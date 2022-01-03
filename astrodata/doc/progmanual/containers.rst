@@ -21,7 +21,7 @@ Our main data container is `astrodata.NDAstroData`. Fundamentally, it is
 a derivative of `astropy.nddata.NDData`, plus a number of mixins to add
 functionality::
 
-    class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
+    class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
         ...
 
 This allows us out of the box to have proper arithmetic with error
@@ -52,13 +52,7 @@ applications dealing with large arrays, particularly when using Python. Given
 the choice to optimize for speed or for memory consumption, we've chosen the
 latter, which is the more pressing issue.
 
-Another addition of as is the ``variance`` property as a convenience for the
-user. Astropy, so far, only provides a standard deviation class for storing
-uncertainties and the code to propagate errors stored this way already
-exists. However, our coding elsewhere is greatly simplified if we are able
-to access and set the variance directly.
-
-Lastly, we've added another new property, ``window``, that can be used to
+We've added another new property, ``window``, that can be used to
 explicitly exploit the `astropy.io.fits`'s ``section`` property, to (again)
 avoid loading unneeded data to memory. This property returns an instance of
 ``NDWindowing`` which, when sliced, in turn produces an instance of
@@ -66,10 +60,37 @@ avoid loading unneeded data to memory. This property returns an instance of
 seem complex, but it was deemed the easiest and cleanest way to achieve the
 result that we were looking for.
 
+The base ``NDAstroData`` class provides the memory-mapping functionality,
+with other important behaviors added by the ``AstroDataMixin``, which can
+be used with other |NDData|-like classes (such as ``Spectrum1D``) to add
+additional convenience.
+
+One addition is the ``variance`` property, which allows direct access and
+setting of the data's uncertainty, without the user needing to explicitly wrap
+it as an ``NDUncertainty`` object. Internally, the variance is stored as an
+``ADVarianceUncertainty`` object, which is subclassed from Astropy's standard
+``VarianceUncertainty`` class with the addition of a check for negative values
+whenever the array is accessed.
+
+``NDAstroDataMixin`` also changes the default method of combining the ``mask``
+attributes during arithmetic operations from ``logical_or`` to ``bitwise_or``,
+since the individual bits in the mask have separate meanings.
+
+The way slicing affects the ``wcs`` is also changed since DRAGONS regularly
+uses the callable nature of ``gWCS`` objects and this is broken by the standard
+slicing method.
+
+Finally, the additional image planes and tables stored in the ``meta`` dict
+are exposed as attributes of the ``NDAstroData`` object, and any image planes
+that have the same shape as the parent ``NDAstroData`` object will be handled
+by ``NDWindowingAstroData``. Sections will be ignored when accessing image
+planes with a different shape, as well as tables.
+
+
 .. note::
 
    We expect to make changes to ``NDAstroData`` in future releases. In particular,
-   we plan to make use of the ``wcs`` and ``unit`` attributes provided by the
+   we plan to make use of the ``unit`` attribute provided by the
    |NDData| class and increase the use of memory-mapping by default. These
    changes mostly represent increased functionality and we anticipate a high
    (and possibly full) degree of backward compatibility.
