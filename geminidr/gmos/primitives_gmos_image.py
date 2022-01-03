@@ -20,7 +20,7 @@ from gemini_instruments.gmu import detsec_to_pixels
 from geminidr.core import Image, Photometry
 from .primitives_gmos import GMOS
 from . import parameters_gmos_image
-from .lookups.geometry_conf import geometry
+from .lookups import geometry_conf
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups.fringe_control_pairs import control_pairs
 
@@ -252,7 +252,7 @@ class GMOSImage(GMOS, Image, Photometry):
                             "one extension. Continuing.")
                 continue
 
-            geom = geometry[ad.detector_name()]
+            geom = geometry_conf.geometry[ad.detector_name()]
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             origins = [k for k in geom if isinstance(k, tuple)]
             ccd2_xorigin = sorted(origins)[1][0]
@@ -289,10 +289,11 @@ class GMOSImage(GMOS, Image, Photometry):
             if len(array_info.origins) != len(ad):
                 raise ValueError(f"{ad.filename} has not been tiled")
 
+            transform.add_mosaic_wcs(ad, geometry_conf)
+
             for ext, origin, detsec in zip(ad, array_info.origins,
                                            ad.detector_section()):
-                mosaic_model = transform.make_mosaic_model(origin, geom, xbin, ybin)
-                ext.wcs = gWCS([(ext.wcs.input_frame, mosaic_model)] +
+                ext.wcs = gWCS([(ext.wcs.input_frame, ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'))] +
                                ref_wcs.pipeline)
 
             # Timestamp and update filename

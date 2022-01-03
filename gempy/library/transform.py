@@ -1317,12 +1317,52 @@ def add_mosaic_wcs(ad, geotable):
     detname = ad.detector_name()
     xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
     geometry = geotable.geometry[detname]
+    default_shape = geometry.get('default_shape')
 
     ref_index = find_reference_extension(ad)
     ref_wcs = ad[ref_index].wcs
 
     for indices, origin, offset in zip(array_info.extensions, array_info.origins, offsets):
-        mosaic_model = make_mosaic_model(origin, geometry, xbin, ybin)
+        # Origins are in (x, y) order in LUT
+        block_geom = geometry[origin[::-1]]
+        nx, ny = block_geom.get('shape', default_shape)
+        nx /= xbin
+        ny /= ybin
+        shift = block_geom.get('shift', (0, 0))
+        rot = block_geom.get('rotation', 0.)
+        mag = block_geom.get('magnification', (1, 1))
+
+        model_list = []
+
+        # This is now being done by the ext_shift (below)
+        # Shift the Block's coordinates based on its location within
+        # the full array, to ensure any rotation takes place around
+        # the true centre.
+        # if offset.x1 != 0 or offset.y1 != 0:
+        #    model_list.append(models.Shift(offset.x1 / xbin) &
+        #                      models.Shift(offset.y1 / ybin))
+
+        if rot != 0 or mag != (1, 1):
+            # Shift to centre, do whatever, and then shift back
+            model_list.append(models.Shift(-0.5 * (nx - 1)) &
+                              models.Shift(-0.5 * (ny - 1)))
+            if rot != 0:
+                # Cope with non-square pixels by scaling in one
+                # direction to make them square before applying the
+                # rotation, and then reversing that.
+                if xbin != ybin:
+                    model_list.append(models.Identity(1) & models.Scale(ybin / xbin))
+                model_list.append(models.Rotation2D(rot))
+                if xbin != ybin:
+                    model_list.append(models.Identity(1) & models.Scale(xbin / ybin))
+            if mag != (1, 1):
+                model_list.append(models.Scale(mag[0]) &
+                                  models.Scale(mag[1]))
+            model_list.append(models.Shift(0.5 * (nx - 1)) &
+                              models.Shift(0.5 * (ny - 1)))
+        model_list.append(models.Shift(shift[0] / xbin) &
+                          models.Shift(shift[1] / ybin))
+        mosaic_model = reduce(Model.__or__, model_list)
 
         in_frame = cf.Frame2D(name="pixels")
         tiled_frame = cf.Frame2D(name="tile")
@@ -1346,7 +1386,9 @@ def add_mosaic_wcs(ad, geotable):
     # more code here.
     if ref_wcs is not None:
         new_xorigin, new_yorigin = ad[ref_index].wcs(0, 0)
-        if new_xorigin or new_yorigin:
+        # len(ad) > 1 added for applyWCSAdjustment, to preserve the origin
+        # as CCD2, and not the origin of this single slice
+        if (new_xorigin or new_yorigin) and len(ad) > 1:
             origin_shift = models.Shift(-new_xorigin) & models.Shift(-new_yorigin)
         else:
             origin_shift = None
@@ -1358,61 +1400,6 @@ def add_mosaic_wcs(ad, geotable):
                 ext.wcs.insert_transform(mos_frame, origin_shift, after=False)
 
     return ad
-
-
-def make_mosaic_model(origin, geometry, xbin=1, ybin=1):
-    """
-    Create a model to perform the transformation needed for a single physical
-    detector into the mosaic.
-
-    Parameters
-    ----------
-    origin: 2-tuple
-        location of origin of this CCD in DETSEC plane (y-first)
-    geometry: dict
-        information about the mosaic geometry
-    xbin: int
-        binning in x-direction
-    ybin: int
-        binning in y-direction
-
-    Returns
-    -------
-    Model: the model needed to transform this CCD into the mosaic
-    """
-    default_shape = geometry.get('default_shape')
-    # Origins are in (x, y) order in LUT
-    block_geom = geometry[origin[::-1]]
-    nx, ny = block_geom.get('shape', default_shape)
-    nx /= xbin
-    ny /= ybin
-    shift = block_geom.get('shift', (0, 0))
-    rot = block_geom.get('rotation', 0.)
-    mag = block_geom.get('magnification', (1, 1))
-
-    model_list = []
-
-    if rot != 0 or mag != (1, 1):
-        # Shift to centre, do whatever, and then shift back
-        model_list.append(models.Shift(-0.5 * (nx - 1)) &
-                          models.Shift(-0.5 * (ny - 1)))
-        if rot != 0:
-            # Cope with non-square pixels by scaling in one
-            # direction to make them square before applying the
-            # rotation, and then reversing that.
-            if xbin != ybin:
-                model_list.append(models.Identity(1) & models.Scale(ybin / xbin))
-            model_list.append(models.Rotation2D(rot))
-            if xbin != ybin:
-                model_list.append(models.Identity(1) & models.Scale(xbin / ybin))
-        if mag != (1, 1):
-            model_list.append(models.Scale(mag[0]) &
-                              models.Scale(mag[1]))
-        model_list.append(models.Shift(0.5 * (nx - 1)) &
-                          models.Shift(0.5 * (ny - 1)))
-    model_list.append(models.Shift(shift[0] / xbin) &
-                      models.Shift(shift[1] / ybin))
-    return reduce(Model.__or__, model_list)
 
 
 @insert_descriptor_values()
