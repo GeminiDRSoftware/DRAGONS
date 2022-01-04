@@ -173,7 +173,15 @@ class findAperturesConfig(config.Config):
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
                            "collapsed profile?", bool, False)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.1, min=0, max=1)
+                                  float, 0.2, min=0, max=1)
+    aper_width = config.RangeField("Estimated aperture size",
+                                   float, 0.5, min=0.1, max=1.0)
+    arcsecs_per_pixel = config.RangeField("Arcsecs Per Pixel",
+                                          float, 0.0807, min=0.0001, max=1.0)
+    num_widths = config.RangeField("Estimated aperture size",
+                                   int, 10, min=2, max=100)
+    min_frac = config.RangeField("Min fraction of wavelet bin hits for peak",
+                                 float, 0.25, min=0.01, max=1.0)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},

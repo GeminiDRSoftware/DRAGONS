@@ -163,10 +163,12 @@ class TextSlider(CustomWidget):
                                step=self.kwargs.get('step'),
                                low=self.kwargs.get('start'),
                                high=self.kwargs.get('end'))
+        step = self.kwargs.get('step')
+        fmt = "0[.]%s" % ("0" * (len(str(step)) - len(str(int(step))) -1))
         self.slider = Slider(start=self.kwargs.get('start'),
                              end=self.kwargs.get('end'),
                              step=self.kwargs.get('step'),
-                             value=self.value, title=self.title, width=256)
+                             value=self.value, title=self.title, width=256, format=fmt)
         self.spinner.on_change("value", self.handler)
         self.slider.on_change("value", self.handler)
 
@@ -398,7 +400,8 @@ class FindSourceAperturesModel:
             # otherwise we can redo only the peak detection
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
-                self.threshold, self.sizing_method, self.min_snr)
+                self.threshold, self.sizing_method, self.min_snr, self.aper_width,
+            self.arcsecs_per_pixel, self.num_widths, self.min_frac)
 
         self.aperture_models.clear()
 
@@ -947,6 +950,14 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         threshold = TextSlider("Threshold", model, attr="threshold",
                                start=0, end=1, step=0.01)
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
+        aper_width = TextSlider("Aperture Width", model,
+                                attr="aper_width", start=0.1, end=10.0, step=0.001)
+        arcsecs_per_pixel = TextSlider("Arcsecs Per Pixel", model,
+                                       attr="arcsecs_per_pixel", start=0.0001, end=1.0, step=0.0001)
+        num_widths = TextSlider("Num Wavelet Widths", model,
+                                attr="num_widths", start=2, end=100, step=1)
+        min_frac = TextSlider("Min Fraction Wavelets", model,
+                              attr="min_frac", start=0.01, end=1.0, step=0.01)
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
@@ -974,6 +985,10 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             maxaper.build(),
             threshold.build(),
             sizing.build(),
+            aper_width.build(),
+            arcsecs_per_pixel.build(),
+            num_widths.build(),
+            min_frac.build(),
             row([reset_button, find_button]),
         )
 

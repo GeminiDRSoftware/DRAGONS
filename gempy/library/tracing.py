@@ -17,6 +17,8 @@ trace_lines:         trace lines from a set of supplied starting positions
 """
 import warnings
 
+import math
+
 import numpy as np
 from astropy.modeling import fitting, models
 from astropy.stats import sigma_clip, sigma_clipped_stats
@@ -1109,7 +1111,8 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
 
 
 def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
-                   sizing_method, threshold, section, min_snr, use_snr):
+                   sizing_method, threshold, section, min_snr, use_snr, aper_width,
+                   arcsecs_per_pixel, num_widths, min_frac):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
     findSourceApertures as well as by the interactive code. See
@@ -1168,23 +1171,57 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
 
     locations, all_limits = find_apertures_peaks(profile, prof_mask,
                                                  max_apertures, threshold,
-                                                 sizing_method, min_snr)
+                                                 sizing_method, min_snr, aper_width,
+                                                 arcsecs_per_pixel, num_widths, min_frac)
 
     return locations, all_limits, profile, prof_mask
 
 
 def find_apertures_peaks(profile, prof_mask, max_apertures,
-                         threshold, sizing_method, min_snr):
+                         threshold, sizing_method, min_snr, aper_width,
+                         # remainder are for debugging additional tweaks
+                         arcsecs_per_pixel, num_widths, min_frac):
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
     # widths = np.arange(3, 20)
     # TODO trying various width inputs looking to treat the upper and
     #  lower ends of the range in an equivalent manner with respect
     #  to the number of wavelet solutions that include a peak
-    widths = np.asarray([2 ** (1 + 0.3 * i) for i in range(11)])
+    # arcsecs per pixel = 0.0807
+    aper_width_pixels = aper_width / arcsecs_per_pixel
+    log.warning("Target aperture width in pixels is %s" % aper_width_pixels)
+    aper_width_min = aper_width_pixels / 2
+    aper_width_max = aper_width_pixels * 2
+    # widths = np.asarray([2 ** (1 + 0.3 * i) for i in range(11)])
+    # 2 .. 16
+
+    # integer range for width index
+    # i = 0 .. k
+    # desired output width ranges
+    # w = a .. b
+    # Growth factor of f
+    # Initial offset of o
+    # a = exp(o)
+    # b = exp(o + k*f)
+    # log(a) = o
+    # log(b) = o + k*f
+    # (log(b) - o)/k = f
+    # (log(b) - log(a))/k = f
+    # num_widths = 10  # = 10 values, inclusive - we +1 again on the range since that excludes the upper value
+    a = aper_width_min
+    b = aper_width_max
+    o = math.log(a)
+    f = (math.log(b) - o)/num_widths
+    widths = np.asarray([math.exp(o + i*f) for i in range(num_widths)])
+    log.warning("widths: %s" % widths)
+
+    # try old widths again, getting odd results
+    # widths = np.asarray([2 ** (1 + 0.3 * i) for i in range(11)])
+
+    # min_frac = 0.25
     peaks_and_snrs = find_peaks(
         profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
-        reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
+        reject_bad=False, min_snr=min_snr, min_frac=min_frac, pinpoint_index=0)
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")
