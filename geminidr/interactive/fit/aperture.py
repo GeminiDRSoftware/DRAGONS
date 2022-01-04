@@ -401,7 +401,7 @@ class FindSourceAperturesModel:
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
                 self.threshold, self.sizing_method, self.min_snr, self.aper_width,
-            self.arcsecs_per_pixel, self.num_widths, self.min_frac)
+                self.arcsecs_per_pixel, self.num_widths, self.min_frac)
 
         self.aperture_models.clear()
 
@@ -952,8 +952,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
         aper_width = TextSlider("Aperture Width", model,
                                 attr="aper_width", start=0.1, end=10.0, step=0.001)
-        arcsecs_per_pixel = TextSlider("Arcsecs Per Pixel", model,
-                                       attr="arcsecs_per_pixel", start=0.0001, end=1.0, step=0.0001)
         num_widths = TextSlider("Num Wavelet Widths", model,
                                 attr="num_widths", start=2, end=100, step=1)
         min_frac = TextSlider("Min Fraction Wavelets", model,
@@ -986,7 +984,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             threshold.build(),
             sizing.build(),
             aper_width.build(),
-            arcsecs_per_pixel.build(),
             num_widths.build(),
             min_frac.build(),
             row([reset_button, find_button]),

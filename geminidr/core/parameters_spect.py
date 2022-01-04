@@ -175,7 +175,7 @@ class findAperturesConfig(config.Config):
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.2, min=0, max=1)
     aper_width = config.RangeField("Estimated aperture size",
-                                   float, 0.5, min=0.1, max=1.0)
+                                   float, 1.0, min=0.1, max=10.0)
     arcsecs_per_pixel = config.RangeField("Arcsecs Per Pixel",
                                           float, 0.0807, min=0.0001, max=1.0)
     num_widths = config.RangeField("Estimated aperture size",

@@ -1114,7 +1114,7 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
                    sizing_method, threshold, section, min_snr, use_snr, aper_width,
                    arcsecs_per_pixel, num_widths, min_frac):
     """
-    Finds sources in 2D spectral images and compute aperture sizes. Used by
+    Finds sources in 2D spectral images and compute aperture sizes. Used byß
     findSourceApertures as well as by the interactive code. See
     findSourceApertures' docstring for details on the parameters.
     """
@@ -1189,7 +1189,6 @@ def find_apertures_peaks(profile, prof_mask, max_apertures,
     #  to the number of wavelet solutions that include a peak
     # arcsecs per pixel = 0.0807
     aper_width_pixels = aper_width / arcsecs_per_pixel
-    log.warning("Target aperture width in pixels is %s" % aper_width_pixels)
     aper_width_min = aper_width_pixels / 2
     aper_width_max = aper_width_pixels * 2
     # widths = np.asarray([2 ** (1 + 0.3 * i) for i in range(11)])

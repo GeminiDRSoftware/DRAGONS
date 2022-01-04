@@ -1607,9 +1607,10 @@ class Spect(PrimitivesBASE):
         aper_params = {key: params[key] for key in (
             'max_apertures', 'min_sky_region', 'percentile',
             'section', 'sizing_method', 'threshold', 'min_snr', 'use_snr',
-            'aper_width', 'arcsecs_per_pixel', 'num_widths', 'min_frac')}
+            'aper_width', 'num_widths', 'min_frac')}
 
         for ad in adinputs:
+            arcsecs_per_pixel = ad.pixel_scale()
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
                 log.warning(f"{ad.filename} has not been distortion corrected")
 
@@ -1629,10 +1630,10 @@ class Spect(PrimitivesBASE):
 
                 if interactive:
                     locations, all_limits = interactive_find_source_apertures(
-                        ext, **aper_params)
+                        ext, arcsecs_per_pixel=arcsecs_per_pixel, **aper_params)
                 else:
                     locations, all_limits, _, _ = tracing.find_apertures(
-                        ext, **aper_params)
+                        ext, arcsecs_per_pixel=arcsecs_per_pixel, **aper_params)
 
                 if locations is None or len(locations) == 0:
                     # Delete existing APERTURE table
