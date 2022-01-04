@@ -155,16 +155,19 @@ def get_specphot_name(ad):
     except TypeError:
         dt = datetime.timedelta(days=3652.5)  # 10 years
 
+    all_names, all_coords, all_pm_ra, all_pm_dec = [], [], [], []
     for name, (coords, pm_ra, pm_dec) in specphot_standards.items():
-        c = SkyCoord(coords, unit=(u.hourangle, u.deg),
-                     pm_ra_cosdec=pm_ra*u.mas/u.yr, pm_dec=pm_dec*u.mas/u.yr,
-                     distance=100*u.pc)  # needed to avoid ErfaWarning
-        sep = target.separation(c).arcsec
-        if sep < 2 or sep < 10 and target_name == name:
-            return name
-        sep = target.separation(c.apply_space_motion(dt=dt)).arcsec
-        if sep < 2 or sep < 10 and target_name == name:
-            return name
+        all_names.append(name)
+        all_coords.append(coords)
+        all_pm_ra.append(pm_ra)
+        all_pm_dec.append(pm_dec)
+    c = SkyCoord(all_coords, unit=(u.hourangle, u.deg),
+                 pm_ra_cosdec=all_pm_ra*u.mas/u.yr, pm_dec=all_pm_dec*u.mas/u.yr,
+                 distance=10*u.pc)
+    separations = target.separation(c.apply_space_motion(dt=dt)).arcsec
+    i = separations.argmin()
+    if separations[i] < 2 or separations[i] < 10 and all_names[i] == target_name:
+        return all_names[i]
 
 # ------------------------------------------------------------------------------
 class AstroDataGemini(AstroData):
