@@ -1622,7 +1622,8 @@ class AstroDataGemini(AstroData):
             obsepoch = year + fraction
             years = obsepoch - epoch
             pmra *= years
-            pmra *= 15.0*math.cos(math.radians(self.target_dec(offset=True)))
+            # PMRA is to be in time-seconds/yr so cos(dec) term is not needed
+            pmra *= 15.0 #*math.cos(math.radians(self.target_dec(offset=True)))
             pmra /= 3600.0
             ra += pmra
 
