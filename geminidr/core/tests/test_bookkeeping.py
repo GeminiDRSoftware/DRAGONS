@@ -48,6 +48,7 @@ def niri_ads(request, astrofaker):
     return [astrofaker.create('NIRI', ['IMAGE'], filename=f"X{i+1}.fits")
             for i in range(request.param)]
 
+
 # --- Tests ---
 @pytest.mark.parametrize('niri_ads', [3], indirect=True)
 def test_append_stream(niri_ads):
@@ -58,7 +59,7 @@ def test_append_stream(niri_ads):
     p = NIRIImage(niri_ads[:1])
     p.streams['test'] = niri_ads[1:2]
     # Add the AD in 'test' to 'main' leaving it in 'test'
-    p.appendStream(from_stream='test', delete=False)
+    p.appendStream(from_stream='test', copy=True)
     assert len(p.streams['main']) == 2
     assert len(p.streams['test']) == 1
     # Change filename of version in 'test' to confirm that the one in 'main'
@@ -67,10 +68,9 @@ def test_append_stream(niri_ads):
     assert filenames(p.streams['main']) == '12'
 
     # Add the copy in 'test' to 'main', and delete 'test'
-    p.appendStream(from_stream='test', delete=True)
+    p.appendStream(from_stream='test', copy=False)
     assert len(p.streams['main']) == 3
     assert filenames(p.streams['main']) == '124'
-    assert 'test' not in p.streams
 
     # Take 'test2', append 'main', and put the result in 'main'
     p.streams['test2'] = niri_ads[2:]
@@ -108,14 +108,15 @@ def test_slice_into_streams(astrofaker):
 
     # Slice, clearing "main"
     p = GMOSImage(gmos_ads())
-    p.sliceIntoStreams(clear=True)
+    p.sliceIntoStreams(copy=False)
+    p.clearStream()
     assert len(p.streams) == 13
     for k, v in p.streams.items():
         assert len(v) == 0 if k == 'main' else 2
 
     # Slice, not clearing "main"
     p = GMOSImage(gmos_ads())
-    p.sliceIntoStreams(clear=False)
+    p.sliceIntoStreams(copy=True)
     assert len(p.streams) == 13
     for k, v in p.streams.items():
         assert len(v) == 2
@@ -125,7 +126,7 @@ def test_slice_into_streams(astrofaker):
     ad2.phu['EXTRA_KW'] = 33
     del ad1[5]
     p = GMOSImage([ad1, ad2])
-    p.sliceIntoStreams(clear=False)
+    p.sliceIntoStreams(copy=True)
     assert len(p.streams) == 13
     for k, v in p.streams.items():
         assert len(v) == 1 if k == 'ext12' else 2

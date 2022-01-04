@@ -3,7 +3,8 @@
 #
 #                                                      primitives_bookkeeping.py
 # ------------------------------------------------------------------------------
-import copy
+import os
+from copy import deepcopy
 
 import astrodata, gemini_instruments
 
@@ -60,7 +61,7 @@ class Bookkeeping(PrimitivesBASE):
         save_cache(self.stacks, stkindfile)
         return adinputs
 
-    def appendStream(self, adinputs=None, from_stream=None, delete=None):
+    def appendStream(self, adinputs=None, from_stream=None, copy=None):
         """
         This primitive takes the AstroData objects in a stream and appends them
         (order unchanged) to the end of the current stream. If requested, the
@@ -71,8 +72,8 @@ class Bookkeeping(PrimitivesBASE):
         new_stream: str
             name of stream whose ADs are going to be appended to the working
             stream
-        delete: bool
-            delete the stream being appended?
+        copy: bool
+            append full deepcopies of the AD objects?
         """
         log = self.log
         try:
@@ -83,11 +84,10 @@ class Bookkeeping(PrimitivesBASE):
             return adinputs
 
         log.info(f"Appending {len(stream)} frames from stream '{from_stream}'.")
-        if delete:
-            adinputs.extend(stream)
-            del self.streams[from_stream]
+        if copy:
+            adinputs.extend([deepcopy(ad) for ad in stream])
         else:
-            adinputs.extend([copy.deepcopy(ad) for ad in stream])
+            adinputs.extend(stream)
         return adinputs
 
     def clearAllStreams(self, adinputs=None):
@@ -197,6 +197,23 @@ class Bookkeeping(PrimitivesBASE):
         log.stdinfo("Using the following files:")
         adinputs = self.showInputs(adinputs, purpose=None)
         return adinputs
+
+    def mergeInputs(self, adinputs=None):
+        """
+        This primitive takes all the inputs in a stream and makes a single
+        AstroData object containing all the extensions from all the inputs.
+        """
+        log = self.log
+
+        new_ad = astrodata.create(adinputs[0].phu)
+        new_ad.filename = adinputs[0].filename
+        new_ad.orig_filename = adinputs[0].orig_filename
+        for ad in adinputs:
+            log.stdinfo(f"Appending {len(ad)} extensions from {ad.filename}")
+            for ext in ad:
+                new_ad.append(ext)
+
+        return [new_ad]
 
     def rejectInputs(self, adinputs=None, at_start=0, at_end=0):
         """
@@ -315,7 +332,7 @@ class Bookkeeping(PrimitivesBASE):
                 log.status("No datasets in list")
         return adinputs
 
-    def sliceIntoStreams(self, adinputs=None, clear=True):
+    def sliceIntoStreams(self, adinputs=None, root_stream_name=None, copy=True):
         """
         This primitive slices each input AstroData object into separate AD
         objects with one slice each, and puts them into separate streams. The
@@ -325,20 +342,31 @@ class Bookkeeping(PrimitivesBASE):
 
         Parameters
         ----------
-        clear: bool
-            delete unsliced AD objects? (avoids memory duplication of data)
+        root_stream_name: str
+            base name for the streams (to be succeeded by 1, 2, 3, ...)
+        copy: bool
+            make full deepcopies of the slices?
         """
         log = self.log
-        template = 'ext{}'
         streams = []
         for ad in adinputs:
             for i in range(len(ad)):
-                stream_name = template.format(ad[i].id)
-                if clear:
+                stream_name = f'{root_stream_name}{ad[i].id}'
+                if copy:
+                    new_ad = deepcopy(ad[i])
+                else:
                     new_ad = astrodata.create(ad.phu)
                     new_ad.append(ad[i])
+                    new_ad.filename = ad.filename
+                    new_ad.orig_filename = ad.orig_filename
+
+                filename, filetype = os.path.splitext(ad.filename)
+                fields = filename.rsplit('_', 1)
+                if len(fields) == 1:
+                    new_ad.update_filename(suffix=f'_{stream_name}')
                 else:
-                    new_ad = copy.deepcopy(ad[i])
+                    new_ad.update_filename(suffix=f'_{stream_name}_{fields[1]}', strip=True)
+
                 try:
                     self.streams[stream_name].append(new_ad)
                 except KeyError:
@@ -350,7 +378,7 @@ class Bookkeeping(PrimitivesBASE):
             log.debug(f'Files in stream {stream}:')
             for ad in self.streams[stream]:
                 log.debug(f'    {ad.filename}')
-        return [] if clear else adinputs
+        return adinputs
 
     def sortInputs(self, adinputs=None, descriptor='filename', reverse=False):
         """
@@ -428,7 +456,7 @@ class Bookkeeping(PrimitivesBASE):
 
                 try:
                     setattr(ad1, attribute,
-                            copy.deepcopy(getattr(ad2, attribute)))
+                            deepcopy(getattr(ad2, attribute)))
 
                 except ValueError:  # data, mask, are gettable not settable
                     pass
@@ -441,7 +469,7 @@ class Bookkeeping(PrimitivesBASE):
 
                 if hasattr(ext2, attribute):
                     setattr(ext1, attribute,
-                            copy.deepcopy(getattr(ext2, attribute)))
+                            deepcopy(getattr(ext2, attribute)))
                     found = True
 
         if not found:

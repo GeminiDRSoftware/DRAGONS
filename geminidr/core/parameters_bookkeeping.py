@@ -7,7 +7,7 @@ class addToListConfig(config.Config):
 
 class appendStreamConfig(config.Config):
     from_stream = config.Field("Stream from which images are to be appended", str, "")
-    delete = config.Field("Delete stream after appending?", bool, False)
+    copy = config.Field("Append deepcopies of frames?", bool, False)
 
 class clearAllStreamsConfig(config.Config):
     pass
@@ -21,6 +21,9 @@ class flushPixelsConfig(config.Config):
 class getListConfig(config.Config):
     purpose = config.Field("Purpose of list", str, None, optional=True)
     max_frames = config.RangeField("Maximum number of frames", int, None, min=1, optional=True)
+
+class mergeInputsConfig(config.Config):
+    pass
 
 class rejectInputsConfig(config.Config):
     at_start = config.RangeField("Number of files to remove from start of list", int, 0, min=0)
@@ -39,7 +42,8 @@ class showListConfig(config.Config):
     purpose = config.Field("Purpose of displaying list", str, 'all')
 
 class sliceIntoStreamsConfig(config.Config):
-    clear = config.Field("Clear main stream after slicing?", bool, True)
+    root_stream_name = config.Field("Root name for streams", str, "ext")
+    copy = config.Field("Populate streams with deepcopies of the slices?", bool, False)
 
 class sortInputsConfig(config.Config):
     descriptor = config.Field("Name of descriptor for sorting", str, 'filename')

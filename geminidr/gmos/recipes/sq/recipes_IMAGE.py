@@ -41,14 +41,14 @@ def reduce(p):
 _default = reduce
 
 
-def separateCCDs(p):
+def reduceSeparateCCDsCentral(p):
     """
     This recipe performs the standardization and corrections needed to
     convert the raw input science images into a stacked image. To deal
     with different color terms on the different CCDs, the images are
     split by CCD midway through the recipe and subsequently reduced
-    separately. The relative WCS is determined from CCD2 and then applied
-    to CCDs 1 and 3.
+    separately. The relative WCS is determined from the central CCD
+    (CCD2) and then applied to CCDs 1 and 3.
 
     Parameters
     ----------
@@ -65,21 +65,23 @@ def separateCCDs(p):
     p.flatCorrect()
     p.fringeCorrect()
     p.tileArrays(tile_all=False)
-    p.sliceIntoStreams(clear=True)
-    p.detectSources(stream="ext2")
-    p.adjustWCSToReference(stream="ext2")
-    p.applyWCSAdjustment(stream="ext1", reference_stream="ext2")
-    p.applyWCSAdjustment(stream="ext3", reference_stream="ext2")
-    for index in (1, 2, 3):
-        p.resampleToCommonFrame(instream=f"ext{index}")
+    p.sliceIntoStreams(clear=True, root_stream_name="ccd")
+    p.detectSources(stream="ccd2")
+    p.adjustWCSToReference(stream="ccd2")
+    p.applyWCSAdjustment(stream="ccd1", reference_stream="ccd2")
+    p.applyWCSAdjustment(stream="ccd3", reference_stream="ccd2")
+    for ccd in (1, 2, 3):
+        p.resampleToCommonFrame(instream=f"ccd{ccd}")
         p.detectSources()
         p.flagCosmicRaysByStacking()
         p.scaleByExposureTime()
-        p.stackFrames(zero=True, suffix=f"_ccd{index}_stack")
-        p.storeProcessedScience()
+        p.stackFrames(zero=True)
+        p.appendStream(stream="all", from_stream="main", copy=False)
+    p.mergeInputs(instream="all")
+    p.storeProcessedScience()
 
 
-def separateCCDsMosaicking(p):
+def reduceSeparateCCDs(p):
     """
     This recipe performs the standardization and corrections needed to
     convert the raw input science images into a stacked image. To deal
@@ -108,14 +110,17 @@ def separateCCDsMosaicking(p):
     p.adjustWCSToReference(stream="mosaic")
     p.applyWCSAdjustment(reference_stream="mosaic")
     p.clearStream(stream="mosaic")
-    p.sliceIntoStreams(clear=True)
-    for index in (1, 2, 3):
-        p.resampleToCommonFrame(instream=f"ext{index}")
+    p.sliceIntoStreams(root_stream_name="ccd", copy=False)
+    p.clearStream(stream="main")
+    for ccd in (1, 2, 3):
+        p.resampleToCommonFrame(instream=f"ccd{ccd}")
         p.detectSources()
         p.flagCosmicRaysByStacking()
         p.scaleByExposureTime()
-        p.stackFrames(zero=True, suffix=f"_ccd{index}_stack")
-        p.storeProcessedScience()
+        p.stackFrames(zero=True)
+        p.appendStream(stream="all", from_stream="main", copy=False)
+    p.mergeInputs(instream="all")
+    p.storeProcessedScience()
 
 
 def makeProcessedFringe(p):

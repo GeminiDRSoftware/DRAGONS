@@ -325,7 +325,7 @@ def parameter_override(fn):
             # Many primitives operate on AD instances in situ, so need to
             # copy inputs if they're going to a new output stream
             if instream != outstream:
-                adinputs = [deepcopy(ad) for ad in pobj.streams[instream]]
+                adinputs = [deepcopy(ad) for ad in pobj.streams.get(instream, [])]
             else:
                 # Allow a non-existent stream to be passed
                 adinputs = pobj.streams.get(instream, [])

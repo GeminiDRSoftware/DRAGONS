@@ -1220,6 +1220,10 @@ class AstroData:
                 if prefix is None:
                     prefix = m.groups()[0]
                 existing_suffix = m.groups()[1]
+                if '_' in existing_suffix:
+                    last_underscore = existing_suffix.rfind("_")
+                    root += existing_suffix[:last_underscore]
+                    existing_suffix = existing_suffix[last_underscore:]
             else:
                 try:
                     root, existing_suffix = filename.rsplit("_", 1)

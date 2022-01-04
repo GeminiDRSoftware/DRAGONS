@@ -71,12 +71,12 @@ def test_apply_wcs_adjustment(m_error, mosaic, gmos_tiled_images):
                                            names=("NUMBER", "X_IMAGE", "Y_IMAGE"))
 
     p = GMOSImage([ad1, ad2])
-    p.sliceIntoStreams(clear=not mosaic)
+    p.sliceIntoStreams(root_stream_name='ccd', copy=mosaic)
     if mosaic:
         p.mosaicDetectors()
         ref_stream = 'main'
     else:
-        ref_stream = 'ext2'
+        ref_stream = 'ccd2'
 
     # Mimic behaviour of adjustWCSToReference() by modifying second image's WCS
     wcs = p.streams[ref_stream][1][0].wcs
@@ -90,7 +90,7 @@ def test_apply_wcs_adjustment(m_error, mosaic, gmos_tiled_images):
         m_fix = m_error.inverse
     wcs.insert_transform(wcs.input_frame, m_fix, after=True)
 
-    for stream in list({'ext1', 'ext2', 'ext3'} - {ref_stream}):
+    for stream in list({'ccd1', 'ccd2', 'ccd3'} - {ref_stream}):
         p.applyWCSAdjustment(stream=stream, reference_stream=ref_stream)
         ad1, ad2 = p.streams[stream]
         ra1, dec1 = ad1[0].wcs(ad1[0].OBJCAT['X_IMAGE'] - 1,
