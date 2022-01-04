@@ -163,9 +163,6 @@ def get_specphot_name(ad):
         if sep < 2 or sep < 10 and target_name == name:
             return name
         sep = target.separation(c.apply_space_motion(dt=dt)).arcsec
-        if name == 'ltt4364':
-            print(dt)
-            print(c.apply_space_motion(dt=dt))
         if sep < 2 or sep < 10 and target_name == name:
             return name
 
