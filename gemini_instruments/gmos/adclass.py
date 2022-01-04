@@ -8,7 +8,7 @@ from astrodata import (astro_data_tag, astro_data_descriptor, returns_list,
 from .pixel_functions import get_bias_level
 from . import lookup
 from .. import gmu
-from ..gemini import AstroDataGemini, use_keyword_if_prepared
+from ..gemini import AstroDataGemini, use_keyword_if_prepared, get_specphot_name
 
 
 class AstroDataGmos(AstroDataGemini):
@@ -73,8 +73,7 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_standard(self):
-        obj = self.phu.get('OBJECT', '').lower().replace(' ', '')
-        if obj in lookup.standard_star_names:
+        if self._tag_is_spect() and get_specphot_name(self):
             return TagSet(['STANDARD', 'CAL'])
 
     @astro_data_tag

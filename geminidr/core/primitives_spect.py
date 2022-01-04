@@ -32,6 +32,7 @@ from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
 import astrodata
+from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
@@ -612,7 +613,10 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             if datafile is None:
-                filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
+                specphot_name = get_specphot_name(ad)
+                if specphot_name is None:
+                    specphot_name = ad.object().lower().replace(' ', '')
+                filename = f'{specphot_name}.dat'
                 for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
                     try:
                         path = import_module('.', module).__path__[0]
