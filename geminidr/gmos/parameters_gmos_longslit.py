@@ -30,21 +30,33 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
         self.add_illum_mask = True   # adds bridges in longslit full frame
 
 
-class makeSlitIllumConfig(config.Config):
+class makeSlitIllumConfig(config.core_1Dfitting_config):
     bins = config.Field("Total number of bins across the dispersion axis.",
                         int, None, optional=True)
     border = config.Field("Size of the border added to the reconstructed slit illumination image",
                           int, 0, optional=True)
     debug_plot = config.Field("Create diagnosis plots?",
                               bool, False, optional=True)
-    smooth_order = config.Field("Spline order to smooth binned data",
-                                int, 3, optional=True)
+    order = config.Field("Spline order to smooth binned data",
+                                int, 20, optional=True)
+    function = config.ChoiceField("Fitting function to use for bin fitting", str,
+                           allowed={"spline3": "Cubic spline",
+                                    "chebyshev": "Chebyshev polynomial"},
+                           default="spline3", optional=False)
+
     suffix = config.Field("Filename suffix",
                           str, "_slitIllum", optional=True)
     x_order = config.Field("Order of the x-component of the Chebyshev2D model used to reconstruct data",
                            int, 4, optional=True)
     y_order = config.Field("Order of the y-component of the Chebyshev2D model used to reconstruct data",
                            int, 4, optional=True)
+    interactive = config.Field("Set to activate an interactive preview to fine tune the input parameters",
+                               bool, True, optional=True)
+    def setDefaults(self):
+        self.niter = 3
+        self.grow = 0
+        self.hsigma = 3
+        self.lsigma = 3
 
 
 class normalizeFlatConfig(config.core_1Dfitting_config):

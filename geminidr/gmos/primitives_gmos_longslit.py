@@ -267,15 +267,29 @@ class GMOSClassicLongslit(GMOSSpect):
         border : int, optional
             Border size that is added on every edge of the slit illumination
             image before cutting it down to the input AstroData frame.
-        smooth_order : int, optional
-            Order of the spline that is used in each bin fitting to smooth
-            the data (Default: 3)
+        order : int
+            Order of the spline fit to be performed
         x_order : int, optional
             Order of the x-component in the Chebyshev2D model used to
             reconstruct the 2D data from the binned data.
         y_order : int, optional
             Order of the y-component in the Chebyshev2D model used to
             reconstruct the 2D data from the binned data.
+        function : str
+            type of function to fit (splineN or polynomial types)
+        lsigma : float/None
+            lower rejection limit in standard deviations
+        hsigma : float/None
+            upper rejection limit in standard deviations
+        niter : int
+            maximum number of rejection iterations
+        grow : float/False
+            growth radius for rejected pixels
+        threshold : float
+            threshold (relative to peak) for flagging unilluminated pixels
+        interactive : bool
+            set to activate an interactive preview to fine tune the input parameters
+
 
         Return
         ------
@@ -296,12 +310,14 @@ class GMOSClassicLongslit(GMOSSpect):
         bins = params["bins"]
         border = params["border"]
         debug_plot = params["debug_plot"]
-        smooth_order = params["smooth_order"]
         cheb2d_x_order = params["x_order"]
         cheb2d_y_order = params["y_order"]
+        interactive_reduce = params["interactive"]
 
         ad_outputs = []
+
         for ad in adinputs:
+            all_fp_init = []
 
             if len(ad) > 1 and "mosaic" not in ad[0].wcs.available_frames:
 
@@ -356,23 +372,68 @@ class GMOSClassicLongslit(GMOSSpect):
             binned_data = np.zeros_like(data)
             binned_std = np.zeros_like(std)
 
+            for _ in range(nbins):
+                all_fp_init.append(fit_1D.translate_params(params))
+
             log.info("Smooth binned data and variance, and normalize them by "
                      "smoothed central value")
-            for bin_idx, (b0, b1) in enumerate(zip(bin_bot, bin_top)):
+            # Interactive or not
+            if interactive_reduce:
+                all_pixels = []
+                all_domains = []
+                for _ in range(nbins):
+                    pixels = np.arange(width)
+                    all_pixels.append(pixels)
+                    all_domains.append([0, width - 1])
 
-                rows = np.arange(width)
+                config = self.params[self.myself()]
+                config.update(**params)
+
+                data_with_weights = {"x": [], "y": [], "weights": []}
+                for rppixels, b0, b1 in zip(all_pixels, bin_bot, bin_top):
+                    avg_data = np.ma.mean(data[b0:b1], axis=0)
+                    avg_variance = np.ma.mean(variance[b0:b1], axis=0)
+                    data_with_weights["x"].append(rppixels)
+                    data_with_weights["y"].append(avg_data)
+                    data_with_weights["weights"].append(np.sqrt(at.divide0(1., avg_variance)))
+
+                if ad.filename:
+                    filename_info = ad.filename
+                else:
+                    filename_info = ''
+
+                uiparams = UIParameters(config)
+                visualizer = fit1d.Fit1DVisualizer(data_with_weights, all_fp_init,
+                                                   tab_name_fmt="bin {}",
+                                                   xlabel='x (pixels)', ylabel='counts',
+                                                   domains=all_domains,
+                                                   title="Make Slit Illumination Function",
+                                                   primitive_name="makeSlitIllum",
+                                                   filename_info=filename_info,
+                                                   enable_user_masking=False,
+                                                   enable_regions=True,
+                                                   help_text=NORMALIZE_FLAT_HELP_TEXT,
+                                                   recalc_inputs_above=True,
+                                                   modal_message="Recalculating",
+                                                   ui_params=uiparams)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                log.stdinfo('Interactive Parameters retrieved, performing slit function modeling...')
+                fitting_params = visualizer.results()
+                all_fp_init = [params.extract_params() for params in fitting_params]
+
+            for bin_idx, (bin_params, b0, b1) in enumerate(zip(all_fp_init, bin_bot, bin_top)):
 
                 avg_data = np.ma.mean(data[b0:b1], axis=0)
-                model_1d_data = astromodels.UnivariateSplineWithOutlierRemoval(
-                    rows, avg_data, order=smooth_order)
 
+                avg_variance = np.ma.mean(variance[b0:b1], axis=0)
+                weights = np.sqrt(at.divide0(1., avg_variance))
+                model_1d_data = fit_1D(avg_data, weights=weights, **bin_params, axis=0).evaluate()
                 avg_std = np.ma.mean(std[b0:b1], axis=0)
-                model_1d_std = astromodels.UnivariateSplineWithOutlierRemoval(
-                    rows, avg_std, order=smooth_order)
+                model_1d_std = fit_1D(avg_std, weights=weights, **bin_params, axis=0).evaluate()
 
-                slit_central_value = model_1d_data(rows)[width // 2]
-                binned_data[b0:b1] = model_1d_data(rows) / slit_central_value
-                binned_std[b0:b1] = model_1d_std(rows) / slit_central_value
+                slit_central_value = model_1d_data[width // 2]
+                binned_data[b0:b1] = model_1d_data / slit_central_value
+                binned_std[b0:b1] = model_1d_std / slit_central_value
 
             log.info("Reconstruct 2D mosaicked data")
             bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
