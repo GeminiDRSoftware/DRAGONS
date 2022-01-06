@@ -1,6 +1,6 @@
 # Copyright(c) 2019-2020 Association of Universities for Research in Astronomy, Inc.
 #
-from astrodata import AstroData, NDAstroData
+from astrodata import AstroData, AstroDataMixin
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from specutils import Spectrum1D, SpectralRegion
@@ -14,7 +14,7 @@ from gwcs import coordinate_frames as cf
 from . import astromodels as am
 
 
-class Spek1D(Spectrum1D, NDAstroData):
+class Spek1D(AstroDataMixin, Spectrum1D):
     """
     Spectrum container for 1D spectral data, utilizing benefits of
     AstroData. This enhances :class:`~specutils.Spectrum1D` by having

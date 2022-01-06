@@ -8,7 +8,7 @@ from astrodata import (astro_data_tag, astro_data_descriptor, returns_list,
 from .pixel_functions import get_bias_level
 from . import lookup
 from .. import gmu
-from ..gemini import AstroDataGemini, use_keyword_if_prepared
+from ..gemini import AstroDataGemini, use_keyword_if_prepared, get_specphot_name
 
 
 class AstroDataGmos(AstroDataGemini):
@@ -73,8 +73,7 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_standard(self):
-        obj = self.phu.get('OBJECT', '').lower().replace(' ', '')
-        if obj in lookup.standard_star_names:
+        if self._tag_is_spect() and get_specphot_name(self):
             return TagSet(['STANDARD', 'CAL'])
 
     @astro_data_tag
@@ -926,22 +925,19 @@ class AstroDataGmos(AstroDataGemini):
         float/list
             read noise
         """
-        if 'PREPARED' in self.tags:
-            return self.hdr.get(self._keyword_for('read_noise'))
-        else:
-            # Get the correct dict of read noise values
-            ut_date = self.ut_date()
-            if ut_date is None:
-                return None  # converted to list by decorator if needed
+        # Get the correct dict of read noise values
+        ut_date = self.ut_date()
+        if ut_date is None:
+            return None  # converted to list by decorator if needed
 
-            if ut_date > date(2017, 2, 24):
-                rn_dict = lookup.gmosampsRdnoise
-            elif ut_date >= date(2015, 8, 26):
-                rn_dict = lookup.gmosampsRdnoiseBefore20170224
-            elif ut_date >= date(2006, 8, 31):
-                rn_dict = lookup.gmosampsRdnoiseBefore20150826
-            else:
-                rn_dict = lookup.gmosampsRdnoiseBefore20060831
+        if ut_date > date(2017, 2, 24):
+            rn_dict = lookup.gmosampsRdnoise
+        elif ut_date >= date(2015, 8, 26):
+            rn_dict = lookup.gmosampsRdnoiseBefore20170224
+        elif ut_date >= date(2006, 8, 31):
+            rn_dict = lookup.gmosampsRdnoiseBefore20150826
+        else:
+            rn_dict = lookup.gmosampsRdnoiseBefore20060831
 
         read_speed_setting = self.read_speed_setting()
         gain_setting = self.gain_setting()
