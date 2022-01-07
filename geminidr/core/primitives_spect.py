@@ -2570,8 +2570,10 @@ class Spect(PrimitivesBASE):
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
 
+                resampled_frame = copy(ext.wcs.input_frame)
+                resampled_frame.name = 'resampled'
                 ext.wcs = gWCS([(ext.wcs.input_frame, resampling_model),
-                                (cf.Frame2D(name='resampled'), new_wcs_model),
+                                (resampled_frame, new_wcs_model),
                                 (ext.wcs.output_frame, None)])
 
                 origin = (0,) * ndim
