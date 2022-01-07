@@ -52,7 +52,7 @@ def boxcar(data, operation=np.ma.median, size=1):
     try:
         boxarray = np.array([operation(data[max(i-size, 0):i+size+1])
                              for i in range(len(data))])
-    except ValueError:  # Handle things like np.logical_and
+    except (ValueError, TypeError):  # Handle things like np.logical_and
         boxarray = np.array([operation.reduce(data[max(i-size, 0):i+size+1])
                              for i in range(len(data))])
     return boxarray
@@ -103,6 +103,51 @@ def divide0(numerator, denominator):
                          where=abs(denominator) > np.finfo(dtype).tiny)
 
 
+def rasextodec(string):
+    """
+    Convert hh:mm:ss.sss to decimal degrees
+    """
+    match_ra = re.match(r"(\d+):(\d+):(\d+\.\d+)", string)
+    if match_ra:
+        hours = float(match_ra.group(1))
+        minutes = float(match_ra.group(2))
+        secs = float(match_ra.group(3))
+
+        minutes += (secs/60.0)
+        hours += (minutes/60.0)
+
+        degrees = hours * 15.0
+    else:
+        raise ValueError('Invalid RA string')
+
+    return degrees
+
+def degsextodec(string):
+    """
+    Convert [-]dd:mm:ss.sss to decimal degrees
+    """
+    match_dec = re.match(r"(-*)(\d+):(\d+):(\d+\.\d+)", string)
+    if match_dec:
+        sign = match_dec.group(1)
+        if sign == '-':
+            sign = -1.0
+        else:
+            sign = +1.0
+
+        degs = float(match_dec.group(2))
+        minutes = float(match_dec.group(3))
+        secs = float(match_dec.group(4))
+
+        minutes += (secs/60.0)
+        degs += (minutes/60.0)
+
+        degs *= sign
+    else:
+        raise ValueError('Invalid Dec string')
+
+    return degs
+
+
 def cartesian_regions_to_slices(regions):
     """
     Convert a sample region(s) string, consisting of a comma-separated list
@@ -119,7 +164,17 @@ def cartesian_regions_to_slices(regions):
     remainder of the range (eg. '10:,:') and/or an optional step may be
     specified using colon syntax (eg. '1:10:2' or '1-10:2').
     """
+    if not regions:
+        return (slice(None, None, None),)
+
+    if not isinstance(regions, str):
+        raise TypeError('region must be a string or None, not \'{}\''
+                        .format(regions))
+
     origin = 1
+
+    ranges = regions.strip('[]').split(',')
+
     slices = []
     ranges = parse_user_regions(regions, allow_step=True)
 
@@ -275,6 +330,29 @@ def get_spline3_extrema(spline):
                 else:
                     maxima.append(x)
     return np.array(minima), np.array(maxima)
+
+
+def transpose_if_needed(*args, transpose=False, section=slice(None)):
+    """
+    This function takes a list of arrays and returns them (or a section of them),
+    either untouched, or transposed, according to the parameter.
+
+    Parameters
+    ----------
+    args : sequence of arrays
+        The input arrays.
+    transpose : bool
+        If True, return transposed versions.
+    section : slice object
+        Section of output data to return.
+
+    Returns
+    -------
+    list of arrays
+        The input arrays, or their transposed versions.
+    """
+    return list(None if arg is None
+                else arg.T[section] if transpose else arg[section] for arg in args)
 
 
 def rotate_2d(degs):

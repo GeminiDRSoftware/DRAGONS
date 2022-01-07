@@ -8,7 +8,7 @@ from astrodata import (astro_data_tag, astro_data_descriptor, returns_list,
 from .pixel_functions import get_bias_level
 from . import lookup
 from .. import gmu
-from ..gemini import AstroDataGemini
+from ..gemini import AstroDataGemini, use_keyword_if_prepared
 
 
 class AstroDataGmos(AstroDataGemini):
@@ -30,7 +30,7 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_tag
     def _tag_dark(self):
         if self.phu.get('OBSTYPE') == 'DARK':
-            return TagSet(['DARK'], blocks=['IMAGE', 'SPECT'])
+            return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_arc(self):
@@ -567,6 +567,7 @@ class AstroDataGmos(AstroDataGemini):
         return 'Imaging' if mask == 'None' else mask
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def gain(self):
         """
@@ -578,10 +579,6 @@ class AstroDataGmos(AstroDataGemini):
             Gains used for the observation
 
         """
-        # If the file has been prepared, we trust the header keywords
-        if 'PREPARED' in self.tags:
-            return self.hdr.get(self._keyword_for('gain'))
-
         # Get the correct dict of gain values
         ut_date = self.ut_date()
         if ut_date is None:
@@ -703,10 +700,11 @@ class AstroDataGmos(AstroDataGemini):
             id_descriptor_list = ['filter_name']
         elif 'SPECT' in tags and ('FLAT' in tags or 'SLITILLUM' in tags
                 or 'ARC' in tags):
-            # unclear if STANDARD requires central_wavelength
-            # depends on the effects of grating efficiency as f(cwave)
             id_descriptor_list = ['filter_name', 'central_wavelength']
-        else:
+        elif 'SPECT' in tags and 'STANDARD' in tags:
+            id_descriptor_list = ['observation_id', 'filter_name',
+                                  'central_wavelength']
+        else:  # SPECT science
             id_descriptor_list = ['observation_id', 'filter_name']
 
         # Add in all of the common descriptors required
@@ -916,6 +914,7 @@ class AstroDataGmos(AstroDataGemini):
         return mode_dict.get(mode_key)
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def read_noise(self):
         """
@@ -1014,7 +1013,7 @@ class AstroDataGmos(AstroDataGemini):
         in_adu = self.is_in_adu()
 
         # Get estimated bias levels from LUT
-        bias_levels = get_bias_level(self, estimate=True)
+        bias_levels = get_bias_level(self, estimate=False)
         if bias_levels is None:
             bias_levels = 0.0 if self.is_single else [0.0] * len(self)
         else:

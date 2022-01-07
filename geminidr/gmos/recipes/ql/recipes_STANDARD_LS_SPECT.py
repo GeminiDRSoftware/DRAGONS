@@ -6,5 +6,7 @@ Default is "reduceStandard".
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'STANDARD'}
 
 from .recipes_LS_SPECT import reduceScience, reduceStandard
+from geminidr.gmos.recipes.ql.recipes_common import makeIRAFCompatible
 
 _default = reduceStandard
+

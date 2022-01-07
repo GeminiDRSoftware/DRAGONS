@@ -1,7 +1,5 @@
 .. keyhole_api.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _keyhole_api:
 
 ********************************************************************
@@ -58,10 +56,6 @@ Importing Libraries
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system import cal_service
     from gempy.adlibrary import dataselect
-
-Importing ``print_function`` is for compatibility with the Python 2.7 print
-statement.  If you are working with Python 3, it is not needed, but importing
-it will not break anything.
 
 The ``dataselect`` module will be used to create file lists for the
 darks, the flats and the science observations. The ``cal_service`` package
@@ -171,7 +165,7 @@ command would use the ``exposure_time`` descriptor:
         dataselect.expr_parser('exposure_time==60')
     )
 
-.. note::  All expression need to be processed with ``dataselect.expr_parser``.
+.. note::  All expressions need to be processed with ``dataselect.expr_parser``.
 
 
 A list for the flats
@@ -252,7 +246,7 @@ Each flavor is stacked, then the lamp-off stack is subtracted from the lamp-on
 stack.
 
 We create the master flat field and add it to the calibration database as
-follow:
+follows:
 
 .. code-block:: python
     :linenos:

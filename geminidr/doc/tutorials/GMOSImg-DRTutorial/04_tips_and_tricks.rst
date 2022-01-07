@@ -1,7 +1,5 @@
 .. 04_tips_and_tricks.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. _tips_and_tricks:
 
 ***************
@@ -35,7 +33,7 @@ Again, note that this step is only needed for images obtained with some
 detector and filter combinations. Make sure you checked the
 :ref:`Fringe Correction Tables <fringe_correction_tables>`.
 
-The above can be done with the API as follow:
+The above can be done with the API as follows:
 
 .. code-block:: python
     :linenos:
@@ -85,15 +83,12 @@ can be overriden by the user.
 
 The "|showrecipes|" command line is used to show the default recipe for a
 file, a specific recipe for that file, or all the recipes associated with
-the file. It is fully documented in:
-
-    * `Recipe System - User's Manual: showrecipes <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showrecipes>`_
+the file.
 
 Once you know the recipe and primitives it is calling, you can explore the
-primitives' parameters using the "|showpars|" command line. The tool is fully
-documented in:
+primitives' parameters using the "|showpars|" command line.
 
-    * `Recipe System - User's Manual: showpars <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showpars>`_
+The tools are fully documented in the |RSUser|.
 
 
 Customizing input parameters

@@ -12,12 +12,10 @@ To run:
 """
 # TODO @bquint: clean up these tests
 
-import numpy as np
 import os
 import pytest
 
 import astrodata
-import gemini_instruments
 from gempy.utils import logutils
 
 from . import ad_compare
@@ -39,7 +37,7 @@ class TestStandardize:
             os.remove(logfilename)
         log = logutils.get_logger(__name__)
         log.root.handlers = []
-        logutils.config(mode='standard', console_lvl='stdinfo',
+        logutils.config(mode='standard',
                         file_name=logfilename)
 
     @classmethod
@@ -86,11 +84,20 @@ class TestStandardize:
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
                                            'N20070819S0104_varAdded.fits'))
 
-    @pytest.mark.xfail(reason="Test needs revision", run=False)
-    def test_prepare(self):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
+    @pytest.mark.regression
+    def test_prepare(self, change_working_dir, path_to_inputs,
+                     path_to_refs):
+
+        ad = astrodata.open(os.path.join(path_to_inputs,
                                          'N20070819S0104.fits'))
-        p = NIRIImage([ad])
-        ad = p.prepare()[0]
-        assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                           'N20070819S0104_prepared.fits'))
+        with change_working_dir():
+            logutils.config(file_name=f'log_regression_{ad.data_label()}.txt')
+            p = NIRIImage([ad])
+            p.prepare()
+            prepared_ad = p.writeOutputs(
+                outfilename='N20070819S0104_prepared.fits').pop()
+
+        ref_ad = astrodata.open(
+            os.path.join(path_to_refs, 'N20070819S0104_prepared.fits'))
+
+        assert ad_compare(prepared_ad, ref_ad)

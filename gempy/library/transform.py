@@ -35,7 +35,7 @@ Functions:
                         region
 """
 import numpy as np
-import copy
+from copy import deepcopy
 from functools import reduce
 
 from astropy.modeling import models, Model
@@ -56,6 +56,7 @@ import astrodata
 from astrodata import wcs as adwcs
 
 from .astromodels import Rotate2D, Shift2D, Scale2D
+from ..utils.decorators import insert_descriptor_values
 from ..utils import logutils
 
 log= logutils.get_logger(__name__)
@@ -318,7 +319,7 @@ class Transform:
         return transform
 
     def copy(self):
-        return copy.deepcopy(self)
+        return deepcopy(self)
 
     def __getattr__(self, key):
         """
@@ -830,7 +831,7 @@ class DataGroup:
             except TypeError:
                 raise self.UnequalError
             # "Freeze" the transforms
-            self._transforms = copy.deepcopy(transforms)
+            self._transforms = deepcopy(transforms)
             self._arrays = arrays
         self.no_data = {}
         self.output_shape = None
@@ -863,7 +864,7 @@ class DataGroup:
     def append(self, array, transform):
         """Add a single array/transform pair"""
         self._arrays.append(array)
-        self._transforms.append(copy.deepcopy(transform))
+        self._transforms.append(deepcopy(transform))
 
     def calculate_output_shape(self, additional_array_shapes=None,
                                additional_transforms=None):
@@ -984,7 +985,7 @@ class DataGroup:
         for input_array, transform in zip(self._arrays, self._transforms):
             # Since this may be modified, deepcopy to preserve the one if
             # the DataGroup's _transforms list
-            transform = copy.deepcopy(transform)
+            transform = deepcopy(transform)
             if self.origin:
                 transform.append(reduce(Model.__and__,
                                  [models.Shift(-offset) for offset in self.origin[::-1]]))
@@ -1401,7 +1402,9 @@ def add_mosaic_wcs(ad, geotable):
 
     return ad
 
-def add_longslit_wcs(ad):
+
+@insert_descriptor_values()
+def add_longslit_wcs(ad, central_wavelength=None):
     """
     Attach a gWCS object to all extensions of an AstroData objects,
     representing the approximate spectroscopic WCS, as returned by
@@ -1409,8 +1412,10 @@ def add_longslit_wcs(ad):
 
     Parameters
     ----------
-    ad: AstroData
+    ad : AstroData
         the AstroData instance requiring a WCS
+    central_wavelength : float / None
+        central wavelength in nm (None => use descriptor)
 
     Returns
     -------
@@ -1418,8 +1423,6 @@ def add_longslit_wcs(ad):
     """
     if 'SPECT' not in ad.tags:
         raise ValueError(f"Image {ad.filename} is not of type SPECT")
-
-    cenwave = ad.central_wavelength(asNanometers=True)
 
     # TODO: This appears to be true for GMOS. Revisit for other multi-extension
     # spectrographs once they arrive and GMOS tests are written
@@ -1446,14 +1449,14 @@ def add_longslit_wcs(ad):
         transform = ext.wcs.forward_transform
         crpix = transform[f'crpix{dispaxis}'].offset.value
         transform.name = None  # so we can reuse "SKY"
-        #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :0})
+        #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :-crpix})
         if dispaxis == 1:
-            sky_model = models.Mapping((0, 0)) | (models.Const1D(0) & models.Identity(1)) | transform
+            sky_model = models.Mapping((0, 0)) | (models.Const1D(-crpix) & models.Identity(1)) | transform
         else:
-            sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(0)) | transform
+            sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(-crpix)) | transform
         sky_model.name = 'SKY'
         wave_model = (models.Shift(crpix) | models.Scale(dw) |
-                      models.Shift(cenwave))
+                      models.Shift(central_wavelength))
         wave_model.name = 'WAVE'
 
         if dispaxis == 1:
@@ -1596,7 +1599,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     # redetermine the frame_index in the reference extensions's WCS.
     ref_wcs = ref_ext.wcs
     frame_index = ref_wcs.available_frames.index(frame_name)
-    new_pipeline = ref_wcs.pipeline[frame_index:]
+    new_pipeline = deepcopy(ref_wcs.pipeline[frame_index:])
+    new_pipeline[0].frame.name = ref_wcs.input_frame.name
     # Remember, dg.origin is (y, x)
     new_origin = tuple(s for s in dg.origin[::-1])
 

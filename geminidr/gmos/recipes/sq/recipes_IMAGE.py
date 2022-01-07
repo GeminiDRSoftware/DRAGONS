@@ -4,6 +4,8 @@ Default is "reduce".
 """
 recipe_tags = {'GMOS', 'IMAGE'}
 
+from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
+
 
 def reduce(p):
     """
@@ -30,6 +32,7 @@ def reduce(p):
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
     p.flagCosmicRaysByStacking()
+    p.scaleByExposureTime()
     p.stackFrames(zero=True)
     p.storeProcessedScience()
     return
@@ -75,21 +78,22 @@ def alignAndStack(p):
     p.detectSources()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
+    p.scaleByExposureTime()
     p.stackFrames(zero=True)
     return
 
-def makeIRAFCompatible(p):
-    """
-    Add header keywords needed to run some Gemini IRAF tasks.  This is needed
-    only if the reduced file will be used as input to Gemini IRAF tasks.
-
-    Parameters
-    ----------
-    p : PrimitivesBASEE object
-        A primitive set matching the recipe_tags.
-    """
-
-    p.makeIRAFCompatible()
-    p.writeOutputs()
-    return
+# def makeIRAFCompatible(p):
+#     """
+#     Add header keywords needed to run some Gemini IRAF tasks.  This is needed
+#     only if the reduced file will be used as input to Gemini IRAF tasks.
+#
+#     Parameters
+#     ----------
+#     p : PrimitivesBASEE object
+#         A primitive set matching the recipe_tags.
+#     """
+#
+#     p.makeIRAFCompatible()
+#     p.writeOutputs()
+#     return
 

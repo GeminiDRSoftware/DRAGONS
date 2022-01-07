@@ -69,13 +69,12 @@ class CCD(PrimitivesBASE):
                 continue
 
             if bias is None:
-                if 'sq' not in self.mode and do_cal != 'force':
-                    log.warning("No changes will be made to {}, since no "
-                                "bias was specified".format(ad.filename))
-                    continue
+                if 'sq' in self.mode or do_cal == 'force':
+                    raise OSError("No processed bias listed for "
+                                  f"{ad.filename}")
                 else:
-                    log.warning(f"{ad.filename}: no bias was specified. "
-                                "Continuing.")
+                    log.warning(f"No changes will be made to {ad.filename}, "
+                                "since no bias was specified")
                     continue
 
             try:
@@ -141,6 +140,8 @@ class CCD(PrimitivesBASE):
             function to fit ("chebyshev" | "spline" | "none")
         order: int/None
             order of polynomial fit or number of spline pieces
+        bias_type: str
+            For multiple overscan regions, selects which one to use
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -154,6 +155,7 @@ class CCD(PrimitivesBASE):
         hsigma = params["hsigma"]
         order = params["order"]
         nbiascontam = params["nbiascontam"]
+        bias_type = params.get("bias_type")
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -162,67 +164,116 @@ class CCD(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            osec_list = ad.overscan_section()
-            dsec_list = ad.data_section()
-            for ext, osec, dsec in zip(ad, osec_list, dsec_list):
-                x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
-                axis = np.argmin([y2 - y1, x2 - x1])
-                if axis == 1:
-                    if x1 > dsec.x1:  # Bias on right
-                        x1 += nbiascontam
-                        x2 -= 1
-                    else:  # Bias on left
-                        x1 += 1
-                        x2 -= nbiascontam
-                    pixels = np.arange(y1, y2)
-                    sigma = ext.read_noise() / np.sqrt(x2 - x1)
-                else:
-                    if y1 > dsec.y1:  # Bias on top
-                        y1 += nbiascontam
-                        y2 -= 1
-                    else:  # Bias on bottom
-                        y1 += 1
-                        y2 -= nbiascontam
-                    pixels = np.arange(x1, x2)
-                    sigma = ext.read_noise() / np.sqrt(y2 - y1)
+            if bias_type:
+                osec_list = ad.overscan_section()[bias_type]
+            else:
+                osec_list = ad.overscan_section()
+            for ext, ext_osec in zip(ad, osec_list):
+                ext.data = ext.data.astype(np.float32)
+                mapped_asec = gt.map_array_sections(ext)
+                ext_rdnoise = ext.read_noise()
+                ext_gain = ext.gain()
 
-                data = np.mean(ext.data[y1:y2, x1:x2], axis=axis)
-                if ext.is_in_adu():
-                    sigma /= ext.gain()
+                # GMOS for example returns a single Section.  To simplify
+                # the rest of the script, make that a list (to be use in the
+                # for-loop below).
+                if not isinstance(ext_osec, list):
+                    ext_osec = [ext_osec]
+                    mapped_asec = [mapped_asec]
 
-                # The UnivariateSpline will make reduced-chi^2=1 so it will
-                # fit bad rows. Need to mask these before starting, so use a
-                # running median. Probably a good starting point for all fits.
-                runmed = at.boxcar(data, operation=np.median, size=2)
-                residuals = data - runmed
-                mask = np.logical_or(residuals > hsigma * sigma
-                                     if hsigma is not None else False,
-                                     residuals < -lsigma * sigma
-                                     if lsigma is not None else False)
-                if "spline" in function and order is None:
-                    data = np.where(mask, runmed, data)
+                # if there are several amps, the readnoise and gain are likely
+                # to be different for each.  If there's only one value, just
+                # use it for all amps, if not ensure that the number matches
+                # the number of overscan section and arrays.
+                if not isinstance(ext_rdnoise, list):
+                    ext_rdnoise = [ext_rdnoise] * len(ext_osec)
+                elif len(ext_rdnoise) != len(ext_osec):
+                    raise ValueError('Readnoise descriptor does not match overscan.')
 
-                if function == "none":
-                    bias = data
-                else:
-                    fit1d = fit_1D(np.ma.masked_array(data, mask=mask),
-                                   points=pixels,
-                                   weights=np.full_like(data, 1. / sigma),
-                                   function=function, **fit1d_params)
-                    bias = fit1d.evaluate(np.arange(ext.data.shape[1-axis]))
-                    sigma = fit1d.rms
+                if not isinstance(ext_gain, list):
+                    ext_gain = [ext_gain] * len(ext_osec)
+                elif len(ext_gain) != len(ext_osec):
+                    raise ValueError('Readnoise descriptor does not match overscan.')
 
-                # using "-=" won't change from int to float
-                if axis == 1:
-                    ext.data = ext.data - bias[:, np.newaxis].astype(np.float32)
-                else:
-                    ext.data = ext.data - bias.astype(np.float32)
 
-                ext.hdr.set('OVERSEC', '[{}:{},{}:{}]'.format(x1+1,x2,y1+1,y2),
-                            self.keyword_comments['OVERSEC'])
-                ext.hdr.set('OVERSCAN', np.mean(data),
-                            self.keyword_comments['OVERSCAN'])
-                ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
+                for osec, asec, rdnoise, gain in zip(ext_osec, mapped_asec, ext_rdnoise, ext_gain):
+                    x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
+                    axis = np.argmin([y2 - y1, x2 - x1])
+                    if axis == 1:
+                        if x1 > asec.x1:  # Bias on right
+                            x1 += nbiascontam
+                            x2 -= 1
+                        else:  # Bias on left
+                            x1 += 1
+                            x2 -= nbiascontam
+                        sigma = rdnoise / np.sqrt(x2 - x1)
+
+                        # need to match asec location and size
+                        pixels = np.arange(asec.y1, asec.y2)
+                        data = np.mean(ext.data[asec.y1:asec.y2, x1:x2], axis=axis)
+                    else:
+                        if y1 > asec.y1:  # Bias on top
+                            y1 += nbiascontam
+                            y2 -= 1
+                        else:  # Bias on bottom
+                            y1 += 1
+                            y2 -= nbiascontam
+
+                        sigma = rdnoise / np.sqrt(y2 - y1)
+
+                        # needs to match asec location and size
+                        pixels = np.arange(asec.x1, asec.x2)
+                        data = np.mean(ext.data[y1:y2, asec.x1:asec.x2], axis=axis)
+
+                    if ext.is_in_adu():
+                        sigma /= gain
+
+                    # The UnivariateSpline will make reduced-chi^2=1 so it will
+                    # fit bad rows. Need to mask these before starting, so use a
+                    # running median. Probably a good starting point for all fits.
+                    runmed = at.boxcar(data, operation=np.median, size=2)
+                    residuals = data - runmed
+                    mask = np.logical_or(residuals > hsigma * sigma
+                                         if hsigma is not None else False,
+                                         residuals < -lsigma * sigma
+                                         if lsigma is not None else False)
+                    if "spline" in function and order is None:
+                        data = np.where(mask, runmed, data)
+
+                    if function == "none":
+                        bias = data
+                    else:
+                        fit1d = fit_1D(np.ma.masked_array(data, mask=mask),
+                                       points=pixels,
+                                       weights=np.full_like(data, 1. / sigma),
+                                       function=function, **fit1d_params)
+                        bias = fit1d.evaluate(np.arange(ext.data.shape[1-axis]))
+                        sigma = fit1d.rms
+
+                    # using "-=" won't change from int to float
+                    if axis == 1:
+                        ext.data[asec.y1:asec.y2, asec.x1:asec.x2] = \
+                            ext.data[asec.y1:asec.y2, asec.x1:asec.x2] - \
+                            bias[:, np.newaxis].astype(np.float32)
+                        # KL: useful when debugging
+                        # ext.data[asec.y1:asec.y2, x1:x2] = \
+                        #     ext.data[asec.y1:asec.y2, x1:x2] - \
+                        #     bias[:, np.newaxis].astype(np.float32)
+                    else:
+                        ext.data[asec.y1:asec.y2, asec.x1:asec.x2] = \
+                            ext.data[asec.y1:asec.y2, asec.x1:asec.x2] - \
+                            bias.astype(np.float32)
+                        # KL: useful when debugging
+                        # ext.data[y1:y2, asec.x1:asec.x2] = \
+                        #     ext.data[y1:y2, asec.x1:asec.x2] - \
+                        #     bias.astype(np.float32)
+
+
+                    ext.hdr.set('OVERSEC', f'[{x1+1}:{x2},{y1+1}:{y2}]',
+                                self.keyword_comments['OVERSEC'])
+                    ext.hdr.set('OVERSCAN', np.mean(data),
+                                self.keyword_comments['OVERSCAN'])
+                    ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
 
             # Timestamp, and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

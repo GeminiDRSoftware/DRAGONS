@@ -16,6 +16,7 @@ from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
+from geminidr.interactive.server import interactive_fitter
 from gempy.library.tracing import (find_apertures, find_apertures_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
@@ -381,7 +382,8 @@ class FindSourceAperturesModel:
             # Find if parameters that would change the profile have
             # been modified
             recompute_profile = False
-            for name in ('min_sky_region', 'percentile', 'section', 'use_snr'):
+            for name in ('min_sky_region', 'percentile', 'section',
+                         'min_snr', 'use_snr'):
                 if self.profile_params[name] != self.aper_params[name]:
                     recompute_profile = True
                     break
@@ -396,8 +398,7 @@ class FindSourceAperturesModel:
             # otherwise we can redo only the peak detection
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
-                self.direction, self.threshold, self.sizing_method,
-                self.use_snr)
+                self.threshold, self.sizing_method, self.min_snr)
 
         self.aperture_models.clear()
 
@@ -729,6 +730,11 @@ class ApertureView:
 
         self._pending_update_viewport = False
 
+        # save profile max height when managing view.  We want
+        # to resize the height if this changes, such as recalculated
+        # input data, but not if it hasn't
+        self._old_ymax = None
+
         self.model = model
         model.add_listener(self)
 
@@ -745,8 +751,8 @@ class ApertureView:
         self.fig.x_range.on_change('end', lambda attr, old, new:
                                    self.update_viewport(end=new))
 
-        self.annotations_source = ColumnDataSource(data=dict(id=[], start=[], end=[]))
-        self.labels = LabelSet(x='end', y=380, y_units='screen', text='id',
+        self.annotations_source = ColumnDataSource(data=dict(id=[], text=[], start=[], end=[]))
+        self.labels = LabelSet(x='end', y=380, y_units='screen', text='text',
                                y_offset=2, source=self.annotations_source, render_mode='canvas')
         self.fig.add_layout(self.labels)
 
@@ -781,6 +787,7 @@ class ApertureView:
         plot = AperturePlotView(self.fig, model)
         self.widgets[aperture_id] = plot
         self.annotations_source.stream({'id': [model.source.data['id'][0], ],
+                                        'text': [str(model.source.data['id'][0]), ],
                                         'start': [model.source.data['start'][0], ],
                                         'end': [model.source.data['end'][0], ]})
 
@@ -790,21 +797,23 @@ class ApertureView:
             plot = self.widgets[aperture_id]
             plot.delete()
             del self.widgets[aperture_id]
-            newdata = {'id': [], 'start': [], 'end': []}
-            for i in range(len(self.annotations_source.data['id'])):
+            newdata = {'id': [], 'text': [], 'start': [], 'end': []}
+            for i in range(len(self.annotations_source.data['text'])):
                 if self.annotations_source.data['id'][i] != aperture_id:
                     newdata['id'].append(self.annotations_source.data['id'][i])
+                    newdata['text'].append(self.annotations_source.data['text'][i])
                     newdata['start'].append(self.annotations_source.data['start'][i])
                     newdata['end'].append(self.annotations_source.data['end'][i])
             self.annotations_source.data = newdata
 
     def renumber_apertures(self):
         new_widgets = {}
-        newlabeldata = {'id': [], 'start': [], 'end': []}
+        newlabeldata = {'id': [], 'text': [], 'start': [], 'end': []}
         for plot in self.widgets.values():
             aperture_id = plot.model.source.data['id'][0]
             new_widgets[aperture_id] = plot
             newlabeldata['id'].append(aperture_id)
+            newlabeldata['text'].append(str(aperture_id))
             newlabeldata['start'].append(plot.model.source.data['start'])
             newlabeldata['end'].append(plot.model.source.data['end'])
         self.annotations_source.data = newlabeldata
@@ -814,7 +823,9 @@ class ApertureView:
     def update_view(self):
         self._reload_holoviews()
         ymax = np.nanmax(self.model.profile)
-        if ymax:
+        # don't reset plot Y axis if the profile max height hasn't changed
+        if ymax and self._old_ymax is None or self._old_ymax != ymax:
+            self._old_ymax = ymax
             self.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
             self.fig.y_range.reset_end = self.fig.y_range.end
 
@@ -872,7 +883,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             fresh sets as needed
         """
         super().__init__(title='Find Source Apertures',
-                         primitive_name='findSourceApertures',
+                         primitive_name='findApertures',
                          filename_info=filename_info)
         self.model = model
         self.fig = None
@@ -906,7 +917,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 reset_button.disabled = True
                 def fn():
                     model.reset()
-                    for widget in (maxaper, minsky, use_snr,
+                    for widget in (maxaper, minsky, use_snr, min_snr,
                                    threshold, percentile, sizing):
                         widget.reset()
                     self.model.recalc_apertures()
@@ -929,8 +940,10 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                 attr="percentile", start=0, end=100, step=1)
         minsky = SpinnerInputLine("Min sky region", model,
                                   attr="min_sky_region", low=0)
-        use_snr = CheckboxLine("Use S/N ratio ?", model, attr="use_snr",
-                               handler=_use_snr_handler)
+        use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
+                               attr="use_snr", handler=_use_snr_handler)
+        min_snr = TextSlider("SNR threshold for peak detection", model,
+                             attr="min_snr", start=0.1, end=10, step=0.1)
         sections = TextInputLine("Sections", model, attr="section",
                                  placeholder="e.g. 100:900,1500:2000")
 
@@ -961,6 +974,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             percentile.build(),
             minsky.build(),
             use_snr.build(),
+            min_snr.build(),
             sections.build(),
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),
@@ -1012,25 +1026,36 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         col = column(children=[aperture_view.fig, helptext],
                      sizing_mode='scale_width')
-        self.submit_button.align = 'end'
-        self.submit_button.height = 35
-        self.submit_button.height_policy = "fixed"
-        self.submit_button.margin = (0, 5, 5, 5)
-        self.submit_button.width = 212
-        self.submit_button.width_policy = "fixed"
+
+        for btn in (self.submit_button, self.abort_button):
+            btn.align = 'end'
+            btn.height = 35
+            btn.height_policy = "fixed"
+            btn.margin = (0, 5, 5, 5)
+            btn.width = 212
+            btn.width_policy = "fixed"
 
         toolbar = row(Spacer(width=250),
-                      column(self.get_filename_div(), self.submit_button),
+                      column(self.get_filename_div(), row(self.abort_button, self.submit_button)),
                       Spacer(width=10),
                       align="end", css_classes=['top-row'])
 
         layout = column(toolbar, row(controls, col))
         layout.sizing_mode = 'scale_width'
 
-        Controller(aperture_view.fig, self.model, None, helptext,
-                   showing_residuals=False)
+        Controller(aperture_view.fig, self.model, None, helptext)
 
         doc.add_root(layout)
+
+    def submit_button_handler(self):
+        """
+        Submit button handler.
+
+        The parent version checks for bad/poor fits, but that's not an issue
+        here, so we just exit by disabling the submit button, which triggers
+        some callbacks.
+        """
+        self.submit_button.disabled = True
 
     def result(self):
         """
@@ -1062,6 +1087,5 @@ def interactive_find_source_apertures(ext, **kwargs):
     """
     model = FindSourceAperturesModel(ext, **kwargs)
     fsav = FindSourceAperturesVisualizer(model, filename_info=ext.filename)
-    server.set_visualizer(fsav)
-    server.start_server()
+    interactive_fitter(fsav)
     return fsav.result()

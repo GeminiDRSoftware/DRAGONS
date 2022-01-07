@@ -16,9 +16,11 @@ inactive state.
 """
 from abc import ABC, abstractmethod
 
-from bokeh.events import PointEvent, SelectionGeometry, Tap
+from bokeh.events import PointEvent, SelectionGeometry, Tap, MouseEnter, MouseLeave
 
-__all__ = ["controller", "Controller"]
+__all__ = ["controller", "Controller", "Handler"]
+
+from bokeh.models import CustomJS
 
 """ This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
 
@@ -26,6 +28,17 @@ Controller instances will set this to listen to key presses.  The bokeh server w
 it recieves from the clients.  Everyone else should leave it alone!
 """
 controller = None
+
+
+# This is used to track if we already have a pending
+# action to update the mouse position.  This is used
+# to effect throttling.  When there is a mouse move,
+# an action to respond to the mouse position is triggered
+# in the future and this is set True.  Subsequent mouse
+# moves will see we already have the action pending and
+# do nothing.  Then when the action triggers it takes
+# the current (future) mouse position and sets this back
+# to False.
 _pending_handle_mouse = False
 
 
@@ -48,8 +61,8 @@ class Controller(object):
     :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None, showing_residuals=True,
-                 domain=None):
+    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None,
+                 domain=None, handlers=None, helpintrotext=None):
         """
         Create a controller to manage the given aperture and region models on
         the given GIFigure.
@@ -69,41 +82,52 @@ class Controller(object):
             function handles 'P' point mask requests.
         domain : tuple of 2 numbers, or None
             The domain of the data being handled, used for region editing to constrain the values
+        handlers : list of `~geminidr.interactive.controls.Handler`
+            List of handlers for key presses that are always active, not tied to a task
+        helpintrotext : str
+            HTML to show at the top of the controller help (gray text block), or None for a default message.
         """
+
+        fig.js_on_event(MouseEnter, CustomJS(code='window.controller_keys_enabled = true;'))
+        fig.js_on_event(MouseLeave, CustomJS(code='window.controller_keys_enabled = false;'))
 
         # set the class for the help_text div so we can have a common style
         help_text.css_classes.append('controller_div')
 
-        self.showing_residuals = showing_residuals  # used to tweak help text for key presses
         self.aperture_model = aperture_model
 
-        self.helpmaskingtext = (
-            "<b>Masking</b> <br/> "
-            "To mark or unmark one point at a time, select \"Tap\" on the toolbar on "
-            "the right side of the plot.  To mark/unmark a group of point, activate "
-            "\"Box Select\" on the toolbar.<br/>"
-            "<b>M</b> - Mask selected/closest<br/>"
-            "<b>U</b> - Unmask selected/closest<br/>") if mask_handlers else ''
+        self.helpmaskingtext = ''
 
-        self.helpmaskingtext += "<br/>" if mask_handlers else ''
-
-        self.helpintrotext = "While the mouse is over the upper plot, " \
-                             "choose from the following commands:<br/><br/>\n" if showing_residuals \
-            else "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
+        if helpintrotext is not None:
+            self.helpintrotext = f"{helpintrotext}<br/><br/>\n"
+        else:
+            self.helpintrotext = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
 
         self.helptooltext = ''
         self.helptext = help_text
         self.enable_user_masking = True if mask_handlers else False
+
+        self.handlers = dict()
         if mask_handlers:
-            if len(mask_handlers) < 2:
+            if len(mask_handlers) != 2:
                 raise ValueError("Must pass tuple (mask_fn, unmask_fn) to mask_handlers argument of Controller")
-            self.mask_handler = mask_handlers[0]
-            self.unmask_handler = mask_handlers[1]
-            self.pointmask_handler = mask_handlers[2] if len(mask_handlers) > 2 else None
-        else:
-            self.mask_handler = None
-            self.unmask_handler = None
-            self.pointmask_handler = None
+            self.register_handler(Handler('m', 'Mask selected/closest',
+                                          lambda key, x, y:
+                                          mask_handlers[0](x, y, ((self.fig.x_range.end - self.fig.x_range.start)
+                                                                  /float(self.fig.inner_width)) /
+                                                           ((self.fig.y_range.end - self.fig.y_range.start)/
+                                                            float(self.fig.inner_height)))))
+            self.register_handler(Handler('u', 'Unmask selected/closest',
+                                          lambda key, x, y:
+                                          mask_handlers[1](x, y, ((self.fig.x_range.end - self.fig.x_range.start)
+                                                                  /float(self.fig.inner_width)) /
+                                                           ((self.fig.y_range.end - self.fig.y_range.start)
+                                                            /float(self.fig.inner_height)))))
+        if handlers:
+            for handler in handlers:
+                self.register_handler(handler)
+        self.update_helpmaskingtext()
+
         self.tasks = dict()
         if aperture_model:
             self.tasks['a'] = ApertureTask(aperture_model, help_text, fig)
@@ -114,12 +138,55 @@ class Controller(object):
         self.y = None
         # we need to always know where the mouse is in case someone
         # starts an Aperture or Band
-        if aperture_model or region_model:
+        if aperture_model or region_model or mask_handlers or handlers:
             fig.on_event('mousemove', self.on_mouse_move)
             fig.on_event('mouseenter', self.on_mouse_enter)
             fig.on_event('mouseleave', self.on_mouse_leave)
         self.fig = fig
         self.set_help_text(None)
+
+    def register_handler(self, handler):
+        """
+        Add the passed handler to the controller's list of known handlers
+        for always on key commands.  This is also the mechanism that
+        handles mask/unmask events.
+
+        Only one handler can be registered for each key.  Please
+        be careful not to register a handler for a key needed by one
+        of the tasks.
+
+        Parameters
+        ----------
+        handler : :class:`~geminidr.interactive.controls.Handler`
+            Handler to add to the controller
+        """
+        if handler.key in self.handlers.keys():
+            raise ValueError(f'Key {handler.key} already registered')
+        self.handlers[handler.key] = handler
+
+    def update_helpmaskingtext(self):
+        """
+        Update the help preamble text for keys that are
+        always available, starting with the masking.
+        """
+        if 'm' in self.handlers.keys():
+            self.helpmaskingtext = (
+                "<b>Masking</b> <br/> "
+                "To mark or unmark one point at a time, select \"Tap\" on the toolbar on "
+                "the right side of the plot.  To mark/unmark a group of point, activate "
+                "\"Box Select\" on the toolbar.<br/>"
+                "<b>M</b> - Mask selected/closest<br/>"
+                "<b>U</b> - Unmask selected/closest<br/></br>")
+
+        if self.handlers.keys() - ['m', 'u']:
+            if 'm' in self.handlers.keys():
+                self.helpmaskingtext += '<b>Other Commands</b><br/>'
+            else:
+                self.helpmaskingtext += '<b>Commands</b><br/>'
+            for k, v in self.handlers.items():
+                if k not in ['u', 'm']:
+                    self.helpmaskingtext += f"<b>{k.upper()}</b> - {v.description}<br/>"
+            self.helpmaskingtext += '<br/>'
 
     def set_help_text(self, text=None):
         """
@@ -137,7 +204,7 @@ class Controller(object):
         if text is not None:
             ht = self.helpintrotext + self.helpmaskingtext + text
         else:
-            if self.tasks or self.enable_user_masking:
+            if self.tasks or self.handlers or self.enable_user_masking:
                 # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
                 ht = self.helpintrotext + self.helpmaskingtext
                 if len(self.tasks) == 1:
@@ -166,10 +233,6 @@ class Controller(object):
         ----------
         event
             the mouse event from bokeh, unused
-
-        Returns
-        -------
-
         """
         global controller
         controller = self
@@ -215,9 +278,8 @@ class Controller(object):
 
         Parameters
         ----------
-        event : PointEvent
+        event : :class:`~bokeh.events.PointEvent`
             the event from bokeh
-
         """
         self.x = event.x
         self.y = event.y
@@ -236,22 +298,10 @@ class Controller(object):
         ----------
         key : char
             Key that was pressed, such as 'a'
-
         """
         def _ui_loop_handle_key(_key):
-
-            if _key == 'm' or _key == 'M':
-                if self.mask_handler:
-                    # mult is used to convert the y distance to be in x-equivalent-pixel terms
-                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
-                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
-                    self.mask_handler(self.x, self.y, mult)
-
-            elif _key == 'u' or _key == 'U':
-                if self.unmask_handler:
-                    mult = ((self.fig.x_range.end - self.fig.x_range.start)/float(self.fig.inner_width)) / \
-                           ((self.fig.y_range.end - self.fig.y_range.start)/float(self.fig.inner_height))
-                    self.unmask_handler(self.x, self.y, mult)
+            if _key in self.handlers.keys():
+                self.handlers[_key].handle(_key, self.x, self.y)
 
             elif self.task:
                 if self.task.handle_key(_key):
@@ -286,7 +336,6 @@ class Controller(object):
             x coordinate in data space
         y : float
             y coordinate in data space
-
         """
         self.x = x
         self.y = y
@@ -314,7 +363,10 @@ class Task(ABC):
 
     A task may be connected to a top-level Controller by a key command.
     Once a task is active, the controller will send mouse and key events
-    to it.
+    to it.  Tasks may share key presses with eachother as only one is
+    active at a time.  Tasks are also convenient for holding state.
+    For simple single-key actions that you want to always have active,
+    see `~geminidr.interactive.controls.Handler`
     """
     @abstractmethod
     def handle_key(self, key):
@@ -374,11 +426,30 @@ class ApertureTask(Task):
         self.helptext_area.text = self.helptext()
 
     def start(self, x, y):
+        """
+        Start defining an aperture from the given coordinate.
+
+        This method starts an aperture definition with the current coordinates.  The x
+        value will define the center of the aperture.  After that, as the mouse is moved,
+        it will define the edge of the aperture with an equally wide edge on the other
+        side.
+
+        Parameters
+        ----------
+        x : float
+            Current x coordinate, used to set the center of the aperture
+        y : float
+            Current y coordinate, not used
+        """
         self.last_x = x
         self.last_y = y
         self.aperture_id = None
 
     def stop(self):
+        """
+        Stop the task, which stops the aperture if we're in the middle
+        of workingon one.
+        """
         self.stop_aperture()
 
     def start_aperture(self, x, y):
@@ -508,9 +579,25 @@ class ApertureTask(Task):
         return False
 
     def description(self):
+        """
+        Get the description for this task, to use in the help Div.
+
+        Returns
+        -------
+        str : help html text for display
+        """
         return "Edit <b>apertures</b> interactively"
 
     def helptext(self):
+        """
+        Get the detailed help of key commands available while this
+        task is active.  This is shown in the help Div when the task
+        is active.
+
+        Returns
+        -------
+        str : help html for available commands when task is active.
+        """
         return """
         <b>A</b> to start the aperture or set the value<br/>
         <b>S</b> to select an existing aperture<br/>
@@ -590,6 +677,10 @@ class RegionTask(Task):
             self.region_model.region_id += 1
 
     def stop(self):
+        """
+        Stop the task.
+        :return:
+        """
         if self.region_id is not None:
             self.stop_region()
 
@@ -692,6 +783,10 @@ class RegionTask(Task):
         return "create a <b>region</b> with edge at cursor"
 
     def update_help(self):
+        """
+        Update the controller help text when a region is active
+        or not.
+        """
         if self.region_id is not None:
             controller.set_help_text("""Drag to desired region width.<br/>\n
                   <b>R</b> to set the region<br/>\n
@@ -718,3 +813,30 @@ class RegionTask(Task):
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete/cancel the current/nearest region
                   """
+
+
+class Handler:
+    """
+    A Handler is a top-level key handler for the controller.
+
+    Handlers are always active and only handle a single key.
+    The Handler function will be called with the key to
+    allow for a single function to be used in multiple
+    Handlers without ambiguity.
+
+    Parameters
+    ----------
+    key : str
+        Key this handler listens for
+    description : str
+        Description of handler effect for the help text
+    fn : callable
+        Function to call with the key
+    """
+    def __init__(self, key, description, fn):
+        self.key = key.lower()
+        self.description = description
+        self.fn = fn
+
+    def handle(self, key, x, y):
+        self.fn(key, x, y)

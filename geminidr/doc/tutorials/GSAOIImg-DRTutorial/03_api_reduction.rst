@@ -1,7 +1,5 @@
 .. 03_api_reduction.rst
 
-.. include:: DRAGONSlinks.txt
-
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
 
@@ -58,11 +56,7 @@ We first import the necessary modules and classes:
     from recipe_system.reduction.coreReduce import Reduce
 
 
-Importing ``print_function`` is for compatibility with the Python 2.7 print
-statement. If you are working with Python 3, it is not needed, but importing
-it will not break anything.
-
-:mod:`glob` is Python built-in packages. It will be used to return a
+:mod:`glob` is a Python built-in package. It will be used to return a
 :class:`list` with the input file names.
 
 
@@ -123,9 +117,7 @@ configured as follow:
     caldb.init()
 
 The calibration service is now ready to use. If you need more details,
-check the
-`Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
-
+check the |caldb| section in the |RSUser|.
 
 .. _api_create_file_lists:
 
@@ -262,7 +254,7 @@ probably to use ``disco_stu``'s command line interface as follow:
 
 ::
 
-    $ disco `dataselect *_skySubtracted.fits --expr='observation_class=="partnerCal"'`
+    $ disco `dataselect *_skyCorrected.fits --expr='observation_class=="partnerCal"'`
 
 If you really want or need to run ``disco_stu``'s API, see the example later
 in this chapter where we do just that for the science frames.

@@ -70,8 +70,8 @@ filename would be used. ::
 Accessing the content of a MEF file
 -----------------------------------
 
-Accessing pixel data, headers, tables will be covered in details in following
-chapters.  Here we just introduce the basic content interface.
+Accessing pixel data, headers, and tables will be covered in detail in the
+following chapters. Here we just introduce the basic content interface.
 
 For details on the |AstroData| structure, please refer to the
 :ref:`previous chapter <structure>`.
@@ -264,14 +264,14 @@ to ``ad``, it had to be changed to the next available integer, 5, numbers 1 to
 4 being already used by ``ad``'s own extensions.
 
 In this next example, we are appending only the pixel data, leaving behind the other
-associated data. The header associated with that data does follow however.
+associated data. One can attach the headers too, like we do here.
 
 ::
 
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
     >>> advar = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
 
-    >>> ad.append(advar[3].data)
+    >>> ad.append(advar[3].data, header=advar[3].hdr)
     >>> ad.info()
     Filename: ../playdata/N20170609S0154.fits
     Tags: ACQUISITION GEMINI GMOS IMAGE NORTH RAW SIDEREAL UNPREPARED
@@ -360,7 +360,7 @@ If you want to create that association, the ``ad.filename`` and ``ad.path``
 needs to be modified first.  For example::
 
     >>> ad.filename = 'new154.fits'
-    >>> ad.write()
+    >>> ad.write(overwrite=True)
 
     >>> ad.path
     '../playdata/new154.fits'
@@ -384,7 +384,7 @@ Updating an existing file on disk requires explicitly allowing overwrite.
 If you have not written 'new154.fits' to disk yet (from previous section) ::
 
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
-    >>> ad.write('new154.fits')
+    >>> ad.write('new154.fits', overwrite=True)
 
 Now let's open 'new154.fits', and write to it ::
 
@@ -421,8 +421,8 @@ Needing true copies in memory
 Sometimes it is a true copy in memory that is needed.  This is not specific
 to MEF.  In Python, doing something like ``adnew = ad`` does not create a
 new copy of the AstrodData object; it just gives it a new name.  If you
-modify ``adnew`` you will be modify ``ad`` too.  They point to the same block
-of memory.
+modify ``adnew`` you will be modifying ``ad`` too.  They point to the same
+block of memory.
 
 To create a true independent copy, the ``deepcopy`` utility needs to be used. ::
 
@@ -430,7 +430,7 @@ To create a true independent copy, the ``deepcopy`` utility needs to be used. ::
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
     >>> adcopy = deepcopy(ad)
 
-Be careful using ``deepcopy``, you memory could balloon really fast.  Use it
+Be careful using ``deepcopy``, your memory could balloon really fast. Use it
 only when truly needed.
 
 
@@ -489,7 +489,8 @@ example below will not run, though this is how it would be done.)
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
 
-    >>> ad.BOB = my_astropy_table
+    >>> astrodata.add_header_to_table(my_astropy_table)
+    >>> ad.append(my_astropy_table, name='SMAUG')
 
 
 In the second example, we start with a FITS :class:`~astropy.io.fits.BinTableHDU`
@@ -498,7 +499,7 @@ and attach it to a new |AstroData| object. (Again, we have not created
 
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
-    >>> ad.BILL = my_fits_table
+    >>> ad.append(my_fits_table, name='DROGON')
 
 As before, once the |AstroData| object is constructed, the ``ad.write()``
 method can be used to write it to disk as a MEF file.

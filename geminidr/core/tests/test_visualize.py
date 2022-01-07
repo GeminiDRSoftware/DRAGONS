@@ -56,6 +56,50 @@ def test_mosaic_detectors_gmos_binning(astrofaker, hemi, ccd):
             assert np.max(abs(diffs)) < 0.01
 
 
+def test_mosaic_detectors_raises_warning_with_different_gains(astrofaker, caplog):
+    ad = astrofaker.create('GMOS-N', ['IMAGE'])
+    ad.init_default_extensions(overscan=False)
+    p = GMOSImage([ad])
+    p.mosaicDetectors()
+    assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 1
+
+
+def test_tile_arrays_raises_warning_with_different_gains(astrofaker, caplog):
+    ad = astrofaker.create('GMOS-N', ['IMAGE'])
+    ad.init_default_extensions(overscan=False)
+    p = GMOSImage([ad])
+    p.tileArrays(tile_all=True)
+    assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 1
+    caplog.clear()
+    p = GMOSImage([ad])
+    p.tileArrays(tile_all=False)
+    assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 3
+    caplog.clear()
+    p = GMOSImage([ad])
+    p.prepare()  # should set gain=1
+    p.ADUToElectrons()
+    p.tileArrays(tile_all=False)
+    assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 0
+
+
+def test_tile_arrays_does_not_raise_different_gain_warning_from_display(astrofaker, caplog):
+    ad = astrofaker.create('GMOS-N', ['IMAGE'])
+    ad.init_default_extensions(overscan=False)
+    p = GMOSImage([ad])
+    p.display()
+    assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 0
+
+
+def test_tile_arrays_creates_average_read_noise(astrofaker):
+    ad = astrofaker.create('GMOS-N', ['IMAGE'])
+    ad.init_default_extensions(overscan=False)
+    p = GMOSImage([ad])
+    p.prepare()
+    rn = ad.read_noise()
+    ad = p.tileArrays(tile_all=True).pop()
+    assert ad.read_noise()[0] == np.mean(rn)
+
+
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("input_ads", single_aperture_data, indirect=True)
 @pytest.mark.usefixtures("check_adcc")
@@ -192,10 +236,10 @@ def create_inputs():
         p.flatCorrect(do_cal=do_cal_flat, flat=master_quartz)
         p.QECorrect(arc=master_arc)
         p.distortionCorrect(arc=master_arc)
-        p.findSourceApertures(max_apertures=3)
+        p.findApertures(max_apertures=3)
         p.skyCorrectFromSlit()
         p.traceApertures()
-        p.extract1DSpectra()
+        p.extractSpectra()
         p.linearizeSpectra()
 
         [os.remove(s) for s in glob.glob("*_arc.fits")]

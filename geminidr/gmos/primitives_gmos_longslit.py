@@ -6,6 +6,7 @@
 
 from copy import copy, deepcopy
 from importlib import import_module
+from itertools import groupby
 
 from gempy.library.config import RangeField
 
@@ -18,7 +19,6 @@ from astrodata.provenance import add_provenance
 from astropy import visualization as vis
 from astropy.modeling import models, fitting
 
-from geminidr.core.primitives_spect import _transpose_if_needed
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
@@ -44,16 +44,32 @@ from . import parameters_gmos_longslit
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
 from ..interactive.fit.help import NORMALIZE_FLAT_HELP_TEXT
+from ..interactive.interactive import UIParameters
 
 
 @parameter_override
-class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
+class GMOSLongslit():
+    """
+    "Magic" class to provide the correct class for N&S and classic data
+    """
+    tagset = {"GEMINI", "GMOS", "SPECT", "LS"}
+
+    def __new__(cls, adinputs, **kwargs):
+        if adinputs:
+            _class = GMOSNSLongslit if "NODANDSHUFFLE" in adinputs[0].tags else GMOSClassicLongslit
+            return _class(adinputs, **kwargs)
+        raise ValueError("GMOSLongslit objects cannot be instantiated without"
+                         " specifying 'adinputs'. Please instantiate either"
+                         "'GMOSClassicLongslit' or 'GMOSNSLongslit' instead.")
+
+
+@parameter_override
+class GMOSClassicLongslit(GMOSSpect):
     """
     This is the class containing all of the preprocessing primitives
     for the GMOSLongslit level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = {"GEMINI", "GMOS", "SPECT", "LS"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)
@@ -137,7 +153,6 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 row_medians = np.percentile(np.concatenate(
                     [ext.data for ext in ad], axis=1),
                     95, axis=1)
-                row_medians -= at.boxcar(row_medians, size=50 // ybin)
 
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
@@ -156,6 +171,18 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     log.stdinfo("Expected slit location from pixels "
                                  f"{yccd[0]+1} to {yccd[1]+1}")
 
+                if 'NODANDSHUFFLE' in ad.tags:
+                    shuffle_pixels = ad.shuffle_pixels() // ybin
+                    model[:-shuffle_pixels] += model[shuffle_pixels:]
+
+                # Find largest number of pixels between slits, which will
+                # define a smoothing box scale. This is necessary to take out
+                # the slit function, if most of the detector is illuminated
+                if model.mean() > 0.75:
+                    longest_gap = max([len(list(group)) for item, group in
+                                       groupby(model) if item == 0])
+                    row_medians -= at.boxcar(row_medians, size=longest_gap // 2)
+
                 if shift is None:
                     mshift = max_shift // ybin + 2
                     mshift2 = mshift + edges
@@ -166,6 +193,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                       mode='full')[cntr - mshift:cntr + mshift]
                     # This line avoids numerical errors in the spline fit
                     xcorr -= np.median(xcorr)
+
                     # This calculates the offsets of each point from the
                     # straight line between its neighbours
                     std = (xcorr[1:-1] - 0.5 *
@@ -299,7 +327,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             dispaxis = 2 - mosaicked_ad[0].dispersion_axis()  # python sense
             should_transpose = dispaxis == 1
 
-            data, mask, variance = _transpose_if_needed(
+            data, mask, variance = at.transpose_if_needed(
                 mosaicked_ad[0].data, mosaicked_ad[0].mask,
                 mosaicked_ad[0].variance, transpose=should_transpose)
 
@@ -371,7 +399,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
             del cols_fit, cols_val, rows_fit, rows_val
 
-            _data, _mask, _variance = _transpose_if_needed(
+            _data, _mask, _variance = at.transpose_if_needed(
                 slit_response_data, slit_response_mask, slit_response_var,
                 transpose=dispaxis == 1)
 
@@ -499,7 +527,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # The [::-1] is needed to put the fist extension in the bottom
                 for i, ext in enumerate(slit_response_ad[::-1]):
 
-                    ext_data, ext_mask, ext_variance = _transpose_if_needed(
+                    ext_data, ext_mask, ext_variance = at.transpose_if_needed(
                         ext.data, ext.mask, ext.variance, transpose=dispaxis == 1)
 
                     ext_data = np.ma.masked_array(ext_data, mask=ext_mask)
@@ -696,38 +724,34 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 config = self.params[self.myself()]
                 config.update(**params)
 
-                # Create a 'row' parameter to add to the UI so the user can select the row they
-                # want to fit.
-                reinit_params = ["row", ]
-                reinit_extras = {"row": RangeField("Row of data", int, int(nrows/2), min=1, max=nrows)}
-
                 # This function is used by the interactive fitter to generate the x,y,weights to use
                 # for each fit.  We only want to fit a single row of data interactively, so that we can
                 # be responsive in the UI.  The 'row' extra parameter defined above will create a
                 # slider for the user and we will have access to the selected value in the 'extras'
                 # dictionary passed in here.
-                def reconstruct_points(conf, extras):
-                    r = max(0, extras['row'] - 1)
-                    all_coords = []
+                def reconstruct_points(ui_params=None):
+                    r = max(0, ui_params.values['row'] - 1)
+                    data = {"x": [], "y": [], "weights": []}
                     for rppixels, rpext in zip(all_pixels, ad_tiled):
                         masked_data = np.ma.masked_array(rpext.data[r],
                                                          mask=None if rpext.mask is None else rpext.mask[r])
-                        if rpext.variance is None:
-                            weights = None
-                        else:
-                            weights = np.sqrt(at.divide0(1., rpext.variance[r]))
-                        all_coords.append([rppixels, masked_data, weights])
-                    return all_coords
-                if ad.orig_filename:
-                    filename_info = ad.orig_filename
-                elif ad.filename:
+                        data["x"].append(rppixels)
+                        data["y"].append(masked_data)
+                        data["weights"].append(None if rpext.variance is None
+                                               else np.sqrt(at.divide0(1., rpext.variance[r])))
+                    return data
+
+                if ad.filename:
                     filename_info = ad.filename
                 else:
                     filename_info = ''
+
+                # Create a 'row' parameter to add to the UI so the user can select the row they
+                # want to fit.
+                reinit_params = ["row", ]
+                extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
+                uiparams = UIParameters(config, reinit_params=reinit_params, extras=extras)
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
-                                                   config=config,
-                                                   reinit_params=reinit_params,
-                                                   reinit_extras=reinit_extras,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x (pixels)', ylabel='counts',
                                                    domains=all_domains,
@@ -737,7 +761,9 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                                    enable_user_masking=False,
                                                    enable_regions=True,
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
-                                                   recalc_inputs_above=True)
+                                                   recalc_inputs_above=True,
+                                                   modal_message="Recalculating",
+                                                   ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 log.stdinfo('Interactive Parameters retrieved, performing flat normalization...')
 
@@ -993,3 +1019,10 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
         ad_out.append(temp_ad[0])
 
     return ad_out
+
+
+@parameter_override
+class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle):
+    def __init__(self, adinputs, **kwargs):
+        super().__init__(adinputs, **kwargs)
+        self._param_update(parameters_gmos_longslit)

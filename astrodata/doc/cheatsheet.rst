@@ -151,16 +151,17 @@ Delete and add variance and mask planes::
 
 Attach a table to an extension::
 
-    >>> adcopy[3].BOB = advar[0].OBJCAT
+    >>> adcopy[3].SMAUG = advar[0].OBJCAT.copy()
+
 
 Attach a table to the |AstroData| object::
 
-    >>> adcopy.BILL = advar.REFCAT
+    >>> adcopy.DROGON = advar.REFCAT.copy()
 
 Delete a table::
 
-    >>> del adcopy[3].BOB
-    >>> del adcopy.BILL
+    >>> del adcopy[3].SMAUG
+    >>> del adcopy.DROGON
 
 
 
@@ -386,6 +387,7 @@ Add a column::
 Add a row::
 
     >>> new_row = [0] * len(ad.REFCAT.colnames)
+    >>> new_row[1] = ''   # Cat_Id column is of "str" type.
     >>> ad.REFCAT.add_row(new_row)
 
 Selecting value from criterion::
@@ -450,13 +452,11 @@ A |Table| as an |AstroData| object::
     >>> phu = fits.PrimaryHDU()
 
     >>> ad = astrodata.create(phu)
-    >>> ad.BOB = my_astropy_table
-
-From a `~astropy.io.fits.BinTableHDU`::
+    >>> ad.SMAUG = my_astropy_table
 
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
-    >>> ad.BOB = my_fits_table
+    >>> ad.SMAUG = my_fits_table
 
 WARNING: This last line will not run like the others as we have not defined
 ``my_fits_table``.  This is nonetheless how it is done if you had a FITS table.

@@ -113,7 +113,6 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
 
             # Update various header keywords
             log.status("Updating keywords that are common to all Gemini data")
-            ad.phu.set('NSCIEXT', len(ad), self.keyword_comments['NSCIEXT'])
             ad.hdr.set('BUNIT', 'adu', self.keyword_comments['BUNIT'])
             for ext in ad:
                 if 'RADECSYS' in ext.hdr:

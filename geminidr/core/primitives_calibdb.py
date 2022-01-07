@@ -114,7 +114,13 @@ class CalibDB(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
+            # todo: If RELEASE for all calibration is still not set to "today"
+            #       when we get to use this version for Ops, add a reset of
+            #       that keyword like we did in release/3.0.x.  Otherwise
+            #       SCALeS and FIRE won't be able to see new calibrations.
+
             self.caldb.store_calibration(ad, caltype=caltype)
+
         return adinputs
 
     def _markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
@@ -211,7 +217,25 @@ class CalibDB(PrimitivesBASE):
     def storeProcessedScience(self, adinputs=None, suffix=None):
         for ad in adinputs:
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCSCI")
-            ad.update_filename(suffix=suffix, strip=True)
+            if suffix:
+                ad.update_filename(suffix=suffix, strip=True)
+            else:  # None.  Keep the one it has now.  (eg. 'stack' for imaging)
+                # Got to do a bit of gymnastic to figure what the current
+                # suffix is.  If orig.filename and filename are equal and have
+                # `_`, I have to assume that the last `_` is a suffix.  (KL)
+                root, filetype = os.path.splitext(ad.orig_filename)
+                if ad.orig_filename == ad.filename:
+                    pre, post = ad.orig_filename.rsplit('_', 1)
+                    suffix, filetype = os.path.splitext(post)
+                    suffix = '_' + suffix
+                else:
+                    m = re.match('(.*){}(.*)'.format(re.escape(root)), ad.filename)
+                    if m.groups()[1] and m.groups()[1] != filetype:
+
+                        suffix, filetype = os.path.splitext(m.groups()[1])
+                    else:
+                        suffix = ''
+
             ad.phu.set('PROCMODE', self.mode)
             ad.write(overwrite=True)
 

@@ -82,7 +82,8 @@ class Preprocess(PrimitivesBASE):
         """
         This primitive will convert the units of the pixel data extensions
         of the input AstroData object from ADU to electrons by multiplying
-        by the gain.
+        by the gain. The gain keyword in each extension is then set to 1.0
+        to represent the new conversion factor.
 
         Parameters
         ----------
@@ -100,20 +101,27 @@ class Preprocess(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            gain_list = ad.gain()
             # Now multiply the pixel data in each science extension by the gain
             # and the pixel data in each variance extension by the gain squared
             log.status("Converting {} from ADU to electrons by multiplying by "
                        "the gain".format(ad.filename))
-            for ext, gain in zip(ad, gain_list):
-                log.stdinfo(f"  gain for extension {ext.id} = {gain}")
-                ext.multiply(gain)
+            for ext in ad:
+                if not ext.is_in_adu():
+                    log.warning(f"  {ext.id} is already in electrons. "
+                                "Continuing.")
+                    continue
+                ext.multiply(gt.array_from_descriptor_value(ext, "gain"))
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
             ad.hdr.set('BUNIT', 'electron', self.keyword_comments['BUNIT'])
+            try:
+                ad.hdr.set(ad._keyword_for("gain"), 1.)
+            except AttributeError:  # No keyword for "gain"
+                pass
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix,  strip=True)
+
         return adinputs
 
     def applyDQPlane(self, adinputs=None, **params):
@@ -138,7 +146,6 @@ class Preprocess(PrimitivesBASE):
             outer radius of the cleaning filter
         max_iters: int
             maximum number of cleaning iterations to perform
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -310,14 +317,11 @@ class Preprocess(PrimitivesBASE):
         # if only some frames did not have sky corrected, move them out of main and
         # to the "no_skytable" stream.
         if not any(has_skytable):  # "all false", none have been sky corrected
-            log.warning(
-                'Sky frames could not be associated to any input frames.'
-                'Sky subtraction will not be possible.')
-        elif not all(
-                has_skytable):  # "some false", some frames were NOT sky corrected
+            log.warning('Sky frames could not be associated to any input frames.'
+                        'Sky subtraction will not be possible.')
+        elif not all(has_skytable):  # "some false", some frames were NOT sky corrected
             log.stdinfo('')  # for readablity
-            false_idx = [idx for idx, trueval in enumerate(has_skytable) if
-                         not trueval]
+            false_idx = [idx for idx, trueval in enumerate(has_skytable) if not trueval]
             for idx in reversed(false_idx):
                 ad = adinputs[idx]
                 log.warning(f'{ad.filename} does not have any associated skies'
@@ -471,8 +475,8 @@ class Preprocess(PrimitivesBASE):
                                       check_units=True)
 
             origin_str = f" (obtained from {origin})" if origin else ""
-            log.fullinfo(f"{ad.filename}: subtracting the dark "
-                         f"{dark.filename}{origin_str}")
+            log.stdinfo(f"{ad.filename}: subtracting the dark "
+                        f"{dark.filename}{origin_str}")
             ad.subtract(dark)
 
             # Record dark used, timestamp, and update filename
@@ -766,15 +770,13 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if flat is None:
-                if 'sq' not in self.mode and do_cal != 'force':
-                    log.warning("No changes will be made to {}, since no "
-                                "flatfield has been specified".
-                                format(ad.filename))
-                    continue
+                if 'sq' in self.mode or do_cal == 'force':
+                   raise OSError("No processed flat listed for "
+                                 f"{ad.filename}")
                 else:
-                    log.warning(f"{ad.filename}: no flat was specified. "
-                                "Continuing.")
-                    continue
+                   log.warning(f"No changes will be made to {ad.filename}, "
+                               "since no flatfield has been specified")
+                   continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
@@ -1348,14 +1350,15 @@ class Preprocess(PrimitivesBASE):
                 continue
             if stacked_skies[i] == 0:
                 log.stdinfo("Creating sky frame for {}".format(ad.filename))
-                stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
-                                                  skytable], **stack_params)
+                sky_inputs = [sky_dict[sky] for sky in skytable]
+                stacked_sky = self.stackSkyFrames(sky_inputs, **stack_params)
                 #print ad.filename, memusage(proc)
                 if len(stacked_sky) == 1:
                     stacked_sky = stacked_sky[0]
                     # Provide a more intelligent filename
-                    stacked_sky.filename = ad.filename
-                    stacked_sky.update_filename(suffix="_sky", strip=True)
+                    if len(sky_inputs) > 1:
+                        stacked_sky.filename = ad.filename
+                        stacked_sky.update_filename(suffix="_sky", strip=True)
                 else:
                     log.warning("Problem with stacking the following sky "
                                 "frames for {}".format(adinputs[i].filename))
@@ -1448,6 +1451,7 @@ class Preprocess(PrimitivesBASE):
                 log.stdinfo(f"Subtracting {ad_sky.filename} from "
                             f"the science frame {ad.filename}")
                 if scale or zero:
+                    # This actually does the sky subtraction as well
                     factors = [gt.sky_factor(ext, ext_sky, skyfunc, multiplicative=scale)
                                for ext, ext_sky in zip(ad, ad_sky)]
                     for ext_sky, factor in zip(ad_sky, factors):

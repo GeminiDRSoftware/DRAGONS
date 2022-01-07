@@ -227,8 +227,8 @@ masked.   For example at Gemini here is our bit mapping for bad pixels.
 (These definitions are located in ``geminidr.gemini.lookups.DQ_definitions``.)
 
 So a pixel marked 10 in the mask, would be a "non-linear" "cosmic ray".  The
-``AstroData`` mask are propagated with bitwise-OR operation.  For example, let
-say that we are stacking frames. A pixel is set as bad (value 1)
+``AstroData`` masks are propagated with bitwise-OR operation.  For example,
+let's say that we are stacking frames. A pixel is set as bad (value 1)
 in one frame, saturated in another (value 4), and fine in all the other
 the frames (value 0).  The mask of the resulting stack will be assigned
 a value of 5 for that pixel.
@@ -402,7 +402,7 @@ details are clearly well beyond the scope of this manual, but when looking
 for the tool you need, keep in mind that there are two sets of functions to
 look into. Duplications like ``.mean()`` and ``np.average()`` can happen,
 but they are not the norm. The readers are strongly encouraged to refer to
-the numpy documentation to find the tool they need.
+the NumPy documentation to find the tool they need.
 
 
 Clipped Statistics
@@ -458,7 +458,7 @@ The example below applies a gaussian filter to the pixel array.
     >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
     >>> data = ad[0].data
 
-    >>> # We need to prepare an array of the same size and shape and
+    >>> # We need to prepare an array of the same size and shape as
     >>> # the data array.  The result will be put in there.
     >>> convolved_data = np.zeros(data.size).reshape(data.shape)
 
@@ -474,7 +474,7 @@ The example below applies a gaussian filter to the pixel array.
     >>> ds9.view(convolved_data)
     >>> ds9.scale('zscale')
     >>> ds9.blink()
-    >>> # when you are convinced it's been convolved, stop the blinking.
+    >>> # When you are convinced it's been convolved, stop the blinking.
     >>> ds9.blink(blink=False)
 
 Note that there is an Astropy way to do this convolution, with tools in
@@ -490,8 +490,8 @@ your needs.
 
 Many other tools
 ----------------
-There many, many other tools available out there.  Here are the links to the
-three big projects we have featured in this section.
+There are many, many other tools available out there.  Here are the links to
+the three big projects we have featured in this section.
 
 * NumPy: `www.numpy.org <http://www.numpy.org>`_
 * SciPy: `www.scipy.org <http://www.scipy.org>`_
@@ -654,7 +654,7 @@ add a variance plane to our raw data frame.
               .variance             ndarray           (2112, 288)    float64
 
     >>> # Let's operate on the first extension.
-    >>>
+    >>> #
     >>> # The section descriptors return the section in a Python format
     >>> # ready to use, 0-indexed.
     >>> oversec = ad[0].overscan_section()
@@ -745,35 +745,33 @@ from a given (x,y) position.
 
 
 Now that is nice but it would be nicer if we could plot the x-axis in units
-of Angstroms instead of pixels.  We use ``astropy.wcs`` to convert the pixels
-into wavelengths.  Now a particularity of ``astropy.wcs`` is that it refers
-to the axes in the "natural" way, (x, y, wlen) contrary to Python's (wlen, y, x).
-It truly requires you to pay attention.
+of Angstroms instead of pixels.  We use the AstroData's WCS handler, which is
+based on ``gwcs.wcs.WCS`` to get the necessary information.  A particularity
+of ``gwcs.wcs.WCS`` is that it refers to the axes in the "natural" way,
+(x, y, wlen) contrary to Python's (wlen, y, x). It truly requires you to pay
+attention.
 
 ::
 
-    >>> import numpy as np
-    >>> from astropy import wcs
     >>> import matplotlib.pyplot as plt
 
     >>> adcube = astrodata.open('../playdata/gmosifu_cube.fits')
 
-    >>> # First get the World Coordinate System from the header
-    >>> cube_wcs = wcs.WCS(adcube[0].hdr)
+    # We get the wavelength axis in Angstroms at the position we want to
+    # extract, x=13, y=24.
+    # The wcs call returns a 3-element list, the third element ([2]) contains
+    # the wavelength values for each pixel along the wavelength axis.
 
-    >>> # Then get an array of the coordinates for that spectrum in
-    >>> # pixel coordinates, at position (14,25)
-    >>> length_wlen_axis = adcube[0].data.shape[0]
-    >>> spectrum_pix_coord = np.array([ [13,24,i] for i in range(length_wlen_axis) ])
+    >>> length_wlen_axis = adcube[0].shape[0]   # (wlen, y, x)
+    >>> wavelengths = adcube[0].wcs(13, 24, range(length_wlen_axis))[2] # (x, y, wlen)
 
-    >>> # Transform pixel coordinates in to Angstroms and keep only
-    >>> # the wavelength axis.
-    >>> wavelengths = cube_wcs.wcs_pix2world(spectrum_pix_coord, 0)[:,2]
+    # We get the intensity along that axis
+    >>> intensity = adcube[0].data[:, 24, 13]   # (wlen, y, x)
 
-    >>> # Finally plot the spectrum at position (7,30)
-    >>> plt.clf()  # just to clear the plot
-    >>> plt.plot(wavelengths, adcube[0].data[:,24,13])
-    >>> plt.show()
+    # We plot
+    plt.clf()
+    plt.plot(wavelengths, intensity)
+    plt.show()
 
 
 Plot Data

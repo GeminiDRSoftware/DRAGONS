@@ -6,13 +6,38 @@
 Change Logs
 ***********
 
-[KL: TO REMOVE BEFORE RELEASE.  Last update up to commit  Thu Sep 17 16:57 HST 2020]
-
-2.1.2
+3.0.1
 =====
 
 Bug Fixes
 ---------
+
+**geminidr**
+
+**geminidr.core**
+
+* Fix bug where ``section`` start/end comparison was made on string, not
+  numeric, values.
+
+* Expose ``min_snr`` parameter in ``findApertures`` and hide ``use_snr``
+  (and set its default to ``False``).
+
+
+3.0.0
+=====
+
+This release includes new support for GMOS longslit data.  Reduction of
+GMOS longslit data is offered only quicklook mode.  It does not produce
+science quality outputs, yet.
+
+Bug Fixes
+---------
+
+**geminidr**
+
+* In imaging mode, the science recipes now include a call to
+  ``scaleByExposureTime`` before the stacking step.  It is now possible to stack
+  frames with different exposure times.
 
 **gemini_instruments.gemini**
 
@@ -22,6 +47,11 @@ Bug Fixes
 
 * Remove incorrect logging in separateSky when object and/or sky files are specified.
 * Improve algorithm for separating on-source and on-sky frames.
+* Avoid upsampling OBJMASK from uint8 to uint16
+* In near-IR imaging mode, frames that fail to be sky subtracted are removed
+  from the main reduction stream to avoid contamination.  The reduction continues
+  with the "good" frames.  If all frames fail the sky subtraction, then all
+  frames will be passed to the next step of the reduction.
 
 **geminidr.gemini**
 
@@ -36,19 +66,53 @@ Bug Fixes
 
 * Fix a Python 3 compatibility issue.
 
+
 New Features
 ------------
 
+**geminidr**
+
+* Quicklook (``--ql`` mode) reduction support for GMOS longslit data.
+
 **geminidr.core**
 
-* Add ``remove_first`` parameter to removeFirstFrame primitive
+* Add ``remove_first`` parameter to removeFirstFrame primitive.
+* Add ``match_radius`` parameter to adjustWCSToReference primitive.
 * Add an IRAF compatibility primitive and recipe for Flamingos 2.
+
+**astrodata and recipe_system**
+
+* Provenance history stored with the data in tables named: PROVENANCE and
+  PROVHISTORY.
+
+
+Interface Modifications
+-----------------------
+
+**geminidr.core**
+
+* ``biasCorrect``, ``darkCorrect``, ``flatCorrect``.  The ``do_bias``,
+  ``do_dark``, and ``do_flat`` input parameters have been replaced with
+  ``do_cal`` with more options than True or False.  Use ``showpars`` to
+  inspect the options.
+
+
+Compatibility
+-------------
+
+* Python 2 support has been dropped.  Starting with v3.0.0, DRAGONS requires
+  Python 3.   All tests were run on Python 3.7, and this version of Python
+  now serves as the minimal required version.
+* Improved the F2 processed products backward compatibility with Gemini IRAF.
+
 
 Documentation
 -------------
 
 * Fix various links in the documentation.
 * Add examples and cross-reference to disco-stu usage documentation.
+* New tutorial for the **quicklook** reduction of GMOS longslit data.
+
 
 
 2.1.1

@@ -33,14 +33,14 @@ DPI = 90
 datasets = [
 
     # --- Good datasets ---
-    ("N20180109S0287_flatCorrected.fits", "N20180109S0315_arc.fits"),  # GN-2017B-FT-20-13-001 B600 0.505um
-    ("N20190302S0089_flatCorrected.fits", "N20190302S0274_arc.fits"),  # GN-2019A-Q-203-7-001 B600 0.550um
-    ("N20190313S0114_flatCorrected.fits", "N20190313S0132_arc.fits"),  # GN-2019A-Q-325-13-001 B600 0.482um
-    ("N20190427S0123_flatCorrected.fits", "N20190427S0266_arc.fits"),  # GN-2019A-FT-206-7-001 R400 0.525um
-    ("N20190427S0126_flatCorrected.fits", "N20190427S0267_arc.fits"),  # GN-2019A-FT-206-7-004 R400 0.625um
-    # ("N20190910S0028_flatCorrected.fits", "N20190910S0279_arc.fits"),  # GN-2019B-Q-313-5-001 B600 0.550um
-    ("S20180919S0139_flatCorrected.fits", "S20180919S0141_arc.fits"),  # GS-2018B-Q-209-13-003 B600 0.45um
-    ("S20191005S0051_flatCorrected.fits", "S20191005S0151_arc.fits"),  # GS-2019B-Q-132-35-001 R400 0.73um
+    "N20180109S0287_flatCorrected.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
+    "N20190302S0089_flatCorrected.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
+    "N20190313S0114_flatCorrected.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
+    "N20190427S0123_flatCorrected.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
+    "N20190427S0126_flatCorrected.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
+    # "N20190910S0028_flatCorrected.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
+    "S20180919S0139_flatCorrected.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
+    "S20191005S0051_flatCorrected.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
 
     # --- QE Correction Needs improvement ---
     # "N20180721S0444.fits",  # GN-2018B-Q-313-5-002 B1200 0.44um
@@ -160,8 +160,8 @@ associated_calibrations = {
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
-def test_qe_correct_is_locally_continuous(ad, arc_ad, change_working_dir):
+@pytest.mark.parametrize("ad", datasets, indirect=True)
+def test_qe_correct_is_locally_continuous(ad, change_working_dir):
 
     if ad.filename == 'S20180919S0139_flatCorrected.fits':
         pytest.xfail('FIXME: this test fails following changes on the QE '
@@ -171,14 +171,14 @@ def test_qe_correct_is_locally_continuous(ad, arc_ad, change_working_dir):
 
         logutils.config(file_name='log_test_continuity{}.txt'.format(ad.data_label()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.QECorrect(arc=arc_ad)
+        p.QECorrect()
 
         # Need these extra steps to extract and analyse the data
-        p.distortionCorrect(arc=arc_ad)
-        p.findSourceApertures(max_apertures=1)
+        p.distortionCorrect()
+        p.findApertures(max_apertures=1)
         p.skyCorrectFromSlit()
         p.traceApertures()
-        p.extract1DSpectra()
+        p.extractSpectra()
         p.linearizeSpectra()
         processed_ad = p.writeOutputs().pop()
 
@@ -197,8 +197,8 @@ def test_qe_correct_is_locally_continuous(ad, arc_ad, change_working_dir):
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize("ad, arc_ad", datasets, indirect=True)
-def test_regression_on_qe_correct(ad, arc_ad, change_working_dir, ref_ad_factory):
+@pytest.mark.parametrize("ad", datasets, indirect=True)
+def test_regression_on_qe_correct(ad, change_working_dir, ref_ad_factory):
 
     # The GMOS-N tests need to be run with `use_iraf=False` because the
     # reference files for those use the DRAGONS spline models.
@@ -207,7 +207,7 @@ def test_regression_on_qe_correct(ad, arc_ad, change_working_dir, ref_ad_factory
     with change_working_dir():
         logutils.config(file_name='log_test_regression{}.txt'.format(ad.data_label()))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.QECorrect(arc=arc_ad, use_iraf=is_gmos_s)
+        p.QECorrect(use_iraf=is_gmos_s)
         qe_corrected_ad = p.writeOutputs().pop()
 
     assert 'QECORR' in qe_corrected_ad.phu.keys()
@@ -763,25 +763,25 @@ def create_inputs_recipe(use_branch_name=False):
         arc_reduce.files.extend(arc_paths)
         arc_reduce.ucals = normalize_ucals(calibration_files)
 
-        os.chdir(input_path)
         arc_reduce.runr()
-        _ = arc_reduce.output_filenames.pop()
-        os.chdir(path)
+        arc_out = arc_reduce.output_filenames.pop()
+        del arc_reduce
 
         logutils.config(file_name='log_{}.txt'.format(data_label))
         p = primitives_gmos_longslit.GMOSLongslit([sci_ad])
         p.prepare()
-        p.addDQ(static_bpm=None)
+        p.addDQ()
         p.addVAR(read_noise=True)
         p.overscanCorrect()
         p.biasCorrect(bias=bias_master)
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
+        p.attachWavelengthSolution(arc=arc_out)
         p.flatCorrect(flat=flat_master)
 
-        os.chdir(input_path)
+        os.chdir("inputs")
         _ = p.writeOutputs().pop()
-        os.chdir(path)
+        os.chdir("../")
 
 
 if __name__ == '__main__':

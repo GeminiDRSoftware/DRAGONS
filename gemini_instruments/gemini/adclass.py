@@ -106,6 +106,24 @@ gemini_keyword_names = dict(
     telescope_y_offset = 'YOFFSET',
 )
 
+
+def use_keyword_if_prepared(fn):
+    """
+    A decorator for descriptors. If decorated, the descriptor will bypass its
+    main code on "PREPARED" data in favour of simply returning the value of
+    the associated header keyword (as defined by the "_keyword_for" method)
+    if this exists in all the headers (if the keyword is missing, it will
+    execute the code in the descriptor method).
+    """
+    def gn(self):
+        if "PREPARED" in self.tags:
+            try:
+                return self.hdr[self._keyword_for(fn.__name__)]
+            except (KeyError, AttributeError):
+                pass
+        return fn(self)
+    return gn
+
 # ------------------------------------------------------------------------------
 class AstroDataGemini(AstroData):
     __keyword_dict = gemini_keyword_names
@@ -159,6 +177,9 @@ class AstroDataGemini(AstroData):
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
             elif shut == 'CLOSED':
                 return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
+        elif self.phu.get('GCALLAMP') == 'No Value' and \
+             self.phu.get('GCALSHUT') == 'CLOSED':
+            return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
 
     @astro_data_tag
     def _type_site(self):
@@ -1940,17 +1961,20 @@ class AstroDataGemini(AstroData):
         if wcs is None:
             return None
 
+        ra = dec = None
         coords = {name: None for name in wcs.output_frame.axes_names}
         for m in wcs.forward_transform:
             try:
-                coords['lon'] = m.lon.value
-                coords['lat'] = m.lat.value
+                ra = m.lon.value
+                dec = m.lat.value
             except AttributeError:
                 pass
 
-        # TODO: This isn't in old Gemini descriptors. Should it be?
-        #if 'NON_SIDEREAL' in self.tags:
-        #    ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+        if 'NON_SIDEREAL' in self.tags and ra is not None and dec is not None:
+            ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+
+        coords["lon"] = ra
+        coords["lat"] = dec
         return coords
 
     # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?

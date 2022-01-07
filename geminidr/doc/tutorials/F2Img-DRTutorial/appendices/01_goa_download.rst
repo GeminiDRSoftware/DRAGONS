@@ -39,11 +39,11 @@ Navigate to the `GOA webpage <https://archive.gemini.edu/>`_ search form.  Put t
 **GS-2013B-Q-15-39** in the ``PROGRAM ID`` text field, and press the ``Search``
 button in the middle of the page. The page will refresh and display a table with
 all the data for this dataset. Since the amount of data is unnecessarily large
-for a tutorial (162 files, 0.95 Gb), we have narrowed our search to only the
+for a tutorial (162 files, 0.95 GB), we have narrowed our search to only the
 Y-band data by setting the ``Instrument`` drop-down menu to **F2** and the
-``Filter`` drop-down menu to **Y**. Now we have only 9 files, 0.05 Gb.
+``Filter`` drop-down menu to **Y**. Now we have only 9 files, 0.05 GB.
 
-You can also copy the URL below and paste it on browser to see the search
+You can also copy the URL below and paste it in a browser to see the search
 results:
 
 ::
@@ -51,13 +51,13 @@ results:
   https://archive.gemini.edu/searchform/GS-2013B-Q-15-39/RAW/cols=CTOWEQ/filter=Y/notengineering/F2/NotFail
 
 At the bottom of the page, you will find a button saying *Download all 9 files
-totalling 0.05 Gb*. Click on it to download a `.tar` file with all the data.
+totalling 0.05 GB*. Click on it to download a `.tar` file with all the data.
 
 Calibrations
 ------------
 Matching calibration files can be obtained by clicking on the *Load Associated
 Calibrations* tab. For this data, we need the 120-second darks (for 120-second
-science data). We also need the Y-band flats; the series there is collection
+science data). We also need the Y-band flats; the series there is a collection
 of lamp-on and lamp-off flats.
 
 Select the darks and the Y-band flats at the top of the returned list by
@@ -79,7 +79,7 @@ observations date. This and other settings are:
 - Filter: Any
 
 Hit the "Search" button. You can sort the list by exposure time by clicking
-on header of the "ExpT" column. Several 2-second darks show up. Some were
+on the header of the "ExpT" column. Several 2-second darks show up. Some were
 even taken on the same date as the science data (20131121). Select those,
 and download them as we did before for the other calibrations.
 

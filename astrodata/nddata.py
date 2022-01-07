@@ -14,8 +14,8 @@ from astropy.io.fits import ImageHDU
 from astropy.modeling import Model, models
 from astropy.nddata import (NDArithmeticMixin, NDData, NDSlicingMixin,
                             VarianceUncertainty)
-from astropy.wcs import WCS
 from gwcs.wcs import WCS as gWCS
+from .wcs import remove_axis_from_frame
 
 INTEGER_TYPES = (int, np.integer)
 
@@ -33,6 +33,126 @@ class ADVarianceUncertainty(VarianceUncertainty):
                           RuntimeWarning)
             value = np.where(value >= 0., value, 0.)
         VarianceUncertainty.array.fset(self, value)
+
+
+class AstroDataMixin:
+    """
+    A Mixin for ``NDData``-like classes (such as ``Spectrum1D``) to enable
+    them to behave similarly to ``AstroData`` objects.
+
+    These behaviors are:
+        1.  ``mask`` attributes are combined with bitwise, not logical, or,
+            since the individual bits are important.
+        2.  The WCS must be a ``gwcs.WCS`` object and slicing results in
+            the model being modified.
+        3.  There is a settable ``variance`` attribute.
+    """
+    def _arithmetic(self, operation, operand, propagate_uncertainties=True,
+                    handle_mask=np.bitwise_or, handle_meta=None,
+                    uncertainty_correlation=0, compare_wcs='first_found',
+                    **kwds):
+        """
+        Override the NDData method so that "bitwise_or" becomes the default
+        operation to combine masks, rather than "logical_or"
+        """
+        return super()._arithmetic(
+            operation, operand, propagate_uncertainties=propagate_uncertainties,
+            handle_mask=handle_mask, handle_meta=handle_meta,
+            uncertainty_correlation=uncertainty_correlation,
+            compare_wcs=compare_wcs, **kwds)
+
+    def _slice_wcs(self, slices):
+        """
+        The ``__call__()`` method of gWCS doesn't appear to conform to the
+        APE 14 interface for WCS implementations, and doesn't react to
+        slicing properly. We override NDSlicing's method to do what we want.
+        """
+        if not isinstance(self.wcs, gWCS):
+            return self.wcs
+
+        # Sanitize the slices, catching some errors early
+        if not isinstance(slices, (tuple, list)):
+            slices = (slices,)
+        slices = list(slices)
+        ndim = len(self.shape)
+        if len(slices) > ndim:
+            raise ValueError(f"Too many dimensions specified in slice {slices}")
+
+        if Ellipsis in slices:
+            if slices.count(Ellipsis) > 1:
+                raise IndexError("Only one ellipsis can be specified in a slice")
+            ell_index = slices.index(Ellipsis)
+            slices[ell_index:ell_index+1] = [slice(None)] * (ndim - len(slices) + 1)
+        slices.extend([slice(None)] * (ndim-len(slices)))
+
+        mods = []
+        mapped_axes = []
+        for i, (slice_, length) in enumerate(zip(slices[::-1], self.shape)):
+            model = []
+            if isinstance(slice_, slice):
+                if slice_.step and slice_.step > 1:
+                    raise IndexError("Cannot slice with a step")
+                if slice_.start:
+                    start = length + slice_.start if slice_.start < 1 else slice_.start
+                    if start > 0:
+                        model.append(models.Shift(start))
+                mapped_axes.append(max(mapped_axes)+1 if mapped_axes else 0)
+            elif isinstance(slice_, INTEGER_TYPES):
+                model.append(models.Const1D(slice_))
+                mapped_axes.append(-1)
+            else:
+                raise IndexError("Slice not an integer or range")
+            if model:
+                mods.append(reduce(Model.__or__, model))
+            else:
+                # If the previous model was an Identity, we can hang this
+                # one onto that without needing to append a new Identity
+                if i > 0 and isinstance(mods[-1], models.Identity):
+                    mods[-1] = models.Identity(mods[-1].n_inputs + 1)
+                else:
+                    mods.append(models.Identity(1))
+
+        slicing_model = reduce(Model.__and__, mods)
+        if mapped_axes != list(np.arange(ndim)):
+            slicing_model = models.Mapping(
+                tuple(max(ax, 0) for ax in mapped_axes)) | slicing_model
+            slicing_model.inverse = models.Mapping(
+                tuple(ax for ax in mapped_axes if ax != -1), n_inputs=ndim)
+
+        if isinstance(slicing_model, models.Identity) and slicing_model.n_inputs == ndim:
+            return self.wcs  # Unchanged!
+        new_wcs = deepcopy(self.wcs)
+        input_frame = new_wcs.input_frame
+        for axis, mapped_axis in reversed(list(enumerate(mapped_axes))):
+            if mapped_axis == -1:
+                input_frame = remove_axis_from_frame(input_frame, axis)
+        new_wcs.pipeline[0].frame = input_frame
+        new_wcs.insert_transform(new_wcs.input_frame, slicing_model, after=True)
+        return new_wcs
+
+    @property
+    def variance(self):
+        """
+        A convenience property to access the contents of ``uncertainty``.
+        """
+        arr = self.uncertainty
+        if arr is not None:
+            return arr.array
+
+    @variance.setter
+    def variance(self, value):
+        self.uncertainty = (ADVarianceUncertainty(value) if value is not None
+                            else None)
+
+    @property
+    def wcs(self):
+        return super().wcs
+
+    @wcs.setter
+    def wcs(self, value):
+        if value is not None and not isinstance(value, gWCS):
+            raise TypeError("wcs value must be None or a gWCS object")
+        self._wcs = value
 
 
 class FakeArray:
@@ -99,7 +219,7 @@ def is_lazy(item):
     return isinstance(item, ImageHDU) or (hasattr(item, 'lazy') and item.lazy)
 
 
-class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
+class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
     """
     Implements ``NDData`` with all Mixins, plus some ``AstroData`` specifics.
 
@@ -185,82 +305,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         if not is_lazy(self._uncertainty):
             new.variance = deepcopy(self.variance)
         return new
-
-    def _arithmetic(self, operation, operand, propagate_uncertainties=True,
-                    handle_mask=np.bitwise_or, handle_meta=None,
-                    uncertainty_correlation=0, compare_wcs='first_found',
-                    **kwds):
-        """
-        Override the NDData method so that "bitwise_or" becomes the default
-        operation to combine masks, rather than "logical_or"
-        """
-        return super()._arithmetic(
-            operation, operand, propagate_uncertainties=propagate_uncertainties,
-            handle_mask=handle_mask, handle_meta=handle_meta,
-            uncertainty_correlation=uncertainty_correlation,
-            compare_wcs=compare_wcs, **kwds)
-
-    def _slice_wcs(self, slices):
-        """
-        gWCS doesn't appear to conform to the APE 14 interface for WCS
-        implementations, and doesn't react to slicing properly. We override
-        NDSlicing's method to do what we want.
-        """
-        if not isinstance(self.wcs, gWCS):
-            return self.wcs
-
-        # Sanitize the slices, catching some errors early
-        if not isinstance(slices, (tuple, list)):
-            slices = (slices,)
-        slices = list(slices)
-        ndim = len(self.shape)
-        if len(slices) > ndim:
-            raise ValueError(f"Too many dimensions specified in slice {slices}")
-
-        if Ellipsis in slices:
-            if slices.count(Ellipsis) > 1:
-                raise IndexError("Only one ellipsis can be specified in a slice")
-            ell_index = slices.index(Ellipsis)
-            slices[ell_index:ell_index+1] = [slice(None)] * (ndim - len(slices) + 1)
-        slices.extend([slice(None)] * (ndim-len(slices)))
-
-        mods = []
-        mapped_axes = []
-        for i, (slice_, length) in enumerate(zip(slices[::-1], self.shape)):
-            model = []
-            if isinstance(slice_, slice):
-                if slice_.step and slice_.step > 1:
-                    raise IndexError("Cannot slice with a step")
-                if slice_.start:
-                    start = length + slice_.start if slice_.start < 1 else slice_.start
-                    if start > 0:
-                        model.append(models.Shift(start))
-                mapped_axes.append(max(mapped_axes)+1 if mapped_axes else 0)
-            elif isinstance(slice_, INTEGER_TYPES):
-                model.append(models.Const1D(slice_))
-                mapped_axes.append(-1)
-            else:
-                raise IndexError("Slice not an integer or range")
-            if model:
-                mods.append(reduce(Model.__or__, model))
-            else:
-                # If the previous model was an Identity, we can hang this
-                # one onto that without needing to append a new Identity
-                if i > 0 and isinstance(mods[-1], models.Identity):
-                    mods[-1] = models.Identity(mods[-1].n_inputs + 1)
-                else:
-                    mods.append(models.Identity(1))
-
-        slicing_model = reduce(Model.__and__, mods)
-        if mapped_axes != list(np.arange(ndim)):
-            mapped_axes = [max(x, 0) for x in mapped_axes]
-            slicing_model = models.Mapping(mapped_axes) | slicing_model
-
-        if isinstance(slicing_model, models.Identity) and slicing_model.n_inputs == ndim:
-            return self.wcs  # Unchanged!
-        new_wcs = deepcopy(self.wcs)
-        new_wcs.insert_transform(new_wcs.input_frame, slicing_model, after=True)
-        return new_wcs
 
     @property
     def window(self):
@@ -414,13 +458,3 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
             uncertainty=None if unc is None else unc.__class__(unc.array.T),
             mask=None if self.mask is None else self.mask.T, copy=False
         )
-
-    @property
-    def wcs(self):
-        return super().wcs
-
-    @wcs.setter
-    def wcs(self, value):
-        if value is not None and not isinstance(value, (WCS, gWCS)):
-            raise TypeError("wcs value must be None or a WCS object")
-        self._wcs = value

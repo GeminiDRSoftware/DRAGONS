@@ -74,10 +74,13 @@ to the AstroData tags of the first input element.
 The primitive set is obtained as follow, where ``ad`` is an AstroData object::
 
    >>> from recipe_system.mappers.primitiveMapper import PrimitiveMapper
-   >>> pmapper = PrimitiveMapper([ad])
-   >>> pset = pmapper.get_applicable_primitives()
+   >>> tags = ad.tags
+   >>> instpkg = ad.instrument(generic=True).lower()
+   >>> pmapper = PrimitiveMapper(tags, instpkg)
+   >>> pclass = pmapper.get_applicable_primitives()
+   >>> p = pclass([ad])
 
-This ``pset`` can now be passed to the best match recipe.
+This ``p`` can now be passed to the best match recipe.
 
 Example
 ^^^^^^^
@@ -97,15 +100,13 @@ in this case, ``gmos``. The mapper enforces the rule that the directory name
 for the instrument package be the lower case version of the AstroData descriptor
 ``instrument()``.  This speeds up the search but it is also a limitation.
 
-The |PrimitiveMapper| instance stores the name of the instrument, and thus the
-name of the instrument package in the ``pkg`` attribute, which is set upon
-instantiation from the ``.instrument()`` descriptor of the first AstroData
-object in the input list.  For example, using the GMOS ``ad``::
+The |PrimitiveMapper| instance stores the name of the package it will search
+in the ``dotpackage`` attribute.  For example, using the GMOS ``ad``::
 
    >>> from recipe_system.mappers.primitiveMapper import PrimitiveMapper
     >>> pmapper = PrimitiveMapper([ad])
-    >>> pmappmer.pkg
-   'gmos'
+    >>> pmappmer.dotpackage
+   'geminidr.gmos'
 
 
 The public method ``get_applicable_primitives()``, when invoked, launches the
@@ -114,7 +115,7 @@ on finding class objects with a ``tagset`` attribute.
 
 ::
 
-    >>> pset = pmapper.get_applicable_primitives()
+    >>> pclass = pmapper.get_applicable_primitives()
 
 In the case of GMOS, the ``tagsets`` in primitive classes hierarchy
 (Figure 4.1 above) are::
@@ -134,8 +135,14 @@ the *AstroData tags*.  A successful match requires ``tagset`` to be
 a subset of the Astrodata tags.  The match with the largest subset wins the
 contest.  In our example, the class ``GMOSImage`` wins. Indeed::
 
-    >>> pset.__class__
+    >>> pclass
     <class 'geminidr.gmos.primitives_gmos_image.GMOSImage'>
+
+To use this selection of primitives, one then needs to instantiate it::
+
+    >>> p = pclass([ad])
+
+This can be used by a recipe.
 
 
 
@@ -171,13 +178,17 @@ to the AstroData tags of the first input element.
 The recipe is obtained as follow, where ``ad`` is an AstroData object::
 
     >>> from recipe_system.mappers.recipeMapper import RecipeMapper
-    >>> rmapper = RecipeMapper([ad])
+    >>> tags = ad.tags
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> rmapper = RecipeMapper(tags, instpkg)
     >>> recipe = rmapper.get_applicable_recipe()
+    >>> recipe.__name__
+    reduce
 
 The recipe can then be run by passing it a primitive set (see the section
 above on primitive mapping)::
 
-    >>> recipe(pset)
+    >>> recipe(p)
 
 
 Example
@@ -207,10 +218,11 @@ name of the instrument package in the ``pkg`` attribute, which is set upon
 instantiation from the ``.instrument()`` descriptor of the first AstroData
 object in the input list.  For example, using the GMOS ``ad``::
 
-   >>> from recipe_system.mappers.recipeMapper import RecipeMapper
-    >>> rmapper = RecipeMapper([ad])
-    >>> rmappmer.pkg
-   'gmos'
+    >>> from recipe_system.mappers.recipeMapper import RecipeMapper
+    >>> tags = ad.tags
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> rmapper = RecipeMapper(tags, instpkg)
+    >>> recipe = rmapper.get_applicable_recipe()
 
 The public method ``get_applicable_recipe()``, when invoked, launches the
 search for the most appropriate recipe library. The search itself is focused
@@ -272,11 +284,14 @@ Primitives and Recipes, Together at Last
 To summarize the mapper usage described in this chapter, to launch a reduction
 one does::
 
-    >>> rmapper = RecipeMapper(adinputs, ...)
-    >>> pmapper = PrimitiveMapper(adinputs, ...)
+    >>> tags = ad.tags
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> rmapper = RecipeMapper(tags, instpkg)
+    >>> pmapper = PrimitiveMapper(tags, instpkg)
     >>> recipe = rmapper.get_applicable_recipe()
-    >>> pset = pmapper.get_applicable_primitives()
-    >>> recipe(pset)
+    >>> pclass = pmapper.get_applicable_primitives()
+    >>> p = pclass([ad])
+    >>> recipe(p)
 
 This is essentially what the |Reduce| class does.
 
@@ -293,9 +308,9 @@ The primitive set is obtained as shown in the previous section, using the
 the list of primitives from the primitive set, one can do this::
 
     >>> import inspect
-    >>> for item in dir(pset):
+    >>> for item in dir(p):
     ...    if not item.startswith('_') and \
-    ...       inspect.ismethod(getattr(item, pset)):
+    ...       inspect.ismethod(getattr(p, item)):
     ...       print(item)
     ...
 
@@ -308,8 +323,8 @@ primitives use a ``streams`` attribute to store the AstroData objects being
 processed in such a way that those objects do not need to be passed to the
 primitives when called.  For example::
 
-    >>> pset.prepare()
-    >>> pset.addVAR()
+    >>> p.prepare()
+    >>> p.addVAR()
 
 The syntax above uses *streams* to pass the data along from one primitive to
 the next.  The streams are attributes of the ``geminidr`` ``PrimitiveBASE``
@@ -324,7 +339,7 @@ have the primitives methods return the modified output AstroData objects.  When
 testing, or exploration purposes it can be handy.  For example, one can do
 this::
 
-    >>> intermediate_outputs = pset.prepare()
+    >>> intermediate_outputs = p.prepare()
 
 A logger is currently required.  The logger in ``gempy.utils`` called
 ``logutils`` is used by the recipe_system.  The output will go to
@@ -372,24 +387,24 @@ parameter system used in ``geminidr``.  For the time being, developers of new
 DR packages must use those systems.
 
 The main stream that allows the data to be passed from one primitive to the
-other without the need of arguments is ``pset.streams['main']``.  When the
+other without the need of arguments is ``p.streams['main']``.  When the
 primitive set is instantiated by ``get_applicable_primitives``, the input
 AstroData objects are stored in that stream.   If for some reason you need
 to repopulate that stream, do something like this::
 
     >>> new_inputs = [ad1, ad2, ... adn]
-    >>> pset.streams['main'] = new_inputs
+    >>> p.streams['main'] = new_inputs
 
 The input parameters to the primitives are stored in the primitive set in
-``pset.params``.  For example, to see the parameters to the ``prepare``
+``p.params``.  For example, to see the parameters to the ``prepare``
 primitive and their current settings::
 
-    >>> pset.params['prepare'].toDict()
+    >>> p.params['prepare'].toDict()
     OrderedDict([('suffix', '_prepared'), ('mdf', None), ('attach_mdf', True)])
 
 Or, prettier ::
 
-    >>> print(*pset.param['prepare'].toDict().items(), sep='/n')
+    >>> print(*p.param['prepare'].toDict().items(), sep='\n')
     ('suffix', '_prepared')
     ('mdf', None)
     ('attach_mdf', True)
@@ -401,7 +416,9 @@ inspect the recipes returned by the |RecipeMapper|.
 ::
 
     >>> from recipe_system.mappers.recipeMapper import RecipeMapper
-    >>> rmapper = RecipeMapper([ad])
+    >>> tags = ad.tags
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> rmapper = RecipeMapper(tags, instpkg)
     >>> recipe = rmapper.get_applicable_recipe()
     >>> recipe.__name__
     'reduce'
@@ -422,17 +439,22 @@ inspect the recipes returned by the |RecipeMapper|.
         p.addDQ()
         p.addVAR(read_noise=True)
         p.overscanCorrect()
+        p.getProcessedBias()
         p.biasCorrect()
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
+        p.getProcessedFlat()
         p.flatCorrect()
-        p.makeFringe()
+        p.getProcessedFringe()
         p.fringeCorrect()
         p.mosaicDetectors()
+        p.detectSources()
         p.adjustWCSToReference()
         p.resampleToCommonFrame()
-        p.stackFrames()
-        p.writeOutputs()
+        p.flagCosmicRaysByStacking()
+        p.scaleByExposureTime()
+        p.stackFrames(zero=True)
+        p.storeProcessedScience()
         return
 
 

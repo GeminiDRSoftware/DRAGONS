@@ -1,9 +1,5 @@
 .. 02_data_reduction.rst
 
-.. include:: DRAGONSlinks.txt
-
-.. _data quality plane: https://astrodata-user-manual.readthedocs.io/en/latest/data.html#data-quality-plane
-
 .. _command_line_data_reduction:
 
 **************
@@ -22,18 +18,16 @@ learn more about GMOS data reduction.
 
 DRAGONS installation comes with a set of scripts that are used to
 reduce astronomical data. The most important script is called
-"|reduce|", which is extensively explained in the `Recipe System Users Manual
-<https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/index.html>`_.
+"|reduce|", which is extensively explained in the |RSUser|.
 It is through that command that a DRAGONS reduction is launched.
 
-For this tutorial, we will be also using other `Supplemental tools
-<https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html>`_,
+For this tutorial, we will be also using other |suptools|,
 like:
 
-* "|dataselect|"
-* "|showd|"
-* "|typewalk|"
-* "|caldb|"
+* |dataselect|
+* |showd|
+* |typewalk|
+* |caldb|
 
 
 The dataset
@@ -44,7 +38,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`about_data_set`.
+    :ref:`about_data_set`
 
 Here is a copy of the table for quick reference.
 
@@ -180,7 +174,7 @@ Now we can do the same with the FLAT files:
 
 
 If your dataset has flats obtained with more than one filter, you can add the
-``--expr 'filter_name=="i"'`` expression to get on the flats obtained with in
+``--expr 'filter_name=="i"'`` expression to get only the flats obtained within
 the i-band. For example:
 
 .. code-block:: bash
@@ -282,7 +276,7 @@ To check that the master bias was added to the database, use ``caldb list``.
 Create a Master Flat Field
 ==========================
 
-Twilight flats images are used to produced an imaging master flat and the
+Twilight flats images are used to produce an imaging master flat and the
 result is added to the calibration database.
 
 ..  code-block:: bash

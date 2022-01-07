@@ -12,7 +12,6 @@ from scipy.ndimage import measurements
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
-from gempy.library.transform import add_longslit_wcs
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -368,35 +367,7 @@ class Standardize(PrimitivesBASE):
     def standardizeStructure(self, adinputs=None, **params):
         return adinputs
 
-    def standardizeWCS(self, adinputs=None, suffix=None):
-        """
-        This primitive updates the WCS attribute of each NDAstroData extension
-        in the input AstroData objects. For spectroscopic data, it means
-        replacing an imaging WCS with an approximate spectroscopic WCS.
-        For multi-extension ADs, it means prepending a tiling and/or mosaic
-        transform before the pixel->world transform, and giving all extensions
-        copies of the reference extension's pixel->world transform.
-
-        Parameters
-        ----------
-        suffix: str/None
-            suffix to be added to output files
-
-        """
-        log = self.log
-        timestamp_key = self.timestamp_keys[self.myself()]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        for ad in adinputs:
-            # TODO: work towards making this "if 'SPECT' in ad.tags"
-            # which is why it's here and not in primitives_gmos_spect
-            if {'GMOS', 'SPECT', 'LS'}.issubset(ad.tags):
-                log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-                add_longslit_wcs(ad)
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
+    def standardizeWCS(self, adinputs=None, **params):
         return adinputs
 
     def validateData(self, adinputs=None, suffix=None):
@@ -477,8 +448,8 @@ class Standardize(PrimitivesBASE):
               self.timestamp_keys["subtractOverscan"] not in ad.phu):
             log.warning("It is not recommended to add Poisson noise to the"
                         " variance of data that still contain a bias level")
-        gain_list = ad.gain()
-        for ext, gain in zip(ad, gain_list):
+
+        for ext in ad:
             if 'poisson' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Poisson noise already added for "
                             f"{ad.filename} extension {ext.id}")
@@ -487,9 +458,9 @@ class Standardize(PrimitivesBASE):
             if not ext.is_coadds_summed():
                 var_array /= ext.coadds()
             if ext.is_in_adu():
-                var_array /= ext.gain()
+                var_array /= gt.array_from_descriptor_value(ext, "gain")
             if ext.variance is None:
-                ext.variance = var_array
+                ext.variance = np.full_like(ext.data, var_array, dtype=dtype)
             else:
                 ext.variance += var_array
             varnoise = ext.hdr.get('VARNOISE')
@@ -507,31 +478,30 @@ class Standardize(PrimitivesBASE):
         existing plane if there is no header keyword indicating this operation
         has already been performed.
 
-        This primitive should be invoked by calling addVAR(read_noise=True)
+        This method should be invoked by calling addVAR(read_noise=True)
+
+        If an extension is composed of data from multiple amplifiers, the read
+        noise can be added provided there are the same number of Sections in
+        the data_section() descriptor as there are values in read_noise(). The
+        read noise will also be added to the overscan regions if the descriptor
+        returns Sections. If the data are in ADU, then the gain() descriptor
+        must also return a list of the same length.
         """
         log = self.log
 
         log.fullinfo("Adding read noise to {}".format(ad.filename))
-        gain_list = ad.gain()
-        read_noise_list = ad.read_noise()
-        for ext, gain, read_noise in zip(ad, gain_list, read_noise_list):
+        for ext in ad:
+            extver = ext.hdr['EXTVER']
             if 'read' in ext.hdr.get('VARNOISE', '').lower():
                 log.warning("Read noise already added for "
                             f"{ad.filename} extension {ext.id}")
                 continue
-            if read_noise is None:
-                log.warning(f"Read noise for {ad.filename} extension {ext.id} "
-                            "is None. Setting to zero")
-                read_noise = 0.0
-            else:
-                log.fullinfo(f"Read noise for {ad.filename} extension {ext.id}"
-                             f" = {read_noise} electrons")
-            if ext.is_in_adu():
-                read_noise /= gain
-            var_array = np.full_like(ext.data, read_noise * read_noise,
-                                     dtype=dtype)
+            var_array = (gt.array_from_descriptor_value(ext, "read_noise") /
+                         (gt.array_from_descriptor_value(ext, "gain")
+                          if ext.is_in_adu() else 1.0)) ** 2
+
             if ext.variance is None:
-                ext.variance = var_array
+                ext.variance = np.full_like(ext.data, var_array, dtype=dtype)
             else:
                 ext.variance += var_array
             varnoise = ext.hdr.get('VARNOISE')

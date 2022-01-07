@@ -113,6 +113,7 @@ class Register(PrimitivesBASE):
         cull_sources = params["cull_sources"]
         rotate = params["rotate"]
         scale = params["scale"]
+        use_wcs = not params["debug_ignore_wcs"]
 
         # Use first image in list as reference
         adref = adinputs[0]
@@ -135,6 +136,9 @@ class Register(PrimitivesBASE):
             return adinputs
 
         adoutputs = [adref]
+
+        if method is None:
+            return adinputs
 
         for ad in adinputs[1:]:
             msg = ""
@@ -188,12 +192,13 @@ class Register(PrimitivesBASE):
             # image the sources on the reference image should be if both WCSs
             # were correct. We then work out how to move the sources on the
             # input image so they lie in those positions.
-            try:
-                t_init = adref[0].wcs.forward_transform | ad[0].wcs.backward_transform
-            except AttributeError:  # for cases with no defined WCS
-                pass
-            else:
-                refcoords = t_init(*refcoords)
+            if use_wcs:
+                try:
+                    t_init = adref[0].wcs.forward_transform | ad[0].wcs.backward_transform
+                except AttributeError:  # for cases with no defined WCS
+                    pass
+                else:
+                    refcoords = t_init(*refcoords)
 
             # The code used to start with a translation-only model, but this
             # isn't helpful if there's a sizeable rotation or scaling, so
@@ -231,6 +236,10 @@ class Register(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
+            # If we're not using the WCS, then we want the adjusted AD to
+            # have a WCS that is the transform followed by the reference WCS
+            if not use_wcs:
+                ad[0].wcs = deepcopy(adref[0].wcs)
             try:
                 ad[0].wcs.insert_transform(ad[0].wcs.input_frame, transform, after=True)
             except AttributeError:  # no WCS
