@@ -44,7 +44,7 @@ def test_cosmics_on_mosaiced_data(path_to_inputs, caplog):
 
     debug = os.getenv('DEBUG') is not None
     p = GMOSSpect([ad])
-    adout = p.flagCosmicRays(y_order=3, bkgfit_niter=5, debug=debug)[0]
+    adout = p.flagCosmicRays(spatial_order=3, bkgfit_niter=5, debug=debug)[0]
     if debug:
         p.writeOutputs()
     mask = adout[0].mask
@@ -84,7 +84,7 @@ def test_cosmics(path_to_inputs, caplog):
 
     debug = os.getenv('DEBUG') is not None
     p = GMOSSpect([ad])
-    adout = p.flagCosmicRays(y_order=3, bkgfit_niter=5, debug=debug)[0]
+    adout = p.flagCosmicRays(spatial_order=3, bkgfit_niter=5, debug=debug)[0]
     if debug:
         p.writeOutputs()
 
