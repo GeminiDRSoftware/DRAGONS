@@ -1,5 +1,7 @@
 from astropy.io import fits as pf
 import numpy as np
+import pytest
+
 from astropy.modeling.models import Gaussian1D
 from itertools import product as cart_product
 
