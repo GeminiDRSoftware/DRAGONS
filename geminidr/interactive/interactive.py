@@ -298,7 +298,8 @@ class PrimitiveVisualizer(ABC):
 
         if server.test_mode:
             # Simulate a click of the accept button
-            self.do_later(lambda: self.submit_button_handler(None))
+            self.do_later(lambda: self.session_ended(None, True))
+            # self.do_later(self.submit_button_handler)
 
         # Add a widget we can use for triggering a message
         # This is a workaround, since CustomJS calls can only
