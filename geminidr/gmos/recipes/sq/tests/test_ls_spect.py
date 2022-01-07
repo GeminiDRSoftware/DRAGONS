@@ -14,13 +14,15 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 datasets = {
 
     'GN-2017A-FT-19-15': {
-        "arcs": ["N20170601S0850.fits", "N20170601S0851.fits"],
+        "arcs": ["N20170601S0850.fits"],
         "bias": [f"N20170602S{i:04d}.fits" for i in range(590, 595)],
         "flat": ["N20170601S0459.fits"],
         "sci": [f"N20170601S{i:04d}.fits" for i in range(456, 459)],
         "std": ["N20170529S0168.fits"],
         "user_pars": [],
     },
+
+    # DO NOT UNCOMMENT THESE WITHOUT REDUCING TO 1 ARC AND 1 FLAT PER TEST
 
     # "GN-2018B-Q-108-27": {
     #     "arcs": ["N20181011S0220.fits"],
