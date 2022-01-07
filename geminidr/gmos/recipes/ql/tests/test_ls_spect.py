@@ -14,7 +14,7 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 datasets = {
 
     'GN-2017A-FT-19-15': {
-        "arcs": ["N20170601S0850.fits", "N20170601S0851.fits"],
+        "arcs": ["N20170601S0850.fits"],
         "bias": [f"N20170602S{i:04d}.fits" for i in range(590, 595)],
         "flat": ["N20170601S0459.fits"],
         "sci": [f"N20170601S{i:04d}.fits" for i in range(456, 459)],
@@ -32,7 +32,6 @@ datasets = {
     # }
 }
 
-@pytest.mark.skip("Only QL recipes on v3.0.x")
 @pytest.mark.integration_test
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("test_case", datasets.keys())
@@ -123,6 +122,7 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
     r.files = file_list
     r.ucals = normalize_ucals(r.files, calib_files)
     r.uparms = user_pars
+    r.mode = 'ql'  # for 3.0.x
 
     if recipe_name:
         r.recipename = recipe_name
