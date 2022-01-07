@@ -1747,11 +1747,22 @@ class Spect(PrimitivesBASE):
         suffix : str
             Suffix to be added to output files.
 
-        x_order, y_order : int or None, optional
+        spectral_order, spatial_order : int or None, optional
             Order for fitting and subtracting object continuum and sky line
             models, prior to running the main cosmic ray detection algorithm.
             When None, defaults are used, according to the image size (as in
-            the IRAF task gemcrspec). When 0, no fit is done.
+            the IRAF task gemcrspec). To control which fits are performed, use
+            the bkgmodel parameter.
+
+       bkgmodel : {'both', 'object', 'skyline', 'none'}, optional
+           Set which background model(s) to use, between 'object', 'skyline',
+           'both', or 'none'. Different data may get better results with
+           different background models.
+           'both': Use both object and sky line models.
+           'object': Use object model only.
+           'skyline': Use sky line model only.
+           'none': Don't use a background model.
+           Default: 'skyline'.
 
         bitmask : int, optional
             Bits in the input data quality `flags` that are to be used to
@@ -1839,8 +1850,9 @@ class Spect(PrimitivesBASE):
         bitmask = params.pop('bitmask')
         debug = params.pop('debug')
         suffix = params.pop('suffix')
-        x_order_in = params.pop('x_order')
-        y_order_in = params.pop('y_order')
+        x_order_in = params.pop('spectral_order')
+        y_order_in = params.pop('spatial_order')
+        bkgmodel = params.pop('bkgmodel')
 
         fit_1D_params = dict(
             plot=debug,
@@ -1865,9 +1877,9 @@ class Spect(PrimitivesBASE):
 
                 # Use default orders from gemcrspec (from Bryan):
                 ny, nx = ext.shape
-                x_order = 9 if x_order_in is None else x_order_in
-                y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
-                           if y_order_in is None else y_order_in)
+                spectral_order = 9 if x_order_in is None else x_order_in
+                spatial_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
+                                if y_order_in is None else y_order_in)
 
                 if ext.mask is not None:
                     data = np.ma.array(ext.data, mask=ext.mask != 0)
@@ -1878,43 +1890,50 @@ class Spect(PrimitivesBASE):
                     mask = None
                     weights = None
 
+                # Set up the background and models to be blank initially:
+                background = np.zeros(ext.shape)
+                objfit = np.zeros(ext.shape)
+                skyfit = np.zeros(ext.shape)
+
                 # Fit the object spectrum:
-                if x_order > 0:
+                if bkgmodel in ('both', 'object'):
                     objfit = fit_1D(data,
                                     function='legendre',
                                     axis=dispaxis,
-                                    order=x_order,
+                                    order=spectral_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
-                    if debug:
-                        ext.OBJFIT = objfit.copy()
-                else:
-                    objfit = np.zeros(ext.shape)
+                if debug:
+                    ext.OBJFIT = objfit.copy()
 
-                input_copy = data - objfit
+                background += objfit
+
+                # If fitting both models, subtracting objfit from the data
+                # ensures sky background isn't fitted twice:
+                skyfit_input = data - objfit
 
                 # Fit sky lines:
-                if y_order > 0:
-                    skyfit = fit_1D(input_copy, function='legendre',
+                if bkgmodel in('both', 'skyline'):
+                    skyfit = fit_1D(skyfit_input,
+                                    function='legendre',
                                     axis=1 - dispaxis,
-                                    order=y_order,
+                                    order=spatial_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                if debug:
+                    ext.SKYFIT = skyfit
 
-                    # keep combined fits for later restoration
-                    objfit += skyfit
-                    if debug:
-                        ext.SKYFIT = skyfit
-                    skyfit = None
+                background += skyfit
 
-                input_copy = None
+                # Free up memory.
+                skyfit, objfit, skyfit_input = None, None, None
 
                 # Run astroscrappy's detect_cosmics. We use the variance array
                 # because it takes into account the different read noises if
                 # the data has been tiled
                 crmask, _ = detect_cosmics(ext.data,
                                            inmask=mask,
-                                           inbkg=objfit,
+                                           inbkg=background,
                                            invar=ext.variance,
                                            gain=ext.gain(),
                                            satlevel=ext.saturation_level(),
@@ -3528,7 +3547,8 @@ def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
 def plot_cosmics(ext, crmask):
     from astropy.visualization import ZScaleInterval, imshow_norm
 
-    fig, axes = plt.subplots(5, 1, figsize=(15, 5*2), sharex=True, sharey=True)
+    fig, axes = plt.subplots(1, 5, figsize=(15, 5*2), sharex=True, sharey=True,
+                             tight_layout=True)
     imgs = (ext.data, ext.OBJFIT, ext.SKYFIT,
             ext.data - (ext.OBJFIT + ext.SKYFIT), crmask)
     titles = ('data', 'object fit', 'sky fit', 'residual', 'crmask')

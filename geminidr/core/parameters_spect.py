@@ -202,23 +202,39 @@ class flagCosmicRaysConfig(config.Config):
         default=False
     )
     # Fit parameters --------------------------------------------------------
-    x_order = config.Field(
+    spectral_order = config.Field(
         doc="Order for fitting and subtracting object continuum and sky line "
         "models, prior to running the main cosmic ray detection algorithm. "
         "When None, defaults are used, according to the image size (as in "
-        "the IRAF task gemcrspec). When 0, no fit is done.",
+        "the IRAF task gemcrspec). To control which fits are performed, use "
+        "the bkgmodel parameter.",
         dtype=int,
         optional=True,
         default=None,
     )
-    y_order = config.Field(
+    spatial_order = config.Field(
         doc="Order for fitting and subtracting object continuum and sky line "
         "models, prior to running the main cosmic ray detection algorithm. "
         "When None, defaults are used, according to the image size (as in "
-        "the IRAF task gemcrspec). When 0, no fit is done.",
+        "the IRAF task gemcrspec). To control which fits are performed, use "
+        "the bkgmodel parameter.",
         dtype=int,
         optional=True,
         default=None,
+    )
+    bkgmodel = config.ChoiceField(
+        doc="Set which background model(s) to use, between 'object', "
+        "'skyline','both', or 'none'. Different data may get better results "
+        "with different background models.",
+        allowed={
+            'both': 'Use both object and sky line models.',
+            'object': 'Use object model only.',
+            'skyline': 'Use sky line model only.',
+            'none': "Don't use a background model.",
+        },
+        dtype=str,
+        optional=True,
+        default='skyline',
     )
     bkgfit_niter = config.Field(
         doc="Maximum number of iterations for the objects and sky fits.",
