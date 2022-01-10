@@ -733,6 +733,11 @@ class ApertureView:
 
         self._pending_update_viewport = False
 
+        # save profile max height when managing view.  We want
+        # to resize the height if this changes, such as recalculated
+        # input data, but not if it hasn't
+        self._old_ymax = None
+
         self.model = model
         model.add_listener(self)
 
@@ -821,7 +826,9 @@ class ApertureView:
     def update_view(self):
         self._reload_holoviews()
         ymax = np.nanmax(self.model.profile)
-        if ymax:
+        # don't reset plot Y axis if the profile max height hasn't changed
+        if ymax and self._old_ymax is None or self._old_ymax != ymax:
+            self._old_ymax = ymax
             self.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
             self.fig.y_range.reset_end = self.fig.y_range.end
 

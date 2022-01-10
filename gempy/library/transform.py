@@ -1338,14 +1338,14 @@ def add_mosaic_wcs(ad, geotable):
         # Shift the Block's coordinates based on its location within
         # the full array, to ensure any rotation takes place around
         # the true centre.
-        #if offset.x1 != 0 or offset.y1 != 0:
+        # if offset.x1 != 0 or offset.y1 != 0:
         #    model_list.append(models.Shift(offset.x1 / xbin) &
         #                      models.Shift(offset.y1 / ybin))
 
         if rot != 0 or mag != (1, 1):
             # Shift to centre, do whatever, and then shift back
-            model_list.append(models.Shift(-0.5 * (nx-1)) &
-                              models.Shift(-0.5 * (ny-1)))
+            model_list.append(models.Shift(-0.5 * (nx - 1)) &
+                              models.Shift(-0.5 * (ny - 1)))
             if rot != 0:
                 # Cope with non-square pixels by scaling in one
                 # direction to make them square before applying the
@@ -1358,8 +1358,8 @@ def add_mosaic_wcs(ad, geotable):
             if mag != (1, 1):
                 model_list.append(models.Scale(mag[0]) &
                                   models.Scale(mag[1]))
-            model_list.append(models.Shift(0.5 * (nx-1)) &
-                              models.Shift(0.5 * (ny-1)))
+            model_list.append(models.Shift(0.5 * (nx - 1)) &
+                              models.Shift(0.5 * (ny - 1)))
         model_list.append(models.Shift(shift[0] / xbin) &
                           models.Shift(shift[1] / ybin))
         mosaic_model = reduce(Model.__or__, model_list)
@@ -1386,19 +1386,18 @@ def add_mosaic_wcs(ad, geotable):
     # more code here.
     if ref_wcs is not None:
         new_xorigin, new_yorigin = ad[ref_index].wcs(0, 0)
-        if new_xorigin or new_yorigin:
+        # len(ad) > 1 added for applyWCSAdjustment, to preserve the origin
+        # as CCD2, and not the origin of this single slice
+        if (new_xorigin or new_yorigin) and len(ad) > 1:
             origin_shift = models.Shift(-new_xorigin) & models.Shift(-new_yorigin)
         else:
             origin_shift = None
 
         for ext in ad:
-            ext.wcs = gWCS(ext.wcs.pipeline[:-1] +
-                           [(mos_frame, ref_wcs.forward_transform),
-                            (ref_wcs.output_frame, None)])
+            ext.wcs.insert_frame(ext.wcs.output_frame, ref_wcs.forward_transform,
+                                 ref_wcs.output_frame)
             if origin_shift:
                 ext.wcs.insert_transform(mos_frame, origin_shift, after=False)
-            #ext.wcs.insert_frame(mos_frame, ref_wcs.forward_transform,
-            #                     ref_wcs.output_frame)
 
     return ad
 
