@@ -50,6 +50,12 @@ fixed_test_parameters_for_determine_distortion = {
 }
 
 
+def compare_frames(frame1, frame2):
+    """Compare the important stuff of two CoordinateFrame instances"""
+    for attr in ("naxes", "axes_type", "axes_order", "unit", "axes_names"):
+        assert getattr(frame1, attr) == getattr(frame2, attr)
+
+
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
@@ -81,7 +87,7 @@ def test_regression_in_attach_wavelength_solution(ad, arc_ad, change_working_dir
         # regenerating with a differently-structured but equivalent wavelength
         # solution, when the same references could possibly be re-used.
         for f in ext_ref.wcs.available_frames:
-            assert repr(getattr(ext_ref.wcs, f)) == repr(getattr(ext.wcs, f))
+            compare_frames(getattr(ext_ref.wcs, f), getattr(ext.wcs, f))
         idx = np.meshgrid(*(np.arange(dim) for dim in reversed(ext_ref.shape)))
         world, world_ref = ext.wcs(*idx), ext_ref.wcs(*idx)
         # Require roughly 0.1 pix precision in wavelength & <0.1" spatially:
@@ -120,7 +126,7 @@ def test_regression_in_attach_wavelength_solution_to_mosaic(ad, arc_ad, change_w
     for ext, ext_ref in zip(calibrated_ad, ref_ad):
         # Do the same comparison as in the above test on the mosicked data:
         for f in ext_ref.wcs.available_frames:
-            assert repr(getattr(ext_ref.wcs, f)) == repr(getattr(ext.wcs, f))
+            compare_frames(getattr(ext_ref.wcs, f), getattr(ext.wcs, f))
         idx = np.meshgrid(*(np.arange(dim) for dim in reversed(ext_ref.shape)))
         world, world_ref = ext.wcs(*idx), ext_ref.wcs(*idx)
         np.testing.assert_allclose(world[0], world_ref[0], atol=0.005)
