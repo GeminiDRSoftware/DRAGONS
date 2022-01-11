@@ -1006,20 +1006,35 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         self.fig = aperture_view.fig  # figure now comes from holoviews, need to pull it out here
 
         # making button configurable so we can add it conditionally for notebooks in future
+        renumber_label = "Renumber Apertures"
+        clear_label = "Clear Apertures"
         if show_add_aperture_button:
-            add_button = Button(label="Add Aperture", button_type='primary',
+            add_button = Button(label="Add", button_type='primary',
                                 default_size=200)
             add_button.on_click(self.add_aperture)
+            # need shorter labels
+            renumber_label = "Renumber"
+            clear_label = "Clear"
 
-        renumber_button = Button(label="Renumber apertures",
+        renumber_button = Button(label=renumber_label,
                                  button_type='primary', default_size=200)
         renumber_button.on_click(self.model.renumber_apertures)
+        clear_button = Button(label=clear_label,
+                              button_type='warning', default_size=200)
+
+        def do_clear_apertures():
+            def handle_clear(okc):
+                if okc:
+                    self.model.clear_apertures()
+            self.show_ok_cancel('Clear All Apertures?', handle_clear)
+        clear_button.on_click(do_clear_apertures)
 
         helptext = Div(margin=(20, 0, 0, 35), sizing_mode='scale_width')
         controls = column(children=[
             params,
             aperture_view.controls,
-            row(renumber_button, add_button) if show_add_aperture_button else renumber_button,
+            row(clear_button, renumber_button, add_button) if show_add_aperture_button
+                else row(clear_button, renumber_button),
         ])
 
         self.model.recalc_apertures()
