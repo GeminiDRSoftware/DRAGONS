@@ -174,19 +174,15 @@ class findAperturesConfig(config.Config):
                            "collapsed profile?", bool, False)
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.2, min=0, max=1)
-    aper_width = config.RangeField("Estimated aperture size",
-                                   float, 1.0, min=0.1, max=10.0)
-    arcsecs_per_pixel = config.RangeField("Arcsecs Per Pixel",
-                                          float, 0.0807, min=0.0001, max=1.0)
-    num_widths = config.RangeField("Estimated aperture size",
-                                   int, 10, min=2, max=100)
-    min_frac = config.RangeField("Min fraction of wavelet bin hits for peak",
-                                 float, 0.25, min=0.01, max=1.0)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},
                                        default="peak")
     interactive = config.Field("Use interactive interface", bool, False)
+    width_spacing = config.ChoiceField("Spacing of widths for wavelet peak find", str,
+                                       allowed={"exponential": "Exponentially spaced widths",
+                                                "linear": "Linear spaced widths"},
+                                       default="exponential")
 
 
 class flagCosmicRaysConfig(config.Config):
