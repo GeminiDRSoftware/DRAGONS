@@ -301,11 +301,30 @@ class Spect(PrimitivesBASE):
 
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             if arc.detector_x_bin() != xbin or arc.detector_y_bin() != ybin:
-                log.warning("Science frame and arc have different binnings.")
+                log.warning(f"Science frame {ad.filename} and arc "
+                            f"{arc.filename} have different binnings.")
                 if 'sq' in self.mode:
                     fail = True
                 adoutputs.append(ad)
                 continue
+
+            ad_detsec = ad.detector_section()
+
+            # Check that the arc is at least as large as the science frame
+            # We only do this for single-extension arcs now, which is true
+            # for GMOSLongslit
+            if len_arc == 1:
+                arc_detsec = arc.detector_section()[0]
+                detsec_array = np.asarray(ad_detsec)
+                x1, _, y1, _ = detsec_array.min(axis=0)
+                x2, _, y2, _ = detsec_array.max(axis=0)
+                if (x1 < arc_detsec.x1 or x2 > arc_detsec.x2 or
+                        y1 < arc_detsec.y1 or y2 > arc_detsec.y2):
+                    log.warning(f"Science frame {ad.filename} is larger than "
+                                f"the arc {arc.filename}")
+                    fail = True
+                    adoutputs.append(ad)
+                    continue
 
             # Read all the arc's distortion maps. Do this now so we only have
             # one block of reading and verifying them
@@ -363,8 +382,6 @@ class Spect(PrimitivesBASE):
                 ] * len_ad
                 output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
 
-                arc_detsec = arc.detector_section()[0]
-                ad_detsec = ad.detector_section()
                 if len_ad > 1:
                     # We need to apply the mosaicking geometry, and add the
                     # same distortion correction to each input extension.
@@ -434,14 +451,25 @@ class Spect(PrimitivesBASE):
                         # same pixel basis before applying the new wave_model
                         offsets = tuple(o_ad - o_arc
                                         for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
+                        # Shift the distortion-corrected co-ordinates back from
+                        # the arc's ROI to the native one after transforming:
+                        for ext in ad:
+                            ext.wcs.insert_transform(
+                                'distortion_corrected',
+                                reduce(Model.__and__,
+                                       [models.Shift(-offset) for
+                                        offset in offsets]),
+                                after=False
+                            )
                         # len(arc)=1 so we only have one wave_model, but need to
                         # update the entry in the list, which gets used later
                         if wave_model is not None:
                             offset = offsets[ext.dispersion_axis()-1]
                             if offset != 0:
                                 wave_model.name = None
-                                wave_models[0] = models.Shift(offset) | wave_model
-                                wave_models[0].name = 'WAVE'
+                                wave_model = models.Shift(offset) | wave_model
+                                wave_model.name = 'WAVE'
+                                wave_models = [wave_model] * len_ad
 
                 else:
                     # Single-extension AD, with single Transform
@@ -1086,19 +1114,33 @@ class Spect(PrimitivesBASE):
                 new_pipeline = ext.wcs.pipeline[:idx-1]
                 prev_frame, m_distcorr = ext.wcs.pipeline[idx-1]
 
-                if hasattr(m_distcorr, 'left') and (
-                    isinstance(m_distcorr.left, CompoundModel) and
-                    m_distcorr.left.n_outputs == 2 and
-                    all(isinstance(m, models.Shift) for m in m_distcorr.left)
-                ):
-                    m_dummy = m_distcorr.left | models.Identity(2)
+                # The model must have a Mapping prior to the Chebyshev2D
+                # model(s) since coordinates have to be duplicated. Find this
+                for i in range(m_distcorr.n_submodels):
+                    if isinstance(m_distcorr[i], models.Mapping):
+                        break
                 else:
-                    m_dummy = models.Identity(2)
+                    raise ValueError("Cannot find Mapping")
 
-                m_dummy.inverse = m_distcorr.inverse
-                new_pipeline.append((prev_frame, m_dummy))
+                # Now determine the extent of the submodel that encompasses the
+                # overall 2D distortion, which will be a 2D->2D model
+                for j in range(i + 1, m_distcorr.n_submodels + 1):
+                    try:
+                        msub = m_distcorr[i:j]
+                    except IndexError:
+                        continue
+                    if msub.n_inputs == msub.n_outputs == 2:
+                        break
+                else:
+                    raise ValueError("Cannot find distortion model")
+
+                # Name it so we can replace it
+                m_distcorr[i:j].name = "DISTCORR"
+                m_dummy = models.Identity(2)
+                m_dummy.inverse = msub.inverse
+                new_m_distcorr = m_distcorr.replace_submodel("DISTCORR", m_dummy)
+                new_pipeline.append((prev_frame, new_m_distcorr))
                 new_pipeline.extend(ext.wcs.pipeline[idx:])
-
                 ext.wcs = gWCS(new_pipeline)
 
             if not have_distcorr:
@@ -2528,8 +2570,10 @@ class Spect(PrimitivesBASE):
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
 
+                resampled_frame = copy(ext.wcs.input_frame)
+                resampled_frame.name = 'resampled'
                 ext.wcs = gWCS([(ext.wcs.input_frame, resampling_model),
-                                (cf.Frame2D(name='resampled'), new_wcs_model),
+                                (resampled_frame, new_wcs_model),
                                 (ext.wcs.output_frame, None)])
 
                 origin = (0,) * ndim

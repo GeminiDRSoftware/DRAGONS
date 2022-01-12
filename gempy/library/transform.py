@@ -46,7 +46,7 @@ from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from scipy import ndimage
 
-from gempy.library import astrotools as at
+from gempy.library import astromodels as am, astrotools as at
 from gempy.gemini import gemini_tools as gt
 
 import multiprocessing as multi
@@ -1603,6 +1603,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     # Remember, dg.origin is (y, x)
     new_origin = tuple(s for s in dg.origin[::-1])
 
+    origin_model = None
     if len(new_pipeline) == 1:
         new_wcs = None
     else:
@@ -1712,18 +1713,59 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
 
     # We may need to remake the gWCS object. The issue here is with 2D spectra,
     # where the resetting of the dispersion direction is done before the
-    # complete model and so isn't within the "WAVE" submodel. Converting to
-    # a FITS header and back results in a reconstructed model where "WAVE" is
-    # a distinct submodel.
-    if ad_out[0].wcs is not None:
-        wcs_dict = adwcs.gwcs_to_fits(ad_out[0].nddata,
-                                      hdr=ad_out.phu)
-        if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
-            hdr = ad_out[0].hdr.copy()
-            hdr.update(wcs_dict)
-            ad_out[0].wcs = adwcs.fitswcs_to_gwcs(hdr)
-
+    # complete model and so isn't within the "WAVE" submodel. This is done by
+    # splitting up origin shift model and putting the shifts before each of the
+    # submodels corresponding to each input axis.
+    if origin_model is not None and ad_out[0].wcs is not None:
+        try:
+            m_wave = am.get_named_submodel(ad_out[0].wcs.forward_transform, "WAVE")
+        except IndexError:
+            pass
+        else:
+            ad_out[0].wcs.pipeline[0].transform = add_shifts_to_submodel(
+                ad_out[0].wcs.pipeline[0].transform.right, new_origin)
     return ad_out
+
+
+def add_shifts_to_submodel(m, shifts):
+    """
+    This function applies specified shifts to each input of a Model but,
+    instead of inserting them as a combination of Shifts at the start, it
+    adds each shift to the start of the appropriate submodel. So if you have
+    a model m(X) & m(Y) and want to add shifts dX and dY it will produce
+                (Shift(dX) | m(X)) & (Shift(dY) & m(Y))
+    instead of
+                (Shift(dX) & Shift(dY)) | (m(X) & m(Y))
+
+    Similarly, if you have m(X) & m(Y,Z) it will give you
+           (Shift(dX) | m(X)) & ((Shift(dY) & Shift(dZ)) | m(Y,Z))
+
+    If any of the "m" model instances had a name, this name is now given to
+    the compound model that includes the shift.
+
+    Parameters
+    ----------
+    m : Model instance
+        model that needs to be modified
+    shifts : iterable
+        the shifts that need to be applied to each input of the Model
+
+    Returns
+    -------
+    new Model instance
+    """
+    if m.n_inputs != len(shifts):
+        raise ValueError(f"Mismatched {m.n_inputs} inputs and {len(shifts)} "
+                         "shifts")
+    if hasattr(m, "op") and m.op == "&":
+        return (add_shifts_to_submodel(m.left, shifts[:m.left.n_inputs]) &
+                add_shifts_to_submodel(m.right, shifts[m.left.n_inputs:]))
+    else:
+        new_model_name = m.name
+        m.name = None
+        new_model = reduce(Model.__and__, [models.Shift(s) for s in shifts]) | m
+        new_model.name = new_model_name
+        return new_model
 
 
 def get_output_corners(transform, input_shape=None, origin=None):
