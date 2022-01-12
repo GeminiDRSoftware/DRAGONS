@@ -1611,7 +1611,7 @@ class Spect(PrimitivesBASE):
         aper_params = {key: params[key] for key in (
             'max_apertures', 'min_sky_region', 'percentile',
             'section', 'sizing_method', 'threshold', 'min_snr', 'use_snr',
-            'width_spacing')}
+            'strategy')}
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:

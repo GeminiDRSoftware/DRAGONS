@@ -407,7 +407,7 @@ class FindSourceAperturesModel:
             # otherwise we can redo only the peak detection
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
-                self.threshold, self.sizing_method, self.min_snr, self.width_spacing)
+                self.threshold, self.sizing_method, self.min_snr, self.strategy)
 
         self.aperture_models.clear()
 
@@ -963,7 +963,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         threshold = TextSlider("Threshold", model, attr="threshold",
                                start=0, end=1, step=0.01)
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
-        width_spacing = SelectLine("Width Spacing", model, attr="width_spacing", options=["exponential", "linear"])
+        strategy = SelectLine("Strategy", model, attr="strategy", options=["wavelet_exponential", "wavelet_linear", "iraf"])
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
@@ -991,7 +991,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             maxaper.build(),
             threshold.build(),
             sizing.build(),
-            width_spacing.build(),
+            strategy.build(),
             row([reset_button, find_button]),
         )
 

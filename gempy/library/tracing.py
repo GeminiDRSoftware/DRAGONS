@@ -15,6 +15,7 @@ reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 
 trace_lines:         trace lines from a set of supplied starting positions
 """
+import pickle
 import warnings
 
 import math
@@ -1112,7 +1113,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
 
 def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
                    sizing_method, threshold, section, min_snr, use_snr,
-                   width_spacing="exponential"):
+                   strategy="wavelet_exponential"):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used byß
     findSourceApertures as well as by the interactive code. See
@@ -1169,10 +1170,21 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
         else:
             profile = np.nanmean(masked_data, axis=1)
 
+    pickle_file = open('pickle.dat', 'wb')
+    pickle_file.write(pickle.dumps({
+        "profile": profile,
+        "prof_mask": prof_mask,
+        "max_apertures": max_apertures,
+        "threshold": threshold,
+        "sizing_method": sizing_method,
+        "min_snr": min_snr,
+        "strategy": strategy
+    }))
+    pickle_file.close()
     locations, all_limits = find_apertures_peaks(profile, prof_mask,
                                                  max_apertures, threshold,
                                                  sizing_method, min_snr,
-                                                 width_spacing)
+                                                 strategy)
 
     return locations, all_limits, profile, prof_mask
 
@@ -1180,11 +1192,11 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
 def find_apertures_peaks(profile, prof_mask, max_apertures,
                          threshold, sizing_method, min_snr,
                          # remainder are for debugging additional tweaks
-                         width_spacing="exponential"):
+                         strategy="wavelet_exponential"):
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
     widths = np.arange(3, 20)
-    if width_spacing == "exponential":
+    if strategy == "wavelet_exponential":
         widths = np.asarray([2 ** (1 + 0.3 * i) for i in range(11)])
 
     peaks_and_snrs = find_peaks(
