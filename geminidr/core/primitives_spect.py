@@ -20,7 +20,6 @@ from astropy.io.registry import IORegistryError
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
-from astropy.modeling.core import CompoundModel
 from astropy.stats import sigma_clip
 from astropy.table import Table, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
@@ -1491,10 +1490,28 @@ class Spect(PrimitivesBASE):
                     apertures.append(aperture)
 
                 if skysub_needed:
-                    apmask = np.logical_or.reduce([ap.aperture_mask(ext, width=width, grow=grow)
-                                                   for ap in apertures])
+                    apmask = np.logical_or.reduce(
+                        [ap.aperture_mask(ext, width=width, grow=grow)
+                         for ap in apertures])
 
-                for apnum, aperture in enumerate(apertures, start=1):
+                # Calculate world coords at middle of each dispersed spectrum
+                pix_coords = [[0.5 * (length-1)] * len(apertures)
+                              for length in ext.shape[::-1]]
+                pix_coords[dispaxis] = [ap.model(coord) for ap, coord in
+                                        zip(apertures, pix_coords[1-dispaxis])]
+                wcs_coords = ext.wcs(*pix_coords)
+                sky_axes = None
+                if isinstance(ext.wcs.output_frame, cf.CompositeFrame):
+                    for frame in ext.wcs.output_frame.frames:
+                        if isinstance(frame, cf.CelestialFrame):
+                            try:
+                                sky_axes = [frame.axes_order[frame.axes_names.index(axis)]
+                                            for axis in ('lon', 'lat')]
+                            except IndexError:
+                                pass
+                            break
+
+                for apnum, (aperture, *coords) in enumerate(zip(apertures, *wcs_coords), start=1):
                     log.stdinfo(f"    Extracting spectrum from aperture {apnum}")
                     self.viewer.width = 2
                     self.viewer.color = colors[(apnum-1) % len(colors)]
@@ -1546,21 +1563,21 @@ class Spect(PrimitivesBASE):
                     # same gWCS but that could change.
                     ext_spec = ad_spec[-1]
                     if wave_model is not None:
-                        in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
-                                                      axes_order=(0,), unit=u.pix,
-                                                      axes_names=('x',), name='pixels')
+                        in_frame = astrodata.wcs.pixel_frame(naxes=1)
                         out_frame = cf.SpectralFrame(unit=u.nm, name='world',
                                                      axes_names=axes_names)
                         ext_spec.wcs = gWCS([(in_frame, wave_model),
                                              (out_frame, None)])
                     ext_spec.hdr[ad._keyword_for('aperture_number')] = apnum
                     center = aperture.model.c0.value
-                    ext_spec.hdr['XTRACTED'] = (center, "Spectrum extracted "
-                                                        "from {} {}".format(direction, int(center + 0.5)))
-                    ext_spec.hdr['XTRACTLO'] = (aperture._last_extraction[0],
-                                                'Aperture lower limit')
-                    ext_spec.hdr['XTRACTHI'] = (aperture._last_extraction[1],
-                                                'Aperture upper limit')
+                    ext_spec.hdr['XTRACTED'] = (
+                        center, f"Spectrum extracted from {direction} {int(center+0.5)}")
+                    for i, kw in enumerate(['XTRACTLO', 'XTRACTHI']):
+                        ext_spec.hdr[kw] = (aperture.last_extraction[i],
+                                            self.keyword_comments[kw])
+                    if sky_axes:
+                        for i, kw in zip(sky_axes, ['XTRACTRA', 'XTRACTDE']):
+                            ext_spec.hdr[kw] = (coords[i], self.keyword_comments[kw])
 
                     # Delete unnecessary keywords
                     for kw in kw_to_delete:
