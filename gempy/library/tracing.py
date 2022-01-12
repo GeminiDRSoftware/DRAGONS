@@ -1177,7 +1177,8 @@ def find_apertures_peaks(profile, prof_mask, max_apertures,
         widths = np.arange(3, 20)
         if strategy == "wavelet_exponential":
             widths = np.asarray([2 ** (1 + 0.3 * i) for i in range(11)])
-
+        if isinstance(strategy, list):
+            widths = np.asarray(strategy)
         peaks_and_snrs = find_peaks(
             profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
             reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
