@@ -1080,7 +1080,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         models = self.model.aperture_models
         res = (models[id_].result() for id_ in sorted(models.keys()))
-        locations, limits = zip(*res)
+        try:
+            locations, limits = zip(*res)
+        except ValueError:
+            # There were no results.  Can't check ahead because they are generators
+            return [[], []]
         return np.array(locations), limits
 
 
