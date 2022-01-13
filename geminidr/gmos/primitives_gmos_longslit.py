@@ -43,6 +43,7 @@ from . import parameters_gmos_longslit
 
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
+from ..interactive.fit import bineditor
 from ..interactive.fit.help import NORMALIZE_FLAT_HELP_TEXT
 from ..interactive.interactive import UIParameters
 
@@ -367,6 +368,25 @@ class GMOSClassicLongslit(GMOSSpect):
                 raise TypeError("Expected None or Int for `bins`. "
                                 "Found: {}".format(type(bins)))
 
+            if ad.filename:
+                filename_info = ad.filename
+            else:
+                filename_info = ''
+
+            if interactive_reduce:
+                model = {
+                    'x': np.arange(height),
+                    'y': np.ma.mean(data, axis=1),
+                    'regions': [(left, right) for (left, right) in
+                           zip(bin_limits[:-1], bin_limits[1:])]
+                }
+
+              #  visualizer = bineditor.EditBinsVisualizer(model, filename_info=filename_info)
+              #  geminidr.interactive.server.interactive_fitter(visualizer)
+                visualizer = bineditor.BinVisualizer(model)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+
+
             bin_top = bin_limits[1:]
             bin_bot = bin_limits[:-1]
             binned_data = np.zeros_like(data)
@@ -396,11 +416,6 @@ class GMOSClassicLongslit(GMOSSpect):
                     data_with_weights["x"].append(rppixels)
                     data_with_weights["y"].append(avg_data)
                     data_with_weights["weights"].append(np.sqrt(at.divide0(1., avg_variance)))
-
-                if ad.filename:
-                    filename_info = ad.filename
-                else:
-                    filename_info = ''
 
                 uiparams = UIParameters(config)
                 visualizer = fit1d.Fit1DVisualizer(data_with_weights, all_fp_init,
