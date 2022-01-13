@@ -570,13 +570,22 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def gain(self):
         """
-        Returns the gain (electrons/ADU) for each extension
+        Returns the gain (electrons/data unit) for each extension
 
         Returns
         -------
         list/float
             Gains used for the observation
 
+        """
+        # Only if not PREPARED
+        return self._electrons_per_adu()
+
+    @returns_list
+    def _electrons_per_adu(self):
+        """"
+        Return the conversion between electrons and ADU for this observation,
+        from the LUT
         """
         # Get the correct dict of gain values
         ut_date = self.ut_date()
@@ -834,8 +843,8 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def non_linear_level(self):
         """
-        Returns the level at which the data become non-linear, in ADU.
-        For GMOS, this is just the saturation level.
+        Returns the level at which the data become non-linear, in the
+        units of the data. For GMOS, this is just the saturation level.
 
         Returns
         -------
@@ -972,10 +981,14 @@ class AstroDataGmos(AstroDataGemini):
         else:
             return 'slow' if ampinteg > 2000 else 'fast'
 
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level (in ADU)
+        Returns the saturation level in the same units as the data. This is
+        only guaranteed to work for raw data, and the value should be placed
+        in the headers and propagated as required; however, it attempts to
+        produce a sensible result for partially-processed data.
 
         Returns
         -------
@@ -983,10 +996,10 @@ class AstroDataGmos(AstroDataGemini):
             saturation level
         """
 
-        def _well_depth(detector, amp, bin, gain, in_adu):
+        def _well_depth(detector, amp, bin):
+            # return well depth in electrons
             try:
-                return lookup.gmosThresholds[detector][amp] * bin / (
-                    1 if in_adu else gain)
+                return lookup.gmosThresholds[detector][amp] * bin
             except KeyError:
                 return None
 
@@ -997,7 +1010,8 @@ class AstroDataGmos(AstroDataGemini):
             self.phu.get(self._keyword_for('dark_image')) is not None
 
         # OVERSCAN keyword also means data have been bias-subtracted
-        overscan_levels = self.hdr.get('OVERSCAN')
+        bias_levels = self.hdr.get('OVERSCAN')
+        bias_subtracted |= bias_levels not in (None, [None] * len(self))
 
         detname = self.detector_name(pretty=True)
         detector = self.phu['DETECTOR']  # the only way to distinguish GMOS-S Ham pre/post video board work.
@@ -1006,31 +1020,30 @@ class AstroDataGmos(AstroDataGemini):
         bin_factor = xbin * ybin
         ampname = self.array_name()
         gain = self.gain()
-        in_adu = self.is_in_adu()
 
-        # Get estimated bias levels from LUT
-        bias_levels = get_bias_level(self, estimate=False)
-        if bias_levels is None:
-            bias_levels = 0.0 if self.is_single else [0.0] * len(self)
+        # Get estimated bias levels from LUT. Note that these are the values
+        # that have *already* been subtracted from the data, so should be zero
+        # if the data have not yet been bias-subtracted.
+        est_bias_levels = get_bias_level(self, estimate=True)
+        if bias_subtracted:
+            if self.is_single and bias_levels is None:
+                bias_levels = est_bias_levels or 0.0
+            elif not self.is_single:
+                bias_levels = [bias if bias is not None else (est or 0.0)
+                               for bias, est in zip(bias_levels, est_bias_levels)]
         else:
-            if not self.is_single:
-                bias_levels = [b if b is not None else 0 for b in bias_levels]
+            bias_levels = 0.0 if self.is_single else [0.0] * len(self)
 
         adc_limit = 65535
         # Get the limit that could be processed without hitting the ADC limit
-        # Subtracted bias level if data are bias-subtracted, and
-        # multiply by gain if data are in electron/electrons
+        # Subtracted bias level if data are bias-subtracted
         if self.is_single:
-            bias_subtracted |= overscan_levels is not None
-            processed_limit = (adc_limit - (bias_levels if bias_subtracted
-                                            else 0)) * (1 if in_adu else gain)
+            processed_limit = ((adc_limit - bias_levels) *
+                               self._electrons_per_adu() / self.gain())
         else:
-            bias_subtracted = [bias_subtracted or o is not None
-                               for o in overscan_levels]
-            processed_limit = [(adc_limit - (blev if bsub else 0))
-                               * (1 if in_adu else g)
-                               for blev, bsub, g in
-                               zip(bias_levels, bias_subtracted, gain)]
+            processed_limit = [
+                (adc_limit - blev) * (1.0 if self.is_in_adu() else e_per_adu)
+                for blev, e_per_adu in zip(bias_levels, self._electrons_per_adu())]
 
         # For old EEV data, or heavily-binned data, we're ADC-limited
         if detname == 'EEV' or bin_factor > 2:
@@ -1038,20 +1051,21 @@ class AstroDataGmos(AstroDataGemini):
         else:
             # Otherwise, we're limited by the electron well depths
             if self.is_single:
-                saturation = _well_depth(detector, ampname, bin_factor, gain, in_adu)
+                saturation = _well_depth(detector, ampname, bin_factor)
                 if saturation is None:
                     saturation = processed_limit
                 else:
-                    saturation += bias_levels if not bias_subtracted else 0
+                    # Remember: bias_levels=0 if the data haven't been bias-subtracted
+                    saturation = (saturation + bias_levels *
+                                  self._electrons_per_adu()) / gain  # in data units
                     if saturation > processed_limit:
                         saturation = processed_limit
             else:
-                well_limit = [_well_depth(detector, a, bin_factor, g, in_adu)
-                              for a, g in zip(ampname, gain)]
-                saturation = [None if w is None else
-                              min(w + blev if not bsub else 0, p)
-                              for w, p, blev, bsub in zip(well_limit,
-                                                          processed_limit, bias_levels, bias_subtracted)]
+                well_limit = [_well_depth(detector, a, bin_factor)
+                              for a in ampname]
+                saturation = [None if w is None else min((w + blev * e_per_adu) / g, p)
+                              for w, p, blev, g, e_per_adu in zip(
+                        well_limit, processed_limit, bias_levels, gain, self._electrons_per_adu())]
         return saturation
 
     @astro_data_descriptor
