@@ -145,58 +145,59 @@ class Reduce:
         :raises: :class:~recipe_system.reduction.coreReduce.UnrecognizedParameterException: \
             when a user parameter uses an unrecognized primitive or parameter name
         """
-        for uparm in self.uparms:
-            key = uparm[0]
-            primitive = None
-            if ':' in key:
-                split_key = key.split(':')
-                if len(split_key) != 2:
-                    raise UnrecognizedParameterException("Expecting parameter or primitive:parameter in "
-                                                         "-p user parameters")
-                primitive = split_key[0]
-                key = split_key[1]
-            found_primitive = False
-            found_key = False
-            alternative_keys = list()
-            alternative_primitives = list()
+        if self.uparms:
+            for uparm in self.uparms:
+                key = uparm[0]
+                primitive = None
+                if ':' in key:
+                    split_key = key.split(':')
+                    if len(split_key) != 2:
+                        raise UnrecognizedParameterException("Expecting parameter or primitive:parameter in "
+                                                             "-p user parameters")
+                    primitive = split_key[0]
+                    key = split_key[1]
+                found_primitive = False
+                found_key = False
+                alternative_keys = list()
+                alternative_primitives = list()
 
-            def big_generator(base_class=config.Config):
-                for cfg_class in base_class.__subclasses__():
-                    yield cfg_class
-                    for cfg_subclass in big_generator(cfg_class):
-                        yield cfg_subclass
+                def big_generator(base_class=config.Config):
+                    for cfg_class in base_class.__subclasses__():
+                        yield cfg_class
+                        for cfg_subclass in big_generator(cfg_class):
+                            yield cfg_subclass
 
-            for cfg_class in big_generator():
-                if (primitive is None or f"{primitive}Config" == cfg_class.__name__) and \
-                        not cfg_class.__name__.startswith('core_'):
-                    found_primitive = True
-                    if primitive is None or f"{primitive}Config" == cfg_class.__name__:
-                        # We have to use _fields to avoid having to instantiate the config here
-                        for field_name, field_typ in cfg_class._fields.items():  # pylint: disable=protected-access
-                            if key == field_name:
-                                found_key = True
-                            elif key.upper() == field_name.upper() and field_name not in alternative_keys:
-                                alternative_keys.append(field_name)
-                if primitive is not None:
-                    if f"{primitive.upper()}CONFIG" == cfg_class.__name__.upper() \
-                            and cfg_class.__name__[0:-6] not in alternative_primitives:
-                        alternative_primitives.append(cfg_class.__name__[0:-6])
-            if primitive and not found_primitive:
-                if alternative_primitives:
-                    if len(alternative_primitives) == 1:
-                        raise UnrecognizedParameterException(f"Primitive {primitive} not found, did you mean {alternative_primitives[0]}?")
+                for cfg_class in big_generator():
+                    if (primitive is None or f"{primitive}Config" == cfg_class.__name__) and \
+                            not cfg_class.__name__.startswith('core_'):
+                        found_primitive = True
+                        if primitive is None or f"{primitive}Config" == cfg_class.__name__:
+                            # We have to use _fields to avoid having to instantiate the config here
+                            for field_name, field_typ in cfg_class._fields.items():  # pylint: disable=protected-access
+                                if key == field_name:
+                                    found_key = True
+                                elif key.upper() == field_name.upper() and field_name not in alternative_keys:
+                                    alternative_keys.append(field_name)
+                    if primitive is not None:
+                        if f"{primitive.upper()}CONFIG" == cfg_class.__name__.upper() \
+                                and cfg_class.__name__[0:-6] not in alternative_primitives:
+                            alternative_primitives.append(cfg_class.__name__[0:-6])
+                if primitive and not found_primitive:
+                    if alternative_primitives:
+                        if len(alternative_primitives) == 1:
+                            raise UnrecognizedParameterException(f"Primitive {primitive} not found, did you mean {alternative_primitives[0]}?")
+                        else:
+                            raise UnrecognizedParameterException(f"Primitive {primitive} not found, did you mean one of {alternative_primitives}?")
                     else:
-                        raise UnrecognizedParameterException(f"Primitive {primitive} not found, did you mean one of {alternative_primitives}?")
-                else:
-                    raise UnrecognizedParameterException(f"Primitive {primitive} not found")
-            if not found_key:
-                if alternative_keys:
-                    if len(alternative_keys) == 1:
-                        raise UnrecognizedParameterException(f"Parameter {key} not found, did you mean {alternative_keys[0]}?")
+                        raise UnrecognizedParameterException(f"Primitive {primitive} not found")
+                if not found_key:
+                    if alternative_keys:
+                        if len(alternative_keys) == 1:
+                            raise UnrecognizedParameterException(f"Parameter {key} not found, did you mean {alternative_keys[0]}?")
+                        else:
+                            raise UnrecognizedParameterException(f"Parameter {key} not found, did you mean one of these? {alternative_keys}?")
                     else:
-                        raise UnrecognizedParameterException(f"Parameter {key} not found, did you mean one of these? {alternative_keys}?")
-                else:
-                    raise UnrecognizedParameterException(f"Parameter {key} not recognized")
+                        raise UnrecognizedParameterException(f"Parameter {key} not recognized")
 
     @property
     def upload(self):
