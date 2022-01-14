@@ -198,8 +198,6 @@ class Reduce:
                 else:
                     raise UnrecognizedParameterException(f"Parameter {key} not recognized")
 
-        exit(0)
-
     @property
     def upload(self):
         return self._upload
