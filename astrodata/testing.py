@@ -5,12 +5,14 @@ Fixtures to be used in tests in DRAGONS
 import os
 import shutil
 import urllib
+import inspect
 import xml.etree.ElementTree as et
 
 import numpy as np
 import pytest
 from astropy.table import Table
 from astropy.utils.data import download_file
+from geminidr.gemini.lookups.timestamp_keywords import timestamp_keys
 
 URL = 'https://archive.gemini.edu/file/'
 
@@ -274,3 +276,197 @@ def get_associated_calibrations(filename, nbias=5):
     tbl.sort('filename')
     tbl.remove_rows(np.where(tbl['caltype'] == 'bias')[0][nbias:])
     return tbl
+
+
+class ADCompare:
+    """
+    Compare two AstroData instances to determine whether they are basically
+    the same. Various properties (both data and metadata) can be compared
+    """
+    def __init__(self, ad1, ad2):
+        self.ad1 = ad1
+        self.ad2 = ad2
+
+    def run_comparison(self, max_miss=0, rtol=1e-7, atol=0, compare=None,
+                       ignore=None, raise_exception=True):
+        """
+        Perform a comparison between the two AD objects in this instance.
+
+        Parameters
+        ----------
+        max_miss: int
+            maximum number of elements in each array that can disagree
+        rtol: float
+            relative tolerance allowed between array elements
+        atol: float
+            absolute tolerance allowed between array elements
+        compare: list/None
+            list of comparisons to perform
+        ignore: list/None
+            list of comparisons to ignore
+        raise_exception: bool
+            raise an AssertionError if the comparison fails? If False,
+            the errordict is returned, which may be useful if a very
+            specific mismatch is permitted
+
+        Raises
+        -------
+        AssertionError if the AD objects do not agree.
+        """
+        self.max_miss = max_miss
+        self.rtol = rtol
+        self.atol = atol
+        if compare is None:
+            compare = ('filename', 'tags', 'numext', 'refcat', 'phu',
+                           'hdr', 'attributes')
+        if ignore is not None:
+            compare = [c for c in compare if c not in ignore]
+
+        errordict = {}
+        for func_name in compare:
+            errorlist = getattr(self, func_name)()
+            if errorlist:
+                errordict[func_name] = errorlist
+        if errordict and raise_exception:
+            raise AssertionError(self.format_errordict(errordict))
+        return errordict
+
+    def numext(self):
+        """Check the number of extensions is equal"""
+        numext1, numext2 = len(self.ad1), len(self.ad2)
+        if numext1 != numext2:
+            return [f'{numext1} vs {numext2}']
+
+    def filename(self):
+        """Check the filenames are equal"""
+        fname1, fname2 = self.ad1.filename, self.ad2.filename
+        if fname1 != fname2:
+            return [f'{fname1} vs {fname2}']
+
+    def tags(self):
+        """Check the tags are equal"""
+        tags1, tags2 = self.ad1.tags, self.ad2.tags
+        if tags1 != tags2:
+            return [f'{tags1}\n  vs: {tags2}']
+
+    def phu(self):
+        """Check the PHUs agree"""
+        errorlist = self._header(self.ad1.phu, self.ad2.phu)
+        if errorlist:
+            return errorlist
+
+    def hdr(self):
+        """Check the extension headers agree"""
+        errorlist = []
+        for i, (hdr1, hdr2) in enumerate(zip(self.ad1.hdr, self.ad2.hdr)):
+            elist = self._header(hdr1, hdr2)
+            if elist:
+                errorlist.extend([f'Slice {i} HDR mismatch'] + elist)
+        return errorlist
+
+    def _header(self, hdr1, hdr2):
+        """General method for comparing headers, ignoring some keywords"""
+        errorlist = []
+        s1 = set(hdr1.keys()) - {'HISTORY', 'COMMENT'}
+        s2 = set(hdr2.keys()) - {'HISTORY', 'COMMENT'}
+        if s1 != s2:
+            if s1 - s2:
+                errorlist.append(f'Header 1 contains keywords {s1 - s2}')
+            if s2 - s1:
+                errorlist.append(f'Header 2 contains keywords {s2 - s1}')
+
+        for kw in hdr1:
+            # GEM-TLM is "time last modified"
+            if kw not in timestamp_keys.values() and kw not in ['GEM-TLM',
+                                                    'HISTORY', 'COMMENT', '']:
+                try:
+                    v1, v2 = hdr1[kw], hdr2[kw]
+                except KeyError:  # Missing keyword in AD2
+                    continue
+                if not (isinstance(v1, float) and abs(v1 - v2) < 0.01 or v1 == v2):
+                    errorlist.append('{} value mismatch: {} v {}'.
+                                format(kw, v1, v2))
+        return errorlist
+
+    def refcat(self):
+        """Check both ADs have REFCATs (or not) and that the lengths agree"""
+        refcat1 = getattr(self.ad1, 'REFCAT', None)
+        refcat2 = getattr(self.ad2, 'REFCAT', None)
+        if (refcat1 is None) ^ (refcat2 is None):
+            return [f'presence: {refcat1 is not None} vs {refcat2 is not None}']
+        elif refcat1 is not None:  # and refcat2 must also exist
+            len1, len2 = len(refcat1), len(refcat2)
+            if len1 != len2:
+                return [f'lengths: {len1} vs {len2}']
+
+    def attributes(self):
+        """Check extension-level attributes"""
+        errorlist = []
+        for i, (ext1, ext2) in enumerate(zip(self.ad1, self.ad2)):
+            elist = self._attributes(ext1, ext2)
+            if elist:
+                errorlist.extend([f'Slice {i} attribute mismatch'] + elist)
+        return errorlist
+
+    def _attributes(self, ext1, ext2):
+        """Helper method for checking attributes"""
+        errorlist = []
+        for attr in ['data', 'mask', 'variance', 'OBJMASK', 'OBJCAT']:
+            attr1 = getattr(ext1, attr, None)
+            attr2 = getattr(ext2, attr, None)
+            if (attr1 is None) ^ (attr2 is None):
+                errorlist.append(f'Attribute error for {attr}: '
+                                 f'{attr1 is not None} v {attr2 is not None}')
+            elif attr1 is not None:
+                if isinstance(attr, Table):
+                    if len(attr1) != len(attr2):
+                        errorlist.append(f'attr lengths differ: '
+                                         f'{len(attr1)} vs {len(attr2)}')
+                else:  # everything else is pixel-like
+                    if attr1.dtype.name != attr2.dtype.name:
+                        errorlist.append(f'Datatype mismatch for {attr}: '
+                                         f'{attr1.dtype} vs {attr2.dtype}')
+                    if attr1.shape != attr2.shape:
+                        errorlist.append(f'Shape mismatch for {attr}: '
+                                         f'{attr1.shape} vs {attr2.shape}')
+                    if 'int' in attr1.dtype.name:
+                        try:
+                            assert_most_equal(attr1, attr2, max_miss=self.max_miss)
+                        except AssertionError as e:
+                            errorlist.append(f'Inequality for {attr}: '+str(e))
+                    else:
+                        try:
+                            assert_most_close(attr1, attr2, max_miss=self.max_miss,
+                                              rtol=self.rtol, atol=self.atol)
+                        except AssertionError as e:
+                            errorlist.append(f'Mismatch for {attr}: '+str(e))
+        return errorlist
+
+    @staticmethod
+    def format_errordict(errordict):
+        """Format the errordict into a str for reporting"""
+        errormsg = ''
+        for k, v in errordict.items():
+            errormsg += f'\nComparison failure in {k}'
+            errormsg += '\n' + ('-' * (len(errormsg) - 1)) + '\n'
+            errormsg += '\n  '.join(v)
+        return errormsg
+
+def ad_compare(ad1, ad2):
+    """
+    Compares the tags, headers, and pixel values of two images. This is simply
+    a wrapper for ADCompare.run_comparison() for backward-compatibility.
+
+    Parameters
+    ----------
+    ad1: AstroData
+        first AD objects
+    ad2: AstroData
+        second AD object
+
+    Returns
+    -------
+    bool: are the two AD instances basically the same?
+    """
+    compare = ADCompare(ad1, ad2).run_comparison()
+    return compare == {}
