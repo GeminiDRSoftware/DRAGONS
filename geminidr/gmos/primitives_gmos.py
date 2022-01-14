@@ -86,7 +86,7 @@ class GMOS(Gemini, CCD):
             # Update keywords in the image extensions. The descriptors return
             # the true values on unprepared data.
             descriptors = ['pixel_scale', 'read_noise', 'gain_setting',
-                               'gain', 'saturation_level']
+                           'gain', 'non_linear_level', 'saturation_level']
             for desc in descriptors:
                 keyword = ad._keyword_for(desc)
                 comment = self.keyword_comments[keyword]
