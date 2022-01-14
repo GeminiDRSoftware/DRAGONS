@@ -151,8 +151,8 @@ class Reduce:
             if ':' in key:
                 split_key = key.split(':')
                 if len(split_key) != 2:
-                    raise UnrecognizedParameterException("Expecting parameter or primitive:parameter in \
-                        -p user parameters")
+                    raise UnrecognizedParameterException("Expecting parameter or primitive:parameter in "
+                                                         "-p user parameters")
                 primitive = split_key[0]
                 key = split_key[1]
             found_primitive = False
