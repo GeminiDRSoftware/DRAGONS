@@ -110,7 +110,19 @@ class Preprocess(PrimitivesBASE):
                     log.warning(f"  {ext.id} is already in electrons. "
                                 "Continuing.")
                     continue
-                ext.multiply(gt.array_from_descriptor_value(ext, "gain"))
+                gain = gt.array_from_descriptor_value(ext, "gain")
+                ext.multiply(gain)
+
+                # Update saturation and nonlinear levels with new value. We
+                # allowed these to return lists before this point but now a
+                # single (mean) value is going to be used.
+                for desc in ('saturation_level', 'non_linear_level'):
+                    try:
+                        kw = ad._keyword_for(desc)
+                    except AttributeError:
+                        continue
+                    ext.hdr[kw] = np.mean(
+                        gain * gt.array_from_descriptor_value(ext, desc))
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
