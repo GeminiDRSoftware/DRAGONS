@@ -28,17 +28,17 @@ def test_mode_not_found():
         red.runr()
 
 
-@pytest.mark.parameterize('parm, expected',
-                          [
-                              ('calculateSensitivity:nteractive=True', 'Parameter nteractive not found'),
-                              ('alculateSensitivity:interactive=True', 'Primitive alculateSensitivity not found'),
-                              ('calculateSensitivity:Interactive=True',
-                               'Parameter Interactive not found, did you mean interactive?'),
-                              ('CalculateSensitivity:interactive=True',
-                               'Primitive CalculateSensitivity not found, did you mean calculateSensitivity?'),
-                              ('calculateSensitivity:interactive:pickles=True',
-                               'Expecting parameter or primitive:parameter in -p user parameters')
-                          ])
+@pytest.mark.parametrize('parm, expected',
+                         [
+                             ('calculateSensitivity:nteractive=True', 'Parameter nteractive not found'),
+                             ('alculateSensitivity:interactive=True', 'Primitive alculateSensitivity not found'),
+                             ('calculateSensitivity:Interactive=True',
+                              'Parameter Interactive not found, did you mean interactive?'),
+                             ('CalculateSensitivity:interactive=True',
+                              'Primitive CalculateSensitivity not found, did you mean calculateSensitivity?'),
+                             ('calculateSensitivity:interactive:pickles=True',
+                              'Expecting parameter or primitive:parameter in -p user parameters')
+                         ])
 def test_unrecognized_uparm(parm, expected):
     """ Test handling of unrecognized user parameters. """
     # quick argparse to mimic a call from reduce.py
