@@ -383,7 +383,7 @@ class GMOSClassicLongslit(GMOSSpect):
 
               #  visualizer = bineditor.EditBinsVisualizer(model, filename_info=filename_info)
               #  geminidr.interactive.server.interactive_fitter(visualizer)
-                visualizer = bineditor.BinVisualizer(model)
+                visualizer = bineditor.BinVisualizer(model, domain=[0, height-1])
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
 
