@@ -1003,11 +1003,9 @@ class AstroDataGmos(AstroDataGemini):
             except KeyError:
                 return None
 
-        # We need to know whether the data have been bias-subtracted
-        # First, look for keywords in PHU
-        bias_subtracted = \
-            self.phu.get(self._keyword_for('bias_image')) is not None or \
-            self.phu.get(self._keyword_for('dark_image')) is not None
+        # We need to know whether the data have had the bias level removed
+        # First, look for dark subtraction (which does it)
+        bias_subtracted = self._keyword_for('dark_image') in self.phu
 
         # OVERSCAN keyword also means data have been bias-subtracted
         bias_levels = self.hdr.get('OVERSCAN')
