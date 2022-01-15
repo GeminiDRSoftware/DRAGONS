@@ -38,6 +38,34 @@ def niriprim2():
     return p
 
 
+@pytest.fixture(scope="function")
+def fake_niri_images(astrofaker):
+    """Create two NIRI images, one all 1s, the other all 2s"""
+    adinputs = []
+    for i in (1, 2):
+        ad = astrofaker.create('NIRI', 'IMAGE')
+        ad.init_default_extensions()
+        ad[0].data += i
+        adinputs.append(ad)
+    return adinputs
+
+
+def test_adu_to_electrons(fake_niri_images):
+    ad = fake_niri_images[0]
+    gain = ad.gain()[0]
+    p = NIRIImage([ad])
+    orig_sat = ad.saturation_level()[0]
+    orig_nonlin = ad.non_linear_level()[0]
+    p.prepare()
+    assert ad.saturation_level()[0] == orig_sat
+    assert ad.non_linear_level()[0] == orig_nonlin
+    p.ADUToElectrons()
+    assert ad.gain() == [1.0]
+    assert ad.saturation_level()[0] == orig_sat * gain
+    assert ad.non_linear_level()[0] == orig_nonlin * gain
+    assert_array_almost_equal(ad[0].data, gain)
+
+
 @pytest.mark.dragons_remote_data
 def test_apply_dq_plane_default(niriprim):
     """Default params: replace masked pixels by median of the image."""
@@ -310,20 +338,6 @@ def test_fixpixels_multiple_ext(niriprim2):
 
 
 # TODO @bquint: clean up these tests
-
-# @pytest.fixture
-# def niri_images(astrofaker):
-#     """Create two NIRI images, one all 1s, the other all 2s"""
-#     adinputs = []
-#     for i in (1, 2):
-#         ad = astrofaker.create('NIRI', 'IMAGE')
-#         ad.init_default_extensions()
-#         ad[0].data += i
-
-#     adinputs.append(ad)
-
-#     return NIRIImage(adinputs)
-
 
 # @pytest.mark.xfail(reason="Test needs revision", run=False)
 # def test_scale_by_exposure_time(niri_images):
