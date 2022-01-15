@@ -806,15 +806,17 @@ class GIRegionListener(ABC):
 class GIRegionModel:
     """
     Model for tracking a set of regions.
+
+    Parameters
+    ----------
+    domain : None, or tuple of 2 ints
+        range of supported values, or None
+    support_adjacent : bool
+        If True, enables adjacency mode where regions cannot overlap, but are made visually distinct as they can touch.
     """
-    def __init__(self, domain=None):
-        # Right now, the region model is effectively stateless, other
-        # than maintaining the set of registered listeners.  That is
-        # because the regions are not used for anything, so there is
-        # no need to remember where they all are.  This is likely to
-        # change in future and that information should likely be
-        # kept in here.
+    def __init__(self, domain=None, support_adjacent=False):
         self.region_id = 1
+        self.support_adjacent = support_adjacent
         self.listeners = list()
         self.regions = dict()
         if domain:
@@ -898,12 +900,32 @@ class GIRegionModel:
             Ending coordinate of the x range
 
         """
-        if start is not None and stop is not None and start > stop:
-            start, stop = stop, start
         if start is not None:
             start = int(start)
         if stop is not None:
             stop = int(stop)
+        if start is not None and stop is not None and start > stop:
+            start, stop = stop, start
+        if self.support_adjacent:
+            # We need to cap our range between existing regions
+            for other_id, other_region in self.regions.items():
+                if other_id != region_id:
+                    # if this region would be fully inside other region, abort
+                    if other_region[0] < start and other_region[1] > stop:
+                        return
+                    # if other region would be fully inside this region, cap depending on existing values
+                    elif other_region[0] > start and other_region[1] < stop:
+                        if start == self.regions[region_id][0]:
+                            stop = other_region[0]
+                        else:
+                            start = other_region[1]
+                    # if other region overlaps below, cap the start
+                    elif other_region[1] < stop and other_region[1] > start:
+                        start = other_region[1]
+                    # if other region overlaps above, cap the stop
+                    elif other_region[0] > start and other_region[0] < stop:
+                        stop = other_region[0]
+
         self.regions[region_id] = [start, stop]
         for listener in self.listeners:
             listener.adjust_region(region_id, start, stop)
@@ -1068,10 +1090,17 @@ class RegionHolder:
 
     Not used outside the `interactive` module.
     """
-    def __init__(self, annotation, start, stop):
+    def __init__(self, annotation, start, stop, fill_color):
         self.annotation = annotation
         self.start = start
         self.stop = stop
+        self.fill_color = fill_color
+
+    def update_fill_color(self, fill_color):
+        if self.fill_color == fill_color:
+            return
+        self.fill_color = fill_color
+        self.annotation.fill_color = fill_color
 
 
 class GIRegionView(GIRegionListener):
@@ -1130,15 +1159,29 @@ class GIRegionView(GIRegionListener):
                 region.stop = stop
                 region.annotation.left = draw_start
                 region.annotation.right = draw_stop
+                self._stripe_regions()
             else:
-                region = BoxAnnotation(left=draw_start, right=draw_stop, fill_alpha=0.1, fill_color='navy')
+                fill_color = 'navy'
+                # if self.model.support_adjacent and region_id % 2 == 1:
+                #     fill_color = 'green'
+                region = BoxAnnotation(left=draw_start, right=draw_stop, fill_alpha=0.1, fill_color=fill_color)
                 self.fig.add_layout(region)
-                self.regions[region_id] = RegionHolder(region, start, stop)
+                self.regions[region_id] = RegionHolder(region, start, stop, fill_color)
+                self._stripe_regions()
         if self.fig.document is not None:
             self.fig.document.add_next_tick_callback(lambda: fn())
+            pass
         else:
             # do it now
             fn()
+
+    def _stripe_regions(self):
+        if self.model.support_adjacent:
+            # stripe the regions
+            fill_color = 'green'
+            for reg in sorted(list(self.regions.values()), key=lambda r: r.start):
+                reg.update_fill_color(fill_color)
+                fill_color = 'navy' if fill_color == 'green' else 'green'
 
     def update_viewport(self):
         """
