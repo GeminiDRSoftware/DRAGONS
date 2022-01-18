@@ -29,6 +29,7 @@ from astropy.io.fits.verify import VerifyWarning
 
 # new system imports - 10-06-2016 kra
 # NOTE: imports of these and other tables will be moving around ...
+from recipe_system.reduction.coreReduce import UnrecognizedParameterException
 from .gemini.lookups import keyword_comments
 from .gemini.lookups import timestamp_keywords
 from .gemini.lookups.source_detection import sextractor_dict
@@ -134,6 +135,8 @@ def cleanup(process):
     process.terminate()
 
 
+
+
 @parameter_override
 class PrimitivesBASE:
     """
@@ -162,6 +165,9 @@ class PrimitivesBASE:
     """
     tagset = None
 
+    # Track the last validated uparms set so we don't have to do the work twice
+    _validated_user_parms = None
+
     def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None,
                  config_file=None):
         # This is a general config file so we should load it now. Some of its
@@ -177,6 +183,9 @@ class PrimitivesBASE:
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict.copy()
+
+        # pre-check the user parameters for problems, rather than making the user wait through reduction for a fail
+        self._validate_user_parms()
 
         # Prepend paths to SExtractor input files now
         self.sx_dict.update({
@@ -206,6 +215,72 @@ class PrimitivesBASE:
 
         # Instantiate a dormantViewer(). Only ds9 for now.
         self.viewer = dormantViewer(self, 'ds9')
+
+    def _validate_user_parms(self):
+        """
+        Validate the user parameters.
+
+        This is an internal method that checks the user parameters for
+        any obvious issues.  This lets us fail fast in case the user
+        made an error.
+
+        :raises: :class:~recipe_system.reduction.coreReduce.UnrecognizedParameterException: \
+            when a user parameter uses an unrecognized primitive or parameter name
+        """
+        if self.user_params and (PrimitivesBASE._validated_user_parms is None
+                                 or PrimitivesBASE._validated_user_parms == self.user_parms):
+            for key in self.user_params.keys():
+                primitive = None
+                if ':' in key:
+                    split_key = key.split(':')
+                    if len(split_key) != 2:
+                        raise UnrecognizedParameterException("Expecting parameter or primitive:parameter in "
+                                                             "-p user parameters")
+                    primitive = split_key[0]
+                    key = split_key[1]
+                found_primitive = False
+                found_key = False
+                alternative_keys = list()
+                alternative_primitives = list()
+
+                def big_generator(base_class=config.Config):
+                    for cfg_class in base_class.__subclasses__():
+                        yield cfg_class
+                        for cfg_subclass in big_generator(cfg_class):
+                            yield cfg_subclass
+
+                for cfg_class in big_generator():
+                    if (primitive is None or f"{primitive}Config" == cfg_class.__name__) and \
+                            not cfg_class.__name__.startswith('core_'):
+                        found_primitive = True
+                        if primitive is None or f"{primitive}Config" == cfg_class.__name__:
+                            # We have to use _fields to avoid having to instantiate the config here
+                            for field_name, field_typ in cfg_class._fields.items():  # pylint: disable=protected-access
+                                if key == field_name:
+                                    found_key = True
+                                elif key.upper() == field_name.upper() and field_name not in alternative_keys:
+                                    alternative_keys.append(field_name)
+                    if primitive is not None:
+                        if f"{primitive.upper()}CONFIG" == cfg_class.__name__.upper() \
+                                and cfg_class.__name__[0:-6] not in alternative_primitives:
+                            alternative_primitives.append(cfg_class.__name__[0:-6])
+                if primitive and not found_primitive:
+                    if alternative_primitives:
+                        if len(alternative_primitives) == 1:
+                            raise UnrecognizedParameterException(f"Primitive {primitive} not found, did you mean {alternative_primitives[0]}?")
+                        else:
+                            raise UnrecognizedParameterException(f"Primitive {primitive} not found, did you mean one of {alternative_primitives}?")
+                    else:
+                        raise UnrecognizedParameterException(f"Primitive {primitive} not found")
+                if not found_key:
+                    if alternative_keys:
+                        if len(alternative_keys) == 1:
+                            raise UnrecognizedParameterException(f"Parameter {key} not found, did you mean {alternative_keys[0]}?")
+                        else:
+                            raise UnrecognizedParameterException(f"Parameter {key} not found, did you mean one of these? {alternative_keys}?")
+                    else:
+                        raise UnrecognizedParameterException(f"Parameter {key} not recognized")
+            PrimitivesBASE._validated_user_parms = self.user_params
 
     @property
     def upload(self):
