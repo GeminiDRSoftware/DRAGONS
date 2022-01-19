@@ -121,8 +121,11 @@ class Preprocess(PrimitivesBASE):
                         kw = ad._keyword_for(desc)
                     except AttributeError:
                         continue
-                    ext.hdr[kw] = np.mean(
+                    new_value = np.mean(
                         gain * gt.array_from_descriptor_value(ext, desc))
+                    # Make sure we update the comment too!
+                    new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
+                    ext.hdr[kw] = (new_value, new_comment)
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.

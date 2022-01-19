@@ -30,7 +30,7 @@ keyword_comments = {
     "FILTER": "Combined filter name",
     "FLATIM": "Flat image used",
     "FRINGEIM": "Fringe image used",
-    "GAIN": "Gain [electrons/ADU]",
+    "GAIN": "Gain [electrons/data value]",
     "GAINSET": "Gain setting (low / high)",
     "GEMPRGID": "Gemini program ID",
     "MEANFWHM": "Mean point source FWHM (arcsec)",
