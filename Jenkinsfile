@@ -40,7 +40,7 @@ pipeline {
             }
         }
 
-        stage('Normal tests') {
+        stage('Quicker tests') {
             parallel {
 
                 stage('Unit tests') {
@@ -151,7 +151,11 @@ pipeline {
                         }
                     } // end post
                 }
+            } // end parallel
+        }
 
+        stage('Slower tests') {
+            parallel {
                 stage('GMOS LS Tests') {
                     agent { label "master" }
                     environment {
