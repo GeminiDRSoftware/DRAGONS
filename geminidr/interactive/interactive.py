@@ -6,7 +6,8 @@ from functools import cmp_to_key
 from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, Slider, TextInput, Div, NumericInput, PreText)
+                          NumeralTickFormatter, Slider, TextInput, Div, NumericInput, PreText, ColumnDataSource,
+                          Whisker)
 from bokeh import models as bm
 
 from geminidr.interactive import server
@@ -1090,8 +1091,9 @@ class RegionHolder:
 
     Not used outside the `interactive` module.
     """
-    def __init__(self, annotation, start, stop, fill_color):
+    def __init__(self, annotation, whisker_id, start, stop, fill_color):
         self.annotation = annotation
+        self.whisker_id = whisker_id
         self.start = start
         self.stop = stop
         self.fill_color = fill_color
@@ -1129,6 +1131,16 @@ class GIRegionView(GIRegionListener):
         fig.y_range.on_change('start', lambda attr, old, new: self.update_viewport())
         fig.y_range.on_change('end', lambda attr, old, new: self.update_viewport())
 
+        # The whisker is a single Bokeh glyph but it draws all of the range bars for all regions.
+        # These bars are drawn using coordinates in self.whisker_data
+        # The index in the arrays if whisker data are a field we track in the self.regions dict
+        self.whisker_data = ColumnDataSource(data=dict(base=[], lower=[], upper=[]))
+        self.whisker = Whisker(source=self.whisker_data, base="base", upper="upper", lower="lower", dimension='width',
+                               base_units="screen")
+        self.fig.add_layout(
+            self.whisker
+        )
+
     def adjust_region(self, region_id, start, stop):
         """
         Adjust a region by it's ID.
@@ -1159,6 +1171,7 @@ class GIRegionView(GIRegionListener):
                 region.stop = stop
                 region.annotation.left = draw_start
                 region.annotation.right = draw_stop
+                self.whisker_data.patch({'base': [(region.whisker_id, 40)], 'lower': [(region.whisker_id, draw_start)], 'upper': [(region.whisker_id, draw_stop)]})
                 self._stripe_regions()
             else:
                 fill_color = 'navy'
@@ -1166,7 +1179,9 @@ class GIRegionView(GIRegionListener):
                 #     fill_color = 'green'
                 region = BoxAnnotation(left=draw_start, right=draw_stop, fill_alpha=0.1, fill_color=fill_color)
                 self.fig.add_layout(region)
-                self.regions[region_id] = RegionHolder(region, start, stop, fill_color)
+                whisker_id = len(self.whisker_data.data['base'])
+                self.whisker_data.stream({'base': [40], 'upper': [draw_stop], 'lower': [draw_start]})
+                self.regions[region_id] = RegionHolder(region, whisker_id, start, stop, fill_color)
                 self._stripe_regions()
         if self.fig.document is not None:
             self.fig.document.add_next_tick_callback(lambda: fn())
