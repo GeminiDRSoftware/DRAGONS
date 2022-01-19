@@ -24,7 +24,6 @@ import gemini_instruments
 from gempy.utils import logutils
 
 from astrodata import AstroDataError
-# from astrodata._version import version
 
 from recipe_system import __version__
 
