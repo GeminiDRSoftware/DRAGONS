@@ -49,6 +49,16 @@ associated_calibrations = {
     #     'flat': ["S20190831S0113.fits"],
     #     'arcs': ["S20190831S0146.fits"],
     # },
+    "N20211008S0368.fits": {              # GN B600:0.495 HAM CS+FULL
+        'bias': ["N20211010S0041.fits",
+                 "N20211010S0042.fits",
+                 "N20211010S0043.fits",
+                 "N20211010S0044.fits",
+                 "N20211010S0045.fits",],
+        'flat': ["N20211008S0369.fits"],
+        'arcs': ["N20211015S0382.fits"],
+    #   'arcs': ["N20211008S0408.fits"],  # Alternative CS arc
+    },
 }
 sci_datasets = [key.replace('.fits', '_QECorrected.fits')
                 for key in associated_calibrations]

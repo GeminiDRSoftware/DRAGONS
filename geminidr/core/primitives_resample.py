@@ -331,6 +331,7 @@ class Resample(PrimitivesBASE):
             ad_out = transform.resample_from_wcs(ad, frame, order=order, conserve=conserve,
                                                  output_shape=output_shape, origin=origin,
                                                  process_objcat=process_objcat)
+            ad_out.filename = ad.filename
             adoutputs.append(ad_out)
 
         return adoutputs

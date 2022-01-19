@@ -7,4 +7,5 @@ class calRequirementConfig(config.Config):
                              "force": "Require a calibration regardless of the"
                                       "processing mode.",
                              "skip": "Skip this correction, no calibration required."},
-                    default="procmode")
+                    default="procmode",
+                    optional=False)
