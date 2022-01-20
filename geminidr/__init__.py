@@ -135,8 +135,6 @@ def cleanup(process):
     process.terminate()
 
 
-
-
 @parameter_override
 class PrimitivesBASE:
     """
@@ -170,8 +168,26 @@ class PrimitivesBASE:
 
     def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None,
                  config_file=None):
+        if hasattr(self, "_in_init") and self._in_init:
+            raise OverflowError("Caught recursive call to __init__.  "
+                                "This is likely an error in the subclass definition.  Did you forget "
+                                "to update the super() call when redefining _init() to _initialize()?")
+        self._in_init = True
+
+        self._initialize(adinputs, mode=mode, ucals=ucals, uparms=uparms, upload=upload, config_file=config_file)
+
+        # Most logic is separated into initialize() so subclasses can do custom initialization
+        # while leaving any final logic to this base class.  This avoids having to repeat
+        # this validate call across all subclass definitions
+        self._validate_user_parms()
+
+        self._in_init = False
+
+    def _initialize(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None,
+                    config_file=None):
         # This is a general config file so we should load it now. Some of its
         # information may be overridden by other parameters passed here.
+
         load_config(config_file)
 
         self.streams          = {'main': adinputs}
@@ -183,9 +199,6 @@ class PrimitivesBASE:
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict.copy()
-
-        # pre-check the user parameters for problems, rather than making the user wait through reduction for a fail
-        self._validate_user_parms()
 
         # Prepend paths to SExtractor input files now
         self.sx_dict.update({
@@ -227,8 +240,8 @@ class PrimitivesBASE:
         :raises: :class:~recipe_system.reduction.coreReduce.UnrecognizedParameterException: \
             when a user parameter uses an unrecognized primitive or parameter name
         """
-        if hasattr(self, 'user_params') and self.user_params 
-                and (PrimitivesBASE._validated_user_parms is None
+        if hasattr(self, 'user_params') and self.user_params \
+                and (PrimitivesBASE._validated_user_parms is None \
                      or PrimitivesBASE._validated_user_parms == self.user_parms):
             for key in self.user_params.keys():
                 primitive = None
@@ -244,27 +257,18 @@ class PrimitivesBASE:
                 alternative_keys = list()
                 alternative_primitives = list()
 
-                def big_generator(base_class=config.Config):
-                    for cfg_class in base_class.__subclasses__():
-                        yield cfg_class
-                        for cfg_subclass in big_generator(cfg_class):
-                            yield cfg_subclass
-
-                for cfg_class in big_generator():
-                    if (primitive is None or f"{primitive}Config" == cfg_class.__name__) and \
-                            not cfg_class.__name__.startswith('core_'):
+                for prim, cfg in self.params.items():
+                    if primitive is None or f"{primitive}" == prim:
                         found_primitive = True
-                        if primitive is None or f"{primitive}Config" == cfg_class.__name__:
-                            # We have to use _fields to avoid having to instantiate the config here
-                            for field_name, field_typ in cfg_class._fields.items():  # pylint: disable=protected-access
-                                if key == field_name:
-                                    found_key = True
-                                elif key.upper() == field_name.upper() and field_name not in alternative_keys:
-                                    alternative_keys.append(field_name)
+                        for field_name in cfg.keys():  # pylint: disable=protected-access
+                            if key == field_name:
+                                found_key = True
+                            elif key.upper() == field_name.upper() and field_name not in alternative_keys:
+                                alternative_keys.append(field_name)
                     if primitive is not None:
-                        if f"{primitive.upper()}CONFIG" == cfg_class.__name__.upper() \
-                                and cfg_class.__name__[0:-6] not in alternative_primitives:
-                            alternative_primitives.append(cfg_class.__name__[0:-6])
+                        if f"{primitive.upper()}" == prim.upper() \
+                                and prim not in alternative_primitives:
+                            alternative_primitives.append(prim)
                 if primitive and not found_primitive:
                     if alternative_primitives:
                         if len(alternative_primitives) == 1:

@@ -35,8 +35,8 @@ class GMOSImage(GMOS, Image, Photometry):
     """
     tagset = {"GEMINI", "GMOS", "IMAGE"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_image)
 
     def addOIWFSToDQ(self, adinputs=None, **params):

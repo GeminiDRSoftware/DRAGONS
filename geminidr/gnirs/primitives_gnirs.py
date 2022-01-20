@@ -21,9 +21,9 @@ class GNIRS(Gemini, NearIR):
     """
     tagset = {"GEMINI", "GNIRS"}
 
-    def __init__(self, adinputs, **kwargs):
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gnirs.lookups'
-        super().__init__(adinputs, **kwargs)
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs)
 
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):

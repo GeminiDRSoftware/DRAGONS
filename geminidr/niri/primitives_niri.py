@@ -23,9 +23,9 @@ class NIRI(Gemini, NearIR):
     """
     tagset = {"GEMINI", "NIRI"}
 
-    def __init__(self, adinputs, **kwargs):
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.niri.lookups'
-        super().__init__(adinputs, **kwargs)
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_niri)
 
     def nonlinearityCorrect(self, adinputs=None, suffix=None):

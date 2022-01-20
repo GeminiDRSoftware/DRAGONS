@@ -33,8 +33,8 @@ class GMOSNodAndShuffle(GMOS):
     """
     tagset = set()
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_nodandshuffle)
 
     def combineNodAndShuffleBeams(self, adinputs=None, **params):
