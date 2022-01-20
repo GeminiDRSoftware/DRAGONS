@@ -941,9 +941,9 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             attr="percentile", slider_width=256, allow_none=True, throttled=True,
             is_float=False,
             handler=self.slider_handler_factory("percentile", reinit_live=False))
+        percentile_panel.children.insert(1, Spacer(width_policy='max'))
 
-        # percentile = TextSlider("Percentile (use mean if no value)", model,
-        #                         attr="percentile", start=0, end=100, step=1)
+        # TODO the rest of these should reuse generic calls like build_text_slider
         minsky = SpinnerInputLine("Min sky region", model,
                                   attr="min_sky_region", low=0)
         use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
