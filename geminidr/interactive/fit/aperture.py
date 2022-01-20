@@ -13,7 +13,7 @@ from holoviews.streams import Stream
 from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
-from geminidr.interactive.interactive import PrimitiveVisualizer
+from geminidr.interactive.interactive import PrimitiveVisualizer, build_text_slider
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from geminidr.interactive.server import interactive_fitter
@@ -936,8 +936,14 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 self.do_later(fn)
 
         # Profile parameters
-        percentile = TextSlider("Percentile (use mean if no value)", model,
-                                attr="percentile", start=0, end=100, step=1)
+        percentile_panel = build_text_slider(
+            "Percentile (use mean if no value)", getattr(model, "percentile"), 1, 0, 100, obj=model,
+            attr="percentile", slider_width=100, allow_none=True, throttled=True,
+            is_float=False,
+            handler=self.slider_handler_factory("percentile", reinit_live=False))
+
+        # percentile = TextSlider("Percentile (use mean if no value)", model,
+        #                         attr="percentile", start=0, end=100, step=1)
         minsky = SpinnerInputLine("Min sky region", model,
                                   attr="min_sky_region", low=0)
         use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
@@ -971,7 +977,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         return column(
             Div(text="Parameters to compute the profile:",
                 css_classes=['param_section']),
-            percentile.build(),
+            percentile_panel[0],
             minsky.build(),
             use_snr.build(),
             min_snr.build(),
