@@ -227,8 +227,9 @@ class PrimitivesBASE:
         :raises: :class:~recipe_system.reduction.coreReduce.UnrecognizedParameterException: \
             when a user parameter uses an unrecognized primitive or parameter name
         """
-        if self.user_params and (PrimitivesBASE._validated_user_parms is None
-                                 or PrimitivesBASE._validated_user_parms == self.user_parms):
+        if hasattr(self, 'user_params') and self.user_params 
+                and (PrimitivesBASE._validated_user_parms is None
+                     or PrimitivesBASE._validated_user_parms == self.user_parms):
             for key in self.user_params.keys():
                 primitive = None
                 if ':' in key:
