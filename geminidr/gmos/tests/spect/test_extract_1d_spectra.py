@@ -43,6 +43,7 @@ test_datasets = [
 @pytest.mark.regression
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
 def test_regression_on_extract_1d_spectra(ad, ref_ad_factory, change_working_dir):
+
     """
     Regression test for the :func:`~geminidr.gmos.GMOSSpect.extractSpectra`
     primitive.
@@ -58,9 +59,7 @@ def test_regression_on_extract_1d_spectra(ad, ref_ad_factory, change_working_dir
         Fixture that contains a function used to load the reference AstroData
         object (see :mod:`recipe_system.testing`).
     """
-
     with change_working_dir():
-
         logutils.config(
             file_name='log_regression_{:s}.txt'.format(ad.data_label()))
 
@@ -74,6 +73,19 @@ def test_regression_on_extract_1d_spectra(ad, ref_ad_factory, change_working_dir
     for ext, ref_ext in zip(extracted_ad, ref_ad):
         assert ext.data.ndim == 1
         np.testing.assert_allclose(ext.data, ref_ext.data, atol=1e-3)
+
+    # Check the RA and DEC; the maths here is just a quick way to evaluate
+    # the Chebyshev1D model
+    hdr = extracted_ad[0].hdr
+    x = 0.5 * (ad[0].shape[0] - 1)
+    aptable = ad[0].APERTURE
+    y = aptable['c0'][0]
+    if 'c2' in aptable.colnames:
+        y -= aptable['c2'][0]
+    if 'c4' in aptable.colnames:
+        y += aptable['c4'][0]
+    np.testing.assert_allclose((hdr['XTRACTRA'], hdr['XTRACTDE']),
+                               ad[0].wcs(x, y)[1:])
 
 
 # Local Fixtures and Helper Functions ------------------------------------------

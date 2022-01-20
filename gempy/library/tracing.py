@@ -46,7 +46,7 @@ class Aperture:
         (i.e., lower edge is at center+aper_lower)
     aper_upper: float
         location of the upper edge of the aperture relative to the center
-    _last_extraction: tuple
+    last_extraction: tuple
         values of (aper_lower, aper_upper) used for the most recent extraction
     width: float
         property defining the total aperture width
@@ -58,7 +58,7 @@ class Aperture:
             self.aper_upper = aper_upper
         else:
             self.width = width
-        self._last_extraction = None
+        self.last_extraction = None
 
     @property
     def width(self):
@@ -344,7 +344,7 @@ class Aperture:
         extraction_func(data, mask, var, aper_lower, aper_upper)
 
         del self._center_pixels
-        self._last_extraction = (aper_lower, aper_upper)
+        self.last_extraction = (aper_lower, aper_upper)
         ndd = NDAstroData(self.data, mask=self.mask, variance=self.var)
         try:
             ndd.meta['header'] = ext.hdr.copy()
