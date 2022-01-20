@@ -269,6 +269,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
         traceback.print_exc()
 
 
+@make_class_wrapper
 def capture_provenance(fn):
     """
     Decorator for carrying forward provenance data and updating the provenance history
@@ -298,7 +299,8 @@ def capture_provenance(fn):
     return gn
 
 
-def setup_params(fn):
+@make_class_wrapper
+def parameter_override(fn):
     """
     Decorator for handling primitive configuration and user supplied parameters.
     """
@@ -380,18 +382,4 @@ def setup_params(fn):
         unset_logging()
         gc.collect()
         return ret_value
-    return gn
-
-
-@make_class_wrapper
-def parameter_override(fn):
-    """
-    Composite the :meth:`capture_provenance` and :meth:`setup_params` decorators and
-    apply across all method of a class.
-    """
-    @wraps(fn)
-    def gn(pobj, *args, **kwargs):
-        cp = capture_provenance(fn)
-        po2 = setup_params(cp)
-        return po2(pobj, *args, **kwargs)
     return gn

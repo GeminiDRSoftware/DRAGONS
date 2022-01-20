@@ -18,10 +18,11 @@ from geminidr.gemini.lookups import color_corrections
 from geminidr import PrimitivesBASE
 from . import parameters_photometry
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 
 @parameter_override
+@capture_provenance
 class Photometry(PrimitivesBASE):
     """
     This is the class containing all of the primitives for photometry.

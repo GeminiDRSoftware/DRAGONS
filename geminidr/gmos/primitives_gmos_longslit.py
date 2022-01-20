@@ -33,7 +33,7 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
 from .primitives_gmos_spect import GMOSSpect
@@ -48,6 +48,7 @@ from ..interactive.interactive import UIParameters
 
 
 @parameter_override
+@capture_provenance
 class GMOSLongslit():
     """
     "Magic" class to provide the correct class for N&S and classic data
@@ -64,6 +65,7 @@ class GMOSLongslit():
 
 
 @parameter_override
+@capture_provenance
 class GMOSClassicLongslit(GMOSSpect):
     """
     This is the class containing all of the preprocessing primitives
@@ -1022,6 +1024,7 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
 
 
 @parameter_override
+@capture_provenance
 class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle):
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)
