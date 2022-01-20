@@ -938,7 +938,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # Profile parameters
         percentile_panel = build_text_slider(
             "Percentile (use mean if no value)", getattr(model, "percentile"), 1, 0, 100, obj=model,
-            attr="percentile", slider_width=100, allow_none=True, throttled=True,
+            attr="percentile", slider_width=256, allow_none=True, throttled=True,
             is_float=False,
             handler=self.slider_handler_factory("percentile", reinit_live=False))
 
@@ -977,7 +977,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         return column(
             Div(text="Parameters to compute the profile:",
                 css_classes=['param_section']),
-            percentile_panel[0],
+            percentile_panel,
             minsky.build(),
             use_snr.build(),
             min_snr.build(),
