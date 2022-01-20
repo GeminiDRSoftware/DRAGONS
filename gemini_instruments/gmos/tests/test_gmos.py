@@ -1,4 +1,5 @@
 import pytest
+
 import astrodata
 import astrodata.testing
 import gemini_instruments
@@ -49,6 +50,23 @@ def test_descriptor_matches_type(ad, descriptor, expected_type):
     value = getattr(ad, descriptor)()
     assert isinstance(value, expected_type) or value is None, \
         "Assertion failed for file: {}".format(ad.filename)
+
+
+def test_tag_as_standard_fake(astrofaker):
+    # LTT4363 (a high proper motion specphot) on Jan 1, 2021
+    ad = astrofaker.create('GMOS-S', ['SPECT'],
+                           extra_keywords={'RA': 176.46534847,
+                                           'DEC': -64.84352513,
+                                           'DATE-OBS': '2021-01-01T12:00:00.000'}
+                           )
+    assert 'STANDARD' in ad.tags
+
+
+@pytest.mark.dragons_remote_data
+def test_tag_as_standard_real():
+    path = astrodata.testing.download_from_archive("S20190215S0188.fits")
+    ad = astrodata.open(path)
+    assert 'STANDARD' in ad.tags
 
 
 if __name__ == '__main__':

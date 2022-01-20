@@ -20,8 +20,8 @@ import pytest
 
 # from . import ad_compare
 from geminidr.niri.primitives_niri_image import NIRIImage
+from geminidr.gmos.primitives_gmos_image import GMOSImage
 from gempy.utils import logutils
-
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 logfilename = 'test_bookkeeping.log'
@@ -43,7 +43,97 @@ def log():
     os.remove(logfilename)
 
 
+@pytest.fixture(scope="function")
+def niri_ads(request, astrofaker):
+    return [astrofaker.create('NIRI', ['IMAGE'], filename=f"X{i+1}.fits")
+            for i in range(request.param)]
+
+
 # --- Tests ---
+@pytest.mark.parametrize('niri_ads', [3], indirect=True)
+def test_append_stream(niri_ads):
+    """Some manipulation of streams using appendStream()"""
+    def filenames(stream):
+        return ''.join([ad.filename[1] for ad in stream])
+
+    p = NIRIImage(niri_ads[:1])
+    p.streams['test'] = niri_ads[1:2]
+    # Add the AD in 'test' to 'main' leaving it in 'test'
+    p.appendStream(from_stream='test', copy=True)
+    assert len(p.streams['main']) == 2
+    assert len(p.streams['test']) == 1
+    # Change filename of version in 'test' to confirm that the one in 'main'
+    # is not simply a reference
+    p.streams['test'][0].filename = 'X4.fits'
+    assert filenames(p.streams['main']) == '12'
+
+    # Add the copy in 'test' to 'main', and delete 'test'
+    p.appendStream(from_stream='test', copy=False)
+    assert len(p.streams['main']) == 3
+    assert filenames(p.streams['main']) == '124'
+
+    # Take 'test2', append 'main', and put the result in 'main'
+    p.streams['test2'] = niri_ads[2:]
+    p.appendStream(instream='test2', from_stream='main')
+    assert filenames(p.streams['main']) == '3124'
+
+
+@pytest.mark.parametrize('niri_ads', [2], indirect=True)
+def test_clear_all_streams(niri_ads):
+    p = NIRIImage(niri_ads[:1])
+    p.streams['test'] = niri_ads[1:]
+    p.clearAllStreams()
+    assert not p.streams['test']
+    assert len(p.streams['main']) == 1
+
+
+@pytest.mark.parametrize('niri_ads', [2], indirect=True)
+def test_clear_stream(niri_ads):
+    p = NIRIImage(niri_ads[:1])
+    p.streams['test'] = niri_ads[1:]
+    p.clearStream(stream='test')
+    assert not p.streams['test']
+    assert len(p.streams['main']) == 1
+    p.clearStream()
+    assert not p.streams['main']
+
+
+def test_slice_into_streams(astrofaker):
+    def gmos_ads():
+        ad1 = astrofaker.create("GMOS-N")
+        ad1.init_default_extensions()
+        ad2 = astrofaker.create("GMOS-N")
+        ad2.init_default_extensions()
+        return [ad1, ad2]
+
+    # Slice, clearing "main"
+    p = GMOSImage(gmos_ads())
+    p.sliceIntoStreams(copy=False)
+    p.clearStream()
+    assert len(p.streams) == 13
+    for k, v in p.streams.items():
+        assert len(v) == 0 if k == 'main' else 2
+
+    # Slice, not clearing "main"
+    p = GMOSImage(gmos_ads())
+    p.sliceIntoStreams(copy=True)
+    assert len(p.streams) == 13
+    for k, v in p.streams.items():
+        assert len(v) == 2
+
+    # Slice with different lengths of input
+    ad1, ad2 = gmos_ads()
+    ad2.phu['EXTRA_KW'] = 33
+    del ad1[5]
+    p = GMOSImage([ad1, ad2])
+    p.sliceIntoStreams(copy=True)
+    assert len(p.streams) == 13
+    for k, v in p.streams.items():
+        assert len(v) == 1 if k == 'ext12' else 2
+    # The last stream should only have a slice from ad2
+    assert 'EXTRA_KW' in p.streams['ext12'][0].phu
+
+
 class TestBookkeeping:
     """
     Suite of tests for the functions in the primitives_standardize module.
