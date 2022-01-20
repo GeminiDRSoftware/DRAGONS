@@ -1784,12 +1784,6 @@ class Spect(PrimitivesBASE):
             image.  Increase this value if cores of bright stars are flagged
             as cosmic rays. Default: 5.0.
 
-        pssl : float, optional
-            Previously subtracted sky level in ADU. We always need to work in
-            electrons for cosmic ray detection, so we need to know the sky
-            level that has been subtracted so we can add it back in.
-            Default: 0.0.
-
         niter : int, optional
             Number of iterations of the LA Cosmic algorithm to perform.
             Default: 4.
