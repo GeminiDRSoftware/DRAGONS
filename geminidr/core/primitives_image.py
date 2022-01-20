@@ -117,9 +117,7 @@ class Image(Preprocess, Register, Resample):
 
             # Logic to deal with different exposure times where only
             # some inputs might require fringe correction
-            # KL: for now, I'm not allowing the "force" to do anything when
-            #     the correction is not needed.
-            if (do_cal == 'procmode' or do_cal == 'force') and not correct:
+            if do_cal == 'procmode' and not correct:
                 log.stdinfo("{} does not require a fringe correction".
                             format(ad.filename))
                 ad.update_filename(suffix=params["suffix"], strip=True)
