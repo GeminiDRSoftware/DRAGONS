@@ -410,6 +410,9 @@ class Reduce:
             return newname
 
         for ad in outputs:
+            ver = __version__
+            if ver:
+                ad.phu['DRGNSVER'] = ver
             if self.suffix:
                 username = _sname(ad.filename)
                 ad.write(username, overwrite=True)

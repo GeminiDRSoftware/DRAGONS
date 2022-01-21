@@ -50,7 +50,7 @@ from gempy.library.astrotools import array_from_list, transpose_if_needed
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
 from . import parameters_spect
@@ -64,6 +64,7 @@ matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
 # noinspection SpellCheckingInspection
 @parameter_override
+@capture_provenance
 class Spect(PrimitivesBASE):
     """
     This is the class containing all of the pre-processing primitives
