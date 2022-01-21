@@ -16,10 +16,12 @@ from gempy.library.nddops import NDStacker
 from geminidr import PrimitivesBASE
 from . import parameters_stack
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Stack(PrimitivesBASE):
     """
     This is the class containing all of the primitives for stacking.

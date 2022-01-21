@@ -26,7 +26,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import transform, wavecal
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 
 # Put this here for now!
@@ -136,6 +136,7 @@ def qeModel(ext, use_iraf=False):
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GMOSSpect(Spect, GMOS):
     """
     This is the class containing all of the preprocessing primitives
