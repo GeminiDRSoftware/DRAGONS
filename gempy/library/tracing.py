@@ -1115,26 +1115,25 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
     findSourceApertures as well as by the interactive code. See
     findSourceApertures' docstring for details on the parameters.
     """
-
     # Collapse image along spatial direction to find noisy regions
     # (caused by sky lines, regardless of whether image has been
     # sky-subtracted or not)
     _, mask1d, var1d = NDStacker.mean(ext.data, mask=ext.mask,
                                       variance=ext.variance)
 
+    # Mask sky-line regions and find clumps of unmasked pixels
+    # Also only include wavelengths where at least 25% of pixels in the
+    # spatial direction are good
+    mask1d |= (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
+
     # Very light sigma-clipping to remove bright sky lines
     var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
     _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
-                                    maxiters=1)
-
-    full_mask = (ext.mask > 0 if ext.mask is not None else
-                 np.zeros(ext.shape, dtype=bool))
-
-    # Mask sky-line regions and find clumps of unmasked pixels
-    mask1d = (var_excess > 5 * std)
+                                    maxiters=3)
+    mask1d |= (var_excess > 5 * std)
     slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
 
-    sky_mask = np.ones_like(mask1d)
+    sky_mask = np.ones_like(mask1d, dtype=bool)
     for reg in slices:
         if (reg.stop - reg.start) >= min_sky_region:
             sky_mask[reg] = False
@@ -1147,6 +1146,9 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
             sec_mask[reg] = False
     else:
         sec_mask = False
+
+    full_mask = (ext.mask > 0 if ext.mask is not None else
+                 np.zeros(ext.shape, dtype=bool))
     full_mask |= sky_mask | sec_mask
 
     signal = (ext.data if (ext.variance is None or not use_snr) else
