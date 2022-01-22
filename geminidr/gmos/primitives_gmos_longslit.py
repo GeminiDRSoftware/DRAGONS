@@ -223,6 +223,7 @@ class GMOSClassicLongslit(GMOSSpect):
                         row_mask[yshift:] = 1 - model[:-yshift]
                     else:
                         row_mask[:] = 1 - model
+                    row_mask = at.boxcar(row_mask, operation=np.bitwise_or, size=2)
                     for ext in ad:
                         ext.mask |= (row_mask * DQ.unilluminated).astype(
                             DQ.datatype)[:, np.newaxis]
