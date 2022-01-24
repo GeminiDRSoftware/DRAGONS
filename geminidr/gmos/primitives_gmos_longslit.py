@@ -260,9 +260,13 @@ class GMOSClassicLongslit(GMOSSpect):
             slit of a source free of illumination problems. The data needs to
             have been overscan and bias corrected and is expected to have a
             Data Quality mask.
-        bins : {None, int}, optional
-            Total number of bins across the dispersion axis. If None,
-            the number of bins will match the number of extensions on each
+        bins : {None, str}, optional
+            Comma-separated list of pixel coordinate pairs defining the dispersion
+            bins to be used for the slit profile fitting. If None, then the dispersion
+            bins will be determined by the nbins parameter.
+        nbins : {None, int}, optional
+            Total number of bins across the dispersion axis if bins are not specified.
+            If None, the number of bins will match the number of extensions on each
             input AstroData object. It it is an int, it will create N bins
             with the same size.
         border : int, optional
@@ -360,13 +364,14 @@ class GMOSClassicLongslit(GMOSSpect):
             if bins is None:
                 nbins = max(len(ad), 12)
                 bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
+                bin_list = zip(bin_limits[:-1], bin_limits[1:])
             elif isinstance(bins, int):
                 nbins = bins
                 bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
+                bin_list = zip(bin_limits[:-1], bin_limits[1:])
             else:
-                # ToDo: Handle input bins as array
-                raise TypeError("Expected None or Int for `bins`. "
-                                "Found: {}".format(type(bins)))
+                bin_list = at.parse_user_bins(bins, height)
+                nbins = len(bin_list)
 
             if ad.filename:
                 filename_info = ad.filename
@@ -378,15 +383,24 @@ class GMOSClassicLongslit(GMOSSpect):
                     'x': np.arange(height),
                     'y': np.ma.mean(data, axis=1),
                     'regions': [(left, right) for (left, right) in
-                           zip(bin_limits[:-1], bin_limits[1:])]
+                           bin_list]
                 }
 
               #  visualizer = bineditor.EditBinsVisualizer(model, filename_info=filename_info)
               #  geminidr.interactive.server.interactive_fitter(visualizer)
-                visualizer = bineditor.BinVisualizer(model, domain=[0, height-1])
+                visualizer = bineditor.BinVisualizer(model, domain=[0, height-1],
+                                                     title='Set Dispersion Bins',
+                                                     primitive_name='makeSlitIllum')
                 geminidr.interactive.server.interactive_fitter(visualizer)
+                new_bin_list = at.parse_user_regions(visualizer.results())
+                print(new_bin_list)
+                nbins = len(new_bin_list)
+               # bin_limits = [region[0] for region in new_bin_list]
 
+                #edited_bins = [params.extract_params("regions") for params in visualizer.results()]
+                #print(edited_bins)
 
+           # bin_limits =
             bin_top = bin_limits[1:]
             bin_bot = bin_limits[:-1]
             binned_data = np.zeros_like(data)

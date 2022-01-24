@@ -602,13 +602,23 @@ class BinVisualizer(PrimitiveVisualizer):
                 extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
         tui = BinPanel(self, domain=domain,
                           **this_dict, **kwargs, extra_masks=extra_masks)
-        tab = bm.Panel(child=tui.component, title="Bin pnal")
+        self.model = tui.model
+        tab = bm.Panel(child=tui.component, title="Bin panel")
         self.tabs.tabs.append(tab)
         self.fits.append(tui.model)
         self.panels.append(tui)
 
         self._reinit_params = {k: v for k, v in (ui_params.values.items() if ui_params else {})}
 
+    def submit_button_handler(self):
+        """
+        Submit button handler.
+
+        The parent version checks for bad/poor fits, but that's not an issue
+        here, so we just exit by disabling the submit button, which triggers
+        some callbacks.
+        """
+        self.submit_button.disabled = True
     # noinspection PyProtectedMember
     def reset_reinit_panel(self, param=None):
         """
@@ -752,6 +762,6 @@ class BinVisualizer(PrimitiveVisualizer):
         -------
         list of `~gempy.library.fitting.fit_1D`
         """
-        return [fit.fit for fit in self.fits]
+        return self.model.regions
 
 

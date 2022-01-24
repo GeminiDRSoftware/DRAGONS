@@ -31,8 +31,8 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
 
 
 class makeSlitIllumConfig(config.core_1Dfitting_config):
-    bins = config.Field("Total number of bins across the dispersion axis.",
-                        int, None, optional=True)
+    bins = config.Field("Total number of bins across the dispersion axis if bins are not specified.",
+                        (int, str), None, optional=True)
     border = config.Field("Size of the border added to the reconstructed slit illumination image",
                           int, 0, optional=True)
     debug_plot = config.Field("Create diagnosis plots?",
