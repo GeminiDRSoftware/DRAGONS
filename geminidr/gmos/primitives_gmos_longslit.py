@@ -386,8 +386,6 @@ class GMOSClassicLongslit(GMOSSpect):
                            bin_list]
                 }
 
-              #  visualizer = bineditor.EditBinsVisualizer(model, filename_info=filename_info)
-              #  geminidr.interactive.server.interactive_fitter(visualizer)
                 visualizer = bineditor.BinVisualizer(model, domain=[0, height-1],
                                                      title='Set Dispersion Bins',
                                                      primitive_name='makeSlitIllum')
@@ -395,14 +393,8 @@ class GMOSClassicLongslit(GMOSSpect):
                 new_bin_list = at.parse_user_regions(visualizer.results())
                 print(new_bin_list)
                 nbins = len(new_bin_list)
-               # bin_limits = [region[0] for region in new_bin_list]
+                bin_list = new_bin_list
 
-                #edited_bins = [params.extract_params("regions") for params in visualizer.results()]
-                #print(edited_bins)
-
-           # bin_limits =
-            bin_top = bin_limits[1:]
-            bin_bot = bin_limits[:-1]
             binned_data = np.zeros_like(data)
             binned_std = np.zeros_like(std)
 
@@ -424,9 +416,9 @@ class GMOSClassicLongslit(GMOSSpect):
                 config.update(**params)
 
                 data_with_weights = {"x": [], "y": [], "weights": []}
-                for rppixels, b0, b1 in zip(all_pixels, bin_bot, bin_top):
-                    avg_data = np.ma.mean(data[b0:b1], axis=0)
-                    avg_variance = np.ma.mean(variance[b0:b1], axis=0)
+                for rppixels, bin in zip(all_pixels, bin_list):
+                    avg_data = np.ma.mean(data[bin[0]:bin[1]], axis=0)
+                    avg_variance = np.ma.mean(variance[bin[0]:bin[1]], axis=0)
                     data_with_weights["x"].append(rppixels)
                     data_with_weights["y"].append(avg_data)
                     data_with_weights["weights"].append(np.sqrt(at.divide0(1., avg_variance)))
@@ -450,22 +442,24 @@ class GMOSClassicLongslit(GMOSSpect):
                 fitting_params = visualizer.results()
                 all_fp_init = [params.extract_params() for params in fitting_params]
 
-            for bin_idx, (bin_params, b0, b1) in enumerate(zip(all_fp_init, bin_bot, bin_top)):
+            for bin_idx, (bin_params, bin) in enumerate(zip(all_fp_init, bin_list)):
 
-                avg_data = np.ma.mean(data[b0:b1], axis=0)
+                avg_data = np.ma.mean(data[bin[0]:bin[1]], axis=0)
 
-                avg_variance = np.ma.mean(variance[b0:b1], axis=0)
+                avg_variance = np.ma.mean(variance[bin[0]:bin[1]], axis=0)
                 weights = np.sqrt(at.divide0(1., avg_variance))
                 model_1d_data = fit_1D(avg_data, weights=weights, **bin_params, axis=0).evaluate()
-                avg_std = np.ma.mean(std[b0:b1], axis=0)
+                avg_std = np.ma.mean(std[bin[0]:bin[1]], axis=0)
                 model_1d_std = fit_1D(avg_std, weights=weights, **bin_params, axis=0).evaluate()
 
                 slit_central_value = model_1d_data[width // 2]
-                binned_data[b0:b1] = model_1d_data / slit_central_value
-                binned_std[b0:b1] = model_1d_std / slit_central_value
+                binned_data[bin[0]:bin[1]] = model_1d_data / slit_central_value
+                binned_std[bin[0]:bin[1]] = model_1d_std / slit_central_value
 
             log.info("Reconstruct 2D mosaicked data")
-            bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
+
+            bin_center = np.array([0.5 * (bin_start + bin_end) for (bin_start, bin_end) in bin_list],
+                                  dtype=int)
             cols_fit, rows_fit = np.meshgrid(np.arange(width), bin_center)
 
             fitter = fitting.SLSQPLSQFitter()
