@@ -240,8 +240,8 @@ def parse_user_regions(regions, dtype=int, allow_step=False):
 def parse_user_bins(bins, frame_size:int):
     """
     Parse a string of bin ranges containing a comma-separated list of colon- or hyphen-separated
-    pixel sections into a list of tuples. Arrange the bins in acsending order, remove the ones outside
-    the frame pixel range (python sense), merge the overlapping bins.
+    pixel sections into a list of tuples. Arrange the bins in ascending order, remove the ones outside
+    the frame pixel range, merge the overlapping bins.
 
     Parameters
     ----------

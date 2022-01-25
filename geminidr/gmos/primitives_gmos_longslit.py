@@ -431,7 +431,7 @@ class GMOSClassicLongslit(GMOSSpect):
                                                    title="Make Slit Illumination Function",
                                                    primitive_name="makeSlitIllum",
                                                    filename_info=filename_info,
-                                                   enable_user_masking=False,
+                                                   enable_user_masking=True,
                                                    enable_regions=True,
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=True,
