@@ -163,7 +163,7 @@ class findAperturesConfig(config.Config):
     max_apertures = config.RangeField("Maximum number of sources to find",
                                       int, None, min=1, optional=True)
     percentile = config.RangeField("Percentile to determine signal for each spatial pixel",
-                                   float, 95, min=1, max=100, optional=True)
+                                   int, 80, min=1, max=100, optional=True, inclusiveMax=True)
     section = config.Field("Pixel section(s) for measuring the spatial profile",
                            str, None, optional=True, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
