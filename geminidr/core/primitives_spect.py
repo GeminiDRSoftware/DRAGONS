@@ -1867,7 +1867,16 @@ class Spect(PrimitivesBASE):
             array_info = gt.array_information(ad)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
 
-            for ext in ad_tiled:
+            # Create a modified version of the debug plot for inspection
+            fig, axes = plt.subplots(5, 3, sharex=True, sharey=True,
+                                     tight_layout=True)
+            if debug:
+                # This counter-intuitive step prevents the empty figure from
+                # being shown by calls to pyplot.show(), but still allows it to
+                # be drawn to and modified (somehow...).
+                plt.close(fig)
+
+            for i, ext in enumerate(ad_tiled):
                 dispaxis = 2 - ext.dispersion_axis()
 
                 # Use default orders from gemcrspec (from Bryan):
@@ -1920,9 +1929,6 @@ class Spect(PrimitivesBASE):
 
                 background += skyfit
 
-                # Free up memory.
-                skyfit, objfit, skyfit_input = None, None, None
-
                 # Run astroscrappy's detect_cosmics. We use the variance array
                 # because it takes into account the different read noises if
                 # the data has been tiled
@@ -1941,7 +1947,18 @@ class Spect(PrimitivesBASE):
                     ext.mask[crmask] = DQ.cosmic_ray
 
                 if debug:
-                    plot_cosmics(ext, crmask)
+                    plot_cosmics(ext, objfit, skyfit, crmask)
+
+                plot_cosmics(ext, objfit, skyfit, crmask, axes=axes[:, i])
+
+                # Free up memory.
+                skyfit, objfit, skyfit_input = None, None, None
+
+            # Save the figure
+            fig.set_size_inches(5, 15)
+            fig.savefig(ad.filename.replace('.fits', '.pdf'),
+                        bbox_inches='tight', dpi=300)
+            plt.close(fig)
 
             # Set flags in the original (un-tiled) ad
             if ad_tiled is not ad:
@@ -3539,13 +3556,16 @@ def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
     ax.set_title(title)
 
 
-def plot_cosmics(ext, crmask):
+def plot_cosmics(ext, objfit, skyfit, crmask, axes=None):
     from astropy.visualization import ZScaleInterval, imshow_norm
 
-    fig, axes = plt.subplots(1, 5, figsize=(15, 5*2), sharex=True, sharey=True,
-                             tight_layout=True)
-    imgs = (ext.data, ext.OBJFIT, ext.SKYFIT,
-            ext.data - (ext.OBJFIT + ext.SKYFIT), crmask)
+    if axes is None:
+        fig, axes = plt.subplots(1, 5, figsize=(15, 5*2),
+                                 sharex=True,
+                                 sharey=True,
+                                 tight_layout=True)
+    imgs = (ext.data, objfit, skyfit,
+            ext.data - (objfit + skyfit), crmask)
     titles = ('data', 'object fit', 'sky fit', 'residual', 'crmask')
     mask = ext.mask & (DQ.max ^ DQ.cosmic_ray)
 
@@ -3563,4 +3583,6 @@ def plot_cosmics(ext, crmask):
         imshow_norm(data, ax=ax, origin='lower', interval=interval, cmap=cmap)
         ax.set_title(title)
 
-    plt.show()
+    if axes is None:
+        plt.show()
+        plt.close(fig)
