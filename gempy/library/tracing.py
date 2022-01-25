@@ -1137,15 +1137,28 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
     for reg in slices:
         if (reg.stop - reg.start) >= min_sky_region:
             sky_mask[reg] = False
+    # If nothing satisfies the min_sky_region requirement, ignore it
+    if sky_mask.all():
+        log.warning(f"No regions in {ext.filename} between sky lines exceed "
+                    f"{min_sky_region} pixels. Ignoring requirement.")
+        sky_mask[:] = True
+        for reg in slices:
+            sky_mask[reg] = False
 
     if section:
-        sec_mask = np.ones_like(mask1d)
+        sec_mask = np.ones_like(mask1d, dtype=bool)
         for x1, x2 in (s.split(':') for s in section.split(',')):
             reg = slice(None if x1 == '' else int(x1) - 1,
                         None if x2 == '' else int(x2))
             sec_mask[reg] = False
     else:
         sec_mask = False
+
+    # Ensure we have some valid pixels left
+    if (sky_mask | sec_mask).all():
+        log.warning(f"No valid regions remain in {ext.filename} after "
+                    "applying sections. Ignoring sky mask.")
+        sky_mask[:] = False
 
     full_mask = (ext.mask > 0 if ext.mask is not None else
                  np.zeros(ext.shape, dtype=bool))
