@@ -173,12 +173,17 @@ class findAperturesConfig(config.Config):
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
                            "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.1, min=0, max=1)
+                                  float, 0.2, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},
                                        default="peak")
     interactive = config.Field("Use interactive interface", bool, False)
+    strategy = config.ChoiceField("Strategy for wavelet peak find", str,
+                                       allowed={"wavelet_exponential": "Wavelet with exponentially spaced widths",
+                                                "wavelet_linear": "Wavelet with linear spaced widths",
+                                                "iraf": "IRAF-style algorithm"},
+                                       default="wavelet_exponential")
 
 
 class flagCosmicRaysConfig(config.Config):

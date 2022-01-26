@@ -36,6 +36,36 @@ def test_divide0():
     np.testing.assert_array_equal(at.divide0(twod, zeros), np.zeros_like(twod))
 
 
+def test_fit_spline_to_data():
+    rng = np.random.default_rng(0)
+    x = np.arange(100)
+    y = np.ones_like(x)
+    spline = at.fit_spline_to_data(y)
+    np.testing.assert_allclose(spline(x), y)
+
+    # Test with a curve and noise
+    y = x + x*x + rng.normal(size=x.size)
+    spline = at.fit_spline_to_data(y)
+    np.testing.assert_allclose(spline(x), y, atol=3)
+
+    # Test with some masking
+    mask = np.zeros_like(x, dtype=bool)
+    safe = y[10]
+    y[10] = 1000
+    mask[10] = True
+    spline = at.fit_spline_to_data(y, mask=mask)
+    y[10] = safe
+    np.testing.assert_allclose(spline(x), y, atol=3)
+
+
+@pytest.mark.parametrize("separation", [1,2,3,4,5])
+def test_std_from_pixel_variations(separation):
+    # Test passes with ths seed and number of samples
+    rng = np.random.default_rng(1)
+    data = rng.normal(size=10000)
+    assert abs(at.std_from_pixel_variations(data, separation=separation) - 1) < 0.02
+
+
 def test_rasextodec():
     rastring = '20:30:40.506'
     ra = at.rasextodec(rastring)

@@ -163,10 +163,12 @@ class TextSlider(CustomWidget):
                                step=self.kwargs.get('step'),
                                low=self.kwargs.get('start'),
                                high=self.kwargs.get('end'))
+        step = self.kwargs.get('step')
+        fmt = "0[.]%s" % ("0" * (len(str(step)) - len(str(int(step))) -1))
         self.slider = Slider(start=self.kwargs.get('start'),
                              end=self.kwargs.get('end'),
                              step=self.kwargs.get('step'),
-                             value=self.value, title=self.title, width=256)
+                             value=self.value, title=self.title, width=256, format=fmt)
         self.spinner.on_change("value", self.handler)
         self.slider.on_change("value", self.handler)
 
@@ -204,8 +206,15 @@ class CheckboxLine(CustomWidget):
 
 
 class SelectLine(CustomWidget):
+    def __init__(self, title, model, attr, handler=None, **kwargs):
+        super().__init__(title, model, attr, handler, **kwargs)
+        # TODO can we infer the options from the config somehow?
+        self.options = ["peak", "integral"]
+        if 'options' in kwargs:
+            self.options = kwargs['options']
+
     def build(self):
-        self.select = Select(value=self.value, options=["peak", "integral"],
+        self.select = Select(value=self.value, options=self.options,
                              width=128)
         self.select.on_change("value", self.handler)
         return row([Div(text=self.title, align='center'),
@@ -398,7 +407,7 @@ class FindSourceAperturesModel:
             # otherwise we can redo only the peak detection
             locations, all_limits = find_apertures_peaks(
                 self.profile, self.prof_mask, self.max_apertures,
-                self.threshold, self.sizing_method, self.min_snr)
+                self.threshold, self.sizing_method, self.min_snr, self.strategy)
 
         self.aperture_models.clear()
 
@@ -960,6 +969,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         threshold = TextSlider("Threshold", model, attr="threshold",
                                start=0, end=1, step=0.01)
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
+        strategy = SelectLine("Strategy", model, attr="strategy", options=["wavelet_exponential", "wavelet_linear", "iraf"])
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
@@ -987,6 +997,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             maxaper.build(),
             threshold.build(),
             sizing.build(),
+            strategy.build(),
             row([reset_button, find_button]),
         )
 
@@ -1090,7 +1101,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         models = self.model.aperture_models
         res = (models[id_].result() for id_ in sorted(models.keys()))
-        locations, limits = zip(*res)
+        try:
+            locations, limits = zip(*res)
+        except ValueError:
+            # There were no results.  Can't check ahead because they are generators
+            return [[], []]
         return np.array(locations), limits
 
 

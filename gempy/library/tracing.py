@@ -15,7 +15,10 @@ reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 
 trace_lines:         trace lines from a set of supplied starting positions
 """
+import pickle
 import warnings
+
+import math
 
 import numpy as np
 from astropy.modeling import fitting, models
@@ -486,9 +489,9 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
     window_size = 4 * max_width + 1
 
     # If no variance is supplied we estimate S/N from pixel-to-pixel variations
-    # (do this before wny smoothing)
+    # (do this before any smoothing)
     if variance is None:
-        variance = sigma_clip(np.diff(data[~mask]), masked=False).std() ** 2 / 2
+        variance = at.std_from_pixel_variations(data[~mask]) ** 2
 
     # For really broad peaks we can do a median filter to remove spikes
     if max_width > 10:
@@ -750,29 +753,7 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     except KeyError:
         method = None
 
-    x = np.arange(len(data))
-    y = np.ma.masked_array(data, mask=mask)
-
-    # Try to better estimate the true noise from the pixel-to-pixel
-    # variations (the difference between adjacent pixels will be
-    # sqrt(2) times larger than the rms noise). Also lower the weights
-    # in regions of rapidly-varying signal to avoid getting spurious minima.
-    if variance is None:
-        diff = np.diff(y)
-        sigma1 = sigma_clipped_stats(diff)[2] / np.sqrt(2)
-        # 0.1 is a fudge factor that seems to work well
-        #sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
-        # Average from 2 pixels either side; 0.05 corresponds to 0.1 before
-        # since this is the change in a 4-pixel span, instead of 2 pixels
-        diff2 = np.r_[diff[:2], y[4:] - y[:-4], diff[-2:]]
-        sigma2 = 0.05 * diff2
-        w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
-    else:
-        w = at.divide0(1.0, np.sqrt(variance))
-
-    # TODO: Consider outlier removal
-    #spline = am.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=3)
-    spline = interpolate.UnivariateSpline(x, y, w=w, k=3)
+    spline = at.fit_spline_to_data(data, mask, variance)
     minima, maxima = at.get_spline3_extrema(spline)
 
     all_limits = []
@@ -1109,9 +1090,10 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
 
 
 def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
-                   sizing_method, threshold, section, min_snr, use_snr):
+                   sizing_method, threshold, section, min_snr, use_snr,
+                   strategy="wavelet_exponential"):
     """
-    Finds sources in 2D spectral images and compute aperture sizes. Used by
+    Finds sources in 2D spectral images and compute aperture sizes. Used byß
     findSourceApertures as well as by the interactive code. See
     findSourceApertures' docstring for details on the parameters.
     """
@@ -1181,21 +1163,59 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
         else:
             profile = np.nanmean(masked_data, axis=1)
 
+    pickle_file = open('pickle.dat', 'wb')
+    pickle_file.write(pickle.dumps({
+        "profile": profile,
+        "prof_mask": prof_mask,
+        "max_apertures": max_apertures,
+        "threshold": threshold,
+        "sizing_method": sizing_method,
+        "min_snr": min_snr,
+        "strategy": strategy
+    }))
+    pickle_file.close()
     locations, all_limits = find_apertures_peaks(profile, prof_mask,
                                                  max_apertures, threshold,
-                                                 sizing_method, min_snr)
+                                                 sizing_method, min_snr,
+                                                 strategy)
 
     return locations, all_limits, profile, prof_mask
 
 
 def find_apertures_peaks(profile, prof_mask, max_apertures,
-                         threshold, sizing_method, min_snr):
+                         threshold, sizing_method, min_snr,
+                         # remainder are for debugging additional tweaks
+                         strategy="wavelet_exponential"):
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
-    widths = np.arange(3, 20)
-    peaks_and_snrs = find_peaks(
-        profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
-        reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
+    if strategy != "iraf":
+        widths = np.arange(3, 20)
+        if strategy == "wavelet_exponential":
+            widths = np.asarray([2 ** (1 + 0.3 * i) for i in range(11)])
+        if isinstance(strategy, list):
+            widths = np.asarray(strategy)
+        peaks_and_snrs = find_peaks(
+            profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
+            reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
+    else:
+        mask = (prof_mask.astype(bool) if prof_mask is not None
+                else np.zeros_like(profile, dtype=bool))
+        spline = at.fit_spline_to_data(profile, mask=mask)
+        minima, maxima = at.get_spline3_extrema(spline)
+        # Ensure we have minima either side of each maximum
+        if maxima[0] < minima[0]:
+            minima = np.r_[[0], minima]
+        if maxima[-1] > minima[-1]:
+            minima = np.r_[minima, [profile.size-1]]
+
+        # Estimate SNR from height of maximum above linear interpolation
+        # between adjacent minima
+        spline_at_minima = spline(minima)
+        interpolate_at_maxima = (spline_at_minima[:-1] * (minima[1:] - maxima) +
+                                 spline_at_minima[1:] * (maxima - minima[:-1])) / np.diff(minima)
+        snrs = (spline(maxima) - interpolate_at_maxima) / at.std_from_pixel_variations(profile[~mask])
+        snr_ok = snrs >= min_snr
+        peaks_and_snrs = np.array([maxima[snr_ok], snrs[snr_ok]])
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")
