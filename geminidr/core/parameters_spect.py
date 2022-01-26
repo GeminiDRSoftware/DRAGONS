@@ -171,7 +171,7 @@ class findAperturesConfig(config.Config):
     min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",
                                 float, 3.0, min=0.1)
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
-                           "collapsed profile?", bool, False)
+                           "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.1, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,
@@ -415,7 +415,8 @@ class resampleToCommonFrameConfig(config.Config):
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
     conserve = config.Field("Conserve flux?", bool, None, optional=True)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
-    trim_data = config.Field("Trim to field of view of reference image?", bool, False)
+    trim_spatial = config.Field("Trim spatial range to fully-covered region?", bool, True)
+    trim_spectral = config.Field("Trim wavelength range to fully-covered region?", bool, False)
     force_linear = config.Field("Force linear wavelength solution?", bool, True)
 
     def validate(self):
