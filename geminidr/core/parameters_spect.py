@@ -44,6 +44,7 @@ class adjustWCSToReferenceConfig(config.Config):
     tolerance = config.RangeField("Maximum distance from the header offset, "
                                   "for the correlation method (arcsec)",
                                   float, 1, min=0., optional=True)
+    debug_block_resampling = config.Field("Block resampling in the spatial direction?", bool, False)
 
 
 class attachWavelengthSolutionConfig(config.Config):

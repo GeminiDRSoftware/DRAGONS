@@ -106,6 +106,7 @@ class Spect(PrimitivesBASE):
         methods = (params["method"], params["fallback"])
         region = slice(*at.parse_user_regions(params["region"])[0])
         tolerance = params["tolerance"]
+        integer_offsets = params["debug_block_resampling"]
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least two "
@@ -191,6 +192,8 @@ class Spect(PrimitivesBASE):
                 if adjust:
                     wcs = ad[0].wcs
                     frames = wcs.available_frames
+                    if integer_offsets:
+                        offset = np.round(offset)
                     for input_frame, output_frame in zip(frames[:-1], frames[1:]):
                         t = wcs.get_transform(input_frame, output_frame)
                         try:
@@ -2481,8 +2484,6 @@ class Spect(PrimitivesBASE):
                           for ad in adinputs]
             ref_pixels_spatial = [rpix[:dispaxis_wcs] + rpix[dispaxis_wcs+1:]
                                   for rpix in ref_pixels]
-            print("REF PIXELS", ref_pixels_spatial)
-            print("DISPAXIS", dispaxis, dispaxis_wcs)
             # Locations in frame of reference AD
             all_corners = [transform.get_output_corners(
                 ad[0].wcs.forward_transform | refad[0].wcs.backward_transform,
@@ -2602,9 +2603,6 @@ class Spect(PrimitivesBASE):
         else:
             origin = (0,)
             output_shape = (npixout,)
-
-        print("ORIGIN", origin)
-        print("OUTSHP", output_shape)
 
         adoutputs = []
         for i, ad in enumerate(adinputs):
