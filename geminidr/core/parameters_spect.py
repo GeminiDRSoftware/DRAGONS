@@ -180,10 +180,10 @@ class findAperturesConfig(config.Config):
                                        default="peak")
     interactive = config.Field("Use interactive interface", bool, False)
     strategy = config.ChoiceField("Strategy for wavelet peak find", str,
-                                       allowed={"wavelet_exponential": "Wavelet with exponentially spaced widths",
-                                                "wavelet_linear": "Wavelet with linear spaced widths",
-                                                "iraf": "IRAF-style algorithm"},
-                                       default="wavelet_exponential")
+                                       allowed={"exponential_wavelet": "Wavelet with exponentially spaced widths",
+                                                "linear_wavelet": "Wavelet with linear spaced widths",
+                                                "maxima": "Maxima in profile"},
+                                       default="exponential_wavelet")
 
 
 class flagCosmicRaysConfig(config.Config):

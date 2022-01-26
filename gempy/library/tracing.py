@@ -15,10 +15,7 @@ reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 
 trace_lines:         trace lines from a set of supplied starting positions
 """
-import pickle
 import warnings
-
-import math
 
 import numpy as np
 from astropy.modeling import fitting, models
@@ -1163,17 +1160,6 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
         else:
             profile = np.nanmean(masked_data, axis=1)
 
-    pickle_file = open('pickle.dat', 'wb')
-    pickle_file.write(pickle.dumps({
-        "profile": profile,
-        "prof_mask": prof_mask,
-        "max_apertures": max_apertures,
-        "threshold": threshold,
-        "sizing_method": sizing_method,
-        "min_snr": min_snr,
-        "strategy": strategy
-    }))
-    pickle_file.close()
     locations, all_limits = find_apertures_peaks(profile, prof_mask,
                                                  max_apertures, threshold,
                                                  sizing_method, min_snr,
@@ -1182,22 +1168,42 @@ def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
     return locations, all_limits, profile, prof_mask
 
 
-def find_apertures_peaks(profile, prof_mask, max_apertures,
-                         threshold, sizing_method, min_snr,
-                         # remainder are for debugging additional tweaks
-                         strategy="wavelet_exponential"):
+def find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
+                         sizing_method, min_snr, strategy="exponential_wavelet"):
+    """
+    Find sources in a collapsed 1D spatial profile.
+
+    Parameters
+    ----------
+    profile: 1D array, float
+        the spatial profile along which sources are to be found
+    prof_mask: 1D array, bool
+        mask to apply to this array
+    max_apertures: int
+        maximum number of peaks to find
+    threshold: float
+        parameter to control the sizing of each aperture
+    sizing_method: str
+        parameter to describe the method for sizing each aperture
+    min_snr: float
+        minimum signal-to-noise ratio for a peak to be considered real
+    strategy: str/iterable
+        strategy for finding sources
+            "maxima": find maxima in a quasi-smoothed version of the profile
+            "wavelet": wavelets spaced linearly
+            "exponential_wavelet": wavelets spaced exponentially
+            iterable list of widths
+
+    Returns
+    -------
+    locations: 1D array, float
+        pixel locations of peaks
+    all_limits: list of 2-element lists
+        upper and lower limits for each aperture
+    """
     # TODO: find_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
-    if strategy != "iraf":
-        widths = np.arange(3, 20)
-        if strategy == "wavelet_exponential":
-            widths = np.asarray([2 ** (1 + 0.3 * i) for i in range(11)])
-        if isinstance(strategy, list):
-            widths = np.asarray(strategy)
-        peaks_and_snrs = find_peaks(
-            profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
-            reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
-    else:
+    if strategy == "maxima":
         mask = (prof_mask.astype(bool) if prof_mask is not None
                 else np.zeros_like(profile, dtype=bool))
         spline = at.fit_spline_to_data(profile, mask=mask)
@@ -1216,6 +1222,17 @@ def find_apertures_peaks(profile, prof_mask, max_apertures,
         snrs = (spline(maxima) - interpolate_at_maxima) / at.std_from_pixel_variations(profile[~mask])
         snr_ok = snrs >= min_snr
         peaks_and_snrs = np.array([maxima[snr_ok], snrs[snr_ok]])
+    else:
+        try:
+            float(strategy[0])
+        except ValueError:
+            widths = (2 ** np.arange(1, 4.1, 0.3) if strategy == "exponential_wavelet"
+                      else np.arange(3, 20.1))
+        else:
+            widths = np.asarray(strategy)
+        peaks_and_snrs = find_peaks(
+            profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
+            reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")
