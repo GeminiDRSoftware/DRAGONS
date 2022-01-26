@@ -1077,7 +1077,7 @@ class Preprocess(PrimitivesBASE):
         for sky_filename in ref_sky:
             for ad in adinputs:
                 if strip_fits(sky_filename) in ad.filename:
-                    objects.add(ad)
+                    skies.add(ad)
                     if 'OBJFRAME' in ad.phu and 'SKYFRAME' not in ad.phu:
                         log.warning("{} previously classified as OBJECT; "
                                 "added SKY as requested".format(ad.filename))
