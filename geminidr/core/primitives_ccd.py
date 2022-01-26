@@ -116,6 +116,7 @@ class CCD(PrimitivesBASE):
             raise OSError("Not all inputs have BIAS tag")
 
         stack_params = self._inherit_params(params, "stackFrames")
+        stack_params.update({'zero': False, 'scale': False})
         adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 
