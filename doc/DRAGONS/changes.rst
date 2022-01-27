@@ -6,6 +6,20 @@
 Change Logs
 ***********
 
+3.0.2
+=====
+
+Bug Fixes
+---------
+
+**geminidr**
+
+**geminidr.core**
+
+* Fix bug where manually-assigned sky frames in ``separateSky`` were added
+  to the list of science frames by mistake.
+
+
 3.0.1
 =====
 
