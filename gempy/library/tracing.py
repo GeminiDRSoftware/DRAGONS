@@ -8,7 +8,7 @@ in the orthogonal direction in a 2D image.
 
 Functions in this module:
 estimate_peak_width: estimate the widths of peaks
-find_peaks:          locate peaks using the scipy.signal routine
+find_wavelet_peaks:          locate peaks using the scipy.signal routine
 pinpoint_peaks:      produce more accuate positions for existing peaks by
                      centroiding
 reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
@@ -444,14 +444,182 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
     return sigma_clip(widths).mean()
 
 
-def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
-               min_frac=0.25, reject_bad=True, pinpoint_index=-1):
+def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
+                   sizing_method, threshold, section, min_snr, use_snr,
+                   strategy="wavelet_exponential"):
     """
-    Find peaks in a 1D array. This uses scipy.signal routines, but requires some
-    duplication of that code since the _filter_ridge_lines() function doesn't
-    expose the *window_size* parameter, which is important. This also does some
-    rejection based on a pixel mask and/or "forensic accounting" of relative
-    peak heights.
+    Finds sources in 2D spectral images and compute aperture sizes. Used byß
+    findSourceApertures as well as by the interactive code. See
+    findSourceApertures' docstring for details on the parameters.
+    """
+    # Collapse image along spatial direction to find noisy regions
+    # (caused by sky lines, regardless of whether image has been
+    # sky-subtracted or not)
+    _, mask1d, var1d = NDStacker.mean(ext.data, mask=ext.mask,
+                                      variance=ext.variance)
+
+    # Mask sky-line regions and find clumps of unmasked pixels
+    # Also only include wavelengths where at least 25% of pixels in the
+    # spatial direction are good
+    mask1d |= (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
+
+    # Very light sigma-clipping to remove bright sky lines
+    var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
+    _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
+                                    maxiters=3)
+    mask1d |= (var_excess > 5 * std)
+    slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
+
+    sky_mask = np.ones_like(mask1d, dtype=bool)
+    for reg in slices:
+        if (reg.stop - reg.start) >= min_sky_region:
+            sky_mask[reg] = False
+    # If nothing satisfies the min_sky_region requirement, ignore it
+    if sky_mask.all():
+        log.warning(f"No regions in {ext.filename} between sky lines exceed "
+                    f"{min_sky_region} pixels. Ignoring requirement.")
+        sky_mask[:] = True
+        for reg in slices:
+            sky_mask[reg] = False
+
+    if section:
+        sec_mask = np.ones_like(mask1d, dtype=bool)
+        for x1, x2 in (s.split(':') for s in section.split(',')):
+            reg = slice(None if x1 == '' else int(x1) - 1,
+                        None if x2 == '' else int(x2))
+            sec_mask[reg] = False
+    else:
+        sec_mask = False
+
+    # Ensure we have some valid pixels left
+    if (sky_mask | sec_mask).all():
+        log.warning(f"No valid regions remain in {ext.filename} after "
+                    "applying sections. Ignoring sky mask.")
+        sky_mask[:] = False
+
+    full_mask = (ext.mask > 0 if ext.mask is not None else
+                 np.zeros(ext.shape, dtype=bool))
+    full_mask |= sky_mask | sec_mask
+
+    signal = (ext.data if (ext.variance is None or not use_snr) else
+              np.divide(ext.data, np.sqrt(ext.variance),
+                        out=np.zeros_like(ext.data), where=ext.variance > 0))
+    if ext.variance is not None:
+        full_mask |= ext.variance == 0
+    masked_data = np.where(full_mask, np.nan, signal)
+    prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
+
+    # Need to catch warnings for rows full of NaNs
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='All-NaN slice')
+        warnings.filterwarnings('ignore', message='Mean of empty slice')
+        if percentile:
+            profile = np.nanpercentile(masked_data, percentile, axis=1)
+        else:
+            profile = np.nanmean(masked_data, axis=1)
+
+    locations, all_limits = find_apertures_peaks(profile, prof_mask,
+                                                 max_apertures, threshold,
+                                                 sizing_method, min_snr,
+                                                 strategy)
+
+    return locations, all_limits, profile, prof_mask
+
+
+def find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
+                         sizing_method, min_snr, strategy="exponential_wavelet"):
+    """
+    Find sources in a collapsed 1D spatial profile.
+
+    Parameters
+    ----------
+    profile: 1D array, float
+        the spatial profile along which sources are to be found
+    prof_mask: 1D array, bool
+        mask to apply to this array
+    max_apertures: int
+        maximum number of peaks to find
+    threshold: float
+        parameter to control the sizing of each aperture
+    sizing_method: str
+        parameter to describe the method for sizing each aperture
+    min_snr: float
+        minimum signal-to-noise ratio for a peak to be considered real
+    strategy: str/iterable
+        strategy for finding sources
+            "maxima": find maxima in a quasi-smoothed version of the profile
+            "wavelet": wavelets spaced linearly
+            "exponential_wavelet": wavelets spaced exponentially
+            iterable list of widths
+
+    Returns
+    -------
+    locations: 1D array, float
+        pixel locations of peaks
+    all_limits: list of 2-element lists
+        upper and lower limits for each aperture
+    """
+    # TODO: find_wavelet_peaks might not be best considering we have no
+    #   idea whether sources will be extended or not
+    if strategy == "maxima":
+        mask = (prof_mask.astype(bool) if prof_mask is not None
+                else np.zeros_like(profile, dtype=bool))
+        spline = at.fit_spline_to_data(profile, mask=mask)
+        minima, maxima = at.get_spline3_extrema(spline)
+        # Ensure we have minima either side of each maximum
+        if maxima[0] < minima[0]:
+            minima = np.r_[[0], minima]
+        if maxima[-1] > minima[-1]:
+            minima = np.r_[minima, [profile.size-1]]
+
+        # Estimate SNR from height of maximum above linear interpolation
+        # between adjacent minima
+        spline_at_minima = spline(minima)
+        interpolate_at_maxima = (spline_at_minima[:-1] * (minima[1:] - maxima) +
+                                 spline_at_minima[1:] * (maxima - minima[:-1])) / np.diff(minima)
+        snrs = (spline(maxima) - interpolate_at_maxima) / at.std_from_pixel_variations(profile[~mask])
+        snr_ok = snrs >= min_snr
+        peaks_and_snrs = np.array([maxima[snr_ok], snrs[snr_ok]])
+    else:
+        try:
+            float(strategy[0])
+        except ValueError:
+            widths = (2 ** np.arange(1, 4.4, 0.3) if strategy == "exponential_wavelet"
+                      else np.arange(3, 20.1))
+        else:
+            widths = np.asarray(strategy)
+        peaks_and_snrs = find_wavelet_peaks(
+            profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
+            reject_bad=False, min_snr=min_snr, min_frac=0.2, pinpoint_index=0)
+
+    if peaks_and_snrs.size == 0:
+        log.warning("Found no sources")
+        return [], []
+
+    # Reverse-sort by SNR and return only the locations
+    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
+                                reverse=True)[:max_apertures]).T[0]
+
+    if np.isnan(profile[prof_mask == 0]).any():
+        log.warning("There are unmasked NaNs in the spatial profile")
+
+    all_limits = get_limits(np.nan_to_num(profile),
+                            prof_mask,
+                            peaks=locations,
+                            threshold=threshold,
+                            method=sizing_method)
+
+    return locations, all_limits
+
+
+def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
+                       min_frac=0.25, reject_bad=True, pinpoint_index=-1):
+    """
+    Find peaks in a 1D array using a wavelet method. This uses scipy.signal
+    routines, but requires some duplication of that code since the
+    _filter_ridge_lines() function doesn't expose the *window_size* parameter,
+    which is important. This also does some rejection based on a pixel mask
+    and/or "forensic accounting" of relative peak heights.
 
     Parameters
     ----------
@@ -738,6 +906,16 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     list of 2-element lists:
         the lower and upper limits for each peak
     """
+    def create_minimum(data, mask, peaks):
+        """Find/create a minimum in the data between two peaks"""
+        ix1, ix2 = int(these_peaks[0]), int(these_peaks[1]) + 1
+        region = np.ma.masked_array(data, mask)[ix1:ix2+1]
+        for i in region[1:-1].argsort():
+            if region[i+1] <= region[i] and region[i+1] <= region[i+2]:
+                return pinpoint_peaks(-data, mask, [ix1+i+1], halfwidth=2,
+                                      threshold=-data.max())[0]
+        # No luck, so just split the difference
+        return 0.5 * sum(peaks)
 
     # We abstract the limit-finding function. Any function can be added here,
     # providing it has a standard call signature, taking parameters:
@@ -753,9 +931,22 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     spline = at.fit_spline_to_data(data, mask, variance)
     minima, maxima = at.get_spline3_extrema(spline)
 
+    # Before we continue, we may have multiple peaks between minima, so we
+    # need to create additional minima between them. This is a rare case
+    # where a minor peak on the shoulder of a larger one is ignored by the
+    # full-range spline fitting above. Peaks is sorted by SNR, not location!
+    i = 0
+    while i < minima.size - 1:
+        these_peaks = np.sort([p for p in peaks if minima[i] < p < minima[i+1]])
+        if these_peaks.size > 1:
+            new_minimum = create_minimum(data, mask, these_peaks[:2])
+            minima = np.r_[minima[:i+1], [new_minimum], minima[i+1:]]
+        i += 1
+
     all_limits = []
     for peak in peaks:
-        tweaked_peak = maxima[np.argmin(abs(maxima - peak))]
+        #tweaked_peak = maxima[np.argmin(abs(maxima - peak))]
+        tweaked_peak = peak
 
         # Now find the nearest minima above and below the peak
         for upper in minima:
@@ -1084,174 +1275,6 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
     # Return the coordinate lists, in the form (x-coords, y-coords),
     # regardless of the dispersion axis
     return (ref_coords, in_coords) if axis == 1 else (ref_coords[::-1], in_coords[::-1])
-
-
-def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
-                   sizing_method, threshold, section, min_snr, use_snr,
-                   strategy="wavelet_exponential"):
-    """
-    Finds sources in 2D spectral images and compute aperture sizes. Used byß
-    findSourceApertures as well as by the interactive code. See
-    findSourceApertures' docstring for details on the parameters.
-    """
-    # Collapse image along spatial direction to find noisy regions
-    # (caused by sky lines, regardless of whether image has been
-    # sky-subtracted or not)
-    _, mask1d, var1d = NDStacker.mean(ext.data, mask=ext.mask,
-                                      variance=ext.variance)
-
-    # Mask sky-line regions and find clumps of unmasked pixels
-    # Also only include wavelengths where at least 25% of pixels in the
-    # spatial direction are good
-    mask1d |= (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
-
-    # Very light sigma-clipping to remove bright sky lines
-    var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
-    _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
-                                    maxiters=3)
-    mask1d |= (var_excess > 5 * std)
-    slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
-
-    sky_mask = np.ones_like(mask1d, dtype=bool)
-    for reg in slices:
-        if (reg.stop - reg.start) >= min_sky_region:
-            sky_mask[reg] = False
-    # If nothing satisfies the min_sky_region requirement, ignore it
-    if sky_mask.all():
-        log.warning(f"No regions in {ext.filename} between sky lines exceed "
-                    f"{min_sky_region} pixels. Ignoring requirement.")
-        sky_mask[:] = True
-        for reg in slices:
-            sky_mask[reg] = False
-
-    if section:
-        sec_mask = np.ones_like(mask1d, dtype=bool)
-        for x1, x2 in (s.split(':') for s in section.split(',')):
-            reg = slice(None if x1 == '' else int(x1) - 1,
-                        None if x2 == '' else int(x2))
-            sec_mask[reg] = False
-    else:
-        sec_mask = False
-
-    # Ensure we have some valid pixels left
-    if (sky_mask | sec_mask).all():
-        log.warning(f"No valid regions remain in {ext.filename} after "
-                    "applying sections. Ignoring sky mask.")
-        sky_mask[:] = False
-
-    full_mask = (ext.mask > 0 if ext.mask is not None else
-                 np.zeros(ext.shape, dtype=bool))
-    full_mask |= sky_mask | sec_mask
-
-    signal = (ext.data if (ext.variance is None or not use_snr) else
-              np.divide(ext.data, np.sqrt(ext.variance),
-                        out=np.zeros_like(ext.data), where=ext.variance > 0))
-    if ext.variance is not None:
-        full_mask |= ext.variance == 0
-    masked_data = np.where(full_mask, np.nan, signal)
-    prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
-
-    # Need to catch warnings for rows full of NaNs
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore', message='All-NaN slice')
-        warnings.filterwarnings('ignore', message='Mean of empty slice')
-        if percentile:
-            profile = np.nanpercentile(masked_data, percentile, axis=1)
-        else:
-            profile = np.nanmean(masked_data, axis=1)
-
-    locations, all_limits = find_apertures_peaks(profile, prof_mask,
-                                                 max_apertures, threshold,
-                                                 sizing_method, min_snr,
-                                                 strategy)
-
-    return locations, all_limits, profile, prof_mask
-
-
-def find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
-                         sizing_method, min_snr, strategy="exponential_wavelet"):
-    """
-    Find sources in a collapsed 1D spatial profile.
-
-    Parameters
-    ----------
-    profile: 1D array, float
-        the spatial profile along which sources are to be found
-    prof_mask: 1D array, bool
-        mask to apply to this array
-    max_apertures: int
-        maximum number of peaks to find
-    threshold: float
-        parameter to control the sizing of each aperture
-    sizing_method: str
-        parameter to describe the method for sizing each aperture
-    min_snr: float
-        minimum signal-to-noise ratio for a peak to be considered real
-    strategy: str/iterable
-        strategy for finding sources
-            "maxima": find maxima in a quasi-smoothed version of the profile
-            "wavelet": wavelets spaced linearly
-            "exponential_wavelet": wavelets spaced exponentially
-            iterable list of widths
-
-    Returns
-    -------
-    locations: 1D array, float
-        pixel locations of peaks
-    all_limits: list of 2-element lists
-        upper and lower limits for each aperture
-    """
-    # TODO: find_peaks might not be best considering we have no
-    #   idea whether sources will be extended or not
-    if strategy == "maxima":
-        mask = (prof_mask.astype(bool) if prof_mask is not None
-                else np.zeros_like(profile, dtype=bool))
-        spline = at.fit_spline_to_data(profile, mask=mask)
-        minima, maxima = at.get_spline3_extrema(spline)
-        # Ensure we have minima either side of each maximum
-        if maxima[0] < minima[0]:
-            minima = np.r_[[0], minima]
-        if maxima[-1] > minima[-1]:
-            minima = np.r_[minima, [profile.size-1]]
-
-        # Estimate SNR from height of maximum above linear interpolation
-        # between adjacent minima
-        spline_at_minima = spline(minima)
-        interpolate_at_maxima = (spline_at_minima[:-1] * (minima[1:] - maxima) +
-                                 spline_at_minima[1:] * (maxima - minima[:-1])) / np.diff(minima)
-        snrs = (spline(maxima) - interpolate_at_maxima) / at.std_from_pixel_variations(profile[~mask])
-        snr_ok = snrs >= min_snr
-        peaks_and_snrs = np.array([maxima[snr_ok], snrs[snr_ok]])
-    else:
-        try:
-            float(strategy[0])
-        except ValueError:
-            widths = (2 ** np.arange(1, 4.1, 0.3) if strategy == "exponential_wavelet"
-                      else np.arange(3, 20.1))
-        else:
-            widths = np.asarray(strategy)
-        peaks_and_snrs = find_peaks(
-            profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
-            reject_bad=False, min_snr=min_snr, min_frac=0.25, pinpoint_index=0)
-
-    if peaks_and_snrs.size == 0:
-        log.warning("Found no sources")
-        return [], []
-
-    # Reverse-sort by SNR and return only the locations
-    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                reverse=True)[:max_apertures]).T[0]
-
-    if np.isnan(profile[prof_mask == 0]).any():
-        log.warning("There are unmasked NaNs in the spatial profile")
-
-    all_limits = get_limits(np.nan_to_num(profile),
-                            prof_mask,
-                            peaks=locations,
-                            threshold=threshold,
-                            method=sizing_method)
-
-    return locations, all_limits
 
 
 def cwt_ricker(data, widths, **kwargs):

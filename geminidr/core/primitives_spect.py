@@ -159,8 +159,8 @@ class Spect(PrimitivesBASE):
                     profile = tracing.stack_slit(ad[0], section=region)
                     corr = np.correlate(ref_profile, profile, mode='full')
                     expected_peak = corr.size // 2 + hdr_offset
-                    peaks, snrs = tracing.find_peaks(corr, np.arange(3,20),
-                                                     reject_bad=False, pinpoint_index=0)
+                    peaks, snrs = tracing.find_wavelet_peaks(corr, np.arange(3, 20),
+                                                             reject_bad=False, pinpoint_index=0)
                     if peaks.size:
                         if tolerance is None:
                             found_peak = peaks[snrs.argmax()]
@@ -964,8 +964,8 @@ class Spect(PrimitivesBASE):
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                    initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
-                                                          variance=variance, min_snr=min_snr)
+                    initial_peaks, _ = tracing.find_wavelet_peaks(data, widths, mask=mask & DQ.not_signal,
+                                                                  variance=variance, min_snr=min_snr)
                     log.stdinfo(f"Found {len(initial_peaks)} peaks")
 
                 # The coordinates are always returned as (x-coords, y-coords)
@@ -1642,7 +1642,7 @@ class Spect(PrimitivesBASE):
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
         min_snr : float
-            minimum S/N ratio for detecting peaks (passed to find_peaks)
+            minimum S/N ratio for detecting peaks
         use_snr : bool
             Convert data to SNR per pixel before collapsing and peak-finding?
         threshold : float (0 - 1)

@@ -969,7 +969,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         threshold = TextSlider("Threshold", model, attr="threshold",
                                start=0, end=1, step=0.01)
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
-        strategy = SelectLine("Strategy", model, attr="strategy", options=["wavelet_exponential", "wavelet_linear", "iraf"])
+        strategy = SelectLine("Strategy", model, attr="strategy",
+                              options=["exponential_wavelet", "linear_wavelet", "maxima"])
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '

@@ -168,23 +168,23 @@ class findAperturesConfig(config.Config):
     section = config.Field("Pixel section(s) for measuring the spatial profile",
                            str, None, optional=True, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
-                                       "between sky lines", int, 20, min=1)
+                                       "between sky lines", int, 50, min=1)
     min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",
-                                float, 3.0, min=0.1)
+                                float, 4.0, min=0.1)
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
                            "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.2, min=0, max=1)
+                                  float, 0.1, min=0, max=1)
     sizing_method = config.ChoiceField("Method for automatic width determination", str,
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},
                                        default="peak")
     interactive = config.Field("Use interactive interface", bool, False)
-    strategy = config.ChoiceField("Strategy for wavelet peak find", str,
-                                       allowed={"exponential_wavelet": "Wavelet with exponentially spaced widths",
-                                                "linear_wavelet": "Wavelet with linear spaced widths",
-                                                "maxima": "Maxima in profile"},
-                                       default="exponential_wavelet")
+    strategy = config.ChoiceField("Strategy for peak finding", str,
+                                  allowed={"exponential_wavelet": "Wavelet with exponentially spaced widths",
+                                           "linear_wavelet": "Wavelet with linearly spaced widths",
+                                           "maxima": "Maxima in profile"},
+                                  default="exponential_wavelet")
 
 
 class flagCosmicRaysConfig(config.Config):
