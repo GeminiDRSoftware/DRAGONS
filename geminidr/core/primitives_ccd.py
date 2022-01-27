@@ -16,9 +16,12 @@ from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
 from . import parameters_ccd
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class CCD(PrimitivesBASE):
     """
     This is the class containing all of the primitives used for generic CCD

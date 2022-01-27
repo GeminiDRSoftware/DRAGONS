@@ -23,10 +23,12 @@ from geminidr import PrimitivesBASE
 from . import parameters_qa
 from .lookups import DQ_definitions as DQ
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class QA(PrimitivesBASE):
     """
     This is the class containing the QA primitives.
