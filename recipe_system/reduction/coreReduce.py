@@ -342,7 +342,36 @@ def _check_files(ffiles):
     return input_files
 
 
-def reduce_data(files, mode, drpkg, recipename, uparms, ucals, upload, config_file, suffix):
+def _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_file, suffix):
+    print("\n\t"+"-"*65+"\n")
+    if files:
+        print("Files".ljust(33) + ":: " + files[0])
+        for f in files[1:]:
+            print(" "*33 + ":: {}".format(f))
+    print("Mode".ljust(33) + ":: " + mode)
+    print("Data Reduction Package".ljust(33) + ":: " + drpkg)
+    print("Recipe Name".ljust(33) + ":: " + recipename)
+    if uparms:
+        print("Parameters")
+        print("----------")
+        for param in uparms.keys():
+            print("    " + param.ljust(29) + ":: " + str(uparms[param]))
+    if ucals:
+        print("Calibrations")
+        print("------------")
+        for cal in ucals.keys():
+            print("    " + cal.ljust(29) + ":: " + ucals[cal])
+    if upload:
+        print("Upload".ljust(33) + ":: " + upload)
+    if config_file:
+        print("Config File".ljust(33) + ":: " + config_file)
+    if suffix:
+        print("Suffix".ljust(33) + ":: " + suffix)
+    print("-"*65+"\n")
+
+
+def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, ucals={},
+                upload=None, config_file=None, suffix=None, debug=False):
     """
     Map and run the requested or defaulted recipe.
 
@@ -351,27 +380,31 @@ def reduce_data(files, mode, drpkg, recipename, uparms, ucals, upload, config_fi
     files : <list> or str
         The set of files to reduce, if a string it is assumed to be a single file
     mode : <str>
-        The mode of reduction: ``qa`` ``ql`` or ``sq``
+        The mode of reduction: ``qa`` ``ql`` or ``sq``, defaults to ``sq``
     drpkg :<str>
         The data reduction package to map. Default is 'geminidr'.
         This package *must* be importable.
     recipename : <str>
         The name of the recipe or primitive to run, or None for default
     uparms : <dict>
-        The parameters for the recipes
+        The parameters for the recipes, if any
     ucals : <dict>
-        Calibration files to use, if any, as a dictionary mapping calibration type to file
+        Calibration files to use, if any, as a dictionary mapping calibration type to file, ``None`` for default
     upload : <list>
-        List of types to upload
+        List of types to upload, default None
     config_file : str
-        Configuration file to use
+        Configuration file to use, None for default
     suffix : str
-        Suffix to add to output file(s)
+        Suffix to add to output file(s), None for default
+    debug : bool
+        Show parameters in output, defaults to False
 
     Returns
     -------
     <list> : List of files produced by the reduction
     """
+    if debug:
+        _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_file, suffix)
     recipe = None
     if isinstance(files, str):
         files = [files,]
@@ -408,7 +441,7 @@ def reduce_data(files, mode, drpkg, recipename, uparms, ucals, upload, config_fi
         # primitive and update uparms to prepend the name to any parameters
         # without the primitive named explicitly
         uparms = [((k if ':' in k else f"{recipename}:{k}"), v)
-                       for k, v in uparms]
+                       for k, v in uparms.items()]
 
     # clear reference for GC
     rm = None
