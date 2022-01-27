@@ -21,10 +21,11 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from .primitives_gmos import GMOS
 from . import parameters_gmos_nodandshuffle
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GMOSNodAndShuffle(GMOS):
     """
     This is the class containing all of the preprocessing primitives
