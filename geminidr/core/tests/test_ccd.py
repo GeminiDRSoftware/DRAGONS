@@ -11,18 +11,19 @@ from geminidr.gmos.primitives_gmos import GMOS
 # -- Tests --------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture(scope='module')
 def fake_biases():
-    return [create_bias(100, 100) for i in range(5)]
+    return [create_bias(100, 100, i) for i in (0, 1, 2, 2, 3)]
 
-@pytest.mark.parametrize("rejection_method", ('varclip', 'sigclip', 'minmax'))
-def test_stack_biases(rejection_method, fake_biases):
+@pytest.mark.parametrize("rejection_method, expected",
+                         [('varclip', 1.6), ('sigclip', 1.6), ('minmax', 1.6)])
+def test_stack_biases(rejection_method, expected, fake_biases):
 
     p = GMOS(fake_biases)
     p.addVAR()
     ad_out = p.stackBiases(reject_method=rejection_method)
     assert(len(ad_out)) == 1
-    assert ad_out[0].data[0][0, 0] == 1.
+    assert pytest.approx(ad_out[0].data[0]) == expected
 
 
 def test_non_bias_mixed_in(fake_biases):
@@ -35,11 +36,11 @@ def test_non_bias_mixed_in(fake_biases):
         p.stackBiases()
 
 
-def create_bias(height, width):
+def create_bias(height, width, value):
 
     astrofaker = pytest.importorskip("astrofaker")
 
-    data = np.ones((height, width))
+    data = np.ones((height, width)) * value
     hdu = fits.ImageHDU()
     hdu.data = data
 
