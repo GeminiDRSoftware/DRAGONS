@@ -11,10 +11,12 @@ from gempy.gemini import gemini_tools as gt
 from geminidr import PrimitivesBASE
 from . import parameters_calibdb
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class CalibDB(PrimitivesBASE):
     """
     Only 'storeProcessedXXX' calibration primitives have associated parameters.
