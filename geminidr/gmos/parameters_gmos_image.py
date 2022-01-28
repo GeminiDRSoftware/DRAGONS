@@ -10,6 +10,10 @@ class addOIWFSToDQConfig(config.Config):
     convergence = config.RangeField("Convergence required in sky level to stop dilation",
                                     float, 2.0, min=0.001)
 
+class applyWCSAdjustmentConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_align", optional=True)
+    reference_stream = config.Field("Stream containing adjusted images", str, "adjusted")
+
 class addDQConfig(parameters_standardize.addDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True

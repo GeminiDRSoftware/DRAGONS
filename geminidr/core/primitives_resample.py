@@ -24,9 +24,12 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from . import parameters_resample
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Resample(PrimitivesBASE):
     """
     This is the class containing all of the primitives for resampling images.
@@ -331,6 +334,7 @@ class Resample(PrimitivesBASE):
             ad_out = transform.resample_from_wcs(ad, frame, order=order, conserve=conserve,
                                                  output_shape=output_shape, origin=origin,
                                                  process_objcat=process_objcat)
+            ad_out.filename = ad.filename
             adoutputs.append(ad_out)
 
         return adoutputs

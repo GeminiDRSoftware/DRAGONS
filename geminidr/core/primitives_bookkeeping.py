@@ -3,12 +3,13 @@
 #
 #                                                      primitives_bookkeeping.py
 # ------------------------------------------------------------------------------
-import copy
+import os
+from copy import deepcopy
 
 import astrodata, gemini_instruments
 
 from gempy.gemini import gemini_tools as gt
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from geminidr import PrimitivesBASE, save_cache, stkindfile
 from geminidr.core import parameters_bookkeeping
@@ -16,6 +17,7 @@ from geminidr.core import parameters_bookkeeping
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Bookkeeping(PrimitivesBASE):
     """
     This is the class containing all of the preprocessing primitives
@@ -60,13 +62,42 @@ class Bookkeeping(PrimitivesBASE):
         save_cache(self.stacks, stkindfile)
         return adinputs
 
+    def appendStream(self, adinputs=None, from_stream=None, copy=None):
+        """
+        This primitive takes the AstroData objects in a stream and appends them
+        (order unchanged) to the end of the current stream. If requested, the
+        stream whose ADs are being appended is deleted.
+
+        Parameters
+        ----------
+        new_stream: str
+            name of stream whose ADs are going to be appended to the working
+            stream
+        copy: bool
+            append full deepcopies of the AD objects?
+        """
+        log = self.log
+        try:
+            stream = self.streams[from_stream]
+        except KeyError:
+            log.warning(f"There is no stream called '{from_stream}'. "
+                        f"Continuing without appending any images.")
+            return adinputs
+
+        log.info(f"Appending {len(stream)} frames from stream '{from_stream}'.")
+        if copy:
+            adinputs.extend([deepcopy(ad) for ad in stream])
+        else:
+            adinputs.extend(stream)
+        return adinputs
+
     def clearAllStreams(self, adinputs=None):
         """
         This primitive clears all streams (except "main") by setting them
         to empty lists.
         """
         log = self.log
-        for stream in self.streams.keys():
+        for stream in self.streams:
             if stream != 'main':
                 log.fullinfo('Clearing stream {}'.format(stream))
                 self.streams[stream] = []
@@ -167,6 +198,23 @@ class Bookkeeping(PrimitivesBASE):
         log.stdinfo("Using the following files:")
         adinputs = self.showInputs(adinputs, purpose=None)
         return adinputs
+
+    def mergeInputs(self, adinputs=None):
+        """
+        This primitive takes all the inputs in a stream and makes a single
+        AstroData object containing all the extensions from all the inputs.
+        """
+        log = self.log
+
+        new_ad = astrodata.create(adinputs[0].phu)
+        new_ad.filename = adinputs[0].filename
+        new_ad.orig_filename = adinputs[0].orig_filename
+        for ad in adinputs:
+            log.stdinfo(f"Appending {len(ad)} extensions from {ad.filename}")
+            for ext in ad:
+                new_ad.append(ext)
+
+        return [new_ad]
 
     def rejectInputs(self, adinputs=None, at_start=0, at_end=0):
         """
@@ -285,6 +333,54 @@ class Bookkeeping(PrimitivesBASE):
                 log.status("No datasets in list")
         return adinputs
 
+    def sliceIntoStreams(self, adinputs=None, root_stream_name=None, copy=True):
+        """
+        This primitive slices each input AstroData object into separate AD
+        objects with one slice each, and puts them into separate streams. The
+        stream "index0" will contain all the first slices from all the AD
+        objects, "index1" all the second slices, and so on. These streams will
+        not be the same length if the input AD objects have different lengths.
+
+        Parameters
+        ----------
+        root_stream_name: str
+            base name for the streams (to be succeeded by 1, 2, 3, ...)
+        copy: bool
+            make full deepcopies of the slices?
+        """
+        log = self.log
+        streams = []
+        for ad in adinputs:
+            for i in range(len(ad)):
+                stream_name = f'{root_stream_name}{ad[i].id}'
+                if copy:
+                    new_ad = deepcopy(ad[i])
+                else:
+                    new_ad = astrodata.create(ad.phu)
+                    new_ad.append(ad[i])
+                    new_ad.filename = ad.filename
+                    new_ad.orig_filename = ad.orig_filename
+
+                filename, filetype = os.path.splitext(ad.filename)
+                fields = filename.rsplit('_', 1)
+                if len(fields) == 1:
+                    new_ad.update_filename(suffix=f'_{stream_name}')
+                else:
+                    new_ad.update_filename(suffix=f'_{stream_name}_{fields[1]}', strip=True)
+
+                try:
+                    self.streams[stream_name].append(new_ad)
+                except KeyError:
+                    self.streams[stream_name] = [new_ad]
+                    streams.append(stream_name)
+
+        log.stdinfo(f'Created {len(streams)} streams by slicing input files.')
+        for stream in streams:
+            log.debug(f'Files in stream {stream}:')
+            for ad in self.streams[stream]:
+                log.debug(f'    {ad.filename}')
+        return adinputs
+
     def sortInputs(self, adinputs=None, descriptor='filename', reverse=False):
         """
         This sorts the input list according to the values returned by the
@@ -361,7 +457,7 @@ class Bookkeeping(PrimitivesBASE):
 
                 try:
                     setattr(ad1, attribute,
-                            copy.deepcopy(getattr(ad2, attribute)))
+                            deepcopy(getattr(ad2, attribute)))
 
                 except ValueError:  # data, mask, are gettable not settable
                     pass
@@ -374,7 +470,7 @@ class Bookkeeping(PrimitivesBASE):
 
                 if hasattr(ext2, attribute):
                     setattr(ext1, attribute,
-                            copy.deepcopy(getattr(ext2, attribute)))
+                            deepcopy(getattr(ext2, attribute)))
                     found = True
 
         if not found:

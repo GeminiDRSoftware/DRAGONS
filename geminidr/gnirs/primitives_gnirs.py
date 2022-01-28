@@ -10,9 +10,12 @@ from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
 from . import parameters_gnirs
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GNIRS(Gemini, NearIR):
     """
     This is the class containing all of the preprocessing primitives

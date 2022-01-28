@@ -17,9 +17,12 @@ from .primitives_gnirs import GNIRS
 from ..core import Image, Photometry
 from . import parameters_gnirs_image
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GNIRSImage(GNIRS, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives

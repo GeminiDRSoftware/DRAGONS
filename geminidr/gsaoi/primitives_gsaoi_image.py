@@ -23,7 +23,7 @@ from gempy.library.matching import find_alignment_transform, fit_model, match_so
 from gempy.gemini import qap_tools as qap
 
 from geminidr.core import Image, Photometry
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from .primitives_gsaoi import GSAOI
 from . import parameters_gsaoi_image
@@ -31,6 +31,7 @@ from .lookups import gsaoi_static_distortion_info as gsdi
 
 
 @parameter_override
+@capture_provenance
 class GSAOIImage(GSAOI, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives

@@ -225,6 +225,20 @@ def gwcs_to_fits(ndd, hdr=None):
 
     crval = [wcs_dict[f'CRVAL{i+1}'] for i, _ in enumerate(world_axes)]
     crpix = np.array(wcs.backward_transform(*crval)) + 1
+
+    # Cope with a situation where the sky projection center is not in the slit
+    # We may be able to fix this in future, but FITS doesn't handle it well.
+    if len(ndd.shape) > 1:
+        crval2 = wcs(*(crpix - 1))
+        try:
+            sky_center = coord.SkyCoord(crval[lon_axis], crval[lat_axis], unit=u.deg)
+        except NameError:
+            pass
+        else:
+            sky_center2 = coord.SkyCoord(crval2[lon_axis], crval2[lat_axis], unit=u.deg)
+            if sky_center.separation(sky_center2).arcsec > 0.01:
+                wcs_dict['FITS-WCS'] = ('APPROXIMATE', 'FITS WCS is approximate')
+
     if nworld_axes == 1:
         wcs_dict['CRPIX1'] = crpix
     else:

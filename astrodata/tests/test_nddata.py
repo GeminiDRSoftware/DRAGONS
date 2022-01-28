@@ -8,6 +8,7 @@ from astropy.io import fits
 from astropy.nddata import NDData, VarianceUncertainty
 from astropy.wcs import WCS
 from astropy.modeling import models
+from astropy.table import Table
 from gwcs.wcs import WCS as gWCS
 from gwcs.coordinate_frames import Frame2D
 
@@ -21,6 +22,8 @@ def testnd():
                      mask=np.zeros(shape, dtype=bool),
                      wcs=WCS(header=hdr),
                      unit='ct')
+    nd.meta['other'] = {'OBJMASK': np.arange(np.prod(shape)).reshape(shape),
+                        'OBJCAT': Table([[1,2,3]], names=[['number']])}
     nd.mask[3, 4] = True
     return nd
 
@@ -123,6 +126,24 @@ def test_wcs_slicing():
     assert nd[..., 10:].wcs(10, 10) == (20, 10)
     assert nd[:, 5].wcs(10) == (5, 10)
     assert nd[20, -10:].wcs(0) == (40, 20)
+
+
+def test_access_to_other_planes(testnd):
+    assert hasattr(testnd, 'OBJMASK')
+    assert testnd.OBJMASK.shape == testnd.data.shape
+    assert hasattr(testnd, 'OBJCAT')
+    assert isinstance(testnd.OBJCAT, Table)
+    assert len(testnd.OBJCAT) == 3
+
+
+def test_access_to_other_planes_when_windowed(testnd):
+    ndwindow = testnd.window[1:, 1:]
+    assert ndwindow.data.shape == (4, 4)
+    assert ndwindow.data[0, 0] == testnd.shape[1] + 1
+    assert ndwindow.OBJMASK.shape == (4, 4)
+    assert ndwindow.OBJMASK[0, 0] == testnd.shape[1] + 1
+    assert isinstance(ndwindow.OBJCAT, Table)
+    assert len(ndwindow.OBJCAT) == 3
 
 
 if __name__ == '__main__':
