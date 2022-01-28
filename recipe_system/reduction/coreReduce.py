@@ -166,6 +166,92 @@ class Reduce:
 
 
     # -------------------------------- prive -----------------------------------
+    def _check_files(self, ffiles):
+        """
+        Sanity check on submitted files.
+
+        Parameters
+        --------
+        ffiles: <list>
+                list of passed FITS files.
+
+        Return
+        ------
+        input_files: <list>
+              list of 'good' input fits datasets.
+
+        """
+        try:
+            assert ffiles
+        except AssertionError:
+            log.error("NO INPUT FILE(s) specified")
+            log.stdinfo("type 'reduce -h' for usage information")
+            raise OSError("NO INPUT FILE(s) specified")
+
+        input_files = []
+        bad_files = []
+
+        for image in ffiles:
+            if not os.access(image, os.R_OK):
+                log.error('Cannot read file: '+str(image))
+                bad_files.append(image)
+            else:
+                input_files.append(image)
+        try:
+            assert bad_files
+            err = "\n\t".join(bad_files)
+            log.warning("Files not found or cannot be loaded:\n\t%s" % err)
+            if input_files:
+                found = "\n\t".join(input_files)
+                log.stdinfo("These datasets were loaded:\n\t%s" % found)
+            else:
+                log.error("Caller passed no valid input files")
+                sys.exit(1)
+        except AssertionError:
+            log.stdinfo("All submitted files appear valid:")
+            if len(input_files) > 1:
+                filestr = input_files[0]
+                filestr += " ... " + input_files[-1]
+                filestr += ", {} files submitted.".format(len(input_files))
+            else:
+                filestr = input_files[0]
+
+            log.stdinfo(filestr)
+        return input_files
+
+    def _convert_inputs(self, inputs):
+        """
+        Convert files into AstroData objects.
+
+        Parameters
+        ----------
+        inputs: <list>, list of FITS file names
+
+        Return
+        ------
+        allinputs: <list>, list of AstroData objects
+
+        """
+        allinputs = []
+        for inp in inputs:
+            try:
+                ad = astrodata.open(inp)
+            except AstroDataError as err:
+                log.warning("Can't Load Dataset: %s" % inp)
+                log.warning(err)
+                continue
+            except OSError as err:
+                log.warning("Can't Load Dataset: %s" % inp)
+                log.warning(err)
+                continue
+
+            if not len(ad):
+                log.warning("%s contains no extensions." % ad.filename)
+                continue
+
+            allinputs.append(ad)
+
+        return allinputs
 
     def _confirm_args(self):
         """
