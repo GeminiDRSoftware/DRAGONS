@@ -1239,13 +1239,18 @@ class DataGroup:
             Jacobian of transformation (basically the increase in pixel area)
         """
         trans_output_shape = tuple(length * subsample for length in output_shape)
+
+        # We want to transform any DQ bit arrays into floats so we can sample
+        # the "ringing" from the interpolation and flag appropriately
+        out_dtype = np.float32 if np.issubdtype(
+            input_array.dtype, np.unsignedinteger) else input_array.dtype
         if isinstance(mapping, GeoMap):
             out_array = ndimage.map_coordinates(input_array, mapping.coords,
-                                                cval=cval, order=order)
+                                                cval=cval, order=order, output=out_dtype)
         else:
             out_array = ndimage.affine_transform(input_array, mapping.matrix,
                                                  mapping.offset, trans_output_shape,
-                                                 cval=cval, order=order)
+                                                 cval=cval, order=order, output=out_dtype)
 
         # We average to undo the subsampling. This retains the "threshold" and
         # conserves flux according to the Jacobian of input/output arrays.
