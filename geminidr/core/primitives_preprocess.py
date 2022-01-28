@@ -21,7 +21,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.filtering import ring_median_filter
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 from scipy.interpolate import interp1d
 from scipy.ndimage import binary_dilation
@@ -30,6 +30,7 @@ from . import parameters_preprocess
 
 
 @parameter_override
+@capture_provenance
 class Preprocess(PrimitivesBASE):
     """
     This is the class containing all of the preprocessing primitives.
@@ -1076,7 +1077,7 @@ class Preprocess(PrimitivesBASE):
         for sky_filename in ref_sky:
             for ad in adinputs:
                 if strip_fits(sky_filename) in ad.filename:
-                    objects.add(ad)
+                    skies.add(ad)
                     if 'OBJFRAME' in ad.phu and 'SKYFRAME' not in ad.phu:
                         log.warning("{} previously classified as OBJECT; "
                                 "added SKY as requested".format(ad.filename))

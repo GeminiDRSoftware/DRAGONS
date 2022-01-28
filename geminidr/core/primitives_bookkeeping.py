@@ -9,7 +9,7 @@ from copy import deepcopy
 import astrodata, gemini_instruments
 
 from gempy.gemini import gemini_tools as gt
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from geminidr import PrimitivesBASE, save_cache, stkindfile
 from geminidr.core import parameters_bookkeeping
@@ -17,6 +17,7 @@ from geminidr.core import parameters_bookkeeping
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Bookkeeping(PrimitivesBASE):
     """
     This is the class containing all of the preprocessing primitives

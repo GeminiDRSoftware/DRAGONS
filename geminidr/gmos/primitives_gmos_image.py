@@ -24,9 +24,12 @@ from .lookups import geometry_conf
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups.fringe_control_pairs import control_pairs
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GMOSImage(GMOS, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives

@@ -16,9 +16,12 @@ from itertools import product as cart_product
 from astropy.stats import sigma_clip
 import warnings
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class NIRIImage(NIRI, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives

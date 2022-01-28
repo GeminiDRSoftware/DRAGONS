@@ -12,10 +12,11 @@ from geminidr.core import NearIR
 from geminidr.gemini.primitives_gemini import Gemini
 from . import parameters_f2
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 
 @parameter_override
+@capture_provenance
 class F2(Gemini, NearIR):
     """
     This is the class containing all of the preprocessing primitives

@@ -20,9 +20,12 @@ from .primitives_register import Register
 from .primitives_resample import Resample
 from . import parameters_image
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Image(Preprocess, Register, Resample):
     """
     This is the class containing the generic imaging primitives.

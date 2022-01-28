@@ -15,12 +15,13 @@ from gempy.gemini import irafcompat
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from . import parameters_standardize
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Standardize(PrimitivesBASE):
     """
     This is the class containing all of the primitives used to standardize an

@@ -11,9 +11,12 @@ from geminidr.core import Visualize, Standardize, Stack
 from .primitives_qa import QA
 from . import parameters_gemini
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
              CalibDB):
     """
