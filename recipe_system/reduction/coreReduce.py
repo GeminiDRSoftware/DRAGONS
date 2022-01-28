@@ -284,13 +284,12 @@ class Reduce:
             assert bad_files
             err = "\n\t".join(bad_files)
             log.warning("Files not found or cannot be loaded:\n\t%s" % err)
-            try:
-                assert input_files
+            if input_files:
                 found = "\n\t".join(input_files)
                 log.stdinfo("These datasets were loaded:\n\t%s" % found)
-            except AssertionError:
+            else:
                 log.error("Caller passed no valid input files")
-                raise OSError("No valid files passed.")
+                sys.exit(1)
         except AssertionError:
             log.stdinfo("All submitted files appear valid:")
             if len(input_files) > 1:
