@@ -30,6 +30,7 @@ array_properties = {
     # Dictionary values are in the following order:
     # readnoise, gain, well, linearlimit, coeff1, coeff2, coeff3, nonlinearlimit
     # read noise is in units of electrons, well is in units of ADU
+    # nonlinearity coefficients are for data in electrons
 
     # Well depth from email from Rodrigo Carrasco, 20150824:
     # Detector well depth. GSAOI detector is formed by 4 2kx2k arrays.
@@ -64,18 +65,18 @@ array_properties = {
     # is at the 2% from 96% before saturation, after correction for
     # non-linearity.
 
-    ('Bright Objects', 'H2RG-032-074'): ArrayProperties(26.53, 2.434, 52400, 0.73, (0.9947237, 7.400241E-7, 2.539787E-11), 0.97),
-    ('Bright Objects', 'H2RG-032-064'): ArrayProperties(19.10, 2.010, 50250, 0.64, (0.9944842, 6.748257E-7, 3.679960E-11), 0.97),
-    ('Bright Objects', 'H2RG-032-071'): ArrayProperties(27.24, 2.411, 53700, 0.76, (0.9947278, 7.067051E-7, 2.177223E-11), 0.98),
-    ('Bright Objects', 'H2RG-032-061'): ArrayProperties(32.26, 2.644, 52300, 0.75, (0.9958842, 5.670857E-7, 2.718377E-11), 0.96),
-    ('Faint Objects', 'H2RG-032-074'): ArrayProperties(13.63, 2.434, 52400, 0.73, (0.9947237, 7.400241E-7, 2.539787E-11), 0.97),
-    ('Faint Objects', 'H2RG-032-064'): ArrayProperties(9.85, 2.010, 50250, 0.64, (0.9944842, 6.748257E-7, 3.679960E-11), 0.97),
-    ('Faint Objects', 'H2RG-032-071'): ArrayProperties(14.22, 2.411, 53700, 0.76, (0.9947278, 7.067051E-7, 2.177223E-11), 0.98),
-    ('Faint Objects', 'H2RG-032-061'): ArrayProperties(16.78, 2.644, 52300, 0.75, (0.9958842, 5.670857E-7, 2.718377E-11), 0.96),
-    ('Very Faint Objects', 'H2RG-032-074'): ArrayProperties(10.22, 2.434, 52400, 0.73, (0.9947237, 7.400241E-7, 2.539787E-11), 0.97),
-    ('Very Faint Objects', 'H2RG-032-064'): ArrayProperties(7.44, 2.010, 50250, 0.64, (0.9944842, 6.748257E-7, 3.679960E-11), 0.97),
-    ('Very Faint Objects', 'H2RG-032-071'): ArrayProperties(10.61, 2.411, 53700, 0.76, (0.9947278, 7.067051E-7, 2.177223E-11), 0.98),
-    ('Very Faint Objects', 'H2RG-032-061'): ArrayProperties(12.79, 2.644, 52300, 0.75, (0.9958842, 5.670857E-7, 2.718377E-11), 0.96),
+    ('Bright Objects', 'H2RG-032-074'): ArrayProperties(26.53, 2.434, 52400, 0.73, (0.9947237, 3.0403620e-07, 4.2870263e-12), 0.97),
+    ('Bright Objects', 'H2RG-032-064'): ArrayProperties(19.10, 2.010, 50250, 0.64, (0.9944842, 3.3573418e-07, 9.1085864e-12), 0.97),
+    ('Bright Objects', 'H2RG-032-071'): ArrayProperties(27.24, 2.411, 53700, 0.76, (0.9947278, 2.9311700e-07, 3.7454887e-12), 0.98),
+    ('Bright Objects', 'H2RG-032-061'): ArrayProperties(32.26, 2.644, 52300, 0.75, (0.9958842, 2.1448022e-07, 3.8885419e-12), 0.96),
+    ('Faint Objects', 'H2RG-032-074'): ArrayProperties(13.63, 2.434, 52400, 0.73, (0.9947237, 3.0403620e-07, 4.2870263e-12), 0.97),
+    ('Faint Objects', 'H2RG-032-064'): ArrayProperties(9.85, 2.010, 50250, 0.64, (0.9944842, 3.3573418e-07, 9.1085864e-12), 0.97),
+    ('Faint Objects', 'H2RG-032-071'): ArrayProperties(14.22, 2.411, 53700, 0.76, (0.9947278, 2.9311701e-07, 3.7454887e-12), 0.98),
+    ('Faint Objects', 'H2RG-032-061'): ArrayProperties(16.78, 2.644, 52300, 0.75, (0.9958842, 2.1448022e-07, 3.8885419e-12), 0.96),
+    ('Very Faint Objects', 'H2RG-032-074'): ArrayProperties(10.22, 2.434, 52400, 0.73, (0.9947237, 3.0403620e-07, 4.2870263e-12), 0.97),
+    ('Very Faint Objects', 'H2RG-032-064'): ArrayProperties(7.44, 2.010, 50250, 0.64, (0.9944842, 3.3573418e-07, 9.1085864e-12), 0.97),
+    ('Very Faint Objects', 'H2RG-032-071'): ArrayProperties(10.61, 2.411, 53700, 0.76, (0.9947278, 2.9311700e-07, 3.7454887e-12), 0.98),
+    ('Very Faint Objects', 'H2RG-032-061'): ArrayProperties(12.79, 2.644, 52300, 0.75, (0.9958842, 2.1448022e-07, 3.8885419e-12), 0.96),
     }
 
 nominal_zeropoints = {

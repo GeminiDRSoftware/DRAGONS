@@ -448,11 +448,11 @@ class ADCompare:
         errormsg = ''
         for k, v in errordict.items():
             errormsg += f'\nComparison failure in {k}'
-            errormsg += '\n' + ('-' * (len(errormsg) - 1)) + '\n'
+            errormsg += '\n' + ('-' * (22 + len(k))) + '\n'
             errormsg += '\n  '.join(v)
         return errormsg
 
-def ad_compare(ad1, ad2):
+def ad_compare(ad1, ad2, **kwargs):
     """
     Compares the tags, headers, and pixel values of two images. This is simply
     a wrapper for ADCompare.run_comparison() for backward-compatibility.
@@ -468,5 +468,5 @@ def ad_compare(ad1, ad2):
     -------
     bool: are the two AD instances basically the same?
     """
-    compare = ADCompare(ad1, ad2).run_comparison()
+    compare = ADCompare(ad1, ad2).run_comparison(**kwargs)
     return compare == {}

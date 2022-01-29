@@ -115,8 +115,9 @@ class NIRI(Gemini, NearIR):
                 log.fullinfo(f"The true total exposure time = {total_exptime}")
                 for desc in ('saturation_level', 'non_linear_level'):
                     current_value = getattr(ext, desc)()
-                    ext.hdr[ad._keyword_for(desc)] = linearize(
+                    new_value = linearize(
                         current_value * gain / coadds, coeffs) * coadds / gain
+                    ext.hdr[ad._keyword_for(desc)] = f'{new_value:.3f}'
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
