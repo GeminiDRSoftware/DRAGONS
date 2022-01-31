@@ -1179,10 +1179,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.recalc_inputs_above = recalc_inputs_above
         self.pad_buttons = pad_buttons
 
-        # Make the widgets accessible from external code so we can update
-        # their properties if the default setup isn't great
-        self.widgets = {}
-
         # Keep a list of panels for access later
         self.panels = list()
 

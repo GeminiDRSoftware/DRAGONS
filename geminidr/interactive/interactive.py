@@ -6,7 +6,7 @@ from functools import cmp_to_key
 from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, Slider, TextInput, Div, NumericInput, PreText)
+                          NumeralTickFormatter, Slider, TextInput, Div, NumericInput, PreText, Spacer, Select)
 from bokeh import models as bm
 
 from geminidr.interactive import server
@@ -28,6 +28,28 @@ _visualizer = None
 
 
 _log = logutils.get_logger(__name__)
+
+
+def _title_from_field(field):
+    """
+    Extract a suitable UI Field Title from a Field instance
+
+    Parameters
+    ----------
+
+    field : :class:`~gempy.library.config.config.Field`
+        Field object to infer title for
+
+    returns
+    -------
+        str : Title string for UI
+    """
+    if hasattr(field, 'title'):
+        title = field.title
+    elif hasattr(field, 'name'):
+        title = field.name.replace('_', ' ').title()
+    else:
+        raise ValueError("Field has neither title nor name, unable to parse a title")
 
 
 class FitQuality(Enum):
@@ -61,6 +83,10 @@ class PrimitiveVisualizer(ABC):
         """
         global _visualizer
         _visualizer = self
+
+        # Make the widgets accessible from external code so we can update
+        # their properties if the default setup isn't great
+        self.widgets = {}
 
         # set help to default, subclasses should override this with something specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
@@ -466,7 +492,7 @@ class PrimitiveVisualizer(ABC):
             self._message_holder.text = message
 
     def make_widgets_from_parameters(self, params, reinit_live: bool = True,
-                                     slider_width: int = 256):
+                                     slider_width: int = 256, add_spacer=False):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
@@ -481,6 +507,8 @@ class PrimitiveVisualizer(ABC):
             Currently only viable for text-slider style inputs
         slider_width : int
             Width of the sliders
+        add_spacer : bool
+            If True, add a spacer between sliders and their text-boxes
 
         Returns
         -------
@@ -500,26 +528,85 @@ class PrimitiveVisualizer(ABC):
                         params.titles[key], params.values[key], step, field.min, field.max, obj=params.values,
                         attr=key, slider_width=slider_width, allow_none=field.optional, throttled=True,
                         is_float=is_float,
-                        handler=self.slider_handler_factory(key, reinit_live=reinit_live))
+                        handler=self.slider_handler_factory(key, reinit_live=reinit_live),
+                        add_spacer=False)
+                        # add_spacer=add_spacer)
 
                     self.widgets[key] = widget.children[0]
+                    widgets.append(widget)
                 elif hasattr(field, 'allowed'):
                     # ChoiceField => drop-down menu
-                    widget = Dropdown(label=field.title, menu=list(field.allowed.keys()))
+                    if key in params.titles:
+                        title = params.titles[key]
+                    else:
+                        title = _title_from_field(field)
+                    # menu = [(v, k) for k, v in field.allowed.items() if k is not None]
+                    # if None in field.allowed.keys():
+                    #     menu.append(None)
+                    # widget = Dropdown(label=title, menu=menu)
+                    widget = Select(# title=title,
+                                    width=96,
+                                    value=params.values[key], options=list(field.allowed.keys()))
+                    def _select_handler(attr, old, new):
+                        self.extras[key] = new
+                        if reinit_live:
+                            self.reconstruct_points()
+                    widget.on_change('value', _select_handler)
                     self.widgets[key] = widget
+                    widgets.append(row([Div(text=title, align='center'), widget]))
+                                        # Spacer(width_policy='max'), widget]))
                 elif field.dtype is bool:
-                    widget = bm.CheckboxGroup(labels=[params.titles[key]],
+                    widget = bm.CheckboxGroup(labels=[" "], # labels=[params.titles[key]],
                                               active=[0] if params.values[key] else [])
+                    cb_key = key
+                    def _cb_handler(cbkey, val):
+                        self.extras[cbkey] = True if len(val) else False
+                        if reinit_live:
+                            self.reconstruct_points()
+                    widget.on_click(lambda v: _cb_handler(cb_key, v))
                     self.widgets[key] = widget
+                    widgets.append(row([Div(text=params.titles[key], align='start'), widget]))
+                                        # Spacer(width_policy='max'), widget]))
                 else:
                     # Anything else
-                    widget = TextInput(title=field.title)
+                    if key in params.titles:
+                        title = params.titles[key]
+                    else:
+                        title = _title_from_field(field)
+                    widget = TextInput(title=title,
+                                       min_width=100,
+                                       max_width=256,
+                                       width_policy="fit",
+                                       placeholder=params.placeholders[key]
+                                       if key in params.placeholders else None)
                     self.widgets[key] = widget
-
-                widgets.append(widget)
+                    widgets.append(widget)
         return widgets
 
     def slider_handler_factory(self, key, reinit_live=False):
+        """
+        Returns a function that updates the `extras` attribute.
+
+        Parameters
+        ----------
+        key : str
+            The parameter name to be updated.
+        reinit_live : bool, optional
+            Update the reconstructed points on "real time".
+
+        Returns
+        -------
+        function : callback called when we change the slider value.
+        """
+
+        def handler(val):
+            self.extras[key] = val
+            if reinit_live:
+                self.reconstruct_points()
+
+        return handler
+
+    def select_handler_factory(self, key, reinit_live=False):
         """
         Returns a function that updates the `extras` attribute.
 
@@ -546,7 +633,7 @@ class PrimitiveVisualizer(ABC):
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
                       slider_width=256, config=None, allow_none=False,
-                      is_float=None):
+                      is_float=None, add_spacer=False):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -574,6 +661,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         Set to `True` to allow an empty text entry to specify a `None` value
     is_float : bool
         nature of parameter (None => try to figure it out)
+    add_spacer : bool
+        Add a spacer element between the slider and the text input (default False)
 
     Returns
     -------
@@ -649,7 +738,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
                 }
             """ % ("inp.value != null && " if allow_none else "", min_value, min_value, min_value)))
 
-    component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
+    if add_spacer:
+        component = row(slider, Spacer(width_policy='max'), text_input, css_classes=["text_slider_%s" % attr, ])
+    else:
+        component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
@@ -1397,7 +1489,7 @@ class UIParameters:
     Holder class for the set of UI-adjustable parameters
     """
     def __init__(self, config: Config = None, extras: dict = None, reinit_params: list = None,
-                 title_overrides: dict = None):
+                 title_overrides: dict = None, placeholders: dict = None):
         """
         Create a UIParameters set of parameters for the UI.
 
@@ -1416,11 +1508,14 @@ class UIParameters:
             List of names of configuration fields to show in the reinit panel
         :titles_overrides: dict
             Dictionary of overrides for labeling the fields in the UI
+        :placeholders: dict
+            Dictionary of placeholder text to use for text inputs
         """
         self.fields = dict()
         self.values = dict()
         self.reinit_params = reinit_params
         self.titles = dict()
+        self.placeholders = dict()
 
         if config:
             for fname, field in config._fields.items():
@@ -1431,12 +1526,17 @@ class UIParameters:
                 self.fields[fname] = field
                 self.values[fname] = field.default
 
+        if placeholders:
+            self.placeholders = placeholders
+
         # Parse the titles once and be done, grab initial values
         for fname, field in self.fields.items():
             if title_overrides and fname in title_overrides:
                 title = title_overrides[fname]
             else:
                 title = field.doc.split('\n')[0]
+            if not title:
+                title = _title_from_field(field)
             self.titles[fname] = title
 
     def update_values(self, **kwargs):

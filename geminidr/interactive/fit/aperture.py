@@ -156,35 +156,6 @@ class TextInputLine(CustomWidget):
         self.text_input.value = self.value
 
 
-class TextSlider(CustomWidget):
-    def build(self):
-        self.in_update = False
-        self.spinner = Spinner(value=self.value, width=64,
-                               step=self.kwargs.get('step'),
-                               low=self.kwargs.get('start'),
-                               high=self.kwargs.get('end'))
-        self.slider = Slider(start=self.kwargs.get('start'),
-                             end=self.kwargs.get('end'),
-                             step=self.kwargs.get('step'),
-                             value=self.value, title=self.title, width=256)
-        self.spinner.on_change("value", self.handler)
-        self.slider.on_change("value", self.handler)
-
-        return row([self.slider,
-                    Spacer(width_policy='max'),
-                    self.spinner])
-
-    def reset(self):
-        self.spinner.value = self.value
-        self.slider.value = self.value
-
-    @avoid_multiple_update
-    def handler(self, attr, old, new):
-        self.spinner.value = new
-        self.slider.value = new
-        super().handler(attr, old, new)
-
-
 class CheckboxLine(CustomWidget):
     def build(self):
         self.checkbox = CheckboxGroup(labels=[""],
@@ -363,6 +334,10 @@ class FindSourceAperturesModel:
                                 method=self.sizing_method)
             log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
             self.add_aperture(peaks[0], *limits[0])
+
+    def update(self, extras):
+        for k in extras.keys():
+            setattr(self, k, extras[k])
 
     def recalc_apertures(self):
         """
@@ -871,7 +846,7 @@ class ApertureView:
 
 
 class FindSourceAperturesVisualizer(PrimitiveVisualizer):
-    def __init__(self, model, filename_info=''):
+    def __init__(self, model, filename_info='', ui_params=None):
         """
         Create a view for finding apertures with the given
         :class:`FindSourceAperturesModel`
@@ -884,10 +859,12 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         super().__init__(title='Find Source Apertures',
                          primitive_name='findApertures',
-                         filename_info=filename_info)
+                         filename_info=filename_info,
+                         ui_params=ui_params)
         self.model = model
         self.fig = None
         self.help_text = DETAILED_HELP
+        self.ui_params = ui_params
 
     def add_aperture(self):
         """
@@ -903,11 +880,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
     def parameters_view(self):
         model = self.model
 
-        def _maxaper_handler(new):
-            model.max_apertures = int(new) if new is not None else None
-
-        def _use_snr_handler(new):
-            model.use_snr = 0 in new
+        # def _maxaper_handler(new):
+        #     model.max_apertures = int(new) if new is not None else None
+        #
+        # def _use_snr_handler(new):
+        #     model.use_snr = 0 in new
 
         reset_button = Button(label="Reset", button_type='warning',
                               default_size=200)
@@ -917,9 +894,9 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 reset_button.disabled = True
                 def fn():
                     model.reset()
-                    for widget in (maxaper, minsky, use_snr, min_snr,
-                                   threshold, percentile, sizing):
-                        widget.reset()
+                    # for widget in (maxaper, minsky, use_snr, min_snr,
+                    #                threshold, percentile_panel, sizing):
+                    #     widget.reset()
                     self.model.recalc_apertures()
                     reset_button.disabled = False
                 self.do_later(fn)
@@ -931,35 +908,44 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             if result:
                 find_button.disabled = True
                 def fn():
+                    # self.model.update(self.ui_params)
+                    self.model.update(self.extras)
                     self.model.recalc_apertures()
                     find_button.disabled = False
                 self.do_later(fn)
 
+        widgets = self.make_widgets_from_parameters(self.ui_params, reinit_live=False, slider_width=256,
+                                                    add_spacer=True)
         # Profile parameters
-        percentile_panel = build_text_slider(
-            "Percentile (use mean if no value)", getattr(model, "percentile"), 1, 0, 100, obj=model,
-            attr="percentile", slider_width=256, allow_none=True, throttled=True,
-            is_float=False,
-            handler=self.slider_handler_factory("percentile", reinit_live=False))
-        percentile_panel.children.insert(1, Spacer(width_policy='max'))
+        # percentile_panel = build_text_slider(
+        #     "Percentile (use mean if no value)", getattr(model, "percentile"), 1, 0, 100, obj=model,
+        #     attr="percentile", slider_width=256, allow_none=True, throttled=True,
+        #     is_float=False,
+        #     handler=self.slider_handler_factory("percentile", reinit_live=False),
+        #     add_spacer=True)
 
         # TODO the rest of these should reuse generic calls like build_text_slider
-        minsky = SpinnerInputLine("Min sky region", model,
-                                  attr="min_sky_region", low=0)
-        use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
-                               attr="use_snr", handler=_use_snr_handler)
-        min_snr = TextSlider("SNR threshold for peak detection", model,
-                             attr="min_snr", start=0.1, end=10, step=0.1)
-        sections = TextInputLine("Sections", model, attr="section",
-                                 placeholder="e.g. 100:900,1500:2000")
+        # minsky = SpinnerInputLine("Min sky region", model,
+        #                           attr="min_sky_region", low=0)
+        # use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
+        #                        attr="use_snr", handler=_use_snr_handler)
+        # min_snr = build_text_slider(
+        #     "SNR threshold for peak detection", getattr(model, "min_snr"),  0.1, 0.1, 10, obj=model,
+        #     attr="min_snr", slider_width=256, throttled=True, is_float=True,
+        #     handler=self.slider_handler_factory("min_snr", reinit_live=False),
+        #     add_spacer=True)
+        # sections = TextInputLine("Sections", model, attr="section",
+        #                          placeholder="e.g. 100:900,1500:2000")
 
         # Peak finding parameters
-        maxaper = SpinnerInputLine("Max Apertures (empty means no limit)",
-                                   model, attr="max_apertures",
-                                   handler=_maxaper_handler, low=0)
-        threshold = TextSlider("Threshold", model, attr="threshold",
-                               start=0, end=1, step=0.01)
-        sizing = SelectLine("Sizing method", model, attr="sizing_method")
+        # maxaper = SpinnerInputLine("Max Apertures (empty means no limit)",
+        #                            model, attr="max_apertures",
+        #                            handler=_maxaper_handler, low=0)
+        # threshold = build_text_slider("Threshold", getattr(model, "threshold"), 0.01, 0, 1, obj=model,
+        #                               attr="threshold", slider_width=256, throttled=True, is_float=True,
+        #                               handler=self.slider_handler_factory("threshold", reinit_live=False),
+        #                               add_spacer=True)
+        # sizing = SelectLine("Sizing method", model, attr="sizing_method")
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
@@ -977,17 +963,20 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         return column(
             Div(text="Parameters to compute the profile:",
                 css_classes=['param_section']),
-            percentile_panel,
-            minsky.build(),
-            use_snr.build(),
-            min_snr.build(),
-            sections.build(),
+            *widgets[0:5],
+            # percentile_panel,
+            # minsky.build(),
+            # use_snr.build(),
+            # min_snr,
+            # sections.build(),
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),
-            maxaper.build(),
-            threshold.build(),
-            sizing.build(),
+            *widgets[5:],
+            # maxaper.build(),
+            # threshold,
+            # sizing.build(),
             row([reset_button, find_button]),
+            width_policy="min",
         )
 
     def visualize(self, doc):
@@ -1094,7 +1083,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         return np.array(locations), limits
 
 
-def interactive_find_source_apertures(ext, **kwargs):
+def interactive_find_source_apertures(ext, ui_params=None, **kwargs):
     """
     Perform an interactive find of source apertures with the given initial
     parameters.
@@ -1107,6 +1096,7 @@ def interactive_find_source_apertures(ext, **kwargs):
 
     """
     model = FindSourceAperturesModel(ext, **kwargs)
-    fsav = FindSourceAperturesVisualizer(model, filename_info=ext.filename)
+    ui_params = ui_params
+    fsav = FindSourceAperturesVisualizer(model, ui_params=ui_params, filename_info=ext.filename)
     interactive_fitter(fsav)
     return fsav.result()
