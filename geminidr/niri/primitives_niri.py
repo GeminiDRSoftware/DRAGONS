@@ -117,7 +117,7 @@ class NIRI(Gemini, NearIR):
                     current_value = getattr(ext, desc)()
                     new_value = linearize(
                         current_value * gain / coadds, coeffs) * coadds / gain
-                    ext.hdr[ad._keyword_for(desc)] = f'{new_value:.3f}'
+                    ext.hdr[ad._keyword_for(desc)] = np.round(new_value, 3)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

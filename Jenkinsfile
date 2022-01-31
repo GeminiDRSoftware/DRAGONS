@@ -76,11 +76,11 @@ pipeline {
                               deleteDir()
                             }
                         }
-                        failure {
-                            echo "Archiving tests results for Unit Tests"
-                            sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+        //                failure {
+        //                    echo "Archiving tests results for Unit Tests"
+        //                    sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
         //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
-                        }
+        //                }
                     }
                 }
 

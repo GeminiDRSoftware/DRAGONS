@@ -5,14 +5,15 @@ Fixtures to be used in tests in DRAGONS
 import os
 import shutil
 import urllib
-import inspect
 import xml.etree.ElementTree as et
 
 import numpy as np
 import pytest
 from astropy.table import Table
 from astropy.utils.data import download_file
+
 from geminidr.gemini.lookups.timestamp_keywords import timestamp_keys
+from gempy.library import astrotools as at
 
 URL = 'https://archive.gemini.edu/file/'
 
@@ -228,7 +229,7 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
     root_cache_path = os.getenv(env_var)
 
     if root_cache_path is None:
-        raise ValueError('Environment variable not set: {:s}'.format(env_var))
+        raise ValueError(f'Environment variable not set: {env_var}')
 
     root_cache_path = os.path.expanduser(root_cache_path)
 
@@ -318,7 +319,7 @@ class ADCompare:
         self.atol = atol
         if compare is None:
             compare = ('filename', 'tags', 'numext', 'refcat', 'phu',
-                           'hdr', 'attributes')
+                           'hdr', 'attributes', 'wcs')
         if ignore is not None:
             compare = [c for c in compare if c not in ignore]
 
@@ -335,23 +336,24 @@ class ADCompare:
         """Check the number of extensions is equal"""
         numext1, numext2 = len(self.ad1), len(self.ad2)
         if numext1 != numext2:
-            return [f'{numext1} vs {numext2}']
+            return [f'{numext1} v {numext2}']
 
     def filename(self):
         """Check the filenames are equal"""
         fname1, fname2 = self.ad1.filename, self.ad2.filename
         if fname1 != fname2:
-            return [f'{fname1} vs {fname2}']
+            return [f'{fname1} v {fname2}']
 
     def tags(self):
         """Check the tags are equal"""
         tags1, tags2 = self.ad1.tags, self.ad2.tags
         if tags1 != tags2:
-            return [f'{tags1}\n  vs: {tags2}']
+            return [f'{tags1}\n  v {tags2}']
 
     def phu(self):
         """Check the PHUs agree"""
-        errorlist = self._header(self.ad1.phu, self.ad2.phu)
+        # Ignore NEXTEND as only recently added and len(ad) handles it
+        errorlist = self._header(self.ad1.phu, self.ad2.phu, ignore=['NEXTEND'])
         if errorlist:
             return errorlist
 
@@ -364,11 +366,14 @@ class ADCompare:
                 errorlist.extend([f'Slice {i} HDR mismatch'] + elist)
         return errorlist
 
-    def _header(self, hdr1, hdr2):
+    def _header(self, hdr1, hdr2, ignore=None):
         """General method for comparing headers, ignoring some keywords"""
         errorlist = []
         s1 = set(hdr1.keys()) - {'HISTORY', 'COMMENT'}
         s2 = set(hdr2.keys()) - {'HISTORY', 'COMMENT'}
+        if ignore:
+            s1 -= set(ignore)
+            s2 -= set(ignore)
         if s1 != s2:
             if s1 - s2:
                 errorlist.append(f'Header 1 contains keywords {s1 - s2}')
@@ -383,9 +388,12 @@ class ADCompare:
                     v1, v2 = hdr1[kw], hdr2[kw]
                 except KeyError:  # Missing keyword in AD2
                     continue
-                if not (isinstance(v1, float) and abs(v1 - v2) < 0.01 or v1 == v2):
-                    errorlist.append('{} value mismatch: {} v {}'.
-                                format(kw, v1, v2))
+                try:
+                    if abs(v1 - v2) >= 0.01:
+                        errorlist.append(f'{kw} value mismatch: {v1} v {v2}')
+                except TypeError:
+                    if v1 != v2:
+                        errorlist.append(f'{kw} value inequality: {v1} v {v2}')
         return errorlist
 
     def refcat(self):
@@ -393,11 +401,11 @@ class ADCompare:
         refcat1 = getattr(self.ad1, 'REFCAT', None)
         refcat2 = getattr(self.ad2, 'REFCAT', None)
         if (refcat1 is None) ^ (refcat2 is None):
-            return [f'presence: {refcat1 is not None} vs {refcat2 is not None}']
+            return [f'presence: {refcat1 is not None} v {refcat2 is not None}']
         elif refcat1 is not None:  # and refcat2 must also exist
             len1, len2 = len(refcat1), len(refcat2)
             if len1 != len2:
-                return [f'lengths: {len1} vs {len2}']
+                return [f'lengths: {len1} v {len2}']
 
     def attributes(self):
         """Check extension-level attributes"""
@@ -421,14 +429,14 @@ class ADCompare:
                 if isinstance(attr, Table):
                     if len(attr1) != len(attr2):
                         errorlist.append(f'attr lengths differ: '
-                                         f'{len(attr1)} vs {len(attr2)}')
+                                         f'{len(attr1)} v {len(attr2)}')
                 else:  # everything else is pixel-like
                     if attr1.dtype.name != attr2.dtype.name:
                         errorlist.append(f'Datatype mismatch for {attr}: '
-                                         f'{attr1.dtype} vs {attr2.dtype}')
+                                         f'{attr1.dtype} v {attr2.dtype}')
                     if attr1.shape != attr2.shape:
                         errorlist.append(f'Shape mismatch for {attr}: '
-                                         f'{attr1.shape} vs {attr2.shape}')
+                                         f'{attr1.shape} v {attr2.shape}')
                     if 'int' in attr1.dtype.name:
                         try:
                             assert_most_equal(attr1, attr2, max_miss=self.max_miss)
@@ -440,6 +448,35 @@ class ADCompare:
                                               rtol=self.rtol, atol=self.atol)
                         except AssertionError as e:
                             errorlist.append(f'Mismatch for {attr}: '+str(e))
+        return errorlist
+
+    def wcs(self):
+        """Check WCS agrees"""
+        def compare_frames(frame1, frame2):
+            """Compare the important stuff of two CoordinateFrame instances"""
+            for attr in ("naxes", "axes_type", "axes_order", "unit", "axes_names"):
+                assert getattr(frame1, attr) == getattr(frame2, attr)
+
+        errorlist = []
+        for i, (ext1, ext2) in enumerate(zip(self.ad1, self.ad2)):
+            wcs1, wcs2 = ext1.wcs, ext2.wcs
+            frames1, frames2 = wcs1.available_frames, wcs2.available_frames
+            if frames1 != frames2:
+                errorlist.append(f'Slice {i}rames differ: {frames1} v {frames2}')
+                return errorlist
+            for frame in frames1:
+                frame1, frame2 = getattr(wcs1, frame), getattr(wcs2, frame)
+                try:
+                    compare_frames(frame1, frame2)
+                except AssertionError:
+                    errorlist.compare(f'Slice {i} {frame} differs: '
+                                      f'{frame1} v {frame2}')
+            corners = at.get_corners(ext1.shape)
+            world1, world2 = wcs1(*zip(*corners)), wcs2(*zip(*corners))
+            try:
+                np.testing.assert_allclose(world1, world2)
+            except AssertionError:
+                errorlist.append(f'Slice {i} world coords differ: {world1} v {world2}')
         return errorlist
 
     @staticmethod

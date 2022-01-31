@@ -903,7 +903,7 @@ class Preprocess(PrimitivesBASE):
                         current_value = getattr(ext, desc)()
                         new_value = linearize(
                             [current_value * conv_factor], coeffs)[0] / conv_factor
-                        ext.hdr[ad._keyword_for(desc)] = f'{new_value:.3f}'
+                        ext.hdr[ad._keyword_for(desc)] = np.round(new_value, 3)
 
             # Timestamp the header and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
