@@ -104,6 +104,22 @@ class CCD(PrimitivesBASE):
             timestamp = datetime.now()
         return adinputs
 
+    def stackBiases(self, adinputs=None, **params):
+        """
+        This primitive checks the inputs have the same exposure time and stacks
+        them without any scaling offsetting, suitable for biases.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitve", self.myself(), "starting"))
+
+        if not all('BIAS' in bias.tags for bias in adinputs):
+            raise OSError("Not all inputs have BIAS tag")
+
+        stack_params = self._inherit_params(params, "stackFrames")
+        stack_params.update({'zero': False, 'scale': False})
+        adinputs = self.stackFrames(adinputs, **stack_params)
+        return adinputs
+
     def overscanCorrect(self, adinputs=None, **params):
         adinputs = self.subtractOverscan(adinputs,
                     **self._inherit_params(params, "subtractOverscan"))
