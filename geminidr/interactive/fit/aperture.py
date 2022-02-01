@@ -975,7 +975,6 @@ def interactive_find_source_apertures(ext, ui_params=None, **kwargs):
 
     """
     model = FindSourceAperturesModel(ext, **kwargs)
-    ui_params = ui_params
     fsav = FindSourceAperturesVisualizer(model, ui_params=ui_params, filename_info=ext.filename)
     interactive_fitter(fsav)
     return fsav.result()
