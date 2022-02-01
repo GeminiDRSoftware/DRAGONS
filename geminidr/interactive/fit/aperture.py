@@ -110,83 +110,6 @@ def avoid_multiple_update(func):
     return wrapper
 
 
-class CustomWidget:
-    """Defines a default handler that set the value on the model."""
-
-    def __init__(self, title, model, attr, handler=None, **kwargs):
-        self.title = title
-        self.attr = attr
-        self.model = model
-        self._handler = handler
-        self.kwargs = kwargs
-
-    @property
-    def value(self):
-        """The value from the model."""
-        return getattr(self.model, self.attr)
-
-    def handler(self, attr, old, new):
-        if self._handler is not None:
-            self._handler(new)
-        else:
-            setattr(self.model, self.attr, new)
-
-
-class SpinnerInputLine(CustomWidget):
-    def build(self):
-        self.spinner = Spinner(value=self.value, width=64, **self.kwargs)
-        self.spinner.on_change("value", self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.spinner])
-
-    def reset(self):
-        self.spinner.value = self.value
-
-
-class TextInputLine(CustomWidget):
-    def build(self):
-        self.text_input = TextInput(value=self.value if self.value else '', width=256, **self.kwargs)
-        self.text_input.on_change("value", self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.text_input])
-
-    def reset(self):
-        self.text_input.value = self.value
-
-
-class CheckboxLine(CustomWidget):
-    def build(self):
-        self.checkbox = CheckboxGroup(labels=[""],
-                                      active=[0] if self.value else [],
-                                      width=40, width_policy='fixed',
-                                      align='center')
-        self.checkbox.on_click(self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.checkbox])
-
-    def reset(self):
-        self.checkbox.active = [0] if self.value else []
-
-    def handler(self, new):
-        super().handler(None, None, new)
-
-
-class SelectLine(CustomWidget):
-    def build(self):
-        self.select = Select(value=self.value, options=["peak", "integral"],
-                             width=128)
-        self.select.on_change("value", self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.select])
-
-    def reset(self):
-        self.select.value = self.value
-
-
 class ApertureModel:
     def __init__(self, aperture_id, location, start, end, parent):
         self.source = ColumnDataSource({
@@ -880,12 +803,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
     def parameters_view(self):
         model = self.model
 
-        # def _maxaper_handler(new):
-        #     model.max_apertures = int(new) if new is not None else None
-        #
-        # def _use_snr_handler(new):
-        #     model.use_snr = 0 in new
-
         reset_button = Button(label="Reset", button_type='warning',
                               default_size=200)
 
@@ -894,9 +811,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 reset_button.disabled = True
                 def fn():
                     model.reset()
-                    # for widget in (maxaper, minsky, use_snr, min_snr,
-                    #                threshold, percentile_panel, sizing):
-                    #     widget.reset()
+                    self.reset_reinit_panel()
                     self.model.recalc_apertures()
                     reset_button.disabled = False
                 self.do_later(fn)
@@ -908,7 +823,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             if result:
                 find_button.disabled = True
                 def fn():
-                    # self.model.update(self.ui_params)
                     self.model.update(self.extras)
                     self.model.recalc_apertures()
                     find_button.disabled = False
@@ -916,36 +830,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         widgets = self.make_widgets_from_parameters(self.ui_params, reinit_live=False, slider_width=256,
                                                     add_spacer=True)
-        # Profile parameters
-        # percentile_panel = build_text_slider(
-        #     "Percentile (use mean if no value)", getattr(model, "percentile"), 1, 0, 100, obj=model,
-        #     attr="percentile", slider_width=256, allow_none=True, throttled=True,
-        #     is_float=False,
-        #     handler=self.slider_handler_factory("percentile", reinit_live=False),
-        #     add_spacer=True)
-
-        # TODO the rest of these should reuse generic calls like build_text_slider
-        # minsky = SpinnerInputLine("Min sky region", model,
-        #                           attr="min_sky_region", low=0)
-        # use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
-        #                        attr="use_snr", handler=_use_snr_handler)
-        # min_snr = build_text_slider(
-        #     "SNR threshold for peak detection", getattr(model, "min_snr"),  0.1, 0.1, 10, obj=model,
-        #     attr="min_snr", slider_width=256, throttled=True, is_float=True,
-        #     handler=self.slider_handler_factory("min_snr", reinit_live=False),
-        #     add_spacer=True)
-        # sections = TextInputLine("Sections", model, attr="section",
-        #                          placeholder="e.g. 100:900,1500:2000")
-
-        # Peak finding parameters
-        # maxaper = SpinnerInputLine("Max Apertures (empty means no limit)",
-        #                            model, attr="max_apertures",
-        #                            handler=_maxaper_handler, low=0)
-        # threshold = build_text_slider("Threshold", getattr(model, "threshold"), 0.01, 0, 1, obj=model,
-        #                               attr="threshold", slider_width=256, throttled=True, is_float=True,
-        #                               handler=self.slider_handler_factory("threshold", reinit_live=False),
-        #                               add_spacer=True)
-        # sizing = SelectLine("Sizing method", model, attr="sizing_method")
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
@@ -964,17 +848,9 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             Div(text="Parameters to compute the profile:",
                 css_classes=['param_section']),
             *widgets[0:5],
-            # percentile_panel,
-            # minsky.build(),
-            # use_snr.build(),
-            # min_snr,
-            # sections.build(),
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),
             *widgets[5:],
-            # maxaper.build(),
-            # threshold,
-            # sizing.build(),
             row([reset_button, find_button]),
             width_policy="min",
         )
@@ -1078,8 +954,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         """
         models = self.model.aperture_models
-        res = (models[id_].result() for id_ in sorted(models.keys()))
-        locations, limits = zip(*res)
+        res = list(models[id_].result() for id_ in sorted(models.keys()))
+        if res:
+            locations, limits = zip(*res)
+        else:
+            locations, limits = [], []
         return np.array(locations), limits
 
 

@@ -135,7 +135,6 @@ class PrimitiveVisualizer(ABC):
         # JS callbacks in bokeh)
         self.submit_button.on_click(self.submit_button_handler)
         self.submit_button.js_on_change('disabled', callback)
-        # self.submit_button.js_on_click(callback)
 
         abort_callback = CustomJS(code="""
             $.ajax('/shutdown?user_satisfied=false').done(function()
@@ -154,7 +153,70 @@ class PrimitiveVisualizer(ABC):
         # Text widget for triggering ok/cancel via DOM text change event
         self._ok_cancel_holder = None
 
+        self._reinit_params = {k: v for k, v in ui_params.values.items()}
+
         self.fits = []
+
+    # noinspection PyProtectedMember
+    def reset_reinit_panel(self, param=None):
+        """
+        Reset all the parameters in the Tracing Panel (leftmost column).
+        If a param is provided, it resets only this parameter in particular.
+
+        Parameters
+        ----------
+        param : str
+            Parameter name
+        """
+        for fname in self.ui_params.reinit_params:
+            if param is None or fname == param:
+                reset_value = self._reinit_params[fname]
+            else:
+                continue
+
+            # Handle CheckboxGroup widgets
+            if hasattr(self.widgets[fname], "value"):
+                attr = "value"
+            else:
+                attr = "active"
+                reset_value = [0] if reset_value else []
+            old = getattr(self.widgets[fname], attr)
+
+            # Update widget value
+            if reset_value is None:
+                if not isinstance(self.widgets[fname], TextInput):
+                    kwargs = {attr: self.widgets[fname].start, "show_value": False}
+                else:
+                    kwargs = {attr: ""}
+            else:
+                kwargs = {attr: reset_value}
+            self.widgets[fname].update(**kwargs)
+
+            # Update Text Field via callback function
+            if 'value' in self.widgets[fname]._callbacks:
+                for callback in self.widgets[fname]._callbacks['value']:
+                    callback('value', old=old, new=reset_value)
+            if 'value_throttled' in self.widgets[fname]._callbacks:
+                for callback in self.widgets[fname]._callbacks['value_throttled']:
+                    callback(attrib='value_throttled', old=old, new=reset_value)
+
+    def build_reset_button(self):
+        reset_reinit_button = bm.Button(
+            button_type='warning',
+            height=35,
+            id='reset-reinit-pars',
+            label="Reset",
+            width=202)
+
+        def reset_dialog_handler(result):
+            if result:
+                self.reset_reinit_panel()
+
+        self.make_ok_cancel_dialog(
+            btn=reset_reinit_button,
+            message='Do you want to reset the input parameters?',
+            callback=reset_dialog_handler)
+        return reset_reinit_button
 
     def make_ok_cancel_dialog(self, btn, message, callback):
         """
@@ -540,12 +602,7 @@ class PrimitiveVisualizer(ABC):
                         title = params.titles[key]
                     else:
                         title = _title_from_field(field)
-                    # menu = [(v, k) for k, v in field.allowed.items() if k is not None]
-                    # if None in field.allowed.keys():
-                    #     menu.append(None)
-                    # widget = Dropdown(label=title, menu=menu)
-                    widget = Select(# title=title,
-                                    width=96,
+                    widget = Select(width=96,
                                     value=params.values[key], options=list(field.allowed.keys()))
                     def _select_handler(attr, old, new):
                         self.extras[key] = new
@@ -554,10 +611,10 @@ class PrimitiveVisualizer(ABC):
                     widget.on_change('value', _select_handler)
                     self.widgets[key] = widget
                     widgets.append(row([Div(text=title, align='center'), widget]))
-                                        # Spacer(width_policy='max'), widget]))
                 elif field.dtype is bool:
-                    widget = bm.CheckboxGroup(labels=[" "], # labels=[params.titles[key]],
-                                              active=[0] if params.values[key] else [])
+                    widget = bm.CheckboxGroup(labels=[" "],
+                                              active=[0] if params.values[key] else [],
+                                              width_policy="min")
                     cb_key = key
                     def _cb_handler(cbkey, val):
                         self.extras[cbkey] = True if len(val) else False
@@ -566,7 +623,6 @@ class PrimitiveVisualizer(ABC):
                     widget.on_click(lambda v: _cb_handler(cb_key, v))
                     self.widgets[key] = widget
                     widgets.append(row([Div(text=params.titles[key], align='start'), widget]))
-                                        # Spacer(width_policy='max'), widget]))
                 else:
                     # Anything else
                     if key in params.titles:
