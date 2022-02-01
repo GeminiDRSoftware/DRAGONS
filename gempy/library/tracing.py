@@ -912,8 +912,10 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
         region = np.ma.masked_array(data, mask)[ix1:ix2+1]
         for i in region[1:-1].argsort():
             if region[i+1] <= region[i] and region[i+1] <= region[i+2]:
-                return pinpoint_peaks(-data, mask, [ix1+i+1], halfwidth=2,
-                                      threshold=-data.max())[0]
+                found = pinpoint_peaks(-data, mask, [ix1+i+1], halfwidth=2,
+                                       threshold=-data.max())
+                if found:
+                    return found[0]
         # No luck, so just split the difference
         return 0.5 * sum(peaks)
 
