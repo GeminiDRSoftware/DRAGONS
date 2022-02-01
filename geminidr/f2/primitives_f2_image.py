@@ -9,9 +9,12 @@ from geminidr.core import Image, Photometry
 from .primitives_f2 import F2
 from . import parameters_f2_image
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class F2Image(F2, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives

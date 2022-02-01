@@ -43,8 +43,15 @@
         var queryFreq = 3;  // seconds
         var element = $('#main');
         var id = 'specViewer';
-        var sViewer = new SpecViewer(element, id, queryFreq);
-        sViewer.start();
+        var sViewer = new SpecViewer(element, id, queryFreq, false);
+
+        var stackElement = $('#stack');
+        stackElement.hide();  // make this bit hidden, will show() on data
+        var stackId = 'stackViewer';
+        var stackViewer = new SpecViewer(stackElement, stackId, queryFreq, true);
+
+        start_polling_adcc([sViewer, stackViewer], queryFreq);
+        // sViewer.start();
 
       }
     );
@@ -79,6 +86,9 @@
 
       <div id="main">
         <!-- Placeholder for SpecViewer -->
+      </div>
+      <div id="stack">
+        <!-- Placeholder for Stack SpecViewer -->
       </div>
 
     </div>

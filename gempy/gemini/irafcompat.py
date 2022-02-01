@@ -50,6 +50,15 @@ def compat_with_iraf_GMOS(ad, verbose):
         if verbose:
             print("Add GIREDUCE to PHU")
         ad.phu.set('GIREDUCE', "Compatibility", "For IRAF compatibility")
+    if 'TRANSFRM' in ad.phu:
+        if verbose:
+            print("Add GSTRANSF to PHU")
+        ad.phu.set('GSTRANSF', "Compatibility", "For IRAF compatibility")
+    if 'SKYCORR' in ad.phu:
+        kw = 'GNSSKYSU' if 'NODANDSHUFFLE' in ad.tags else 'GSSKYSUB'
+        if verbose:
+            print(f"Add {kw} to PHU")
+        ad.phu.set(kw, "Compatibility", "For IRAF compatibility")
     if 'MOSAIC' in ad.phu:
         if verbose:
             print("Add GMOSAIC to PHU")
@@ -57,6 +66,10 @@ def compat_with_iraf_GMOS(ad, verbose):
         if verbose:
             print("Copy WCS to PHU")
         _copy_wcs_to_phu(ad)
+    if 'CCDSUM' not in ad.phu:
+        if verbose:
+            print("Copy CCDSUM to PHU")
+        ad.phu['CCDSUM'] = ad.hdr['CCDSUM'][0]
     if 'NSCIEXT' not in ad.phu:
         if verbose:
             print("Add NSCIEXT to PHU")

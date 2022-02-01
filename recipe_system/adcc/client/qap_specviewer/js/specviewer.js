@@ -7,6 +7,10 @@ const specViewerJsonName = "/specqueue.json";
 const notAvailableYet = '<span class="not-available"> (Not available yet) </span>';
 const noData = '<span class="no-data"> No Data </span>';
 
+// global variable for the countdown timer
+let countdown = 3;
+
+
 /**
  * Options to be used by the plots
  */
@@ -57,9 +61,10 @@ const plotOptions = {
  * Adds a count down in the footer to let user know when the server was queried.
  * @param {object} sViewer - An initialized version of SpecViewer.
  */
-function addCountDown(sViewer) {
+function addCountDown() {
+  let cdn=countdown;
 
-  $(`.footer`).width( $(`#${sViewer.id}`).width() );
+  $(`.footer`).width( $(`#main`).width() );
   $(`.footer`).append(`<span class="d-table-cell tar countdown"> </span>`);
 
   $(`.countdown`).append(`<span class="dot"></span>`);
@@ -68,11 +73,14 @@ function addCountDown(sViewer) {
 
   function updateCountdown() {
 
-    if (sViewer.countdown >= 0) {
-      $(`.countdown .number`).html(`${sViewer.countdown} s`);
+    if (cdn >= 0) {
+      $(`.countdown .number`).html(`${cdn} s`);
       $(`.countdown .title, .countdown .number, .dot`).addClass(`online`);
       $(`.countdown .title, .countdown .number, .dot`).removeClass(`offline`);
-      sViewer.countdown--;
+      cdn--;
+      if (cdn == 0) {
+        cdn = countdown;
+      }
     } else {
       $(`.countdown .title, .countdown .number, .dot`).removeClass(`online`);
       $(`.countdown .title, .countdown .number, .dot`).addClass(`offline`);
@@ -90,8 +98,10 @@ function addCountDown(sViewer) {
  * Add the settings button and the hidden form to the webpage.
  * @param {object} sViewer - An initialized version of SpecViewer.
  */
-function addSettings(sViewer) {
+function addSettings(gcs) {
   'use strict';
+
+  let delay = countdown * 1000;
 
   // Add the settings button
   $( `span.settings` ).html(`
@@ -111,7 +121,7 @@ function addSettings(sViewer) {
       <form>
 
           <label for="queryFreq">Query frequency:</label>
-          <input type="number" id="queryFreq" name="queryFreq" min="1" max="60" value=${sViewer.countdown}>
+          <input type="number" id="queryFreq" name="queryFreq" min="1" max="60" value=${countdown}>
           <label for="queryFreq">seconds</label>
           <br><br>
           <input type="checkbox" name="flashOnRefresh" id="flashOnRefresh" name="flashOnRefresh" value="flash">
@@ -133,23 +143,20 @@ function addSettings(sViewer) {
   let queryFreq = $( "#queryFreq" );
 
   function showSettings () {
-    console.log("Clicked on settings button.");
     settingsModal.css("display", "block");
     queryFreq.focus();
   };
 
   function saveSettings () {
-    sViewer.delay = queryFreq.val() * 1000;
-    sViewer.countdown = queryFreq.val();
-    sViewer.gjs.delay = sViewer.delay;
+    delay = queryFreq.val() * 1000;
+    countdown = queryFreq.val();
+    gjs.delay = delay;
     settingsModal.css("display", "none");
-    console.log(` Setting countdown to ${sViewer.delay / 1000} seconds`);
   };
 
   function cancel() {
     settingsModal.css("display", "none");
-    queryFreq.val(sViewer.delay / 1000);
-    console.log(` Discarding changes.`);
+    queryFreq.val(delay / 1000);
   };
 
   // Add functionality to buttons
@@ -269,14 +276,13 @@ function getNearestIndex(target, list) {
 
 }
 
-
 /**
  * Returns the last frame info div element using a template.
  *
  * @param filename {string} name of the filename.
  * @param programId {string} program Id code.
  */
-function getFrameInfo(filename, programId) {
+function getInfo(filename, programId, is_stack) {
 
   if (filename === '') {
     filename = notAvailableYet;
@@ -285,11 +291,15 @@ function getFrameInfo(filename, programId) {
   if (programId === '') {
     programId = notAvailableYet;
   }
+  let frame_type='Latest'
+  if (is_stack) {
+    frame_type= 'Stack';
+  }
 
   return `
   <div class="d-table w-100">
     <p class="d-table-cell">
-      Latest frame - ${filename} - ${programId}
+      ${frame_type} frame - ${filename} - ${programId}
     </p>
     <div class="d-table-cell tar">
       <button class="ui-button ui-widget ui-corner-all" title="Reset zoom">
@@ -297,37 +307,6 @@ function getFrameInfo(filename, programId) {
       </button>
     </div>
   </div>`;
-}
-
-
-/**
- * Returns the stack frame info div element using a template.
- *
- * @param filename {string} name of the filename.
- * @param programId {string} program Id code.
- */
-function getStackInfo(filename, programId) {
-
-  if (filename === '') {
-    filename = '<span style="color: #aaa"> (Not available yet) </span>';
-  }
-
-  if (programId === '') {
-    programId = '<span style="color: #aaa"> (Not available yet) </span>';
-  }
-
-  return `
-    <div class="d-table w-100">
-      <p class="d-table-cell">
-        Stack frame - ${filename} - ${programId}
-      </p>
-      <div class="d-table-cell tar">
-        <button class="ui-button ui-widget ui-corner-all" title="Reset zoom">
-          <img class="zoom-reset" src="/qapspec/images/zoom_reset_48px.png"></img>
-        </button>
-      </div>
-    </div>
-  `;
 }
 
 
@@ -390,11 +369,50 @@ function isInApertureList(aperture, pixelScale, listOfApertures) {
  * @param {number} idx - Aperture index
  */
 function remove_extra_items_from_legend(plotId) {
+//  setTimeout(() => {
   let legend_items = $(`#${plotId} table.jqplot-table-legend tr`);
   for (let j = legend_items.length-1; j > 0; j--) {
     if (j != legend_items.length / 2) { legend_items[j].remove(); }}
+//  },50);
 }
 
+/**
+* Starts to query for new data
+*/
+function start_polling_adcc(svs) {
+    // Make an AJAX request to the server for the current
+    // time and the server site information.
+    // The callback for this request will call the init function
+    $.ajax({
+      type: "GET",
+      url: "/rqsite.json",
+      success: function success (data) {
+        svs.forEach(sv => {
+            sv.site = data.local_site;
+            sv.timestamp = data.unxtime;
+            });
+      }, // end success
+      error: function error () {
+        let ts = new Date();
+        svs.forEach(sv => {
+            sv.site = undefined;
+            sv.tzname = "LT";
+            sv.timestamp = ts;
+            });
+      } // end error
+    }); // end ajax
+
+    gjs = new GJSCommandPipe();
+    gjs.registerCallback("specjson", function(msg) {
+      svs.forEach(sv => {
+        sv.loadData(msg);
+      });
+    });
+    gjs.startPump(svs[0].timestamp, "specjson");
+    gjs.delay = countdown*1000;
+    addCountDown();
+    addSettings(gjs);
+} // end start
 
 /**
  * Main component for SpecViewer.
@@ -402,10 +420,11 @@ function remove_extra_items_from_legend(plotId) {
  * @param {object} parentElement - element that will hold SpecViewer.
  * @param {string} id - name of the ID of the SpecViewer div container.
  * @param {int} queryFreq - refresh delay in seconds
+ * @param {bool} is_stack - Is this viewer for stacked data or non-stacked
  */
 class SpecViewer {
 
-  constructor(parentElement, id, queryFreq) {
+  constructor(parentElement, id, queryFreq, is_stack) {
     'use strict';
 
     // Creating empty object
@@ -413,14 +432,23 @@ class SpecViewer {
     this.id = id;
 
     // Placeholders for different elements
-    this.singlePlots = [];
-    this.stackPlots = [];
+    this.plots = [];
 
     this.aperturesId = [];
     this.dataLabel = null;  // Last Frame Data Label
     this.groupId = null;
     this.stackSize = 0;
     this.timestamp = 0;
+
+    this.is_stack = is_stack;
+    this.prefix = 'spec_';
+    this.type = 'single';
+    this.top_id = '#main';
+    if (is_stack) {
+      this.prefix = 'stack_';
+      this.type = 'stack';
+      this.top_id = '#stack';
+    }
 
     // Create empty page
     this.parentElement.html(`
@@ -434,17 +462,6 @@ class SpecViewer {
 
     // Call function to enable the tabs
     $(`#${id}`).tabs();
-
-    // Add countdown
-    this.delay = queryFreq * 1000;
-    this.countdown = queryFreq;
-
-    addCountDown(this);
-    addSettings(this);
-
-    // Placeholder for adcc command pump
-    this.gjs = null;
-
   } // end constructor
 
   /**
@@ -479,6 +496,14 @@ class SpecViewer {
   loadData(jsonData) {
       'use restrict';
 
+      // filter for whether this SpecViewer is for stack or non-stack events
+      if (jsonData.length) {
+        if (jsonData[0].is_stack != this.is_stack) {
+          return;
+        }
+      }
+
+      this.parentElement.show();
       this.now = Date(Date.now());
 
       // Restart countdown
@@ -506,18 +531,18 @@ class SpecViewer {
 
         jsonElement.apertures = assureUniqueApertures(jsonElement.apertures);
 
-        if (jsonElement.group_id !== this.groupId) {
+        if (this.timestamp < jsonElement.timestamp
+            || jsonElement.group_id !== this.groupId) {
 
           console.log(`- NEW group Id: ${jsonElement.group_id} - ${type} data`);
           this.groupId = jsonElement.group_id;
 
           // Clear navigation tabs and relevant lists
-          this.singlePlots = [];
-          this.stackPlots = [];
+          this.plots = [];
           this.stackSize = 0;
 
           // Clear tab contents
-          $('.tabcontent').remove();
+          $(`.${this.prefix}tabcontent`).remove();
 
           // Clear navigation tab
           $(`#${this.id} ul`).empty();
@@ -546,7 +571,6 @@ class SpecViewer {
           this.updatePlotArea(jsonElement, type);
           this.updateNavigationTab();
           this.flashInfo(type);
-
         } else {
 
           console.log(`- SAME group Id: ${this.groupId} - ${type} data`);
@@ -605,14 +629,10 @@ class SpecViewer {
     newTabContent(ap) {
 
       $(`#${this.id}`).append(
-        `<div id="aperture${ap.id}" class="tabcontent">
+        `<div id="${this.prefix}aperture${ap.id}" class="${this.prefix}tabcontent">
           <div class="apertureInfo"> </div>
           <div class="info single"> </div>
-          <div class="ui-widget-content resizable single" id="singlePlot${ap.id}-resizable" >
-            ${notAvailableYet}
-          </div>
-          <div class="info stack"> </div>
-          <div class="ui-widget-content resizable stack" id="stackPlot${ap.id}-resizable" >
+          <div class="ui-widget-content resizable single" id="${this.prefix}${this.type}Plot${ap.id}-resizable" >
             ${notAvailableYet}
           </div>
         </div>`
@@ -620,8 +640,8 @@ class SpecViewer {
 
       // Add content to the container
       $(`#aperture${ap.id} .apertureInfo`).html( getApertureInfo(ap) );
-      $(`#aperture${ap.id} .info.single`).html( getFrameInfo("", "") );
-      $(`#aperture${ap.id} .info.stack`).html( getStackInfo("", "") );
+
+      $(`#aperture${ap.id} .info`).html( getInfo("", "", this.is_stack) );
 
   } // end newTabContent
 
@@ -629,67 +649,31 @@ class SpecViewer {
    * Enable Reset Zoom button for Frame Plots
    * @param {object} p - JQPlot instance
    * @param {number} i - Aperture index
-   * @param {string} type - Aperture type (single/stack)
    */
-  resetZoom(p, i, type) {
+  resetZoom(p, i) {
 
       let sViewer = this;
       let apId = sViewer.aperturesId[i];
-      let plotId = `${type}Plot_${apId}`;
+      let plotId = `${this.prefix}${this.type}Plot_${apId}`;
 
       function sleep (miliseconds) {
         return new Promise(resolve => setTimeout(resolve, miliseconds));
       }
 
       // Unbind click to prevent setting it several times
-      $(`#aperture${apId} .info.${type} button`).unbind( "click" );
+      $(`#${this.prefix}aperture${apId} .info .d-table .tar button`).unbind( "click" );
 
       // Bind click event
-      $(`#aperture${apId} .info.${type} button`).click(
-        async function() {
-          console.log(`Reset zoom of ${type} plot #${i}.`);
-          p.resetZoom();
+      $(`#${this.prefix}aperture${apId} .info .d-table .tar button`).click(
+        () => {
+          this.plots[i].replot( { resetAxes: true } );
           remove_extra_items_from_legend(plotId);
-          sleep(250);
         }
       );
 
+      remove_extra_items_from_legend(plotId);
+
   } //
-
-  /**
-   * Starts to query for new data
-   */
-  start() {
-
-    console.log("Starting SpecViewer");
-
-    // Make an AJAX request to the server for the current
-    // time and the server site information.
-    // The callback for this request will call the init function
-    var sv = this;
-
-    $.ajax({
-      type: "GET",
-      url: "/rqsite.json",
-      success: function success (data) {
-        sv.site = data.local_site;
-        sv.timestamp = data.unxtime;
-      }, // end success
-      error: function error () {
-        sv.site = undefined;
-        sv.tzname = "LT";
-        sv.timestamp = new Date();
-      } // end error
-    }); // end ajax
-
-    this.gjs = new GJSCommandPipe();
-    this.gjs.registerCallback("specjson", function(msg) {
-      sv.loadData(msg);
-    });
-    this.gjs.startPump(sv.timestamp, "specjson");
-    this.gjs.delay = this.delay;
-
-  } // end start
 
   /**
    * Updates navigation tabs based on tab contents and the number of aperture
@@ -709,7 +693,7 @@ class SpecViewer {
     // Create buttons and add them to the navigation tab
     for (let i = 0; i < this.aperturesId.length; i++) {
       navTabContainer.append(`
-        <li><a href="#aperture${this.aperturesId[i]}"> Aperture ${i + 1}
+        <li><a href="#${this.prefix}aperture${this.aperturesId[i]}"> Aperture ${i + 1}
         </a></li>`);
     }
 
@@ -736,7 +720,7 @@ class SpecViewer {
 
       let sViewer = this;
       let apertureId = this.aperturesId[i];
-      let plotId = `${type}Plot_${apertureId}`;
+      let plotId = `${this.prefix}${this.type}Plot_${apertureId}`;
       let activeTabIndex = $(`#${this.id}`).tabs('option', 'active');
 
       let inputAperturesId = data.apertures.map(function (a) {return a.id;});
@@ -758,42 +742,40 @@ class SpecViewer {
       let sliced_stddev = slices.map(function (s) {
         return stddev.slice(s[0], s[1])});
 
-      $(`#aperture${apertureId} .apertureInfo`).html(
+      $(`#${this.prefix}aperture${apertureId} .apertureInfo`).html(
         getApertureInfo(data.apertures[apIdx])
       );
 
-      $(`#aperture${apertureId} .info.${type}`).html(
-        getFrameInfo(data.filename, data.program_id)
+      $(`#${this.prefix}aperture${apertureId} .info`).html(
+        getInfo(data.filename, data.program_id, this.is_stack)
       );
 
       // Create plot area if it does not exist
       if (!$(`#${plotId}`).length) {
-        $(`#aperture${apertureId} .resizable.${type}`).html(
-          `<div class="plot ${type}" id="${plotId}"> </div>`);
-
+        $(`#${this.prefix}aperture${apertureId} .resizable`).html(
+          `<div class="plot" id="${plotId}"> </div>`);
       }
 
       // Plot instance exists
-      if (this[`${type}Plots`][i]) {
+      if (this[`plots`][i]) {
 
         // Existing plotted apperture id exists inside data apertures
         if (isInApertureList(apertureId, data.pixel_scale, inputAperturesId)) {
 
-          console.log('Refresh plots');
-
           slices.map(function (s, idx) {
-            sViewer[`${type}Plots`][i].series[idx].data = intensity.slice(s[0], s[1]);
-            sViewer[`${type}Plots`][i].series[idx + slices.length].data = stddev.slice(s[0], s[1]);
+            sViewer[`plots`][i].series[idx].data = intensity.slice(s[0], s[1]);
+            sViewer[`plots`][i].series[idx + slices.length].data = stddev.slice(s[0], s[1]);
           })
 
-          this[`${type}Plots`][i].title.text = plotTitle;
-          this[`${type}Plots`][i].resetAxesScale();
+          this[`plots`][i].title.text = plotTitle;
+          this[`plots`][i].resetAxesScale();
 
           // Refresh only on active tab
           if (i === activeTabIndex) {
-            this[`${type}Plots`][i].replot( { resetAxes:true } );
+            this[`plots`][i].replot( { resetAxes:true } );
           }
 
+          remove_extra_items_from_legend(plotId);
         } else {
           $(`#${plotId}`).html(noData);
         }
@@ -802,8 +784,6 @@ class SpecViewer {
 
         // Existing plotted apperture id exists inside data apertures
         if (isInApertureList(apertureId, data.pixel_scale, inputAperturesId)) {
-
-          console.log('Create new plots');
 
           let options_for_intensity = sliced_intensities.map(
             function () {
@@ -819,7 +799,7 @@ class SpecViewer {
                 label: 'Standard Deviation',
               }});
 
-          this[`${type}Plots`][i] = $.jqplot(
+          this[`plots`][i] = $.jqplot(
             plotId, sliced_intensities.concat(sliced_stddev),
             $.extend(plotOptions, {
               title: plotTitle,
@@ -843,9 +823,9 @@ class SpecViewer {
 
           // Customize doZoom to clean up the legend after zooming.
           let sViewer = this;
-          let originalDoZoom = this[`${type}Plots`][i].plugins.cursor.doZoom;
+          let originalDoZoom = this[`plots`][i].plugins.cursor.doZoom;
 
-          this[`${type}Plots`][i].plugins.cursor.doZoom = function (gridpos, datapos, plot, cursor) {
+          this[`plots`][i].plugins.cursor.doZoom = function (gridpos, datapos, plot, cursor) {
             originalDoZoom(gridpos, datapos, plot, cursor);
             remove_extra_items_from_legend(plotId);
           }
@@ -867,32 +847,19 @@ class SpecViewer {
 
     // Reference self to use in inner function
     let sViewer = this;
-
-    this.singlePlots.map(function(p, i) {
-        sViewer.resetZoom(p, i, 'single');
-    });
-
-    this.stackPlots.map(function(p, i) {
-        sViewer.resetZoom(p, i, 'stack');
+    this.plots.map(function(p, i) {
+        sViewer.resetZoom(p, i);
     });
 
     // Enable on tab change event
-    function resizePlotArea(index, type) {
+    function resizePlotArea(index) {
       let apId = sViewer.aperturesId[index];
-      let plotInstance = sViewer[`${type}Plots`][index];
-      let plotId = `${type}Plot_${apId}`;
-      let plotTarget = $(`#${type}Plot_${apId}`);
-      let resizableArea = $(`#aperture${apId} .resizable.${type}`);
+      let plotInstance = sViewer[`plots`][index];
+      let plotId = `${sViewer.prefix}${sViewer.type}Plot_${apId}`;
+      let plotTarget = $(`#${sViewer.prefix}${sViewer.type}Plot_${apId}`);
+      let resizableArea = $(`#${sViewer.prefix}aperture${apId} .resizable`);
 
       plotTarget.width(resizableArea.width() * 0.99);
-
-      // Sometimes this function is activated before plots are defined.
-      // if ($(plotTarget).length) {
-      //   if (plotInstance) {
-      //     plotInstance.replot({ resetAxes: true }
-      //     );
-      //   }
-      // }
 
       if (plotInstance) {
         plotInstance.replot({ resetAxes: true }
@@ -905,8 +872,7 @@ class SpecViewer {
 
     function onTabChange(event, tab) {
       let newIndex = tab.newTab.index();
-      resizePlotArea(newIndex, 'single');
-      resizePlotArea(newIndex, 'stack');
+      resizePlotArea(newIndex);
     }
 
     $(`#${this.id}`).tabs({'activate': onTabChange});
@@ -914,8 +880,7 @@ class SpecViewer {
     // Resize plot area on window resize stop
     function resizeEnd() {
       let activeTabIndex = $(`#${sViewer.id}`).tabs('option', 'active');
-      resizePlotArea(activeTabIndex, 'single');
-      resizePlotArea(activeTabIndex, 'stack');
+      resizePlotArea(activeTabIndex);
     }
 
     var doit;
@@ -925,24 +890,30 @@ class SpecViewer {
     };
 
     // Enable to resize plot area's height
-    $('.resizable').resizable({
+    $(`${sViewer.top_id} .resizable`).resizable({
       ghost: true,
       resize: function(event, ui) {
-
         // Restrict horizontal resizing
         ui.size.width = ui.originalSize.width;
 
         // Resize internal elements
-        let id = $(this).children('.plot').attr('id');
+        let id = $(this).children(`${sViewer.top_id} .plot`).attr('id');
         let index = $(`#${sViewer.id}`).tabs('option', 'active');
-        let type = (id.includes('stack') ? 'stack':'single');
 
-        $('.plot').height(ui.size.height * 0.95);
-        sViewer[`${type}Plots`][index].replot( { resetAxes: true } );
+        $(`${sViewer.top_id} .plot`).height(ui.size.height * 0.95);
+        sViewer[`plots`][index].replot( { resetAxes: true } );
+        sViewer.plots.map(function(p, i) {
+          sViewer.resetZoom(p, i);
+        });
 
+        let height = ui.size.height;
+        document.querySelectorAll(`${sViewer.top_id} .resizeable`).forEach((item) => {
+          item.style.height = height;
+        });
+
+        remove_extra_items_from_legend(id);
       }
     });
-
   }
 
 } // end SpecViewer

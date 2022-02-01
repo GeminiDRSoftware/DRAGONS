@@ -22,9 +22,12 @@ from gempy.library.matching import find_alignment_transform, fit_model, match_so
 from geminidr import PrimitivesBASE
 from . import parameters_register
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Register(PrimitivesBASE):
     """
     This is the class containing all of the primitives for registration.

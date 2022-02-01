@@ -16,9 +16,12 @@ from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
 from . import parameters_ccd
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class CCD(PrimitivesBASE):
     """
     This is the class containing all of the primitives used for generic CCD
@@ -110,6 +113,22 @@ class CCD(PrimitivesBASE):
             if bias.path:
                 add_provenance(ad, bias.filename, md5sum(bias.path) or "", self.myself())
 
+        return adinputs
+
+    def stackBiases(self, adinputs=None, **params):
+        """
+        This primitive checks the inputs have the same exposure time and stacks
+        them without any scaling offsetting, suitable for biases.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitve", self.myself(), "starting"))
+
+        if not all('BIAS' in bias.tags for bias in adinputs):
+            raise OSError("Not all inputs have BIAS tag")
+
+        stack_params = self._inherit_params(params, "stackFrames")
+        stack_params.update({'zero': False, 'scale': False})
+        adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 
     def overscanCorrect(self, adinputs=None, **params):

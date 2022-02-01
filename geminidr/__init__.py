@@ -34,7 +34,7 @@ from .gemini.lookups import timestamp_keywords
 from .gemini.lookups.source_detection import sextractor_dict
 
 from recipe_system.cal_service import init_calibration_databases
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.config import load_config
 
 import atexit
@@ -135,6 +135,7 @@ def cleanup(process):
 
 
 @parameter_override
+@capture_provenance
 class PrimitivesBASE:
     """
     This is the base class for all of primitives classes for the geminidr

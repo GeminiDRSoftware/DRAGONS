@@ -29,11 +29,12 @@ from gemini_instruments.gmos.pixel_functions import get_bias_level
 from geminidr import PrimitivesBASE
 from . import parameters_visualize
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Visualize(PrimitivesBASE):
     """
     This is the class containing the visualization primitives.

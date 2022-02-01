@@ -18,6 +18,7 @@ class makeFringeFrameConfig(parameters_stack.core_stacking_config, parameters_ph
     dilation = config.RangeField("Object dilation radius (pixels)", float, 2., min=0)
     def setDefaults(self):
         self.suffix = "_fringe"
+        self.reject_method = "varclip"
 
 class makeFringeForQAConfig(makeFringeFrameConfig):
     pass

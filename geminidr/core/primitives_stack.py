@@ -16,10 +16,12 @@ from gempy.library.nddops import NDStacker
 from geminidr import PrimitivesBASE
 from . import parameters_stack
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Stack(PrimitivesBASE):
     """
     This is the class containing all of the primitives for stacking.
@@ -322,6 +324,10 @@ class Stack(PrimitivesBASE):
             else:
                 out_refcat['Id'] = list(range(1, len(out_refcat)+1))
                 ad_out.REFCAT = out_refcat
+
+        # Propagate MDF from first input (no checking that they're all the same)
+        if hasattr(adinputs[0], 'MDF'):
+            ad_out.MDF = deepcopy(adinputs[0].MDF)
 
         # Set AIRMASS to be the mean of the input values
         try:

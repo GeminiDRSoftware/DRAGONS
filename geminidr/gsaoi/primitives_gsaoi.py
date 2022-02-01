@@ -9,12 +9,13 @@ from astropy.table import vstack
 from geminidr.core import NearIR
 from geminidr.gemini.primitives_gemini import Gemini
 from gempy.gemini import gemini_tools as gt
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from . import parameters_gsaoi
 
 
 @parameter_override
+@capture_provenance
 class GSAOI(Gemini, NearIR):
     """
     This is the class containing all of the preprocessing primitives

@@ -11,7 +11,7 @@ from geminidr.core import CCD
 # from gempy.scripts.gmoss_fix_headers import correct_headers
 # from gempy.gemini.eti import gmosaiceti
 from gempy.gemini import gemini_tools as gt
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from ..gemini.primitives_gemini import Gemini
 from . import parameters_gmos
@@ -19,6 +19,7 @@ from .lookups import maskdb
 
 
 @parameter_override
+@capture_provenance
 class GMOS(Gemini, CCD):
     """
     This is the class containing all of the preprocessing primitives
