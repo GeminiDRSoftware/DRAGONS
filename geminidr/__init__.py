@@ -19,6 +19,7 @@ import weakref
 
 from copy import deepcopy
 from inspect import isclass, currentframe
+from itertools import chain
 
 from gempy.eti_core.eti import ETISubprocess
 from gempy.library import config
@@ -241,6 +242,21 @@ class PrimitivesBASE:
         :raises: :class:~recipe_system.reduction.coreReduce.UnrecognizedParameterException: \
             when a user parameter uses an unrecognized primitive or parameter name
         """
+        def find_similar_names(name, valid_names):
+            """Will return None if it's valid"""
+            if name in valid_names:
+                return None
+            alternative_names = [n for n in valid_names if n.upper() == name.upper()]
+            return alternative_names
+
+        def format_exception(name, alternative_names, noun):
+            msg = f"{noun} {name} not recognized"
+            if len(alternative_names) == 1:
+                msg += f", did you mean {alternative_names[0]}?"
+            elif len(alternative_names) > 1:
+                msg += f", did you mean one of {alternative_names}?"
+            return msg
+
         if self.user_params and (PrimitivesBASE._validated_user_parms is None
                                  or PrimitivesBASE._validated_user_parms == self.user_params):
             for key in self.user_params.keys():
@@ -251,40 +267,22 @@ class PrimitivesBASE:
                         raise UnrecognizedParameterException("Expecting parameter or primitive:parameter in "
                                                              "-p user parameters")
                     primitive = split_key[0]
-                    key = split_key[1]
-                found_primitive = False
-                found_key = False
-                alternative_keys = list()
-                alternative_primitives = list()
+                    parameter = split_key[1]
+                else:
+                    parameter = key
 
-                for prim, cfg in self.params.items():
-                    if primitive is None or f"{primitive}" == prim:
-                        found_primitive = True
-                        for field_name in cfg.keys():  # pylint: disable=protected-access
-                            if key == field_name:
-                                found_key = True
-                            elif key.upper() == field_name.upper() and field_name not in alternative_keys:
-                                alternative_keys.append(field_name)
-                    if primitive is not None:
-                        if f"{primitive.upper()}" == prim.upper() \
-                                and prim not in alternative_primitives:
-                            alternative_primitives.append(prim)
-                if primitive and not found_primitive:
-                    if alternative_primitives:
-                        if len(alternative_primitives) == 1:
-                            raise UnrecognizedParameterException(f"Primitive {primitive} not found, did you mean {alternative_primitives[0]}?")
-                        else:
-                            raise UnrecognizedParameterException(f"Primitive {primitive} not found, did you mean one of {alternative_primitives}?")
-                    else:
-                        raise UnrecognizedParameterException(f"Primitive {primitive} not found")
-                if not found_key:
-                    if alternative_keys:
-                        if len(alternative_keys) == 1:
-                            raise UnrecognizedParameterException(f"Parameter {key} not found, did you mean {alternative_keys[0]}?")
-                        else:
-                            raise UnrecognizedParameterException(f"Parameter {key} not found, did you mean one of these? {alternative_keys}?")
-                    else:
-                        raise UnrecognizedParameterException(f"Parameter {key} not recognized")
+                if primitive:
+                    alternative_primitives = find_similar_names(primitive, self.params.keys())
+                    if alternative_primitives is None:  # it's valid
+                        alternative_parameters = find_similar_names(parameter, self.params[primitive])
+                else:
+                    alternative_parameters = find_similar_names(
+                        parameter, chain(*[v.keys() for v in self.params.values()]))
+
+                if primitive and alternative_primitives is not None:  # it's invalid
+                    raise UnrecognizedParameterException(format_exception(primitive, alternative_primitives, "Primitive"))
+                if alternative_parameters is not None:  # it's invalid
+                    raise UnrecognizedParameterException(format_exception(parameter, alternative_parameters, "Parameter"))
             PrimitivesBASE._validated_user_parms = self.user_params
 
     @property

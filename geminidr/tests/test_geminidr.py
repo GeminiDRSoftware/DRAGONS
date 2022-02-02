@@ -11,11 +11,11 @@ import gemini_instruments  # needed to initialize instrument support
                          [
                              ([('nteractive', True)], 'Parameter nteractive not recognized'),
                              ([('calculateSensitivity:nteractive', True)], 'Parameter nteractive not recognized'),
-                             ([('alculateSensitivity:interactive', True)], 'Primitive alculateSensitivity not found'),
+                             ([('alculateSensitivity:interactive', True)], 'Primitive alculateSensitivity not recognized'),
                              ([('calculateSensitivity:Interactive', True)],
-                              'Parameter Interactive not found, did you mean interactive?'),
+                              'Parameter Interactive not recognized, did you mean interactive?'),
                              ([('CalculateSensitivity:interactive', True)],
-                              'Primitive CalculateSensitivity not found, did you mean calculateSensitivity?'),
+                              'Primitive CalculateSensitivity not recognized, did you mean calculateSensitivity?'),
                              ([('calculateSensitivity:interactive:pickles', True)],
                               'Expecting parameter or primitive:parameter in -p user parameters')
                          ])
