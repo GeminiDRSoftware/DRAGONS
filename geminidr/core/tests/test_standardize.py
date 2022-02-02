@@ -17,8 +17,8 @@ import pytest
 
 import astrodata
 from gempy.utils import logutils
+from astrodata.testing import ad_compare
 
-from . import ad_compare
 from geminidr.niri.primitives_niri_image import NIRIImage
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')

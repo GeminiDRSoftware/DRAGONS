@@ -21,6 +21,10 @@ def get_bias_level(adinput=None, estimate=True):
     # function call an appropriate function. This is in place due to the call
     # to the function from the primitives_qa module - MS 2014-05-14 see
     # Trac #683
+    try:  # the header keyword gets deleted when trimming, so it is there?
+        adinput.hdr[adinput._keyword_for('overscan_section')]
+    except KeyError:  # no, it isn't!
+        estimate = True  # so we have to estimate
     __ALLOWED_TYPES__ = ["GMOS"]
     if not set(__ALLOWED_TYPES__).issubset(adinput.tags):
         msg = "{}.{} only works for {} data".format(__name__,
