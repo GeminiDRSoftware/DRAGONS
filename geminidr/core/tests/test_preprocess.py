@@ -4,6 +4,7 @@
 import os
 
 import astrodata
+from geminidr.core.tests import ad_compare
 import gemini_instruments
 import numpy as np
 import pytest
@@ -18,6 +19,21 @@ from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
 
 DEBUG = bool(os.getenv('DEBUG', False))
 
+
+# ---- Fixtures ----------------------------------------
+
+@pytest.fixture
+def niri_images(astrofaker):
+    """Create two NIRI images, one all 1s, the other all 2s"""
+    adinputs = []
+    for i in (1, 2):
+        ad = astrofaker.create('NIRI', 'IMAGE')
+        ad.init_default_extensions()
+        ad[0].data += i
+
+        adinputs.append(ad)
+
+    return NIRIImage(adinputs)
 
 @pytest.fixture
 def niriprim():
@@ -37,6 +53,34 @@ def niriprim2():
     p.addDQ()
     return p
 
+@pytest.fixture
+def niri_targets_sequence():
+    # Produce a list of NIRI target frames from the tutorial dataset
+    filenames = ['N20160102S{:04d}.fits'.format(i)
+                  for i in range(270, 275)]
+    # filenames = [f'N20210615S{i:04d}.fits' for i in range(28, 36)]
+    ad_outputs = []
+    for name in filenames:
+        file_path = download_from_archive(name)
+        ad_outputs.append(astrodata.open(file_path))
+
+    return ad_outputs
+
+@pytest.fixture
+def niri_skies_sequence():
+    # Produce a list of NIRI sky frames from the tutoral dataset
+    filenames = ['N20160102S{:04d}.fits'.format(i)
+                 for i in range(275, 280)]
+    ad_outputs = []
+    for name in filenames:
+        file_path = download_from_archive(name)
+        ad_outputs.append(astrodata.open(file_path))
+
+    return ad_outputs
+
+
+
+# ---- Tests ---------------------------------------------
 
 @pytest.mark.dragons_remote_data
 def test_apply_dq_plane_default(niriprim):
@@ -311,37 +355,22 @@ def test_fixpixels_multiple_ext(niriprim2):
 
 # TODO @bquint: clean up these tests
 
-# @pytest.fixture
-# def niri_images(astrofaker):
-#     """Create two NIRI images, one all 1s, the other all 2s"""
-#     adinputs = []
-#     for i in (1, 2):
-#         ad = astrofaker.create('NIRI', 'IMAGE')
-#         ad.init_default_extensions()
-#         ad[0].data += i
+def test_scale_by_exposure_time(niri_images):
+    ad1, ad2 = niri_images.streams['main']
 
-#     adinputs.append(ad)
+    ad2.phu[ad2._keyword_for('exposure_time')] *= 0.5
+    ad2_orig_value = ad2[0].data.mean()
 
-#     return NIRIImage(adinputs)
+    ad1, ad2 = niri_images.scaleByExposureTime(time=None)
 
+    # Check that ad2 had its data doubled
+    assert abs(ad2[0].data.mean() - ad2_orig_value * 2) < 0.001
 
-# @pytest.mark.xfail(reason="Test needs revision", run=False)
-# def test_scale_by_exposure_time(niri_images):
-#     ad1, ad2 = niri_images.streams['main']
+    ad1, ad2 = niri_images.scaleByExposureTime(time=1)
 
-#     ad2.phu[ad2._keyword_for('exposure_time')] *= 0.5
-#     ad2_orig_value = ad2[0].data.mean()
-
-#     ad1, ad2 = niri_images.scaleByExposureTime(time=None)
-
-#     # Check that ad2 had its data doubled
-#     assert abs(ad2[0].data.mean() - ad2_orig_value * 2) < 0.001
-
-#     ad1, ad2 = niri_images.scaleByExposureTime(time=1)
-
-#     # Check that ad2 has been rescaled to 1-second
-#     print(ad2[0].data.mean(), ad2_orig_value, ad2.phu["ORIGTEXP"])
-#     assert abs(ad2[0].data.mean() - ad2_orig_value / ad2.phu["ORIGTEXP"]) < 0.001
+    # Check that ad2 has been rescaled to 1-second
+    print(ad2[0].data.mean(), ad2_orig_value, ad2.phu["ORIGTEXP"])
+    assert abs(ad2[0].data.mean() - ad2_orig_value / ad2.phu["ORIGTEXP"]) < 0.001
 
 
 # @pytest.mark.xfail(reason="Test needs revision", run=False)
@@ -368,23 +397,25 @@ def test_fixpixels_multiple_ext(niriprim2):
 
 
 # @pytest.mark.xfail(reason="Test needs revision", run=False)
-# def test_associateSky():
-#     filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
-#                  for i in range(104, 109)]
+@pytest.mark.dragons_remote_data
+def test_associateSky(niri_targets_sequence):
+    # filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
+    #               for i in range(104, 109)]
 
-#     adinputs = [astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', f))
-#                 for f in filenames]
+    # adinputs = [astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', f))
+                # for f in filenames]
+    adinputs = niri_targets_sequence
 
-#     p = NIRIImage(adinputs)
-#     p.separateSky()  # Difficult to construct this by hand
-#     p.associateSky()
-#     filename_set = {ad.phu['ORIGNAME'] for ad in adinputs}
+    p = NIRIImage(adinputs)
+    p.separateSky()  # Difficult to construct this by hand
+    p.associateSky()
+    filename_set = {ad.phu['ORIGNAME'] for ad in adinputs}
 
-#     # Test here is that each science frame has all other frames as skies
-#     for k, v in p.sky_dict.items():
-#         v = [ad.phu['ORIGNAME'] for ad in v]
-#         assert len(v) == len(filenames) - 1
-#         assert set([k] + v) == filename_set
+    # Test here is that each science frame has all other frames as skies
+    for ad in p.showList():
+        # v = [ad.phu['ORIGNAME'] for ad in ad.SKYTABLE]
+        assert len(ad.SKYTABLE) == len(niri_targets_sequence) - 1
+        # assert set([ad.phu['ORIGNAME']] + v) == filename_set
 
 # def test_correctBackgroundToReference(self):
 #     pass
@@ -397,13 +428,15 @@ def test_fixpixels_multiple_ext(niriprim2):
 #     assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
 #                             'N20070819S0104_darkCorrected.fits'))
 
-# def test_darkCorrect_with_af(self):
-#     science = astrofaker.create('NIRI', 'IMAGE')
-#     dark = astrofaker.create('NIRI', 'IMAGE')
-#     p = NIRIImage([science])
-#     p.darkCorrect([science], dark=dark)
-#     science.subtract(dark)
-#     assert ad_compare(science, dark)
+@pytest.mark.xfail(reason="Test needs revision", run=False)
+def test_darkCorrect_with_af(astrofaker):
+    science = astrofaker.create('NIRI', 'IMAGE')
+    dark = astrofaker.create('NIRI', 'IMAGE')
+    p = NIRIImage([science])
+    p.darkCorrect([science], dark=dark)
+    science.subtract(dark)
+    science.filename = 'N20010101S0001.fits'
+    assert ad_compare(science, dark)
 
 
 # af.init_default_extensions()
@@ -433,8 +466,47 @@ def test_fixpixels_multiple_ext(niriprim2):
 #     ad = p.normalizeFlat(suffix='_flat', strip=True)[0]
 #     assert ad_compare(ad, flat_file)
 #
-# def test_separateSky(self):
-#     pass
+
+@pytest.mark.dragons_remote_data
+def test_separateSky_dithered(niri_targets_sequence, niri_skies_sequence):
+
+    adinputs = niri_targets_sequence + niri_skies_sequence
+
+    target_filenames = set([ad.phu['ORIGNAME'] for ad in niri_targets_sequence])
+    sky_filenames = set([ad.phu['ORIGNAME'] for ad in niri_skies_sequence])
+
+    p = NIRIImage(adinputs)
+    p.separateSky()
+
+    target_names = set([ad.phu['ORIGNAME'] for ad in p.streams['main']])
+    sky_names = set([ad.phu['ORIGNAME'] for ad in p.streams['sky']])
+
+    assert len(p.streams['main']) == len(niri_targets_sequence)
+    assert len(p.streams['sky']) == len(niri_skies_sequence)
+    assert target_filenames == target_names
+    assert sky_filenames == sky_names
+
+@pytest.mark.dragons_remote_data
+def test_separateSky_all_on_target(niri_targets_sequence):
+
+    adinputs = set(niri_targets_sequence)
+
+    p = NIRIImage(adinputs)
+    p.separateSky()
+
+    assert p.streams['main'] == p.streams['sky']
+
+@pytest.mark.dragons_remote_data
+def test_separateSky_low_frac_FOV(niri_targets_sequence):
+
+    adinputs = set(niri_targets_sequence)
+
+    p = NIRIImage(adinputs)
+    p.separateSky(frac_FOV=0.5)
+
+    assert p.streams['main'] == p.streams['sky']
+
+
 #
 # def test_skyCorrect(self):
 #     pass
