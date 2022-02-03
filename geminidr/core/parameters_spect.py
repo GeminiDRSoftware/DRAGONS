@@ -178,7 +178,7 @@ class findAperturesConfig(config.Config):
     sizing_method = config.ChoiceField("Method for automatic width determination", str,
                                        allowed={"peak": "height relative to peak",
                                                 "integral": "integrated flux"},
-                                       default="peak")
+                                       default="peak", optional=False)
     interactive = config.Field("Use interactive interface", bool, False)
     strategy = config.ChoiceField("Strategy for peak finding", str,
                                   allowed={"exponential_wavelet": "Wavelet with exponentially spaced widths",
