@@ -136,6 +136,15 @@ def cleanup(process):
     process.terminate()
 
 
+def _find_similar_names(name, valid_names):
+    """Will return None if it's valid"""
+    # moved outside _validate_user_parms for pytest use
+    if name in valid_names:
+        return None
+    alternative_names = [n for n in valid_names if n.upper() == name.upper()]
+    return alternative_names
+
+
 @parameter_override
 @capture_provenance
 class PrimitivesBASE:
@@ -242,12 +251,6 @@ class PrimitivesBASE:
         :raises: :class:~recipe_system.reduction.coreReduce.UnrecognizedParameterException: \
             when a user parameter uses an unrecognized primitive or parameter name
         """
-        def find_similar_names(name, valid_names):
-            """Will return None if it's valid"""
-            if name in valid_names:
-                return None
-            alternative_names = [n for n in valid_names if n.upper() == name.upper()]
-            return alternative_names
 
         def format_exception(name, alternative_names, noun):
             msg = f"{noun} {name} not recognized"
@@ -257,8 +260,7 @@ class PrimitivesBASE:
                 msg += f", did you mean one of {alternative_names}?"
             return msg
 
-        if self.user_params and (PrimitivesBASE._validated_user_parms is None
-                                 or PrimitivesBASE._validated_user_parms != self.user_params):
+        if self.user_params and PrimitivesBASE._validated_user_parms != self.user_params:
             for key in self.user_params.keys():
                 primitive = None
                 if ':' in key:
@@ -272,11 +274,11 @@ class PrimitivesBASE:
                     parameter = key
 
                 if primitive:
-                    alternative_primitives = find_similar_names(primitive, self.params.keys())
+                    alternative_primitives = _find_similar_names(primitive, self.params.keys())
                     if alternative_primitives is None:  # it's valid
-                        alternative_parameters = find_similar_names(parameter, self.params[primitive])
+                        alternative_parameters = _find_similar_names(parameter, self.params[primitive])
                 else:
-                    alternative_parameters = find_similar_names(
+                    alternative_parameters = _find_similar_names(
                         parameter, chain(*[v.keys() for v in self.params.values()]))
 
                 if primitive and alternative_primitives is not None:  # it's invalid
