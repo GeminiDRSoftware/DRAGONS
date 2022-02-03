@@ -258,7 +258,7 @@ class PrimitivesBASE:
             return msg
 
         if self.user_params and (PrimitivesBASE._validated_user_parms is None
-                                 or PrimitivesBASE._validated_user_parms == self.user_params):
+                                 or PrimitivesBASE._validated_user_parms != self.user_params):
             for key in self.user_params.keys():
                 primitive = None
                 if ':' in key:
