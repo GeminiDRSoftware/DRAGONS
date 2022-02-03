@@ -40,7 +40,7 @@ pipeline {
             }
         }
 
-        stage('Normal tests') {
+        stage('Quicker tests') {
             parallel {
 
                 stage('Unit tests') {
@@ -76,11 +76,11 @@ pipeline {
                               deleteDir()
                             }
                         }
-                        failure {
-                            echo "Archiving tests results for Unit Tests"
-                            sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+        //                failure {
+        //                    echo "Archiving tests results for Unit Tests"
+        //                    sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
         //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
-                        }
+        //                }
                     }
                 }
 
@@ -151,7 +151,11 @@ pipeline {
                         }
                     } // end post
                 }
+            } // end parallel
+        }
 
+        stage('Slower tests') {
+            parallel {
                 stage('GMOS LS Tests') {
                     agent { label "master" }
                     environment {
@@ -187,41 +191,40 @@ pipeline {
                     }  // end post
                 }  // end stage
 
-            }  // end parallel
-        }
-
-        stage('Slow Tests') {
-            agent { label "master" }
-            environment {
-                MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-                DRAGONS_TEST_OUT = "regression_tests_outputs"
-                TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                TMPDIR = "${env.WORKSPACE}/.tmp/slow/"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                echo "${env.PATH}"
-                sh '.jenkins/scripts/setup_agent.sh'
-                echo "Slow tests"
-                sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F slow'
-            } // end steps
-            post {
-                always {
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: '.tmp/py37-slow/reports/*_results.xml'
-                    )
-                    echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                      deleteDir()
+                stage('Slow Tests') {
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                        DRAGONS_TEST_OUT = "regression_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/slow/"
                     }
-                }
-            } // end post
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        echo "${env.PATH}"
+                        sh '.jenkins/scripts/setup_agent.sh'
+                        echo "Slow tests"
+                        sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F slow'
+                    } // end steps
+                    post {
+                        always {
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py37-slow/reports/*_results.xml'
+                            )
+                            echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }
+                    } // end post
+                } // end stage
+            } // end parallel
         }
 
     }

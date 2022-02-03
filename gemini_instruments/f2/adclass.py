@@ -506,10 +506,12 @@ class AstroDataF2(AstroDataGemini):
         return getattr(array_properties.get(self.read_mode()), 'coeffs', None)
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
         """
-        Returns the level at which the data become non-linear, in ADU.
+        Returns the level at which the data become non-linear, in the units
+        of the image.
 
         Returns
         -------
@@ -586,10 +588,11 @@ class AstroDataF2(AstroDataGemini):
                        'readnoise', None)
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level (in ADU)
+        Returns the saturation level, in the units of the image
 
         Returns
         -------

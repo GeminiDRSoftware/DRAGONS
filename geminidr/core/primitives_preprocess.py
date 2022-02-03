@@ -7,6 +7,7 @@ import datetime
 import math
 from collections import defaultdict
 from copy import deepcopy
+from contextlib import suppress
 from functools import partial
 
 import astrodata
@@ -111,7 +112,22 @@ class Preprocess(PrimitivesBASE):
                     log.warning(f"  {ext.id} is already in electrons. "
                                 "Continuing.")
                     continue
-                ext.multiply(gt.array_from_descriptor_value(ext, "gain"))
+                gain = gt.array_from_descriptor_value(ext, "gain")
+                ext.multiply(gain)
+
+                # Update saturation and nonlinear levels with new value. We
+                # allowed these to return lists before this point but now a
+                # single (mean) value is going to be used.
+                for desc in ('saturation_level', 'non_linear_level'):
+                    try:
+                        kw = ad._keyword_for(desc)
+                    except AttributeError:
+                        continue
+                    new_value = np.mean(
+                        gain * gt.array_from_descriptor_value(ext, desc))
+                    # Make sure we update the comment too!
+                    new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
+                    ext.hdr[kw] = (new_value, new_comment)
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
@@ -835,11 +851,18 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
+        def linearize(counts, coeffs):
+            """Return a linearized version of the counts in electrons per coadd"""
+            ret_counts = np.zeros_like(counts)
+            for coeff in reversed(coeffs):
+                ret_counts[:] += coeff
+                ret_counts[:] *= counts
+            return ret_counts
+
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to %s, since it has "
-                            "already been processed by nonlinearityCorrect".
-                            format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, since "
+                            "it has already been processed by nonlinearityCorrect")
                 continue
 
             # Get the correction coefficients
@@ -847,42 +870,41 @@ class Preprocess(PrimitivesBASE):
                 nonlin_coeffs = ad.nonlinearity_coeffs()
             except:
                 log.warning("Unable to obtain nonlinearity coefficients for "
-                            "{}".format(ad.filename))
+                            f"{ad.filename}")
                 continue
 
             in_adu = ad.is_in_adu()
             # It's impossible to do this cleverly with a string of ad.mult()s
             # so use regular maths
-            log.status("Applying nonlinearity correction to {}".
-                       format(ad.filename))
-            for ext, coeffs in zip(ad, nonlin_coeffs):
-                log.status("   nonlinearity correction for extension {} is {}"
-                           .format(ext.id, coeffs))
-                pixel_data = np.zeros_like(ext.data)
+            log.status(f"Applying nonlinearity correction to {ad.filename}")
+            for ext, gain, coeffs in zip(ad, ad.gain(), nonlin_coeffs):
+                log.status("   nonlinearity correction for extension "
+                           f"{ext.id} is {coeffs}")
 
-                # Convert back to ADU per exposure if coadds have been summed
-                # or if the data have been converted to electrons
-                conv_factor = 1 if in_adu else ext.gain()
-                if ext.is_coadds_summed():
-                    conv_factor *= ext.coadds()
-                for n in range(len(coeffs), 0, -1):
-                    pixel_data += coeffs[n-1]
-                    pixel_data *= ext.data / conv_factor
-                pixel_data *= conv_factor
+                # Ensure we linearize the electrons per exposure
+                coadds = ext.coadds() if ext.is_coadds_summed() else 1
+                conv_factor = gain / coadds
+                pixel_data = linearize(ext.data * conv_factor, coeffs) / conv_factor
+
                 # Try to do something useful with the VAR plane, if it exists
                 # Since the data are fairly pristine, VAR will simply be the
                 # Poisson noise (divided by gain if in ADU, divided by COADDS
                 # if the coadds are averaged), possibly plus read-noise**2
                 # So making an additive correction will sort this out,
                 # irrespective of whether there's read noise
-                conv_factor = ext.gain() if in_adu else 1
-                if not ext.is_coadds_summed():
-                    conv_factor *= ext.coadds()
                 if ext.variance is not None and \
                    'poisson' in ext.hdr.get('VARNOISE', '').lower():
-                    ext.variance += (pixel_data - ext.data) / conv_factor
+                    ext.variance += ((pixel_data - ext.data) /
+                                     (gain * (1 if ext.is_coadds_summed() else ext.coadds())))
                 # Now update the SCI extension
                 ext.data = pixel_data
+
+                for desc in ('saturation_level', 'non_linear_level'):
+                    with suppress(AttributeError):
+                        current_value = getattr(ext, desc)()
+                        new_value = linearize(
+                            [current_value * conv_factor], coeffs)[0] / conv_factor
+                        ext.hdr[ad._keyword_for(desc)] = np.round(new_value, 3)
 
             # Timestamp the header and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1077,7 +1099,7 @@ class Preprocess(PrimitivesBASE):
         for sky_filename in ref_sky:
             for ad in adinputs:
                 if strip_fits(sky_filename) in ad.filename:
-                    objects.add(ad)
+                    skies.add(ad)
                     if 'OBJFRAME' in ad.phu and 'SKYFRAME' not in ad.phu:
                         log.warning("{} previously classified as OBJECT; "
                                 "added SKY as requested".format(ad.filename))

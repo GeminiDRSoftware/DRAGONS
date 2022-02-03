@@ -1546,14 +1546,15 @@ class AstroDataGemini(AstroData):
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level of the data, in ADU. This is expected
-        to be overridden by the individual instruments, so at the Gemini
-        level it returns the values of the SATLEVEL keywords (or None)
+        Returns the saturation level of the data, in the units of the data.
+        This is expected to be overridden by the individual instruments,
+        so at the Gemini level it returns the values of the SATLEVEL keyword
+        (or None).
 
         Returns
         -------
         list/float
-            saturation level in ADU
+            saturation level (in units of the data)
         """
         return self.hdr.get(self._keyword_for('saturation_level'))
 
