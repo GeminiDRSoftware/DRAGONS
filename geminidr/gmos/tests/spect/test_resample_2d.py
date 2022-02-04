@@ -67,7 +67,7 @@ def test_correlation_and_trim(adinputs, caplog):
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
 
-    p.resampleToCommonFrame(dw=0.15, trim_data=True)
+    p.resampleToCommonFrame(dw=0.15, trim_spectral=True)
     _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
 
     p.findApertures(max_apertures=1)
