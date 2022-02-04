@@ -124,42 +124,6 @@ def test_correlation_non_linearize(adinputs, caplog):
     assert adstack[0][0].shape == (512, 3868)
 
 
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-def test_header_offset(adinputs2, caplog):
-    """Test that the offset is correctly read from the headers."""
-    p = GMOSLongslit(adinputs2)
-    adout = p.adjustWCSToReference(method='offsets')
-
-    for rec in caplog.records:
-        assert not rec.message.startswith('WARNING')
-
-    assert np.isclose(adout[0].phu['SLITOFF'], 0)
-    assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[3].phu['SLITOFF'], 0)
-
-
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-@pytest.mark.skip("Improved primitive doesn't fail any more")
-def test_header_offset_fallback(adinputs2, caplog):
-    """For this dataset the correlation method fails, and give an offset very
-    different from the header one. So we check that the fallback to the header
-    offset works.
-    """
-    p = GMOSLongslit(adinputs2)
-    adout = p.adjustWCSToReference()
-
-    # WARNING when offset is too large
-    assert caplog.records[3].message.startswith('WARNING - No cross')
-
-    assert np.isclose(adout[0].phu['SLITOFF'], 0)
-    assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[3].phu['SLITOFF'], 0, atol=0.2, rtol=0)
-
-
 # Local Fixtures and Helper Functions -----------------------------------------
 def _check_params(records, expected):
     for record in records:
