@@ -42,16 +42,15 @@ def test_correlation(adinputs, caplog):
 
     p.findApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
-                                for ad in p.streams['main']], 260.6, atol=0.25)
+                                for ad in p.streams['main']], 260.4, atol=0.25)
 
     ad = p.stackFrames(reject_method="sigclip")[0]
-    assert ad[0].shape == (512, 3869)
+    assert ad[0].shape == (492, 3869)  # trim_spatial=True
 
     caplog.clear()
     ad = p.findApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    #assert caplog.records[3].message == 'Found sources at rows: 260.6'
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.4, atol=0.25)
 
     ad = p.extractSpectra()[0]
     assert ad[0].shape == (3869,)
@@ -72,15 +71,15 @@ def test_correlation_and_trim(adinputs, caplog):
 
     p.findApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
-                                for ad in p.streams['main']], 260.6, atol=0.25)
+                                for ad in p.streams['main']], 260.4, atol=0.25)
 
     ad = p.stackFrames(reject_method="sigclip")[0]
-    assert ad[0].shape == (512, 3139)
+    assert ad[0].shape == (492, 3139)  # trim_spatial=True
 
     caplog.clear()
     ad = p.findApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
+    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.4, atol=0.25)
 
     ad = p.extractSpectra()[0]
     assert ad[0].shape == (3139,)
@@ -100,7 +99,7 @@ def test_correlation_and_w1_w2(adinputs, caplog):
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
     adstack = p.stackFrames()
-    assert adstack[0][0].shape == (512, 1001)
+    assert adstack[0][0].shape == (492, 1001)
 
 
 @pytest.mark.gmosls
@@ -121,7 +120,7 @@ def test_correlation_non_linearize(adinputs, caplog):
     _check_params(caplog.records, 'w1=508.198 w2=1088.232 dw=0.150 npix=3868')
 
     adstack = p.stackFrames()
-    assert adstack[0][0].shape == (512, 3868)
+    assert adstack[0][0].shape == (492, 3868)
 
 
 # Local Fixtures and Helper Functions -----------------------------------------

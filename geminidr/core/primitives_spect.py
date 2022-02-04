@@ -1692,11 +1692,10 @@ class Spect(PrimitivesBASE):
                 if dispaxis == 0:
                     ext = ext.transpose()
 
-                aper_params['direction'] = "column" if dispaxis == 0 else "row"
-
                 if interactive:
+                    # pass "direction" purely for logging purposes
                     locations, all_limits = interactive_find_source_apertures(
-                        ext, **aper_params)
+                        ext, **aper_params, direction="column" if dispaxis == 0 else "row")
                 else:
                     locations, all_limits, _, _ = tracing.find_apertures(
                         ext, **aper_params)
@@ -2491,14 +2490,13 @@ class Spect(PrimitivesBASE):
             refad = adinputs[0]
             ref_coords = (refad.central_wavelength(asNanometers=True),
                           refad.target_ra(), refad.target_dec())
-            ref_pixels = [ad[0].wcs.invert(*ref_coords)
+            ref_pixels = [np.asarray(ad[0].wcs.invert(*ref_coords)[::-1])
                           for ad in adinputs]
-            ref_pixels_spatial = [rpix[:dispaxis_wcs] + rpix[dispaxis_wcs+1:]
-                                  for rpix in ref_pixels]
-            # Locations in frame of reference AD
-            all_corners = [transform.get_output_corners(
-                ad[0].wcs.forward_transform | refad[0].wcs.backward_transform,
-                ad[0].shape) for ad in adinputs]
+            # Locations in frame of reference AD. The spectral axis is
+            # unimportant here.
+            all_corners = [(np.array(at.get_corners(ad[0].shape)) -
+                            r + ref_pixels[0]).T.astype(int)
+                           for ad, r in zip(adinputs, ref_pixels)]
 
         # If only one variable is missing we compute it from the others
         nparams = 4 - [w1, w2, dw, npix].count(None)
@@ -2635,8 +2633,8 @@ class Spect(PrimitivesBASE):
                     resampling_model = wave_resample
                 else:
                     spatial_offset = reduce(
-                        Model.__and__, [models.Shift(r0 - ri) for r0, ri in
-                                        zip(ref_pixels_spatial[0], ref_pixels_spatial[i])])
+                        Model.__and__, [models.Shift(c[0])
+                                        for j, c in enumerate(all_corners[i]) if j != dispaxis])
                     if dispaxis == 0:
                         resampling_model = spatial_offset & wave_resample
                     else:
