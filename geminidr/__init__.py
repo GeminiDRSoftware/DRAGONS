@@ -30,6 +30,7 @@ from astropy.io.fits.verify import VerifyWarning
 
 # new system imports - 10-06-2016 kra
 # NOTE: imports of these and other tables will be moving around ...
+from gempy.utils.soundex import soundex
 from recipe_system.reduction.coreReduce import UnrecognizedParameterException
 from .gemini.lookups import keyword_comments
 from .gemini.lookups import timestamp_keywords
@@ -254,6 +255,9 @@ class PrimitivesBASE:
             if name in valid_names:
                 return None
             alternative_names = [n for n in valid_names if n.upper() == name.upper()]
+            if alternative_names:
+                return alternative_names
+            alternative_names = [n for n in valid_names if soundex(n) == soundex(name)]
             return alternative_names
 
         for key in self.user_params.keys():

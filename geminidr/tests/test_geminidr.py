@@ -19,7 +19,9 @@ import gemini_instruments  # needed to initialize instrument support
                              ([('CalculateSensitivity:interactive', True)],
                               'Primitive CalculateSensitivity not recognized, did you mean calculateSensitivity?'),
                              ([('calculateSensitivity:interactive:pickles', True)],
-                              'Expecting parameter or primitive:parameter in -p user parameters')
+                              'Expecting parameter or primitive:parameter in -p user parameters'),
+                             ([('calculateSensitivity:intiractive', True)],
+                              'Parameter intiractive not recognized, did you mean interactive?')
                          ])
 def test_unrecognized_uparm(parm, expected):
     """ Test handling of unrecognized user parameters. """
