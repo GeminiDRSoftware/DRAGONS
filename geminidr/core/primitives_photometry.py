@@ -226,13 +226,8 @@ class Photometry(PrimitivesBASE):
                     sexpars.update({key.upper(): value})
 
             for ext in ad:
-                # saturation_level() descriptor always returns level in ADU,
-                # so need to multiply by gain if image is not in ADU
                 if set_saturation:
-                    sat_level = ext.saturation_level()
-                    if not ext.is_in_adu():
-                        sat_level *= ext.gain()
-                    sexpars.update({'SATUR_LEVEL': sat_level})
+                    sexpars.update({'SATUR_LEVEL': ext.saturation_level()})
 
                 # If we don't have a seeing estimate, try to get one
                 if seeing_estimate is None:

@@ -1,7 +1,7 @@
 import math
 
 from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
-from ..gemini import AstroDataGemini
+from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from .lookup import constants_by_bias, config_dict, lnrs_mode_map
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
@@ -88,6 +88,7 @@ class AstroDataNifs(AstroDataGemini):
         raise KeyError("The bias value for this image doesn't match any on the lookup table")
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def gain(self):
         """
@@ -128,11 +129,12 @@ class AstroDataNifs(AstroDataGemini):
         elif lamps and "OPEN" in shut.upper():
             return lamps
 
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
         """
-        Returns the level at which the array becomes non-linear.  The
-        return units are ADUs.  A lookup table is used.  Whether the data
+        Returns the level at which the array becomes non-linear, in the same
+        units as the data. A lookup table is used. Whether the data
         has been corrected for non-linearity or not is taken into account.
         A list is returned unless called on a single-extension slice.
 
@@ -208,20 +210,22 @@ class AstroDataNifs(AstroDataGemini):
             return None
 
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level for the observation, in ADUs
-        A lookup table is used to get the full well value based on the
-        gain. A list is returned unless called on a single-extension slice.
+        Returns the saturation level for the observation, in the same units as
+        the data. A lookup table is used to get the full well value based on the
+        bias voltage.
 
         Returns
         -------
         int/list
-            Saturation level in ADUs.
+            Saturation level
 
         """
         try:
-            return int(self._from_biaspwr("well") * self.coadds())
+            return int(self._from_biaspwr("well") *
+                       self._from_biaspwr("gain") * self.coadds() / self.gain())
         except TypeError:
             return None

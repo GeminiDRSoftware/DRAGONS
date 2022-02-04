@@ -325,6 +325,10 @@ class Stack(PrimitivesBASE):
                 out_refcat['Id'] = list(range(1, len(out_refcat)+1))
                 ad_out.REFCAT = out_refcat
 
+        # Propagate MDF from first input (no checking that they're all the same)
+        if hasattr(adinputs[0], 'MDF'):
+            ad_out.MDF = deepcopy(adinputs[0].MDF)
+
         # Set AIRMASS to be the mean of the input values
         try:
             airmass_kw = ad_out._keyword_for('airmass')

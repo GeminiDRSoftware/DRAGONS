@@ -405,17 +405,17 @@ class AstroDataNiri(AstroDataGemini):
             return [lookup.nonlin_coeffs.get((read_mode, size, well_depth))
                     for size in naxis2]
 
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
         """
-        Returns the ADU level at which the data become non-linear. A list is
-        returned with a value for each extension (i.e., one value for NIRI)
-        unless called on a single-extension slice.
+        Returns the level at which the data become non-linear, in units of the
+        data.
 
         Returns
         -------
         int/list
-            non-linearity level in ADU
+            non-linearity level
         """
         sat_level = self.saturation_level()
         linear_limit = lookup.array_properties['linearlimit']
@@ -493,15 +493,16 @@ class AstroDataNiri(AstroDataGemini):
         # Because coadds are summed, read noise increases by sqrt(COADDS)
         return read_noise * math.sqrt(self.coadds())
 
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level of the data, in ADU.
+        Returns the saturation level of the data, in the units of the data
 
         Returns
         -------
         int/list
-            saturation level in ADU
+            saturation level
         """
         coadds = self.coadds()
         gain = self.gain()
