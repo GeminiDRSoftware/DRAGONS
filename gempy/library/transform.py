@@ -986,7 +986,7 @@ class DataGroup:
             # Since this may be modified, deepcopy to preserve the one if
             # the DataGroup's _transforms list
             transform = deepcopy(transform)
-            if self.origin:
+            if self.origin is not None and any(x != 0 for x in self.origin):
                 transform.append(reduce(Model.__and__,
                                  [models.Shift(-offset) for offset in self.origin[::-1]]))
             output_corners = self._prepare_for_output(input_array,
