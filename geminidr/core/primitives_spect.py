@@ -2268,7 +2268,7 @@ class Spect(PrimitivesBASE):
         for ad in adinputs:
             ad_out = self.resampleToCommonFrame([ad], suffix=sfx, w1=w1, w2=w2, npix=npix,
                                                 conserve=conserve, order=order,
-                                                trim_data=False)[0]
+                                                trim_spectral=False)[0]
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(ad_out)
 
