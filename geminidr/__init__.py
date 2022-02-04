@@ -136,15 +136,6 @@ def cleanup(process):
     process.terminate()
 
 
-def _find_similar_names(name, valid_names):
-    """Will return None if it's valid"""
-    # moved outside _validate_user_parms for pytest use
-    if name in valid_names:
-        return None
-    alternative_names = [n for n in valid_names if n.upper() == name.upper()]
-    return alternative_names
-
-
 @parameter_override
 @capture_provenance
 class PrimitivesBASE:
@@ -173,9 +164,6 @@ class PrimitivesBASE:
         name of DRAGONS configuration file (None => default)
     """
     tagset = None
-
-    # Track the last validated uparms set so we don't have to do the work twice
-    _validated_user_parms = None
 
     def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None,
                  config_file=None):
@@ -260,32 +248,38 @@ class PrimitivesBASE:
                 msg += f", did you mean one of {alternative_names}?"
             return msg
 
-        if self.user_params and PrimitivesBASE._validated_user_parms != self.user_params:
-            for key in self.user_params.keys():
-                primitive = None
-                if ':' in key:
-                    split_key = key.split(':')
-                    if len(split_key) != 2:
-                        raise UnrecognizedParameterException("Expecting parameter or primitive:parameter in "
-                                                             "-p user parameters")
-                    primitive = split_key[0]
-                    parameter = split_key[1]
-                else:
-                    parameter = key
+        def find_similar_names(name, valid_names):
+            """Will return None if it's valid"""
+            # moved outside _validate_user_parms for pytest use
+            if name in valid_names:
+                return None
+            alternative_names = [n for n in valid_names if n.upper() == name.upper()]
+            return alternative_names
 
-                if primitive:
-                    alternative_primitives = _find_similar_names(primitive, self.params.keys())
-                    if alternative_primitives is None:  # it's valid
-                        alternative_parameters = _find_similar_names(parameter, self.params[primitive])
-                else:
-                    alternative_parameters = _find_similar_names(
-                        parameter, chain(*[v.keys() for v in self.params.values()]))
+        for key in self.user_params.keys():
+            primitive = None
+            if ':' in key:
+                split_key = key.split(':')
+                if len(split_key) != 2:
+                    raise UnrecognizedParameterException("Expecting parameter or primitive:parameter in "
+                                                         "-p user parameters")
+                primitive = split_key[0]
+                parameter = split_key[1]
+            else:
+                parameter = key
 
-                if primitive and alternative_primitives is not None:  # it's invalid
-                    raise UnrecognizedParameterException(format_exception(primitive, alternative_primitives, "Primitive"))
-                if alternative_parameters is not None:  # it's invalid
-                    raise UnrecognizedParameterException(format_exception(parameter, alternative_parameters, "Parameter"))
-            PrimitivesBASE._validated_user_parms = self.user_params
+            if primitive:
+                alternative_primitives = find_similar_names(primitive, self.params.keys())
+                if alternative_primitives is None:  # it's valid
+                    alternative_parameters = find_similar_names(parameter, self.params[primitive])
+            else:
+                alternative_parameters = find_similar_names(
+                    parameter, chain(*[v.keys() for v in self.params.values()]))
+
+            if primitive and alternative_primitives is not None:  # it's invalid
+                raise UnrecognizedParameterException(format_exception(primitive, alternative_primitives, "Primitive"))
+            if alternative_parameters is not None:  # it's invalid
+                raise UnrecognizedParameterException(format_exception(parameter, alternative_parameters, "Parameter"))
 
     @property
     def upload(self):
