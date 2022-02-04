@@ -429,35 +429,34 @@ def _check_files(ffiles):
 
 
 def _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_file, suffix):
-    print("\n\t"+"-"*65+"\n")
     if files:
-        print("Files".ljust(33) + ":: " + files[0])
+        log.debug("Files".ljust(33) + ":: " + files[0])
         for f in files[1:]:
-            print(" "*33 + ":: {}".format(f))
-    print("Mode".ljust(33) + ":: " + mode)
-    print("Data Reduction Package".ljust(33) + ":: " + drpkg)
-    print("Recipe Name".ljust(33) + ":: " + recipename)
+            log.debug(" "*33 + ":: {}".format(f))
+    log.debug("Mode".ljust(33) + ":: " + mode)
+    log.debug("Data Reduction Package".ljust(33) + ":: " + drpkg)
+    log.debug("Recipe Name".ljust(33) + ":: " + recipename)
     if uparms:
-        print("Parameters")
-        print("----------")
+        log.debug("\nParameters")
+        log.debug("----------")
         for param in uparms.keys():
-            print("    " + param.ljust(29) + ":: " + str(uparms[param]))
+            log.debug(param.ljust(33) + ":: " + str(uparms[param]))
     if ucals:
-        print("Calibrations")
-        print("------------")
+        log.debug("\nCalibrations")
+        log.debug("------------")
         for cal in ucals.keys():
-            print("    " + cal.ljust(29) + ":: " + ucals[cal])
+            log.debug(cal.ljust(33) + ":: " + ucals[cal])
     if upload:
-        print("Upload".ljust(33) + ":: " + upload)
+        log.debug("Upload".ljust(33) + ":: " + upload)
     if config_file:
-        print("Config File".ljust(33) + ":: " + config_file)
+        log.debug("Config File".ljust(33) + ":: " + config_file)
     if suffix:
-        print("Suffix".ljust(33) + ":: " + suffix)
-    print("-"*65+"\n")
+        log.debug("Suffix".ljust(33) + ":: " + suffix)
+    log.debug("-"*65+"\n")
 
 
 def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, ucals={},
-                upload=None, config_file=None, suffix=None, debug=False):
+                upload=None, config_file=None, suffix=None):
     """
     Map and run the requested or defaulted recipe.
 
@@ -482,15 +481,12 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
         Configuration file to use, None for default
     suffix : str
         Suffix to add to output file(s), None for default
-    debug : bool
-        Show parameters in output, defaults to False
 
     Returns
     -------
     <list> : List of files produced by the reduction
     """
-    if debug:
-        _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_file, suffix)
+    _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_file, suffix)
     recipe = None
     if isinstance(files, str):
         files = [files,]
