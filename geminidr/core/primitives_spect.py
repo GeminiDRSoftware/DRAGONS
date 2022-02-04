@@ -2608,7 +2608,7 @@ class Spect(PrimitivesBASE):
                     output_shape = list(refad[0].shape)
             else:
                 origin = np.concatenate(all_corners, axis=1).min(axis=1)
-                output_shape = tuple(np.max(all_corners, axis=1) - origin + 1)
+                output_shape = list(np.concatenate(all_corners, axis=1).max(axis=1) - origin + 1)
             output_shape[dispaxis] = npixout
             origin[dispaxis] = 0
         else:
