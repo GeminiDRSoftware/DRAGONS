@@ -278,6 +278,7 @@ class FindSourceAperturesModel:
 
         # initial parameters are set as attributes
         self.reset()
+        del self._aper_params['direction']  # no longer passed to find_apertures()
 
     @property
     def aper_params(self):

@@ -444,25 +444,26 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
     return sigma_clip(widths).mean()
 
 
-def find_apertures(ext, direction, max_apertures, min_sky_region, percentile,
+def find_apertures(ext, max_apertures, min_sky_region, percentile,
                    sizing_method, threshold, section, min_snr, use_snr,
-                   strategy="wavelet_exponential"):
+                   strategy="exponential_wavelet"):
     """
-    Finds sources in 2D spectral images and compute aperture sizes. Used byß
+    Finds sources in 2D spectral images and compute aperture sizes. Used by
     findSourceApertures as well as by the interactive code. See
     findSourceApertures' docstring for details on the parameters.
+    Data MUST always be dispersed along the rows
     """
+    # We need to construct a spatial profile along the slit. First, remove
+    # columns where too few pixels are good
+    mask1d = (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
+
     # Collapse image along spatial direction to find noisy regions
     # (caused by sky lines, regardless of whether image has been
     # sky-subtracted or not)
-    _, mask1d, var1d = NDStacker.mean(ext.data, mask=ext.mask,
+    _, _, var1d = NDStacker.mean(ext.data, mask=ext.mask,
                                       variance=ext.variance)
 
     # Mask sky-line regions and find clumps of unmasked pixels
-    # Also only include wavelengths where at least 25% of pixels in the
-    # spatial direction are good
-    mask1d |= (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
-
     # Very light sigma-clipping to remove bright sky lines
     var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
     _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
