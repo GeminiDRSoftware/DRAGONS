@@ -49,6 +49,10 @@ class getProcessedSlitIllumConfig(config.Config):
     pass
 
 
+class getProcessedBPM(config.Config):
+    pass
+
+
 class getMDFConfig(config.Config):
     pass
 

@@ -103,6 +103,12 @@ class CalibDB(PrimitivesBASE):
         self._assert_calibrations(adinputs, cals)
         return adinputs
 
+    def getProcessedBPM(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_bpm(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
+        return adinputs
+
     def getMDF(self, adinputs=None):
         cals = self.caldb.get_calibrations(adinputs, caltype="mask")
         self._assert_calibrations(adinputs, cals)
