@@ -54,31 +54,25 @@ def niriprim2():
     return p
 
 @pytest.fixture
-def niri_targets_sequence():
-    # Produce a list of NIRI target frames from the tutorial dataset
-    filenames = ['N20160102S{:04d}.fits'.format(i)
-                  for i in range(270, 275)]
-    # filenames = [f'N20210615S{i:04d}.fits' for i in range(28, 36)]
-    ad_outputs = []
-    for name in filenames:
-        file_path = download_from_archive(name)
-        ad_outputs.append(astrodata.open(file_path))
+def niri_sequence():
+    # Can be called like `niri_sequence(['object'|'sky'|'mixed'])`
 
-    return ad_outputs
+    def _make_niri_sequence(marker):
+        if marker == 'object':
+            filenames = [f'N20160102S{i:04d}.fits' for i in range(270, 275)]
+        elif marker == 'sky':
+            filenames = [f'N20160102S{i:04d}.fits' for i in range(275, 280)]
+        elif marker == 'mixed':
+            filenames = [f'N20150404S{i:04d}.fits' for i in range(3, 6)]
+            filenames.extend([f'N20150404S{i:04d}.fits' for i in range(776,
+                                                                        780)])
+        # Create a list of astrodata objects from files downloaded from the
+        # archive
+        adoutputs = [astrodata.open(download_from_archive(name)) for
+                      name in filenames]
+        return adoutputs
 
-@pytest.fixture
-def niri_skies_sequence():
-    # Produce a list of NIRI sky frames from the tutoral dataset
-    filenames = ['N20160102S{:04d}.fits'.format(i)
-                 for i in range(275, 280)]
-    ad_outputs = []
-    for name in filenames:
-        file_path = download_from_archive(name)
-        ad_outputs.append(astrodata.open(file_path))
-
-    return ad_outputs
-
-
+    return _make_niri_sequence
 
 # ---- Tests ---------------------------------------------
 
@@ -398,13 +392,8 @@ def test_scale_by_exposure_time(niri_images):
 
 # @pytest.mark.xfail(reason="Test needs revision", run=False)
 @pytest.mark.dragons_remote_data
-def test_associateSky(niri_targets_sequence):
-    # filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
-    #               for i in range(104, 109)]
-
-    # adinputs = [astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', f))
-                # for f in filenames]
-    adinputs = niri_targets_sequence
+def test_associateSky(niri_sequence):
+    adinputs = niri_sequence('object')
 
     p = NIRIImage(adinputs)
     p.separateSky()  # Difficult to construct this by hand
@@ -414,7 +403,7 @@ def test_associateSky(niri_targets_sequence):
     # Test here is that each science frame has all other frames as skies
     for ad in p.showList():
         # v = [ad.phu['ORIGNAME'] for ad in ad.SKYTABLE]
-        assert len(ad.SKYTABLE) == len(niri_targets_sequence) - 1
+        assert len(ad.SKYTABLE) == len(niri_sequence('object')) - 1
         # assert set([ad.phu['ORIGNAME']] + v) == filename_set
 
 # def test_correctBackgroundToReference(self):
@@ -466,14 +455,16 @@ def test_darkCorrect_with_af(astrofaker):
 #     ad = p.normalizeFlat(suffix='_flat', strip=True)[0]
 #     assert ad_compare(ad, flat_file)
 #
-
 @pytest.mark.dragons_remote_data
-def test_separateSky_dithered(niri_targets_sequence, niri_skies_sequence):
+def test_separateSky_offset(niri_sequence):
+
+    niri_targets_sequence = niri_sequence('object')
+    niri_skies_sequence = niri_sequence('sky')
 
     adinputs = niri_targets_sequence + niri_skies_sequence
 
-    target_filenames = set([ad.phu['ORIGNAME'] for ad in niri_targets_sequence])
-    sky_filenames = set([ad.phu['ORIGNAME'] for ad in niri_skies_sequence])
+    target_filenames = set([ad.filename for ad in niri_targets_sequence])
+    sky_filenames = set([ad.filename for ad in niri_skies_sequence])
 
     p = NIRIImage(adinputs)
     p.separateSky()
@@ -487,26 +478,58 @@ def test_separateSky_dithered(niri_targets_sequence, niri_skies_sequence):
     assert sky_filenames == sky_names
 
 @pytest.mark.dragons_remote_data
-def test_separateSky_all_on_target(niri_targets_sequence):
+@pytest.mark.parametrize('target', ['object', 'sky'])
+def test_separateSky_all_one_type(target, niri_sequence):
 
-    adinputs = set(niri_targets_sequence)
+    frames = niri_sequence(target)
+    in_names = set([ad.filename for ad in frames])
 
-    p = NIRIImage(adinputs)
+    p = NIRIImage(frames)
     p.separateSky()
 
-    assert p.streams['main'] == p.streams['sky']
+    out_obj_names = set(ad.phu['ORIGNAME'] for ad in p.streams['main'])
+    out_sky_names = set(ad.phu['ORIGNAME'] for ad in p.streams['sky'])
+    # Change to testing filenames
+    assert out_obj_names == out_sky_names
+    assert out_obj_names == in_names
+    assert out_sky_names == in_names
 
 @pytest.mark.dragons_remote_data
-def test_separateSky_low_frac_FOV(niri_targets_sequence):
+@pytest.mark.parametrize('frac_FOV', [0.9, 0.5])
+def test_separateSky_frac_FOV(frac_FOV, niri_sequence):
 
-    adinputs = set(niri_targets_sequence)
+    adinputs = niri_sequence('mixed')
 
     p = NIRIImage(adinputs)
-    p.separateSky(frac_FOV=0.5)
+    p.separateSky(frac_FOV=frac_FOV)
 
-    assert p.streams['main'] == p.streams['sky']
+    # Check filenames just in case we ever change things such that astrodata
+    # objects aren't held in memory anymore.
+    out_obj_names = set(ad.phu['ORIGNAME'] for ad in p.streams['main'])
+    out_sky_names = set(ad.phu['ORIGNAME'] for ad in p.streams['sky'])
 
+    assert out_obj_names != out_sky_names
 
+@pytest.mark.dragons_remote_data
+def test_separateSky_cross_assign_frames(niri_sequence):
+
+    niri_objects = niri_sequence('object')
+    niri_skies = niri_sequence('sky')
+
+    obj_filenames = ','.join([ad.filename for ad in niri_objects])
+    sky_filenames = ','.join([ad.filename for ad in niri_skies])
+
+    adinputs = niri_objects
+    adinputs.extend(niri_skies)
+
+    p = NIRIImage(adinputs)
+    p.separateSky(ref_obj=sky_filenames, ref_sky=obj_filenames)
+
+    obj_names = ','.join([ad.phu['ORIGNAME'] for ad in p.streams['main']])
+    sky_names = ','.join([ad.phu['ORIGNAME'] for ad in p.streams['sky']])
+
+    assert obj_filenames == sky_names
+    assert sky_filenames == obj_names
 #
 # def test_skyCorrect(self):
 #     pass
