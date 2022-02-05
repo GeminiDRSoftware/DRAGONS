@@ -439,8 +439,17 @@ def _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_fi
     if uparms:
         log.debug("\nParameters")
         log.debug("----------")
-        for param in uparms.keys():
-            log.debug(param.ljust(33) + ":: " + str(uparms[param]))
+        if isinstance(uparms, dict):
+            for param in uparms.keys():
+                log.debug(param.ljust(33) + ":: " + str(uparms[param]))
+        elif isinstance(uparms, list):
+            for param in uparms:
+                if len(param) == 2:
+                    log.debug(param[0].ljust(33) + ":: " + str(param[1]))
+                else:
+                    log.debug("Unrecognized parameter".ljust(33) + ":: " + param)
+        else:
+            log.debug("(Unrecognized parameters)")
     if ucals:
         log.debug("\nCalibrations")
         log.debug("------------")
