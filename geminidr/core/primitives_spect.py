@@ -2635,6 +2635,8 @@ class Spect(PrimitivesBASE):
                     spatial_offset = reduce(
                         Model.__and__, [models.Shift(c[0])
                                         for j, c in enumerate(all_corners[i]) if j != dispaxis])
+                    print("MY SPATIAL MODEL IS")
+                    print(spatial_offset)
                     if dispaxis == 0:
                         resampling_model = spatial_offset & wave_resample
                     else:
