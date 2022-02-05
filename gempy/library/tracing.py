@@ -453,10 +453,6 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     findSourceApertures' docstring for details on the parameters.
     Data MUST always be dispersed along the rows
     """
-    # We need to construct a spatial profile along the slit. First, remove
-    # columns where too few pixels are good
-    mask1d = (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
-
     # Collapse image along spatial direction to find noisy regions
     # (caused by sky lines, regardless of whether image has been
     # sky-subtracted or not)
@@ -466,6 +462,14 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     # Mask sky-line regions and find clumps of unmasked pixels
     # Very light sigma-clipping to remove bright sky lines
     var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
+
+    # We need to construct a spatial profile along the slit. First, remove
+    # columns where too few pixels are good
+    if ext.mask is not None:
+        mask1d = (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
+    else:
+        mask1d = np.zeros_like(var1d, dtype=bool)
+
     _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
                                     maxiters=3)
     mask1d |= (var_excess > 5 * std)
