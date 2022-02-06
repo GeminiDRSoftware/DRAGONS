@@ -172,10 +172,19 @@ def _check_params(records, expected):
 
 def add_fake_offset(adinputs, offset=10):
     # introduce fake offsets
+    # CJS hack so this can handle fractional offsets by linear interpolation
     for i, ad in enumerate(adinputs[1:], start=1):
-        ad[0].data = np.roll(ad[0].data, offset * i, axis=0)
-        ad[0].mask = np.roll(ad[0].mask, offset * i, axis=0)
-        ad[0].variance = np.roll(ad[0].variance, offset * i, axis=0)
+        int_offset =int(np.floor(i * offset))
+        frac_offset = i * offset - int_offset
+        for attr in ('data', 'mask', 'variance'):
+            setattr(ad[0], attr, np.roll(getattr(ad[0], attr), int_offset, axis=0))
+            if frac_offset > 0:
+                plus_one = np.roll(getattr(ad[0], attr), 1, axis=0)
+                if attr == 'mask':
+                    setattr(ad[0], attr, getattr(ad[0], attr) | plus_one)
+                else:
+                    setattr(ad[0], attr, (1 - frac_offset) * getattr(ad[0], attr) +
+                            frac_offset * plus_one)
         ad.phu['QOFFSET'] += offset * i * ad.pixel_scale()
 
 

@@ -2492,20 +2492,11 @@ class Spect(PrimitivesBASE):
                           refad.target_ra(), refad.target_dec())
             ref_pixels = [np.asarray(ad[0].wcs.invert(*ref_coords)[::-1])
                           for ad in adinputs]
-            print("REF PIXELS ARE")
-            print(ref_pixels)
             # Locations in frame of reference AD. The spectral axis is
             # unimportant here.
             all_corners = [(np.array(at.get_corners(ad[0].shape)) -
-                            r + ref_pixels[0]).T
-                           for ad, r in zip(adinputs, ref_pixels)]
-            print("ALL CORNERS (FLOAT)")
-            print(all_corners)
-            all_corners = [(np.array(at.get_corners(ad[0].shape)) -
                             r + ref_pixels[0]).T.astype(int)
                            for ad, r in zip(adinputs, ref_pixels)]
-            print("ALL CORNERS (INT)")
-            print(all_corners)
 
         # If only one variable is missing we compute it from the others
         nparams = 4 - [w1, w2, dw, npix].count(None)
@@ -2644,8 +2635,6 @@ class Spect(PrimitivesBASE):
                     spatial_offset = reduce(
                         Model.__and__, [models.Shift(r0 - ref_pixels[i][j])
                                         for j, r0 in enumerate(ref_pixels[0]) if j != dispaxis])
-                    print("MY SPATIAL MODEL IS")
-                    print(spatial_offset)
                     if dispaxis == 0:
                         resampling_model = spatial_offset & wave_resample
                     else:
