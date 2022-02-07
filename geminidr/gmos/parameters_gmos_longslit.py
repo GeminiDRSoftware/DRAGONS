@@ -52,6 +52,8 @@ class makeSlitIllumConfig(config.core_1Dfitting_config):
                            int, 4, optional=True)
     interactive = config.Field("Set to activate an interactive preview to fine tune the input parameters",
                                bool, True, optional=True)
+    section = config.Field("Set to extend the illumination function with zeroes if 'nearest neighbour' is not desirable",
+                           bool, False, optional=True)
     def setDefaults(self):
         self.niter = 3
         self.grow = 0

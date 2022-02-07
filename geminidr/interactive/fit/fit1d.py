@@ -815,7 +815,8 @@ class Fit1DPanel:
 
     def build_figures(self, domain=None, controller_div=None,
                       plot_residuals=True, plot_ratios=True,
-                      extra_masks=None):
+                      extra_masks=None,
+                      figure_building_fn=None):
         """
         Construct the figures containing the various plots needed for this
         Visualizer.
@@ -832,6 +833,8 @@ class Fit1DPanel:
             make a residuals plot?
         extra_masks : dict/list/None
             names of additional masks to inform the user about
+        figure_building_fn: callable
+            function that returns the main and supplemental plots
 
         Returns
         -------
@@ -839,10 +842,12 @@ class Fit1DPanel:
             list of bokeh objects with attached listeners
         """
 
-        p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
-                                      xpoint=self.xpoint, ypoint=self.ypoint,
-                                      xlabel=self.xlabel, ylabel=self.ylabel, model=self.model,
-                                      enable_user_masking=self.enable_user_masking)
+        # If figure_building_fn is not define, use the default
+        fig_fn = figure_building_fn or fit1d_figure
+        p_main, p_supp = fig_fn(width=self.width, height=self.height,
+                                xpoint=self.xpoint, ypoint=self.ypoint,
+                                xlabel=self.xlabel, ylabel=self.ylabel, model=self.model,
+                                enable_user_masking=self.enable_user_masking)
         if self.enable_regions:
             self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
             connect_region_model(p_main, self.model.band_model)
