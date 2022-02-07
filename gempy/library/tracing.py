@@ -446,7 +446,7 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
 
 def find_apertures(ext, max_apertures, min_sky_region, percentile,
                    sizing_method, threshold, section, min_snr, use_snr,
-                   strategy="exponential_wavelet"):
+                   max_separation=None, strategy="exponential_wavelet"):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
     findSourceApertures as well as by the interactive code. See
@@ -523,16 +523,25 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
         else:
             profile = np.nanmean(masked_data, axis=1)
 
-    locations, all_limits = find_apertures_peaks(profile, prof_mask,
-                                                 max_apertures, threshold,
-                                                 sizing_method, min_snr,
-                                                 strategy)
+    locations, all_limits = _find_apertures_peaks(profile, prof_mask,
+                                                  max_apertures, threshold,
+                                                  sizing_method, min_snr,
+                                                  strategy)
+
+    # Remove sources larger than a certain distance from the target coords
+    if max_separation is not None:
+        max_separation /= ext.pixel_scale()
+        target_location = ext.wcs.invert(
+            ext.central_wavelength(asNanometers=True), ext.target_ra(),
+            ext.target_dec())[2 - ext.dispersion_axis()]
+        all_limits = [y for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
+        locations = [x for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
 
     return locations, all_limits, profile, prof_mask
 
 
-def find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
-                         sizing_method, min_snr, strategy="exponential_wavelet"):
+def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
+                          sizing_method, min_snr, strategy="exponential_wavelet"):
     """
     Find sources in a collapsed 1D spatial profile.
 

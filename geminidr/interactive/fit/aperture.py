@@ -17,7 +17,7 @@ from geminidr.interactive.interactive import PrimitiveVisualizer, build_text_sli
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from geminidr.interactive.server import interactive_fitter
-from gempy.library.tracing import (find_apertures, find_apertures_peaks,
+from gempy.library.tracing import (find_apertures,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
 
@@ -130,6 +130,16 @@ class CustomWidget:
             self._handler(new)
         else:
             setattr(self.model, self.attr, new)
+
+
+class CustomSlider(CustomWidget):
+    def build(self):
+        self.slider = Slider(title=self.title, start=self.kwargs['start'], end=self.kwargs['end'], step=self.kwargs['step'], value=self.value)
+        self.slider.on_change("value", self.handler)
+        return self.slider
+
+    def reset(self):
+        self.slider.value = self.value
 
 
 class SpinnerInputLine(CustomWidget):
@@ -276,6 +286,18 @@ class FindSourceAperturesModel:
             'y': np.zeros(self.profile_shape),
         })
 
+        # self.target_location is the row from the target coords
+        # max_width is the largest distance (in arcsec) from there to the edge of the slit
+        try:
+            # Note: although the ext may have been transposed to ensure that
+            # the slit is vertical, the WCS has not been modified
+            self.target_location = ext.wcs.invert(
+                ext.central_wavelength(asNanometers=True), ext.target_ra(), ext.target_dec())[2 - ext.dispersion_axis()]
+            self.max_width = np.ceil(max(self.target_location, self.profile_shape - 1 - self.target_location) * ext.pixel_scale())
+        except:
+            self.target_location = (self.profile_shape - 1) / 2
+            self.max_width = np.ceil(self.target_location * ext.pixel_scale())
+
         # initial parameters are set as attributes
         self.reset()
         del self._aper_params['direction']  # no longer passed to find_apertures()
@@ -301,6 +323,8 @@ class FindSourceAperturesModel:
         """Reset model to its initial values."""
         for name, value in self._aper_params.items():
             setattr(self, name, value)
+        if self.max_separation is None:
+            self.max_separation = self.max_width
 
     def find_closest(self, x, x_start, x_end, prefer_selected=True):
         """
@@ -405,10 +429,13 @@ class FindSourceAperturesModel:
                 find_apertures(self.ext, **self.aper_params)
             self.profile_source.patch({'y': [(slice(None), self.profile)]})
         else:
-            # otherwise we can redo only the peak detection
-            locations, all_limits = find_apertures_peaks(
-                self.profile, self.prof_mask, self.max_apertures,
-                self.threshold, self.sizing_method, self.min_snr, self.strategy)
+            # otherwise we can redo only the peak detection. However, to
+            # avoid having to add yet more parameters to the
+            # find_apertures_peaks() function, we are forced to recompute
+            # the profile (which won't have changed, so we
+            # don't update the bokeh objects)
+            locations, all_limits, _, _ = \
+                find_apertures(self.ext, **self.aper_params)
 
         self.aperture_models.clear()
 
@@ -928,7 +955,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 def fn():
                     model.reset()
                     for widget in (maxaper, minsky, use_snr, min_snr,
-                                   threshold, percentile, sizing):
+                                   threshold, maxsep, sizing):
                         widget.reset()
                     self.model.recalc_apertures()
                     reset_button.disabled = False
@@ -972,6 +999,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
         strategy = SelectLine("Strategy", model, attr="strategy",
                               options=["exponential_wavelet", "linear_wavelet", "maxima"])
+        maxsep = CustomSlider("Maximum separation from target (arcsec)", model, attr="max_separation",
+                              start=5, end=model.max_width, step=0.5)
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
@@ -997,9 +1026,10 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),
             maxaper.build(),
-            threshold.build(),
-            sizing.build(),
             strategy.build(),
+            maxsep.build(),
+            sizing.build(),
+            threshold.build(),
             row([reset_button, find_button]),
         )
 

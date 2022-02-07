@@ -185,6 +185,8 @@ class findAperturesConfig(config.Config):
                                            "linear_wavelet": "Wavelet with linearly spaced widths",
                                            "maxima": "Maxima in profile"},
                                   default="exponential_wavelet")
+    max_separation = config.RangeField("Maximum separation from target location (arcsec)",
+                                       float, None, min=1, optional=True)
 
 
 class flagCosmicRaysConfig(config.Config):
