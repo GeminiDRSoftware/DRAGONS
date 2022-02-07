@@ -40,7 +40,7 @@ def test_correlation(adinputs, caplog, offset):
 
     p.resampleToCommonFrame(dw=0.15)
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
-    assert all(ad[0].shape == (int(512 + 2*offset), 3869) for ad in p.streams['main'])
+    assert all(ad[0].shape == (int(512 - 2*offset), 3869) for ad in p.streams['main'])
 
     p.findApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
@@ -72,7 +72,7 @@ def test_correlation_and_trim(adinputs, caplog, offset):
     p.resampleToCommonFrame(dw=0.15, trim_spectral=True)
     _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
     for ad in p.streams['main']:
-        assert ad[0].shape == (int(512 + 2*offset), 3139)
+        assert ad[0].shape == (int(512 - 2*offset), 3139)
 
     p.findApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
