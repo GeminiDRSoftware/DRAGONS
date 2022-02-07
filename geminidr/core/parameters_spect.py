@@ -34,7 +34,7 @@ class adjustWCSToReferenceConfig(config.Config):
                                 allowed={"sources_wcs": "Match sources using WCS",
                                          "sources_offsets": "Match sources using telescope offsets",
                                          "offsets": "Use telescope offsets only"},
-                                default="sources_wcs")
+                                default="sources_wcs", optional=False)
     fallback = config.ChoiceField("Fallback method", str,
                                   allowed={"sources_offsets": "Match sources using telescope offsets",
                                            "offsets": "Use telescope offsets only"},
