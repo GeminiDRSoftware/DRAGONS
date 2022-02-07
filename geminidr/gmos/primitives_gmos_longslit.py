@@ -37,7 +37,7 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
 from .primitives_gmos_spect import GMOSSpect
@@ -53,6 +53,7 @@ from ..interactive.interactive import UIParameters
 
 
 @parameter_override
+@capture_provenance
 class GMOSLongslit():
     """
     "Magic" class to provide the correct class for N&S and classic data
@@ -131,6 +132,7 @@ class CustomFit1DPanel(fit1d.Fit1DPanel):
 
 
 @parameter_override
+@capture_provenance
 class GMOSClassicLongslit(GMOSSpect):
     """
     This is the class containing all of the preprocessing primitives
@@ -138,8 +140,8 @@ class GMOSClassicLongslit(GMOSSpect):
     the primitives from the level above
     """
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)
 
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
@@ -1309,7 +1311,8 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
 
 
 @parameter_override
+@capture_provenance
 class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle):
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)

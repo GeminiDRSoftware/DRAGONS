@@ -17,9 +17,12 @@ from .primitives_gnirs import GNIRS
 from ..core import Image, Photometry
 from . import parameters_gnirs_image
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GNIRSImage(GNIRS, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives
@@ -28,8 +31,8 @@ class GNIRSImage(GNIRS, Image, Photometry):
     """
     tagset = {"GEMINI", "GNIRS", "IMAGE"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs_image)
 
     def addIllumMaskToDQ(self, adinputs=None, **params):

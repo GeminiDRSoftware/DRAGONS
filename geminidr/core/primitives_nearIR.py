@@ -12,15 +12,18 @@ from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from . import parameters_nearIR, Bookkeeping
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 
 @parameter_override
+@capture_provenance
 class NearIR(Bookkeeping):
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_nearIR)
 
     def addLatencyToDQ(self, adinputs=None, **params):

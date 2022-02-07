@@ -13,7 +13,7 @@ from holoviews.streams import Stream
 from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
-from geminidr.interactive.interactive import PrimitiveVisualizer
+from geminidr.interactive.interactive import PrimitiveVisualizer, build_text_slider
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from geminidr.interactive.server import interactive_fitter
@@ -936,8 +936,14 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 self.do_later(fn)
 
         # Profile parameters
-        percentile = TextSlider("Percentile (use mean if no value)", model,
-                                attr="percentile", start=0, end=100, step=1)
+        percentile_panel = build_text_slider(
+            "Percentile (use mean if no value)", getattr(model, "percentile"), 1, 0, 100, obj=model,
+            attr="percentile", slider_width=256, allow_none=True, throttled=True,
+            is_float=False,
+            handler=self.slider_handler_factory("percentile", reinit_live=False))
+        percentile_panel.children.insert(1, Spacer(width_policy='max'))
+
+        # TODO the rest of these should reuse generic calls like build_text_slider
         minsky = SpinnerInputLine("Min sky region", model,
                                   attr="min_sky_region", low=0)
         use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
@@ -971,7 +977,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         return column(
             Div(text="Parameters to compute the profile:",
                 css_classes=['param_section']),
-            percentile.build(),
+            percentile_panel,
             minsky.build(),
             use_snr.build(),
             min_snr.build(),
@@ -1006,20 +1012,35 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         self.fig = aperture_view.fig  # figure now comes from holoviews, need to pull it out here
 
         # making button configurable so we can add it conditionally for notebooks in future
+        renumber_label = "Renumber Apertures"
+        clear_label = "Clear Apertures"
         if show_add_aperture_button:
-            add_button = Button(label="Add Aperture", button_type='primary',
+            add_button = Button(label="Add", button_type='primary',
                                 default_size=200)
             add_button.on_click(self.add_aperture)
+            # need shorter labels
+            renumber_label = "Renumber"
+            clear_label = "Clear"
 
-        renumber_button = Button(label="Renumber apertures",
+        renumber_button = Button(label=renumber_label,
                                  button_type='primary', default_size=200)
         renumber_button.on_click(self.model.renumber_apertures)
+        clear_button = Button(label=clear_label,
+                              button_type='warning', default_size=200)
+
+        def do_clear_apertures():
+            def handle_clear(okc):
+                if okc:
+                    self.model.clear_apertures()
+            self.show_ok_cancel('Clear All Apertures?', handle_clear)
+        clear_button.on_click(do_clear_apertures)
 
         helptext = Div(margin=(20, 0, 0, 35), sizing_mode='scale_width')
         controls = column(children=[
             params,
             aperture_view.controls,
-            row(renumber_button, add_button) if show_add_aperture_button else renumber_button,
+            row(clear_button, renumber_button, add_button) if show_add_aperture_button
+                else row(clear_button, renumber_button),
         ])
 
         self.model.recalc_apertures()

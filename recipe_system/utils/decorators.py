@@ -270,7 +270,40 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
 
 
 @make_class_wrapper
+def capture_provenance(fn):
+    """
+    Decorator for carrying forward provenance data and updating the provenance history
+    """
+    @wraps(fn)
+    def gn(pobj, *args, **kwargs):
+        # grab kwargs for provenance
+        stringified_args = json.dumps({k: v for k, v in kwargs.items()
+                                       if not k.startswith('debug_') and not k == 'adinputs'},
+                                      default=lambda v: v.filename if hasattr(v, 'filename')
+                                      else '<not serializable>')
+
+        # Determine if this is a top-level primitive, by checking if the
+        # calling function contains a self that is also a primitive
+        toplevel = _top_level_primitive()
+        timestamp_start = datetime.now()
+
+        if toplevel:
+            provenance_inputs = _get_provenance_inputs(kwargs["adinputs"])
+
+        ret_value = fn(pobj, **kwargs)
+
+        if toplevel:
+            _capture_provenance(provenance_inputs, ret_value,
+                                timestamp_start, fn, stringified_args)
+        return ret_value
+    return gn
+
+
+@make_class_wrapper
 def parameter_override(fn):
+    """
+    Decorator for handling primitive configuration and user supplied parameters.
+    """
     @wraps(fn)
     def gn(pobj, *args, **kwargs):
         pname = fn.__name__
@@ -278,10 +311,6 @@ def parameter_override(fn):
         # Determine if this is a top-level primitive, by checking if the
         # calling function contains a self that is also a primitive
         toplevel = _top_level_primitive()
-
-        # for provenance information
-        stringified_args = "%s" % kwargs
-        timestamp_start = datetime.now()
 
         # Start with the config file to get list of parameters
         # Copy to avoid permanent changes; shallow copy is OK
@@ -325,25 +354,14 @@ def parameter_override(fn):
             # Many primitives operate on AD instances in situ, so need to
             # copy inputs if they're going to a new output stream
             if instream != outstream:
-                adinputs = [deepcopy(ad) for ad in pobj.streams[instream]]
+                adinputs = [deepcopy(ad) for ad in pobj.streams.get(instream, [])]
             else:
                 # Allow a non-existent stream to be passed
                 adinputs = pobj.streams.get(instream, [])
 
             try:
-                if toplevel:
-                    provenance_inputs = _get_provenance_inputs(adinputs)
-
                 fnargs = dict(config.items())
-                stringified_args = json.dumps({k: v for k, v in fnargs.items()
-                                               if not k.startswith('debug_')},
-                                              default=lambda v: v.filename if hasattr(v, 'filename')
-                                                                else '<not serializable>')
                 ret_value = fn(pobj, adinputs=adinputs, **fnargs)
-
-                if toplevel:
-                    _capture_provenance(provenance_inputs, ret_value,
-                                        timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise
@@ -357,14 +375,7 @@ def parameter_override(fn):
                 if isinstance(adinputs, AstroData):
                     raise TypeError("Single AstroData instance passed to "
                                     "primitive, should be a list")
-                if toplevel:
-                    provenance_inputs = _get_provenance_inputs(adinputs)
-
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-
-                if toplevel:
-                    _capture_provenance(provenance_inputs, ret_value,
-                                        timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise

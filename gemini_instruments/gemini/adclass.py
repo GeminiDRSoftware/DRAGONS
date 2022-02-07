@@ -12,12 +12,16 @@ import dateutil.parser
 
 import numpy as np
 
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
 from astrodata import AstroData
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
 from astrodata import TagSet, Section
 
-from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
+from .lookup import (wavelength_band, nominal_extinction,
+                     filter_wavelengths, specphot_standards)
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -123,6 +127,47 @@ def use_keyword_if_prepared(fn):
                 pass
         return fn(self)
     return gn
+
+
+def get_specphot_name(ad):
+    """
+    Return the name of the specphotometric standard of which this AD object
+    is an observation, or None if it is not an observation of a specphot.
+    The name is returned in a whitespace-stripped, all-lowercase format
+    corresponding to the filename containing the specphot data in
+    geminidr.gemini.lookups.spectrophotometric_standards
+
+    Parameters
+    ----------
+    ad: AstroData object which might be a specphot standard
+
+    Returns
+    -------
+    str/None: name of the standard (or None if it's not a standard)
+    """
+    target_name = ad.object().lower().replace(' ', '')
+    try:
+        target = SkyCoord(ad.target_ra(), ad.target_dec(), unit=u.deg)
+    except (TypeError, ValueError):
+        return
+    try:
+        dt = ad.ut_datetime() - datetime.datetime(2000, 1, 1, 12)
+    except TypeError:
+        dt = datetime.timedelta(days=3652.5)  # 10 years
+
+    all_names, all_coords, all_pm_ra, all_pm_dec = [], [], [], []
+    for name, (coords, pm_ra, pm_dec) in specphot_standards.items():
+        all_names.append(name)
+        all_coords.append(coords)
+        all_pm_ra.append(pm_ra)
+        all_pm_dec.append(pm_dec)
+    c = SkyCoord(all_coords, unit=(u.hourangle, u.deg),
+                 pm_ra_cosdec=all_pm_ra*u.mas/u.yr, pm_dec=all_pm_dec*u.mas/u.yr,
+                 distance=10*u.pc)
+    separations = target.separation(c.apply_space_motion(dt=dt)).arcsec
+    i = separations.argmin()
+    if separations[i] < 2 or separations[i] < 10 and all_names[i] == target_name:
+        return all_names[i]
 
 # ------------------------------------------------------------------------------
 class AstroDataGemini(AstroData):
@@ -1501,14 +1546,15 @@ class AstroDataGemini(AstroData):
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level of the data, in ADU. This is expected
-        to be overridden by the individual instruments, so at the Gemini
-        level it returns the values of the SATLEVEL keywords (or None)
+        Returns the saturation level of the data, in the units of the data.
+        This is expected to be overridden by the individual instruments,
+        so at the Gemini level it returns the values of the SATLEVEL keyword
+        (or None).
 
         Returns
         -------
         list/float
-            saturation level in ADU
+            saturation level (in units of the data)
         """
         return self.hdr.get(self._keyword_for('saturation_level'))
 
@@ -1580,7 +1626,8 @@ class AstroDataGemini(AstroData):
             obsepoch = year + fraction
             years = obsepoch - epoch
             pmra *= years
-            pmra *= 15.0*math.cos(math.radians(self.target_dec(offset=True)))
+            # PMRA is to be in time-seconds/yr so cos(dec) term is not needed
+            pmra *= 15.0 #*math.cos(math.radians(self.target_dec(offset=True)))
             pmra /= 3600.0
             ra += pmra
 

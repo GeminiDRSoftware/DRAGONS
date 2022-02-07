@@ -29,6 +29,10 @@ associated_calibrations = {
     "S20200116S0104.fits": {              # GS R400:0.850 HAM CS
         'arc': "S20200116S0357.fits",
     },
+    "N20211008S0368.fits": {              # GN B600:0.495 HAM CS+FULL
+        'arc': "N20211015S0382.fits",
+    #   'arc': "N20211008S0408.fits",  # Alternative CS arc
+    },
 }
 datasets = [(key.replace('.fits', '_varAdded.fits'),
              cals['arc'].replace('.fits', '_arc.fits'))
@@ -44,6 +48,12 @@ fixed_test_parameters_for_determine_distortion = {
     "spatial_order": 3,
     "spectral_order": 4,
 }
+
+
+def compare_frames(frame1, frame2):
+    """Compare the important stuff of two CoordinateFrame instances"""
+    for attr in ("naxes", "axes_type", "axes_order", "unit", "axes_names"):
+        assert getattr(frame1, attr) == getattr(frame2, attr)
 
 
 # Tests Definitions ------------------------------------------------------------
@@ -77,7 +87,7 @@ def test_regression_in_attach_wavelength_solution(ad, arc_ad, change_working_dir
         # regenerating with a differently-structured but equivalent wavelength
         # solution, when the same references could possibly be re-used.
         for f in ext_ref.wcs.available_frames:
-            assert repr(getattr(ext_ref.wcs, f)) == repr(getattr(ext.wcs, f))
+            compare_frames(getattr(ext_ref.wcs, f), getattr(ext.wcs, f))
         idx = np.meshgrid(*(np.arange(dim) for dim in reversed(ext_ref.shape)))
         world, world_ref = ext.wcs(*idx), ext_ref.wcs(*idx)
         # Require roughly 0.1 pix precision in wavelength & <0.1" spatially:
@@ -101,6 +111,9 @@ def test_regression_in_attach_wavelength_solution_to_mosaic(ad, arc_ad, change_w
         logutils.config(
             file_name='log_regression_{:s}.txt'.format(ad.data_label()))
 
+        if ad.detector_roi_setting() != arc_ad.detector_roi_setting():
+            pytest.skip('Can\'t use arc of different ROI for mosaicked data')
+
         p = primitives_gmos_longslit.GMOSLongslit([deepcopy(ad)])
         p.viewer = geminidr.dormantViewer(p, None)
         p.mosaicDetectors()
@@ -113,7 +126,7 @@ def test_regression_in_attach_wavelength_solution_to_mosaic(ad, arc_ad, change_w
     for ext, ext_ref in zip(calibrated_ad, ref_ad):
         # Do the same comparison as in the above test on the mosicked data:
         for f in ext_ref.wcs.available_frames:
-            assert repr(getattr(ext_ref.wcs, f)) == repr(getattr(ext.wcs, f))
+            compare_frames(getattr(ext_ref.wcs, f), getattr(ext.wcs, f))
         idx = np.meshgrid(*(np.arange(dim) for dim in reversed(ext_ref.shape)))
         world, world_ref = ext.wcs(*idx), ext_ref.wcs(*idx)
         np.testing.assert_allclose(world[0], world_ref[0], atol=0.005)

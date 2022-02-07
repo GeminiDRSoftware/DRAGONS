@@ -29,19 +29,20 @@ from gemini_instruments.gmos.pixel_functions import get_bias_level
 from geminidr import PrimitivesBASE
 from . import parameters_visualize
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Visualize(PrimitivesBASE):
     """
     This is the class containing the visualization primitives.
     """
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_visualize)
 
     def display(self, adinputs=None, **params):

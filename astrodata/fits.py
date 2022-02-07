@@ -608,6 +608,9 @@ def ad_to_hdulist(ad):
         for name, table in sorted(ad._tables.items()):
             hdul.append(table_to_bintablehdu(table, extname=name))
 
+    # Additional FITS compatibility, add to PHU
+    hdul[0].header['NEXTEND'] = len(hdul) - 1
+
     return hdul
 
 

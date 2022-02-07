@@ -20,7 +20,6 @@ from astropy.io.registry import IORegistryError
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
-from astropy.modeling.core import CompoundModel
 from astropy.stats import sigma_clip
 from astropy.table import Table, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
@@ -32,6 +31,7 @@ from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
 import astrodata
+from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
@@ -50,7 +50,7 @@ from gempy.library.astrotools import array_from_list, transpose_if_needed
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
 from . import parameters_spect
@@ -64,6 +64,7 @@ matplotlib.rcParams.update({'figure.max_open_warning': 0})
 
 # noinspection SpellCheckingInspection
 @parameter_override
+@capture_provenance
 class Spect(PrimitivesBASE):
     """
     This is the class containing all of the pre-processing primitives
@@ -71,8 +72,8 @@ class Spect(PrimitivesBASE):
     """
     tagset = {"GEMINI", "SPECT"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
     def adjustWCSToReference(self, adinputs=None, **params):
@@ -300,11 +301,30 @@ class Spect(PrimitivesBASE):
 
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             if arc.detector_x_bin() != xbin or arc.detector_y_bin() != ybin:
-                log.warning("Science frame and arc have different binnings.")
+                log.warning(f"Science frame {ad.filename} and arc "
+                            f"{arc.filename} have different binnings.")
                 if 'sq' in self.mode:
                     fail = True
                 adoutputs.append(ad)
                 continue
+
+            ad_detsec = ad.detector_section()
+
+            # Check that the arc is at least as large as the science frame
+            # We only do this for single-extension arcs now, which is true
+            # for GMOSLongslit
+            if len_arc == 1:
+                arc_detsec = arc.detector_section()[0]
+                detsec_array = np.asarray(ad_detsec)
+                x1, _, y1, _ = detsec_array.min(axis=0)
+                x2, _, y2, _ = detsec_array.max(axis=0)
+                if (x1 < arc_detsec.x1 or x2 > arc_detsec.x2 or
+                        y1 < arc_detsec.y1 or y2 > arc_detsec.y2):
+                    log.warning(f"Science frame {ad.filename} is larger than "
+                                f"the arc {arc.filename}")
+                    fail = True
+                    adoutputs.append(ad)
+                    continue
 
             # Read all the arc's distortion maps. Do this now so we only have
             # one block of reading and verifying them
@@ -362,8 +382,6 @@ class Spect(PrimitivesBASE):
                 ] * len_ad
                 output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
 
-                arc_detsec = arc.detector_section()[0]
-                ad_detsec = ad.detector_section()
                 if len_ad > 1:
                     # We need to apply the mosaicking geometry, and add the
                     # same distortion correction to each input extension.
@@ -433,14 +451,25 @@ class Spect(PrimitivesBASE):
                         # same pixel basis before applying the new wave_model
                         offsets = tuple(o_ad - o_arc
                                         for o_ad, o_arc in zip(ad_origin, arc_origin))[::-1]
+                        # Shift the distortion-corrected co-ordinates back from
+                        # the arc's ROI to the native one after transforming:
+                        for ext in ad:
+                            ext.wcs.insert_transform(
+                                'distortion_corrected',
+                                reduce(Model.__and__,
+                                       [models.Shift(-offset) for
+                                        offset in offsets]),
+                                after=False
+                            )
                         # len(arc)=1 so we only have one wave_model, but need to
                         # update the entry in the list, which gets used later
                         if wave_model is not None:
                             offset = offsets[ext.dispersion_axis()-1]
                             if offset != 0:
                                 wave_model.name = None
-                                wave_models[0] = models.Shift(offset) | wave_model
-                                wave_models[0].name = 'WAVE'
+                                wave_model = models.Shift(offset) | wave_model
+                                wave_model.name = 'WAVE'
+                                wave_models = [wave_model] * len_ad
 
                 else:
                     # Single-extension AD, with single Transform
@@ -612,7 +641,10 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             if datafile is None:
-                filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
+                specphot_name = get_specphot_name(ad)
+                if specphot_name is None:
+                    specphot_name = ad.object().lower().replace(' ', '')
+                filename = f'{specphot_name}.dat'
                 for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
                     try:
                         path = import_module('.', module).__path__[0]
@@ -1082,19 +1114,33 @@ class Spect(PrimitivesBASE):
                 new_pipeline = ext.wcs.pipeline[:idx-1]
                 prev_frame, m_distcorr = ext.wcs.pipeline[idx-1]
 
-                if hasattr(m_distcorr, 'left') and (
-                    isinstance(m_distcorr.left, CompoundModel) and
-                    m_distcorr.left.n_outputs == 2 and
-                    all(isinstance(m, models.Shift) for m in m_distcorr.left)
-                ):
-                    m_dummy = m_distcorr.left | models.Identity(2)
+                # The model must have a Mapping prior to the Chebyshev2D
+                # model(s) since coordinates have to be duplicated. Find this
+                for i in range(m_distcorr.n_submodels):
+                    if isinstance(m_distcorr[i], models.Mapping):
+                        break
                 else:
-                    m_dummy = models.Identity(2)
+                    raise ValueError("Cannot find Mapping")
 
-                m_dummy.inverse = m_distcorr.inverse
-                new_pipeline.append((prev_frame, m_dummy))
+                # Now determine the extent of the submodel that encompasses the
+                # overall 2D distortion, which will be a 2D->2D model
+                for j in range(i + 1, m_distcorr.n_submodels + 1):
+                    try:
+                        msub = m_distcorr[i:j]
+                    except IndexError:
+                        continue
+                    if msub.n_inputs == msub.n_outputs == 2:
+                        break
+                else:
+                    raise ValueError("Cannot find distortion model")
+
+                # Name it so we can replace it
+                m_distcorr[i:j].name = "DISTCORR"
+                m_dummy = models.Identity(2)
+                m_dummy.inverse = msub.inverse
+                new_m_distcorr = m_distcorr.replace_submodel("DISTCORR", m_dummy)
+                new_pipeline.append((prev_frame, new_m_distcorr))
                 new_pipeline.extend(ext.wcs.pipeline[idx:])
-
                 ext.wcs = gWCS(new_pipeline)
 
             if not have_distcorr:
@@ -1445,10 +1491,28 @@ class Spect(PrimitivesBASE):
                     apertures.append(aperture)
 
                 if skysub_needed:
-                    apmask = np.logical_or.reduce([ap.aperture_mask(ext, width=width, grow=grow)
-                                                   for ap in apertures])
+                    apmask = np.logical_or.reduce(
+                        [ap.aperture_mask(ext, width=width, grow=grow)
+                         for ap in apertures])
 
-                for apnum, aperture in enumerate(apertures, start=1):
+                # Calculate world coords at middle of each dispersed spectrum
+                pix_coords = [[0.5 * (length-1)] * len(apertures)
+                              for length in ext.shape[::-1]]
+                pix_coords[dispaxis] = [ap.model(coord) for ap, coord in
+                                        zip(apertures, pix_coords[1-dispaxis])]
+                wcs_coords = ext.wcs(*pix_coords)
+                sky_axes = None
+                if isinstance(ext.wcs.output_frame, cf.CompositeFrame):
+                    for frame in ext.wcs.output_frame.frames:
+                        if isinstance(frame, cf.CelestialFrame):
+                            try:
+                                sky_axes = [frame.axes_order[frame.axes_names.index(axis)]
+                                            for axis in ('lon', 'lat')]
+                            except IndexError:
+                                pass
+                            break
+
+                for apnum, (aperture, *coords) in enumerate(zip(apertures, *wcs_coords), start=1):
                     log.stdinfo(f"    Extracting spectrum from aperture {apnum}")
                     self.viewer.width = 2
                     self.viewer.color = colors[(apnum-1) % len(colors)]
@@ -1500,21 +1564,21 @@ class Spect(PrimitivesBASE):
                     # same gWCS but that could change.
                     ext_spec = ad_spec[-1]
                     if wave_model is not None:
-                        in_frame = cf.CoordinateFrame(naxes=1, axes_type=['SPATIAL'],
-                                                      axes_order=(0,), unit=u.pix,
-                                                      axes_names=('x',), name='pixels')
+                        in_frame = astrodata.wcs.pixel_frame(naxes=1)
                         out_frame = cf.SpectralFrame(unit=u.nm, name='world',
                                                      axes_names=axes_names)
                         ext_spec.wcs = gWCS([(in_frame, wave_model),
                                              (out_frame, None)])
                     ext_spec.hdr[ad._keyword_for('aperture_number')] = apnum
                     center = aperture.model.c0.value
-                    ext_spec.hdr['XTRACTED'] = (center, "Spectrum extracted "
-                                                        "from {} {}".format(direction, int(center + 0.5)))
-                    ext_spec.hdr['XTRACTLO'] = (aperture._last_extraction[0],
-                                                'Aperture lower limit')
-                    ext_spec.hdr['XTRACTHI'] = (aperture._last_extraction[1],
-                                                'Aperture upper limit')
+                    ext_spec.hdr['XTRACTED'] = (
+                        center, f"Spectrum extracted from {direction} {int(center+0.5)}")
+                    for i, kw in enumerate(['XTRACTLO', 'XTRACTHI']):
+                        ext_spec.hdr[kw] = (aperture.last_extraction[i],
+                                            self.keyword_comments[kw])
+                    if sky_axes:
+                        for i, kw in zip(sky_axes, ['XTRACTRA', 'XTRACTDE']):
+                            ext_spec.hdr[kw] = (coords[i], self.keyword_comments[kw])
 
                     # Delete unnecessary keywords
                     for kw in kw_to_delete:
@@ -1684,11 +1748,22 @@ class Spect(PrimitivesBASE):
         suffix : str
             Suffix to be added to output files.
 
-        x_order, y_order : int or None, optional
+        spectral_order, spatial_order : int or None, optional
             Order for fitting and subtracting object continuum and sky line
             models, prior to running the main cosmic ray detection algorithm.
             When None, defaults are used, according to the image size (as in
-            the IRAF task gemcrspec). When 0, no fit is done.
+            the IRAF task gemcrspec). To control which fits are performed, use
+            the bkgmodel parameter.
+
+       bkgmodel : {'both', 'object', 'skyline', 'none'}, optional
+           Set which background model(s) to use, between 'object', 'skyline',
+           'both', or 'none'. Different data may get better results with
+           different background models.
+           'both': Use both object and sky line models.
+           'object': Use object model only.
+           'skyline': Use sky line model only.
+           'none': Don't use a background model.
+           Default: 'skyline'.
 
         bitmask : int, optional
             Bits in the input data quality `flags` that are to be used to
@@ -1708,12 +1783,6 @@ class Spect(PrimitivesBASE):
             Minimum contrast between Laplacian image and the fine structure
             image.  Increase this value if cores of bright stars are flagged
             as cosmic rays. Default: 5.0.
-
-        pssl : float, optional
-            Previously subtracted sky level in ADU. We always need to work in
-            electrons for cosmic ray detection, so we need to know the sky
-            level that has been subtracted so we can add it back in.
-            Default: 0.0.
 
         niter : int, optional
             Number of iterations of the LA Cosmic algorithm to perform.
@@ -1776,8 +1845,9 @@ class Spect(PrimitivesBASE):
         bitmask = params.pop('bitmask')
         debug = params.pop('debug')
         suffix = params.pop('suffix')
-        x_order_in = params.pop('x_order')
-        y_order_in = params.pop('y_order')
+        x_order_in = params.pop('spectral_order')
+        y_order_in = params.pop('spatial_order')
+        bkgmodel = params.pop('bkgmodel')
 
         fit_1D_params = dict(
             plot=debug,
@@ -1797,14 +1867,23 @@ class Spect(PrimitivesBASE):
             array_info = gt.array_information(ad)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
 
-            for ext in ad_tiled:
+            # Create a modified version of the debug plot for inspection
+            fig, axes = plt.subplots(5, 3, sharex=True, sharey=True,
+                                     tight_layout=True)
+            if debug:
+                # This counter-intuitive step prevents the empty figure from
+                # being shown by calls to pyplot.show(), but still allows it to
+                # be drawn to and modified (somehow...).
+                plt.close(fig)
+
+            for i, ext in enumerate(ad_tiled):
                 dispaxis = 2 - ext.dispersion_axis()
 
                 # Use default orders from gemcrspec (from Bryan):
                 ny, nx = ext.shape
-                x_order = 9 if x_order_in is None else x_order_in
-                y_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
-                           if y_order_in is None else y_order_in)
+                spectral_order = 9 if x_order_in is None else x_order_in
+                spatial_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
+                                if y_order_in is None else y_order_in)
 
                 if ext.mask is not None:
                     data = np.ma.array(ext.data, mask=ext.mask != 0)
@@ -1815,43 +1894,47 @@ class Spect(PrimitivesBASE):
                     mask = None
                     weights = None
 
+                # Set up the background and models to be blank initially:
+                background = np.zeros(ext.shape)
+                objfit = np.zeros(ext.shape)
+                skyfit = np.zeros(ext.shape)
+
                 # Fit the object spectrum:
-                if x_order > 0:
+                if bkgmodel in ('both', 'object'):
                     objfit = fit_1D(data,
                                     function='legendre',
                                     axis=dispaxis,
-                                    order=x_order,
+                                    order=spectral_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
-                    if debug:
-                        ext.OBJFIT = objfit.copy()
-                else:
-                    objfit = np.zeros(ext.shape)
+                if debug:
+                    ext.OBJFIT = objfit.copy()
 
-                input_copy = data - objfit
+                background += objfit
+
+                # If fitting both models, subtracting objfit from the data
+                # ensures sky background isn't fitted twice:
+                skyfit_input = data - objfit
 
                 # Fit sky lines:
-                if y_order > 0:
-                    skyfit = fit_1D(input_copy, function='legendre',
+                if bkgmodel in('both', 'skyline'):
+                    skyfit = fit_1D(skyfit_input,
+                                    function='legendre',
                                     axis=1 - dispaxis,
-                                    order=y_order,
+                                    order=spatial_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                if debug:
+                    ext.SKYFIT = skyfit
 
-                    # keep combined fits for later restoration
-                    objfit += skyfit
-                    if debug:
-                        ext.SKYFIT = skyfit
-                    skyfit = None
-
-                input_copy = None
+                background += skyfit
 
                 # Run astroscrappy's detect_cosmics. We use the variance array
                 # because it takes into account the different read noises if
                 # the data has been tiled
                 crmask, _ = detect_cosmics(ext.data,
                                            inmask=mask,
-                                           inbkg=objfit,
+                                           inbkg=background,
                                            invar=ext.variance,
                                            gain=ext.gain(),
                                            satlevel=ext.saturation_level(),
@@ -1864,7 +1947,18 @@ class Spect(PrimitivesBASE):
                     ext.mask[crmask] = DQ.cosmic_ray
 
                 if debug:
-                    plot_cosmics(ext, crmask)
+                    plot_cosmics(ext, objfit, skyfit, crmask)
+
+                plot_cosmics(ext, objfit, skyfit, crmask, axes=axes[:, i])
+
+                # Free up memory.
+                skyfit, objfit, skyfit_input = None, None, None
+
+            # Save the figure
+            fig.set_size_inches(5, 15)
+            fig.savefig(ad.filename.replace('.fits', '.pdf'),
+                        bbox_inches='tight', dpi=300)
+            plt.close(fig)
 
             # Set flags in the original (un-tiled) ad
             if ad_tiled is not ad:
@@ -2524,8 +2618,10 @@ class Spect(PrimitivesBASE):
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
 
+                resampled_frame = copy(ext.wcs.input_frame)
+                resampled_frame.name = 'resampled'
                 ext.wcs = gWCS([(ext.wcs.input_frame, resampling_model),
-                                (cf.Frame2D(name='resampled'), new_wcs_model),
+                                (resampled_frame, new_wcs_model),
                                 (ext.wcs.output_frame, None)])
 
                 origin = (0,) * ndim
@@ -3460,12 +3556,16 @@ def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
     ax.set_title(title)
 
 
-def plot_cosmics(ext, crmask):
+def plot_cosmics(ext, objfit, skyfit, crmask, axes=None):
     from astropy.visualization import ZScaleInterval, imshow_norm
 
-    fig, axes = plt.subplots(5, 1, figsize=(15, 5*2), sharex=True, sharey=True)
-    imgs = (ext.data, ext.OBJFIT, ext.SKYFIT,
-            ext.data - (ext.OBJFIT + ext.SKYFIT), crmask)
+    if axes is None:
+        fig, axes = plt.subplots(1, 5, figsize=(15, 5*2),
+                                 sharex=True,
+                                 sharey=True,
+                                 tight_layout=True)
+    imgs = (ext.data, objfit, skyfit,
+            ext.data - (objfit + skyfit), crmask)
     titles = ('data', 'object fit', 'sky fit', 'residual', 'crmask')
     mask = ext.mask & (DQ.max ^ DQ.cosmic_ray)
 
@@ -3483,4 +3583,6 @@ def plot_cosmics(ext, crmask):
         imshow_norm(data, ax=ax, origin='lower', interval=interval, cmap=cmap)
         ax.set_title(title)
 
-    plt.show()
+    if axes is None:
+        plt.show()
+        plt.close(fig)

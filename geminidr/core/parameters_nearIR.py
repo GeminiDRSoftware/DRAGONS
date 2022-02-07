@@ -35,4 +35,7 @@ class separateFlatsDarksConfig(config.Config):
     pass
 
 class stackDarksConfig(parameters_stack.core_stacking_config):
-    pass
+
+    def setDefaults(self):
+        del self.zero
+        del self.scale
