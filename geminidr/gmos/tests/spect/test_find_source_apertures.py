@@ -53,7 +53,13 @@ extra_test_data.extend([
     for bkgd, peak, contrast, sep, gal_fwhm, sn_fwhm in cart_product(
             BACKGROUNDS, PEAKS, CONTRASTS, SEPARATIONS, GAL_FWHMS, SN_FWHMS)
 ])
-del extra_test_data[28]  # this one fails
+
+# Some iterations are known to be failure cases
+# we mark them accordingly so we can see if they start passing
+_xfail_indices = [28, ]
+for idx in _xfail_indices:
+    args = extra_test_data[idx]
+    extra_test_data[idx] = pytest.param(args, marks=pytest.mark.xfail)
 
 ##################################
 
