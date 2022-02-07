@@ -30,13 +30,13 @@ test_datasets2 = [
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("offset", (5.5, 10))
-def test_correlation(adinputs, caplog, offset):
+def test_resampling(adinputs, caplog, offset):
     add_fake_offset(adinputs, offset=offset)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
-    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.05
-    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.05
+    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.001
+    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
 
     p.resampleToCommonFrame(dw=0.15)
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
@@ -61,13 +61,13 @@ def test_correlation(adinputs, caplog, offset):
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("offset", (5.5, 10))
-def test_correlation_and_trim(adinputs, caplog, offset):
+def test_resampling_and_trim(adinputs, caplog, offset):
     add_fake_offset(adinputs, offset=offset)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
-    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.05
-    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.05
+    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.001
+    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
 
     p.resampleToCommonFrame(dw=0.15, trim_spectral=True)
     _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
@@ -92,10 +92,10 @@ def test_correlation_and_trim(adinputs, caplog, offset):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_correlation_and_w1_w2(adinputs, caplog):
+def test_resampling_and_w1_w2(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -109,10 +109,10 @@ def test_correlation_and_w1_w2(adinputs, caplog):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_correlation_non_linearize(adinputs, caplog):
+def test_resampling_non_linearize(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -126,43 +126,6 @@ def test_correlation_non_linearize(adinputs, caplog):
 
     adstack = p.stackFrames()
     assert adstack[0][0].shape == (492, 3868)
-
-
-# These tests are in the wrong place but they use the inputs from here
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-def test_header_offset(adinputs2, caplog):
-    """Test that the offset is correctly read from the headers."""
-    p = GMOSLongslit(adinputs2)
-    adout = p.adjustWCSToReference(method='offsets')
-
-    for rec in caplog.records:
-        assert not rec.message.startswith('WARNING')
-
-    assert np.isclose(adout[0].phu['SLITOFF'], 0)
-    assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[3].phu['SLITOFF'], 0)
-
-
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-@pytest.mark.skip("Improved primitive doesn't fail any more")
-def test_header_offset_fallback(adinputs2, caplog):
-    """For this dataset the correlation method fails, and give an offset very
-    different from the header one. So we check that the fallback to the header
-    offset works.
-    """
-    p = GMOSLongslit(adinputs2)
-    adout = p.adjustWCSToReference()
-
-    # WARNING when offset is too large
-    assert caplog.records[3].message.startswith('WARNING - No cross')
-
-    assert np.isclose(adout[0].phu['SLITOFF'], 0)
-    assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[3].phu['SLITOFF'], 0, atol=0.2, rtol=0)
 
 
 # Local Fixtures and Helper Functions -----------------------------------------
