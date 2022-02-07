@@ -30,17 +30,17 @@ test_datasets2 = [
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("offset", (5.5, 10))
-def test_correlation(adinputs, caplog, offset):
+def test_resampling(adinputs, caplog, offset):
     add_fake_offset(adinputs, offset=offset)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
-    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.05
-    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.05
+    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.001
+    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
 
     p.resampleToCommonFrame(dw=0.15)
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
-    assert all(ad[0].shape == (int(512 + 2*offset), 3869) for ad in p.streams['main'])
+    assert all(ad[0].shape == (int(512 - 2*offset), 3869) for ad in p.streams['main'])
 
     p.findApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
@@ -61,18 +61,18 @@ def test_correlation(adinputs, caplog, offset):
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("offset", (5.5, 10))
-def test_correlation_and_trim(adinputs, caplog, offset):
+def test_resampling_and_trim(adinputs, caplog, offset):
     add_fake_offset(adinputs, offset=offset)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
-    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.05
-    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.05
+    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.001
+    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
 
     p.resampleToCommonFrame(dw=0.15, trim_spectral=True)
     _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
     for ad in p.streams['main']:
-        assert ad[0].shape == (int(512 + 2*offset), 3139)
+        assert ad[0].shape == (int(512 - 2*offset), 3139)
 
     p.findApertures(max_apertures=1)
     np.testing.assert_allclose([ad[0].APERTURE['c0']
@@ -92,10 +92,10 @@ def test_correlation_and_trim(adinputs, caplog, offset):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_correlation_and_w1_w2(adinputs, caplog):
+def test_resampling_and_w1_w2(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -109,10 +109,10 @@ def test_correlation_and_w1_w2(adinputs, caplog):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_correlation_non_linearize(adinputs, caplog):
+def test_resampling_non_linearize(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -154,7 +154,7 @@ def test_header_offset_fallback(adinputs2, caplog):
     offset works.
     """
     p = GMOSLongslit(adinputs2)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='sources_wcs')
 
     # WARNING when offset is too large
     assert caplog.records[3].message.startswith('WARNING - No cross')
