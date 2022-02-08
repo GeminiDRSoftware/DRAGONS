@@ -702,14 +702,8 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
         min_length=int(min_frac * len(widths)), min_snr=min_snr)
     peaks = sorted([x[1][0] for x in filtered])
 
-    # We need to find accurate peak positions from convolved data so we're
-    # not affected by noise or problems with broad, flat-topped features.
-    # There appears to be a bias with narrow Ricker transforms, so we use the
-    # broadest one for this purpose.
-    pinpoint_data = (data if pinpoint_index is None else
-                     wavelet_transformed_data[pinpoint_index])
-
-    snr = np.divide(pinpoint_data, np.sqrt(variance),
+    # Estimate the SNR from the wavelet-transformed data to remove continuum
+    snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
                     where=variance > 0)
     peaks = [x for x in peaks if snr[x] > min_snr]
@@ -735,10 +729,17 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
     # (e.g., chip gaps in GMOS)
     peaks = [x for x in peaks if np.sum(mask[int(x-edge):int(x+edge+1)]) == 0]
 
+    # We need to find accurate peak positions from convolved data so we're
+    # not affected by noise or problems with broad, flat-topped features.
+    # There appears to be a bias with narrow Ricker transforms, so we use the
+    # broadest one for this purpose.
+    pinpoint_data = (data if pinpoint_index is None else
+                     wavelet_transformed_data[pinpoint_index])
+
     # Clip the really noisy parts of the data and get more accurate positions
-    pinpoint_data[snr < 0.5] = 0
+    #pinpoint_data[snr < 0.5] = 0
     peaks = pinpoint_peaks(pinpoint_data, mask, peaks,
-                           halfwidth=int(np.median(widths)+0.5))
+                           halfwidth=int(0.5*np.median(widths)))
 
     # Clean up peaks that are too close together
     while True:
@@ -753,8 +754,10 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
             peaks[i] = np.mean(new_peaks)
         else:  # somehow both peaks vanished
             del peaks[i]
+    print('PEAKS', peaks)
 
     final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
+    final_peaks = peaks
     peak_snrs = list(snr[int(p + 0.5)] for p in final_peaks)
 
     # Remove suspiciously bright peaks and return as array of
