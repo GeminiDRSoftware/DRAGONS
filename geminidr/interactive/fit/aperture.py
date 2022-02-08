@@ -429,13 +429,10 @@ class FindSourceAperturesModel:
                 find_apertures(self.ext, **self.aper_params)
             self.profile_source.patch({'y': [(slice(None), self.profile)]})
         else:
-            # otherwise we can redo only the peak detection. However, to
-            # avoid having to add yet more parameters to the
-            # find_apertures_peaks() function, we are forced to recompute
-            # the profile (which won't have changed, so we
-            # don't update the bokeh objects)
+            # otherwise pass the existing profile
             locations, all_limits, _, _ = \
-                find_apertures(self.ext, **self.aper_params)
+                find_apertures(self.ext, **self.aper_params,
+                               profile=np.ma.masked_array(self.profile, self.prof_mask))
 
         self.aperture_models.clear()
 

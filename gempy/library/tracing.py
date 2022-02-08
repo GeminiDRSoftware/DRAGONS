@@ -446,82 +446,91 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
 
 def find_apertures(ext, max_apertures, min_sky_region, percentile,
                    sizing_method, threshold, section, min_snr, use_snr,
-                   max_separation=None, strategy="exponential_wavelet"):
+                   max_separation=None, strategy="exponential_wavelet",
+                   profile=None):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
     findSourceApertures as well as by the interactive code. See
     findSourceApertures' docstring for details on the parameters.
     Data MUST always be dispersed along the rows
+
+    An existing profile can be passed to avoid the need to recalculate it.
     """
     # Collapse image along spatial direction to find noisy regions
     # (caused by sky lines, regardless of whether image has been
     # sky-subtracted or not)
-    _, _, var1d = NDStacker.mean(ext.data, mask=ext.mask,
-                                      variance=ext.variance)
+    if profile is None:
+        _, _, var1d = NDStacker.mean(ext.data, mask=ext.mask,
+                                          variance=ext.variance)
 
-    # Mask sky-line regions and find clumps of unmasked pixels
-    # Very light sigma-clipping to remove bright sky lines
-    var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
+        # Mask sky-line regions and find clumps of unmasked pixels
+        # Very light sigma-clipping to remove bright sky lines
+        var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
 
-    # We need to construct a spatial profile along the slit. First, remove
-    # columns where too few pixels are good
-    if ext.mask is not None:
-        mask1d = (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
-    else:
-        mask1d = np.zeros_like(var1d, dtype=bool)
-
-    _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
-                                    maxiters=3)
-    mask1d |= (var_excess > 5 * std)
-    slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
-
-    sky_mask = np.ones_like(mask1d, dtype=bool)
-    for reg in slices:
-        if (reg.stop - reg.start) >= min_sky_region:
-            sky_mask[reg] = False
-    # If nothing satisfies the min_sky_region requirement, ignore it
-    if sky_mask.all():
-        log.warning(f"No regions in {ext.filename} between sky lines exceed "
-                    f"{min_sky_region} pixels. Ignoring requirement.")
-        sky_mask[:] = True
-        for reg in slices:
-            sky_mask[reg] = False
-
-    if section:
-        sec_mask = np.ones_like(mask1d, dtype=bool)
-        for x1, x2 in (s.split(':') for s in section.split(',')):
-            reg = slice(None if x1 == '' else int(x1) - 1,
-                        None if x2 == '' else int(x2))
-            sec_mask[reg] = False
-    else:
-        sec_mask = False
-
-    # Ensure we have some valid pixels left
-    if (sky_mask | sec_mask).all():
-        log.warning(f"No valid regions remain in {ext.filename} after "
-                    "applying sections. Ignoring sky mask.")
-        sky_mask[:] = False
-
-    full_mask = (ext.mask > 0 if ext.mask is not None else
-                 np.zeros(ext.shape, dtype=bool))
-    full_mask |= sky_mask | sec_mask
-
-    signal = (ext.data if (ext.variance is None or not use_snr) else
-              np.divide(ext.data, np.sqrt(ext.variance),
-                        out=np.zeros_like(ext.data), where=ext.variance > 0))
-    if ext.variance is not None:
-        full_mask |= ext.variance == 0
-    masked_data = np.where(full_mask, np.nan, signal)
-    prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
-
-    # Need to catch warnings for rows full of NaNs
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore', message='All-NaN slice')
-        warnings.filterwarnings('ignore', message='Mean of empty slice')
-        if percentile:
-            profile = np.nanpercentile(masked_data, percentile, axis=1)
+        # We need to construct a spatial profile along the slit. First, remove
+        # columns where too few pixels are good
+        if ext.mask is not None:
+            mask1d = (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
         else:
-            profile = np.nanmean(masked_data, axis=1)
+            mask1d = np.zeros_like(var1d, dtype=bool)
+
+        _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
+                                        maxiters=3)
+        mask1d |= (var_excess > 5 * std)
+        slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
+
+        sky_mask = np.ones_like(mask1d, dtype=bool)
+        for reg in slices:
+            if (reg.stop - reg.start) >= min_sky_region:
+                sky_mask[reg] = False
+        # If nothing satisfies the min_sky_region requirement, ignore it
+        if sky_mask.all():
+            log.warning(f"No regions in {ext.filename} between sky lines exceed "
+                        f"{min_sky_region} pixels. Ignoring requirement.")
+            sky_mask[:] = True
+            for reg in slices:
+                sky_mask[reg] = False
+
+        if section:
+            sec_mask = np.ones_like(mask1d, dtype=bool)
+            for x1, x2 in (s.split(':') for s in section.split(',')):
+                reg = slice(None if x1 == '' else int(x1) - 1,
+                            None if x2 == '' else int(x2))
+                sec_mask[reg] = False
+        else:
+            sec_mask = False
+
+        # Ensure we have some valid pixels left
+        if (sky_mask | sec_mask).all():
+            log.warning(f"No valid regions remain in {ext.filename} after "
+                        "applying sections. Ignoring sky mask.")
+            sky_mask[:] = False
+
+        full_mask = (ext.mask > 0 if ext.mask is not None else
+                     np.zeros(ext.shape, dtype=bool))
+        full_mask |= sky_mask | sec_mask
+
+        signal = (ext.data if (ext.variance is None or not use_snr) else
+                  np.divide(ext.data, np.sqrt(ext.variance),
+                            out=np.zeros_like(ext.data), where=ext.variance > 0))
+        if ext.variance is not None:
+            full_mask |= ext.variance == 0
+        masked_data = np.where(full_mask, np.nan, signal)
+        prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
+
+        # Need to catch warnings for rows full of NaNs
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', message='All-NaN slice')
+            warnings.filterwarnings('ignore', message='Mean of empty slice')
+            if percentile:
+                profile = np.nanpercentile(masked_data, percentile, axis=1)
+            else:
+                profile = np.nanmean(masked_data, axis=1)
+    elif hasattr(profile, 'mask'):
+        prof_mask = profile.mask
+        profile = profile.data
+    else:
+        prof_mask = None
 
     locations, all_limits = _find_apertures_peaks(profile, prof_mask,
                                                   max_apertures, threshold,
@@ -603,7 +612,7 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
         else:
             widths = np.asarray(strategy)
         peaks_and_snrs = find_wavelet_peaks(
-            profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
+            profile, widths, mask=None if prof_mask is None else prof_mask & DQ.not_signal, variance=None,
             reject_bad=False, min_snr=min_snr, min_frac=0.2, pinpoint_index=0)
 
     if peaks_and_snrs.size == 0:
