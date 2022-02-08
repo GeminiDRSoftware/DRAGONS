@@ -754,9 +754,8 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
             peaks[i] = np.mean(new_peaks)
         else:  # somehow both peaks vanished
             del peaks[i]
-    print('PEAKS', peaks)
 
-    final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
+    #final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
     final_peaks = peaks
     peak_snrs = list(snr[int(p + 0.5)] for p in final_peaks)
 

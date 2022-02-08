@@ -35,7 +35,7 @@ from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
-from geminidr import PrimitivesBASE
+from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
 from geminidr.interactive.fit import fit1d
@@ -65,7 +65,7 @@ matplotlib.rcParams.update({'figure.max_open_warning': 0})
 # noinspection SpellCheckingInspection
 @parameter_override
 @capture_provenance
-class Spect(PrimitivesBASE):
+class Spect(Resample):
     """
     This is the class containing all of the pre-processing primitives
     for the `Spect` level of the type hierarchy tree.
