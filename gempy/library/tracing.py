@@ -539,12 +539,15 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
 
     # Remove sources larger than a certain distance from the target coords
     if max_separation is not None:
-        max_separation /= ext.pixel_scale()
-        target_location = ext.wcs.invert(
-            ext.central_wavelength(asNanometers=True), ext.target_ra(),
-            ext.target_dec())[2 - ext.dispersion_axis()]
-        all_limits = [y for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
-        locations = [x for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
+        try:
+            max_separation /= ext.pixel_scale()
+            target_location = ext.wcs.invert(
+                ext.central_wavelength(asNanometers=True), ext.target_ra(),
+                ext.target_dec())[2 - ext.dispersion_axis()]
+            all_limits = [y for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
+            locations = [x for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
+        except:
+            pass
 
     return locations, all_limits, profile, prof_mask
 

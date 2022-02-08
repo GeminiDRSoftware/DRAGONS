@@ -293,10 +293,16 @@ class FindSourceAperturesModel:
             # the slit is vertical, the WCS has not been modified
             self.target_location = ext.wcs.invert(
                 ext.central_wavelength(asNanometers=True), ext.target_ra(), ext.target_dec())[2 - ext.dispersion_axis()]
-            self.max_width = np.ceil(max(self.target_location, self.profile_shape - 1 - self.target_location) * ext.pixel_scale())
+            # gWCS will return NaN coords if sent Nones, so bomb out now
+            assert np.isnan(self.target_location).sum() == 0
+            self.max_width = np.ceil(max(self.target_location, self.profile_shape - 1 - self.target_location))
         except:
             self.target_location = (self.profile_shape - 1) / 2
-            self.max_width = np.ceil(self.target_location * ext.pixel_scale())
+            self.max_width = np.ceil(self.target_location)
+        try:
+            self.max_width *= ext.pixel_scale()
+        except TypeError:
+            pass
 
         # initial parameters are set as attributes
         self.reset()
@@ -996,7 +1002,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
         strategy = SelectLine("Strategy", model, attr="strategy",
                               options=["exponential_wavelet", "linear_wavelet", "maxima"])
-        maxsep = CustomSlider("Maximum separation from target (arcsec)", model, attr="max_separation",
+        maxsep = CustomSlider("Maximum separation from target", model, attr="max_separation",
                               start=5, end=model.max_width, step=0.5)
 
         self.make_ok_cancel_dialog(reset_button,
