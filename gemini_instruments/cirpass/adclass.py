@@ -17,7 +17,7 @@ from ..gemini import AstroDataGemini
 class AstroDataCirpass(AstroDataGemini):
     __keyword_dict = dict(
         ra = 'TEL_RA',
-        dec = 'TEC_DEC',
+        dec = 'TEL_DEC',
     )
     @staticmethod
     def _matches_data(source):
