@@ -30,11 +30,12 @@ test_datasets2 = [
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("offset", (5.5, 10))
-def test_simple_correlation_test(offset):
+def test_simple_correlation_test(path_to_inputs, offset):
     """A simple correlation test that uses a single image, shifted, to avoid
     difficulties in centroiding. Placed here because it uses datasets and
     functions in this module"""
-    adinputs = [astrodata.open(test_datasets[0]) for i in (0, 1, 2)]
+    adinputs = [astrodata.open(os.path.join(path_to_inputs, test_datasets[0]))
+                for i in (0, 1, 2)]
     add_fake_offset(adinputs, offset=offset)
     p = GMOSLongslit(adinputs)
     p.findApertures(max_apertures=1)

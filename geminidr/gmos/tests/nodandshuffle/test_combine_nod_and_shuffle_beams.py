@@ -9,7 +9,7 @@ from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 # There's an emission line so alignment only works with a specified region
 datasets = [("N20180908S0020_distortionCorrected.fits", {}, -371.75),
             ("N20180908S0020_distortionCorrected.fits", {"align_sources": True}, -371.75),
-            ("N20180908S0020_distortionCorrected.fits", {"align_sources": True, "region": "2855:2875"}, -375.5),
+            ("N20180908S0020_distortionCorrected.fits", {"align_sources": True, "region": "2855:2865"}, -375.5),
             ]
 
 
