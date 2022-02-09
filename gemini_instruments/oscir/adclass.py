@@ -33,7 +33,7 @@ class AstroDataOscir(AstroDataGemini):
         float
             declination in degrees
         """
-        return self.phu.get('DEC')
+        return self._dec()
 
     @astro_data_descriptor
     def ra(self):
@@ -45,4 +45,4 @@ class AstroDataOscir(AstroDataGemini):
         float
             right ascension in degrees
         """
-        return self.phu.get('RA')
+        return self._ra()
