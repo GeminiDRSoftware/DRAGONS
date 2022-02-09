@@ -62,18 +62,6 @@ def test_resampling(adinputs, caplog, offset):
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
     assert all(ad[0].shape == (int(512 - 2*offset), 3869) for ad in p.streams['main'])
 
-    p.findApertures(max_apertures=1)
-    np.testing.assert_allclose([ad[0].APERTURE['c0']
-                                for ad in p.streams['main']], 260.4, atol=0.25)
-
-    caplog.clear()
-    ad = p.findApertures(max_apertures=1)[0]
-    assert len(ad[0].APERTURE) == 1
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.4, atol=0.25)
-
-    ad = p.extractSpectra()[0]
-    assert ad[0].shape == (3869,)
-
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
