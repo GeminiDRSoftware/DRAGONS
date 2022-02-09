@@ -1,6 +1,7 @@
 # import os
 # from copy import deepcopy
 
+from itertools import count
 import os
 
 import astrodata
@@ -19,16 +20,27 @@ from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
 
 DEBUG = bool(os.getenv('DEBUG', False))
 
-
 # ---- Fixtures ----------------------------------------
 
+# @pytest.fixture
+# def niri_images(astrofaker):
+#     """Create two NIRI images, one all 1s, the other all 2s"""
+#     adinputs = []
+#     for i in (1, 2):
+#         ad = astrofaker.create('NIRI', 'IMAGE')
+#         ad.init_default_extensions()
+#         ad[0].data += i
+
+#         adinputs.append(ad)
+
+#     return NIRIImage(adinputs)
+
 @pytest.fixture
-def niri_images(astrofaker):
+def niri_images(niri_image):
     """Create two NIRI images, one all 1s, the other all 2s"""
     adinputs = []
     for i in (1, 2):
-        ad = astrofaker.create('NIRI', 'IMAGE')
-        ad.init_default_extensions()
+        ad = niri_image()
         ad[0].data += i
 
         adinputs.append(ad)
@@ -54,25 +66,79 @@ def niriprim2():
     return p
 
 @pytest.fixture
-def niri_sequence():
-    # Can be called like `niri_sequence(['object'|'sky'|'mixed'])`
+def niri_image(astrofaker):
+    """Create a fake NIRI image.
 
-    def _make_niri_sequence(marker):
+    Optional
+    --------
+    keywords : dict
+        A dictionary with keys equal to FITS header keywords, whose values
+        will be propogated to the new image.
+
+    """
+
+    def _niri_image(filename='N20010101S0001.fits', keywords={}):
+
+        ad = astrofaker.create('NIRI', 'IMAGE',
+                                extra_keywords=keywords,
+                                filename=filename)
+        ad.init_default_extensions()
+        return ad
+
+    return _niri_image
+
+@pytest.fixture
+def niri_sequence(niri_image):
+    """Create a sequence of fake NIRI images.
+
+    Parameters
+    ----------
+    marker : str, Options: ('object', 'sky1', 'sky2', 'sky3')
+
+    Can be called in a test like `niri_sequence('object')` as long as it's
+    passed as an argument.
+    """
+
+    # Use an infiite iterator to ensure fake files get unique filenames.
+    filenum = count(1)
+
+    def _niri_sequence(marker):
+
+        nonlocal filenum
+
+        adoutputs = []
         if marker == 'object':
-            filenames = [f'N20160102S{i:04d}.fits' for i in range(270, 275)]
-        elif marker == 'sky':
-            filenames = [f'N20160102S{i:04d}.fits' for i in range(275, 280)]
-        elif marker == 'mixed':
-            filenames = [f'N20150404S{i:04d}.fits' for i in range(3, 6)]
-            filenames.extend([f'N20150404S{i:04d}.fits' for i in range(776,
-                                                                        780)])
-        # Create a list of astrodata objects from files downloaded from the
-        # archive
-        adoutputs = [astrodata.open(download_from_archive(name)) for
-                      name in filenames]
+            ra_offsets = [-6, -6, 0]
+            dec_offsets = [0, -6, -6]
+            guided = True
+        elif marker == 'sky1':
+            ra_offsets = [-180, -240, -240]
+            dec_offsets = [180, 180, 120]
+            guided = False
+        elif marker == 'sky2':
+            ra_offsets = [330, 330, 270]
+            dec_offsets = [-280, -210, -280]
+            guided = False
+        elif marker == 'sky3':
+            ra_offsets = [470, 430, 420]
+            dec_offsets = [ 420, 420, 370]
+            guided = False
+        else:
+            raise ValueError(f'"{marker}" not recognized as input')
+
+        for raoff, decoff in zip(ra_offsets, dec_offsets):
+            filename = f'N20010101S{next(filenum):04d}.fits'
+            # Need to add unguided keywords to automatically detect as sky
+            ad = niri_image(filename=filename)
+            ad.sky_offset(raoff, decoff)
+            if not guided:
+                for keyword in ('PWFS1_ST', 'PWFS2_ST', 'OIWFS_ST'):
+                    ad.phu[keyword] = 'True'
+            adoutputs.append(ad)
+
         return adoutputs
 
-    return _make_niri_sequence
+    return _niri_sequence
 
 # ---- Tests ---------------------------------------------
 
@@ -349,7 +415,7 @@ def test_fixpixels_multiple_ext(niriprim2):
 
 # TODO @bquint: clean up these tests
 
-def test_scale_by_exposure_time(niri_images):
+def test_scale_by_exposure_time(niri_images, niri_image):
     ad1, ad2 = niri_images.streams['main']
 
     ad2.phu[ad2._keyword_for('exposure_time')] *= 0.5
@@ -455,16 +521,16 @@ def test_darkCorrect_with_af(astrofaker):
 #     ad = p.normalizeFlat(suffix='_flat', strip=True)[0]
 #     assert ad_compare(ad, flat_file)
 #
-@pytest.mark.dragons_remote_data
+
 def test_separateSky_offset(niri_sequence):
 
-    niri_targets_sequence = niri_sequence('object')
-    niri_skies_sequence = niri_sequence('sky')
+    object_frames = niri_sequence('object')
+    sky_frames = niri_sequence('sky1')
 
-    adinputs = niri_targets_sequence + niri_skies_sequence
+    adinputs = object_frames + sky_frames
 
-    target_filenames = set([ad.filename for ad in niri_targets_sequence])
-    sky_filenames = set([ad.filename for ad in niri_skies_sequence])
+    target_filenames = set([ad.filename for ad in object_frames])
+    sky_filenames = set([ad.filename for ad in sky_frames])
 
     p = NIRIImage(adinputs)
     p.separateSky()
@@ -472,13 +538,12 @@ def test_separateSky_offset(niri_sequence):
     target_names = set([ad.phu['ORIGNAME'] for ad in p.streams['main']])
     sky_names = set([ad.phu['ORIGNAME'] for ad in p.streams['sky']])
 
-    assert len(p.streams['main']) == len(niri_targets_sequence)
-    assert len(p.streams['sky']) == len(niri_skies_sequence)
+    assert len(p.streams['main']) == len(object_frames)
+    assert len(p.streams['sky']) == len(sky_frames)
     assert target_filenames == target_names
     assert sky_filenames == sky_names
 
-@pytest.mark.dragons_remote_data
-@pytest.mark.parametrize('target', ['object', 'sky'])
+@pytest.mark.parametrize('target', ['object', 'sky1'])
 def test_separateSky_all_one_type(target, niri_sequence):
 
     frames = niri_sequence(target)
@@ -494,11 +559,13 @@ def test_separateSky_all_one_type(target, niri_sequence):
     assert out_obj_names == in_names
     assert out_sky_names == in_names
 
-@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize('frac_FOV', [0.9, 0.5])
 def test_separateSky_frac_FOV(frac_FOV, niri_sequence):
 
-    adinputs = niri_sequence('mixed')
+    object_frames = niri_sequence('object')
+    sky_frames = niri_sequence('sky2')
+
+    adinputs = object_frames + sky_frames
 
     p = NIRIImage(adinputs)
     p.separateSky(frac_FOV=frac_FOV)
@@ -510,11 +577,10 @@ def test_separateSky_frac_FOV(frac_FOV, niri_sequence):
 
     assert out_obj_names != out_sky_names
 
-@pytest.mark.dragons_remote_data
 def test_separateSky_cross_assign_frames(niri_sequence):
 
     niri_objects = niri_sequence('object')
-    niri_skies = niri_sequence('sky')
+    niri_skies = niri_sequence('sky1')
 
     obj_filenames = ','.join([ad.filename for ad in niri_objects])
     sky_filenames = ','.join([ad.filename for ad in niri_skies])
@@ -530,6 +596,133 @@ def test_separateSky_cross_assign_frames(niri_sequence):
 
     assert obj_filenames == sky_names
     assert sky_filenames == obj_names
+
+@pytest.mark.parametrize('frames', [0, -1])
+def test_separateSky_cross_assign_single_frames(frames, niri_sequence):
+    """Test user assigning frames as sky or object."""
+
+    niri_objects = niri_sequence('object')
+    niri_skies = niri_sequence('sky1')
+
+    manual_obj = niri_skies[frames].filename
+    manual_sky = niri_objects[frames].filename
+
+    obj_filenames = ','.join([ad.filename for ad in niri_objects])
+    sky_filenames = ','.join([ad.filename for ad in niri_skies])
+
+    adinputs = niri_objects
+    adinputs.extend(niri_skies)
+
+    p = NIRIImage(adinputs)
+    p.separateSky(ref_obj=manual_obj,
+                  ref_sky=manual_sky)
+
+    obj_names = ','.join([ad.phu['ORIGNAME'] for ad in p.streams['main']])
+    sky_names = ','.join([ad.phu['ORIGNAME'] for ad in p.streams['sky']])
+
+    assert obj_filenames == sky_names
+    assert sky_filenames == obj_names
+
+@pytest.mark.parametrize('marker', ('object', 'sky'))
+def test_separateSky_assign_one_group(marker, niri_sequence):
+
+    niri_objects = niri_sequence('object')
+    niri_skies = niri_sequence('sky1')
+
+    adinputs = niri_objects + niri_skies
+
+    for ad in adinputs:
+        for keyword in ('PWFS1_ST', 'PWFS2_ST', 'OIWFS_ST'):
+            try:
+                del ad.phu[keyword]
+            except KeyError:
+                pass
+        ad.phu["OIWFS_ST"] = True
+
+    filenames = {}
+    filenames['object'] = ','.join([ad.filename for ad in niri_objects])
+    filenames['sky'] = ','.join([ad.filename for ad in niri_skies])
+
+    p = NIRIImage(adinputs)
+
+    if marker == 'object':
+        p.separateSky(ref_obj=filenames['object'])
+    elif marker == 'sky':
+        p.separateSky(ref_sky=filenames['sky'])
+
+    obj_names = ','.join([ad.phu['ORIGNAME'] for ad in p.streams['main']])
+    sky_names = ','.join([ad.phu['ORIGNAME'] for ad in p.streams['sky']])
+
+    assert obj_names == filenames['object']
+    assert sky_names == filenames['sky']
+
+def test_separateSky_assigned_header_keywords(niri_sequence):
+
+    obj_frames = niri_sequence('object')
+    sky_frames = niri_sequence('sky1')
+
+    for ad in obj_frames:
+        ad.phu['OBJFRAME'] = 'True'
+    for ad in sky_frames:
+        ad.phu['SKYFRAME'] = 'True'
+
+    obj = obj_frames[0].filename
+    sky = sky_frames[0].filename
+
+    p = NIRIImage(obj_frames + sky_frames)
+    p.separateSky(ref_obj=sky, ref_sky=obj)
+
+    assert len(p.streams['main']) == len(p.streams['sky'])
+    assert len(p.streams['main']) == len(obj_frames) + len(sky_frames)
+
+@pytest.mark.parametrize('marker', ['object', 'sky1'])
+def test_separateSky_missing(marker, niri_sequence):
+
+    input_length = len(niri_sequence(marker))
+    p = NIRIImage(niri_sequence(marker))
+    # Pass a non-existent filename to check handling of bad input
+    p.separateSky(ref_sky='S20110101S0001.fits',
+                  ref_obj='S20110101S0002.fits')
+
+    assert len(p.streams['main']) == len(p.streams['sky'])
+    assert len(p.streams['main']) == input_length
+
+@pytest.mark.parametrize('groups', [('object', 'sky1'),
+                                    ('object', 'sky1', 'sky2', 'sky3')])
+def test_separateSky_proximity(groups, niri_sequence):
+
+    adinputs = []
+    for marker in groups:
+        adinputs.extend(niri_sequence(marker))
+
+    # Set all inputs to be "guided" data to remove that as a means of
+    # determining skies to force the use of proximity of groups.
+    for ad in adinputs:
+        for keyword in ('PWFS1_ST', 'PWFS2_ST', 'OIWFS_ST'):
+            try:
+                del ad.phu[keyword]
+            except KeyError:
+                pass
+        ad.phu["OIWFS_ST"] = True
+
+    p = NIRIImage(adinputs)
+    p.separateSky()
+
+    # In both cases the proximity assignment should put half the groups as
+    # 'object' and half as 'sky'.
+    assert len(p.streams['main']) * 2 == len(adinputs)
+    assert len(p.streams['sky']) * 2 == len(adinputs)
+
+# @pytest.mark.parametrize('frame', ['object', 'sky'])#, 'mixed'])
+# def test_list_ra_dec(frame, niri_sequence):
+
+#     adinputs = niri_sequence(frame)
+#     for ad in adinputs:
+#         # print(f'{ad.filename}')
+#         print(ad.phu['RA'], ad.phu['RAOFFSET'], sep=', ')
+#     for ad in adinputs:
+#         print(ad.phu['DEC'], ad.phu['DECOFFSE'], sep=',')
+
 #
 # def test_skyCorrect(self):
 #     pass
