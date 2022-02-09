@@ -1,6 +1,8 @@
 import pytest
 
 
+# until we add CIRPASS to astrofaker
+@pytest.mark.sjip
 def test_ra_dec_from_text(astrofaker):
     ad = astrofaker.create('CIRPASS', ['IMAGE'],
                            extra_keywords={'RA': '03:48:30.113',

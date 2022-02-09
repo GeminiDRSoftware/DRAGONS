@@ -1,6 +1,8 @@
 import pytest
 
 
+# Until we add Hokupaa to astrofaker
+@pytest.mark.skip
 def test_ra_dec_from_text(astrofaker):
     ad = astrofaker.create('Hokupaa+QUIRC', ['IMAGE'],
                            extra_keywords={'RA': '03:48:30.113',
