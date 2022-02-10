@@ -177,6 +177,14 @@ def dectodeg(string: str) -> float:
     """
     A utility function that recognises a Dec: [+-]DD:MM:SS.sss
     Returns a float in decimal degrees if it is valid, None otherwise
+
+    Parameters
+    ----------
+    string : text representation of the declination to be parsed into degrees
+
+    Returns
+    -------
+    float : degrees of declination, or None if unparseable
     """
 
     re_match = deccre.match(string)
@@ -218,7 +226,14 @@ def ratodeg(string: str) -> float:
     """
     A utility function that recognises an RA: HH:MM:SS.sss
     Or a decimal degrees RA value
-    Returns a float in decimal degrees if it is valid, None otherwise
+
+    Parameters
+    ----------
+    string : text representation of the right ascension to be parsed into degrees
+
+    Returns
+    -------
+    float : degrees, or None if unparseable
     """
     re_match = racre.match(string)
     if re_match is None:
@@ -400,12 +415,30 @@ class AstroDataGemini(AstroData):
             return TagSet(['EXTRACTED'])
 
     def _ra(self):
+        """
+        Parse RA from header.
+
+        Utility method to pull the right ascension from the header, parsing text if appropriate.
+
+        Returns
+        -------
+        float : right ascension in degrees, or None
+        """
         ra = self.phu.get(self._keyword_for('ra'), None)
         if type(ra) == str:
             return ratodeg(ra)
         return ra
 
     def _dec(self):
+        """
+        Parse DEC from header.
+
+        Utility method to pull the declination from the header, parsing text if appropriate.
+
+        Returns
+        -------
+        float : declination in degrees, or None
+        """
         dec = self.phu.get(self._keyword_for('dec'), None)
         if type(dec) == str:
             return dectodeg(dec)
