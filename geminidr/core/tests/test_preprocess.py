@@ -456,8 +456,6 @@ def test_scale_by_exposure_time(niri_images, niri_image):
 #                                        'N20070819S0104_ADUToElectrons.fits'))
 
 
-# @pytest.mark.xfail(reason="Test needs revision", run=False)
-@pytest.mark.dragons_remote_data
 def test_associateSky(niri_sequence):
     adinputs = niri_sequence('object')
 
@@ -468,9 +466,79 @@ def test_associateSky(niri_sequence):
 
     # Test here is that each science frame has all other frames as skies
     for ad in p.showList():
-        # v = [ad.phu['ORIGNAME'] for ad in ad.SKYTABLE]
+        skies = [a[0].replace('_skyAssociated', '') for a in ad.SKYTABLE]
         assert len(ad.SKYTABLE) == len(niri_sequence('object')) - 1
-        # assert set([ad.phu['ORIGNAME']] + v) == filename_set
+        assert set([ad.phu['ORIGNAME']] + skies) == filename_set
+
+def test_associateSky_pass_skies(niri_sequence):
+    obj_inputs = niri_sequence('object')
+    sky_inputs = niri_sequence('sky1')
+
+    in_sky_names = [ad.filename for ad in sky_inputs]
+
+    p = NIRIImage(obj_inputs)
+    # Don't run separateSky, this is to simulate starting and resuming work
+    # with pre-known sky frames.
+    p.associateSky(sky=sky_inputs)
+
+    out_sky_names = [ad.phu['ORIGNAME'] for ad in p.streams['sky']]
+
+    assert in_sky_names == out_sky_names
+
+@pytest.mark.parametrize('use_all',
+                         [False, True])
+def test_associateSky_use_all(use_all, niri_sequence):
+
+    objects = niri_sequence('object')
+    skies1 = niri_sequence('sky1')
+    skies2 = niri_sequence('sky2')
+    skies3 = niri_sequence('sky3')
+
+    p = NIRIImage(objects + skies1 + skies2 + skies3)
+    p.separateSky()
+    # This test checks that minimum distance is respected, unless
+    # 'use_all' == True.
+    p.associateSky(distance=320, use_all=use_all)
+
+    for ad in p.showList():
+        skies = set([row[0].replace('_skyAssociated', '')
+                     for row in ad.SKYTABLE])
+        assert (skies1[0].phu['ORIGNAME'] in skies) == use_all
+
+def test_associateSky_exclude_all(niri_sequence):
+
+    objects = niri_sequence('object')
+    skies1 = niri_sequence('sky1')
+
+    p = NIRIImage(objects + skies1)
+    p.separateSky()
+    p.associateSky(distance=1000)
+
+    # assert len(p.streams['no_skies']) == len(objects)
+
+    for ad in p.showList():
+        with pytest.raises(AttributeError):
+            ad.SKYTABLE
+
+def test_associateSky_exclude_some(niri_image, niri_sequence):
+
+    objects = niri_sequence('object')
+    extra_frame = [niri_image(filename='N20010101S0099.fits')]
+    extra_frame[0].sky_offset(600, 600)
+    skies1 = niri_sequence('sky1')
+
+    object_names = set([ad.filename for ad in objects])
+
+    p = NIRIImage(objects + extra_frame + skies1)
+    p.separateSky()
+    p.associateSky(distance=500)
+
+    no_skies = set([ad.phu['ORIGNAME'] for ad in p.streams['no_skies']])
+
+    # Check that frames in 'objects' have been put in the 'no_skies' stream
+    # since they're closer to the skies than the minimum distance
+    assert object_names == no_skies
+
 
 # def test_correctBackgroundToReference(self):
 #     pass
