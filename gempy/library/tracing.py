@@ -32,6 +32,7 @@ from ..utils.decorators import insert_descriptor_values
 
 log = logutils.get_logger(__name__)
 
+MAX_WIDTH = 20
 
 ###############################################################################
 class Aperture:
@@ -613,8 +614,8 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
         try:
             float(strategy[0])
         except ValueError:
-            widths = (2 ** np.arange(1, 4.4, 0.3) if strategy == "exponential_wavelet"
-                      else np.arange(3, 20.1))
+            widths = (2 ** np.arange(1, np.log(MAX_WIDTH)/np.log(2), 0.3) if strategy == "exponential_wavelet"
+                      else np.arange(3, MAX_WIDTH+0.1))
         else:
             widths = np.asarray(strategy)
         peaks_and_snrs = find_wavelet_peaks(
@@ -658,8 +659,8 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
     return locations, all_limits
 
 
-def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=1,
-                       min_frac=0.25, reject_bad=True, pinpoint_index=-1):
+def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=3,
+                       min_frac=0.20, reject_bad=True, pinpoint_index=-1):
     """
     Find peaks in a 1D array using a wavelet method. This uses scipy.signal
     routines, but requires some duplication of that code since the
@@ -705,7 +706,7 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
         variance = at.std_from_pixel_variations(data[~mask]) ** 2
 
     # For really broad peaks we can do a median filter to remove spikes
-    if max_width > 10:
+    if min(widths) > 10:
         data = at.boxcar(data, size=2)
         mask = at.boxcar(mask, size=2, operation=np.logical_or)
 
