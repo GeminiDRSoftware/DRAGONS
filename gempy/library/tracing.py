@@ -716,7 +716,7 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
     wavelet_transformed_data[np.nan_to_num(wavelet_transformed_data) < eps] = eps
 
     ridge_lines = signal._peak_finding._identify_ridge_lines(
-        wavelet_transformed_data, 0.03 * widths, 2)
+        wavelet_transformed_data, 0.03 * np.asarray(widths), 2)
 
     filtered = signal._peak_finding._filter_ridge_lines(
         wavelet_transformed_data, ridge_lines, window_size=window_size,

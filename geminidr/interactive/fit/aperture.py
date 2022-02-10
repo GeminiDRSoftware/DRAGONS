@@ -17,7 +17,7 @@ from geminidr.interactive.interactive import PrimitiveVisualizer, build_text_sli
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from geminidr.interactive.server import interactive_fitter
-from gempy.library.tracing import (find_apertures,
+from gempy.library.tracing import (find_apertures, find_wavelet_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
 
@@ -392,17 +392,19 @@ class FindSourceAperturesModel:
     def find_peak(self, x):
         # Find local maximum to help pinpoint_peaks
         data = np.ma.array(self.profile, mask=self.prof_mask)
-        initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
-
-        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])
-        if len(peaks) > 0:
-            limits = get_limits(np.nan_to_num(self.profile),
-                                self.prof_mask,
-                                peaks=peaks,
-                                threshold=self.threshold,
-                                method=self.sizing_method)
-            log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
-            self.add_aperture(peaks[0], *limits[0])
+        #initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
+        peaks = find_wavelet_peaks(self.profile, [2], reject_bad=False)[0]
+        if peaks.size:
+            initx = peaks[np.argmin(abs(peaks - x))]
+            if abs(initx - x) <= 20:
+                peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])
+                limits = get_limits(np.nan_to_num(self.profile),
+                                    self.prof_mask,
+                                    peaks=peaks,
+                                    threshold=self.threshold,
+                                    method=self.sizing_method)
+                log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
+                self.add_aperture(peaks[0], *limits[0])
 
     def recalc_apertures(self):
         """
