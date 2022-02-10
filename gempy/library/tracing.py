@@ -539,15 +539,13 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
 
     # Remove sources larger than a certain distance from the target coords
     if max_separation is not None:
-        try:
-            max_separation /= ext.pixel_scale()
-            target_location = ext.wcs.invert(
-                ext.central_wavelength(asNanometers=True), ext.target_ra(),
-                ext.target_dec())[2 - ext.dispersion_axis()]
+        max_separation /= ext.pixel_scale()
+        target_location = ext.wcs.invert(
+            ext.central_wavelength(asNanometers=True), ext.target_ra(),
+            ext.target_dec())[2 - ext.dispersion_axis()]
+        if not np.isnan(target_location):
             all_limits = [y for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
             locations = [x for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
-        except:
-            pass
 
     return locations, all_limits, profile, prof_mask
 
@@ -587,10 +585,12 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
     """
     # TODO: find_wavelet_peaks might not be best considering we have no
     #   idea whether sources will be extended or not
+    prof_mask = (prof_mask.astype(bool) if prof_mask is not None
+                 else np.zeros_like(profile, dtype=bool))
+    stddev = at.std_from_pixel_variations(profile[~prof_mask])
+    #print("STDDEV = ", stddev)
     if strategy == "maxima":
-        mask = (prof_mask.astype(bool) if prof_mask is not None
-                else np.zeros_like(profile, dtype=bool))
-        spline = at.fit_spline_to_data(profile, mask=mask)
+        spline = at.fit_spline_to_data(profile, mask=prof_mask)
         minima, maxima = at.get_spline3_extrema(spline)
         # Ensure we have minima either side of each maximum
         if maxima[0] < minima[0]:
@@ -603,7 +603,10 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
         spline_at_minima = spline(minima)
         interpolate_at_maxima = (spline_at_minima[:-1] * (minima[1:] - maxima) +
                                  spline_at_minima[1:] * (maxima - minima[:-1])) / np.diff(minima)
-        snrs = (spline(maxima) - interpolate_at_maxima) / at.std_from_pixel_variations(profile[~mask])
+        snrs = (spline(maxima) - interpolate_at_maxima) / stddev
+        #print("ALL MAXIMA AND SNR")
+        #for p, s in zip(maxima, snrs):
+        #    print(p, s)
         snr_ok = snrs >= min_snr
         peaks_and_snrs = np.array([maxima[snr_ok], snrs[snr_ok]])
     else:
@@ -615,16 +618,16 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
         else:
             widths = np.asarray(strategy)
         peaks_and_snrs = find_wavelet_peaks(
-            profile, widths, mask=None if prof_mask is None else prof_mask & DQ.not_signal, variance=None,
-            reject_bad=False, min_snr=min_snr, min_frac=0.2, pinpoint_index=0)
+            profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
+            reject_bad=False, min_snr=min_snr, min_frac=0.2, pinpoint_index=None)
 
     if peaks_and_snrs.size == 0:
         log.warning("Found no sources")
         return [], []
 
     # Reverse-sort by SNR and return only the locations
-    locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                reverse=True)[:max_apertures]).T[0]
+    locations = list(np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
+                                     reverse=True)[:max_apertures]).T[0])
 
     if np.isnan(profile[prof_mask == 0]).any():
         log.warning("There are unmasked NaNs in the spatial profile")
@@ -634,6 +637,23 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
                             peaks=locations,
                             threshold=threshold,
                             method=sizing_method)
+
+    #print("ALL LOCATIONS AND LIMITS")
+    for i, (loc, limits) in reversed(list(enumerate(zip(locations, all_limits)))):
+        interpolate_at_maximum = np.interp(loc, limits, np.interp(limits, np.arange(profile.size)[~prof_mask], profile[~prof_mask]))
+        #interpolate_at_maximum = np.max(np.interp(limits, np.arange(profile.size)[~prof_mask], profile[~prof_mask]))
+        _slice = slice(int(loc-2.5), int(loc+3.5))
+        max = np.max(profile[_slice][~prof_mask[_slice]])
+        halfmax = 0.5 * (interpolate_at_maximum + max)
+        lower = np.interp(halfmax, [interpolate_at_maximum, max], [limits[0], loc])
+        upper = np.interp(halfmax, [max, interpolate_at_maximum], [loc, limits[1]])
+        #print(loc, limits, interpolate_at_maximum, max, lower, upper)
+        snr = (max - interpolate_at_maximum) / stddev
+        if snr < min_snr or upper - lower > snr/min_snr * 20:
+            del locations[i]
+            del all_limits[i]
+
+    #print("RETURNING", locations, all_limits)
 
     return locations, all_limits
 
@@ -717,8 +737,6 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
             j += 1
         new_peaks.append(np.mean(peaks[i:j]))
         i = j
-        if i == len(peaks) - 1:
-            new_peaks.append(peaks[i])
 
     # Turn into array and remove those too close to the edges
     peaks = np.array(new_peaks)
