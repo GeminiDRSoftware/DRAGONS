@@ -35,8 +35,8 @@ class QA(PrimitivesBASE):
     """
     tagset = {"GEMINI"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_qa)
 
     def measureBG(self, adinputs=None, **params):

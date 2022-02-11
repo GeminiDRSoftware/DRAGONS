@@ -31,8 +31,8 @@ class GNIRSImage(GNIRS, Image, Photometry):
     """
     tagset = {"GEMINI", "GNIRS", "IMAGE"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs_image)
 
     def addIllumMaskToDQ(self, adinputs=None, **params):

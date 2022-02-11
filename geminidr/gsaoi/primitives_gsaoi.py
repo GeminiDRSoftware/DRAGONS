@@ -24,9 +24,9 @@ class GSAOI(Gemini, NearIR):
     """
     tagset = {"GEMINI", "GSAOI"}
 
-    def __init__(self, adinputs, **kwargs):
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gsaoi.lookups'
-        super().__init__(adinputs, **kwargs)
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gsaoi)
 
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
