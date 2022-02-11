@@ -456,7 +456,7 @@ def test_scale_by_exposure_time(niri_images, niri_image):
 #                                        'N20070819S0104_ADUToElectrons.fits'))
 
 
-def test_associateSky(niri_sequence):
+def test_associate_sky(niri_sequence):
     adinputs = niri_sequence('object')
 
     p = NIRIImage(adinputs)
@@ -470,7 +470,7 @@ def test_associateSky(niri_sequence):
         assert len(ad.SKYTABLE) == len(niri_sequence('object')) - 1
         assert set([ad.phu['ORIGNAME']] + skies) == filename_set
 
-def test_associateSky_pass_skies(niri_sequence):
+def test_associate_sky_pass_skies(niri_sequence):
     obj_inputs = niri_sequence('object')
     sky_inputs = niri_sequence('sky1')
 
@@ -487,7 +487,7 @@ def test_associateSky_pass_skies(niri_sequence):
 
 @pytest.mark.parametrize('use_all',
                          [False, True])
-def test_associateSky_use_all(use_all, niri_sequence):
+def test_associate_sky_use_all(use_all, niri_sequence):
 
     objects = niri_sequence('object')
     skies1 = niri_sequence('sky1')
@@ -505,7 +505,7 @@ def test_associateSky_use_all(use_all, niri_sequence):
                      for row in ad.SKYTABLE])
         assert (skies1[0].phu['ORIGNAME'] in skies) == use_all
 
-def test_associateSky_exclude_all(niri_sequence):
+def test_associate_sky_exclude_all(niri_sequence):
 
     objects = niri_sequence('object')
     skies1 = niri_sequence('sky1')
@@ -520,7 +520,7 @@ def test_associateSky_exclude_all(niri_sequence):
         with pytest.raises(AttributeError):
             ad.SKYTABLE
 
-def test_associateSky_exclude_some(niri_image, niri_sequence):
+def test_associate_sky_exclude_some(niri_image, niri_sequence):
 
     objects = niri_sequence('object')
     extra_frame = [niri_image(filename='N20010101S0099.fits')]
@@ -590,7 +590,7 @@ def test_darkCorrect_with_af(astrofaker):
 #     assert ad_compare(ad, flat_file)
 #
 
-def test_separateSky_offset(niri_sequence):
+def test_separate_sky_offset(niri_sequence):
 
     object_frames = niri_sequence('object')
     sky_frames = niri_sequence('sky1')
@@ -612,7 +612,7 @@ def test_separateSky_offset(niri_sequence):
     assert sky_filenames == sky_names
 
 @pytest.mark.parametrize('target', ['object', 'sky1'])
-def test_separateSky_all_one_type(target, niri_sequence):
+def test_separate_sky_all_one_type(target, niri_sequence):
 
     frames = niri_sequence(target)
     in_names = set([ad.filename for ad in frames])
@@ -628,7 +628,7 @@ def test_separateSky_all_one_type(target, niri_sequence):
     assert out_sky_names == in_names
 
 @pytest.mark.parametrize('frac_FOV', [0.9, 0.5])
-def test_separateSky_frac_FOV(frac_FOV, niri_sequence):
+def test_separate_sky_frac_FOV(frac_FOV, niri_sequence):
 
     object_frames = niri_sequence('object')
     sky_frames = niri_sequence('sky2')
@@ -645,7 +645,7 @@ def test_separateSky_frac_FOV(frac_FOV, niri_sequence):
 
     assert out_obj_names != out_sky_names
 
-def test_separateSky_cross_assign_frames(niri_sequence):
+def test_separate_sky_cross_assign_frames(niri_sequence):
 
     niri_objects = niri_sequence('object')
     niri_skies = niri_sequence('sky1')
@@ -666,7 +666,7 @@ def test_separateSky_cross_assign_frames(niri_sequence):
     assert sky_filenames == obj_names
 
 @pytest.mark.parametrize('frames', [0, -1])
-def test_separateSky_cross_assign_single_frames(frames, niri_sequence):
+def test_separate_sky_cross_assign_single_frames(frames, niri_sequence):
     """Test user assigning frames as sky or object."""
 
     niri_objects = niri_sequence('object')
@@ -692,7 +692,7 @@ def test_separateSky_cross_assign_single_frames(frames, niri_sequence):
     assert sky_filenames == obj_names
 
 @pytest.mark.parametrize('marker', ('object', 'sky'))
-def test_separateSky_assign_one_group(marker, niri_sequence):
+def test_separate_sky_assign_one_group(marker, niri_sequence):
 
     niri_objects = niri_sequence('object')
     niri_skies = niri_sequence('sky1')
@@ -724,7 +724,7 @@ def test_separateSky_assign_one_group(marker, niri_sequence):
     assert obj_names == filenames['object']
     assert sky_names == filenames['sky']
 
-def test_separateSky_assigned_header_keywords(niri_sequence):
+def test_separate_sky_assigned_header_keywords(niri_sequence):
 
     obj_frames = niri_sequence('object')
     sky_frames = niri_sequence('sky1')
@@ -744,7 +744,7 @@ def test_separateSky_assigned_header_keywords(niri_sequence):
     assert len(p.streams['main']) == len(obj_frames) + len(sky_frames)
 
 @pytest.mark.parametrize('marker', ['object', 'sky1'])
-def test_separateSky_missing(marker, niri_sequence):
+def test_separate_sky_missing(marker, niri_sequence):
 
     input_length = len(niri_sequence(marker))
     p = NIRIImage(niri_sequence(marker))
@@ -757,7 +757,7 @@ def test_separateSky_missing(marker, niri_sequence):
 
 @pytest.mark.parametrize('groups', [('object', 'sky1'),
                                     ('object', 'sky1', 'sky2', 'sky3')])
-def test_separateSky_proximity(groups, niri_sequence):
+def test_separate_sky_proximity(groups, niri_sequence):
 
     adinputs = []
     for marker in groups:
