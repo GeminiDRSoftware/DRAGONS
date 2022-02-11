@@ -4,6 +4,7 @@ import pytest
 import astrodata
 import astrodata.testing
 import gemini_instruments
+from gemini_instruments.f2 import AstroDataF2
 
 test_files = [
     "S20131121S0094.fits",
@@ -97,11 +98,9 @@ def test_descriptor_matches_type(descriptor, expected_type, ad):
 
 
 def test_ra_dec_from_text(astrofaker):
-    ad = astrofaker.create('F2', ['SPECT'],
-                           extra_keywords={'RA': '03:48:30.113',
-                                           'DEC': '+24:20:43.00',
-                                           'DATE-OBS': '2021-01-01T12:00:00.000'}
-                           )
+    ad = AstroDataF2()
+    ad.phu['RA'] = '03:48:30.113'
+    ad.phu['DEC'] = '+24:20:43.00'
     assert pytest.approx(ad.ra(), 57.12547083333333)
     assert pytest.approx(ad.dec(), 24.345277777777778)
     assert pytest.approx(ad.target_ra(), 57.12547083333333)
