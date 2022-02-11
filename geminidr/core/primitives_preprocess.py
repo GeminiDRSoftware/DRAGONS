@@ -663,7 +663,8 @@ class Preprocess(PrimitivesBASE):
                     if debug:
                         log.debug(f'Replacing pixel {region} with a '
                                   'local median ')
-                        plot_slices = [slice(sl.start - 10, sl.stop + 10)
+                        plot_slices = [slice(None if sl.start is None else sl.start - 10,
+                                             None if sl.stop is None else sl.stop + 10)
                                        for sl in slices]
                         if len(plot_slices) > 2:
                             plot_slices = [Ellipsis] + plot_slices[-2:]
