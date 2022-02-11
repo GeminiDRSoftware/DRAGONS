@@ -13,7 +13,7 @@ import dateutil.parser
 import numpy as np
 
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 
 from astrodata import AstroData
 from astrodata import astro_data_tag
@@ -168,99 +168,6 @@ def get_specphot_name(ad):
     i = separations.argmin()
     if separations[i] < 2 or separations[i] < 10 and all_names[i] == target_name:
         return all_names[i]
-
-
-deccre = re.compile(r'^([+-]?)(\d\d):([012345]\d):([012345]\d)(\.?\d*)$')
-
-
-def dectodeg(string: str) -> float:
-    """
-    A utility function that recognises a Dec: [+-]DD:MM:SS.sss
-    Returns a float in decimal degrees if it is valid, None otherwise
-
-    Parameters
-    ----------
-    string : text representation of the declination to be parsed into degrees
-
-    Returns
-    -------
-    float : degrees of declination, or None if unparseable
-    """
-
-    re_match = deccre.match(string)
-    if re_match is None:
-        # Not DD:MM:SS. Maybe it's decimal degrees already
-        try:
-            value = float(string)
-            if value >= -90.0 and value <= 90.0:
-                return value
-        except:
-            return None
-        return None
-    sign = 1
-    if re_match.group(1) == '-':
-        sign = -1
-
-    degs = float(re_match.group(2))
-    mins = float(re_match.group(3))
-    secs = float(re_match.group(4))
-    frac = re_match.group(5)
-    if frac:
-        frac = float(frac)
-    else:
-        frac = 0.0
-
-    secs += frac
-    mins += secs / 60.0
-    degs += mins / 60.0
-
-    degs *= sign
-
-    return degs
-
-
-racre = re.compile(r'^([012]\d):([012345]\d):([012345]\d)(\.?\d*)$')
-
-
-def ratodeg(string: str) -> float:
-    """
-    A utility function that recognises an RA: HH:MM:SS.sss
-    Or a decimal degrees RA value
-
-    Parameters
-    ----------
-    string : text representation of the right ascension to be parsed into degrees
-
-    Returns
-    -------
-    float : degrees, or None if unparseable
-    """
-    re_match = racre.match(string)
-    if re_match is None:
-        # Not HH:MM:SS. Maybe it's decimal degrees already
-        try:
-            value = float(string)
-            if value <= 360.0 and value >= 0.0:
-                return value
-        except:
-            return None
-        return None
-    hours = float(re_match.group(1))
-    mins = float(re_match.group(2))
-    secs = float(re_match.group(3))
-    frac = re_match.group(4)
-    if frac:
-        frac = float(frac)
-    else:
-        frac = 0.0
-
-    secs += frac
-    mins += secs / 60.0
-    hours += mins / 60.0
-
-    degs = 15.0 * hours
-
-    return degs
 
 
 # ------------------------------------------------------------------------------
@@ -426,7 +333,9 @@ class AstroDataGemini(AstroData):
         """
         ra = self.phu.get(self._keyword_for('ra'), None)
         if type(ra) == str:
-            return ratodeg(ra)
+            if not ra.endswith('hours') and not ra.endswith('degrees'):
+                ra = f'{ra} hours'
+            return Angle(ra).degree
         return ra
 
     def _dec(self):
@@ -441,7 +350,9 @@ class AstroDataGemini(AstroData):
         """
         dec = self.phu.get(self._keyword_for('dec'), None)
         if type(dec) == str:
-            return dectodeg(dec)
+            if not dec.endswith('degrees'):
+                dec = f'{dec} degrees'
+            return Angle(dec).degree
         return dec
 
     def _parse_section(self, keyword, pretty):
