@@ -333,9 +333,15 @@ class AstroDataGemini(AstroData):
         """
         ra = self.phu.get(self._keyword_for('ra'), None)
         if type(ra) == str:
-            if not ra.endswith('hours') and not ra.endswith('degrees'):
-                ra = f'{ra} hours'
-            return Angle(ra).degree
+            try:
+                if not ra.endswith('hours') and not ra.endswith('degrees'):
+                    rastr = f'{ra} hours'
+                else:
+                    rastr = ra
+                return Angle(rastr).degree
+            except:
+                self._logger.warning(f"Unable to parse RA from {ra}")
+                return None
         return ra
 
     def _dec(self):
@@ -350,9 +356,15 @@ class AstroDataGemini(AstroData):
         """
         dec = self.phu.get(self._keyword_for('dec'), None)
         if type(dec) == str:
-            if not dec.endswith('degrees'):
-                dec = f'{dec} degrees'
-            return Angle(dec).degree
+            try:
+                if not dec.endswith('degrees'):
+                    decstr = f'{dec} degrees'
+                else:
+                    decstr = dec
+                return Angle(decstr).degree
+            except:
+                self._logger.warning(f"Unable to parse dec from {dec}")
+                return None
         return dec
 
     def _parse_section(self, keyword, pretty):

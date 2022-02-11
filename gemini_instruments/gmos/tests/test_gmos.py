@@ -78,6 +78,15 @@ def test_ra_dec_from_text(astrofaker):
     assert pytest.approx(ad.ra(), 57.12547083333333)
     assert pytest.approx(ad.dec(), 24.345277777777778)
 
+    # test bad RA/DEC values, just doing this for GMOS but it's testing the base
+    ad = astrofaker.create('GMOS-S', ['SPECT'],
+                           extra_keywords={'RA': 'Fail',
+                                           'DEC': 'Fail',
+                                           'DATE-OBS': '2021-01-01T12:00:00.000'}
+                           )
+    assert ad.ra() is None
+    assert ad.dec() is None
+
 
 if __name__ == '__main__':
 
