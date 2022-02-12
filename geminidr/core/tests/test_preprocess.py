@@ -3,14 +3,14 @@
 
 import os
 
-import astrodata
-import gemini_instruments
+import astrodata, gemini_instruments
 import numpy as np
 import pytest
-from astrodata.testing import download_from_archive
+from astrodata.testing import ad_compare, download_from_archive
 from geminidr.core.primitives_preprocess import Preprocess
 from geminidr.gemini.lookups import DQ_definitions as DQ
 # from geminidr.gmos.primitives_gmos_image import GMOSImage
+from geminidr.gsaoi.primitives_gsaoi_image import GSAOIImage
 from geminidr.niri.primitives_niri_image import NIRIImage
 from gempy.library.astrotools import cartesian_regions_to_slices
 from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
@@ -18,6 +18,10 @@ from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
 
 DEBUG = bool(os.getenv('DEBUG', False))
 
+nonlinearity_datasets = (
+    ('S20190115S0073_dqAdded.fits', 'S20190115S0073_nonlinearityCorrected_adu.fits'),
+    ('S20190115S0073_varAdded.fits', 'S20190115S0073_nonlinearityCorrected_electron.fits'),
+)
 
 @pytest.fixture
 def niriprim():
@@ -36,6 +40,34 @@ def niriprim2():
     p = NIRIImage([ad])
     p.addDQ()
     return p
+
+
+@pytest.fixture(scope="function")
+def fake_niri_images(astrofaker):
+    """Create two NIRI images, one all 1s, the other all 2s"""
+    adinputs = []
+    for i in (1, 2):
+        ad = astrofaker.create('NIRI', 'IMAGE')
+        ad.init_default_extensions()
+        ad[0].data += i
+        adinputs.append(ad)
+    return adinputs
+
+
+def test_adu_to_electrons(fake_niri_images):
+    ad = fake_niri_images[0]
+    gain = ad.gain()[0]
+    p = NIRIImage([ad])
+    orig_sat = ad.saturation_level()[0]
+    orig_nonlin = ad.non_linear_level()[0]
+    p.prepare()
+    assert ad.saturation_level()[0] == orig_sat
+    assert ad.non_linear_level()[0] == orig_nonlin
+    p.ADUToElectrons()
+    assert ad.gain() == [1.0]
+    assert ad.saturation_level()[0] == orig_sat * gain
+    assert ad.non_linear_level()[0] == orig_nonlin * gain
+    assert_array_almost_equal(ad[0].data, gain)
 
 
 @pytest.mark.dragons_remote_data
@@ -309,21 +341,21 @@ def test_fixpixels_multiple_ext(niriprim2):
     assert_almost_equal(ad[1].data[sy, sx].max(), 60.333, decimal=2)
 
 
+@pytest.mark.regression
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize('dataset', nonlinearity_datasets)
+#def test_nonlinearity_correct(path_to_inputs, path_to_refs, dataset):
+def test_nonlinearity_correct(path_to_inputs, path_to_refs, dataset):
+    """Only GSAOI uses the core primitive with real coefficients"""
+    ad = astrodata.open(os.path.join(path_to_inputs, dataset[0]))
+    p = GSAOIImage([ad])
+    ad_out = p.nonlinearityCorrect().pop()
+    ad_ref = astrodata.open(os.path.join(path_to_refs, dataset[1]))
+
+    assert ad_compare(ad_out, ad_ref, ignore=['filename'])
+
+
 # TODO @bquint: clean up these tests
-
-# @pytest.fixture
-# def niri_images(astrofaker):
-#     """Create two NIRI images, one all 1s, the other all 2s"""
-#     adinputs = []
-#     for i in (1, 2):
-#         ad = astrofaker.create('NIRI', 'IMAGE')
-#         ad.init_default_extensions()
-#         ad[0].data += i
-
-#     adinputs.append(ad)
-
-#     return NIRIImage(adinputs)
-
 
 # @pytest.mark.xfail(reason="Test needs revision", run=False)
 # def test_scale_by_exposure_time(niri_images):
@@ -417,10 +449,6 @@ def test_fixpixels_multiple_ext(niriprim2):
 #                             'N20070819S0104_flatCorrected.fits'))
 #
 # def test_makeSky(self):
-#     pass
-#
-# def test_nonlinearityCorrect(self):
-#     # Don't use NIRI data; NIRI has its own primitive
 #     pass
 #
 # def test_normalizeFlat(self):

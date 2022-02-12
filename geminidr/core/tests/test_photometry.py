@@ -16,7 +16,7 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table
 import numpy as np
 
-from . import ad_compare
+from astrodata.testing import ad_compare
 from .. import primitives_photometry as prims
 from ...gemini.lookups.timestamp_keywords import timestamp_keys
 

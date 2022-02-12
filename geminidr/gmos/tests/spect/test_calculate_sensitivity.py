@@ -131,9 +131,9 @@ def test_regression_on_calculate_sensitivity(ad, change_working_dir, ref_ad_fact
 
     assert hasattr(calc_sens_ad[0], 'SENSFUNC')
 
-    ref_ad = ref_ad_factory(ad.filename)
+    ref_ad = ref_ad_factory(calc_sens_ad.filename)
 
-    for calc_sens_ext, ref_ext in zip(ad, ref_ad):
+    for calc_sens_ext, ref_ext in zip(calc_sens_ad, ref_ad):
         np.testing.assert_allclose(
             calc_sens_ext.data, ref_ext.data, atol=1e-4)
 

@@ -19,6 +19,7 @@ import weakref
 
 from copy import deepcopy
 from inspect import isclass, currentframe
+from itertools import chain
 
 from gempy.eti_core.eti import ETISubprocess
 from gempy.library import config
@@ -29,12 +30,14 @@ from astropy.io.fits.verify import VerifyWarning
 
 # new system imports - 10-06-2016 kra
 # NOTE: imports of these and other tables will be moving around ...
+from gempy.utils.soundex import soundex
+from recipe_system.reduction.coreReduce import UnrecognizedParameterException
 from .gemini.lookups import keyword_comments
 from .gemini.lookups import timestamp_keywords
 from .gemini.lookups.source_detection import sextractor_dict
 
 from recipe_system.cal_service import init_calibration_databases
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.config import load_config
 
 import atexit
@@ -135,6 +138,7 @@ def cleanup(process):
 
 
 @parameter_override
+@capture_provenance
 class PrimitivesBASE:
     """
     This is the base class for all of primitives classes for the geminidr
@@ -164,8 +168,26 @@ class PrimitivesBASE:
 
     def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None,
                  config_file=None):
+        if hasattr(self, "_in_init") and self._in_init:
+            raise OverflowError("Caught recursive call to __init__.  "
+                                "This is likely an error in the subclass definition.  Did you forget "
+                                "to update the super() call when redefining _init() to _initialize()?")
+        self._in_init = True
+
+        self._initialize(adinputs, mode=mode, ucals=ucals, uparms=uparms, upload=upload, config_file=config_file)
+
+        # Most logic is separated into initialize() so subclasses can do custom initialization
+        # while leaving any final logic to this base class.  This avoids having to repeat
+        # this validate call across all subclass definitions
+        self._validate_user_parms()
+
+        self._in_init = False
+
+    def _initialize(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None,
+                    config_file=None):
         # This is a general config file so we should load it now. Some of its
         # information may be overridden by other parameters passed here.
+
         load_config(config_file)
 
         self.streams          = {'main': adinputs}
@@ -206,6 +228,62 @@ class PrimitivesBASE:
 
         # Instantiate a dormantViewer(). Only ds9 for now.
         self.viewer = dormantViewer(self, 'ds9')
+
+    def _validate_user_parms(self):
+        """
+        Validate the user parameters.
+
+        This is an internal method that checks the user parameters for
+        any obvious issues.  This lets us fail fast in case the user
+        made an error.
+
+        :raises: :class:~recipe_system.reduction.coreReduce.UnrecognizedParameterException: \
+            when a user parameter uses an unrecognized primitive or parameter name
+        """
+
+        def format_exception(name, alternative_names, noun):
+            msg = f"{noun} {name} not recognized"
+            if len(alternative_names) == 1:
+                msg += f", did you mean {alternative_names[0]}?"
+            elif len(alternative_names) > 1:
+                msg += f", did you mean one of {alternative_names}?"
+            return msg
+
+        def find_similar_names(name, valid_names):
+            """Will return None if it's valid"""
+            # moved outside _validate_user_parms for pytest use
+            if name in valid_names:
+                return None
+            alternative_names = [n for n in valid_names if n.upper() == name.upper()]
+            if alternative_names:
+                return alternative_names
+            alternative_names = [n for n in valid_names if soundex(n) == soundex(name)]
+            return alternative_names
+
+        for key in self.user_params.keys():
+            primitive = None
+            if ':' in key:
+                split_key = key.split(':')
+                if len(split_key) != 2:
+                    raise UnrecognizedParameterException("Expecting parameter or primitive:parameter in "
+                                                         "-p user parameters")
+                primitive = split_key[0]
+                parameter = split_key[1]
+            else:
+                parameter = key
+
+            if primitive:
+                alternative_primitives = find_similar_names(primitive, self.params.keys())
+                if alternative_primitives is None:  # it's valid
+                    alternative_parameters = find_similar_names(parameter, self.params[primitive])
+            else:
+                alternative_parameters = find_similar_names(
+                    parameter, chain(*[v.keys() for v in self.params.values()]))
+
+            if primitive and alternative_primitives is not None:  # it's invalid
+                raise UnrecognizedParameterException(format_exception(primitive, alternative_primitives, "Primitive"))
+            if alternative_parameters is not None:  # it's invalid
+                raise UnrecognizedParameterException(format_exception(parameter, alternative_parameters, "Parameter"))
 
     @property
     def upload(self):

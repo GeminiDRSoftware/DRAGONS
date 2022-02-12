@@ -76,8 +76,8 @@ def test_tile_arrays_raises_warning_with_different_gains(astrofaker, caplog):
     assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 3
     caplog.clear()
     p = GMOSImage([ad])
-    p.prepare()  # should set gain=1
-    p.ADUToElectrons()
+    p.prepare()
+    p.ADUToElectrons()  # should set gain=1
     p.tileArrays(tile_all=False)
     assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 0
 
@@ -98,6 +98,22 @@ def test_tile_arrays_creates_average_read_noise(astrofaker):
     rn = ad.read_noise()
     ad = p.tileArrays(tile_all=True).pop()
     assert ad.read_noise()[0] == np.mean(rn)
+
+
+def test_mosaicking_unaffected_by_tiling(astrofaker):
+    """Confirm that tiling the amps on each CCD before mosaicking
+    produces the same result as mosaicking the 12 extensions"""
+    ad = astrofaker.create('GMOS-N', ['IMAGE'])
+    ad.init_default_extensions(overscan=False)
+    ad.hdr['GAIN'] = 1  # avoid wanings when tiling/mosaicking
+    ad.phu['GPREPARE'] = "YES"  # ...continued
+    ad.add_read_noise()
+    p = GMOSImage([ad])
+    p.tileArrays(tile_all=False, outstream="tiled")
+    p.mosaicDetectors()
+    p.mosaicDetectors(stream="tiled")
+    np.testing.assert_allclose(p.streams['main'][0][0].data,
+                               p.streams['tiled'][0][0].data)
 
 
 @pytest.mark.preprocessed_data

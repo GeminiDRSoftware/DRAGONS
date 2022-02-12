@@ -10,9 +10,12 @@ from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
 from . import parameters_gnirs
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GNIRS(Gemini, NearIR):
     """
     This is the class containing all of the preprocessing primitives
@@ -21,9 +24,9 @@ class GNIRS(Gemini, NearIR):
     """
     tagset = {"GEMINI", "GNIRS"}
 
-    def __init__(self, adinputs, **kwargs):
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gnirs.lookups'
-        super().__init__(adinputs, **kwargs)
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs)
 
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):

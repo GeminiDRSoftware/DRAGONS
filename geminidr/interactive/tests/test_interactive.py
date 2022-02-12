@@ -1,7 +1,7 @@
 import numpy as np
 
 from geminidr.core import primitives_spect
-from geminidr.core.tests import ad_compare
+from astrodata.testing import ad_compare
 from geminidr.core.tests.test_spect import create_zero_filled_fake_astrodata, fake_point_source_spatial_profile, \
     get_aperture_table, SkyLines
 from geminidr.interactive import server
