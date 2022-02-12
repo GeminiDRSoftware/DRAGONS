@@ -668,7 +668,7 @@ def find_peaks_by_percolation(data, mask=None, variance=None, min_snr=3, min_sep
     mask = mask.astype(bool) if mask is not None else np.zeros_like(data, dtype=bool)
     xpixels = np.arange(data.size)[~mask]
     perc_data = data[~mask]
-    stddev = (np.full_like(perc_data, at.std_from_pixel_variations(perc_data))
+    stddev = (np.full_like(data, at.std_from_pixel_variations(perc_data))
               if variance is None else np.sqrt(variance))
     perc_ids = np.zeros_like(perc_data, dtype=np.int16)
 
