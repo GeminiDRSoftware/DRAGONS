@@ -1080,8 +1080,10 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None,
         method = None
 
     spline = at.fit_spline_to_data(data, mask, variance)
-    stddev = (np.full_like(data, at.std_from_pixel_variations(data[~mask]))
-              if variance is None else np.sqrt(variance))
+    if variance is None:
+        stddev = np.full_like(data, data if mask is None else at.std_from_pixel_variations(data[~mask]))
+    else:
+        stddev = np.sqrt(variance)
     minima, maxima = at.get_spline3_extrema(spline)
 
     # Before we continue, we may have multiple peaks between minima, so we
