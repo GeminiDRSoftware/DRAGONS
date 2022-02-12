@@ -22,19 +22,6 @@ DEBUG = bool(os.getenv('DEBUG', False))
 
 # ---- Fixtures ----------------------------------------
 
-# @pytest.fixture
-# def niri_images(astrofaker):
-#     """Create two NIRI images, one all 1s, the other all 2s"""
-#     adinputs = []
-#     for i in (1, 2):
-#         ad = astrofaker.create('NIRI', 'IMAGE')
-#         ad.init_default_extensions()
-#         ad[0].data += i
-
-#         adinputs.append(ad)
-
-#     return NIRIImage(adinputs)
-
 @pytest.fixture
 def niri_images(niri_image):
     """Create two NIRI images, one all 1s, the other all 2s"""
