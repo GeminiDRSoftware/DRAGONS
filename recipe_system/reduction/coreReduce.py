@@ -12,6 +12,7 @@ which calls on the mapper classes and passes the received data to them.
 #                                                                  coreReduce.py
 # ------------------------------------------------------------------------------
 import os
+
 import sys
 import inspect
 #import traceback
@@ -22,6 +23,7 @@ import astrodata
 import gemini_instruments
 
 from gempy.utils import logutils
+from gempy.library import config
 
 from astrodata import AstroDataError
 
@@ -38,6 +40,12 @@ from recipe_system.utils.rs_utilities import log_traceback
 
 from recipe_system.mappers.recipeMapper import RecipeMapper
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
+
+
+class UnrecognizedParameterException(Exception):
+    """ Exception for unrecognized user parameters. """
+    pass
+
 
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)

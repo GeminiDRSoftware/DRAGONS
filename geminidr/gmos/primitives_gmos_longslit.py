@@ -73,8 +73,8 @@ class GMOSClassicLongslit(GMOSSpect):
     the primitives from the level above
     """
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)
 
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
@@ -1026,6 +1026,6 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
 @parameter_override
 @capture_provenance
 class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle):
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)

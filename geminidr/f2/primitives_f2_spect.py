@@ -26,8 +26,8 @@ class F2Spect(F2, Spect):
     """
     tagset = {"GEMINI", "F2", "SPECT"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2_spect)
 
     def _get_linelist_filename(self, ext, cenwave, dw):
