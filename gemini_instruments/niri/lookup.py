@@ -56,16 +56,30 @@ nonlin_coeffs = {
     # In the following form for NIRI data:
     #("read_mode", naxis2, "well_depth_setting"):
     #    (maximum counts, exposure time correction, gamma, eta)
+    #      for data in *electrons*, not ADU (which is what matters, anyway!)
+    #      max_counts was used in nirlin.py for flagging pixels, so is not
+    #        used in DRAGONS
+    # These lines show the original ADU-based numbers, for provenance
+    #("Low Background", 1024, "Shallow"):
+    #    NonLinCoeffs(12000*12.3, 1.2662732, 7.3877618e-06/12.3, 1.940645271e-10/12.3**2),
+    #("Medium Background", 1024, "Shallow"):
+    #    NonLinCoeffs(12000*12.3, 0.09442515154, 3.428783846e-06/12.3, 4.808353308e-10/12.3**2),
+    #"Medium Background", 256, "Shallow"):
+    #    NonLinCoeffs(12000*12.3, 0.01029262589, 6.815415667e-06/12.3, 2.125210479e-10/12.3**2),
+    #("High Background", 1024, "Shallow"):
+    #    NonLinCoeffs(12000*12.3, 0.009697324059, 3.040036696e-06/12.3, 4.640788333e-10/12.3**2),
+    #("High Background", 1024, "Deep"):
+    #    NonLinCoeffs(21000*12.3, 0.007680816203, 3.581914163e-06/12.3, 1.820403678e-10/12.3**2),
     ("Low Background", 1024, "Shallow"):
-        NonLinCoeffs(12000, 1.2662732, 7.3877618e-06, 1.940645271e-10),
+        NonLinCoeffs(12000*12.3, 1.2662732, 6.006310407e-07, 1.282732019e-12),
     ("Medium Background", 1024, "Shallow"):
-        NonLinCoeffs(12000, 0.09442515154, 3.428783846e-06, 4.808353308e-10),
+        NonLinCoeffs(12000*12.3, 0.09442515154, 2.787629143e-07, 3.178236042e-12),
     ("Medium Background", 256, "Shallow"):
-        NonLinCoeffs(12000, 0.01029262589, 6.815415667e-06, 2.125210479e-10),
+        NonLinCoeffs(12000*12.3, 0.01029262589, 5.540988347e-07, 1.404726339e-12),
     ("High Background", 1024, "Shallow"):
-        NonLinCoeffs(12000, 0.009697324059, 3.040036696e-06, 4.640788333e-10),
+        NonLinCoeffs(12000*12.3, 0.009697324059, 2.471574550e-07, 3.067478573e-12),
     ("High Background", 1024, "Deep"):
-        NonLinCoeffs(21000, 0.007680816203, 3.581914163e-06, 1.820403678e-10),
+        NonLinCoeffs(21000*12.3, 0.007680816203, 2.912125336e-07, 1.203254464e-12),
     }
 
 spec_sections = {

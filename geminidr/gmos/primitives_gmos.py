@@ -28,9 +28,9 @@ class GMOS(Gemini, CCD):
     """
     tagset = {"GEMINI", "GMOS"}
 
-    def __init__(self, adinputs, **kwargs):
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gmos.lookups'
-        super().__init__(adinputs, **kwargs)
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos)
 
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
@@ -87,7 +87,7 @@ class GMOS(Gemini, CCD):
             # Update keywords in the image extensions. The descriptors return
             # the true values on unprepared data.
             descriptors = ['pixel_scale', 'read_noise', 'gain_setting',
-                               'gain', 'saturation_level']
+                           'gain', 'non_linear_level', 'saturation_level']
             for desc in descriptors:
                 keyword = ad._keyword_for(desc)
                 comment = self.keyword_comments[keyword]

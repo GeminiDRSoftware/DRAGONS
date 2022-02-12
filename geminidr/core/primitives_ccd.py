@@ -3,7 +3,7 @@
 #
 #                                                              primitives_ccd.py
 # ------------------------------------------------------------------------------
-from datetime import datetime
+from contextlib import suppress
 
 import numpy as np
 
@@ -29,8 +29,8 @@ class CCD(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_ccd)
 
     def biasCorrect(self, adinputs=None, suffix=None, bias=None, do_cal=None):
@@ -94,6 +94,18 @@ class CCD(PrimitivesBASE):
                          f"{bias.filename}{origin_str}")
             ad.subtract(bias)
 
+            # If there's no OVERSCAN keyword on the bias extension, then it
+            # hasn't been overscan-subtracted and we are subtracting a value
+            # from the data, which needs to be recorded
+            for ext, ext_bias in zip(ad, bias):
+                if 'OVERSCAN' not in ext_bias.hdr:
+                    bias_level = np.median(ext_bias.data)
+                    ext.hdr.set('OVERSCAN', bias_level,
+                                self.keyword_comments['OVERSCAN'])
+                    for desc in ('saturation_level', 'non_linear_level'):
+                        with suppress(AttributeError, KeyError):
+                            ext.hdr[ad._keyword_for(desc)] -= bias_level
+
             # Record bias used, timestamp, and update filename
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -101,7 +113,22 @@ class CCD(PrimitivesBASE):
             if bias.path:
                 add_provenance(ad, bias.filename, md5sum(bias.path) or "", self.myself())
 
-            timestamp = datetime.now()
+        return adinputs
+
+    def stackBiases(self, adinputs=None, **params):
+        """
+        This primitive checks the inputs have the same exposure time and stacks
+        them without any scaling offsetting, suitable for biases.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitve", self.myself(), "starting"))
+
+        if not all('BIAS' in bias.tags for bias in adinputs):
+            raise OSError("Not all inputs have BIAS tag")
+
+        stack_params = self._inherit_params(params, "stackFrames")
+        stack_params.update({'zero': False, 'scale': False})
+        adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 
     def overscanCorrect(self, adinputs=None, **params):
@@ -274,9 +301,18 @@ class CCD(PrimitivesBASE):
 
                     ext.hdr.set('OVERSEC', f'[{x1+1}:{x2},{y1+1}:{y2}]',
                                 self.keyword_comments['OVERSEC'])
-                    ext.hdr.set('OVERSCAN', np.mean(data),
+                    # Some shenanigans to deal with the case where the user
+                    # subtracts a non-corrected bias from a non-corrected
+                    # science and then overscanCorrects the result
+                    previous_overscan = ext.hdr.get('OVERSCAN', 0)
+                    bias_level = np.median(data)
+                    ext.hdr.set('OVERSCAN', previous_overscan + bias_level,
                                 self.keyword_comments['OVERSCAN'])
                     ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
+                    for desc in ('saturation_level', 'non_linear_level'):
+                        with suppress(AttributeError, KeyError):
+                            ext.hdr[ad._keyword_for(desc)] -= bias_level
+
 
             # Timestamp, and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -305,8 +341,12 @@ class CCD(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            ad = gt.trim_to_data_section(ad,
-                                    keyword_comments=self.keyword_comments)
+            ad = gt.trim_to_data_section(
+                ad, keyword_comments=self.keyword_comments)
+
+            # Delete overscan_section keyword so no attempt is made to measure it
+            with suppress(AttributeError, KeyError):
+                del ad.hdr[ad._keyword_for('overscan_section')]
 
             # Set keyword, timestamp, and update filename
             ad.phu.set('TRIMMED', 'yes', self.keyword_comments['TRIMMED'])

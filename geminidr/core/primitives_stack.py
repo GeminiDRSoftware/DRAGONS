@@ -28,8 +28,8 @@ class Stack(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_stack)
 
     def stackFlats(self, adinputs=None, **params):
@@ -324,6 +324,10 @@ class Stack(PrimitivesBASE):
             else:
                 out_refcat['Id'] = list(range(1, len(out_refcat)+1))
                 ad_out.REFCAT = out_refcat
+
+        # Propagate MDF from first input (no checking that they're all the same)
+        if hasattr(adinputs[0], 'MDF'):
+            ad_out.MDF = deepcopy(adinputs[0].MDF)
 
         # Set AIRMASS to be the mean of the input values
         try:
