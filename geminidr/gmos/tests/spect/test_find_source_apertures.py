@@ -56,7 +56,7 @@ extra_test_data.extend([
 
 # Some iterations are known to be failure cases
 # we mark them accordingly so we can see if they start passing
-_xfail_indices = [28, ]
+_xfail_indices = (0, 5, 20, 25, 29)
 for idx in _xfail_indices:
     args = extra_test_data[idx]
     extra_test_data[idx] = pytest.param(args, marks=pytest.mark.xfail)
@@ -148,6 +148,7 @@ def test_find_apertures_extra_cases(ad_center_tolerance_snr):
     if expected_centers is not None:
         apertures = ", ".join([str(ap) for ap in ad[0].APERTURE["c0"]])
         for expected_center, range in zip(expected_centers, ranges):
+            range = (expected_center-2, expected_center+2)
             assert len([ap for ap in ad[0].APERTURE['c0'] if (ap <= range[1] and ap >= range[0])]) >= 1, \
                 f'{ad.filename} check for aperture at {expected_center} not found within range {range} aps at ' \
                 f'{apertures}'

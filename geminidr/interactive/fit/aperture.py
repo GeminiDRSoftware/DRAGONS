@@ -288,21 +288,17 @@ class FindSourceAperturesModel:
 
         # self.target_location is the row from the target coords
         # max_width is the largest distance (in arcsec) from there to the edge of the slit
-        try:
-            # Note: although the ext may have been transposed to ensure that
-            # the slit is vertical, the WCS has not been modified
-            self.target_location = ext.wcs.invert(
-                ext.central_wavelength(asNanometers=True), ext.target_ra(), ext.target_dec())[2 - ext.dispersion_axis()]
-            # gWCS will return NaN coords if sent Nones, so bomb out now
-            assert np.isnan(self.target_location).sum() == 0
-            self.max_width = np.ceil(max(self.target_location, self.profile_shape - 1 - self.target_location))
-        except:
+        # Note: although the ext may have been transposed to ensure that
+        # the slit is vertical, the WCS has not been modified
+        self.target_location = ext.wcs.invert(
+            ext.central_wavelength(asNanometers=True), ext.target_ra(), ext.target_dec())[2 - ext.dispersion_axis()]
+        # gWCS will return NaN coords if sent Nones, so bomb out now
+        if np.isnan(self.target_location):
             self.target_location = (self.profile_shape - 1) / 2
-            self.max_width = np.ceil(self.target_location)
-        try:
-            self.max_width *= ext.pixel_scale()
-        except TypeError:
-            pass
+            self.max_width = self.target_location
+        else:
+            self.max_width = max(self.target_location, self.profile_shape - 1 - self.target_location)
+        self.max_width = np.ceil(self.max_width * ext.pixel_scale())
 
         # initial parameters are set as attributes
         self.reset()
@@ -402,7 +398,9 @@ class FindSourceAperturesModel:
                                     self.prof_mask,
                                     peaks=peaks,
                                     threshold=self.threshold,
-                                    method=self.sizing_method)
+                                    method=self.sizing_method,
+                                    percolate=self.strategy=="percolation",
+                                    min_snr=self.min_snr)
                 log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
                 self.add_aperture(peaks[0], *limits[0])
 
@@ -437,7 +435,7 @@ class FindSourceAperturesModel:
                 find_apertures(self.ext, **self.aper_params)
             self.profile_source.patch({'y': [(slice(None), self.profile)]})
         else:
-            # otherwise pass the existing profile
+            # otherwise pass the existing profile for speed
             locations, all_limits, _, _ = \
                 find_apertures(self.ext, **self.aper_params,
                                profile=np.ma.masked_array(self.profile, self.prof_mask))
@@ -1003,7 +1001,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                start=0, end=1, step=0.01)
         sizing = SelectLine("Sizing method", model, attr="sizing_method")
         strategy = SelectLine("Strategy", model, attr="strategy",
-                              options=["exponential_wavelet", "linear_wavelet", "maxima"])
+                              options=["exponential_wavelet", "linear_wavelet", "maxima", "percolation"])
         maxsep = CustomSlider("Maximum separation from target", model, attr="max_separation",
                               start=5, end=model.max_width, step=0.5)
 

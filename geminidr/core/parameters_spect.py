@@ -170,7 +170,7 @@ class findAperturesConfig(config.Config):
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
                                        "between sky lines", int, 50, min=1)
     min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",
-                                float, 4.0, min=0.1)
+                                float, 3.0, min=0.1)
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
                            "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
@@ -183,8 +183,9 @@ class findAperturesConfig(config.Config):
     strategy = config.ChoiceField("Strategy for peak finding", str,
                                   allowed={"exponential_wavelet": "Wavelet with exponentially spaced widths",
                                            "linear_wavelet": "Wavelet with linearly spaced widths",
-                                           "maxima": "Maxima in profile"},
-                                  default="exponential_wavelet")
+                                           "maxima": "Maxima in profile",
+                                           "percolation": "Percolation"},
+                                  default="percolation")
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
                                        float, None, min=1, optional=True)
 

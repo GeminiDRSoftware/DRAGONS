@@ -610,6 +610,8 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
         #    print(p, s)
         snr_ok = snrs >= min_snr
         peaks_and_snrs = np.array([maxima[snr_ok], snrs[snr_ok]])
+    elif strategy == "percolation":
+        peaks_and_snrs = find_peaks_by_percolation(profile, prof_mask & DQ.not_signal, min_snr=min_snr)
     else:
         try:
             float(strategy[0])
@@ -637,7 +639,9 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
                             prof_mask,
                             peaks=locations,
                             threshold=threshold,
-                            method=sizing_method)
+                            method=sizing_method,
+                            percolate=strategy=="percolation",
+                            min_snr=min_snr)
 
     #print("ALL LOCATIONS AND LIMITS")
     for i, (loc, limits) in reversed(list(enumerate(zip(locations, all_limits)))):
@@ -647,16 +651,106 @@ def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
         max = np.max(profile[_slice][~prof_mask[_slice]])
         halfmax = 0.5 * (interpolate_at_maximum + max)
         lower = np.interp(halfmax, [interpolate_at_maximum, max], [limits[0], loc])
-        upper = np.interp(halfmax, [max, interpolate_at_maximum], [loc, limits[1]])
+        upper = np.interp(halfmax, [interpolate_at_maximum, max], [limits[1], loc])
         #print(loc, limits, interpolate_at_maximum, max, lower, upper)
         snr = (max - interpolate_at_maximum) / stddev
         if snr < min_snr or upper - lower > snr/min_snr * 20:
+            #print("DELETED")
             del locations[i]
             del all_limits[i]
 
     #print("RETURNING", locations, all_limits)
 
     return locations, all_limits
+
+
+def find_peaks_by_percolation(data, mask=None, variance=None, min_snr=3, min_sep=3):
+    mask = mask.astype(bool) if mask is not None else np.zeros_like(data, dtype=bool)
+    xpixels = np.arange(data.size)[~mask]
+    perc_data = data[~mask]
+    stddev = (np.full_like(perc_data, at.std_from_pixel_variations(perc_data))
+              if variance is None else np.sqrt(variance))
+    perc_ids = np.zeros_like(perc_data, dtype=np.int16)
+
+    x0 = -10000
+    npeaks = 0
+    for x in np.argsort(perc_data)[::-1]:
+        l, _, r = np.r_[[0], perc_ids, [0]][x:x+3]
+        if x == x0:
+            print(x, l, _, r)
+        if l == 0 and r == 0:
+            npeaks += 1
+            perc_ids[x] = npeaks
+        elif l == 0:
+            perc_ids[x] = perc_ids[x+1]
+        elif r == 0:
+            perc_ids[x] = perc_ids[x-1]
+        else:
+            ldata, rdata = perc_data[perc_ids==l], perc_data[perc_ids==r]
+            xl = xpixels[perc_ids==l][perc_data[perc_ids==l].argmax()]
+            xr = xpixels[perc_ids==r][perc_data[perc_ids==r].argmax()]
+            peaks, values = pinpoint_peaks(data, mask, [xl], return_peak_values=True)
+            boundary_value = perc_data[x]
+            lsnr = rsnr = 0
+            if peaks:
+                lsnr = (values[0] - min(ldata[0], ldata[-1])) / stddev[xl]
+                lsnr = (values[0] - boundary_value) / stddev[xl]
+                #lsnr = (ldata.max() - boundary_value) / stddev[xl]
+                zz = values[0]
+            peaks, values = pinpoint_peaks(data, mask, [xr], return_peak_values=True)
+            if peaks:
+                rsnr = (values[0] - min(rdata[0], rdata[-1])) / stddev[xr]
+                rsnr = (values[0] - boundary_value) / stddev[xr]
+                #rsnr = (rdata.max() - boundary_value) / stddev[xr]
+            if x == x0:
+                print(boundary_value, ldata.max(), rdata.max(), lsnr, rsnr, zz, values[0])
+            #ldata, rdata = perc_data[perc_ids==l], perc_data[perc_ids==r]
+            #lsnr = ((ldata - min(ldata[0], ldata[-1])) / stddev[perc_ids==l]).max()
+            #rsnr = ((rdata - min(rdata[0], rdata[-1])) / stddev[perc_ids==r]).max()
+            if lsnr < min_snr or rsnr < min_snr:
+                if lsnr >= min_snr:
+                    perc_ids[perc_ids==r] = l
+                    perc_ids[x] = l
+                else:
+                    perc_ids[perc_ids==l] = r
+                    perc_ids[x] = r
+                #else:
+                #    perc_ids[perc_ids==l] = 0
+                #    perc_ids[perc_ids==r] = 0
+                #    perc_ids[x] = 0
+
+    peaks_and_snrs = []
+    for id in np.unique(perc_ids):
+        x = xpixels[perc_ids==id]
+        if id > 0:
+            d = perc_data[perc_ids==id]
+            xp = xpixels[perc_ids==id][d.argmax()]
+            peaks, values = pinpoint_peaks(data, mask, [xp], return_peak_values=True)
+            if peaks and d.size > 3:
+                snr = (values[0] - min(d[0], d[-1])) / stddev[xp]
+                if snr > min_snr:
+                    peaks_and_snrs.append((peaks[0], snr))
+                    continue
+            perc_ids[perc_ids==id] = 0
+
+    for i, (peak1, snr1) in reversed(list(enumerate(peaks_and_snrs))):
+        for j, (peak2, snr2) in reversed(list(enumerate(peaks_and_snrs[:i]))):
+            if abs(peak1 - peak2) < min_sep:
+                if snr2 > snr1:
+                    peaks_and_snrs[i] = peaks_and_snrs[j]
+                del peaks_and_snrs[j]
+
+    #from matplotlib import pyplot as plt
+    #plt.ioff()
+    #fig, ax = plt.subplots()
+    #for i in range(1, npeaks+1):
+    #    ax.plot(xpixels[perc_ids==i], perc_data[perc_ids==i])
+    #plt.show()
+    #plt.ion()
+
+    if peaks_and_snrs:
+        return np.array(sorted(peaks_and_snrs, key=lambda x: x[1], reverse=True)).T
+    return np.array([[], []])
 
 
 def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=3,
@@ -798,7 +892,8 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
     return T
 
 
-def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
+def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0,
+                   return_peak_values=False):
     """
     Improves positions of peaks with centroiding. It uses a deliberately
     small centroiding box to avoid contamination by nearby lines, which
@@ -821,6 +916,8 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
         number of pixels either side of initial peak to use in centroid
     threshold: float
         threshold to cut data
+    return_peak_values: bool
+        return the fitted peak values as well as the locations?
 
     Returns
     -------
@@ -829,7 +926,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     halfwidth = max(halfwidth, 2)  # Need at least 5 pixels to constrain spline
     int_limits = np.array([-1, -0.5, 0.5, 1])
     npts = len(data)
-    final_peaks = []
+    final_peaks, peak_values = [], []
 
     if mask is None:
         masked_data = data - threshold
@@ -878,6 +975,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
                 break
             if abs(dx) < 0.001:
                 final_peak = xc
+                peak_value = spline1(xc)
                 break
             if abs(dx) > dxlast + 0.001:
                 dxcheck += 1
@@ -892,7 +990,10 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
 
         if final_peak is not None:
             final_peaks.append(final_peak)
+            peak_values.append(peak_value)
 
+    if return_peak_values:
+        return final_peaks, peak_values
     return final_peaks
 
 
@@ -918,7 +1019,8 @@ def reject_bad_peaks(peaks):
     return peaks
 
 
-def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
+def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None,
+               percolate=True, min_snr=3):
     """
     Determines the region in a 1D array associated with each already-identified
     peak.
@@ -978,6 +1080,8 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
         method = None
 
     spline = at.fit_spline_to_data(data, mask, variance)
+    stddev = (np.full_like(data, at.std_from_pixel_variations(data[~mask]))
+              if variance is None else np.sqrt(variance))
     minima, maxima = at.get_spline3_extrema(spline)
 
     # Before we continue, we may have multiple peaks between minima, so we
@@ -997,17 +1101,41 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
         #tweaked_peak = maxima[np.argmin(abs(maxima - peak))]
         tweaked_peak = peak
 
-        # Now find the nearest minima above and below the peak
-        for upper in minima:
-            if upper > peak:
-                break
+        if percolate:
+            p = int(peak)
+            if p < data.size - 1 and data[p+1] > data[p]:
+                p += 1
+            lower = None
+            for dx in (-1, 1):
+                x = p + dx
+                lowest = (p, data[p])
+                while True:
+                    if data[x] < lowest[1]:
+                        lowest = (x, data[x])
+                    elif (data[x] - lowest[1]) / stddev[x] > min_snr:
+                        peaks, values = pinpoint_peaks(data, mask, [x], return_peak_values=True)
+                        if values and (values[0]  - lowest[1]) / stddev[x] > min_snr:
+                            break
+                    x += dx
+                    if x < 0 or x > data.size - 1:
+                        break
+                if lower is None:
+                    lower = x
+                else:
+                    upper = x
+
         else:
-            upper = len(data) - 1
-        for lower in reversed(minima):
-            if lower < peak:
-                break
-        else:
-            lower = 0
+            # Now find the nearest minima above and below the peak
+            for upper in minima:
+                if upper > peak:
+                    break
+            else:
+                upper = len(data) - 1
+            for lower in reversed(minima):
+                if lower < peak:
+                    break
+            else:
+                lower = 0
 
         if method is None:
             all_limits.append((lower, upper))
