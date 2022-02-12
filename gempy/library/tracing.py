@@ -1122,9 +1122,9 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None,
                     if x < 0 or x > data.size - 1:
                         break
                 if lower is None:
-                    lower = x
+                    lower = lowest[0]
                 else:
-                    upper = x
+                    upper = lowest[0]
 
         else:
             # Now find the nearest minima above and below the peak

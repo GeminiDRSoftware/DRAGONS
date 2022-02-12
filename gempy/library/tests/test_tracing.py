@@ -74,4 +74,4 @@ def test_get_limits():
     limits = np.asarray(tracing.get_limits(y, None, peaks=[CENT],
                                            threshold=0.05, method='integral')[0])
     np.testing.assert_allclose(abs(limits - CENT),
-                               1.96 * SIG, atol=0.1*SIG)
+                               1.96 * SIG, rtol=0.1)
