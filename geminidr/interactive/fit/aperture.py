@@ -393,13 +393,11 @@ class FindSourceAperturesModel:
         if peaks.size:
             initx = peaks[np.argmin(abs(peaks - x))]
             if abs(initx - x) <= 20:
-                peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])
+                peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])[0]
                 limits = get_limits(np.nan_to_num(self.profile),
                                     self.prof_mask,
                                     peaks=peaks,
                                     threshold=self.threshold,
-                                    method=self.sizing_method,
-                                    percolate=self.strategy=="percolation",
                                     min_snr=self.min_snr)
                 log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
                 self.add_aperture(peaks[0], *limits[0])

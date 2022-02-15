@@ -445,10 +445,193 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
     return sigma_clip(widths).mean()
 
 
+def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
+                            section=None, use_snr=True):
+    """
+
+    Parameters
+    ----------
+    ext: NDData-like object
+        2D spectral image, with data dispersed along the rows
+    min_sky_region: int
+        minimum separation between sky lines for a region to be used in
+        profile construction
+    percentile: float
+        percentile to take at each spatial element
+    section: str
+        specific sections in the wavelength direction for determining profile
+    use_snr: bool
+        divide data by sqrt(variance) first?
+
+    Returns
+    -------
+    profile, prof_mask:
+        1D profile and mask to be applied
+    """
+    _, _, var1d = NDStacker.mean(ext.data, mask=ext.mask,
+                                 variance=ext.variance)
+
+    # Mask sky-line regions and find clumps of unmasked pixels
+    # Very light sigma-clipping to remove bright sky lines
+    var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
+
+    # We need to construct a spatial profile along the slit. First, remove
+    # columns where too few pixels are good
+    if ext.mask is not None:
+        mask1d = (np.sum(ext.mask == DQ.good, axis=0) < 0.25 * ext.shape[0])
+    else:
+        mask1d = np.zeros_like(var1d, dtype=bool)
+
+    _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
+                                    maxiters=3)
+    mask1d |= (var_excess > 5 * std)
+    slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
+
+    sky_mask = np.ones_like(mask1d, dtype=bool)
+    for reg in slices:
+        if (reg.stop - reg.start) >= min_sky_region:
+            sky_mask[reg] = False
+    # If nothing satisfies the min_sky_region requirement, ignore it
+    if sky_mask.all():
+        log.warning(f"No regions in {ext.filename} between sky lines exceed "
+                    f"{min_sky_region} pixels. Ignoring requirement.")
+        sky_mask[:] = True
+        for reg in slices:
+            sky_mask[reg] = False
+
+    if section:
+        sec_mask = np.ones_like(mask1d, dtype=bool)
+        for x1, x2 in (s.split(':') for s in section.split(',')):
+            reg = slice(None if x1 == '' else int(x1) - 1,
+                        None if x2 == '' else int(x2))
+            sec_mask[reg] = False
+    else:
+        sec_mask = False
+
+    # Ensure we have some valid pixels left
+    if (sky_mask | sec_mask).all():
+        log.warning(f"No valid regions remain in {ext.filename} after "
+                    "applying sections. Ignoring sky mask.")
+        sky_mask[:] = False
+
+    full_mask = (ext.mask > 0 if ext.mask is not None else
+                 np.zeros(ext.shape, dtype=bool))
+    full_mask |= sky_mask | sec_mask
+
+    signal = (ext.data if (ext.variance is None or not use_snr) else
+              np.divide(ext.data, np.sqrt(ext.variance),
+                        out=np.zeros_like(ext.data), where=ext.variance > 0))
+    if ext.variance is not None:
+        full_mask |= ext.variance == 0
+    masked_data = np.where(full_mask, np.nan, signal)
+    prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
+
+    # Need to catch warnings for rows full of NaNs
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='All-NaN slice')
+        warnings.filterwarnings('ignore', message='Mean of empty slice')
+        if percentile:
+            profile = np.nanpercentile(masked_data, percentile, axis=1)
+        else:
+            profile = np.nanmean(masked_data, axis=1)
+    return profile, prof_mask
+
+
+def get_extrema(profile, prof_mask, min_snr=3):
+    diffs = np.array([np.diff(profile[:-1]), -np.diff(profile[1:])])
+    extrema = np.multiply.reduce(diffs, axis=0) >= 0
+    extrema_types = np.add.reduce(diffs, axis=0)
+    xpixels = np.arange(profile.size)[1:-1]
+    maxima = pinpoint_peaks(profile, prof_mask,
+                            xpixels[np.logical_and(extrema, extrema_types > 0)])
+    minima = pinpoint_peaks(-profile, prof_mask,
+                            xpixels[np.logical_and(extrema, extrema_types < 0)])
+    extrema = sorted(zip(minima[0]+maxima[0], [-x for x in minima[1]]+maxima[1],
+                         [False]*len(minima[0])+[True]*len(maxima[0])))
+
+    # Now remove all adjacent minima with no maxima between them, and vice versa
+    i = 0
+    while i < len(extrema) - 1:
+        if extrema[i][2] == extrema[i+1][2]:
+            # All minima have -ve the minimum value
+            if extrema[i][1] > extrema[i+1][1]:
+                del extrema[i+1]
+            else:
+                del extrema[i]
+        else:
+            i += 1
+    if extrema[0][2]:
+        del extrema[0]
+    if extrema[-1][2]:
+        del extrema[-1]
+
+    #print("SECOND")
+    #print(extrema)
+    # Now get rid of insignificant maxima
+    stddev = at.std_from_pixel_variations(profile if prof_mask is None else
+                                          profile[~prof_mask])
+
+    def merge_with_left(index):
+        del apertures[index]
+        if extrema[index*2+1][1] > extrema[index*2-1][1]:
+            del extrema[index*2-1:index*2+1]
+        else:
+            del extrema[index*2:index*2+2]
+
+    def merge_with_right(index):
+        del apertures[index]
+        if extrema[index*2+1][1] > extrema[index*2+3][1]:
+            del extrema[index*2+2:index*2+4]
+        else:
+            del extrema[index*2+1:index*2+3]
+
+    def merge_with_neighbor(index):
+        if extrema[index*2][1] < extrema[index*2+2][1] and index < len(apertures) - 1 or index == 0:
+            merge_with_right(index)
+            height = extrema[index * 2 + 1][1]
+        else:
+            merge_with_left(index)
+            height = extrema[index*2-1][1]
+        # Reset the search from the height of the new combined peak
+        for i, _ in enumerate(apertures):
+            if extrema[i*2+1][1] <= height:
+                apertures[i] = 0
+
+    ### WE NEED TO GET RID OF THEM IN A SMARTER WAY. PERCOLATING?
+    apertures = [0] * (len(extrema) // 2)
+    apnext = 1
+    niter = 0
+    while True:
+        # Find highest unassigned peak
+        order = np.argsort([x[1] for x in extrema if x[2]])[::-1]
+        for highest in order:
+            if apertures[highest] == 0:
+                break
+        l = 0 if highest == 0 else apertures[highest-1]
+        r = 0 if highest == len(apertures)-1 else apertures[highest+1]
+        snr = _prominence(extrema, highest) / stddev
+        if l == 0 and r == 0 or snr >= min_snr :  # new aperture
+            apertures[highest] = apnext
+            apnext += 1
+        else:
+            merge_with_neighbor(highest)
+        if apertures.count(0) == 0:
+            break
+        niter += 1
+        if niter > 4 * profile.size:
+            raise ValueError("Failed to converge")
+
+    return extrema
+
+
+def _prominence(extrema, index):
+    """Calculate the prominence of the index-th maximum"""
+    return extrema[index*2+1][1] - max(extrema[index*2][1], extrema[index*2+2][1])
+
+
 def find_apertures(ext, max_apertures, min_sky_region, percentile,
                    sizing_method, threshold, section, min_snr, use_snr,
-                   max_separation=None, strategy="exponential_wavelet",
-                   profile=None):
+                   strategy=None, max_separation=None, min_sep=3, profile=None):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
     findSourceApertures as well as by the interactive code. See
@@ -461,82 +644,51 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     # (caused by sky lines, regardless of whether image has been
     # sky-subtracted or not)
     if profile is None:
-        _, _, var1d = NDStacker.mean(ext.data, mask=ext.mask,
-                                          variance=ext.variance)
-
-        # Mask sky-line regions and find clumps of unmasked pixels
-        # Very light sigma-clipping to remove bright sky lines
-        var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
-
-        # We need to construct a spatial profile along the slit. First, remove
-        # columns where too few pixels are good
-        if ext.mask is not None:
-            mask1d = (np.sum(ext.mask==DQ.good, axis=0) < 0.25 * ext.shape[0])
-        else:
-            mask1d = np.zeros_like(var1d, dtype=bool)
-
-        _, _, std = sigma_clipped_stats(var_excess, mask=mask1d, sigma=5.0,
-                                        maxiters=3)
-        mask1d |= (var_excess > 5 * std)
-        slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
-
-        sky_mask = np.ones_like(mask1d, dtype=bool)
-        for reg in slices:
-            if (reg.stop - reg.start) >= min_sky_region:
-                sky_mask[reg] = False
-        # If nothing satisfies the min_sky_region requirement, ignore it
-        if sky_mask.all():
-            log.warning(f"No regions in {ext.filename} between sky lines exceed "
-                        f"{min_sky_region} pixels. Ignoring requirement.")
-            sky_mask[:] = True
-            for reg in slices:
-                sky_mask[reg] = False
-
-        if section:
-            sec_mask = np.ones_like(mask1d, dtype=bool)
-            for x1, x2 in (s.split(':') for s in section.split(',')):
-                reg = slice(None if x1 == '' else int(x1) - 1,
-                            None if x2 == '' else int(x2))
-                sec_mask[reg] = False
-        else:
-            sec_mask = False
-
-        # Ensure we have some valid pixels left
-        if (sky_mask | sec_mask).all():
-            log.warning(f"No valid regions remain in {ext.filename} after "
-                        "applying sections. Ignoring sky mask.")
-            sky_mask[:] = False
-
-        full_mask = (ext.mask > 0 if ext.mask is not None else
-                     np.zeros(ext.shape, dtype=bool))
-        full_mask |= sky_mask | sec_mask
-
-        signal = (ext.data if (ext.variance is None or not use_snr) else
-                  np.divide(ext.data, np.sqrt(ext.variance),
-                            out=np.zeros_like(ext.data), where=ext.variance > 0))
-        if ext.variance is not None:
-            full_mask |= ext.variance == 0
-        masked_data = np.where(full_mask, np.nan, signal)
-        prof_mask = np.bitwise_and.reduce(full_mask, axis=1)
-
-        # Need to catch warnings for rows full of NaNs
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', message='All-NaN slice')
-            warnings.filterwarnings('ignore', message='Mean of empty slice')
-            if percentile:
-                profile = np.nanpercentile(masked_data, percentile, axis=1)
-            else:
-                profile = np.nanmean(masked_data, axis=1)
+        profile, prof_mask = _construct_slit_profile(
+            ext, min_sky_region, percentile, section, use_snr)
     elif hasattr(profile, 'mask'):
         prof_mask = profile.mask
         profile = profile.data
     else:
         prof_mask = None
 
-    locations, all_limits = _find_apertures_peaks(profile, prof_mask,
-                                                  max_apertures, threshold,
-                                                  sizing_method, min_snr,
-                                                  strategy)
+    extrema = get_extrema(profile, prof_mask, min_snr=min_snr)
+
+    #from matplotlib import pyplot as plt
+    #plt.ioff()
+    #fig, ax = plt.subplots()
+    #ax.plot(profile)
+    #plt.show()
+    #plt.ion()
+
+    # 10 is a good value to capture artifacts
+    stddev = at.std_from_pixel_variations(profile if prof_mask is None
+                                          else profile[~prof_mask], separation=10)
+    peaks = [x[0] for x in extrema[1::2]]
+    all_limits = get_limits(np.nan_to_num(profile), prof_mask, peaks=peaks,
+                            threshold=threshold, extrema=extrema)
+    fwhm_limits = get_limits(np.nan_to_num(profile), prof_mask, peaks=peaks,
+                            threshold=0.5, extrema=extrema)
+
+    snrs = [_prominence(extrema, i // 2) / stddev
+            for i in range(1, len(extrema), 2)]
+
+    # Start by removing low-S/N apertures
+    ok_apertures = {i: snr >= min_snr for i, snr in enumerate(snrs)}
+    # Remove apertures too close to other apertures
+    for i, (peak1, limit1, snr1) in enumerate(zip(peaks, all_limits, snrs)):
+        for j, (peak2, limit2, snr2) in enumerate(list(zip(peaks, all_limits, snrs))[i+1:], start=i+1):
+            if abs(peak1 - peak2) < min_sep or limit1[1] >= peak2 or limit2[0] <= peak1:
+                if extrema[i*2+1] > extrema[j*2+1]:
+                    ok_apertures[j] = False
+                    all_limits[i] = (all_limits[i][0], all_limits[j][1])
+                    fwhm_limits[i] = (fwhm_limits[i][0], fwhm_limits[j][1])
+                    extrema[i*2+2] = extrema[j*2+2]
+                else:
+                    ok_apertures[i] = False
+                    all_limits[j] = (all_limits[i][0], all_limits[j][1])
+                    fwhm_limits[j] = (fwhm_limits[i][0], fwhm_limits[j][1])
+                    extrema[j*2] = extrema[i*2]
 
     # Remove sources larger than a certain distance from the target coords
     if max_separation is not None:
@@ -545,212 +697,34 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
             ext.central_wavelength(asNanometers=True), ext.target_ra(),
             ext.target_dec())[2 - ext.dispersion_axis()]
         if not np.isnan(target_location):
-            all_limits = [y for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
-            locations = [x for x, y in zip(locations, all_limits) if abs(target_location - x) <= max_separation]
+            ok_apertures.update({i: False for i, x in enumerate(peaks)
+                                 if abs(target_location - x) > max_separation})
+
+    spline = at.fit_spline_to_data(profile, mask=prof_mask)
+    # Remove apertures that are too wide
+    for i, (peak, limits, flimits, snr) in enumerate(zip(peaks, all_limits, fwhm_limits, snrs)):
+        for side in (0, 1):
+            height = (extrema[i*2+1][1] - extrema[i*2+2*side][1]) / stddev
+            width = abs(peak - limits[side])
+            if width > height / min_snr * 20:
+                ok_apertures[i] = False
+            # Eliminate things with square edges that are likely artifacts
+            if (flimits[side] - peak) / (limits[side] - peak) > 0.85:
+                ok_apertures[i] = False
+        if spline(peak) - spline(limits).min() < stddev:
+            ok_apertures[i] = False
+
+    good_apertures = [info for i, info in enumerate(zip(peaks, all_limits, snrs))
+                      if ok_apertures[i]]
+    if not good_apertures:
+        log.warning("Found no sources")
+        locations, all_limits = [], []
+    else:
+        good_apertures = sorted(good_apertures, key=lambda ap: ap[2], reverse=True)
+        locations = [ap[0] for ap in good_apertures[:max_apertures]]
+        all_limits = [ap[1] for ap in good_apertures[:max_apertures]]
 
     return locations, all_limits, profile, prof_mask
-
-
-def _find_apertures_peaks(profile, prof_mask, max_apertures, threshold,
-                          sizing_method, min_snr, strategy="exponential_wavelet"):
-    """
-    Find sources in a collapsed 1D spatial profile.
-
-    Parameters
-    ----------
-    profile: 1D array, float
-        the spatial profile along which sources are to be found
-    prof_mask: 1D array, bool
-        mask to apply to this array
-    max_apertures: int
-        maximum number of peaks to find
-    threshold: float
-        parameter to control the sizing of each aperture
-    sizing_method: str
-        parameter to describe the method for sizing each aperture
-    min_snr: float
-        minimum signal-to-noise ratio for a peak to be considered real
-    strategy: str/iterable
-        strategy for finding sources
-            "maxima": find maxima in a quasi-smoothed version of the profile
-            "wavelet": wavelets spaced linearly
-            "exponential_wavelet": wavelets spaced exponentially
-            iterable list of widths
-
-    Returns
-    -------
-    locations: 1D array, float
-        pixel locations of peaks
-    all_limits: list of 2-element lists
-        upper and lower limits for each aperture
-    """
-    # TODO: find_wavelet_peaks might not be best considering we have no
-    #   idea whether sources will be extended or not
-    prof_mask = (prof_mask.astype(bool) if prof_mask is not None
-                 else np.zeros_like(profile, dtype=bool))
-    stddev = at.std_from_pixel_variations(profile[~prof_mask])
-    #print("STDDEV = ", stddev)
-    if strategy == "maxima":
-        spline = at.fit_spline_to_data(profile, mask=prof_mask)
-        minima, maxima = at.get_spline3_extrema(spline)
-        # Ensure we have minima either side of each maximum
-        if maxima[0] < minima[0]:
-            minima = np.r_[[0], minima]
-        if maxima[-1] > minima[-1]:
-            minima = np.r_[minima, [profile.size-1]]
-
-        # Estimate SNR from height of maximum above linear interpolation
-        # between adjacent minima
-        spline_at_minima = spline(minima)
-        interpolate_at_maxima = (spline_at_minima[:-1] * (minima[1:] - maxima) +
-                                 spline_at_minima[1:] * (maxima - minima[:-1])) / np.diff(minima)
-        snrs = (spline(maxima) - interpolate_at_maxima) / stddev
-        #print("ALL MAXIMA AND SNR")
-        #for p, s in zip(maxima, snrs):
-        #    print(p, s)
-        snr_ok = snrs >= min_snr
-        peaks_and_snrs = np.array([maxima[snr_ok], snrs[snr_ok]])
-    elif strategy == "percolation":
-        peaks_and_snrs = find_peaks_by_percolation(profile, prof_mask & DQ.not_signal, min_snr=min_snr)
-    else:
-        try:
-            float(strategy[0])
-        except ValueError:
-            widths = (2 ** np.arange(1, np.log(MAX_WIDTH)/np.log(2), 0.3) if strategy == "exponential_wavelet"
-                      else np.arange(3, MAX_WIDTH+0.1))
-        else:
-            widths = np.asarray(strategy)
-        peaks_and_snrs = find_wavelet_peaks(
-            profile, widths, mask=prof_mask & DQ.not_signal, variance=None,
-            reject_bad=False, min_snr=min_snr, min_frac=0.2, pinpoint_index=None)
-
-    if peaks_and_snrs.size == 0:
-        log.warning("Found no sources")
-        return [], []
-
-    # Reverse-sort by SNR and return only the locations
-    locations = list(np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                     reverse=True)[:max_apertures]).T[0])
-
-    if np.isnan(profile[prof_mask == 0]).any():
-        log.warning("There are unmasked NaNs in the spatial profile")
-
-    all_limits = get_limits(np.nan_to_num(profile),
-                            prof_mask,
-                            peaks=locations,
-                            threshold=threshold,
-                            method=sizing_method,
-                            percolate=strategy=="percolation",
-                            min_snr=min_snr)
-
-    #print("ALL LOCATIONS AND LIMITS")
-    for i, (loc, limits) in reversed(list(enumerate(zip(locations, all_limits)))):
-        interpolate_at_maximum = np.interp(loc, limits, np.interp(limits, np.arange(profile.size)[~prof_mask], profile[~prof_mask]))
-        #interpolate_at_maximum = np.max(np.interp(limits, np.arange(profile.size)[~prof_mask], profile[~prof_mask]))
-        _slice = slice(int(loc-2.5), int(loc+3.5))
-        max = np.max(profile[_slice][~prof_mask[_slice]])
-        halfmax = 0.5 * (interpolate_at_maximum + max)
-        lower = np.interp(halfmax, [interpolate_at_maximum, max], [limits[0], loc])
-        upper = np.interp(halfmax, [interpolate_at_maximum, max], [limits[1], loc])
-        #print(loc, limits, interpolate_at_maximum, max, lower, upper)
-        snr = (max - interpolate_at_maximum) / stddev
-        if snr < min_snr or upper - lower > snr/min_snr * 20:
-            #print("DELETED")
-            del locations[i]
-            del all_limits[i]
-
-    #print("RETURNING", locations, all_limits)
-
-    return locations, all_limits
-
-
-def find_peaks_by_percolation(data, mask=None, variance=None, min_snr=3, min_sep=3):
-    mask = mask.astype(bool) if mask is not None else np.zeros_like(data, dtype=bool)
-    xpixels = np.arange(data.size)[~mask]
-    perc_data = data[~mask]
-    stddev = (np.full_like(data, at.std_from_pixel_variations(perc_data))
-              if variance is None else np.sqrt(variance))
-    perc_ids = np.zeros_like(perc_data, dtype=np.int16)
-
-    x0 = -10000
-    npeaks = 0
-    for x in np.argsort(perc_data)[::-1]:
-        l, _, r = np.r_[[0], perc_ids, [0]][x:x+3]
-        if x == x0:
-            print(x, l, _, r)
-        if l == 0 and r == 0:
-            npeaks += 1
-            perc_ids[x] = npeaks
-        elif l == 0:
-            perc_ids[x] = perc_ids[x+1]
-        elif r == 0:
-            perc_ids[x] = perc_ids[x-1]
-        else:
-            ldata, rdata = perc_data[perc_ids==l], perc_data[perc_ids==r]
-            xl = xpixels[perc_ids==l][perc_data[perc_ids==l].argmax()]
-            xr = xpixels[perc_ids==r][perc_data[perc_ids==r].argmax()]
-            peaks, values = pinpoint_peaks(data, mask, [xl], return_peak_values=True)
-            boundary_value = perc_data[x]
-            lsnr = rsnr = 0
-            if peaks:
-                lsnr = (values[0] - min(ldata[0], ldata[-1])) / stddev[xl]
-                lsnr = (values[0] - boundary_value) / stddev[xl]
-                #lsnr = (ldata.max() - boundary_value) / stddev[xl]
-                zz = values[0]
-            peaks, values = pinpoint_peaks(data, mask, [xr], return_peak_values=True)
-            if peaks:
-                rsnr = (values[0] - min(rdata[0], rdata[-1])) / stddev[xr]
-                rsnr = (values[0] - boundary_value) / stddev[xr]
-                #rsnr = (rdata.max() - boundary_value) / stddev[xr]
-            if x == x0:
-                print(boundary_value, ldata.max(), rdata.max(), lsnr, rsnr, zz, values[0])
-            #ldata, rdata = perc_data[perc_ids==l], perc_data[perc_ids==r]
-            #lsnr = ((ldata - min(ldata[0], ldata[-1])) / stddev[perc_ids==l]).max()
-            #rsnr = ((rdata - min(rdata[0], rdata[-1])) / stddev[perc_ids==r]).max()
-            if lsnr < min_snr or rsnr < min_snr:
-                if lsnr >= min_snr:
-                    perc_ids[perc_ids==r] = l
-                    perc_ids[x] = l
-                else:
-                    perc_ids[perc_ids==l] = r
-                    perc_ids[x] = r
-                #else:
-                #    perc_ids[perc_ids==l] = 0
-                #    perc_ids[perc_ids==r] = 0
-                #    perc_ids[x] = 0
-
-    peaks_and_snrs = []
-    for id in np.unique(perc_ids):
-        x = xpixels[perc_ids==id]
-        if id > 0:
-            d = perc_data[perc_ids==id]
-            xp = xpixels[perc_ids==id][d.argmax()]
-            peaks, values = pinpoint_peaks(data, mask, [xp], return_peak_values=True)
-            if peaks and d.size > 3:
-                snr = (values[0] - min(d[0], d[-1])) / stddev[xp]
-                if snr > min_snr:
-                    peaks_and_snrs.append((peaks[0], snr))
-                    continue
-            perc_ids[perc_ids==id] = 0
-
-    for i, (peak1, snr1) in reversed(list(enumerate(peaks_and_snrs))):
-        for j, (peak2, snr2) in reversed(list(enumerate(peaks_and_snrs[:i]))):
-            if abs(peak1 - peak2) < min_sep:
-                if snr2 > snr1:
-                    peaks_and_snrs[i] = peaks_and_snrs[j]
-                del peaks_and_snrs[j]
-
-    #from matplotlib import pyplot as plt
-    #plt.ioff()
-    #fig, ax = plt.subplots()
-    #for i in range(1, npeaks+1):
-    #    ax.plot(xpixels[perc_ids==i], perc_data[perc_ids==i])
-    #plt.show()
-    #plt.ion()
-
-    if peaks_and_snrs:
-        return np.array(sorted(peaks_and_snrs, key=lambda x: x[1], reverse=True)).T
-    return np.array([[], []])
 
 
 def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=3,
@@ -852,7 +826,7 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
     # Clip the really noisy parts of the data and get more accurate positions
     #pinpoint_data[snr < 0.5] = 0
     peaks = pinpoint_peaks(pinpoint_data, mask, peaks,
-                           halfwidth=int(0.5*np.median(widths)))
+                           halfwidth=int(0.5*np.median(widths)))[0]
 
     # Clean up peaks that are too close together
     while True:
@@ -861,7 +835,7 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
             break
         i = np.argmax(diffs < min_sep)
         # Replace with mean of re-pinpointed points
-        new_peaks = pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2])
+        new_peaks = pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2])[0]
         del peaks[i+1]
         if new_peaks:
             peaks[i] = np.mean(new_peaks)
@@ -892,8 +866,7 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
     return T
 
 
-def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0,
-                   return_peak_values=False):
+def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     """
     Improves positions of peaks with centroiding. It uses a deliberately
     small centroiding box to avoid contamination by nearby lines, which
@@ -928,13 +901,15 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0,
     npts = len(data)
     final_peaks, peak_values = [], []
 
-    if mask is None:
-        masked_data = data - threshold
-    else:
-        masked_data = np.where(np.logical_or(mask, data < threshold),
-                               0, data - threshold)
+    masked_data = data if threshold is None else data - threshold
+    if threshold:
+        if mask is None:
+            masked_data[masked_data < 0] = 0
+        else:
+            masked_data = np.where(np.logical_or(mask, masked_data < 0),
+                                   0, data - threshold)
     if all(masked_data == 0):  # Exit now if there's no data
-        return []
+        return [], []
 
     for peak in peaks:
         xc = int(peak + 0.5)
@@ -992,9 +967,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0,
             final_peaks.append(final_peak)
             peak_values.append(peak_value)
 
-    if return_peak_values:
-        return final_peaks, peak_values
-    return final_peaks
+    return final_peaks, peak_values
 
 
 def reject_bad_peaks(peaks):
@@ -1019,8 +992,8 @@ def reject_bad_peaks(peaks):
     return peaks
 
 
-def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None,
-               percolate=True, min_snr=3):
+def get_limits(data, mask, variance=None, peaks=[], threshold=0, min_snr=3,
+               extrema=None):
     """
     Determines the region in a 1D array associated with each already-identified
     peak.
@@ -1045,114 +1018,56 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None,
         variance of each pixel (None => recalculate)
     peaks: sequence
         peaks for which limits are to be found
-    threshold_function: None/callable
-        takes 3 arguments: the spline, the peak location, and the
-                           location of the minimum, and returns a value
-                           that must be zero at the desired limit's location
 
     Returns
     -------
     list of 2-element lists:
         the lower and upper limits for each peak
     """
-    def create_minimum(data, mask, peaks):
-        """Find/create a minimum in the data between two peaks"""
-        ix1, ix2 = int(these_peaks[0]), int(these_peaks[1]) + 1
-        region = np.ma.masked_array(data, mask)[ix1:ix2+1]
-        for i in region[1:-1].argsort():
-            if region[i+1] <= region[i] and region[i+1] <= region[i+2]:
-                found = pinpoint_peaks(-data, mask, [ix1+i+1], halfwidth=2,
-                                       threshold=-data.max())
-                if found:
-                    return found[0]
-        # No luck, so just split the difference
-        return 0.5 * sum(peaks)
-
-    # We abstract the limit-finding function. Any function can be added here,
-    # providing it has a standard call signature, taking parameters:
-    # spline representation, location of peak, location of limit on this side,
-    # location of limit on other side, thresholding value
-    functions = {'peak': peak_limit,
-                 'integral': integral_limit}
-    try:
-        limit_finding_function = functions[method]
-    except KeyError:
-        method = None
-
-    spline = at.fit_spline_to_data(data, mask, variance)
+    if extrema is None:
+        min_snr = -min_snr
+        extrema = get_extrema(data, mask, min_snr=0)
     if variance is None:
         stddev = np.full_like(data, data if mask is None else at.std_from_pixel_variations(data[~mask]))
     else:
         stddev = np.sqrt(variance)
-    minima, maxima = at.get_spline3_extrema(spline)
-
-    # Before we continue, we may have multiple peaks between minima, so we
-    # need to create additional minima between them. This is a rare case
-    # where a minor peak on the shoulder of a larger one is ignored by the
-    # full-range spline fitting above. Peaks is sorted by SNR, not location!
-    i = 0
-    while i < minima.size - 1:
-        these_peaks = np.sort([p for p in peaks if minima[i] < p < minima[i+1]])
-        if these_peaks.size > 1:
-            new_minimum = create_minimum(data, mask, these_peaks[:2])
-            minima = np.r_[minima[:i+1], [new_minimum], minima[i+1:]]
-        i += 1
 
     all_limits = []
     for peak in peaks:
-        #tweaked_peak = maxima[np.argmin(abs(maxima - peak))]
-        tweaked_peak = peak
+        while True:
+            maxima = np.array([x[:2] for x in extrema if x[2]]).T
+            i = np.argmin(abs(maxima[0] - peak)) * 2 + 1
+            true_peak = extrema[i][0]
+            if abs(true_peak - peak) > 2:
+                raise ValueError("Trouble with peak-finding")
+            if min_snr > 0:
+                break
+            # Estimate S/N of this peak and find extrema with that
+            # value if it's lower than min_snr
+            this_snr = _prominence(extrema, i // 2) / stddev[int(true_peak+0.5)]
+            min_snr = min(this_snr, -min_snr)
+            extrema = get_extrema(data, mask, min_snr=min_snr)
 
-        if percolate:
-            p = int(peak)
-            if p < data.size - 1 and data[p+1] > data[p]:
-                p += 1
-            lower = None
-            for dx in (-1, 1):
-                x = p + dx
-                lowest = (p, data[p])
-                while True:
-                    if data[x] < lowest[1]:
-                        lowest = (x, data[x])
-                    elif (data[x] - lowest[1]) / stddev[x] > min_snr:
-                        peaks, values = pinpoint_peaks(data, mask, [x], return_peak_values=True)
-                        if values and (values[0]  - lowest[1]) / stddev[x] > min_snr:
-                            break
-                    x += dx
-                    if x < 0 or x > data.size - 1:
-                        break
-                if lower is None:
-                    lower = lowest[0]
-                else:
-                    upper = lowest[0]
+        lower, upper = extrema[i-1][0], extrema[i+1][0]
+        i1, i2, p = int(lower), int(upper+1), int(true_peak+0.5)
 
-        else:
-            # Now find the nearest minima above and below the peak
-            for upper in minima:
-                if upper > peak:
-                    break
-            else:
-                upper = len(data) - 1
-            for lower in reversed(minima):
-                if lower < peak:
-                    break
-            else:
-                lower = 0
+        limits = []
+        for _slice in (slice(i1, p+2), slice(p-1, i2+1)):
+            npts = _slice.stop - _slice.start
+            spline = at.fit_spline_to_data(
+                data[_slice], mask=None if mask is None else mask[_slice],
+                variance=stddev[_slice]**2, k=min(npts-1, 3))
+            limit = peak_limit(spline, true_peak-_slice.start,
+                               0 if _slice.start==i1 else npts-1, threshold) + _slice.start
+            limits.append(limit)
 
-        if method is None:
-            all_limits.append((lower, upper))
-        else:
-            limit1 = limit_finding_function(spline, tweaked_peak, lower,
-                                            upper, threshold)
-            limit2 = limit_finding_function(spline, tweaked_peak, upper,
-                                            lower, threshold)
-            limit1, limit2 = min(limit1, peak), max(limit2, peak)
-            all_limits.append((limit1, limit2))
+        limit1, limit2 = min(limits[0], peak), max(limits[1], peak)
+        all_limits.append((limit1, limit2))
 
     return all_limits
 
 
-def peak_limit(spline, peak, limit, other_limit, threshold):
+def peak_limit(spline, peak, limit, threshold):
     """
     Finds a threshold as a fraction of the way from the signal at the minimum to
     the signal at the peak.
@@ -1177,47 +1092,12 @@ def peak_limit(spline, peak, limit, other_limit, threshold):
     """
     # target is the signal level at the threshold
     target = spline(limit) + threshold * (spline(peak) - spline(limit))
+    #target = spline(limit) + threshold * (spline(peak) - max(spline([limit, other_limit])))
     func = lambda x: spline(x) - target
-    return optimize.bisect(func, limit, peak)
-
-
-def integral_limit(spline, peak, limit, other_limit, threshold):
-    """
-    Finds a threshold as a fraction of the missing flux, defined as the
-    area under the signal between the peak and this limit, removing a
-    straight line between the two points
-
-
-    Parameters
-    ----------
-    spline : callable
-        the function within which aperture-extraction limits are desired
-    peak : float
-        location of peak
-    limit : float
-        location of the minimum -- an aperture edge is required between
-        this location and the peak
-    other_limit : float
-        location of the minimum on the opposite side of the peak
-    threshold : float
-        the integral from the peak to the limit should encompass a fraction
-        (1-threshold) of the integral from the peak to the minimum
-
-    Returns
-    -------
-    float : the pixel location of the aperture edge
-    """
-    integral = spline.antiderivative()
-    slope = (spline(other_limit) - spline(limit)) / (other_limit - limit)
-    definite_integral = lambda x: integral(x) - integral(limit) - (x - limit) * (
-                (spline(limit) - slope * limit) + 0.5 * slope * (x + limit))
-    flux_this_side = definite_integral(peak) - definite_integral(limit)
-
-    # definite_integral is the flux from the limit towards the peak, so this
-    # should be equal to the required fraction of the flux om that side of
-    # the peak.
-    func = lambda x: definite_integral(x) / flux_this_side - threshold
-    return optimize.bisect(func, limit, peak)
+    try:
+        return optimize.bisect(func, limit, peak)
+    except ValueError:
+        return limit + threshold * (peak - limit)
 
 
 @insert_descriptor_values("dispersion_axis")
@@ -1331,7 +1211,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
     if initial_tolerance is None:
         initial_peaks = initial
     else:
-        peaks = pinpoint_peaks(data, mask, initial)
+        peaks = pinpoint_peaks(data, mask, initial)[0]
         initial_peaks = []
         for peak in initial:
             j = np.argmin(abs(np.array(peaks) - peak))
@@ -1385,7 +1265,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
             # the data array 0 as well, and we can't find any peaks
             if any(mask[0] == 0) and not all(np.isinf(var[0])):
                 last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
-                peaks = pinpoint_peaks(data[0], mask[0], last_peaks, halfwidth=halfwidth)
+                peaks = pinpoint_peaks(data[0], mask[0], last_peaks, halfwidth=halfwidth)[0]
 
                 for i, (last_row, old_peak) in enumerate(last_coords):
                     if np.isnan(old_peak):
@@ -1409,7 +1289,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                             # Investigate more heavily-binned profiles
                             try:
                                 new_peak = pinpoint_peaks(data[j+1], mask[j+1],
-                                                          [old_peak], halfwidth=halfwidth)[0]
+                                                          [old_peak], halfwidth=halfwidth)[0][0]
                             except IndexError:  # No peak there
                                 new_peak = np.inf
                     else:
