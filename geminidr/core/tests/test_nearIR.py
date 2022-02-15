@@ -6,8 +6,33 @@ from datetime import datetime
 
 import pytest
 
+from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.core.tests.test_spect import create_zero_filled_fake_astrodata
 from geminidr.core import primitives_nearIR
+
+# -- Fixtures -----------------------------------------------------------------
+
+@pytest.fixture
+def niri_image(astrofaker):
+    """Create a fake NIRI image.
+
+    Optional
+    --------
+    keywords : dict
+        A dictionary with keys equal to FITS header keywords, whose values
+        will be propogated to the new image.
+
+    """
+
+    def _niri_image(filename='N20010101S0001.fits', keywords={}):
+
+        ad = astrofaker.create('NIRI', 'IMAGE',
+                                extra_keywords=keywords,
+                                filename=filename)
+        ad.init_default_extensions()
+        return ad
+
+    return _niri_image
 
 # -- Tests --------------------------------------------------------------------
 
@@ -60,5 +85,17 @@ def test_remove_first_frame():
     assert ad_out[2] == ad_in[3]
 
 
-if __name__ == '__main__':
-    pytest.main()
+def test_stack_darks(niri_image):
+    adinputs = [niri_image(f'N20010101S{i:04d}.fits', keywords={'EXPTIME': 1.})
+                for i in range(0, 4)]
+
+    p = NIRIImage(adinputs)
+    p.stackDarks(adinputs)
+
+    assert len(p.streams["main"]) == len(adinputs)
+
+    adinputs[0].phu['EXPTIME'] = 100.
+
+    # Check that a file with a different exposure time raises an error.
+    with pytest.raises(ValueError):
+        p.stackDarks(adinputs)

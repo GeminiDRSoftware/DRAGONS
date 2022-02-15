@@ -265,7 +265,7 @@ class NearIR(Bookkeeping):
 
         if not all(dark.exposure_time() == adinputs[0].exposure_time()
                    for dark in adinputs[1:]):
-                raise OSError("Darks are not of equal exposure time")
+                raise ValueError("Darks are not of equal exposure time")
 
         stack_params = self._inherit_params(params, "stackFrames")
         stack_params.update({'zero': False, 'scale': False})
