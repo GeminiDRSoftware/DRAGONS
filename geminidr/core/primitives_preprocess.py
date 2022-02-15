@@ -733,7 +733,7 @@ class Preprocess(PrimitivesBASE):
                         ext.data[tuple(slices_extract)] = data
 
                     # Mark the interpolated pixels as no_data
-                    ext.mask[slices] = DQ.no_data
+                    ext.mask[slices] |= DQ.no_data
 
                     if debug:
                         fig, (ax1, ax2) = plt.subplots(1, 2)

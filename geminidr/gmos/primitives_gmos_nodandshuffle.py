@@ -297,7 +297,7 @@ class GMOSNodAndShuffle(GMOS):
                     getattr(ext_nodded, attr)[shuffle:] = getattr(ext,
                                                         attr)[:-shuffle]
                     ext_nodded.data[:shuffle] = 0
-                    ext_nodded.mask[:shuffle] = DQ.no_data
+                    ext_nodded.mask[:shuffle] |= DQ.no_data
                     ext_nodded.variance[:shuffle] = 0
 
             # Normalize if the A and B nod counts differ
