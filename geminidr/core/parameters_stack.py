@@ -74,7 +74,6 @@ class stackBiasesConfig(stackFramesConfig):
         del self.scale
 
 class stackFlatsConfig(stackFramesConfig):
-    # scale = config.Field("Scale images to the same intensity?", bool, False)
     def setDefaults(self):
         self.reject_method = "minmax"
         self.nlow = 1
