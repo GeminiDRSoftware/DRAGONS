@@ -12,12 +12,25 @@ Change Logs
 Bug Fixes
 ---------
 
-**geminidr**
-
 **geminidr.core**
 
 * Fix bug where manually-assigned sky frames in ``separateSky`` were added
   to the list of science frames by mistake.
+
+* In fringeCorrect, ``do_cal=force`` has been reactivated.
+
+**geminidr.gnirs**q
+
+* Added missing support for YPHOT filter.
+
+Interface Modifications
+-----------------------
+* Internal Gemini catalog server URL updated.
+
+Documentation
+------------
+
+* Various fixes to the documentation affecting formatting, not the content.
 
 
 3.0.1
