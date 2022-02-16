@@ -215,26 +215,6 @@ class CheckboxLine(CustomWidget):
         super().handler(None, None, new)
 
 
-class SelectLine(CustomWidget):
-    def __init__(self, title, model, attr, handler=None, **kwargs):
-        super().__init__(title, model, attr, handler, **kwargs)
-        # TODO can we infer the options from the config somehow?
-        self.options = ["peak", "integral"]
-        if 'options' in kwargs:
-            self.options = kwargs['options']
-
-    def build(self):
-        self.select = Select(value=self.value, options=self.options,
-                             width=128)
-        self.select.on_change("value", self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.select])
-
-    def reset(self):
-        self.select.value = self.value
-
-
 class ApertureModel:
     def __init__(self, aperture_id, location, start, end, parent):
         self.source = ColumnDataSource({
@@ -956,7 +936,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 def fn():
                     model.reset()
                     for widget in (maxaper, minsky, use_snr, min_snr,
-                                   threshold, maxsep, sizing):
+                                   threshold, maxsep):
                         widget.reset()
                     self.model.recalc_apertures()
                     reset_button.disabled = False
@@ -997,9 +977,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                                    handler=_maxaper_handler, low=0)
         threshold = TextSlider("Threshold", model, attr="threshold",
                                start=0, end=1, step=0.01)
-        sizing = SelectLine("Sizing method", model, attr="sizing_method")
-        strategy = SelectLine("Strategy", model, attr="strategy",
-                              options=["exponential_wavelet", "linear_wavelet", "maxima", "percolation"])
         maxsep = CustomSlider("Maximum separation from target", model, attr="max_separation",
                               start=5, end=model.max_width, step=0.5)
 
@@ -1027,9 +1004,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),
             maxaper.build(),
-            strategy.build(),
             maxsep.build(),
-            sizing.build(),
             threshold.build(),
             row([reset_button, find_button]),
         )

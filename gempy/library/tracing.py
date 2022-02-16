@@ -453,7 +453,7 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
     ----------
     ext: NDData-like object
         2D spectral image, with data dispersed along the rows
-    min_sky_region: int
+    min_sky_region: int/None
         minimum separation between sky lines for a region to be used in
         profile construction
     percentile: float
@@ -473,7 +473,8 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
 
     # Mask sky-line regions and find clumps of unmasked pixels
     # Very light sigma-clipping to remove bright sky lines
-    var_excess = var1d - at.boxcar(var1d, np.median, size=min_sky_region // 2)
+    var_excess = var1d - at.boxcar(
+        var1d, np.median, size=min_sky_region // 2 if min_sky_region else 25)
 
     # We need to construct a spatial profile along the slit. First, remove
     # columns where too few pixels are good
@@ -488,9 +489,10 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
     slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
 
     sky_mask = np.ones_like(mask1d, dtype=bool)
-    for reg in slices:
-        if (reg.stop - reg.start) >= min_sky_region:
-            sky_mask[reg] = False
+    if min_sky_region:
+        for reg in slices:
+            if (reg.stop - reg.start) >= min_sky_region:
+                sky_mask[reg] = False
     # If nothing satisfies the min_sky_region requirement, ignore it
     if sky_mask.all():
         log.warning(f"No regions in {ext.filename} between sky lines exceed "
@@ -561,6 +563,7 @@ def get_extrema(profile, prof_mask, min_snr=3):
         else:
             i += 1
 
+    # These checks are required for the noiseless data in the tests
     if not extrema:
         return []
 
@@ -635,25 +638,74 @@ def get_extrema(profile, prof_mask, min_snr=3):
 
 
 def _prominence(extrema, index):
-    """Calculate the prominence of the index-th maximum"""
+    """
+    Calculate the prominence of the index-th maximum. The prominence is
+    defined as the height of the peak above the height of the highest adjacent
+    minimum. This function is abstracted in case we want to change that.
+    """
     return extrema[index*2+1][1] - max(extrema[index*2][1], extrema[index*2+2][1])
 
 
 def find_apertures(ext, max_apertures, min_sky_region, percentile,
-                   sizing_method, threshold, section, min_snr, use_snr,
-                   strategy=None, max_separation=None, min_sep=3, profile=None):
+                   threshold, section, min_snr, use_snr,
+                   max_separation=None, min_sep=3, profile=None):
     """
     Finds sources in 2D spectral images and compute aperture sizes. Used by
-    findSourceApertures as well as by the interactive code. See
-    findSourceApertures' docstring for details on the parameters.
-    Data MUST always be dispersed along the rows
+    findApertures as well as by the interactive code. Data MUST always be
+    dispersed along the rows (i.e., GMOS orientation).
 
     An existing profile can be passed to avoid the need to recalculate it.
+
+    Parameters
+    ----------
+    ext: NDAstroData-like
+        the data, with the spatial direction vertical and the spectra
+        dispersed horizontally
+    max_apertures: int/None
+        maximum number of apertures to return
+    min_sky_region: int/None
+        minimum separation between sky lines if the wavelength region is to
+        be used to construct the profile
+    percentile: float/None
+        when constructing the profile, use this percentile for each row
+        (if None, use the mean)
+    threshold: float
+        thresholding parameter between peak and continuum for determining the
+        aperture size
+    section: str
+        pixel section in the wavelength direction for determining the profile
+        (generally used if percentile=None to reproduce IRAF-like finding)
+    min_snr: float
+        minimum S/N ratio for acceptable apertures
+    use_snr: bool
+        if True, divide each pixel in the 2D image by its standard deviation
+        in order to construct the profile (this helps to mitigate the effects
+        of varying exposure times along the slit -- e.g., because of the GMOS
+        longslit bridges -- when using percentile > 50)
+    max_separation: float
+        ignore sources found at a larger distance (in arcseconds) from the
+        target than this
+    min_sep: float
+        merge sources closer than this separation (in pixels)
+    profile: 1D ndarray/masked_array/None
+        the 1D spatial profile can be provided; if not, it is calculated
+
+    Returns
+    -------
+    locations: list
+        pixel locations of all peaks, in order of decreasing S/N ratio
+    all_limits: list of 2-tuples
+        pixel locations of the upper and lower limits of the aperture
+        of each peak
+    profile: ndarray
+        the spatial profile
+    prof_mask: ndarray/None
+        the mask
     """
-    # Collapse image along spatial direction to find noisy regions
-    # (caused by sky lines, regardless of whether image has been
-    # sky-subtracted or not)
     if profile is None:
+        # Collapse image along spatial direction to find noisy regions
+        # (caused by sky lines, regardless of whether image has been
+        # sky-subtracted or not)
         profile, prof_mask = _construct_slit_profile(
             ext, min_sky_region, percentile, section, use_snr)
     elif hasattr(profile, 'mask'):
@@ -905,6 +957,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     Returns
     -------
     list: more accurate locations of the peaks that are unaffected by the mask
+          (may be shorter than the input list of peaks)
     """
     halfwidth = max(halfwidth, 2)  # Need at least 5 pixels to constrain spline
     int_limits = np.array([-1, -0.5, 0.5, 1])
@@ -1008,15 +1061,20 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, min_snr=3,
     Determines the region in a 1D array associated with each already-identified
     peak.
 
-    It operates by fitting a spline to the data (with weighting set based on
-    pixel-to-pixel scatter) and then differentiating this to find maxima and
-    minima. For each peak, the region is between the two closest minima, one on
-    each side.
+    This function operates in one of two ways:
+        1. A list of already-determined extrema (maxima and minima) can be
+           provided, in which case each peak is shifted to the nearest
+           maximum and the limits determined from the adjacent minima. This
+           is the mode of operation during the findApertures() first pass.
+        2. If not list is provided, extrema are calculated, each peak is
+           shifted, and then extrema are recaculated based on the S/N of
+           this peak, and the limits determined. This is the mode of operation
+           if the user marks a new aperture in the findApertures() UI, which
+           may be less significance than the nominal minimum S/N ratio.
 
-    If the threshold_function is None, then the locations of these minima
-    are returned. Otherwise, this must be a callable function that takes
-    the spline and the location of the minimum and the peak and returns
-    zero at the location one wants to be returned.
+    Limits are determined between the peak and the adjacent minimum, which is
+    assumed to represent the continuum level (since we do not require that
+    data have a continuum level of zero).
 
     Parameters
     ----------
@@ -1028,6 +1086,15 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, min_snr=3,
         variance of each pixel (None => recalculate)
     peaks: sequence
         peaks for which limits are to be found
+    threshold: float
+        parameter that determines where to place the aperture edge
+        between the peak and the continuum level
+    min_snr: float
+        minimum S/N ratio for detection (used to find minima if
+        extrema is None)
+    extrema: sequence/None
+        output from get_extrema(); if not provided, extrema will be calculated
+        again; if provided, it is assumed that they satisfy min_snr conditions
 
     Returns
     -------
@@ -1035,8 +1102,10 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, min_snr=3,
         the lower and upper limits for each peak
     """
     if extrema is None:
-        min_snr = -min_snr
         extrema = get_extrema(data, mask, min_snr=0)
+        niter = 1  # need to iterate to refind extrema given source's S/N
+    else:
+        niter = 0
     if variance is None:
         stddev = np.full_like(data, at.std_from_pixel_variations(
             data if mask is None else data[~mask], separation=10))
@@ -1045,19 +1114,23 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, min_snr=3,
 
     all_limits = []
     for peak in peaks:
-        while True:
+        for iter in range(niter+1):
             maxima = np.array([x[:2] for x in extrema if x[2]]).T
             i = np.argmin(abs(maxima[0] - peak)) * 2 + 1
             true_peak = extrema[i][0]
             if abs(true_peak - peak) > 2:
-                raise ValueError("Trouble with peak-finding")
-            if min_snr > 0:
+                log.warning(f'Difficulty finding peak near {peak:.2f} - continuing')
+                true_peak = None
+                break
+            if iter == niter:
                 break
             # Estimate S/N of this peak and find extrema with that
             # value if it's lower than min_snr
             this_snr = _prominence(extrema, i // 2) / stddev[int(true_peak+0.5)]
-            min_snr = min(this_snr, -min_snr)
-            extrema = get_extrema(data, mask, min_snr=min_snr)
+            extrema = get_extrema(data, mask, min_snr=min(this_snr, min_snr))
+
+        if true_peak is None:
+            continue
 
         lower, upper = extrema[i-1][0], extrema[i+1][0]
         i1, i2, p = int(lower), int(upper+1), int(true_peak+0.5)
@@ -1092,8 +1165,6 @@ def peak_limit(spline, peak, limit, threshold):
     limit : float
         location of the minimum -- an aperture edge is required between
         this location and the peak
-    other_limit : float (not used)
-        location of the minimum on the opposite side of the peak
     threshold : float
         fractional height gain (peak - minimum) where aperture edge should go
 
