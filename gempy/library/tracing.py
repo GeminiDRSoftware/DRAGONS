@@ -560,10 +560,17 @@ def get_extrema(profile, prof_mask, min_snr=3):
                 del extrema[i]
         else:
             i += 1
+
     if extrema[0][2]:
-        del extrema[0]
-    if extrema[-1][2]:
+        if len(extrema) == 1:
+            extrema = [(1, profile[1], False)] + extrema + [(xpixels[-1], profile[-2], False)]
+        else:
+            del extrema[0]
+    if extrema and extrema[-1][2]:
         del extrema[-1]
+
+    if not extrema:
+        return []
 
     #print("SECOND")
     #print(extrema)
@@ -1028,7 +1035,8 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, min_snr=3,
         min_snr = -min_snr
         extrema = get_extrema(data, mask, min_snr=0)
     if variance is None:
-        stddev = np.full_like(data, data if mask is None else at.std_from_pixel_variations(data[~mask]))
+        stddev = np.full_like(data, at.std_from_pixel_variations(
+            data if mask is None else data[~mask], separation=10))
     else:
         stddev = np.sqrt(variance)
 
