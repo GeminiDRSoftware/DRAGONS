@@ -98,7 +98,7 @@ def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrof
     for ext in ad:
         ext.data = model(rows)
         ext.data += np.random.poisson(ext.data)
-        ext.data += (np.random.random(size=ext.data.shape) - 0.5) * gmos_fake_noise
+        ext.data += np.random.normal(scale=gmos_fake_noise, size=ext.shape)
         ext.mask = np.zeros_like(ext.data, dtype=np.uint)
 
     p = GMOSSpect([ad])

@@ -561,6 +561,9 @@ def get_extrema(profile, prof_mask, min_snr=3):
         else:
             i += 1
 
+    if not extrema:
+        return []
+
     if extrema[0][2]:
         if len(extrema) == 1:
             extrema = [(1, profile[1], False)] + extrema + [(xpixels[-1], profile[-2], False)]
@@ -665,7 +668,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     #plt.ioff()
     #fig, ax = plt.subplots()
     #ax.plot(profile)
-    #plt.show()
+    ##plt.show()
     #plt.ion()
 
     # 10 is a good value to capture artifacts
