@@ -6,9 +6,17 @@ tracing.py
 This module contains functions used to locate peaks in 1D data and trace them
 in the orthogonal direction in a 2D image.
 
+Classes in this module:
+Aperture:            defines an aperture on an image
+
 Functions in this module:
+average_along_slit:  collapse a 2D spectral image in the wavelength direction
+                     to produce a slit profile
 estimate_peak_width: estimate the widths of peaks
-find_wavelet_peaks:          locate peaks using the scipy.signal routine
+find_apertures:      find sources and define apertures in a 2D spectral image
+find_wavelet_peaks:  locate peaks using the scipy.signal routine
+get_extrema:         find all minima and maxima in a profile
+get_limits:          calculate aperture limits for a particular source
 pinpoint_peaks:      produce more accuate positions for existing peaks by
                      centroiding
 reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
@@ -31,8 +39,6 @@ from . import astrotools as at
 from ..utils.decorators import insert_descriptor_values
 
 log = logutils.get_logger(__name__)
-
-MAX_WIDTH = 20
 
 ###############################################################################
 class Aperture:
@@ -540,6 +546,35 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
 
 
 def get_extrema(profile, prof_mask, min_snr=3):
+    """
+    Find all the significant maxima and minima in a 1D profile. Significance
+    is calculated from the prominence of each peak divided by an estimate of
+    the noise from the pixel-to-pixel variations in the profile, and whether
+    this exceeds the minimum S/N ratio threshold.
+
+    Maxima and minima are found by identifying all pixels that are either
+    lower than both their neighbours, or higher than both their neighbours,
+    or equal to one neighbour. The precise locations of these extrema are
+    then calculated (with any that fail to produce a clear result simply
+    being discarded) and any adjacent pairs of minima or maxima (when
+    ordered by location) merged to leave only the most prominent. As a
+    result, the returned list alternates perfectly between minima and
+    maxima.
+
+    Parameters
+    ----------
+    profile: 1D array
+        profile from which extrema are to be found
+    prof_mask: 1D array/mask
+        mask to apply to this profile
+    min_snr: float
+        minimum S/N ratio for a maximum to be considered significant
+
+    Returns
+    -------
+    extrema: list of 3-element lists (float, float, bool)
+        [position, value, is_maximum?]
+    """
     diffs = np.array([np.diff(profile[:-1]), -np.diff(profile[1:])])
     extrema = np.multiply.reduce(diffs, axis=0) >= 0
     extrema_types = np.add.reduce(diffs, axis=0)
@@ -716,13 +751,6 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
 
     extrema = get_extrema(profile, prof_mask, min_snr=min_snr)
 
-    #from matplotlib import pyplot as plt
-    #plt.ioff()
-    #fig, ax = plt.subplots()
-    #ax.plot(profile)
-    ##plt.show()
-    #plt.ion()
-
     # 10 is a good value to capture artifacts
     stddev = at.std_from_pixel_variations(profile if prof_mask is None
                                           else profile[~prof_mask], separation=10)
@@ -735,6 +763,8 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     snrs = [_prominence(extrema, i // 2) / stddev
             for i in range(1, len(extrema), 2)]
 
+    # The code below here tries to remove things that aren't real sources,
+    # either noise spikes or artifacts
     # Start by removing low-S/N apertures
     ok_apertures = {i: snr >= min_snr for i, snr in enumerate(snrs)}
     # Remove apertures too close to other apertures
@@ -763,8 +793,8 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
                                  if abs(target_location - x) > max_separation})
 
     spline = at.fit_spline_to_data(profile, mask=prof_mask)
-    # Remove apertures that are too wide
     for i, (peak, limits, flimits, snr) in enumerate(zip(peaks, all_limits, fwhm_limits, snrs)):
+        # Remove apertures that are too wide
         for side in (0, 1):
             height = (extrema[i*2+1][1] - extrema[i*2+2*side][1]) / stddev
             width = abs(peak - limits[side])
@@ -773,6 +803,8 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
             # Eliminate things with square edges that are likely artifacts
             if (flimits[side] - peak) / (limits[side] - peak) > 0.85:
                 ok_apertures[i] = False
+        # Remove apertures that don't appear in a smoothed version of the
+        # data (these are basically noise peaks)
         if spline(peak) - spline(limits).min() < stddev:
             ok_apertures[i] = False
 
@@ -951,13 +983,12 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
         number of pixels either side of initial peak to use in centroid
     threshold: float
         threshold to cut data
-    return_peak_values: bool
-        return the fitted peak values as well as the locations?
 
     Returns
     -------
-    list: more accurate locations of the peaks that are unaffected by the mask
+    peaks: list of more accurate locations of the peaks that converged
           (may be shorter than the input list of peaks)
+    values: list of the fitted peak values (same length as peaks)
     """
     halfwidth = max(halfwidth, 2)  # Need at least 5 pixels to constrain spline
     int_limits = np.array([-1, -0.5, 0.5, 1])
@@ -1195,6 +1226,21 @@ def stack_slit(ext, percentile=50, section=slice(None), dispersion_axis=None):
     return np.nan_to_num(profile, copy=False, nan=np.nanmedian(profile))
 
 
+def cwt_ricker(data, widths, **kwargs):
+    """
+    Continuous wavelet transform, using the Ricker filter.
+
+    Hacked from scipy.cwt to ensure that the convolution is done with
+    a wavelet that has an odd number of pixels.
+    """
+    output = np.zeros((len(widths), len(data)), dtype=np.float64)
+    for ind, width in enumerate(widths):
+        N = int(np.min([10 * width, len(data)])) // 2 * 2 - 1
+        wavelet_data = np.conj(signal.ricker(N, width, **kwargs)[::-1])
+        output[ind] = np.convolve(data, wavelet_data, mode='same')
+    return output
+
+
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-TRACING
 
@@ -1416,18 +1462,3 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
     # Return the coordinate lists, in the form (x-coords, y-coords),
     # regardless of the dispersion axis
     return (ref_coords, in_coords) if axis == 1 else (ref_coords[::-1], in_coords[::-1])
-
-
-def cwt_ricker(data, widths, **kwargs):
-    """
-    Continuous wavelet transform, using the Ricker filter.
-
-    Hacked from scipy.cwt to ensure that the convolution is done with
-    a wavelet that has an odd number of pixels.
-    """
-    output = np.zeros((len(widths), len(data)), dtype=np.float64)
-    for ind, width in enumerate(widths):
-        N = int(np.min([10 * width, len(data)])) // 2 * 2 - 1
-        wavelet_data = np.conj(signal.ricker(N, width, **kwargs)[::-1])
-        output[ind] = np.convolve(data, wavelet_data, mode='same')
-    return output

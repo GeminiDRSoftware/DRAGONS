@@ -1647,11 +1647,7 @@ class Spect(Resample):
             Convert data to SNR per pixel before collapsing and peak-finding?
         threshold : float (0 - 1)
             parameter describing either the height above background (relative
-            to peak) or the integral under the spectrum (relative to the
-            integral to the next minimum) at which to define the edges of
-            the aperture.
-        sizing_method : str ("peak" or "integral")
-            which method to use
+            to peak) at which to define the edges of the aperture.
         interactive : bool
             Show interactive controls for fine tuning source aperture detection
 
