@@ -1005,21 +1005,22 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=None):
         return [], []
 
     xvalues = np.arange(data.size)
-    # We fit splines to y(x) and x * y(x)
-    t, c, k = interpolate.splrep(xvalues[~mask], data[~mask], k=3,
-                                 s=0)
-    spline1 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
-    t, c, k = interpolate.splrep(xvalues[~mask], (data * xvalues)[~mask],
-                                 k=3, s=0)
-    spline2 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
 
     for peak in peaks:
         xc = int(peak + 0.5)
         xc = np.argmax(data[max(xc - 1, 0):min(xc + 2, npts)]) + xc - 1
-        if xc < halfwidth or xc > npts - halfwidth or np.isnan(data[xc]):
+        x1 = int(xc - halfwidth - 1)
+        x2 = int(xc + halfwidth + 2)
+        m = mask[x1:x2]
+        if x1 < 0 or x2 > data.size - 1 or np.isnan(data[xc]) or m.all():
             continue
-        x1 = int(xc - halfwidth)
-        x2 = int(xc + halfwidth + 1)
+        # We fit splines to y(x) and x * y(x)
+        t, c, k = interpolate.splrep(xvalues[x1:x2][~m], data[x1:x2][~m], k=3,
+                                     s=0)
+        spline1 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
+        t, c, k = interpolate.splrep(xvalues[x1:x2][~m], (data * xvalues)[x1:x2][~m],
+                                     k=3, s=0)
+        spline2 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
 
         # Then there's some centroiding around the peak, with convergence
         # tolerances. This is still just an IRAF re-code.
