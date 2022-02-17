@@ -1002,6 +1002,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
         else:
             masked_data = np.where(np.logical_or(mask, masked_data < 0),
                                    0, data - threshold)
+    masked_data[np.isnan(data)] = 0
     if all(masked_data == 0):  # Exit now if there's no data
         return [], []
 
