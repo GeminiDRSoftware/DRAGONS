@@ -1691,8 +1691,25 @@ class Spect(PrimitivesBASE):
                 aper_params['direction'] = "column" if dispaxis == 0 else "row"
 
                 if interactive:
+                    # build config for interactive
+                    config = self.params[self.myself()]
+                    config.update(**params)
+                    reinit_params = ["percentile", "min_sky_region", "use_snr", "min_snr", "section", "max_apertures",
+                                     "threshold", "sizing_method"]
+                    title_overrides = {
+                        "percentile": "Percentile (use mean if no value)",
+                        "min_sky_region": "Min sky region",
+                        "use_snr": "Use S/N ratio in spatial profile?",
+                        "min_snr": "SNR threshold for peak detection",
+                        "max_apertures": "Max Apertures (empty means no limit)",
+                        "threshold": "Threshold",
+                        "sizing_method": "Sizing method"
+                    }
+                    ui_params = UIParameters(config, reinit_params=reinit_params, extras={},
+                                             title_overrides=title_overrides,
+                                             placeholders={"section": "e.g. 100:900,1500:2000"})
                     locations, all_limits = interactive_find_source_apertures(
-                        ext, **aper_params)
+                        ext, ui_params=ui_params, **aper_params)
                 else:
                     locations, all_limits, _, _ = tracing.find_apertures(
                         ext, **aper_params)
