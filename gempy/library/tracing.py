@@ -998,7 +998,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=None):
     if mask is None:
         mask = np.isnan(data)
     else:
-        mask |= np.isnan(data)
+        mask = mask.astype(bool) | np.isnan(data)
     if threshold is not None:
         mask |= data < threshold
     if data.size - mask.sum() < 4:
