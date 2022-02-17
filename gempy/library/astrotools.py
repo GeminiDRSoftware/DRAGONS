@@ -7,7 +7,10 @@ The astroTools module contains astronomy specific utility functions
 import os
 import re
 import numpy as np
+from scipy import interpolate
+
 from astropy import units as u
+from astropy import stats
 
 
 def array_from_list(list_of_quantities, unit=None):
@@ -29,6 +32,7 @@ def array_from_list(list_of_quantities, unit=None):
     values = [x.to(unit).value for x in list_of_quantities]
     # subok=True is needed to handle magnitude/log units
     return u.Quantity(np.array(values), unit, subok=True)
+
 
 def boxcar(data, operation=np.ma.median, size=1):
     """
@@ -56,6 +60,7 @@ def boxcar(data, operation=np.ma.median, size=1):
         boxarray = np.array([operation.reduce(data[max(i-size, 0):i+size+1])
                              for i in range(len(data))])
     return boxarray
+
 
 def divide0(numerator, denominator):
     """
@@ -101,6 +106,82 @@ def divide0(numerator, denominator):
 
         return np.divide(numerator, denominator, out=np.zeros(out_shape, dtype=dtype),
                          where=abs(denominator) > np.finfo(dtype).tiny)
+
+
+def fit_spline_to_data(data, mask=None, variance=None, k=3):
+    """
+    Fit a spline to data, weighting by variance. If no variance is supplied,
+    it is computed from the pixel-to-pixel variations in the data and an
+    additional component is added based on how rapidly the data are varying.
+    This is important to prevent "overfitting" of the slopes of features.
+
+    Parameters
+    ----------
+    data: array
+        data to which a spline is to be fitted
+    mask: array/None
+        mask values for each data point
+    variance: array/None
+        variance of each data point
+    k: int
+        order of the spline
+
+    Returns
+    -------
+    callable spline object: the fitted spline
+    """
+    if variance is None:
+        y = np.ma.masked_array(data, mask=mask)
+        sigma1 = std_from_pixel_variations(y)
+        diff = np.diff(y)
+        # 0.1 is a fudge factor that seems to work well
+        #sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
+        # Average from 2 pixels either side; 0.05 corresponds to 0.1 before
+        # since this is the change in a 4-pixel span, instead of 2 pixels
+        diff2 = np.r_[diff[:2], y[4:] - y[:-4], diff[-2:]]
+        sigma2 = 0.05 * diff2
+        w = 1. / np.sqrt(sigma1 * sigma1 + sigma2 * sigma2)
+        if mask is not None:
+            mask = mask | w.mask
+    else:
+        w = divide0(1.0, np.sqrt(variance))
+
+    # TODO: Consider outlier removal
+    if mask is None:
+        spline = interpolate.UnivariateSpline(np.arange(data.size), data, w=w, k=k)
+        #spline = am.UnivariateSplineWithOutlierRemoval(np.arange(data.size), data, w=w, k=k)
+    else:
+        spline = interpolate.UnivariateSpline(np.arange(data.size)[mask == 0],
+                                              data[mask == 0], w=w[mask == 0], k=k)
+        #spline = am.UnivariateSplineWithOutlierRemoval(np.arange(data.size)[mask == 0],
+        #                                      data[mask == 0], w=w[mask == 0], k=k)
+    return spline
+
+
+def std_from_pixel_variations(array, separation=5, **kwargs):
+    """
+    Estimate the standard deviation of pixels in an array by measuring the
+    pixel-to-pixel variations. Since the values might be correlated over small
+    scales (e.g., if the data have been smoothed), pixels are compared not
+    with their immediate neighbors but with pixels a few locations away.
+
+    Parameters
+    ----------
+    array: array-like
+        the data from which the standard deviation is to be estimated
+    separation: int
+        separation between pixels being compared
+    kwargs: dict
+        kwargs to be passed directly to astropy.stats.sigma_clipped_stats
+
+    Returns
+    -------
+    float: the estimated standard deviation
+    """
+    _array = np.asarray(array).ravel()
+    diffs = _array[separation:] - _array[:-separation]
+    ok = ~(np.isnan(diffs) | np.isinf(diffs))  # Stops AstropyUserWarning
+    return stats.sigma_clipped_stats(diffs[ok], **kwargs)[2] / np.sqrt(2)
 
 
 def rasextodec(string):
@@ -312,7 +393,7 @@ def get_spline3_extrema(spline):
     try:
         knots = derivative.get_knots()
     except AttributeError:  # for BSplines
-        knots = derivative.k
+        knots = derivative.t
 
     minima, maxima = [], []
     # We take each pair of knots and map to interval [-1,1]

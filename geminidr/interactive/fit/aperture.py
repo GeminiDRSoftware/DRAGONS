@@ -17,7 +17,7 @@ from geminidr.interactive.interactive import PrimitiveVisualizer, build_text_sli
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from geminidr.interactive.server import interactive_fitter
-from gempy.library.tracing import (find_apertures, find_apertures_peaks,
+from gempy.library.tracing import (find_apertures, find_wavelet_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
 
@@ -161,8 +161,23 @@ class FindSourceAperturesModel:
             'y': np.zeros(self.profile_shape),
         })
 
+        # self.target_location is the row from the target coords
+        # max_width is the largest distance (in arcsec) from there to the edge of the slit
+        # Note: although the ext may have been transposed to ensure that
+        # the slit is vertical, the WCS has not been modified
+        self.target_location = ext.wcs.invert(
+            ext.central_wavelength(asNanometers=True), ext.target_ra(), ext.target_dec())[2 - ext.dispersion_axis()]
+        # gWCS will return NaN coords if sent Nones, so bomb out now
+        if np.isnan(self.target_location):
+            self.target_location = (self.profile_shape - 1) / 2
+            self.max_width = self.target_location
+        else:
+            self.max_width = max(self.target_location, self.profile_shape - 1 - self.target_location)
+        self.max_width = np.ceil(self.max_width * ext.pixel_scale())
+
         # initial parameters are set as attributes
         self.reset()
+        del self._aper_params['direction']  # no longer passed to find_apertures()
 
     @property
     def aper_params(self):
@@ -185,6 +200,8 @@ class FindSourceAperturesModel:
         """Reset model to its initial values."""
         for name, value in self._aper_params.items():
             setattr(self, name, value)
+        if self.max_separation is None:
+            self.max_separation = self.max_width
 
     def find_closest(self, x, x_start, x_end, prefer_selected=True):
         """
@@ -246,17 +263,19 @@ class FindSourceAperturesModel:
     def find_peak(self, x):
         # Find local maximum to help pinpoint_peaks
         data = np.ma.array(self.profile, mask=self.prof_mask)
-        initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
-
-        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])
-        if len(peaks) > 0:
-            limits = get_limits(np.nan_to_num(self.profile),
-                                self.prof_mask,
-                                peaks=peaks,
-                                threshold=self.threshold,
-                                method=self.sizing_method)
-            log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
-            self.add_aperture(peaks[0], *limits[0])
+        #initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
+        peaks = find_wavelet_peaks(self.profile, [2], reject_bad=False)[0]
+        if peaks.size:
+            initx = peaks[np.argmin(abs(peaks - x))]
+            if abs(initx - x) <= 20:
+                peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])[0]
+                limits = get_limits(np.nan_to_num(self.profile),
+                                    self.prof_mask,
+                                    peaks=peaks,
+                                    threshold=self.threshold,
+                                    min_snr=self.min_snr)
+                log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
+                self.add_aperture(peaks[0], *limits[0])
 
     def update(self, extras):
         for k in extras.keys():
@@ -293,10 +312,10 @@ class FindSourceAperturesModel:
                 find_apertures(self.ext, **self.aper_params)
             self.profile_source.patch({'y': [(slice(None), self.profile)]})
         else:
-            # otherwise we can redo only the peak detection
-            locations, all_limits = find_apertures_peaks(
-                self.profile, self.prof_mask, self.max_apertures,
-                self.threshold, self.sizing_method, self.min_snr)
+            # otherwise pass the existing profile for speed
+            locations, all_limits, _, _ = \
+                find_apertures(self.ext, **self.aper_params,
+                               profile=np.ma.masked_array(self.profile, self.prof_mask))
 
         self.aperture_models.clear()
 
@@ -954,11 +973,12 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         """
         models = self.model.aperture_models
-        res = list(models[id_].result() for id_ in sorted(models.keys()))
-        if res:
+        res = (models[id_].result() for id_ in sorted(models.keys()))
+        try:
             locations, limits = zip(*res)
-        else:
-            locations, limits = [], []
+        except ValueError:
+            # There were no results.  Can't check ahead because they are generators
+            return [[], []]
         return np.array(locations), limits
 
 

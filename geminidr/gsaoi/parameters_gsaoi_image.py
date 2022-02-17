@@ -1,7 +1,7 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gsaoi_image.py file, in alphabetical order.
 from gempy.library import config
-from geminidr.core import parameters_photometry, parameters_register, parameters_resample
+from geminidr.core import parameters_photometry, parameters_register, parameters_image
 
 class adjustWCSToReferenceConfig(parameters_register.adjustWCSToReferenceConfig):
     final = config.RangeField("Search radius for object matching (arcseconds)",
@@ -35,7 +35,7 @@ class determineAstrometricSolutionConfig(parameters_register.determineAstrometri
         self.final = 0.5
 
 
-class resampleToCommonFrameConfig(parameters_resample.resampleToCommonFrameConfig):
+class resampleToCommonFrameConfig(parameters_image.resampleToCommonFrameConfig):
     pixel_scale = config.RangeField("Output pixel scale (arcseconds) if no reference provided",
                                     float, 0.02, min=0.01, max=1.0)
     pa = config.RangeField("Output position angle (E of N) if no reference provided",
