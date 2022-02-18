@@ -1692,7 +1692,7 @@ class Spect(Resample):
                     config = self.params[self.myself()]
                     config.update(**params)
                     reinit_params = ["percentile", "min_sky_region", "use_snr", "min_snr", "section", "max_apertures",
-                                     "threshold", "sizing_method"]
+                                     "threshold", "sizing_method", "max_separation"]
                     title_overrides = {
                         "percentile": "Percentile (use mean if no value)",
                         "min_sky_region": "Min sky region",
@@ -1701,6 +1701,7 @@ class Spect(Resample):
                         "max_apertures": "Max Apertures (empty means no limit)",
                         "threshold": "Threshold",
                         "sizing_method": "Sizing method",
+                        "max_separation": "Maximum separation from target",
                     }
                     ui_params = UIParameters(config, reinit_params=reinit_params, extras={},
                                              title_overrides=title_overrides,
