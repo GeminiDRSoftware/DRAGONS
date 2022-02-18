@@ -812,16 +812,16 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # available in the primitive.
         self.ui_params = ui_params
         self.ui_params.fields["max_separation"].min = 5
-        self.ui_params.fields["max_separation"].max = int(self.model.max_width)
+        self.ui_params.fields["max_separation"].max = int(np.ceil(self.model.max_width))
         self.ui_params.fields["max_separation"].step = 1
         if self.ui_params.fields["max_separation"].default is None:
-            self.ui_params.fields["max_separation"].default = int(self.model.max_separation)
+            self.ui_params.fields["max_separation"].default = int(np.ceil(self.model.max_separation))
         self.ui_params.fields["max_separation"].dtype = int
         self.ui_params.fields["max_separation"].optional = False
         if self.ui_params.values['max_separation'] is None:
-            self.ui_params.values['max_separation'] = int(self.model.max_separation)
+            self.ui_params.values['max_separation'] = int(np.ceil(self.model.max_separation))
         if self._reinit_params['max_separation'] is None:
-            self._reinit_params['max_separation'] = int(self.model.max_separation)
+            self._reinit_params['max_separation'] = int(np.ceil(self.model.max_separation))
 
     def add_aperture(self):
         """
