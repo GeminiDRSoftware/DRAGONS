@@ -831,6 +831,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 def fn():
                     model.reset()
                     self.reset_reinit_panel()
+                    self.max_separation.children[1].value = int(self.model.max_separation)
                     self.model.recalc_apertures()
                     reset_button.disabled = False
                 self.do_later(fn)
@@ -849,6 +850,12 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         widgets = self.make_widgets_from_parameters(self.ui_params, reinit_live=False, slider_width=256,
                                                     add_spacer=True)
+        # Running the max_separation widget custom so we can do some smart setup of max value
+        self.max_separation = build_text_slider(
+            "Maximum separation from target", getattr(model, "max_separation"), 1, 5, int(model.max_width),
+            obj=model, attr="max_separation", slider_width=256, allow_none=False, throttled=True,
+            is_float=False,
+            handler=self.slider_handler_factory("max_separation", reinit_live=False))
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
@@ -870,6 +877,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),
             *widgets[5:],
+            self.max_separation,
             row([reset_button, find_button]),
             width_policy="min",
         )
