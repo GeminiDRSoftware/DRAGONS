@@ -175,17 +175,7 @@ class findAperturesConfig(config.Config):
                            "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.1, min=0, max=1)
-    sizing_method = config.ChoiceField("Method for automatic width determination", str,
-                                       allowed={"peak": "height relative to peak",
-                                                "integral": "integrated flux"},
-                                       default="peak", optional=False)
     interactive = config.Field("Use interactive interface", bool, False)
-    strategy = config.ChoiceField("Strategy for peak finding", str,
-                                  allowed={"exponential_wavelet": "Wavelet with exponentially spaced widths",
-                                           "linear_wavelet": "Wavelet with linearly spaced widths",
-                                           "maxima": "Maxima in profile",
-                                           "percolation": "Percolation"},
-                                  default="percolation")
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
                                        float, None, min=1, optional=True)
 
