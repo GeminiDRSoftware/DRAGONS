@@ -863,7 +863,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 self.do_later(fn)
 
         widgets = self.make_widgets_from_parameters(self.ui_params, reinit_live=False, slider_width=256,
-                                                    add_spacer=True)
+                                                    add_spacer=True, hide_textbox=['max_separation'])
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
