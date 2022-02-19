@@ -2363,7 +2363,8 @@ class Spect(Resample):
                 masked_data = np.ma.masked_array(data, mask=mask)
                 weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
                 center = (extract_slice.start + extract_slice.stop) // 2
-                waves = ext.wcs(range(len(masked_data)), center)[0]
+                waves = ext.wcs(range(len(masked_data)),
+                                np.full_like(masked_data, center))[0]
 
                 # We're only going to do CCD-to-CCD normalization if we've
                 # done the mosaicking in this primitive; if not, we assume
