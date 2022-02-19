@@ -347,7 +347,7 @@ class KDTreeFitter(Fitter):
         ref_coords = np.array(list(zip(*ref_coords)))
         tree = spatial.cKDTree(ref_coords)
         # avoid _convert_input since tree can't be coerced to a float
-        farg = (model_copy, in_coords, ref_coords, in_weights, ref_weights, tree)
+        farg = (model_copy, in_coords, tree)
         p0, _ = _model_to_fit_params(model_copy)
 
         arg_names = inspect.getfullargspec(self._opt_method).args
@@ -385,8 +385,7 @@ class KDTreeFitter(Fitter):
     def lorentzian(distance, sigma):
         return 1. / (distance * distance + sigma * sigma)
 
-    def _kdstat(self, tree, updated_model, in_coords, ref_coords,
-                in_weights, ref_weights):
+    def _kdstat(self, tree, updated_model, in_coords):
         """
         Compute the statistic for transforming coordinates onto a set of
         reference coordinates. This uses mathematical calculations and is not
@@ -419,13 +418,20 @@ class KDTreeFitter(Fitter):
         -------
         float : Statistic representing quality of fit to be minimized
         """
-        out_coords = updated_model(*in_coords)
-        if len(in_coords) == 1:
-            out_coords = (out_coords,)
-        out_coords = np.array(list(zip(*out_coords)))
-        dist, idx = tree.query(out_coords, k=self.k,
-                               distance_upper_bound=self.maxsep)
+        out_coords = np.asarray(updated_model(*in_coords))
+        #if len(in_coords) == 1:
+        #    out_coords = (out_coords,)
+        #out_coords = np.array(list(zip(*out_coords)))
+        #dist, idx = tree.query(out_coords, k=self.k,
+        #                       distance_upper_bound=self.maxsep)
+        if len(in_coords) > 1:
+            dist, idx = tree.query(out_coords.T, k=self.k,
+                                   distance_upper_bound=self.maxsep)
+        else:
+            dist, idx = tree.query(np.expand_dims(out_coords, 1), k=self.k,
+                                   distance_upper_bound=self.maxsep)
 
+        # This if statement doesn't seem to speed things up very much
         pf = self.proximity_function(dist)
         if self.k > 1:
            result = np.sum([(self.match_weights[self.in_range, tuple(idx.T[i])] * pf.T[i]).sum()
