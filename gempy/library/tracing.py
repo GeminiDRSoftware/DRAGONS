@@ -1012,7 +1012,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=None):
         x1 = int(xc - halfwidth - 1)
         x2 = int(xc + halfwidth + 2)
         m = mask[x1:x2]
-        if x1 < 0 or x2 > data.size - 1 or np.isnan(data[xc]) or m.all():
+        if x1 < 0 or x2 > data.size - 1 or np.isnan(data[xc]) or np.sum(~m) < 4:
             continue
         # We fit splines to y(x) and x * y(x)
         t, c, k = interpolate.splrep(xvalues[x1:x2][~m], data[x1:x2][~m], k=3,
