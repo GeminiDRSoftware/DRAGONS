@@ -30,36 +30,49 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
         self.add_illum_mask = True   # adds bridges in longslit full frame
 
 
-class makeSlitIllumConfig(config.core_1Dfitting_config):
-    bins = config.Field("Total number of bins across the dispersion axis if bins are not specified.",
+class makeSlitIllumConfig(config.Config):
+    bins = config.Field("Either total number of bins across the dispersion axis, "
+                        "or a comma-separated list \n                                          "
+                        "of pixel coordinate pairs defining then dispersion bins, e.g. 1:300,301:500",
                         (int, str), None, optional=True)
-    border = config.Field("Size of the border added to the reconstructed slit illumination image",
-                          int, 0, optional=True)
     debug_plot = config.Field("Create diagnosis plots?",
                               bool, False, optional=True)
-    order = config.Field("Spline order to smooth binned data",
-                                int, 20, optional=True)
-    function = config.ChoiceField("Fitting function to use for bin fitting", str,
-                           allowed={"spline3": "Cubic spline",
-                                    "chebyshev": "Chebyshev polynomial"},
-                           default="spline3", optional=False)
 
     suffix = config.Field("Filename suffix",
                           str, "_slitIllum", optional=True)
-    x_order = config.Field("Order of the x-component of the Chebyshev2D model used to reconstruct data",
-                           int, 4, optional=True)
-    y_order = config.Field("Order of the y-component of the Chebyshev2D model used to reconstruct data",
-                           int, 4, optional=True)
     interactive = config.Field("Set to activate an interactive preview to fine tune the input parameters",
                                bool, True, optional=True)
-    section = config.Field("Set to extend the illumination function with zeroes if 'nearest neighbour' is not desirable",
-                           bool, False, optional=True)
-    def setDefaults(self):
-        self.niter = 3
-        self.grow = 0
-        self.hsigma = 3
-        self.lsigma = 3
+    regions = config.Field("Sample regions along the slit", str, None, optional=True)
 
+    # Fitting parameters
+    spat_function = config.ChoiceField("Fitting function to use for bin fitting (spatial direction)", str,
+                           allowed={"spline3": "Cubic spline",
+                                    "chebyshev": "Chebyshev polynomial",
+                                    "legendre": "Legendre polynomial",
+                                    "spline1": "Linear spline"},
+                           default="spline3", optional=False)
+    spat_order = config.Field("Order of the bin fitting function",
+                                int, 20, optional=True)
+    disp_function = config.ChoiceField("Fitting function to use for row fitting (dispersion direction)", str,
+                           allowed={"spline3": "Cubic spline",
+                                    "chebyshev": "Chebyshev polynomial",
+                                    "polynomial": "Least squares polynomial",
+                                    "legendre": "Legendre polynomial",
+                                    "spline1": "Linear spline"},
+                           default="spline1", optional=False)
+    disp_order = config.Field("Order of the row fitting function",
+                                int, 7, optional=True)
+    hsigma = config.RangeField("High rejection threshold (sigma) of the bin fit",
+                               float, 3., min=0)
+    lsigma = config.RangeField("Low rejection threshold (sigma) of the bin fit",
+                               float, 3., min=0)
+    niter = config.RangeField("Maximum number of iterations",
+                              int, 3, min = 0, optional=True)
+    grow = config.RangeField("Growth radius for rejected pixels of the bin fit",
+                             float, 0, min=0, optional=True)
+
+    border = config.Field("Size of the border added to the reconstructed slit illumination image",
+                          int, 2, optional=True)
 
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)

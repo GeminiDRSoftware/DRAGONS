@@ -10,6 +10,8 @@ from itertools import groupby
 
 import bokeh.models as bm
 
+import re
+
 from astropy.stats import sigma_clip
 
 from gempy.library.config import RangeField
@@ -69,67 +71,118 @@ class GMOSLongslit():
                          "'GMOSClassicLongslit' or 'GMOSNSLongslit' instead.")
 
 class CustomFit1DPanel(fit1d.Fit1DPanel):
-    def __init__(self, *args, extra_reconstruct_points=None, **kw):
-        self.reconstruct = extra_reconstruct_points
-        self.norm_data = bm.ColumnDataSource(data={})
-        self.update_norm_data()
+    """
+    Specialization of Fit1DPanel to change the figure building method,
+    allowing to overlay additional data over the main plot.
+    """
+    def __init__(self, *args, reconstruct_overlay_points=None, **kw):
+        """
+        reconstruct_overlay_points: callable
+            A function that will provide an updated overlay dataset
+            whenever the view is reset.
+        """
+        self.reconstruct = reconstruct_overlay_points
+        self.segments_data = bm.ColumnDataSource(data={})
+        self.overlay_data = bm.ColumnDataSource(data={})
+        self._update_overlay_data()
 
-        super().__init__(*args, **kw)
+        super().__init__(show_rejection_panel=False, *args, **kw)
+        if 'function' in self.visualizer.ui_params.fields:
+            def fn_select_change(attr, old, new):
+                self._update_segment_data()
 
-    def update_norm_data(self):
-         self.norm_data.data = self.reconstruct()
+            self.fitting_parameters_ui.function.on_change('value', fn_select_change)
+
+    def _update_overlay_data(self):
+        """
+        Internal function to update the overlay data since it's done
+        at several places.
+        """
+        self.overlay_data.data = self.reconstruct()
+
+    def _update_segment_data(self):
+        fitted_data_x = self.model.data.data['x']
+        first_fitted = (fitted_data_x[0], self.model.evaluate(fitted_data_x[0]))
+        last_fitted = (fitted_data_x[-1], self.model.evaluate(fitted_data_x[-1]))
+        overlay_data_x = self.overlay_data.data['x']
+        left_bound = overlay_data_x.min()
+        right_bound = overlay_data_x.max()
+
+        self.segments_data.data = {
+            'x0': [left_bound,      last_fitted[0]],
+            'y0': [first_fitted[1], last_fitted[1]],
+            'x1': [first_fitted[0], right_bound],
+            'y1': [first_fitted[1], last_fitted[1]]
+        }
 
     def build_figures(self, *args, **kw):
-        kw["figure_building_fn"] = self.overlay_orig_data
+        """
+        Overrides the parents' method in order to pass an alternative
+        figure plotting function.
+        """
+        kw["figure_building_fn"] = self._overlay_orig_data
         return super().build_figures(*args, **kw)
 
-    def overlay_orig_data(self, *args, **kw):
+    def _overlay_orig_data(self, *args, **kw):
+        """
+        Call fit1d_figure to produce the main and supplemental figures,
+        and overlay additional data.
+
+        Returns the same data as `fit1d.fid1d_figure`
+        """
         p_main, p_supp = fit1d.fit1d_figure(*args, **kw)
 
         p_main.scatter(
-            x='x', y='y', source=self.norm_data,
-            size=5, legend_label = 'image data',
-            color="blue", alpha=0.25, level = "underlay"
+            x='x', y='y', source=self.overlay_data,
+            size=5, legend_label = 'normalized image data',
+            color="blue", alpha=0.1, level = "underlay"
         )
+
+        # This is needed to plot how the data stretching beyond the fitting
+        # points is set to constant values (same y as first/last center bins)
+        self._update_segment_data()
+        p_main.segment(source=self.segments_data,
+                       color="crimson", line_width=3)
         return p_main, p_supp
 
-    def reset_view(self):
+    def reset_view(self, clip_y_range=True):
         """
         This calculates the x and y ranges for the figure with some custom padding.
 
-        This is used when we initially build the figure, but also as a listener for
+        This is used when initially building the figure, but also as a listener for
         whenever the data changes.
+
+        clip_y_range: bool
+            Sigma clip the y range
         """
         if not hasattr(self, 'p_main') or self.p_main is None:
             return
 
-        self.update_norm_data()
+        self._update_overlay_data()
+        self._update_segment_data()
 
-        x_range = None
-        # y_range = None
         try:
             xdata = self.model.data.data[self.xpoint]
-            nxdata = self.norm_data.data['x']
+            overlay_xdata = self.overlay_data.data['x']
             ydata = self.model.data.data[self.ypoint]
-            nydata = self.norm_data.data['y']
+            overlay_ydata = self.overlay_data.data['y']
         except (AttributeError, KeyError):
             pass
         else:
-            x_min, x_max = min(min(xdata), min(nxdata)), max(max(xdata), max(nxdata))
+            x_min, x_max = min(min(xdata), min(overlay_xdata)), max(max(xdata), max(overlay_xdata))
             if x_min != x_max:
                 x_pad = (x_max - x_min) * 0.1
                 self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
-        #    y_min, y_max = min(min(ydata), min(nydata)), max(max(ydata), max(nydata))
-        #    if y_min != y_max:
-        #        y_pad = (y_max - y_min) * 0.1
-        #        self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
-        if x_range is not None:
-            self.p_main.x_range = x_range
-        #if y_range is not None:
-        self.p_main.y_range.update(start=0, end=1.5)
-           # self.p_main.y_range = y_range
 
+            if clip_y_range:
+                clipped_data = sigma_clip(overlay_ydata, sigma=5)
+            else:
+                clipped_data = overlay_ydata
+            y_min, y_max = min(min(ydata), clipped_data.min()), max(max(ydata), clipped_data.max())
 
+            if y_min != y_max:
+                y_pad = (y_max - y_min) * 0.1
+                self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
 
 @parameter_override
 @capture_provenance
@@ -309,10 +362,10 @@ class GMOSClassicLongslit(GMOSSpect):
         """
         Makes the processed Slit Illumination Function by binning a 2D
         spectrum along the dispersion direction, fitting a smooth function
-        for each bin, fitting a smooth 2D model, and reconstructing the 2D
-        array using this last model.
+        for each bin, then using mean bin values at bin centers to fit
+        each row along spatial direction.
 
-        Its implementation based on the IRAF's `noao.twodspec.longslit.illumination`
+        The implementation is based on the IRAF's `noao.twodspec.longslit.illumination`
         task following the algorithm described in [Valdes, 1968].
 
         It expects an input calibration image to be an a dispersed image of the
@@ -326,50 +379,47 @@ class GMOSClassicLongslit(GMOSSpect):
         adinputs : list
             List of AstroData objects containing the dispersed image of the
             slit of a source free of illumination problems. The data needs to
-            have been overscan and bias corrected and is expected to have a
+            have been overscan and bias corrected and it is expected to have a
             Data Quality mask.
-        bins : {None, str}, optional
-            Comma-separated list of pixel coordinate pairs defining the dispersion
-            bins to be used for the slit profile fitting. If None, then the dispersion
-            bins will be determined by the nbins parameter.
-        nbins : {None, int}, optional
-            Total number of bins across the dispersion axis if bins are not specified.
-            If None, the number of bins will match the number of extensions on each
-            input AstroData object. It it is an int, it will create N bins
-            with the same size.
+        bins : {None, str, int}, optional
+            Either an integer number of equally-spaced bins covering the whole dispersion
+            range, or a comma-separated list of pixel coordinate pairs defining the
+            dispersion bins to be used for the slit profile fitting. If None, the number
+            of bins is max of 12 or the number of extensions.
+        regions : str or None
+            Sample region(s) selected along the spatial axis to use for fitting each dispersion
+            bin, as a comma-separated list of pixel ranges. Any pixels outside these
+            ranges will be ignored when fitting each dispersion bin.
+        spat_function : str
+            Type of function to fit along the the spatial axis (for dispersion bin fitting).
+             Default value is "spline3"
+        spat_order : int
+            Order of the bin fitting function. Default value is 20.
+        lsigma : float/None
+            Lower rejection limit in standard deviations of the bin fit. Default value is 3.
+        hsigma : float/None
+            Upper rejection limit in standard deviations of the bin fit. Default value is 3.
+        niter : int
+            Maximum number of rejection iterations of the bin fit. Default value is 3.
+        grow : float/False
+            Growth radius for rejected pixels of the bin fit. Default value is 0.
+        disp_function: str
+            Type of function to fit along the the dispersion axis (for row fitting). Default
+            value is "spline3".
+        disp_order: int
+            Order of the fitting function in dispersion direction. Default value is 6.
+        interactive : bool
+            Set to True in order to activate an interactive preview to fine tune the
+            input parameters
         border : int, optional
             Border size that is added on every edge of the slit illumination
-            image before cutting it down to the input AstroData frame.
-        order : int
-            Order of the spline fit to be performed
-        x_order : int, optional
-            Order of the x-component in the Chebyshev2D model used to
-            reconstruct the 2D data from the binned data.
-        y_order : int, optional
-            Order of the y-component in the Chebyshev2D model used to
-            reconstruct the 2D data from the binned data.
-        function : str
-            type of function to fit (splineN or polynomial types)
-        lsigma : float/None
-            lower rejection limit in standard deviations
-        hsigma : float/None
-            upper rejection limit in standard deviations
-        niter : int
-            maximum number of rejection iterations
-        grow : float/False
-            growth radius for rejected pixels
-        threshold : float
-            threshold (relative to peak) for flagging unilluminated pixels
-        interactive : bool
-            set to activate an interactive preview to fine tune the input parameters
-        section : bool
-            if True, the illumination function is set to 0 beyond the first and last
-            bin boundaries, otherwise boundaries will be extended using "nearest neighbour".
+            image before cutting it down to the input AstroData frame. Default value is 2.
 
         Return
         ------
-        List of AstroData : containing an AstroData with the Slit Illumination
-            Response Function for each of the input object.
+        List of AstroData :
+            Contains an AstroData with the Slit Illumination Response Function for each
+            of the input object.
 
         References
         ----------
@@ -381,20 +431,58 @@ class GMOSClassicLongslit(GMOSSpect):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
+        def generate_ui_parameters(config, prefix, extras=None, reinit_params=None):
+            """
+            Generate an `UIParameter` instance out of a :class:`gempy.library.config.Config`
+            object passing additional copies of its fields as `extra`. These fields are
+            identified because their names start with `prefix`
+
+            The need for this arises from the fact that the interactive fitting code
+            requires certain fields to be present in the configuration, but `makeSlitIllum`
+            lacks "order" and "function", as it defines two of them instead, for different
+            steps.
+
+            As the `Config` objects can't be modified with extra parameters, they are "aliased"
+            in the `UIParameter` instance instead.
+
+            Parameters
+            ----------
+            config: gempy.library.config.Config
+                The config to be copied
+            prefix: str
+                The prefix for the fields in `config` that map into the missing ones
+                for a standard 1D fitting configuration.
+            extras: dict/None
+                An optional dictionary of names to new Fields to track
+            reinit_params: list/None
+                List of names of configuration fields to show in the reinit panel
+
+            Returns
+            -------
+            A `geminidr.interactive.interactive.UIParameter` instance
+            """
+            extras = {} if extras is None else extras.copy()
+            for name in config.keys():
+                if name.startswith(prefix):
+                    extras[name[len(prefix):]] = config._fields[name]
+
+            return UIParameters(config, extras=extras, reinit_params=reinit_params)
+
         suffix = params["suffix"]
         bins = params["bins"]
         border = params["border"]
         debug_plot = params["debug_plot"]
-        cheb2d_x_order = params["x_order"]
-        cheb2d_y_order = params["y_order"]
         interactive_reduce = params["interactive"]
-        section = params["section"]
-
+        disp_order = params["disp_order"]
+        disp_function = params["disp_function"]
+        spat_params = params.copy()
+        spat_params.update({
+            'order': spat_params['spat_order'],
+            'function': spat_params['spat_function']
+        })
         ad_outputs = []
 
         for ad in adinputs:
-            all_fp_init = []
-
             if len(ad) > 1 and "mosaic" not in ad[0].wcs.available_frames:
 
                 log.info('Add "mosaic" gWCS frame to input data')
@@ -406,9 +494,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 log.info("Temporarily mosaicking multi-extension file")
                 mosaicked_ad = transform.resample_from_wcs(
                     ad, "mosaic", attributes=None, order=1, process_objcat=False)
-
             else:
-
                 log.info('Input data already has one extension and has a '
                          '"mosaic" frame.')
 
@@ -429,19 +515,20 @@ class GMOSClassicLongslit(GMOSSpect):
             std = np.sqrt(variance)  # Easier to work with
 
             log.info("Creating bins for data and variance")
+
             height = data.shape[0]
             width = data.shape[1]
-
             if bins is None:
                 nbins = max(len(ad), 12)
                 bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
-                bin_list = zip(bin_limits[:-1], bin_limits[1:])
+                bin_list = list(zip(bin_limits[:-1], bin_limits[1:]))
             elif isinstance(bins, int):
                 nbins = bins
                 bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
-                bin_list = zip(bin_limits[:-1], bin_limits[1:])
+                bin_list = list(zip(bin_limits[:-1], bin_limits[1:]))
             else:
-                bin_list = at.parse_user_bins(bins, height)
+                bin_list = _parse_user_bins(bins, height)
+                bin_limits = np.array(sum(bin_list, ()))
                 nbins = len(bin_list)
 
             if ad.filename:
@@ -449,6 +536,12 @@ class GMOSClassicLongslit(GMOSSpect):
             else:
                 filename_info = ''
 
+            bin_parameters = {
+                'nbins': nbins,
+                'bin_list': bin_list,
+                'height': height
+            }
+            # Interactive interface for bin inspection and editing
             if interactive_reduce:
                 model = {
                     'x': np.arange(height),
@@ -456,234 +549,170 @@ class GMOSClassicLongslit(GMOSSpect):
                     'regions': [(left, right) for (left, right) in
                            bin_list]
                 }
-
-                visualizer = bineditor.BinVisualizer(model, domain=[0, height-1],
+                visualizer = bineditor.BinVisualizer(model, domain=[0, height],
                                                      title='Set Dispersion Bins',
-                                                     primitive_name='makeSlitIllum')
+                                                     primitive_name='makeSlitIllum',
+                                                     central_plot=False,
+                                                     bin_parameters=bin_parameters,
+                                                     filename_info=filename_info)
                 geminidr.interactive.server.interactive_fitter(visualizer)
-                new_bin_list = at.parse_user_regions(visualizer.results())
-                print(new_bin_list)
-                nbins = len(new_bin_list)
-                bin_list = new_bin_list
+                bin_list = _parse_user_bins(''.join(visualizer.results().split()))
+                nbins = len(bin_list)
 
             cols_val = np.arange(-border, height+border)
             rows_val = np.arange(-border, width+border)
-
-            binned_shape = (len(cols_val), len(rows_val))
-            binned_data = np.zeros(binned_shape)
-            binned_std = np.ones(binned_shape)
-
+            binned_shape = (nbins, len(rows_val))
+            bin_data_avg = np.empty((nbins, data.shape[1]))
+            bin_std_avg = np.empty((nbins, data.shape[1]))
+            bin_data_fits = np.zeros(binned_shape)
+            bin_std_fits = np.zeros(binned_shape)
+            for i, bin in enumerate(bin_list):
+                bin_data_avg[i] = np.ma.mean(data[bin[0]:bin[1]], axis=0)
+                bin_std_avg[i] = np.ma.mean(std[bin[0]:bin[1]], axis=0)
+            spat_fitting_pars = []
             for _ in range(nbins):
-                all_fp_init.append(fit_1D.translate_params(params))
+                spat_fitting_pars.append(fit_1D.translate_params(spat_params))
+            spat_fit_points = np.arange(width)
 
             log.info("Smooth binned data and variance, and normalize them by "
                      "smoothed central value")
 
-            bin_data_fits = np.zeros([nbins,len(rows_val)])
-            bin_avg_data = np.zeros([nbins,width])
-            bin_data_fits_unnorm = np.zeros([nbins,len(rows_val)])
+            config = self.params[self.myself()]
 
-            # Interactive or not
+            # Interactive interface for fitting dispersion bins
             if interactive_reduce:
                 all_pixels = []
                 all_domains = []
                 for _ in range(nbins):
-                    pixels = np.arange(width)
-                    all_pixels.append(pixels)
+                    all_pixels.append(spat_fit_points)
                     all_domains.append([-border, width + border])
 
-                config = self.params[self.myself()]
-                config.update(**params)
-
                 data_with_weights = {"x": [], "y": [], "weights": []}
-                for rppixels, bin in zip(all_pixels, bin_list):
-                    avg_data = np.ma.mean(data[bin[0]:bin[1]], axis=0)
-                    avg_std = np.ma.mean(std[bin[0]:bin[1]], axis=0)
+                for rppixels, avg_data, avg_std in zip(all_pixels, bin_data_avg, bin_std_avg):
                     data_with_weights["x"].append(rppixels)
                     data_with_weights["y"].append(avg_data)
                     data_with_weights["weights"].append(at.divide0(1., avg_std))
-                uiparams = UIParameters(config)
-                visualizer = fit1d.Fit1DVisualizer(data_with_weights, all_fp_init,
-                                                   tab_name_fmt="bin {}",
-                                                   xlabel='x (pixels)', ylabel='counts',
+
+                uiparams = generate_ui_parameters(config, prefix="spat_")
+                x_label = "Rows" if dispaxis == 1 else "Columns"
+                first_label = 'cols' if dispaxis == 1 else 'rows'
+                tab_names = [f'{start}:{end}' for (start, end) in bin_list]
+                tab_names[0] = f"Mean of {first_label} {tab_names[0]}"
+
+                visualizer = fit1d.Fit1DVisualizer(data_with_weights, spat_fitting_pars,
+                                                   tab_names=tab_names,
+                                                   xlabel=x_label, ylabel='Counts',
                                                    domains=all_domains,
                                                    title="Make Slit Illumination Function",
                                                    primitive_name="makeSlitIllum",
                                                    filename_info=filename_info,
                                                    enable_user_masking=True,
                                                    enable_regions=True,
-                                                   help_text=NORMALIZE_FLAT_HELP_TEXT,
+                                                  # help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=True,
                                                    modal_message="Recalculating",
                                                    ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
-                log.stdinfo('Interactive Parameters retrieved, performing slit function modeling...')
-                models = visualizer.results()
-
-                for bin_idx, (bin_model, bin) in enumerate(zip(models, bin_list)):
-                    bin_data_fit = bin_model.evaluate(rows_val)
-                    slit_central_value = bin_data_fit[(len(rows_val)) // 2]
-                    binned_data[bin[0]:bin[1]] = bin_data_fit / slit_central_value
-                    bin_data_fits[bin_idx,:] = bin_data_fit / slit_central_value
+                fits = visualizer.results()
+                spat_fitting_pars = [fit.extract_params() for fit in fits]
+                for bin_idx, bin_fit in enumerate(fits):
+                    bin_data_fit = bin_fit.evaluate(rows_val)
+                    bin_data_fits[bin_idx,:] = bin_data_fit
 
             else:
-                for bin_idx, (bin_params, bin) in enumerate(zip(all_fp_init, bin_list)):
-                    for key, value in bin_params.items():
-                        print(f"  {key}: {value}")
-                    bin_data_avg = np.ma.mean(data[bin[0]:bin[1]], axis=0)
+                for bin_idx, (fit_params, avg_data, avg_std) in \
+                        enumerate(zip(spat_fitting_pars, bin_data_avg, bin_std_avg)):
+                    bin_data_fit = fit_1D(avg_data,
+                                          points=spat_fit_points,
+                                          weights=at.divide0(1., avg_std),
+                                          domain=(-border, width+border),
+                                          **fit_params, axis=0).evaluate(rows_val)
+                    bin_data_fits[bin_idx,:] = bin_data_fit
 
-                    bin_std_avg = np.ma.mean(std[bin[0]:bin[1]], axis=0)
-                    bin_data_weights = at.divide0(1., bin_std_avg)
-
-                    points = np.arange(0, width)
-                    print(bin_params)
-                    bin_data_fit = fit_1D(bin_data_avg,
-                                          points=points,
-                                          weights=bin_data_weights,
-                                          # domain=(-border, width+border),
-                                          **bin_params, axis=0).evaluate(rows_val)
-
-                    bin_std_fit = fit_1D(bin_std_avg,
-                                         points=points,
-                                         **bin_params,
-                                         # domain=(-border, width+border),
-                                         axis=0).evaluate(rows_val)
-
-                    slit_central_value = bin_data_fit[(width+2*border) // 2]
-
-                    binned_data[bin[0]:bin[1]] = bin_data_fit / slit_central_value
-                    binned_std[bin[0]:bin[1]] = bin_std_fit / slit_central_value
+            for bin_idx, (fit_params, avg_std, bin_data_fit) in \
+                    enumerate(zip(spat_fitting_pars, bin_std_avg, bin_data_fits)):
+                bin_std_fit = fit_1D(avg_std,
+                                     points=spat_fit_points,
+                                     **fit_params,
+                                     axis=0).evaluate(rows_val)
+                slit_central_value = bin_data_fit[(width+2*border) // 2]
+                bin_data_fits[bin_idx,:] = bin_data_fit / slit_central_value
+                bin_std_fits[bin_idx,:] = bin_std_fit / slit_central_value
 
             log.info("Reconstruct 2D mosaicked data")
+
             bin_center = np.array([0.5 * (bin_start + bin_end) for (bin_start, bin_end) in bin_list],
                                   dtype=int)
-
-            # # perform boundary extension using boundary projection
-            # # following IRAF's example
-            # # add columns by extending rows (case poly5)
-            #
-            # # add pseudo bin centers at the boundaries
-            # # first 2 bin centers
-            # extra_bins_f = np.array([cols_val[0],(bin_center[0] - cols_val[0])//2])
-            # # last 3 bin centers
-            # spacing = (cols_val[-1] - bin_center[-1])//3
-            # extra_bins_l = np.array([bin_center[-1]+spacing, bin_center[-1]+2*spacing, cols_val[-1]])
-            # ext_bin_data_fits = np.r_[np.zeros([2,len(rows_val)]),bin_data_fits]
-            # ext_bin_data_fits = np.r_[ext_bin_data_fits, np.zeros([3,len(rows_val)])]
-            # # the extended bin center array with pseudo bins added to both ends
-            # ext_bin_center = np.concatenate((extra_bins_f,bin_center))
-            # ext_bin_center = np.concatenate((ext_bin_center, extra_bins_l))
-            # for c, col in enumerate(ext_bin_data_fits.T):
-            #     ext_bin_data_fits[0,c] = 2 * col[2] - col[4]
-            #     ext_bin_data_fits[1,c] = 2 * col[2] - col[3]
-            #     ext_bin_data_fits[-3,c] = 2 * col[-4] - col[-5]
-            #     ext_bin_data_fits[-2,c] = 2 * col[-4] - col[-6]
-            #     ext_bin_data_fits[-1,c] = 2 * col[-4] - col[-7]
-
-            # boundary extension with "nearest neighbour"
-            bdf_rows,  bdf_cols = bin_data_fits.shape
-            ext_bin_data_fits = np.empty((bdf_rows + 2, bdf_cols))
-            ext_bin_data_fits[1:-1] = bin_data_fits
-            ext_bin_data_fits[0] = ext_bin_data_fits[1]
-            ext_bin_data_fits[-1] = ext_bin_data_fits[-2]
-
-            ext_bin_center = np.pad(bin_center, (1,))
-            if not section:
-                ext_bin_center[0] = -border
-                ext_bin_center[-1] = (len(cols_val) - 1) + border
-            else:
-                ext_bin_center[0] = bin_list[0][0]
-                ext_bin_center[-1] = bin_list[-1][-1]
-
-
-            normalized_data = np.zeros(binned_shape)
-
+            slit_response_data = np.zeros((len(cols_val), len(rows_val)))
+            slit_response_std = np.zeros((len(cols_val), len(rows_val)))
+            normalized_data = np.zeros(data.shape)
             for r, row in enumerate(data):
-                normalized_data[r+border, border:-border] = data[r, :] / data[r, data.shape[1] // 2]
+                normalized_data[r,:] = data[r, :] / data[r, data.shape[1] // 2]
 
-           # TODO:  If there is only one slit profile then copy the profile to each column
+            disp_fitting_pars = {"order": disp_order, "function": disp_function,
+                                    "regions": None, "niter": 0, "sigma_upper": 0, "sigma_lower": 0}
+            # TODO:  If there is only one slit profile copy the profile to each column and skip the last
+            #  interactive step
 
-            print(f"bin_center_shape = {bin_center.shape}")
-
-            slit_response_data = np.zeros(binned_shape)
-            #!!!! change
-            slit_response_std = np.ones(binned_shape)
-            print("Geting the slit response data")
-
-            if interactive_reduce:
-                # TODO: Document this
-
+            # Interactive interface for fitting image rows at bin center locations. Image data, normalized
+            # to the center of the slit, gets displayed along with fitting points and fitting curve
+            if interactive_reduce and nbins > 1:
                 reinit_params = ["row", ]
-                fitting_pars = [{"order": 5, "function": "polynomial", "regions": None,
-                                    "niter": 0, "grow": 0, "sigma_upper": 0, "sigma_lower": 0,
-                                    "sigma": False}]
+
                 extras = {"row": RangeField("Row of data to operate on", int, int(len(rows_val)/2), min=1, max=len(rows_val))}
-                uiparams = UIParameters(config, reinit_params=reinit_params, extras=extras)
+                uiparams = generate_ui_parameters(config, prefix="disp_", reinit_params=reinit_params, extras=extras)
 
                 def reconstruct_points(ui_params):
                     r = max(0, ui_params.values['row'] - 1)
                     ret_data = {
-                        "x": [ext_bin_center],
-                        "y": [ext_bin_data_fits[:, r]],
-                        "weights": [np.ones(ext_bin_center.shape)]
+                        "x": [bin_center],
+                        "y": [bin_data_fits[:, r]],
                     }
                     return ret_data
 
-                def normalized_data_reconstruct(ui_params=uiparams):
+                def reconstruct_overlay_points(ui_params=uiparams):
                     r = max(0, ui_params.values['row'] - 1)
                     ret_data = {
                         "x": np.arange(0, normalized_data.shape[0]),
                         "y": normalized_data[:,r]
                     }
                     return ret_data
-
-                visualizer = fit1d.Fit1DVisualizer(reconstruct_points, fitting_pars,
-                                                   tab_name_fmt="bin {}",
-                                                   xlabel='Line (pixels)', ylabel='counts',
-                                                   domains=[(cols_val[0], cols_val[-1])],
+                tab_name = "rows" if dispaxis == 1 else "columns"
+                visualizer = fit1d.Fit1DVisualizer(reconstruct_points, [disp_fitting_pars],
+                                                   tab_name_fmt=f"Fitting {tab_name} at bin centers",
+                                                   xlabel='Column (pixels)', ylabel='Normalized signal',
+                                                   domains=[(bin_center[0], bin_center[-1])],
                                                    title="Make Slit Illumination Function",
                                                    primitive_name="makeSlitIllum",
                                                    filename_info=filename_info,
                                                    enable_user_masking=False,
                                                    enable_regions=False,
-                                                   help_text=NORMALIZE_FLAT_HELP_TEXT,
+                                                #  help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=True,
                                                    modal_message="Recalculating",
                                                    ui_params=uiparams,
                                                    panel_class=CustomFit1DPanel,
-                                                   extra_reconstruct_points=normalized_data_reconstruct)
+                                                   reconstruct_overlay_points=reconstruct_overlay_points)
                 geminidr.interactive.server.interactive_fitter(visualizer)
-                models = visualizer.results()
-                print(f"model length = {len(models)}")
-                # all_bin_models = [fit_1D.model for fit_1D in models]
-                # for k, model in enumerate(models):
-                #     slit_response_data[:, k] = model.evaluate(cols_val)
 
-                weights = np.ones(ext_bin_center.shape)
+                fits = visualizer.results()
+                disp_fitting_pars = fits[0].extract_params()
 
-                fit1d_params = models[0].extract_params()
-                bin_centers = np.tile(bin_center,(binned_data.shape[1],1))
-                for k, row in enumerate(ext_bin_data_fits.T):
-                    slit_response_data[:,k] = fit_1D(row, points = ext_bin_center, weights=weights, **fit1d_params,
-                                         axis=0, domain =(cols_val[0], cols_val[-1])).evaluate(cols_val)
-                # slit_response_data = fit_1D(binned_data[bin_center], points = bin_centers, weights=weights, **fit1d_params,
-                #                          axis=1, domain =(cols_val[0], cols_val[-1]),
-                #                         regions = False).evaluate(cols_val)
-                print(f"row0 = {slit_response_data[1000:1030, 0]}")
-                print(f"row10={slit_response_data[1000:1030, 10]}")
-                print(f"row200={slit_response_data[1000:1030, 200]}")
-            else:
-                for k, row in enumerate(binned_data.T):
-                    slit_response_data[:, k] = fit_1D(row[bin_center],
-                                          points=bin_center,
-                                          function = 'spline3',
-                                          order = 5,
-                                          sigma_lower = 0,
-                                          sigma_upper = 0,
-                                          niter = 0,
-                                          grow = 0,
-                                          axis=0).evaluate(cols_val)
-            print("Done")
+            if nbins > 1:
+                for k, (data_row, std_row) in enumerate(zip(bin_data_fits.T, bin_std_fits.T)):
+                    slit_response_data[:, k] = fit_1D(data_row, points=bin_center, **disp_fitting_pars, axis=0,
+                                                      domain=(cols_val[0], cols_val[-1])).evaluate(cols_val)
+                    slit_response_std[:,k] = fit_1D(std_row, points=bin_center, **disp_fitting_pars, axis=0,
+                                                    domain=(cols_val[0], cols_val[-1])).evaluate(cols_val)
+
+                # Set extrapolated row ends (before the first bin center and after the last one) to
+                # the constant value of the last fitted point
+                slit_response_data[0:bin_center[0],:] = slit_response_data[bin_center[0],:]
+                slit_response_data[bin_center[-1]:-1,:] = slit_response_data[bin_center[-1],:]
+            # If there is only one bin, copy the slit profile to each column
+            elif nbins == 1:
+                slit_response_data[:] = bin_data_fits
+                slit_response_std[:] = bin_std_fits
 
             slit_response_var = slit_response_std ** 2
             slit_response_mask = np.pad(mask, border, mode='edge')
@@ -762,27 +791,28 @@ class GMOSClassicLongslit(GMOSSpect):
                 cax1 = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(im1, cax=cax1)
 
-                # Display non-smoothed bins ---
-                ax2 = fig.add_subplot(gs[0, 1])
-                im2 = ax2.imshow(binned_data, cmap=palette, origin='lower')
-
-                ax2.set_title("Binned, smoothed\n and normalized data ", fontsize=10)
-                ax2.set_xlim(0, data.shape[1])
-                ax2.set_xticks([])
-                ax2.set_ylim(0, data.shape[0])
-                ax2.set_yticks(bin_center)
-                ax2.tick_params(axis=u'both', which=u'both', length=0)
-
-                ax2.set_yticklabels(
-                    ["Bin {}".format(i) for i in range(len(bin_center))],
-                    fontsize=6)
-
-                _ = [ax2.spines[s].set_visible(False) for s in ax2.spines]
-                _ = [ax2.axhline(b, c='w', lw=0.5) for b in bin_limits]
-
-                divider = make_axes_locatable(ax2)
-                cax2 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im2, cax=cax2)
+                # # Doesn't work on custom bins
+                # # Display non-smoothed bins ---
+                # ax2 = fig.add_subplot(gs[0, 1])
+                # im2 = ax2.imshow(binned_data, cmap=palette, origin='lower')
+                #
+                # ax2.set_title("Binned, smoothed\n and normalized data ", fontsize=10)
+                # ax2.set_xlim(0, data.shape[1])
+                # ax2.set_xticks([])
+                # ax2.set_ylim(0, data.shape[0])
+                # ax2.set_yticks(bin_center)
+                # ax2.tick_params(axis=u'both', which=u'both', length=0)
+                #
+                # ax2.set_yticklabels(
+                #     ["Bin {}".format(i) for i in range(len(bin_center))],
+                #     fontsize=6)
+                #
+                # _ = [ax2.spines[s].set_visible(False) for s in ax2.spines]
+                # _ = [ax2.axhline(b, c='w', lw=0.5) for b in bin_limits]
+                #
+                # divider = make_axes_locatable(ax2)
+                # cax2 = divider.append_axes("right", size="5%", pad=0.05)
+                # plt.colorbar(im2, cax=cax2)
 
                 # Display reconstructed slit response ---
                 vmin = slit_response_data.min()
@@ -1043,7 +1073,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x (pixels)', ylabel='counts',
-                                                  # domains=all_domains,
+                                                   domains=all_domains,
                                                    title="Normalize Flat",
                                                    primitive_name="normalizeFlat",
                                                    filename_info=filename_info,
@@ -1150,11 +1180,11 @@ class GMOSClassicLongslit(GMOSSpect):
         ad_outputs = []
         for ad, slit_illum_ad in zip(*gt.make_lists(adinputs, slit_illum_list, force_ad=True)):
 
-            if ad.phu.get(timestamp_key):
-                log.warning(
-                    "No changes will be made to {}, since it has "
-                    "already been processed by flatCorrect".format(ad.filename))
-                continue
+            # if ad.phu.get(timestamp_key):
+            #     log.warning(
+            #         "No changes will be made to {}, since it has "
+            #         "already been processed by flatCorrect".format(ad.filename))
+            #     continue
 
             if slit_illum_ad is None:
                 if self.mode in ['sq'] or do_cal == 'force':
@@ -1308,6 +1338,69 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
         ad_out.append(temp_ad[0])
 
     return ad_out
+
+def _parse_user_bins(bins, frame_size:int=None):
+    """
+    Parse a string of bin ranges containing a comma-separated list of colon- or hyphen-separated
+    pixel sections into a list of Python tuples. Arrange the bins in ascending order, remove the ones outside
+    the frame pixel range, merge the overlapping bins.
+
+    Parameters
+    ----------
+    bins: str
+        Comma-separated list of colon- or hyphen-separated pixel ranges
+    frame_size: int
+        The size of the frame dimension along which the bins are selected.
+
+    Returns
+    -------
+    A sorted list of 2-value tuples lying within the specified frame range, with no overlapping.
+    """
+    bin_list = []
+    for bin in re.split(",|;| ", bins.strip("[]()'")):
+        bin = bin.strip("()[]' ")
+        bin_limits = re.split(":|-", bin)
+        if not len(bin_limits) == 2:
+            raise TypeError("Bin limits must be specified as comma-separated list "
+                            "of colon- or hyphen-separated pixel sections, e.g. 1:300,301:500")
+        int_bin_limits = []
+        for bin_limit in bin_limits:
+            try:
+                int_bin_limit = int(bin_limit)
+            except ValueError:
+                raise TypeError("Bin ranges must be integer")
+            if frame_size is not None:
+                int_bin_limits.append(min(int_bin_limit, frame_size))
+            else:
+                int_bin_limits.append(int_bin_limit)
+        int_bin_limits.sort()
+
+        # trim off the bins that are outside the frame pixel range
+        if frame_size is not None and int_bin_limits[0] == frame_size:
+            break
+
+        bin_list.append(tuple(int_bin_limits))
+    bin_list = sorted(bin_list, key=lambda tup: tup[0])
+
+    # merge overlapping bins
+    merged_list = [bin_list[0]]
+    for bin in bin_list[1:]:
+        last = merged_list[-1]
+        if last[1] > bin[0]:
+            print("Merging the overlapping bins")
+            merged_list[-1] = (last[0], max(last[1], bin[1]))
+        elif last[1] == bin[0]:
+            merged_list.append((bin[0]+1, bin[1]))
+        else:
+            merged_list.append(bin)
+
+    adjusted_bin_list = []
+    for i, bin in enumerate(merged_list):
+        if i == 0 and bin[0] == 0:
+            adjusted_bin_list.append(bin)
+        else:
+            adjusted_bin_list.append((bin[0]-1, bin[1]))
+    return adjusted_bin_list
 
 
 @parameter_override

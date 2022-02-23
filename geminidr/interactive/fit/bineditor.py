@@ -1,122 +1,40 @@
-import math
-from functools import partial, cmp_to_key
-
 import numpy as np
-from bokeh.io import curdoc
+
 from bokeh.layouts import column, row
-from bokeh.models import (Button, CheckboxGroup, ColumnDataSource,
-                          Div, LabelSet, NumeralTickFormatter, Select, Slider,
-                          Spacer, Span, Spinner, TextInput, Whisker)
+from bokeh.models import (Button, Div, Spacer, NumericInput)
 from bokeh import models as bm
 from bokeh.plotting import figure
-from bokeh import events
 
-from geminidr.interactive import server
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.fit1d import Fit1DRegionListener, InteractiveModel1D
-from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import (PrimitiveVisualizer, RegionEditor,
                                               GIRegionModel, connect_region_model)
-from geminidr.interactive.interactive_config import interactive_conf
-from geminidr.interactive.interactive_config import show_add_aperture_button
-from geminidr.interactive.server import interactive_fitter
-from gempy.library.tracing import (find_apertures, find_apertures_peaks,
-                                   get_limits, pinpoint_peaks)
+from geminidr.interactive.fit.aperture import CustomWidget
 from gempy.utils import logutils
-
-USER_MASK_NAME = 'rejected (user)'
-BAND_MASK_NAME = 'excluded'
 
 log = logutils.get_logger(__name__)
 
 DETAILED_HELP = """
-Lorem ipsum
+
+<h2>Help</h2>
+
+<p>Interface to inspect and edit dispersion bins.</p>
+<p>Allows the user to generate a number of equally-spaced bins, and to modify
+bin limits, either manually entering them, or using a point-and-click interface.</p>
 """
 
-class BinView:
-    def __init__(self, model, width=1200, height=500, xpoint='x', ypoint='y',
-                 xline='xlinspace', yline='model',
-                 xlabel="Column", ylabel="Signal",
-                 ):
-        fig = figure(plot_width=width, plot_height=height, min_width=400,
-                    title='Illumination bins', x_axis_label=xlabel, y_axis_label=ylabel,
-                    output_backend="webgl", x_range=None, y_range=None,
-                    min_border_left=80)
-        fig.height_policy = 'fixed'
-        fig.width_policy = 'fit'
-
-        data = ColumnDataSource({'x': model['x'], 'y': model['y']})
-        fig.scatter(x=xpoint, y=ypoint, source=data, size=5)
-
-        regions_tuples = [slice(start, stop) for (start, stop) in model['regions']]
-        region_model = GIRegionModel()
-        region_model.load_from_tuples(regions_tuples)
-        region_editor = RegionEditor(region_model)
-
-        connect_region_model(fig, region_model)
-
-        #  TODO: To this we'll add a Region Editor as well
-        col = column(fig, region_editor.get_widget())
-        col.sizing_mode = 'scale_width'
-        self.view = col
-
-class EditBinsVisualizer(PrimitiveVisualizer):
-    def __init__(self, model, filename_info=''):
-        """
-        Create a view for editing bins with the given
-        :class:`????`
-
-        Parameters
-        ----------
-        model : dict
-            X and Y data plus an initial list of regions
-        """
-        super().__init__(title='Edit/Set/Select Dispersion Bins',
-                         primitive_name='makeSlitIllum',
-                         filename_info=filename_info)
-        self.model = model
-        self.help_text = DETAILED_HELP
-
-    def submit_button_handler(self):
-        """
-        Submit button handler.
-
-        The parent version checks for bad/poor fits, but that's not an issue
-        here, so we just exit by disabling the submit button, which triggers
-        some callbacks.
-        """
-        self.submit_button.disabled = True
-
-    def visualize(self, doc):
-        super().visualize(doc)
-
-        for btn in (self.submit_button, self.abort_button):
-            btn.align = 'end'
-            btn.height = 35
-            btn.height_policy = "fixed"
-            btn.margin = (0, 5, -20, 5)
-            btn.width = 212
-            btn.width_policy = "fixed"
-
-        layout_ls = [row(self.abort_button, self.submit_button,
-                         align="end", css_classes=['top-row'])]
-        # Now, create columns for the plot&region editor, and controls
-        # Then append them as a row to layout_ls
-
-        bin_view = BinView(model=self.model)
-        layout_ls.append(row(bin_view.view))
-
-        layout = column(*layout_ls)
-
-        doc.add_root(layout)
+def tuples_to_slices(tuples):
+    """
+    Helping function to translate into slices a list of bin limit expressed
+    as tuples (start, end)
+    """
+    return [slice(start, end) for (start, end) in tuples]
 
 def bin_figure(width=None, height=None, xpoint='x', ypoint='y',
-                 xline='xlinspace', yline='model',
-                 xlabel=None, ylabel=None, model=None, plot_ratios=True,
-                 plot_residuals=True, enable_user_masking=True):
+                 xlabel=None, ylabel=None, model=None):
     """
-    Fairly generic function to produce bokeh objects for the main scatter/fit
-    plot and the residuals and/or ratios plot. Listeners are not added here.
+    Function to produce bokeh objects for the bin editing plot.
+    Listeners are not added here.
 
     Parameters
     ----------
@@ -126,9 +44,6 @@ def bin_figure(width=None, height=None, xpoint='x', ypoint='y',
         height of the main plot (ratios/residuals are half-height)
     xpoint, ypoint : str
         column names in model.data containing x and y data for points
-    xline, yline : str
-        column names in model.evaluation containing x and y data for line
-        representing the fit
     xlabel, ylabel : str
         label for axes of main plot
     model : InteractiveModel1D
@@ -136,17 +51,14 @@ def bin_figure(width=None, height=None, xpoint='x', ypoint='y',
 
     Returns
     -------
-    tuple : (Figure, Tabs/Figure/None)
-        the main plotting figure and the ratios/residuals plot
+    Figure
+        The plotting figure
     """
 
     tools = "pan,wheel_zoom,box_zoom,reset"
-#   TODO: Do we want any of those?
-#    if enable_user_masking:
-#        tools += ",lasso_select,box_select,tap"
 
     p_main = figure(plot_width=width, plot_height=height, min_width=400,
-                    title='Binning', x_axis_label=xlabel, y_axis_label=ylabel,
+                    title='Illumination bins', x_axis_label=xlabel, y_axis_label=ylabel,
                     tools=tools,
                     output_backend="webgl", x_range=None, y_range=None,
                     min_border_left=80)
@@ -158,18 +70,144 @@ def bin_figure(width=None, height=None, xpoint='x', ypoint='y',
 
     return p_main
 
+class NumericInputLine(CustomWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orig_value = self.value
+    def build(self):
+        self.numeric_input = NumericInput(value=self.value if self.value else 0, width=64, **self.kwargs)
+        self.numeric_input.on_change("value", self.handler)
+        return row([Div(text=self.title, align='center'),
+                    Spacer(width_policy='max'),
+                    self.numeric_input])
+
+    def reset(self):
+        self.numeric_input.value = self.orig_value
+
+class BinEditor(RegionEditor):
+    """
+    Specialized RegionEditor. Just for cosmetic changes (changes the title)
+    """
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.text_input.title = "Bin limits (i.e. 101:500,511:900,951: Press 'Enter' to apply):"
+
 class BinModel1D(InteractiveModel1D):
+    """
+    Specialized InteractiveModle1D that removes the fitting functionality, as
+    it's not needed for the bin editor.
+    """
     def perform_fit(self, *args):
+        """
+        Dummy function. Needs to be here to be compliant with the InteractiveModel1D
+        interface, but we don't want to perform any calculation.
+        """
         ...
 
     def evaluate(self, x):
+        """
+        Returns the `x` parameter itself. This model does not perform fitting evaluation.
+        """
         return x
 
+class BinResettingUI:
+    def __init__(self, vis, model, bin_parameters):
+        """
+        Class to manage the set of UI controls to generate equally-sized bins over the whole dispersion
+        range, and to reset to original values.
+
+        Parameters
+        ----------
+        vis : :class:`~geminidr.interactive.fit.bineditor.BinVisualizer`
+            The visualizer related to these inputs
+        bin_parameters: dict
+            Initial number of bins and generated regions
+        fit : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
+            The model information for doing the 1-D fit
+        """
+        self.vis = vis
+        self.model = model
+        self.original_parameters = bin_parameters
+        self.num_of_bins = self.original_parameters['nbins']
+
+        def _generate_handler(result):
+            if result:
+                generate_button.disabled = True
+                def fn():
+                    self.generate_model_regions(self.num_of_bins)
+                    generate_button.disabled = False
+                vis.do_later(fn)
+
+        self.number_bins = NumericInputLine("Number of bins", self,
+                                 mode='int', attr="num_of_bins",
+                                 placeholder="e.g. 12")
+
+        generate_button = Button(label="Generate bins", button_type='primary',
+                                      default_size=200)
+
+        vis.make_ok_cancel_dialog(generate_button,
+                                  'All bin limits will be recomputed and changes will be lost. Proceed?',
+                                  _generate_handler)
+        reset_button = bm.Button(label="Reset", align='center',
+                                 button_type='warning', width_policy='min')
+        self.reset_dialog = self.vis.make_ok_cancel_dialog(
+            reset_button, 'Reset will change all inputs for this tab back '
+            'to their original values.  Proceed?', self.reset_dialog_handler)
+
+        self.controls_column = (
+            self.number_bins.build(),
+            generate_button,
+            reset_button,
+        )
+
+    def get_bokeh_components(self):
+        """
+        Return the bokeh components to be added with all the input widgets.
+
+        Returns
+        -------
+        list : :class:`~bokeh.models.layout.LayoutDOM`
+            List of bokeh components to add to the UI
+        """
+        return self.controls_column
+
+    def generate_model_regions(self, nbins):
+        """
+        Handle the 'Generate bins' button being clicked.
+
+        This will generate a new set of bin limits and update the model, which
+        in turn will update the interface.
+        """
+        bin_limits = np.linspace(0, self.original_parameters['height'], nbins + 1, dtype=int)
+        bin_list = list(zip(bin_limits[:-1], bin_limits[1:]))
+        self.model.load_from_tuples(tuples_to_slices(bin_list))
+
+    def reset_model_regions(self):
+        """
+        Handle the 'Reset' button being clicked.
+
+        This will update the model with the initial bin limit list, which in
+        turn will udpate the interface.
+        """
+        self.number_bins.reset()
+        self.model.load_from_tuples(tuples_to_slices(self.original_parameters['bin_list']))
+
+    def reset_dialog_handler(self, result):
+       """
+        Reset bin limits values.
+
+        Parameters
+        ----------
+        result : bool
+            This is the user response to an ok/cancel confirmation dialog.  If False, we do not reset.
+       """
+       if result:
+           self.reset_model_regions()
+
 class BinPanel:
-    def __init__(self, visualizer, regions, domain=None,
-                 x=None, y=None, weights=None, idx=0, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400,
-                 enable_user_masking=True, central_plot=True, extra_masks=None):
+    def __init__(self, visualizer, regions, bin_parameters, domain=None,
+                 x=None, y=None, weights=None, xlabel='x', ylabel='y',
+                 plot_width=600, plot_height=400, central_plot=True):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -179,6 +217,8 @@ class BinPanel:
             visualizer to associate with
         regions : list of regions
             ...
+        bin_parameters: dict
+            Initial number of bins and generated regions
         domain : list of pixel coordinates
             Used for new fit_1D fitter
         x : :class:`~numpy.ndarray`
@@ -195,64 +235,48 @@ class BinPanel:
             width of plot area in pixels
         plot_height : int
             height of plot area in pixels
-        enable_user_masking : bool
-            True to enable fine-grained data masking by the user using bokeh selections
-        extra_masks : dict of boolean arrays
-            points to display but not use in the fit
+        central_plot : bool
+            If True, the main plot will be on the left and the control column
+            on the right. If False, the opposite.
         """
         # Just to get the doc later
         self.visualizer = visualizer
-        self.index = idx
 
-        self.title = "Bin panel"
+        # self.title = ""
 
         self.width = plot_width
         self.height = plot_height
         self.xlabel = xlabel
         self.ylabel = ylabel
-        self.enable_user_masking = enable_user_masking
         self.xpoint = 'x'
         self.ypoint = 'y'
         self.p_main = None
 
         # Avoids having to check whether this is None all the time
-        band_model = GIRegionModel(domain=domain)
-        # TODO: If InteractiveModel1D is good for us, then figure out how to pass
-        #       empty fitting_parameters
-        self.model = BinModel1D({}, domain, x, y, weights,
-                                        band_model=band_model, extra_masks=extra_masks)
-
+        band_model = GIRegionModel(domain=domain, support_adjacent=True)
+        self.model = BinModel1D({}, domain, x, y, weights, band_model=band_model)
         self.model.add_listener(self.model_change_handler)
 
-        reset_button = bm.Button(label="Reset", align='center',
-                                 button_type='warning', width_policy='min')
+        self.bin_resetting_ui = BinResettingUI(visualizer, band_model, bin_parameters)
+        controls_column = self.bin_resetting_ui.get_bokeh_components()
+        # reset_button = bm.Button(label="Reset", align='center',
+        #                          button_type='warning', width_policy='min')
 
-        # TODO: We'll want to implement a proper reset_dialog_handler later when we want to be
-        #       a able to reset the bins to the original setting
-        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
-            reset_button, 'Reset will change all inputs for this tab back '
-            'to their original values.  Proceed?', self.reset_dialog_handler)
+        # self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
+        #     reset_button, 'Reset will change all inputs for this tab back '
+        #     'to their original values.  Proceed?', self.reset_dialog_handler)
 
         controller_div = Div(margin=(20, 0, 0, 0), width=220,
                              style={"color": "gray", "padding": "5px"})
-        controls = column(reset_button, controller_div,
+        controls = column(*controls_column, controller_div,
                           width=220)
 
-        fig_column = self.build_figures(domain=domain, controller_div=controller_div,
-                                        extra_masks=extra_masks)
+        fig_column = self.build_figures(domain=domain, controller_div=controller_div)
 
         # Initializing regions here ensures the listeners are notified of the region(s)
-        region_tuples = [slice(start, end) for (start, end) in regions]
-        band_model.load_from_tuples(region_tuples)
+        band_model.load_from_tuples(tuples_to_slices(regions))
 
-        # TODO refactor? this is dupe from band_model_handler
-        # and Fit1DPanel. Also, we're not doing masks
-        # mask = [BAND_MASK_NAME if not band_model.contains(x) and m == 'good' else m
-        #        for x, m in zip(self.model.x, self.model.mask)]
-        # self.model.data.data['mask'] = mask
-        # self.model.perform_fit()
-
-        region_editor = RegionEditor(band_model)
+        region_editor = BinEditor(band_model)
         fig_column.append(region_editor.get_widget())
         col = column(*fig_column)
         col.sizing_mode = 'scale_width'
@@ -261,10 +285,9 @@ class BinPanel:
         self.component = row(*col_order, css_classes=["tab-content"],
                              spacing=10)
 
-    def build_figures(self, domain=None, controller_div=None,
-                      extra_masks=None):
+    def build_figures(self, domain=None, controller_div=None):
         """
-        Construct the figures containing the various plots needed for this
+        Construct the figure containing the plot needed for this
         Visualizer.
 
         Parameters
@@ -273,8 +296,6 @@ class BinPanel:
             the domain over which the model is defined
         controller_div : Div
             Div object accessible by Controller for updating help text
-        extra_masks : dict/list/None
-            names of additional masks to inform the user about
 
         Returns
         -------
@@ -285,21 +306,14 @@ class BinPanel:
         p_main = bin_figure(width=self.width, height=self.height,
                             xpoint=self.xpoint, ypoint=self.ypoint,
                             xlabel=self.xlabel, ylabel=self.ylabel, model=self.model)
-        self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
+        self.model.band_model.add_listener(Fit1DRegionListener(self.update_bin_limits))
         connect_region_model(p_main, self.model.band_model)
 
-        if self.enable_user_masking:
-            mask_handlers = (self.mask_button_handler,
-                             self.unmask_button_handler)
-        else:
-            mask_handlers = None
-
         Controller(p_main, None, self.model.band_model, controller_div,
-                   mask_handlers=mask_handlers, domain=domain, helpintrotext=
+                   mask_handlers=None, domain=domain, helpintrotext=
                    "While the mouse is over the upper plot, "
                    "choose from the following commands:")
 
-        # self.add_custom_cursor_behavior(p_main)
         fig_column = [p_main]
 
         self.p_main = p_main
@@ -341,177 +355,28 @@ class BinPanel:
         if y_range is not None:
             self.p_main.y_range = y_range
 
-    def reset_dialog_handler(self, result):
-       """
-        Reset fit parameter values.
-
-        Parameters
-        ----------
-        result : bool
-            This is the user response to an ok/cancel confirmation dialog.  If False, we do not reset.
-       """
-       raise NotImplementedError("Need to implement reset_dialog_handler")
-
-    def update_regions(self):
-        """ Update fitting regions """
+    def update_bin_limits(self):
+        """ Update bin limits """
         self.model.regions = self.model.band_model.build_regions()
 
     def model_change_handler(self, model):
         """
-        If the model changes, this gets called to evaluate the fit and save the results.
+        If the model changes, this gets called to save the results.
 
         Parameters
         ----------
         model : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
             The model that changed.
         """
+        # We're not evaluating fits, but we're reusing existing models so
+        # we'll follow the interface used elsewhere.
         model.evaluation.data['model'] = model.evaluate(model.evaluation.data['xlinspace'])
-
-    def mask_button_handler(self, x, y, mult):
-        """
-        Handler for the mask button.
-
-        When the mask button is clicked, this method
-        will find the selected data points and set the
-        user mask for them.
-
-        Parameters
-        ----------
-        x : float
-            The pointer x coordinate
-        y : float
-            The pointer y coordinate
-        mult : float
-            The ratio for the X-axis vs Y-axis, so we can calculate "pixel distance"
-        """
-        indices = self.model.data.selected.indices
-        if not indices:
-            self._point_mask_handler(x, y, mult, 'mask')
-        else:
-            self.model.data.selected.update(indices=[])
-            mask = self.model.mask.copy()
-            for i in indices:
-                mask[i] = USER_MASK_NAME
-            self.model.data.data['mask'] = mask
-            self.model.perform_fit()
-
-    def unmask_button_handler(self, x, y, mult):
-        """
-        Handler for the unmask button.
-
-        When the unmask button is clicked, this method
-        will find the selected data points and unset the
-        user mask for them.
-
-        Parameters
-        ----------
-        x : float
-            The pointer x coordinate
-        y : float
-            The pointer y coordinate
-        mult : float
-            The ratio for the X-axis vs Y-axis, so we can calculate "pixel distance"
-        """
-        indices = self.model.data.selected.indices
-        if not indices:
-            self._point_mask_handler(x, y, mult, 'unmask')
-        else:
-            x_data = self.model.x
-            self.model.data.selected.update(indices=[])
-            mask = self.model.mask.copy()
-            for i in indices:
-                if mask[i] == USER_MASK_NAME:
-                    mask[i] = ('good' if self.model.band_model.contains(x_data[i])
-                               else BAND_MASK_NAME)
-            self.model.data.data['mask'] = mask
-            self.model.perform_fit()
-
-    def _point_mask_handler(self, x, y, mult, action):
-        """
-        Handler for the mask button.
-
-        When the mask button is clicked, this method
-        will find the selected data points and set the
-        user mask for them.
-
-        Parameters
-        ----------
-        x : float
-            X mouse position in pixels inside the canvas.
-        y : float
-            Y mouse position in pixels inside the canvas.
-        mult : float
-            The ratio of the x axis vs the y axis, for calculating pixel distance
-        action : str
-            The type of masking action being done
-        """
-        dist = None
-        sel = None
-        xarr = self.model.data.data[self.xpoint]
-        yarr = self.model.data.data[self.ypoint]
-        mask = self.model.mask
-        if action not in ('mask', 'unmask'):
-            action = None
-        for i, (xd, yd) in enumerate(zip(xarr, yarr)):
-            if action is None or ((action == 'mask') ^ (mask[i] == USER_MASK_NAME)):
-                if xd is not None and yd is not None:
-                    ddist = (x - xd) ** 2 + ((y - yd) * mult) ** 2
-                    if dist is None or ddist < dist:
-                        dist = ddist
-                        sel = i
-        if sel is not None:
-            # we have a closest point, toggle the user mask
-            if mask[sel] == USER_MASK_NAME:
-                mask[sel] = ('good' if self.model.band_model.contains(xarr[sel])
-                             else BAND_MASK_NAME)
-            else:
-                mask[sel] = USER_MASK_NAME
-
-        self.model.perform_fit()
-
-    # TODO refactored this down from tracing, but it breaks
-    # x/y tracking when the mouse moves in the figure for calculateSensitivity
-    @staticmethod
-    def add_custom_cursor_behavior(p):
-        """
-        Customize cursor behavior depending on which tool is active.
-        """
-        pan_start = '''
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var active = [...mainPlot.getElementsByClassName('bk-active')];
-
-            console.log(active);
-
-            if ( active.some(e => e.title == "Pan") ) { 
-                Bokeh.cursor = 'move'; }
-        '''
-
-        pan_end = '''
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
-
-            Bokeh.cursor = 'default';
-            elm.style.cursor = Bokeh.cursor;
-        '''
-
-        mouse_move = """
-            var mainPlot = document.getElementsByClassName('plot-main')[0];
-            var elm = mainPlot.getElementsByClassName('bk-canvas-events')[0];
-            elm.style.cursor = Bokeh.cursor;
-        """
-
-        p.js_on_event(events.MouseMove, bm.CustomJS(code=mouse_move))
-        p.js_on_event(events.PanStart, bm.CustomJS(code=pan_start))
-        p.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
 
 class BinVisualizer(PrimitiveVisualizer):
     """
-    The generic class for interactive fitting of one or more 1D functions
+    Specialized visualizer for displaying and editing bin limits.
 
     Attributes:
-        reinit_panel: layout containing widgets that control the parameters
-                      affecting the initialization of the (x,y) array(s)
-        reinit_button: the button to reconstruct the (x,y) array(s)
         tabs: layout containing all the stuff required for an interactive 1D fit
         submit_button: the button signifying a successful end to the interactive session
 
@@ -519,9 +384,8 @@ class BinVisualizer(PrimitiveVisualizer):
         widgets: a dict of (param_name, widget) elements that allow the properties
                  of the widgets to be set/accessed by the calling primitive. So far
                  I'm only including the widgets in the reinit_panel
-        fits: list of InteractiveModel instances, one per (x,y) array
     """
-    def __init__(self, data_source, xlabel='x', ylabel='y',
+    def __init__(self, data_source, xlabel='Column', ylabel='Signal',
                  domain=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None,
                  ui_params=None, pad_buttons=False,
@@ -568,9 +432,6 @@ class BinVisualizer(PrimitiveVisualizer):
 
         # Make the panel with widgets to control the creation of (x, y) arrays
 
-        # Create left panel
-        # reinit_widgets = self.make_widgets_from_parameters(ui_params)
-
         if callable(data_source):
             self.reconstruct_points_fn = data_source
             data = data_source(ui_params=ui_params)
@@ -592,18 +453,11 @@ class BinVisualizer(PrimitiveVisualizer):
                             width_policy="max",
                             tabs=[], name="tabs")
         self.tabs.sizing_mode = 'scale_width'
-
-        extra_masks = {}
         this_dict = data
 
-        # TODO: This will probably go away becase we don't pass masks anyway
-        for k in list(this_dict.keys()):
-            if k.endswith("_mask"):
-                extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
-        tui = BinPanel(self, domain=domain,
-                          **this_dict, **kwargs, extra_masks=extra_masks)
+        tui = BinPanel(self, domain=domain, **this_dict, **kwargs)
         self.model = tui.model
-        tab = bm.Panel(child=tui.component, title="Bin panel")
+        tab = bm.Panel(child=tui.component, title='Bin editor')
         self.tabs.tabs.append(tab)
         self.fits.append(tui.model)
         self.panels.append(tui)
@@ -619,45 +473,6 @@ class BinVisualizer(PrimitiveVisualizer):
         some callbacks.
         """
         self.submit_button.disabled = True
-    # noinspection PyProtectedMember
-    def reset_reinit_panel(self, param=None):
-        """
-        Reset all the parameters in the Tracing Panel (leftmost column).
-        If a param is provided, it resets only this parameter in particular.
-
-        Parameters
-        ----------
-        param : str
-            Parameter name
-        """
-        for fname in self.ui_params.reinit_params:
-            if param is None or fname == param:
-                reset_value = self._reinit_params[fname]
-            else:
-                continue
-
-            # Handle CheckboxGroup widgets
-            if hasattr(self.widgets[fname], "value"):
-                attr = "value"
-            else:
-                attr = "active"
-                reset_value = [0] if reset_value else []
-            old = getattr(self.widgets[fname], attr)
-
-            # Update widget value
-            if reset_value is None:
-                kwargs = {attr: self.widgets[fname].start, "show_value": False}
-            else:
-                kwargs = {attr: reset_value}
-            self.widgets[fname].update(**kwargs)
-
-            # Update Text Field via callback function
-            if 'value' in self.widgets[fname]._callbacks:
-                for callback in self.widgets[fname]._callbacks['value']:
-                    callback('value', old=old, new=reset_value)
-            if 'value_throttled' in self.widgets[fname]._callbacks:
-                for callback in self.widgets[fname]._callbacks['value_throttled']:
-                    callback(attrib='value_throttled', old=old, new=reset_value)
 
     def visualize(self, doc):
         """
@@ -733,17 +548,12 @@ class BinVisualizer(PrimitiveVisualizer):
                     self.show_user_message("Unable to build data from inputs, reverting")
                 if data is not None:
                     for i, fit in enumerate(self.fits):
-                        extra_masks = {}
                         if self.returns_list:
                             this_dict = {k: v[i] for k, v in data.items()}
                         else:
                             this_dict = data
-                        for k in list(this_dict.keys()):
-                            if k.endswith("_mask"):
-                                extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
                         fit.populate_bokeh_objects(this_dict["x"], this_dict["y"],
-                                                   this_dict.get("weights"),
-                                                   extra_masks=extra_masks)
+                                                   this_dict.get("weights"))
                         fit.perform_fit()
 
                 for pnl in self.panels:
@@ -753,14 +563,14 @@ class BinVisualizer(PrimitiveVisualizer):
 
     def results(self):
         """
-        Get the results of the interactive fit.
+        Get the results of the interactive bin editing.
 
-        This gets the list of `~gempy.library.fitting.fit_1D` fits of
-        the data to be used by the caller.
+        This uses the region model to generate a list of bin limits, to be used
+         by the caller.
 
         Returns
         -------
-        list of `~gempy.library.fitting.fit_1D`
+        String representation of the bin limits list.
         """
         return self.model.regions
 
