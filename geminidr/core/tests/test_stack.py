@@ -13,6 +13,8 @@ from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.f2.primitives_f2_image import F2Image
 
 
+# -- Fixtures -----------------------------------------------------------------
+
 @pytest.fixture
 def f2_adinputs():
     phu = fits.PrimaryHDU()
@@ -40,6 +42,30 @@ def niri_adinputs():
         adinputs.append(ad)
     return adinputs
 
+
+@pytest.fixture
+def niri_image(astrofaker):
+    """Create a fake NIRI image.
+
+    Optional
+    --------
+    keywords : dict
+        A dictionary with keys equal to FITS header keywords, whose values
+        will be propogated to the new image.
+
+    """
+
+    def _niri_image(filename='N20010101S0001.fits', keywords={}):
+
+        ad = astrofaker.create('NIRI', 'IMAGE',
+                                extra_keywords=keywords,
+                                filename=filename)
+        ad.init_default_extensions()
+        return ad
+
+    return _niri_image
+
+# -- Tests --------------------------------------------------------------------
 
 def test_error_only_one_file(niri_adinputs, caplog):
     caplog.set_level(20)  # INFO
@@ -119,3 +145,79 @@ def test_stacking_gain_read_noise_propagation(f2_adinputs, caplog):
     assert_allclose(ad.hdr["GAIN"], 8.88/9)
     # Input read_noises are 11.7 and 5
     assert_allclose(ad.hdr["RDNOISE"], 8.996944, atol=0.001)
+
+
+@pytest.mark.parametrize("rejection_method, expected",
+                         [('varclip', 2.),
+                          ('sigclip', 1.6),
+                          ('minmax', 1.666666)])
+def test_stack_biases(rejection_method, expected, niri_image):
+    """Try different rejection methods to make sure we get the expected
+    results"""
+
+    adinputs = []
+    for i in (0, 1, 2, 2, 3):
+        ad = niri_image()
+        data = np.ones((2, 2)) * i
+        ad[0].data = data
+        ad.tags = ad.tags.union({'BIAS'})
+        for ext in ad:
+            ext.variance = np.where(ext.data > 0,
+                                    ext.data, 0).astype(np.float32)
+        adinputs.append(ad)
+
+    p = NIRIImage(adinputs)
+    p.addVAR()
+    if rejection_method == 'minmax':
+        ad_out = p.stackBiases(adinputs, reject_method=rejection_method,
+                               nlow=1, nhigh=1)
+    else:
+        ad_out = p.stackBiases(adinputs, reject_method=rejection_method)
+
+    assert len(ad_out) == 1
+    assert len(p.streams["main"]) == len(adinputs)
+    assert pytest.approx(ad_out[0].data[0]) == expected
+
+    # Check that removing a BIAS tag raises an error.
+    adinputs[0].tags = adinputs[0].tags.difference({'BIAS'})
+
+    with pytest.raises(ValueError, match='Not all inputs have BIAS tag'):
+        p.stackBiases()
+
+
+def test_stack_flats(niri_image):
+    adinputs = [niri_image(f'N20010101S{i:04d}.fits',
+                           keywords={'EXPTIME': 10.})
+                for i in range(0, 4)]
+
+    p = NIRIImage(adinputs)
+    ad_out = p.stackFlats(adinputs)
+
+    assert len(ad_out) == 1
+    assert len(p.streams["main"]) == len(adinputs)
+
+
+def test_stack_darks(niri_image):
+    adinputs = [niri_image(f'N20010101S{i:04d}.fits',
+                           keywords={'EXPTIME': 1.})
+                for i in range(0, 4)]
+    for ad in adinputs:
+        ad.tags = ad.tags.union({'DARK'})
+
+    p = NIRIImage(adinputs)
+    p.stackDarks(adinputs)
+
+    assert len(p.streams["main"]) == len(adinputs)
+
+    adinputs[0].phu['EXPTIME'] = 100.
+
+    # Check that a file with a different exposure time raises an error.
+    with pytest.raises(ValueError):
+        p.stackDarks(adinputs)
+
+    # Check that removing a DARK tag raises an error.
+    adinputs[0].phu['EXPTIME'] =  1.
+    adinputs[0].tags = adinputs[0].tags.difference({'DARK'})
+
+    with pytest.raises(ValueError):
+        p.stackDarks(adinputs)

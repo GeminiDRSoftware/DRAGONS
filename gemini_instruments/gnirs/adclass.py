@@ -434,7 +434,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         wcs_ra = self.wcs_ra()
         if wcs_ra is None:
-            return self.phu.get('RA', None)
+            return self._ra()
         try:
             tgt_ra = self.target_ra(offset=True, icrs=True)
         except:  # Return WCS value if we can't get our sanity check
@@ -474,7 +474,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         wcs_dec = self.wcs_dec()
         if wcs_dec is None:
-            return self.phu.get('DEC', None)
+            return self._dec()
         try:
             tgt_dec = self.target_dec(offset=True, icrs=True)
         except:  # Return WCS value if we can't get our sanity check

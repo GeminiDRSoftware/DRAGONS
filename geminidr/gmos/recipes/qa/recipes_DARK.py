@@ -30,7 +30,7 @@ def makeProcessedDark(p):
     p.addToList(purpose="forStack")
     p.getList(purpose="forStack")
     # Force "varclip" due to large number of CRs
-    p.stackFrames(zero=False, scale=False, reject_method="varclip")
+    p.stackDarks(reject_method="varclip")
     p.storeProcessedDark()
     return
 

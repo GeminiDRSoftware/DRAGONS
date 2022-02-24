@@ -233,6 +233,8 @@ class Preprocess(PrimitivesBASE):
             minimum separation (in arcseconds) required to use an image as sky
         max_skies: int/None
             maximum number of skies to associate to each input frame
+        min_skies: int/None
+            minimum number of skies to associate to each input frame
         sky: str/list
             name(s) of sky frame(s) to associate to each input
         time: float
@@ -677,7 +679,8 @@ class Preprocess(PrimitivesBASE):
                     if debug:
                         log.debug(f'Replacing pixel {region} with a '
                                   'local median ')
-                        plot_slices = [slice(sl.start - 10, sl.stop + 10)
+                        plot_slices = [slice(None if sl.start is None else sl.start - 10,
+                                             None if sl.stop is None else sl.stop + 10)
                                        for sl in slices]
                         if len(plot_slices) > 2:
                             plot_slices = [Ellipsis] + plot_slices[-2:]
@@ -730,7 +733,7 @@ class Preprocess(PrimitivesBASE):
                         ext.data[tuple(slices_extract)] = data
 
                     # Mark the interpolated pixels as no_data
-                    ext.mask[slices] = DQ.no_data
+                    ext.mask[slices] |= DQ.no_data
 
                     if debug:
                         fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -1107,6 +1110,29 @@ class Preprocess(PrimitivesBASE):
             else:
                 missing.append(sky_filename)
 
+        # Analyze the spatial clustering of exposures and attempt to sort them
+        # into dither groups around common nod positions.
+        groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
+        ngroups = len(groups)
+        log.fullinfo("Identified {} group(s) of exposures".format(ngroups))
+
+        # Loop over the nod groups identified above, record which group each
+        # exposure belongs to, propagate any already-known classification(s)
+        # to other members of the same group and determine whether everything
+        # is finally on source and/or sky:
+        for num, group in enumerate(groups):
+            adlist = group.list()
+            for ad in adlist:
+                ad.phu['EXPGROUP'] = num
+
+            # If any of these is already an OBJECT, then they all are:
+            if objects.intersection(adlist):
+                objects.update(adlist)
+
+            # And ditto for SKY:
+            if skies.intersection(adlist):
+                skies.update(adlist)
+
         for ad in adinputs:
             # Mark unguided exposures as skies
             if ad.wavefront_sensor() is None:
@@ -1131,29 +1157,6 @@ class Preprocess(PrimitivesBASE):
                 "via ref_obj/ref_sky parameters, in the input:")
             for name in missing:
                 log.warning("  {}".format(name))
-
-        # Analyze the spatial clustering of exposures and attempt to sort them
-        # into dither groups around common nod positions.
-        groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
-        ngroups = len(groups)
-        log.fullinfo("Identified {} group(s) of exposures".format(ngroups))
-
-        # Loop over the nod groups identified above, record which group each
-        # exposure belongs to, propagate any already-known classification(s)
-        # to other members of the same group and determine whether everything
-        # is finally on source and/or sky:
-        for num, group in enumerate(groups):
-            adlist = group.list()
-            for ad in adlist:
-                ad.phu['EXPGROUP'] = num
-
-            # If any of these is already an OBJECT, then they all are:
-            if objects.intersection(adlist):
-                objects.update(adlist)
-
-            # And ditto for SKY:
-            if skies.intersection(adlist):
-                skies.update(adlist)
 
         # If one set is empty, try to fill it. Put unassigned inputs in the
         # empty set. If all inputs are assigned, put them all in the empty set.

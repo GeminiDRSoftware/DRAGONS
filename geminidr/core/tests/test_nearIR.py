@@ -4,10 +4,9 @@ Tests applied to primitives_nearIR.py
 
 from datetime import datetime
 
-import pytest
-
 from geminidr.core.tests.test_spect import create_zero_filled_fake_astrodata
 from geminidr.core import primitives_nearIR
+
 
 # -- Tests --------------------------------------------------------------------
 
@@ -58,7 +57,3 @@ def test_remove_first_frame():
     assert ad_out[0] == ad_in[0]
     assert ad_out[1] == ad_in[2]
     assert ad_out[2] == ad_in[3]
-
-
-if __name__ == '__main__':
-    pytest.main()

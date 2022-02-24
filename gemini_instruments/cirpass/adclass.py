@@ -17,7 +17,7 @@ from ..gemini import AstroDataGemini
 class AstroDataCirpass(AstroDataGemini):
     __keyword_dict = dict(
         ra = 'TEL_RA',
-        dec = 'TEC_DEC',
+        dec = 'TEL_DEC',
     )
     @staticmethod
     def _matches_data(source):
@@ -74,8 +74,8 @@ class AstroDataCirpass(AstroDataGemini):
 
     @astro_data_descriptor
     def target_ra(self):
-        return self.phu.get(self._keyword_for('ra'))
+        return self._ra()
 
     @astro_data_descriptor
     def target_dec(self):
-        return self.phu.get(self._keyword_for('dec'))
+        return self._dec()
