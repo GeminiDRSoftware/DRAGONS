@@ -9,7 +9,6 @@ from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.fit1d import Fit1DRegionListener, InteractiveModel1D
 from geminidr.interactive.interactive import (PrimitiveVisualizer, RegionEditor,
                                               GIRegionModel, connect_region_model)
-from geminidr.interactive.fit.aperture import CustomWidget
 from gempy.utils import logutils
 
 log = logutils.get_logger(__name__)
@@ -70,20 +69,6 @@ def bin_figure(width=None, height=None, xpoint='x', ypoint='y',
 
     return p_main
 
-class NumericInputLine(CustomWidget):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orig_value = self.value
-    def build(self):
-        self.numeric_input = NumericInput(value=self.value if self.value else 0, width=64, **self.kwargs)
-        self.numeric_input.on_change("value", self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.numeric_input])
-
-    def reset(self):
-        self.numeric_input.value = self.orig_value
-
 class BinEditor(RegionEditor):
     """
     Specialized RegionEditor. Just for cosmetic changes (changes the title)
@@ -128,19 +113,20 @@ class BinResettingUI:
         self.vis = vis
         self.model = model
         self.original_parameters = bin_parameters
-        self.num_of_bins = self.original_parameters['nbins']
+
+        self.num_input = NumericInput(width=64, value=self.original_parameters['nbins'], mode='int')
+        self.number_bins = row([Div(text="Number of bins", align='center'),
+                                Spacer(width_policy='max'),
+                                self.num_input])
 
         def _generate_handler(result):
             if result:
                 generate_button.disabled = True
                 def fn():
-                    self.generate_model_regions(self.num_of_bins)
+                    self.generate_model_regions(self.num_input.value)
                     generate_button.disabled = False
                 vis.do_later(fn)
 
-        self.number_bins = NumericInputLine("Number of bins", self,
-                                 mode='int', attr="num_of_bins",
-                                 placeholder="e.g. 12")
 
         generate_button = Button(label="Generate bins", button_type='primary',
                                       default_size=200)
@@ -155,7 +141,7 @@ class BinResettingUI:
             'to their original values.  Proceed?', self.reset_dialog_handler)
 
         self.controls_column = (
-            self.number_bins.build(),
+            self.number_bins,
             generate_button,
             reset_button,
         )
@@ -189,7 +175,7 @@ class BinResettingUI:
         This will update the model with the initial bin limit list, which in
         turn will udpate the interface.
         """
-        self.number_bins.reset()
+        self.num_input.value = self.original_parameters['nbins']
         self.model.load_from_tuples(tuples_to_slices(self.original_parameters['bin_list']))
 
     def reset_dialog_handler(self, result):
@@ -461,8 +447,6 @@ class BinVisualizer(PrimitiveVisualizer):
         self.tabs.tabs.append(tab)
         self.fits.append(tui.model)
         self.panels.append(tui)
-
-        self._reinit_params = {k: v for k, v in (ui_params.values.items() if ui_params else {})}
 
     def submit_button_handler(self):
         """
