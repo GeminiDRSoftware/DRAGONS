@@ -153,7 +153,7 @@ class PrimitiveVisualizer(ABC):
         # Text widget for triggering ok/cancel via DOM text change event
         self._ok_cancel_holder = None
 
-        self._reinit_params = {k: v for k, v in ui_params.values.items()}
+        self._reinit_params = {k: v for k, v in ui_params.values.items()} if ui_params else {}
 
         self.fits = []
 
