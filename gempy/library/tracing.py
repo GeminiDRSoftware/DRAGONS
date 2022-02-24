@@ -580,9 +580,9 @@ def get_extrema(profile, prof_mask, min_snr=3):
     extrema_types = np.add.reduce(diffs, axis=0)
     xpixels = np.arange(profile.size)[1:-1]
     maxima = pinpoint_peaks(profile, prof_mask,
-                            xpixels[np.logical_and(extrema, extrema_types > 0)])
+                            xpixels[np.logical_and(extrema, extrema_types > 0)], halfwidth=3)
     minima = pinpoint_peaks(-profile, prof_mask,
-                            xpixels[np.logical_and(extrema, extrema_types < 0)])
+                            xpixels[np.logical_and(extrema, extrema_types < 0)], halfwidth=3)
     extrema = sorted(zip(minima[0]+maxima[0], [-x for x in minima[1]]+maxima[1],
                          [False]*len(minima[0])+[True]*len(maxima[0])))
 
@@ -613,8 +613,6 @@ def get_extrema(profile, prof_mask, min_snr=3):
     if not extrema:
         return []
 
-    #print("SECOND")
-    #print(extrema)
     # Now get rid of insignificant maxima
     stddev = at.std_from_pixel_variations(profile if prof_mask is None else
                                           profile[~prof_mask])
