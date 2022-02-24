@@ -1,5 +1,6 @@
 import re
 from abc import ABC, abstractmethod
+from copy import copy
 from enum import Enum, auto
 from functools import cmp_to_key
 
@@ -1649,11 +1650,11 @@ class UIParameters:
 
         if config:
             for fname, field in config._fields.items():
-                self.fields[fname] = field
+                self.fields[fname] = copy(field)
                 self.values[fname] = getattr(config, fname)
         if extras:
             for fname, field in extras.items():
-                self.fields[fname] = field
+                self.fields[fname] = copy(field)
                 self.values[fname] = field.default
 
         if placeholders:

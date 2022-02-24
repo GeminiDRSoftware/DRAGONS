@@ -177,7 +177,7 @@ class findAperturesConfig(config.Config):
                                   float, 0.1, min=0, max=1)
     interactive = config.Field("Use interactive interface", bool, False)
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
-                                       float, None, min=1, optional=True)
+                                       int, None, min=1, inclusiveMax=True, optional=True)
 
 
 class flagCosmicRaysConfig(config.Config):

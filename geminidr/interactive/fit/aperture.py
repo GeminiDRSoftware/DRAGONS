@@ -161,19 +161,20 @@ class FindSourceAperturesModel:
             'y': np.zeros(self.profile_shape),
         })
 
-        # self.target_location is the row from the target coords
+        # target_location is the row from the target coords
         # max_width is the largest distance (in arcsec) from there to the edge of the slit
         # Note: although the ext may have been transposed to ensure that
         # the slit is vertical, the WCS has not been modified
-        self.target_location = ext.wcs.invert(
-            ext.central_wavelength(asNanometers=True), ext.target_ra(), ext.target_dec())[2 - ext.dispersion_axis()]
-        # gWCS will return NaN coords if sent Nones, so bomb out now
-        if np.isnan(self.target_location):
-            self.target_location = (self.profile_shape - 1) / 2
-            self.max_width = self.target_location
+        target_location = ext.wcs.invert(
+            ext.central_wavelength(asNanometers=True), ext.target_ra(),
+            ext.target_dec())[2 - ext.dispersion_axis()]
+        # gWCS will return NaN coords if sent Nones, so assume target is in center
+        if np.isnan(target_location):
+            target_location = (self.profile_shape - 1) / 2
+            self.max_width = target_location
         else:
-            self.max_width = max(self.target_location, self.profile_shape - 1 - self.target_location)
-        self.max_width = np.ceil(self.max_width * ext.pixel_scale())
+            self.max_width = max(target_location, self.profile_shape - 1 - target_location)
+        self.max_width = int(np.ceil(self.max_width * ext.pixel_scale()))
 
         # initial parameters are set as attributes
         self.reset()
@@ -812,16 +813,15 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # available in the primitive.
         self.ui_params = ui_params
         self.ui_params.fields["max_separation"].min = 5
-        self.ui_params.fields["max_separation"].max = int(np.ceil(self.model.max_width))
-        self.ui_params.fields["max_separation"].step = 1
+        self.ui_params.fields["max_separation"].max = self.model.max_width
         if self.ui_params.fields["max_separation"].default is None:
-            self.ui_params.fields["max_separation"].default = int(np.ceil(self.model.max_separation))
-        self.ui_params.fields["max_separation"].dtype = int
-        self.ui_params.fields["max_separation"].optional = False
+            self.ui_params.fields["max_separation"].default = self.model.max_separation
         if self.ui_params.values['max_separation'] is None:
-            self.ui_params.values['max_separation'] = int(np.ceil(self.model.max_separation))
+            self.ui_params.values['max_separation'] = self.model.max_separation
         if self._reinit_params['max_separation'] is None:
-            self._reinit_params['max_separation'] = int(np.ceil(self.model.max_separation))
+            self._reinit_params['max_separation'] = self.model.max_separation
+        # Not necessary since the TextBox is disabled and so the user cannot set to None
+        self.ui_params.fields["max_separation"].optional = False
 
     def add_aperture(self):
         """
