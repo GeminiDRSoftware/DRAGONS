@@ -37,14 +37,11 @@ class makeSlitIllumConfig(config.Config):
                         (int, str), None, optional=True)
     debug_plot = config.Field("Create diagnosis plots?",
                               bool, False, optional=True)
-
     suffix = config.Field("Filename suffix",
                           str, "_slitIllum", optional=True)
     interactive = config.Field("Set to activate an interactive preview to fine tune the input parameters",
-                               bool, True, optional=True)
+                               bool, False, optional=True)
     regions = config.Field("Sample regions along the slit", str, None, optional=True)
-
-    # Fitting parameters
     spat_function = config.ChoiceField("Fitting function to use for bin fitting (spatial direction)", str,
                            allowed={"spline3": "Cubic spline",
                                     "chebyshev": "Chebyshev polynomial",
@@ -56,12 +53,11 @@ class makeSlitIllumConfig(config.Config):
     disp_function = config.ChoiceField("Fitting function to use for row fitting (dispersion direction)", str,
                            allowed={"spline3": "Cubic spline",
                                     "chebyshev": "Chebyshev polynomial",
-                                    "polynomial": "Least squares polynomial",
                                     "legendre": "Legendre polynomial",
                                     "spline1": "Linear spline"},
-                           default="spline1", optional=False)
+                           default="spline3", optional=False)
     disp_order = config.Field("Order of the row fitting function",
-                                int, 7, optional=True)
+                                int, 6, optional=True)
     hsigma = config.RangeField("High rejection threshold (sigma) of the bin fit",
                                float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma) of the bin fit",
@@ -70,7 +66,6 @@ class makeSlitIllumConfig(config.Config):
                               int, 3, min = 0, optional=True)
     grow = config.RangeField("Growth radius for rejected pixels of the bin fit",
                              float, 0, min=0, optional=True)
-
     border = config.Field("Size of the border added to the reconstructed slit illumination image",
                           int, 2, optional=True)
 

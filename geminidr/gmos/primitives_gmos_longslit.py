@@ -90,7 +90,6 @@ class CustomFit1DPanel(fit1d.Fit1DPanel):
         if 'function' in self.visualizer.ui_params.fields:
             def fn_select_change(attr, old, new):
                 self._update_segment_data()
-
             self.fitting_parameters_ui.function.on_change('value', fn_select_change)
 
     def _update_overlay_data(self):
@@ -180,10 +179,12 @@ class CustomFit1DPanel(fit1d.Fit1DPanel):
                 clipped_data = overlay_ydata
             y_min, y_max = min(min(ydata), clipped_data.min()), max(max(ydata), clipped_data.max())
 
-            if y_min != y_max:
-                y_pad = (y_max - y_min) * 0.1
-                self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
+            #ToDo: fix this
 
+            # if y_min != y_max:
+            #     y_pad = (y_max - y_min) * 0.1
+            #     self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
+            self.p_main.y_range.update(start=0.6, end=1.4)
 @parameter_override
 @capture_provenance
 class GMOSClassicLongslit(GMOSSpect):
@@ -557,15 +558,16 @@ class GMOSClassicLongslit(GMOSSpect):
                                                      filename_info=filename_info)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 bin_list = _parse_user_bins(''.join(visualizer.results().split()))
+                bin_limits = np.array(sum(bin_list, ()))
                 nbins = len(bin_list)
 
             cols_val = np.arange(-border, height+border)
             rows_val = np.arange(-border, width+border)
             binned_shape = (nbins, len(rows_val))
-            bin_data_avg = np.empty((nbins, data.shape[1]))
-            bin_std_avg = np.empty((nbins, data.shape[1]))
-            bin_data_fits = np.zeros(binned_shape)
-            bin_std_fits = np.zeros(binned_shape)
+            bin_data_avg = np.ma.empty((nbins, data.shape[1]))
+            bin_std_avg = np.ma.empty((nbins, data.shape[1]))
+            bin_data_fits = np.ma.zeros(binned_shape)
+            bin_std_fits = np.ma.zeros(binned_shape)
             for i, bin in enumerate(bin_list):
                 bin_data_avg[i] = np.ma.mean(data[bin[0]:bin[1]], axis=0)
                 bin_std_avg[i] = np.ma.mean(std[bin[0]:bin[1]], axis=0)
@@ -596,7 +598,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 uiparams = generate_ui_parameters(config, prefix="spat_")
                 x_label = "Rows" if dispaxis == 1 else "Columns"
                 first_label = 'cols' if dispaxis == 1 else 'rows'
-                tab_names = [f'{start}:{end}' for (start, end) in bin_list]
+                tab_names = [f'[{start+1}:{end}]' for (start, end) in bin_list]
                 tab_names[0] = f"Mean of {first_label} {tab_names[0]}"
 
                 visualizer = fit1d.Fit1DVisualizer(data_with_weights, spat_fitting_pars,
@@ -651,15 +653,13 @@ class GMOSClassicLongslit(GMOSSpect):
 
             disp_fitting_pars = {"order": disp_order, "function": disp_function,
                                     "regions": None, "niter": 0, "sigma_upper": 0, "sigma_lower": 0}
-            # TODO:  If there is only one slit profile copy the profile to each column and skip the last
-            #  interactive step
 
             # Interactive interface for fitting image rows at bin center locations. Image data, normalized
             # to the center of the slit, gets displayed along with fitting points and fitting curve
             if interactive_reduce and nbins > 1:
                 reinit_params = ["row", ]
 
-                extras = {"row": RangeField("Row of data to operate on", int, int(len(rows_val)/2), min=1, max=len(rows_val))}
+                extras = {"row": RangeField("Row of data to operate on", int, int(len(rows_val)/3), min=1, max=len(rows_val))}
                 uiparams = generate_ui_parameters(config, prefix="disp_", reinit_params=reinit_params, extras=extras)
 
                 def reconstruct_points(ui_params):
@@ -1180,11 +1180,11 @@ class GMOSClassicLongslit(GMOSSpect):
         ad_outputs = []
         for ad, slit_illum_ad in zip(*gt.make_lists(adinputs, slit_illum_list, force_ad=True)):
 
-            # if ad.phu.get(timestamp_key):
-            #     log.warning(
-            #         "No changes will be made to {}, since it has "
-            #         "already been processed by flatCorrect".format(ad.filename))
-            #     continue
+            if ad.phu.get(timestamp_key):
+                log.warning(
+                    "No changes will be made to {}, since it has "
+                    "already been processed by flatCorrect".format(ad.filename))
+                continue
 
             if slit_illum_ad is None:
                 if self.mode in ['sq'] or do_cal == 'force':

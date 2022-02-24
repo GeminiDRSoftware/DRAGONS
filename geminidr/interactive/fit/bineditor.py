@@ -100,7 +100,7 @@ class BinModel1D(InteractiveModel1D):
     def perform_fit(self, *args):
         """
         Dummy function. Needs to be here to be compliant with the InteractiveModel1D
-        interface, but we don't want to perform any calculation.
+        interface, but no calculation will be performed.
         """
         ...
 
@@ -199,7 +199,7 @@ class BinResettingUI:
         Parameters
         ----------
         result : bool
-            This is the user response to an ok/cancel confirmation dialog.  If False, we do not reset.
+            This is the user response to an ok/cancel confirmation dialog.  If False, do not reset.
        """
        if result:
            self.reset_model_regions()
@@ -327,7 +327,7 @@ class BinPanel:
         """
         This calculates the x and y ranges for the figure with some custom padding.
 
-        This is used when we initially build the figure, but also as a listener for
+        This is used when initially building the figure, but also as a listener for
         whenever the data changes.
         """
         if not hasattr(self, 'p_main') or self.p_main is None:
@@ -423,8 +423,8 @@ class BinVisualizer(PrimitiveVisualizer):
         self.layout = None
         self.pad_buttons = pad_buttons
 
-        # Make the widgets accessible from external code so we can update
-        # their properties if the default setup isn't great
+        # Make the widgets accessible from external code so that their properties can be updated
+        # if the default setup isn't great
         self.widgets = {}
 
         # Keep a list of panels for access later
@@ -469,7 +469,7 @@ class BinVisualizer(PrimitiveVisualizer):
         Submit button handler.
 
         The parent version checks for bad/poor fits, but that's not an issue
-        here, so we just exit by disabling the submit button, which triggers
+        here, so we exit by disabling the submit button, which triggers
         some callbacks.
         """
         self.submit_button.disabled = True

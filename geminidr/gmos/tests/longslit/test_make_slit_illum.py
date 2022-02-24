@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """
-Tests for the `makeSlitIllum` primitive. The primitive itself is
-defined in :mod:`~geminidr.core.primitives_spect` but these tests use GMOS Spect
-data.
+Tests for the `makeSlitIllum` primitive.
 """
 import os
 import pytest
@@ -49,7 +47,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
     constant.
 
     There are several ways of doing this but, given the noise levels, we bin
-    the data, fit a polynomium, and check that the fitted polynomium has its 1st
+    the data, fit a polynomial, and check that the fitted polynomial has its 1st
     and 2nd coefficients almost zero.
     """
     plot = request.config.getoption("--do-plots")
