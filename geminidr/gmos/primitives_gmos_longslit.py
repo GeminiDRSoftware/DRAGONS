@@ -613,6 +613,7 @@ class GMOSClassicLongslit(GMOSSpect):
                                                   # help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=True,
                                                    modal_message="Recalculating",
+                                                   pad_buttons=True,
                                                    ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fits = visualizer.results()
