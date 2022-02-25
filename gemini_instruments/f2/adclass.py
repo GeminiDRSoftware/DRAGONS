@@ -589,7 +589,7 @@ class AstroDataF2(AstroDataGemini):
         """
         # Try to use the Gemini-level helper method
         if 'PREPARED' in self.tags:
-            return self._get_wcs_pixel_scale()
+            return self._get_wcs_pixel_scale() or self.phu.get('PIXSCALE')
         else:
             return self.phu.get('PIXSCALE')
 
