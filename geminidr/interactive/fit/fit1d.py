@@ -825,7 +825,7 @@ class Fit1DPanel:
     def build_figures(self, domain=None, controller_div=None,
                       plot_residuals=True, plot_ratios=True,
                       extra_masks=None,
-                      figure_building_fn=None):
+                      figure_building_fn=None, y_range=None):
         """
         Construct the figures containing the various plots needed for this
         Visualizer.
@@ -844,6 +844,8 @@ class Fit1DPanel:
             names of additional masks to inform the user about
         figure_building_fn: callable
             function that returns the main and supplemental plots
+        y_range : tuple or None
+            Range for y-axis, or None for default behavior
 
         Returns
         -------
@@ -856,7 +858,7 @@ class Fit1DPanel:
         p_main, p_supp = fig_fn(width=self.width, height=self.height,
                                 xpoint=self.xpoint, ypoint=self.ypoint,
                                 xlabel=self.xlabel, ylabel=self.ylabel, model=self.model,
-                                enable_user_masking=self.enable_user_masking)
+                                enable_user_masking=self.enable_user_masking, y_range=y_range)
         if self.enable_regions:
             self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
             connect_region_model(p_main, self.model.band_model)
@@ -1455,7 +1457,8 @@ def prep_fit1d_params_for_fit1d(fit1d_params):
 def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
                  xline='xlinspace', yline='model',
                  xlabel=None, ylabel=None, model=None, plot_ratios=True,
-                 plot_residuals=True, enable_user_masking=True):
+                 plot_residuals=True, enable_user_masking=True,
+                 y_range=None):
     """
     Fairly generic function to produce bokeh objects for the main scatter/fit
     plot and the residuals and/or ratios plot. Listeners are not added here.
@@ -1481,6 +1484,8 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
         make a residuals plot?
     enable_user_masking : bool
         is user masking enabled? If so, additional tools are required
+    y_range: tuple or None
+        range for y-axis
 
     Returns
     -------
@@ -1495,7 +1500,7 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
     p_main = figure(plot_width=width, plot_height=height, min_width=400,
                     title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                     tools=tools,
-                    output_backend="webgl", x_range=None, y_range=None,
+                    output_backend="webgl", x_range=None, y_range=y_range,
                     min_border_left=80)
     p_main.height_policy = 'fixed'
     p_main.width_policy = 'fit'

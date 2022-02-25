@@ -120,6 +120,7 @@ class CustomFit1DPanel(fit1d.Fit1DPanel):
         figure plotting function.
         """
         kw["figure_building_fn"] = self._overlay_orig_data
+        kw["y_range"] = (0.6, 1.4)
         return super().build_figures(*args, **kw)
 
     def _overlay_orig_data(self, *args, **kw):
@@ -180,11 +181,16 @@ class CustomFit1DPanel(fit1d.Fit1DPanel):
             y_min, y_max = min(min(ydata), clipped_data.min()), max(max(ydata), clipped_data.max())
 
             #ToDo: fix this
+            y_pad = 0.1  # just in case
+            if y_min != y_max:
+                y_pad = (y_max - y_min) * 0.1
+            else:
+                # let's use +/- 10%
+                if y_min > 0:
+                    y_pad = y_min * 0.1
+            self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
 
-            # if y_min != y_max:
-            #     y_pad = (y_max - y_min) * 0.1
-            #     self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
-            self.p_main.y_range.update(start=0.6, end=1.4)
+
 @parameter_override
 @capture_provenance
 class GMOSClassicLongslit(GMOSSpect):
