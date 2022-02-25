@@ -745,7 +745,9 @@ class ApertureView:
         if ymax and self._old_ymax is None or self._old_ymax != ymax:
             self._old_ymax = ymax
             self.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
+            self.fig.y_range.start = np.nanmin(self.model.profile) * 0.9
             self.fig.y_range.reset_end = self.fig.y_range.end
+            self.fig.y_range.reset_start = self.fig.y_range.start
 
     def _prepare_data_for_holoviews(self, aperture_model, x_max, y_max):
         if hasattr(self, 'fig'):
