@@ -10,8 +10,7 @@ from .. import gmu
 
 
 class AstroDataF2(AstroDataGemini):
-    __keyword_dict = dict(camera='LYOT',
-                          central_wavelength='GRWLEN',
+    __keyword_dict = dict(central_wavelength='GRWLEN',
                           disperser='GRISM',
                           dispersion='DISPERSI',
                           focal_plane_mask='MOSPOS',
@@ -129,6 +128,28 @@ class AstroDataF2(AstroDataGemini):
         value_filter = (str if pretty else section_to_tuple)
         # TODO: discover reason why this is hardcoded, rather than from keyword
         return value_filter('[1:2048,1:2048]')
+
+    def camera(self, stripID=False, pretty=False):
+        """
+        Returns the string defining the f-ratio being used.
+
+        Returns
+        -------
+        string
+            The string that defines the f-ratio which changes depending on
+            whether AO is used or not.  Historical value.
+        """
+
+        # [2022-02-22] The LYOT keyword is now being used to store filters as
+        # well as LYOT mask.  Therefore, that keyword cannot be reliably used
+        # to return the camera string.
+
+        if self.pixel_scale() > 0.10 and self.pixel_scale() < 0.20:
+            camera = "f/16_G5830"
+        else:
+            camera = self.lyot_stop()
+
+        return self._may_remove_component(camera, stripID, pretty)
 
     # TODO: sort out the unit-handling here
     @astro_data_descriptor
@@ -346,22 +367,37 @@ class AstroDataF2(AstroDataGemini):
             The name of the filter combination with or without the component ID.
 
         """
+
         try:
             filter1 = self.phu['FILTER1']
             filter2 = self.phu['FILTER2']
+            lyot = self.lyot_stop()
         except KeyError:
             try:
                 # Old (pre-20100301) keyword names
                 filter1 = self.phu['FILT1POS']
                 filter2 = self.phu['FILT2POS']
+                lyot = self.lyot_stop()
             except KeyError:
                 return None
+
+        # 2022-02-22:  The lyot wheel now contains filters and stops
+        #  Gymnastic is required to figure out which is which.
+
+        if lyot[0:1] != "f" and lyot[0:4] != "GEMS" and lyot[0:4] != "Hart":
+            filter3 = lyot
+        else:
+            filter3 = None
 
         if stripID or pretty:
             filter1 = gmu.removeComponentID(filter1)
             filter2 = gmu.removeComponentID(filter2)
+            if filter3:
+                filter3 = gmu.removeComponentID(filter3)
 
         filter = [filter1, filter2]
+        if filter3:
+            filter.append(filter3)
         if pretty:
             # Remove filters with the name 'open'
             if 'open' in filter2 or 'Open' in filter2:
@@ -379,7 +415,7 @@ class AstroDataF2(AstroDataGemini):
                 filter = ['open']
 
         # Return &-concatenated names if we still have two filter names
-        return '&'.join(filter[:2])
+        return '&'.join(filter[:])
 
     @returns_list
     @astro_data_descriptor
@@ -552,7 +588,10 @@ class AstroDataF2(AstroDataGemini):
             pixel scale
         """
         # Try to use the Gemini-level helper method
-        return self._get_wcs_pixel_scale() or self.phu.get('PIXSCALE')
+        if 'PREPARED' in self.tags:
+            return self._get_wcs_pixel_scale() or self.phu.get('PIXSCALE')
+        else:
+            return self.phu.get('PIXSCALE')
 
     @astro_data_descriptor
     def read_mode(self):
