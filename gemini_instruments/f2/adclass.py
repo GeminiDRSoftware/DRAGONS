@@ -129,7 +129,7 @@ class AstroDataF2(AstroDataGemini):
         # TODO: discover reason why this is hardcoded, rather than from keyword
         return value_filter('[1:2048,1:2048]')
 
-    def camera(self):
+    def camera(self, stripID=False, pretty=False):
         """
         Returns the string defining the f-ratio being used.
 
@@ -145,11 +145,11 @@ class AstroDataF2(AstroDataGemini):
         # to return the camera string.
 
         if self.pixel_scale() > 0.10 and self.pixel_scale() < 0.20:
-            camera =  "f/16_G5830"
+            camera = "f/16_G5830"
         else:
             camera = self.lyot_stop()
 
-        return camera
+        return self._may_remove_component(camera, stripID, pretty)
 
     # TODO: sort out the unit-handling here
     @astro_data_descriptor
