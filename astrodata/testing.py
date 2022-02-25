@@ -403,6 +403,18 @@ def path_to_inputs(request, env_var='DRAGONS_TEST'):
         pytest.fail('\n  Path to input test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
 
+    # PARENT_BRANCHES, if set, gives the name of a parent branch to take overrides from
+    # master/main gets ignored since that would be the default location and not inputs_master
+    base_path = path
+    parent_branches = os.getenv('PARENT_BRANCHES', None)
+    if parent_branches:
+        parent_branches = [pb for pb in parent_branches.split(',') if pb not in ('master', 'main')]
+        parent_branches.reverse()
+        for parent_branch in parent_branches:
+            parent_branch = parent_branch.replace("/", "_")
+            path_with_branch = base_path.replace("/inputs", f"/inputs_{parent_branch}")
+            path = path_with_branch if os.path.exists(path_with_branch) else path
+
     branch_name = get_active_git_branch()
 
     if branch_name:
@@ -452,11 +464,23 @@ def path_to_refs(request, env_var='DRAGONS_TEST'):
         pytest.fail('\n Path to reference test data exists but is not accessible: '
                     '\n    {:s}'.format(path))
 
+    # PARENT_BRANCHES, if set, gives the name of a parent branch to take overrides from
+    # master/main gets ignored since that would be the default location and not refs_master
+    base_path = path
+    parent_branches = os.getenv('PARENT_BRANCHES', None)
+    if parent_branches:
+        parent_branches = [pb for pb in parent_branches.split(',') if pb not in ('master', 'main')]
+        parent_branches.reverse()
+        for parent_branch in parent_branches:
+            parent_branch = parent_branch.replace("/", "_")
+            path_with_branch = base_path.replace("/refs", f"/refs_{parent_branch}")
+            path = path_with_branch if os.path.exists(path_with_branch) else path
+
     branch_name = get_active_git_branch()
 
     if branch_name:
         branch_name = branch_name.replace("/", "_")
-        path_with_branch = path.replace("/refs", f"/refs_{branch_name}")
+        path_with_branch = base_path.replace("/refs", f"/refs_{branch_name}")
         path = path_with_branch if os.path.exists(path_with_branch) else path
 
     print(f"Using the following path to the refs:\n  {path}\n")
