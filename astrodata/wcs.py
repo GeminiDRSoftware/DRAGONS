@@ -146,8 +146,11 @@ def gwcs_to_fits(ndd, hdr=None):
     transform = wcs.forward_transform
     world_axes = list(wcs.output_frame.axes_names)
     nworld_axes = len(world_axes)
-    wcs_dict = {'WCSAXES': nworld_axes,
+    wcs_dict = {'NAXIS': len(ndd.shape),  # in case it's not written to a file
+                'WCSAXES': nworld_axes,
                 'WCSDIM': nworld_axes}
+    wcs_dict.update({f'NAXIS{i}': length
+                     for i, length in enumerate(ndd.shape[::-1], start=1)})
     wcs_dict.update({f'CD{i+1}_{j+1}': 0. for j in range(nworld_axes)
                      for i in range(nworld_axes)})
     pix_center = [0.5 * (length - 1) for length in ndd.shape[::-1]]
@@ -213,8 +216,6 @@ def gwcs_to_fits(ndd, hdr=None):
     # Convert to x-first order
     affine_matrix = np.flip(affine.matrix)
     # Require an inverse to write out
-    if np.linalg.det(affine_matrix) == 0:
-        affine_matrix[-1, -1] = 1.
     wcs_dict.update({f'CD{i+1}_{j+1}': affine_matrix[i, j]
                      for j, _ in enumerate(ndd.shape)
                      for i, _ in enumerate(world_axes)})
@@ -243,12 +244,17 @@ def gwcs_to_fits(ndd, hdr=None):
         wcs_dict['CRPIX1'] = crpix
     else:
         # Comply with FITS standard, must define CRPIXj for "extra" axes
-        wcs_dict.update({f'CRPIX{j}': cpix for j, cpix in enumerate(np.concatenate([crpix, [0] * (nworld_axes-len(ndd.shape))]), start=1)})
+        wcs_dict.update({f'CRPIX{j}': cpix for j, cpix in enumerate(np.concatenate([crpix, [1] * (nworld_axes-len(ndd.shape))]), start=1)})
     for i, unit in enumerate(wcs.output_frame.unit, start=1):
         try:
             wcs_dict[f'CUNIT{i}'] = unit.name
         except AttributeError:
             pass
+
+    # To ensure an invertable CD matrix, we need to get nonexistent pixel axes
+    # "involved".
+    for j in range(len(ndd.shape), nworld_axes):
+        wcs_dict[f'CD{nworld_axes}_{j+1}'] = 1
 
     return wcs_dict
 

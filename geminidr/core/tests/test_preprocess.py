@@ -5,6 +5,8 @@ from itertools import count
 import os
 
 import astrodata
+from astrodata.testing import ad_compare
+import gemini_instruments
 import numpy as np
 import pytest
 from astrodata.testing import ad_compare, download_from_archive

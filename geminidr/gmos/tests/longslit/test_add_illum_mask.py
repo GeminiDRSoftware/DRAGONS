@@ -25,6 +25,8 @@ def test_add_illum_mask_position(filename, start_row):
     p.prepare()
     ad = p.addIllumMaskToDQ().pop()
 
+    start_row -= 2 ## because we are growing the mask by 2 rows
+
     # Chop off the bottom 200 rows because of the bias issue
     # and the bottom of the longslit mask for pre-Hamamatsu data
     # (larger CCDs) and  choose a middle column in case of edge effects
