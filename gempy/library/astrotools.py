@@ -184,51 +184,6 @@ def std_from_pixel_variations(array, separation=5, **kwargs):
     return stats.sigma_clipped_stats(diffs[ok], **kwargs)[2] / np.sqrt(2)
 
 
-def rasextodec(string):
-    """
-    Convert hh:mm:ss.sss to decimal degrees
-    """
-    match_ra = re.match(r"(\d+):(\d+):(\d+\.\d+)", string)
-    if match_ra:
-        hours = float(match_ra.group(1))
-        minutes = float(match_ra.group(2))
-        secs = float(match_ra.group(3))
-
-        minutes += (secs/60.0)
-        hours += (minutes/60.0)
-
-        degrees = hours * 15.0
-    else:
-        raise ValueError('Invalid RA string')
-
-    return degrees
-
-def degsextodec(string):
-    """
-    Convert [-]dd:mm:ss.sss to decimal degrees
-    """
-    match_dec = re.match(r"(-*)(\d+):(\d+):(\d+\.\d+)", string)
-    if match_dec:
-        sign = match_dec.group(1)
-        if sign == '-':
-            sign = -1.0
-        else:
-            sign = +1.0
-
-        degs = float(match_dec.group(2))
-        minutes = float(match_dec.group(3))
-        secs = float(match_dec.group(4))
-
-        minutes += (secs/60.0)
-        degs += (minutes/60.0)
-
-        degs *= sign
-    else:
-        raise ValueError('Invalid Dec string')
-
-    return degs
-
-
 def cartesian_regions_to_slices(regions):
     """
     Convert a sample region(s) string, consisting of a comma-separated list
@@ -478,50 +433,6 @@ def clipped_mean(data):
             break
 
     return mean, sigma
-
-def rasextodec(string):
-    """
-    Convert hh:mm:ss.sss to decimal degrees
-    """
-    match_ra = re.match(r"(\d+):(\d+):(\d+\.\d+)", string)
-    if match_ra:
-        hours = float(match_ra.group(1))
-        minutes = float(match_ra.group(2))
-        secs = float(match_ra.group(3))
-
-        minutes += (secs/60.0)
-        hours += (minutes/60.0)
-
-        degrees = hours * 15.0
-    else:
-        raise ValueError('Invalid RA string')
-
-    return degrees
-
-def degsextodec(string):
-    """
-    Convert [-]dd:mm:ss.sss to decimal degrees
-    """
-    match_dec = re.match(r"(-*)(\d+):(\d+):(\d+\.\d+)", string)
-    if match_dec:
-        sign = match_dec.group(1)
-        if sign == '-':
-            sign = -1.0
-        else:
-            sign = +1.0
-
-        degs = float(match_dec.group(2))
-        minutes = float(match_dec.group(3))
-        secs = float(match_dec.group(4))
-
-        minutes += (secs/60.0)
-        degs += (minutes/60.0)
-
-        degs *= sign
-    else:
-        raise ValueError('Invalid Dec string')
-
-    return degs
 
 
 # The following functions and classes were borrowed from STSCI's spectools

@@ -66,20 +66,6 @@ def test_std_from_pixel_variations(separation):
     assert abs(at.std_from_pixel_variations(data, separation=separation) - 1) < 0.02
 
 
-def test_rasextodec():
-    rastring = '20:30:40.506'
-    ra = at.rasextodec(rastring)
-    assert abs(ra - 307.668775) < 0.0001
-
-
-def test_degsextodec():
-    decstringneg = '-60:50:40.302'
-    decstringpos = '60:50:40.302'
-    decneg = at.degsextodec(decstringneg)
-    decpos = at.degsextodec(decstringpos)
-    assert abs(decneg + decpos - 0.) < 0.0001
-
-
 def test_get_corners_2d():
     corners = at.get_corners((300, 500))
     assert corners == [(0, 0), (299, 0), (0, 499), (299, 499)]
