@@ -259,12 +259,8 @@ class Register(PrimitivesBASE):
                 pass
             else:
                 ra, dec = ad[0].wcs(x, y)
-            ad[0].OBJCAT['X_WORLD'] = [
-                re.sub('[dms]', ':', Angle(r / 15, unit=u.deg).to_string(
-                    precision=3, pad=True))[:-1] for r in ra]
-            ad[0].OBJCAT['Y_WORLD'] = [
-                re.sub('[dms]', ':', Angle(d, unit=u.deg).to_string(
-                    precision=2, pad=True, alwayssign=True))[:-1] for d in dec]
+                ad[0].OBJCAT['X_WORLD'] = ra
+                ad[0].OBJCAT['Y_WORLD'] = dec
             adoutputs.append(ad)
 
         # Timestamp and update filenames
