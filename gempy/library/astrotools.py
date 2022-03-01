@@ -7,7 +7,7 @@ The astroTools module contains astronomy specific utility functions
 import os
 import re
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate, optimize
 
 from astropy import units as u
 from astropy import stats
@@ -60,6 +60,43 @@ def boxcar(data, operation=np.ma.median, size=1):
         boxarray = np.array([operation.reduce(data[max(i-size, 0):i+size+1])
                              for i in range(len(data))])
     return boxarray
+
+
+def calculate_scaling(x, y, sigma_x=None, sigma_y=None):
+    """
+    Determine the optimum value by which to scale inputs so that they match
+    a set of reference values
+
+    Parameters
+    ----------
+    x: array
+        values to be scaled (inputs)
+    y: array
+        values to be scaled to (references)
+    sigma_x: array/None
+        standard deviations on each input value
+    sigma_y: array/None
+        standard deviations on each reference value
+
+    Returns
+    -------
+    factor: float
+        the best-fitting scaling factor
+    """
+    x, y = np.asarray(x), np.asarray(y)
+    if sigma_x is None and sigma_y is None:
+        return (x * y).sum() / (x * x).sum()
+    elif sigma_x is None:
+        sigma_y = np.asarray(sigma_y)
+        return (x * y / sigma_y**2).sum() / (x * x / sigma_y**2).sum()
+    elif sigma_y is None:
+        sigma_x = np.asarray(sigma_x)
+        return np.square(y / sigma_x).sum() / (x * y / sigma_x**2).sum()
+
+    # Calculus has failed me here, I don't think this is linear
+    fun = lambda f, x, y, sx, sy: np.square((f * x - y) / (f*f*sx*sx + sy*sy)).sum()
+    result = optimize.minimize(fun, [1.], args=(x, y, sigma_x, sigma_y))
+    return result.x[0]
 
 
 def divide0(numerator, denominator):
