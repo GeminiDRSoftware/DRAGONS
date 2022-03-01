@@ -209,8 +209,6 @@ def cartesian_regions_to_slices(regions):
 
     origin = 1
 
-    ranges = regions.strip('[]').split(',')
-
     slices = []
     ranges = parse_user_regions(regions, allow_step=True)
 
