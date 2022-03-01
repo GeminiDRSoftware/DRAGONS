@@ -79,13 +79,6 @@ def test_get_corners_3d():
     assert corners == expected_corners
 
 
-def test_rotate_2d():
-    rotation_matrix = at.rotate_2d(30.)
-    expected_matrix = np.array([[0.8660254, -0.5],
-                                [0.5, 0.8660254]])
-    assert np.allclose(rotation_matrix, expected_matrix)
-
-
 def test_clipped_mean():
     dist = np.array([5, 5, 4, 7, 7, 4, 3, 5, 2, 6, 5, 12, 0,
                      9, 10, 13, 2, 14, 6, 3, 50])

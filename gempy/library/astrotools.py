@@ -273,6 +273,7 @@ def parse_user_regions(regions, dtype=int, allow_step=False):
         ranges.append(tuple(values))
     return ranges
 
+
 def create_mask_from_regions(points, regions=None):
     """
     Produce a boolean mask given an array of x-values and a list of unmasked
@@ -389,19 +390,6 @@ def transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
     return list(None if arg is None
                 else arg.T[section] if transpose else arg[section] for arg in args)
-
-
-def rotate_2d(degs):
-    """
-    Little helper function to return a basic 2-D rotation matrix.
-
-    :param degs: rotation amount, in degrees
-    :type degs: float
-    """
-    rads = np.radians(degs)
-    sine = np.sin(rads)
-    cosine = np.cos(rads)
-    return np.array([[cosine, -sine], [sine, cosine]])
 
 
 def clipped_mean(data):
