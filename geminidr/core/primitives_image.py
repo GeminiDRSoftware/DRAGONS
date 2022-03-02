@@ -16,7 +16,7 @@ from astrodata.provenance import add_provenance
 from astrodata import Section
 from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
-from gempy.library import transform
+from gempy.library import astrotools as at, transform
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from recipe_system.utils.md5 import md5sum
 
@@ -647,6 +647,122 @@ class Image(Preprocess, Register, Resample):
                             ad *= factor
 
             ad.update_filename(suffix=params["suffix"], strip=True)
+        return adinputs
+
+    def scaleByObjectFlux(self, adinputs=None, **params):
+        """
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        tolerance: float (0 <= tolerance <= 1)
+            tolerance within which scaling must match exposure time to be used
+        use_common: bool
+            use only sources common to all frames?
+        radius: float
+            matching radius in arcseconds
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        tolerance = params["tolerance"]
+        use_common = params["use_common"]
+        radius = params["radius"]
+
+        if len(adinputs) <= 1:
+            log.stdinfo("No scaling will be performed, since at least two "
+                        f"AstroData objects are required for {self.myself()}")
+            return adinputs
+
+        ref_ad = adinputs[0]
+        if tolerance > 0:
+            if set(len(ad) for ad in adinputs) != {1}:
+                raise ValueError(f"{self.myself()} requires all inputs to have "
+                                 "only 1 extension")
+            try:
+                ref_objcat = ref_ad[0].OBJCAT['X_WORLD', 'Y_WORLD', 'FLUX_AUTO',
+                                              'FLUXERR_AUTO']
+            except (AttributeError, KeyError):
+                log.warning(f"{adinputs[0].filename} either has no OBJCAT or it "
+                            "is lacking the required columns - continuing")
+                return adinputs
+            else:
+                ref_coords = SkyCoord(ref_objcat['X_WORLD'], ref_objcat['Y_WORLD'],
+                                      unit=u.deg)
+        else:
+            log.stdinfo("Scaling all images by exposure time only.")
+            use_common = False  # it's irrelevant
+
+        ref_texp = ref_ad.exposure_time()
+        scale_factors = [1]  # for first (reference) image
+
+        # If use_common is True, we'll have two passes through this loop:
+        # the first to identify the sources in common to all frames, and the
+        # second to do the work. If it's False, we only do the second pass.
+        while True:
+            for ad in adinputs[1:]:
+                texp = ad.exposure_time()
+                time_scaling = ref_texp / texp
+                if tolerance == 0:
+                    scale_factors.append(texp / ref_texp)
+                    continue
+                try:
+                    objcat = ad[0].OBJCAT['X_WORLD', 'Y_WORLD', 'FLUX_AUTO',
+                                          'FLUXERR_AUTO']
+                except (AttributeError, KeyError):
+                    log.warning(f"{ad.filename} either has no OBJCAT or it "
+                                "is lacking the required columns - scaling by "
+                                f"exposure times ({ref_texp}/{texp})")
+                    scale_factors.append(time_scaling)
+                    continue
+
+                cat = SkyCoord(objcat['X_WORLD'], objcat['Y_WORLD'], unit=u.deg)
+                idx, d2d, _ = ref_coords.match_to_catalog_sky(cat)
+                matched = d2d < radius * u.arcsec
+                if use_common:  # still making the common source catalogue
+                    ref_objcat = ref_objcat[matched]
+                    ref_coords = ref_coords[matched]
+                    log.debug(f"After {ad.filename} there are {len(ref_objcat)} "
+                              "sources in common.")
+                    if not ref_objcat:
+                        log.warning("No objects are common to all images. "
+                                    "Setting use_common=False.")
+                        ref_objcat = ref_ad[0].OBJCAT[
+                            'X_WORLD', 'Y_WORLD', 'FLUX_AUTO', 'FLUXERR_AUTO']
+                        ref_coords = SkyCoord(
+                            ref_objcat['X_WORLD'], ref_objcat['Y_WORLD'], unit=u.deg)
+                        break
+                else:  # calculate the scaling
+                    if matched.sum():
+                        scaling = at.calculate_scaling(
+                            x=objcat['FLUX_AUTO'][idx[matched]],
+                            y=ref_objcat['FLUX_AUTO'][matched],
+                            sigma_x=objcat['FLUXERR_AUTO'][idx[matched]],
+                            sigma_y=ref_objcat['FLUXERR_AUTO'][matched])
+                        if tolerance == 1 or ((1 - tolerance) <= scaling <=
+                                              1 / (1 - tolerance)):
+                            scale_factors.append(scaling)
+                        else:
+                            log.warning(f"Scaling factor {scaling:.3f} for "
+                                        f"{ad.filename} is inconsisent with "
+                                        f"exposure time scaling {time_scaling:.3f}")
+                            scale_factors.append(time_scaling)
+                    else:
+                        log.warning(f"No sources matched between {ref_ad.filename}"
+                                    f" and {ad.filename}")
+                        scale_factors.append(time_scaling)
+            if not use_common:
+                break
+            use_common = False
+
+        for ad, scaling in zip(adinputs, scale_factors):
+            log.stdinfo(f"Scaling {ad.filename} by {scaling:.3f}")
+            if scaling != 1:
+                ad.multiply(scaling)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
         return adinputs
 
     def _needs_fringe_correction(self, ad):
