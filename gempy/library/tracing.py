@@ -32,7 +32,7 @@ from scipy import interpolate, optimize, signal
 
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from gempy.library.nddops import NDStacker, sum1d
+from gempy.library.nddops import NDStacker, sum1d, unpack_nddata
 from gempy.utils import logutils
 
 from . import astrotools as at
@@ -579,10 +579,10 @@ def get_extrema(profile, prof_mask, min_snr=3):
     extrema = np.multiply.reduce(diffs, axis=0) >= 0
     extrema_types = np.add.reduce(diffs, axis=0)
     xpixels = np.arange(profile.size)[1:-1]
-    maxima = pinpoint_peaks(profile, prof_mask,
-                            xpixels[np.logical_and(extrema, extrema_types > 0)], halfwidth=3)
-    minima = pinpoint_peaks(-profile, prof_mask,
-                            xpixels[np.logical_and(extrema, extrema_types < 0)], halfwidth=3)
+    maxima = pinpoint_peaks(profile, mask=prof_mask,
+                            peaks=xpixels[np.logical_and(extrema, extrema_types > 0)], halfwidth=3)
+    minima = pinpoint_peaks(-profile, mask=prof_mask,
+                            peaks=xpixels[np.logical_and(extrema, extrema_types < 0)], halfwidth=3)
     extrema = sorted(zip(minima[0]+maxima[0], [-x for x in minima[1]]+maxima[1],
                          [False]*len(minima[0])+[True]*len(maxima[0])))
 
@@ -819,7 +819,8 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     return locations, all_limits, profile, prof_mask
 
 
-def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_sep=3,
+@unpack_nddata
+def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, min_sep=3,
                        min_frac=0.20, reject_bad=True, pinpoint_index=-1):
     """
     Find peaks in a 1D array using a wavelet method. This uses scipy.signal
@@ -917,7 +918,7 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
 
     # Clip the really noisy parts of the data and get more accurate positions
     #pinpoint_data[snr < 0.5] = 0
-    peaks = pinpoint_peaks(pinpoint_data, mask, peaks,
+    peaks = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
                            halfwidth=int(0.5*np.median(widths)))[0]
 
     # Clean up peaks that are too close together
@@ -927,7 +928,7 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
             break
         i = np.argmax(diffs < min_sep)
         # Replace with mean of re-pinpointed points
-        new_peaks = pinpoint_peaks(pinpoint_data, mask, peaks[i:i+2])[0]
+        new_peaks = pinpoint_peaks(pinpoint_data, peaks=peaks[i:i+2])[0]
         del peaks[i+1]
         if new_peaks:
             peaks[i] = np.mean(new_peaks)
@@ -958,7 +959,9 @@ def find_wavelet_peaks(data, widths, mask=None, variance=None, min_snr=1, min_se
     return T
 
 
-def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=None):
+@unpack_nddata
+def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
+                   variance=None):
     """
     Improves positions of peaks with centroiding. It uses a deliberately
     small centroiding box to avoid contamination by nearby lines, which
@@ -981,6 +984,8 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=None):
         number of pixels either side of initial peak to use in centroid
     threshold: float
         threshold to cut data
+    variance: ndarray/None
+        not used; present to allow unpack_nddata to work
 
     Returns
     -------
@@ -1084,7 +1089,8 @@ def reject_bad_peaks(peaks):
     return peaks
 
 
-def get_limits(data, mask, variance=None, peaks=[], threshold=0, min_snr=3,
+@unpack_nddata
+def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
                extrema=None):
     """
     Determines the region in a 1D array associated with each already-identified
@@ -1242,9 +1248,10 @@ def cwt_ricker(data, widths, **kwargs):
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-TRACING
 
-def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum=10,
-                step=10, initial_tolerance=1.0, max_shift=0.05, max_missed=5,
-                func=NDStacker.median, viewer=None):
+@unpack_nddata
+def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
+                cwidth=5, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
+                max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None):
     """
     This function traces features along one axis of a two-dimensional image.
     Initial peak locations are provided and then these are matched to peaks
@@ -1259,45 +1266,37 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
 
     Parameters
     ----------
-    ext : single-sliced AD object
+    data : array/single-sliced AD object/NDData-like
         The extension within which to trace features.
-
     axis : int (0 or 1)
         Axis along which to trace (0=y-direction, 1=x-direction).
-
+    mask : ndarray/None
+        mask associated with the image
+    variance: ndarray/None
+        variance associated with the image
     start : int/None
         Row/column to start trace (None => middle).
-
     initial : sequence
-        Coordinates of peaks.
-
+        Coordinates of peaks
     cwidth : int
         Width of centroid box in pixels.
-
     rwidth : int/None
         width of Ricker filter to apply to each collapsed 1D slice
-
     nsum : int
         Number of rows/columns to combine at each step.
-
     step : int
         Step size along axis in pixels.
-
     initial_tolerance : float/None
         Maximum perpendicular shift (in pixels) between provided location and
         first calculation of peak.
-
     max_shift: float
         Maximum perpendicular shift (in pixels) from pixel to pixel.
-
     max_missed: int
         Maximum number of interactions without finding line before line is
         considered lost forever.
-
     func: callable
         function to use when collapsing to 1D. This takes the data, mask, and
         variance as arguments, and returns 1D versions of all three
-
     viewer: imexam viewer or None
         Viewer to draw lines on.
 
@@ -1310,12 +1309,12 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
     # Make life easier for the poor coder by transposing data if needed,
     # so that we're always tracing along columns
     if axis == 0:
-        ext_data = ext.data
-        ext_mask = None if ext.mask is None else ext.mask & DQ.not_signal
+        ext_data = data
+        ext_mask = None if mask is None else mask & DQ.not_signal
         direction = "row"
     else:
-        ext_data = ext.data.T
-        ext_mask = None if ext.mask is None else ext.mask.T & DQ.not_signal
+        ext_data = data.T
+        ext_mask = None if mask is None else mask.T & DQ.not_signal
         direction = "column"
 
     if start is None:
@@ -1337,7 +1336,7 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
     if initial_tolerance is None:
         initial_peaks = initial
     else:
-        peaks = pinpoint_peaks(data, mask, initial)[0]
+        peaks = pinpoint_peaks(data, peaks=initial, mask=mask)[0]
         initial_peaks = []
         for peak in initial:
             j = np.argmin(abs(np.array(peaks) - peak))
@@ -1391,7 +1390,8 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
             # the data array 0 as well, and we can't find any peaks
             if any(mask[0] == 0) and not all(np.isinf(var[0])):
                 last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
-                peaks = pinpoint_peaks(data[0], mask[0], last_peaks, halfwidth=halfwidth)[0]
+                peaks = pinpoint_peaks(data[0], peaks=last_peaks, mask=mask[0],
+                                       halfwidth=halfwidth)[0]
 
                 for i, (last_row, old_peak) in enumerate(last_coords):
                     if np.isnan(old_peak):
@@ -1414,8 +1414,9 @@ def trace_lines(ext, axis, start=None, initial=None, cwidth=5, rwidth=None, nsum
                         elif j < lookback:
                             # Investigate more heavily-binned profiles
                             try:
-                                new_peak = pinpoint_peaks(data[j+1], mask[j+1],
-                                                          [old_peak], halfwidth=halfwidth)[0][0]
+                                new_peak = pinpoint_peaks(
+                                    data[j+1], peaks=[old_peak], mask=mask[j+1],
+                                    halfwidth=halfwidth)[0][0]
                             except IndexError:  # No peak there
                                 new_peak = np.inf
                     else:

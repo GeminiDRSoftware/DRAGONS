@@ -101,13 +101,20 @@ def unpack_nddata(fn):
     to be sent instead. This is similar to nddata.support_nddata, but
     handles variance and doesn't give warnings if the NDData instance has
     attributes set which aren't picked up by the function.
+
+    It's also now happy with an np.ma.masked_array
     """
     @wraps(fn)
-    def wrapper(data, mask=None, variance=None, **kwargs):
-        if isinstance(data, NDAstroData):
-            ret_value = fn(data.data, mask=data.mask, variance=data.variance, **kwargs)
+    def wrapper(data, mask=None, variance=None, *args, **kwargs):
+        if hasattr(data, 'mask'):
+            try:
+                ret_value = fn(data.data, mask=data.mask, variance=data.variance,
+                               *args, **kwargs)
+            except AttributeError:
+                ret_value = fn(data.data, mask=data.mask, variance=variance,
+                               *args, **kwargs)
         else:
-            ret_value = fn(data, mask=mask, variance=variance, **kwargs)
+            ret_value = fn(data, mask=mask, variance=variance, *args, **kwargs)
         return ret_value
     return wrapper
 
