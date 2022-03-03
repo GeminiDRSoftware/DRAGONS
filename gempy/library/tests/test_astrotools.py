@@ -17,16 +17,34 @@ def test_array_from_list():
     np.testing.assert_array_equal(result.value, values)
 
 
-def test_calculate_scaling():
+def test_calculate_scaling_without_outlier_removal():
     x = np.arange(1, 11)
     y = 2 * x
     y[3:5] = [5, 7]
     sigma_x = np.ones_like(x)
     sigma_y = np.full_like(x, 2.)
-    assert abs(at.calculate_scaling(x, y) - 1.92987013) < 1e-7
-    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x) - 1.95154778) < 1e-7
-    assert abs(at.calculate_scaling(x, y, sigma_y=sigma_y) - 1.92987013) < 1e-7
-    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x, sigma_y=sigma_y) - 1.95100518) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma=None) - 1.92987013) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x, sigma=None)
+               - 1.95154778) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_y=sigma_y, sigma=None)
+               - 1.92987013) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x, sigma_y=sigma_y, sigma=None)
+               - 1.95100518) < 1e-7
+
+
+def test_calculate_scaling_with_outlier_removal():
+    x = np.arange(1, 11)
+    y = 2 * x
+    y[3:5] = [5, 7]
+    sigma_x = np.ones_like(x)
+    sigma_y = np.full_like(x, 2.)
+    assert abs(at.calculate_scaling(x, y, sigma=2, niter=2) - 2) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x, sigma=2, niter=2)
+               - 2) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_y=sigma_y, sigma=2, niter=2)
+               - 2) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x, sigma_y=sigma_y, sigma=2, niter=2)
+               - 2) < 1e-7
 
 
 def test_divide0():

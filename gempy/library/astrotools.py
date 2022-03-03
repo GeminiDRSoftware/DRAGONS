@@ -11,6 +11,7 @@ from scipy import interpolate, optimize
 
 from astropy import units as u
 from astropy import stats
+from astropy.modeling import models, fitting
 
 
 def array_from_list(list_of_quantities, unit=None):
@@ -62,7 +63,7 @@ def boxcar(data, operation=np.ma.median, size=1):
     return boxarray
 
 
-def calculate_scaling(x, y, sigma_x=None, sigma_y=None):
+def calculate_scaling(x, y, sigma_x=None, sigma_y=None, sigma=3, niter=2):
     """
     Determine the optimum value by which to scale inputs so that they match
     a set of reference values
@@ -77,6 +78,10 @@ def calculate_scaling(x, y, sigma_x=None, sigma_y=None):
         standard deviations on each input value
     sigma_y: array/None
         standard deviations on each reference value
+    sigma: float/None
+        sigma_clipping value (None => no clipping)
+    niter: int
+        number of clipping iterations
 
     Returns
     -------
@@ -85,18 +90,34 @@ def calculate_scaling(x, y, sigma_x=None, sigma_y=None):
     """
     x, y = np.asarray(x), np.asarray(y)
     if sigma_x is None and sigma_y is None:
-        return (x * y).sum() / (x * x).sum()
+        weights = None
+        init_guess = (x * y).sum() / (x * x).sum()
     elif sigma_x is None:
-        sigma_y = np.asarray(sigma_y)
-        return (x * y / sigma_y**2).sum() / (x * x / sigma_y**2).sum()
+        weights = 1 / np.asarray(sigma_y)
+        init_guess = (x * y *weights**2).sum() / (x * x *weights**2).sum()
     elif sigma_y is None:
-        sigma_x = np.asarray(sigma_x)
-        return np.square(y / sigma_x).sum() / (x * y / sigma_x**2).sum()
+        weights = 1 / np.asarray(sigma_x)
+        init_guess = np.square(y * weights).sum() / (x * y *weights**2).sum()
+    else:
+        # Calculus has failed me here, I don't think this is linear
+        fun = lambda f, x, y, sx, sy: np.square((f * x - y) / (f*f*sx*sx + sy*sy)).sum()
+        result = optimize.minimize(fun, [1.], args=(x, y, sigma_x, sigma_y))
+        init_guess = result.x[0]
+        # Assume the initial guess is pretty good and so the weights are these
+        weights = 1 / np.sqrt(sigma_y ** 2 + (init_guess * sigma_x)**2)
 
-    # Calculus has failed me here, I don't think this is linear
-    fun = lambda f, x, y, sx, sy: np.square((f * x - y) / (f*f*sx*sx + sy*sy)).sum()
-    result = optimize.minimize(fun, [1.], args=(x, y, sigma_x, sigma_y))
-    return result.x[0]
+    if sigma is None:
+        return init_guess
+
+    print(x)
+    print(y)
+    m_init = models.Scale(init_guess)
+    fit_it = fitting.FittingWithOutlierRemoval(
+        fitting.LinearLSQFitter(), outlier_func=stats.sigma_clip, niter=niter,
+        sigma=sigma)
+    m_final, _ = fit_it(m_init, x, y, weights=weights)
+    print(_)
+    return m_final.factor.value
 
 
 def divide0(numerator, denominator):
