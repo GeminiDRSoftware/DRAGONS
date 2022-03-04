@@ -960,8 +960,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
 
 @unpack_nddata
-def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
-                   variance=None):
+def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None):
     """
     Improves positions of peaks with centroiding. It uses a deliberately
     small centroiding box to avoid contamination by nearby lines, which
@@ -984,8 +983,6 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
         number of pixels either side of initial peak to use in centroid
     threshold: float
         threshold to cut data
-    variance: ndarray/None
-        not used; present to allow unpack_nddata to work
 
     Returns
     -------

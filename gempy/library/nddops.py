@@ -105,16 +105,16 @@ def unpack_nddata(fn):
     It's also now happy with an np.ma.masked_array
     """
     @wraps(fn)
-    def wrapper(data, mask=None, variance=None, *args, **kwargs):
+    def wrapper(data, *args, **kwargs):
         if hasattr(data, 'mask'):
-            try:
-                ret_value = fn(data.data, mask=data.mask, variance=data.variance,
-                               *args, **kwargs)
-            except AttributeError:
-                ret_value = fn(data.data, mask=data.mask, variance=variance,
-                               *args, **kwargs)
+            if 'mask' not in kwargs:
+                kwargs['mask'] = data.mask
+            if ('variance' in inspect.signature(fn).parameters and
+                    'variance' not in kwargs and hasattr(data, 'variance')):
+                kwargs['variance'] = data.variance
+            ret_value = fn(data.data, *args, **kwargs)
         else:
-            ret_value = fn(data, mask=mask, variance=variance, *args, **kwargs)
+            ret_value = fn(data, *args, **kwargs)
         return ret_value
     return wrapper
 
