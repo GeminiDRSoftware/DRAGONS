@@ -1215,14 +1215,15 @@ def peak_limit(spline, peak, limit, threshold):
 
 
 @insert_descriptor_values("dispersion_axis")
-def stack_slit(ext, percentile=50, section=slice(None), dispersion_axis=None):
+@unpack_nddata
+def stack_slit(data, mask=None, percentile=50, section=slice(None), dispersion_axis=None):
     _slice = tuple([section if axis == dispersion_axis else slice(None)
-                   for axis in range(ext.data.ndim)])
-    if ext.mask is None:
-        return np.percentile(ext.data[_slice], percentile, axis=dispersion_axis)
+                   for axis in range(data.ndim)])
+    if mask is None:
+        return np.percentile(data[_slice], percentile, axis=dispersion_axis)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', message='All-NaN slice')
-        profile = np.nanpercentile(np.where(ext.mask[_slice], np.nan, ext.data[_slice]),
+        profile = np.nanpercentile(np.where(mask[_slice], np.nan, data[_slice]),
                                    percentile, axis=dispersion_axis)
     return np.nan_to_num(profile, copy=False, nan=np.nanmedian(profile))
 

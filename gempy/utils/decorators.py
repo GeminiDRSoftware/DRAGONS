@@ -25,19 +25,18 @@ def insert_descriptor_values(*descriptors):
             if descriptors:
                 all_descriptors = descriptors
 
-            new_kwargs = {p.name: p.default
-                          for p in inspect.signature(fn).parameters.values()
-                          if p.default is not p.empty}
-            new_kwargs.update(**kwargs)
-            for k, v in new_kwargs.items():
+            fn_kwargs = {p.name: p.default
+                         for p in inspect.signature(fn).parameters.values()
+                         if p.default is not p.empty}
+            for k, v in fn_kwargs.items():
                 if k in all_descriptors and v is None:
                     desc_kwargs = DESCRIPTOR_KWARGS.get(k, {})
                     # Because we can't expect other people to use the IRAF system
                     if k == "dispersion_axis":
-                        new_kwargs[k] = len(ext.shape) - ext.dispersion_axis()
+                        kwargs[k] = len(ext.shape) - ext.dispersion_axis()
                     else:
-                        new_kwargs[k] = getattr(ext, k)(**desc_kwargs)
-            return fn(ext, *args, **new_kwargs)
+                        kwargs[k] = getattr(ext, k)(**desc_kwargs)
+            return fn(ext, *args, **kwargs)
         return gn
     return inner_decorator
 
