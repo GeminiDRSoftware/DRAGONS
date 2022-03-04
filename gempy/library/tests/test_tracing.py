@@ -65,7 +65,7 @@ def test_get_limits():
     x = np.arange(CENT * 2)
     y = 100 * np.exp(-0.5 * ((x - CENT) / SIG) ** 2)
 
-    limits = np.asarray(tracing.get_limits(y, None, peaks=[CENT],
+    limits = np.asarray(tracing.get_limits(y, mask=None, peaks=[CENT],
                                            threshold=0.05)[0])
     np.testing.assert_allclose(abs(limits - CENT),
                                SIG * np.sqrt(2 * np.log(20)),
