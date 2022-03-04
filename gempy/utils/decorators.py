@@ -29,7 +29,7 @@ def insert_descriptor_values(*descriptors):
                          for p in inspect.signature(fn).parameters.values()
                          if p.default is not p.empty}
             for k, v in fn_kwargs.items():
-                if k in all_descriptors and v is None:
+                if k in all_descriptors and k not in kwargs:
                     desc_kwargs = DESCRIPTOR_KWARGS.get(k, {})
                     # Because we can't expect other people to use the IRAF system
                     if k == "dispersion_axis":
