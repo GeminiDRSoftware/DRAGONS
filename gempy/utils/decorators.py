@@ -40,3 +40,28 @@ def insert_descriptor_values(*descriptors):
             return fn(ext, *args, **new_kwargs)
         return gn
     return inner_decorator
+
+
+def unpack_nddata(fn):
+    """
+    This decorator wraps a function/staticmethod that expects separate
+    data, mask, and variance parameters and allows an NDAstroData instance
+    to be sent instead. This is similar to nddata.support_nddata, but
+    handles variance and doesn't give warnings if the NDData instance has
+    attributes set which aren't picked up by the function.
+
+    It's also now happy with an np.ma.masked_array
+    """
+    @wraps(fn)
+    def wrapper(data, *args, **kwargs):
+        if hasattr(data, 'mask'):
+            if 'mask' not in kwargs:
+                kwargs['mask'] = data.mask
+            if ('variance' in inspect.signature(fn).parameters and
+                    'variance' not in kwargs and hasattr(data, 'variance')):
+                kwargs['variance'] = data.variance
+            ret_value = fn(data.data, *args, **kwargs)
+        else:
+            ret_value = fn(data, *args, **kwargs)
+        return ret_value
+    return wrapper

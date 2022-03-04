@@ -32,11 +32,11 @@ from scipy import interpolate, optimize, signal
 
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from gempy.library.nddops import NDStacker, sum1d, unpack_nddata
+from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
 from . import astrotools as at
-from ..utils.decorators import insert_descriptor_values
+from ..utils.decorators import insert_descriptor_values, unpack_nddata
 
 log = logutils.get_logger(__name__)
 
