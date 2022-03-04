@@ -104,19 +104,19 @@ def calculate_scaling(x, y, sigma_x=None, sigma_y=None, sigma=3, niter=2):
         result = optimize.minimize(fun, [1.], args=(x, y, sigma_x, sigma_y))
         init_guess = result.x[0]
         # Assume the initial guess is pretty good and so the weights are these
+        # We really want scipy.odr (Orthogonal Distance Regression) but we
+        # have to choose between that and outlier removal, and outlier
+        # removal is more important
         weights = 1 / np.sqrt(sigma_y ** 2 + (init_guess * sigma_x)**2)
 
     if sigma is None:
         return init_guess
 
-    print(x)
-    print(y)
     m_init = models.Scale(init_guess)
     fit_it = fitting.FittingWithOutlierRemoval(
         fitting.LinearLSQFitter(), outlier_func=stats.sigma_clip, niter=niter,
         sigma=sigma)
     m_final, _ = fit_it(m_init, x, y, weights=weights)
-    print(_)
     return m_final.factor.value
 
 

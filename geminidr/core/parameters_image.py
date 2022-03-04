@@ -12,6 +12,7 @@ class applyStackedObjectMaskConfig(config.Config):
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
     threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
 
+
 class fringeCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_fringeCorrected", optional=True)
     fringe = config.ListField("Fringe frame to subtract", (str, AstroData),
@@ -20,6 +21,7 @@ class fringeCorrectConfig(parameters_generic.calRequirementConfig):
     scale_factor = config.ListField("Scale factor for fringe frame", float, None,
                                     optional=True, single=True)
 
+
 class makeFringeFrameConfig(parameters_stack.core_stacking_config, parameters_photometry.detectSourcesConfig):
     subtract_median_image = config.Field("Subtract median image?", bool, True)
     dilation = config.RangeField("Object dilation radius (pixels)", float, 2., min=0)
@@ -27,8 +29,10 @@ class makeFringeFrameConfig(parameters_stack.core_stacking_config, parameters_ph
         self.suffix = "_fringe"
         self.reject_method = "varclip"
 
+
 class makeFringeForQAConfig(makeFringeFrameConfig):
     pass
+
 
 class resampleToCommonFrameConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_align", optional=True)
@@ -39,6 +43,7 @@ class resampleToCommonFrameConfig(config.Config):
     force_affine = config.Field("Force affine transformation for speed?", bool, True)
     reference = config.Field("Name of reference image (optional)", (str, AstroData), None, optional=True)
 
+
 class scaleByIntensityConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_scaled", optional=True)
     section = config.Field("Statistics section", str, None, optional=True)
@@ -48,6 +53,7 @@ class scaleByIntensityConfig(config.Config):
                                  default = "mean")
     separate_ext = config.Field("Scale extensions separately?", bool, False)
 
+
 class scaleByObjectFluxConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_scaledByObjectFlux", optional=True)
     tolerance = config.RangeField("Tolerance for scaling compared to exposure time",
@@ -55,6 +61,7 @@ class scaleByObjectFluxConfig(config.Config):
     use_common = config.Field("Use only sources common to all frames?",
                               bool, True)
     radius = config.RangeField("Matching radius (arcseconds)", float, 0.5, min=0.1)
+
 
 class flagCosmicRaysByStackingConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_CRMasked", optional=True)

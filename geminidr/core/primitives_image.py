@@ -651,6 +651,10 @@ class Image(Preprocess, Register, Resample):
 
     def scaleByObjectFlux(self, adinputs=None, **params):
         """
+        This primitive scales the input images so that the scaled fluxes of
+        the sources in the OBJCAT match those in the reference image (the
+        first image in the list). By setting the input parameter tolerance=0,
+        it is possible to simply scale the images by the exposure times.
 
         Parameters
         ----------
@@ -694,8 +698,10 @@ class Image(Preprocess, Register, Resample):
             log.stdinfo("Scaling all images by exposure time only.")
             use_common = False  # it's irrelevant
 
+        kw_exptime = ref_ad._keyword_for('exposure_time')
         ref_texp = ref_ad.exposure_time()
         scale_factors = [1]  # for first (reference) image
+        exptimes = [ref_texp]
 
         # If use_common is True, we'll have two passes through this loop:
         # the first to identify the sources in common to all frames, and the
@@ -703,9 +709,10 @@ class Image(Preprocess, Register, Resample):
         while True:
             for ad in adinputs[1:]:
                 texp = ad.exposure_time()
+                exptimes.append(texp)
                 time_scaling = ref_texp / texp
                 if tolerance == 0:
-                    scale_factors.append(texp / ref_texp)
+                    scale_factors.append(time_scaling)
                     continue
                 try:
                     objcat = ad[0].OBJCAT['X_WORLD', 'Y_WORLD', 'FLUX_AUTO',
@@ -756,10 +763,16 @@ class Image(Preprocess, Register, Resample):
                 break
             use_common = False
 
-        for ad, scaling in zip(adinputs, scale_factors):
+        for ad, scaling, exptime in zip(adinputs, scale_factors, exptimes):
             log.stdinfo(f"Scaling {ad.filename} by {scaling:.3f}")
             if scaling != 1:
                 ad.multiply(scaling)
+                # ORIGTEXP should always be the *original* exposure
+                # time, so if it already exists, leave it alone!
+                if "ORIGTEXP" not in ad.phu:
+                    ad.phu.set("ORIGTEXP", exptime, "Original exposure time")
+                ad.phu.set(kw_exptime, exptime * scaling,
+                           comment=self.keyword_comments[kw_exptime])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
 
