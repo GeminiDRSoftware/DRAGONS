@@ -1045,11 +1045,25 @@ class Preprocess(PrimitivesBASE):
             matching radius in arcseconds
         """
         def mkcat_image(ad):
-            objcat = ad[0].OBJCAT
-            cat = {(row['X_WORLD'], row['Y_WORLD']):
-                   (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat}
+            try:
+                objcat = ad[0].OBJCAT
+                cat = {(row['X_WORLD'], row['Y_WORLD']):
+                       (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat}
+            except (AttributeError, KeyError):
+                raise ValueError(f"{ad.filename} either has no OBJCAT or it "
+                                "is lacking the required columns")
             return cat
 
+        def calc_scaling_image(objcat, ref_objcat, idx, matched):
+            ref_fluxes = np.array(list(ref_objcat.values()))[matched].T
+            obj_fluxes = np.array(list(objcat.values()))[idx[matched]].T
+            return at.calculate_scaling(x=obj_fluxes[0], y=ref_fluxes[0],
+                                        sigma_x=obj_fluxes[1], sigma_y=ref_fluxes[1])
+
+        # extract a SkyCoord object from a catalogue. Annoyingly, the list of
+        # RA and DEC must be a *list* and NOT a tuple.
+        get_coords = lambda x: SkyCoord(*[list(k) for k in zip(*list(x.keys()))],
+                                        unit=u.deg)
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1070,6 +1084,7 @@ class Preprocess(PrimitivesBASE):
 
         if all_image:
             mkcat = mkcat_image
+            calc_scaling = calc_scaling_image
         else:
             get_coords = lambda ad: SkyCoord(ad.hdr['XTRACTRA'], ad.hdr['XTRACTDE'])
 
@@ -1081,9 +1096,8 @@ class Preprocess(PrimitivesBASE):
                                  "only 1 extension")
             try:
                 ref_objcat = mkcat(ref_ad)
-            except (AttributeError, KeyError):
-                log.warning(f"{adinputs[0].filename} either has no OBJCAT or it "
-                            "is lacking the required columns - continuing")
+            except ValueError as e:
+                log.warning(f"{e} - continuing")
                 return adinputs
         else:
             log.stdinfo("Scaling all images by exposure time only.")
@@ -1097,7 +1111,9 @@ class Preprocess(PrimitivesBASE):
         # If use_common is True, we'll have two passes through this loop:
         # the first to identify the sources in common to all frames, and the
         # second to do the work. If it's False, we only do the second pass.
+        # use_common is False when we want to calculate the scalings.
         while True:
+            ref_coords = get_coords(ref_objcat)
             for ad in adinputs[1:]:
                 texp = ad.exposure_time()
                 exptimes.append(texp)
@@ -1107,36 +1123,32 @@ class Preprocess(PrimitivesBASE):
                     continue
                 try:
                     objcat = mkcat(ad)
-                except (AttributeError, KeyError):
-                    log.warning(f"{ad.filename} either has no OBJCAT or it "
-                                "is lacking the required columns - scaling by "
-                                f"exposure times ({ref_texp}/{texp})")
+                except ValueError as e:
+                    if use_common:
+                        log.warning(f"{e} - there will be no objects common "
+                                    "to all images. Setting use_common=False.")
+                        ref_objcat = mkcat(ref_ad)  # reset
+                        break
+                    log.warning(f"{e} - scaling by exposure times ({time_scaling})")
                     scale_factors.append(time_scaling)
                     continue
 
-                cat = SkyCoord(objcat['X_WORLD'], objcat['Y_WORLD'], unit=u.deg)
-                idx, d2d, _ = ref_coords.match_to_catalog_sky(cat)
+                coords = get_coords(objcat)
+                idx, d2d, _ = ref_coords.match_to_catalog_sky(coords)
                 matched = d2d < radius * u.arcsec
                 if use_common:  # still making the common source catalogue
-                    ref_objcat = ref_objcat[matched]
+                    ref_objcat = {k: v for (k, v), m in zip(ref_objcat.items(), matched) if m}
                     ref_coords = ref_coords[matched]
                     log.debug(f"After {ad.filename} there are {len(ref_objcat)} "
                               "sources in common.")
                     if not ref_objcat:
                         log.warning("No objects are common to all images. "
                                     "Setting use_common=False.")
-                        ref_objcat = ref_ad[0].OBJCAT[
-                            'X_WORLD', 'Y_WORLD', 'FLUX_AUTO', 'FLUXERR_AUTO']
-                        ref_coords = SkyCoord(
-                            ref_objcat['X_WORLD'], ref_objcat['Y_WORLD'], unit=u.deg)
+                        ref_objcat = mkcat(ref_ad)  # reset
                         break
                 else:  # calculate the scaling
                     if matched.sum():
-                        scaling = at.calculate_scaling(
-                            x=objcat['FLUX_AUTO'][idx[matched]],
-                            y=ref_objcat['FLUX_AUTO'][matched],
-                            sigma_x=objcat['FLUXERR_AUTO'][idx[matched]],
-                            sigma_y=ref_objcat['FLUXERR_AUTO'][matched])
+                        scaling = calc_scaling(objcat, ref_objcat, idx, matched)
                         if tolerance == 1 or ((1 - tolerance) <= scaling <=
                                               1 / (1 - tolerance)):
                             scale_factors.append(scaling)
