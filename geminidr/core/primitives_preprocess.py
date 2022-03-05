@@ -1046,8 +1046,8 @@ class Preprocess(PrimitivesBASE):
         """
         def mkcat_image(ad):
             objcat = ad[0].OBJCAT
-            cat = {SkyCoord(row['X_WORLD'], row['Y_WORLD'], unit=u.deg):
-                       (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat}
+            cat = {(row['X_WORLD'], row['Y_WORLD']):
+                   (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat}
             return cat
 
 
