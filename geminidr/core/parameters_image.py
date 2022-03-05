@@ -54,15 +54,6 @@ class scaleByIntensityConfig(config.Config):
     separate_ext = config.Field("Scale extensions separately?", bool, False)
 
 
-class scaleByObjectFluxConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_scaledByObjectFlux", optional=True)
-    tolerance = config.RangeField("Tolerance for scaling compared to exposure time",
-                                  float, 0, min=0, max=1, inclusiveMax=True)
-    use_common = config.Field("Use only sources common to all frames?",
-                              bool, True)
-    radius = config.RangeField("Matching radius (arcseconds)", float, 0.5, min=0.1)
-
-
 class flagCosmicRaysByStackingConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_CRMasked", optional=True)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 7., min=0)
