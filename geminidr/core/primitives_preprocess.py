@@ -1044,6 +1044,13 @@ class Preprocess(PrimitivesBASE):
         radius: float
             matching radius in arcseconds
         """
+        def mkcat_image(ad):
+            objcat = ad[0].OBJCAT
+            cat = {SkyCoord(row['X_WORLD'], row['Y_WORLD'], unit=u.deg):
+                       (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat}
+            return cat
+
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -1056,24 +1063,28 @@ class Preprocess(PrimitivesBASE):
                         f"AstroData objects are required for {self.myself()}")
             return adinputs
 
+        all_image = all('IMAGE' in ad.tags for ad in adinputs)
+        all_spect = all('SPECT' in ad.tags for ad in adinputs)
+        if not (all_image ^ all_spect):
+            raise TypeError("All images must be either IMAGE or SPECT")
+
+        if all_image:
+            mkcat = mkcat_image
+        else:
+            get_coords = lambda ad: SkyCoord(ad.hdr['XTRACTRA'], ad.hdr['XTRACTDE'])
+
         ref_ad = adinputs[0]
-        if 'IMAGE' not in ref_ad.tags:
-            raise TypeError(f'{self.myself()} only works on IMAGEs')
 
         if tolerance > 0:
             if set(len(ad) for ad in adinputs) != {1}:
                 raise ValueError(f"{self.myself()} requires all inputs to have "
                                  "only 1 extension")
             try:
-                ref_objcat = ref_ad[0].OBJCAT['X_WORLD', 'Y_WORLD', 'FLUX_AUTO',
-                                              'FLUXERR_AUTO']
+                ref_objcat = mkcat(ref_ad)
             except (AttributeError, KeyError):
                 log.warning(f"{adinputs[0].filename} either has no OBJCAT or it "
                             "is lacking the required columns - continuing")
                 return adinputs
-            else:
-                ref_coords = SkyCoord(ref_objcat['X_WORLD'], ref_objcat['Y_WORLD'],
-                                      unit=u.deg)
         else:
             log.stdinfo("Scaling all images by exposure time only.")
             use_common = False  # it's irrelevant
@@ -1095,8 +1106,7 @@ class Preprocess(PrimitivesBASE):
                     scale_factors.append(time_scaling)
                     continue
                 try:
-                    objcat = ad[0].OBJCAT['X_WORLD', 'Y_WORLD', 'FLUX_AUTO',
-                                          'FLUXERR_AUTO']
+                    objcat = mkcat(ad)
                 except (AttributeError, KeyError):
                     log.warning(f"{ad.filename} either has no OBJCAT or it "
                                 "is lacking the required columns - scaling by "
