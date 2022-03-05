@@ -11,6 +11,7 @@ def makeProcessedFlat(p):
     p.addVAR(read_noise=True)
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
+    p.determineSlitEdges()
     p.stackFlats()
     p.normalizeFlat()
     p.thresholdFlatfield()

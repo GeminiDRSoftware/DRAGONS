@@ -50,6 +50,8 @@ from gempy.library.astrotools import array_from_list, transpose_if_needed
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.spectral import Spek1D
+from gempy.library.tracing import (find_wavelet_peaks, trace_lines,
+                                   reject_bad_peaks)
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
@@ -3315,6 +3317,80 @@ class Spect(Resample):
                     log.warning(f"{filename} already exists - cannot write")
 
         return adinputs
+
+    def determineSlitEdges(self, adinputs=None, **params):
+        """
+        Finds the edges of the illuminated regions of the CCD and stores the
+        Chebyshev polynomials used to fit them in a SLITEDGE table.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images with a `SLITEDGE` table attached
+            to the first array.
+        """
+
+        # Set up log
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        # Parse parameters
+        order = params["order"]
+
+        fit1d_params = fit_1D.translate_params(
+                {**params, "function": "chebyshev"})
+        order = fit1d_params.pop("order")
+
+        for ad in adinputs:
+
+            for ext in ad:
+                # Need to date the first derivative perpendicular to the
+                # dispersion axis to find the slit edges.
+                dispaxis = 2 - ext.dispersion_axis()
+                # Need to get the spatial axis.
+                # spatialaxis = 1 if (dispaxis == 2) else 0
+
+                # Take the first derivative of flux to find the slit edges.
+                diffarr = abs(np.diff(ext.data, axis=1-dispaxis))
+
+                # Find the peaks those slit edges register as. Halfway along
+                # the array is likely to be near the maximum constrast with the
+                # unilluminated regions.
+                half = diffarr.shape[1 - dispaxis] // 2
+                edge_guesses = find_wavelet_peaks(diffarr[half],
+                                                  widths=np.array([3.]),
+                                                  min_snr=10, min_sep=20)
+                edge_gueses = reject_bad_peaks(edge_guesses)
+                ref_coords, in_coords = trace_lines(ext, 1-dispaxis,
+                                                    initial=edge_guesses)
+
+                for loc in edge_guesses:
+                    coords = np.array([list(c1) + list(c2)
+                                       for c1, c2 in
+                                       zip(ref_coords.T, in_coords.T)
+                                       if c1[dispaxis] == loc])
+                    values = np.array(sorted(coords,
+                                             key=lambda c: c[1 - dispaxis])).T
+                    ref_coords, in_coords = values[:2], values[2:]
+
+                    # Log the trace
+                    min_value = in_coords[1 - dispaxis].min()
+                    max_value = in_coords[1 - dispaxis].max()
+                    log.debug(f"Edge at {loc:.1f} traced from {min_value} "
+                              f"to {max_value}.")
+
+                    _fit_1d = fit_1D(
+                        in_coords[1 - dispaxis],
+                        domain=[0, ext.shape[1 - dispaxis] - 1],
+                        order=order,
+                        points=in_coords[1 - dispaxis],
+                        **fit1d_params)
+
 
     def _get_arc_linelist(self, waves=None):
         """
