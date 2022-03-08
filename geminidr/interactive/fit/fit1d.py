@@ -715,7 +715,7 @@ class Fit1DPanel:
                  x=None, y=None, weights=None, idx=0, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
                  enable_user_masking=True, enable_regions=True, central_plot=True, extra_masks=None,
-                 show_rejection_panel=True):
+                 show_rejection_panel=True, paramsui_class=FittingParametersUI):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -778,9 +778,9 @@ class Fit1DPanel:
                                         band_model=band_model, extra_masks=extra_masks)
         self.model.add_listener(self.model_change_handler)
 
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, self.model,
-                                                         fitting_parameters,
-                                                         show_rejection_panel=show_rejection_panel)
+        self.fitting_parameters_ui = paramsui_class(visualizer, self.model,
+                                                    fitting_parameters,
+                                                    show_rejection_panel=show_rejection_panel)
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
         reset_button = bm.Button(label="Reset", align='center',

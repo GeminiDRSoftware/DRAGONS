@@ -95,6 +95,27 @@ class BinModel1D(InteractiveModel1D):
         """
         return x
 
+class NumericInputControl:
+    def __init__(self, title, value, mode='int'):
+        self.orig_value = value
+        self.title = title
+        self.component = NumericInput(width=64, value=value, mode=mode)
+
+    def build(self):
+        return row([Div(text=self.title, align='center'),
+                    Spacer(width_policy='max'),
+                    self.component])
+
+    def update(self, value):
+        self.component.value = value
+
+    def reset(self):
+        self.update(self.orig_value)
+
+    @property
+    def value(self):
+        return self.component.value
+
 class BinResettingUI:
     def __init__(self, vis, model, bin_parameters):
         """
@@ -114,16 +135,19 @@ class BinResettingUI:
         self.model = model
         self.original_parameters = bin_parameters
 
-        self.num_input = NumericInput(width=64, value=self.original_parameters['nbins'], mode='int')
-        self.number_bins = row([Div(text="Number of bins", align='center'),
-                                Spacer(width_policy='max'),
-                                self.num_input])
+        # self.num_input = NumericInput(width=64, value=self.original_parameters['nbins'], mode='int')
+        # self.number_bins = row([Div(text="Number of bins", align='center'),
+        #                         Spacer(width_policy='max'),
+        #                         self.num_input])
+
+        self.number_bins = NumericInputControl(title="Number of bins",
+                                               value=self.original_parameters['nbins'])
 
         def _generate_handler(result):
             if result:
                 generate_button.disabled = True
                 def fn():
-                    self.generate_model_regions(self.num_input.value)
+                    self.generate_model_regions(self.number_bins.value)
                     generate_button.disabled = False
                 vis.do_later(fn)
 
@@ -141,7 +165,7 @@ class BinResettingUI:
             'to their original values.  Proceed?', self.reset_dialog_handler)
 
         self.controls_column = (
-            self.number_bins,
+            self.number_bins.build(),
             generate_button,
             reset_button,
         )
@@ -175,7 +199,8 @@ class BinResettingUI:
         This will update the model with the initial bin limit list, which in
         turn will udpate the interface.
         """
-        self.num_input.value = self.original_parameters['nbins']
+        # self.num_input.value = self.original_parameters['nbins']
+        self.number_bins.reset()
         self.model.load_from_tuples(tuples_to_slices(self.original_parameters['bin_list']))
 
     def reset_dialog_handler(self, result):

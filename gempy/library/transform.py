@@ -1306,9 +1306,9 @@ def add_mosaic_wcs(ad, geotable):
     -------
     AstroData: the modified input AD, with WCS attributes
     """
-    if any('mosaic' in getattr(ext.wcs, 'available_frames', '') for ext in ad):
-        raise ValueError("A 'mosaic' frame is already present in one or "
-                         f"more extensions of {ad.filename}")
+    # if any('mosaic' in getattr(ext.wcs, 'available_frames', '') for ext in ad):
+    #     raise ValueError("A 'mosaic' frame is already present in one or "
+    #                      f"more extensions of {ad.filename}")
 
     array_info = gt.array_information(ad)
     offsets = [ad[exts[0]].array_section()

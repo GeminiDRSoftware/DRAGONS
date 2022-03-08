@@ -20,6 +20,8 @@ import astrodata
 import geminidr
 import numpy as np
 from scipy.signal import correlate
+from scipy.interpolate import interp1d, make_interp_spline, make_lsq_spline, splrep, BSpline
+from scipy.interpolate.fitpack2 import InterpolatedUnivariateSpline
 
 from astrodata.provenance import add_provenance
 from astropy import visualization as vis
@@ -70,12 +72,59 @@ class GMOSLongslit():
                          " specifying 'adinputs'. Please instantiate either"
                          "'GMOSClassicLongslit' or 'GMOSNSLongslit' instead.")
 
+class CustomParametersUI(fit1d.FittingParametersUI):
+    def __init__(self, interp_update_function, *args, **kw):
+        interp_allowed = ["Not-a-knot", "Clamped", "Natural", "Custom"]
+        self.interpolation_type = bm.Select(title="Interpolation Mode:", value="Custom",
+                                           options=interp_allowed)
+        # Parameters for make_interp_spline
+        # x0 = [(1, 0.0)] or [(2, 0.0)] or None
+        # x1 = [(1, 0.0)] or [(2, 0.0)] or None
+        boundary_options = ["(1, 0.0)", "(2, 0.0)", "None"]
+        self.k = bineditor.NumericInputControl(title="B-Spline Degree", value=3)
+        self.x0 = bm.Select(title="X0", options=boundary_options, value="(1, 0.0)")
+        self.x1 = bm.Select(title="X1", options=boundary_options, value="(1, 0.0)")
+
+        def fn_change(attr, old, new):
+            print("Calling interp_update_function")
+            interp_update_function()
+
+        self.interpolation_type.on_change('value', fn_change)
+        self.k.component.on_change('value', fn_change)
+        self.x0.on_change('value', fn_change)
+        self.x1.on_change('value', fn_change)
+        super().__init__(*args, **kw)
+
+    def build_column(self):
+        column_list = super().build_column()
+        # Parameters for make_interp_spline
+        # x0 = [(1, 0.0)] or [(2, 0.0)] or None
+        # x1 = [(1, 0.0)] or [(2, 0.0)] or None
+        # k  = natural number
+        column_list.extend([
+            self.k.build(),
+            self.interpolation_type,
+            bm.Div(
+                text=f"If custom, use the following boundaries:",
+                min_width=100,
+                max_width=202,
+                sizing_mode='stretch_width',
+                style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+                width_policy='max'
+            ),
+            self.x0,
+            self.x1
+        ])
+
+        return column_list
+
 class CustomFit1DPanel(fit1d.Fit1DPanel):
     """
     Specialization of Fit1DPanel to change the figure building method,
     allowing to overlay additional data over the main plot.
     """
-    def __init__(self, *args, reconstruct_overlay_points=None, **kw):
+    def __init__(self, *args, reconstruct_overlay_points=None,
+                 **kw):
         """
         reconstruct_overlay_points: callable
             A function that will provide an updated overlay dataset
@@ -83,10 +132,22 @@ class CustomFit1DPanel(fit1d.Fit1DPanel):
         """
         self.reconstruct = reconstruct_overlay_points
         self.segments_data = bm.ColumnDataSource(data={})
+        self.interp_data1 = bm.ColumnDataSource(data={})
+        self.interp_data2 = bm.ColumnDataSource(data={})
+        self.interp_data3 = bm.ColumnDataSource(data={})
         self.overlay_data = bm.ColumnDataSource(data={})
         self._update_overlay_data()
+        self.with_interactive_interpolation = False
 
-        super().__init__(show_rejection_panel=False, *args, **kw)
+        def generate_params_ui(*args, **kw):
+            if self.with_interactive_interpolation:
+                return CustomParametersUI(self._update_interp_curve, *args, **kw)
+            else:
+                return fit1d.FittingParametersUI(*args, **kw)
+
+        super().__init__(show_rejection_panel=False, paramsui_class=generate_params_ui, *args, **kw)
+
+        # Add extra listeners to update our data
         if 'function' in self.visualizer.ui_params.fields:
             def fn_select_change(attr, old, new):
                 self._update_segment_data()
@@ -98,6 +159,42 @@ class CustomFit1DPanel(fit1d.Fit1DPanel):
         at several places.
         """
         self.overlay_data.data = self.reconstruct()
+
+    def _update_interp_curve(self):
+        fitted_data_x = self.model.data.data['x']
+        fitted_data_y = self.model.data.data['y']
+        #doesn't let to use k>3
+       # f1 = interp1d(fitted_data_x, fitted_data_y, kind="cubic", fill_value="extrapolate", bounds_error=False)
+        f1 = InterpolatedUnivariateSpline(fitted_data_x, fitted_data_y, k=3)
+        # t, c, k = splrep(fitted_data_x, fitted_data_y, k=5, s=0)
+        # f3 = BSpline.construct_fast(t, c, k, extrapolate=True)
+        #
+        # if self.with_interactive_interpolation:
+        #     fpars = self.fitting_parameters_ui
+        #     k = fpars.k.value
+        #     bc_type = self.fitting_parameters_ui.interpolation_type.value.lower()
+        #     if bc_type == 'custom':
+        #         bc_type = ([eval(fpars.x0.value)], [eval(fpars.x1.value)])
+        #
+        #     f2 = make_interp_spline(fitted_data_x, fitted_data_y, k=k, bc_type=bc_type)
+        # else:
+        #     f2 = make_interp_spline(fitted_data_x, fitted_data_y, k=5, bc_type=None)
+        overlay_data_x = self.overlay_data.data['x']
+
+        x_points = np.arange(overlay_data_x.min(),overlay_data_x.max())
+        self.interp_data1.data = {
+            'x': x_points,
+            'y': f1(x_points)
+        }
+        # self.interp_data2.data = {
+        #     'x': x_points,
+        #     'y': f2(x_points)
+        # }
+        #
+        # self.interp_data3.data = {
+        #     'x': x_points,
+        #     'y': f3(x_points)
+        # }
 
     def _update_segment_data(self):
         fitted_data_x = self.model.data.data['x']
@@ -141,8 +238,26 @@ class CustomFit1DPanel(fit1d.Fit1DPanel):
         # This is needed to plot how the data stretching beyond the fitting
         # points is set to constant values (same y as first/last center bins)
         self._update_segment_data()
+        self._update_interp_curve()
         p_main.segment(source=self.segments_data,
                        color="crimson", line_width=3)
+
+        p_main.line(
+            x='x', y='y', source=self.interp_data1,
+            line_width=3, legend_label = 'interpolated curve1',
+            color="green", alpha=1
+        )
+        # p_main.line(
+        #     x='x', y='y', source=self.interp_data2,
+        #     line_width=3, legend_label = 'interpolated curve2',
+        #     color="blue", alpha=0.5
+        # )
+        # p_main.line(
+        #     x='x', y='y', source=self.interp_data3,
+        #     line_width=3, legend_label = 'interpolated curve3',
+        #     color="pink", alpha=0.5
+        # )
+
         return p_main, p_supp
 
     def reset_view(self, clip_y_range=True):
@@ -160,6 +275,7 @@ class CustomFit1DPanel(fit1d.Fit1DPanel):
 
         self._update_overlay_data()
         self._update_segment_data()
+        self._update_interp_curve()
 
         try:
             xdata = self.model.data.data[self.xpoint]
@@ -663,7 +779,8 @@ class GMOSClassicLongslit(GMOSSpect):
 
             # Interactive interface for fitting image rows at bin center locations. Image data, normalized
             # to the center of the slit, gets displayed along with fitting points and fitting curve
-            if interactive_reduce and nbins > 1:
+            interactive_reduce3=True
+            if interactive_reduce3 and nbins > 1:
                 reinit_params = ["row", ]
 
                 extras = {"row": RangeField("Row of data to operate on", int, int(len(rows_val)/3), min=1, max=len(rows_val))}
@@ -706,12 +823,16 @@ class GMOSClassicLongslit(GMOSSpect):
                 disp_fitting_pars = fits[0].extract_params()
 
             if nbins > 1:
+                # for k, (data_row, std_row) in enumerate(zip(bin_data_fits.T, bin_std_fits.T)):
+                #     slit_response_data[:, k] = fit_1D(data_row, points=bin_center, **disp_fitting_pars, axis=0,
+                #                                       domain=(cols_val[0], cols_val[-1])).evaluate(cols_val)
+                #     slit_response_std[:,k] = fit_1D(std_row, points=bin_center, **disp_fitting_pars, axis=0,
+                #                                     domain=(cols_val[0], cols_val[-1])).evaluate(cols_val)
                 for k, (data_row, std_row) in enumerate(zip(bin_data_fits.T, bin_std_fits.T)):
-                    slit_response_data[:, k] = fit_1D(data_row, points=bin_center, **disp_fitting_pars, axis=0,
-                                                      domain=(cols_val[0], cols_val[-1])).evaluate(cols_val)
-                    slit_response_std[:,k] = fit_1D(std_row, points=bin_center, **disp_fitting_pars, axis=0,
-                                                    domain=(cols_val[0], cols_val[-1])).evaluate(cols_val)
-
+                    f1 = InterpolatedUnivariateSpline(bin_center, data_row, k=3)
+                    f2 = InterpolatedUnivariateSpline(bin_center, std_row, k=3)
+                    slit_response_data[:,k] = f1(cols_val)
+                    slit_response_std[:,k] = f2(cols_val)
                 # Set extrapolated row ends (before the first bin center and after the last one) to
                 # the constant value of the last fitted point
                 slit_response_data[0:bin_center[0],:] = slit_response_data[bin_center[0],:]
@@ -823,7 +944,7 @@ class GMOSClassicLongslit(GMOSSpect):
 
                 # Display reconstructed slit response ---
                 vmin = slit_response_data.min()
-                vmax = slit_response_data.max()
+                vmax = sigma_clip(slit_response_data, sigma=2).max()
 
                 ax3 = fig.add_subplot(gs[1, 0])
                 im3 = ax3.imshow(slit_response_data, cmap=palette,
@@ -1214,6 +1335,11 @@ class GMOSClassicLongslit(GMOSSpect):
                      "slit illumination file:  \n{}".format(ad.filename, slit_illum_ad.filename))
 
             ad_out = deepcopy(ad)
+
+
+            log.stdinfo(f"{ad.filename}: dividing by the slit illumination function "
+                         f"{slit_illum_ad.filename}")
+
             ad_out.divide(slit_illum_ad)
 
             # Update the header and filename, copying QECORR keyword from flat
