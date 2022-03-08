@@ -1044,27 +1044,6 @@ class Preprocess(PrimitivesBASE):
         radius: float
             matching radius in arcseconds
         """
-        def mkcat_image(ad):
-            try:
-                objcat = ad[0].OBJCAT
-                cat = {(row['X_WORLD'], row['Y_WORLD']):
-                       (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat}
-            except (AttributeError, KeyError):
-                raise ValueError(f"{ad.filename} either has no OBJCAT or it "
-                                "is lacking the required columns")
-            return cat
-
-        def calc_scaling_image(objcat, ref_objcat, idx, matched):
-            ref_fluxes = np.array(list(ref_objcat.values()))[matched].T
-            obj_fluxes = np.array(list(objcat.values()))[idx[matched]].T
-            return at.calculate_scaling(x=obj_fluxes[0], y=ref_fluxes[0],
-                                        sigma_x=obj_fluxes[1], sigma_y=ref_fluxes[1])
-
-        # extract a SkyCoord object from a catalogue. Annoyingly, the list of
-        # RA and DEC must be a *list* and NOT a tuple.
-        get_coords = lambda x: SkyCoord(*[list(k) for k in zip(*list(x.keys()))],
-                                        unit=u.deg)
-
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -1080,16 +1059,25 @@ class Preprocess(PrimitivesBASE):
         all_image = all('IMAGE' in ad.tags for ad in adinputs)
         all_spect = all('SPECT' in ad.tags for ad in adinputs)
         if not (all_image ^ all_spect):
-            raise TypeError("All images must be either IMAGE or SPECT")
+            raise TypeError("All inputs must be either IMAGE or SPECT")
 
         if all_image:
             mkcat = mkcat_image
             calc_scaling = calc_scaling_image
         else:
-            get_coords = lambda ad: SkyCoord(ad.hdr['XTRACTRA'], ad.hdr['XTRACTDE'])
+            all_spect1d = all(len(ext.shape) == 1 for ad in adinputs for ext in ad)
+            all_spect2d = all(len(ad) == 1 and len(ad[0].shape) == 2
+                              for ad in adinputs)
+            if not (all_spect1d ^ all_spect2d):
+                raise TypeError("All inputs must either be single-extension "
+                                "2D spectra or multi-extension 1D spectra")
+
+        # extract a SkyCoord object from a catalogue. Annoyingly, the list of
+        # RA and DEC must be a *list* and NOT a tuple, so abstract this ugliness
+        get_coords = lambda x: SkyCoord(*[list(k) for k in zip(*list(x.keys()))],
+                                        unit=u.deg)
 
         ref_ad = adinputs[0]
-
         if tolerance > 0:
             if set(len(ad) for ad in adinputs) != {1}:
                 raise ValueError(f"{self.myself()} requires all inputs to have "
@@ -1753,3 +1741,42 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
+
+
+# Helper functions for scaleByObjectFlux() follow
+def mkcat_image(ad):
+    """Produce a catalog of sources from a single-extension AstroData IMAGE"""
+    try:
+        objcat = ad[0].OBJCAT
+        cat = {(row['X_WORLD'], row['Y_WORLD']):
+               (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat}
+    except (AttributeError, KeyError):
+        raise ValueError(f"{ad.filename} either has no OBJCAT or it "
+                        "is lacking the required columns")
+    return cat
+
+
+def calc_scaling_image(objcat, ref_objcat, idx, matched):
+    ref_fluxes = np.array(list(ref_objcat.values()))[matched].T
+    obj_fluxes = np.array(list(objcat.values()))[idx[matched]].T
+    return at.calculate_scaling(x=obj_fluxes[0], y=ref_fluxes[0],
+                                sigma_x=obj_fluxes[1], sigma_y=ref_fluxes[1])
+
+
+def mkcat_spect(ad):
+    """Produce a catalogue of sources from a spectroscopic AstroData object"""
+    if len(ad) > 1:  # extracted spectra
+        cat = {(ra, dec): i for i, (ra, dec) in
+               enumerate(zip(ad.hdr['XTRACTRA'], ad.hdr['XTRACTDE']))}
+    else:  # 2D spectrum with multiple sources
+        try:
+            aptable = ad[0].APERTURE
+        except AttributeError:
+            raise ValueError(f"{ad.filename} has no APERTURE table")
+        ra, dec = ad[0].wcs()
+        cat = {(r, d): i for i, (r, d) in zip(ra, dec)}
+    return cat
+
+
+def calc_scaling_spect():
+    pass
