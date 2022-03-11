@@ -22,7 +22,8 @@ from astropy.table import Table
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astrotools as at
+from gempy.library import astromodels as am, astrotools as at
+from gempy.library import tracing
 from gempy.library.filtering import ring_median_filter
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
@@ -1766,15 +1767,24 @@ def calc_scaling_image(objcat, ref_objcat, idx, matched):
 def mkcat_spect(ad):
     """Produce a catalogue of sources from a spectroscopic AstroData object"""
     if len(ad) > 1:  # extracted spectra
-        cat = {(ra, dec): i for i, (ra, dec) in
+        cat = {(ra, dec): ad[i].nddata for i, (ra, dec) in
                enumerate(zip(ad.hdr['XTRACTRA'], ad.hdr['XTRACTDE']))}
     else:  # 2D spectrum with multiple sources
         try:
             aptable = ad[0].APERTURE
         except AttributeError:
             raise ValueError(f"{ad.filename} has no APERTURE table")
-        ra, dec = ad[0].wcs()
-        cat = {(r, d): i for i, (r, d) in zip(ra, dec)}
+        dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
+        pix_coords = [0.5 * (length - 1) for length in ad[0].shape[::-1]]
+        cat = {}
+        for row in aptable:
+            trace_model = am.table_to_model(row)
+            aperture = tracing.Aperture(trace_model,
+                                        aper_lower=row['aper_lower'],
+                                        aper_upper=row['aper_upper'])
+            pix_coords[dispaxis] = aperture.center
+            ra, dec = ad[0].wcs(*pix_coords)
+            cat[ra, dec] = aperture
     return cat
 
 
