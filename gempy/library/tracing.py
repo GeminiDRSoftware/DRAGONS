@@ -81,6 +81,11 @@ class Aperture:
         else:
             raise ValueError("Width must be positive ()".format(value))
 
+    @property
+    def center(self):
+        """Return value of the model in the middle of the domain"""
+        return self.model(0.5 * np.sum(self.model.domain))
+
     def limits(self):
         """Return maximum and minimum values of the model across the domain"""
         pixels = np.arange(*self.model.domain)

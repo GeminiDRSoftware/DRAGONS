@@ -1502,8 +1502,7 @@ class Spect(Resample):
                 # Calculate world coords at middle of each dispersed spectrum
                 pix_coords = [[0.5 * (length-1)] * len(apertures)
                               for length in ext.shape[::-1]]
-                pix_coords[dispaxis] = [ap.model(coord) for ap, coord in
-                                        zip(apertures, pix_coords[1-dispaxis])]
+                pix_coords[dispaxis] = [ap.center for ap in apertures]
                 wcs_coords = ext.wcs(*pix_coords)
                 sky_axes = None
                 if isinstance(ext.wcs.output_frame, cf.CompositeFrame):
@@ -3107,6 +3106,7 @@ class Spect(Resample):
                         c0 = int(loc + 0.5)
                         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
                         start = np.argmax(at.boxcar(spectrum, size=20))
+                        log.debug(f"Starting trace of aperture {i+1} at pixel {start+1}")
 
                         # The coordinates are always returned as (x-coords, y-coords)
                         ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
