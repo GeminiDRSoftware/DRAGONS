@@ -17,9 +17,12 @@ Bug Fixes
 * Fix bug where manually-assigned sky frames in ``separateSky`` were added
   to the list of science frames by mistake.
 
+* Fix bug where ``stackFrames`` crashed if using the ``statsec`` parameter
+  when scaling or zero-offsetting.
+
 * In fringeCorrect, ``do_cal=force`` has been reactivated.
 
-**geminidr.gnirs**q
+**geminidr.gnirs**
 
 * Added missing support for YPHOT filter.
 
