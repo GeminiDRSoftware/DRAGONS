@@ -584,10 +584,12 @@ def get_extrema(profile, prof_mask, min_snr=3):
     extrema = np.multiply.reduce(diffs, axis=0) >= 0
     extrema_types = np.add.reduce(diffs, axis=0)
     xpixels = np.arange(profile.size)[1:-1]
-    maxima = pinpoint_peaks(profile, mask=prof_mask,
-                            peaks=xpixels[np.logical_and(extrema, extrema_types > 0)], halfwidth=3)
-    minima = pinpoint_peaks(-profile, mask=prof_mask,
-                            peaks=xpixels[np.logical_and(extrema, extrema_types < 0)], halfwidth=3)
+    max_locations = xpixels[np.logical_and(extrema, extrema_types > 0)]
+    min_locations = xpixels[np.logical_and(extrema, extrema_types < 0)]
+    maxima = pinpoint_peaks(profile, mask=prof_mask, peaks=max_locations,
+                            halfwidth=3)
+    minima = pinpoint_peaks(-profile, mask=prof_mask, peaks=min_locations,
+                            halfwidth=3)
     extrema = sorted(zip(minima[0]+maxima[0], [-x for x in minima[1]]+maxima[1],
                          [False]*len(minima[0])+[True]*len(maxima[0])))
 
@@ -1019,12 +1021,14 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None):
         m = mask[x1:x2]
         if x1 < 0 or x2 > data.size - 1 or np.isnan(data[xc]) or np.sum(~m) < 4:
             continue
+        data_min = data[x1:x2].min()
+        data_snippet = data[x1:x2] - data_min
         # We fit splines to y(x) and x * y(x)
-        t, c, k = interpolate.splrep(xvalues[x1:x2][~m], data[x1:x2][~m], k=3,
+        t, c, k = interpolate.splrep(xvalues[x1:x2][~m], data_snippet[~m], k=3,
                                      s=0)
         spline1 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
-        t, c, k = interpolate.splrep(xvalues[x1:x2][~m], (data * xvalues)[x1:x2][~m],
-                                     k=3, s=0)
+        t, c, k = interpolate.splrep(xvalues[x1:x2][~m],
+                                     (data_snippet * xvalues[x1:x2])[~m], k=3, s=0)
         spline2 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
 
         # Then there's some centroiding around the peak, with convergence
@@ -1064,7 +1068,7 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None):
 
         if final_peak is not None and not np.isnan(peak_value):
             final_peaks.append(final_peak)
-            peak_values.append(peak_value)
+            peak_values.append(peak_value + data_min)
 
     return final_peaks, peak_values
 
@@ -1170,16 +1174,19 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
             continue
 
         lower, upper = extrema[i-1][0], extrema[i+1][0]
+        targets = [threshold * extrema[i][1] +
+                   (1 - threshold) * extrema[j][1] for j in (i-1, i+1)]
         i1, i2, p = int(lower), int(upper+1), int(true_peak+0.5)
 
         limits = []
-        for _slice in (slice(i1, p+2), slice(p-1, i2+1)):
+        for target, _slice in zip(targets, (slice(i1, p+2), slice(p-1, i2+1))):
             npts = _slice.stop - _slice.start
+            # reduce variance to ensure spline goes through points
             spline = at.fit_spline_to_data(
                 data[_slice], mask=None if mask is None else mask[_slice],
-                variance=stddev[_slice]**2, k=min(npts-1, 3))
+                variance=0.01 * stddev[_slice]**2, k=min(npts-1, 3))
             limit = peak_limit(spline, true_peak-_slice.start,
-                               0 if _slice.start==i1 else npts-1, threshold) + _slice.start
+                               0 if _slice.start==i1 else npts-1, target) + _slice.start
             limits.append(limit)
 
         limit1, limit2 = min(limits[0], peak), max(limits[1], peak)
@@ -1188,7 +1195,7 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
     return all_limits
 
 
-def peak_limit(spline, peak, limit, threshold):
+def peak_limit(spline, peak, limit, target):
     """
     Finds a threshold as a fraction of the way from the signal at the minimum to
     the signal at the peak.
@@ -1202,21 +1209,23 @@ def peak_limit(spline, peak, limit, threshold):
     limit : float
         location of the minimum -- an aperture edge is required between
         this location and the peak
-    threshold : float
-        fractional height gain (peak - minimum) where aperture edge should go
+    target : float
+        signal level where limit should be placed
 
     Returns
     -------
     float : the pixel location of the aperture edge
     """
-    # target is the signal level at the threshold
-    target = spline(limit) + threshold * (spline(peak) - spline(limit))
-    #target = spline(limit) + threshold * (spline(peak) - max(spline([limit, other_limit])))
     func = lambda x: spline(x) - target
+    # We need to deal with the possibility that the spline may cross the
+    # target level more than once, and we want the one closest to the peak
+    #new_limit = peak
+    #while func(new_limit) > 0:
+    #    new_limit += 1
     try:
         return optimize.bisect(func, limit, peak)
     except ValueError:
-        return limit + threshold * (peak - limit)
+        return limit
 
 
 @insert_descriptor_values("dispersion_axis")
