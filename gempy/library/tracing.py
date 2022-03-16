@@ -806,7 +806,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
             if width > height / min_snr * 20:
                 ok_apertures[i] = False
             # Eliminate things with square edges that are likely artifacts
-            if (flimits[side] - peak) / (limits[side] - peak) > 0.85:
+            if (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
                 ok_apertures[i] = False
         # Remove apertures that don't appear in a smoothed version of the
         # data (these are basically noise peaks)
