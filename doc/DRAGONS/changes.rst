@@ -14,6 +14,9 @@ Bug Fixes
 
 **geminidr.core**
 
+* Continue without crashing when ``traceApertures`` cannot identify a
+  starting location for a trace.
+
 * Fix bug where manually-assigned sky frames in ``separateSky`` were added
   to the list of science frames by mistake.
 

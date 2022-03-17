@@ -2578,12 +2578,14 @@ class Spect(PrimitivesBASE):
                                                                 initial_tolerance=None,
                                                                 max_shift=max_shift,
                                                                 viewer=self.viewer if debug else None)
-                    if i:
+                    if i == 0:
+                        all_ref_coords = ref_coords
+                        all_in_coords = in_coords
+                    elif in_coords.size:
                         all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
                         all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
                     else:
-                        all_ref_coords = ref_coords
-                        all_in_coords = in_coords
+                        log.warning(f'Cannot find a source to trace in aperture {i+1}')
 
                 self.viewer.color = "blue"
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
@@ -2600,10 +2602,11 @@ class Spect(PrimitivesBASE):
                                        if c1[dispaxis] == location])
                     values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
                     ref_coords, in_coords = values[:2], values[2:]
-                    min_value = in_coords[1 - dispaxis].min()
-                    max_value = in_coords[1 - dispaxis].max()
-                    log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
-                              f"to {max_value}")
+                    if in_coords.size:
+                        min_value = in_coords[1 - dispaxis].min()
+                        max_value = in_coords[1 - dispaxis].max()
+                        log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
+                                  f"to {max_value}")
 
                     # Find model to transform actual (x,y) locations to the
                     # value of the reference pixel along the dispersion axis
