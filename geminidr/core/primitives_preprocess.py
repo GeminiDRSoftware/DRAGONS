@@ -1436,15 +1436,8 @@ class Preprocess(PrimitivesBASE):
         sky: str/AD/list
             sky frame(s) to subtract
         """
-        #tpid = os.getpid()
-        #proc = psutil.Process(tpid)
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        # import os, psutil
-        # def memusage(proc):
-        #     return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
-        # print "STARTING", memusage(proc)
 
         save_sky = params["save_sky"]
         reset_sky = params["reset_sky"]
@@ -1537,7 +1530,6 @@ class Preprocess(PrimitivesBASE):
                 log.stdinfo("Creating sky frame for {}".format(ad.filename))
                 sky_inputs = [sky_dict[sky] for sky in skytable]
                 stacked_sky = self.stackSkyFrames(sky_inputs, **stack_params)
-                #print ad.filename, memusage(proc)
                 if len(stacked_sky) == 1:
                     stacked_sky = stacked_sky[0]
                     # Provide a more intelligent filename
@@ -1577,12 +1569,6 @@ class Preprocess(PrimitivesBASE):
                     # This deletes a reference to the AD sky object
                     stacked_skies[j] = None
 
-        # Now we have a list of skies to subtract, one per adinput, so send
-        # this to subtractSky as the "sky" parameter
-        #print("ABOUT TO SUBTRACT", memusage(proc))
-        #adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
-        #                            offset_sky=offset_sky, reset_sky=reset_sky)
-        #print("SUBTRACTED", memusage(proc))
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):
