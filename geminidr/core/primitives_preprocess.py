@@ -1072,6 +1072,13 @@ class Preprocess(PrimitivesBASE):
             if not (all_spect1d ^ all_spect2d):
                 raise TypeError("All inputs must either be single-extension "
                                 "2D spectra or multi-extension 1D spectra")
+            # Spectral extraction in this primitive does not subtract the sky
+            if (all_spect2d and tolerance > 0 and not
+                    all(self.timestamp_keys['skyCorrectFromSlit'] in ad for ad in adinputs)):
+                log.warning("Not all inputs have been sky-corrected. "
+                            "Scaling may be in error.")
+            mkcat = mkcat_spect
+            calc_scaling = calc_scaling_spect
 
         # extract a SkyCoord object from a catalogue. Annoyingly, the list of
         # RA and DEC must be a *list* and NOT a tuple, so abstract this ugliness
@@ -1080,14 +1087,16 @@ class Preprocess(PrimitivesBASE):
 
         ref_ad = adinputs[0]
         if tolerance > 0:
-            if set(len(ad) for ad in adinputs) != {1}:
+            if all_image and set(len(ad) for ad in adinputs) != {1}:
                 raise ValueError(f"{self.myself()} requires all inputs to have "
                                  "only 1 extension")
             try:
                 ref_objcat = mkcat(ref_ad)
             except ValueError as e:
-                log.warning(f"{e} - continuing")
+                log.warning(f"Cannot construct catalogue from reference ({e})"
+                            " - continuing")
                 return adinputs
+            ref_coords = get_coords(ref_objcat)
         else:
             log.stdinfo("Scaling all images by exposure time only.")
             use_common = False  # it's irrelevant
@@ -1101,8 +1110,12 @@ class Preprocess(PrimitivesBASE):
         # the first to identify the sources in common to all frames, and the
         # second to do the work. If it's False, we only do the second pass.
         # use_common is False when we want to calculate the scalings.
+
+        # Avoid two passes with only two images, since we'll use all matches
+        if len(adinputs) == 2:
+            use_common=False
+
         while True:
-            ref_coords = get_coords(ref_objcat)
             for ad in adinputs[1:]:
                 texp = ad.exposure_time()
                 exptimes.append(texp)
@@ -1137,9 +1150,10 @@ class Preprocess(PrimitivesBASE):
                         break
                 else:  # calculate the scaling
                     if matched.sum():
-                        scaling = calc_scaling(objcat, ref_objcat, idx, matched)
-                        if tolerance == 1 or ((1 - tolerance) <= scaling <=
-                                              1 / (1 - tolerance)):
+                        scaling = calc_scaling(ad, ref_ad, objcat, ref_objcat,
+                                               idx, matched, self.log)
+                        if (scaling > 0 and (tolerance == 1 or
+                                            ((1 - tolerance) <= scaling <= 1 / (1 - tolerance)))):
                             scale_factors.append(scaling)
                         else:
                             log.warning(f"Scaling factor {scaling:.3f} for "
@@ -1757,7 +1771,7 @@ def mkcat_image(ad):
     return cat
 
 
-def calc_scaling_image(objcat, ref_objcat, idx, matched):
+def calc_scaling_image(ad, ref_ad, objcat, ref_objcat, idx, matched, log):
     ref_fluxes = np.array(list(ref_objcat.values()))[matched].T
     obj_fluxes = np.array(list(objcat.values()))[idx[matched]].T
     return at.calculate_scaling(x=obj_fluxes[0], y=ref_fluxes[0],
@@ -1783,10 +1797,55 @@ def mkcat_spect(ad):
                                         aper_lower=row['aper_lower'],
                                         aper_upper=row['aper_upper'])
             pix_coords[dispaxis] = aperture.center
-            ra, dec = ad[0].wcs(*pix_coords)
+            wave, ra, dec = ad[0].wcs(*pix_coords)
             cat[ra, dec] = aperture
     return cat
 
 
-def calc_scaling_spect():
-    pass
+def calc_scaling_spect(ad, ref_ad, objcat, ref_objcat, idx, matched, log):
+    ref_values = list(ref_objcat.values())
+    values = list(objcat.values())
+    data = None
+    all_have_variance = True
+    size = 0
+    for i, (j, m) in enumerate(zip(idx, matched)):
+        if m:
+            log.stdinfo(f"Matched aperture {i+1} from {ref_ad.filename} "
+                        f"with aperture {j+1} from {ad.filename}")
+            ref_ap = ref_values[i]
+            if isinstance(ref_ap, tracing.Aperture):
+                log.debug(f"Extracting aperture {i+1} from {ref_ad.filename}")
+                ref_ap = ref_ap.extract(ref_ad[0])
+                ref_objcat[list(ref_objcat.keys())[i]] = ref_ap
+            ap = values[j]
+            if isinstance(ap, tracing.Aperture):
+                log.debug(f"Extracting aperture {j+1} from {ad.filename}")
+                ap = ap.extract(ad[0])
+                objcat[list(objcat.keys())[j]] = ap
+            if data is None:
+                data = np.empty((4, matched.sum() * ap.shape[0]))
+            good = np.ones_like(ref_ap.data, dtype=bool)
+            if ap.mask is not None:
+                good[:] &= ap.mask == 0
+            if ref_ap.mask is not None:
+                good[:] &= ref_ap.mask == 0
+            if ap.variance is not None:
+                good[:] &= ap.variance > 0
+            if ref_ap.variance is not None:
+                good[:] &= ref_ap.variance > 0
+            ngood = good.sum()
+            data[:2, size:size+ngood] = np.array([ref_ap.data[good],
+                                                  ap.data[good]])
+            if ap.variance is None or ref_ap.variance is None:
+                all_have_variance = False
+            else:
+                data[2:, size:size+ngood] = np.array([ref_ap.variance[good],
+                                                      ap.variance[good]])
+            size += ngood
+    if size > 0:
+        if all_have_variance:
+            return at.calculate_scaling(x=data[1, :size], y=data[0, :size],
+                                        sigma_x=np.sqrt(data[3, :size]),
+                                        sigma_y=np.sqrt(data[2, :size]))
+        return at.calculate_scaling(x=data[1, :size], y=data[0, :size])
+    return -1
