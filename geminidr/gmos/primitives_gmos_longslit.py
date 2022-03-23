@@ -4,15 +4,11 @@
 #                                                     primtives_gmos_longslit.py
 # ------------------------------------------------------------------------------
 
-from copy import copy, deepcopy
+from copy import deepcopy
 from importlib import import_module
 from itertools import groupby
 
-import bokeh.models as bm
-
 import re
-
-from astropy.stats import sigma_clip
 
 from gempy.library.config import RangeField
 
@@ -20,26 +16,20 @@ import astrodata
 import geminidr
 import numpy as np
 from scipy.signal import correlate
-from scipy.interpolate import interp1d, make_interp_spline, make_lsq_spline, splrep, BSpline
 from scipy.interpolate.fitpack2 import InterpolatedUnivariateSpline
 
 from astrodata.provenance import add_provenance
-from astropy import visualization as vis
-from astropy.modeling import models, fitting
+from astropy.modeling import models
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.fitting import fit_1D
-from gempy.library import astromodels, transform
+from gempy.library import transform
 from gempy.library import astrotools as at
 
 from gwcs import coordinate_frames
 from gwcs.wcs import WCS as gWCS
-
-from matplotlib import gridspec
-from matplotlib import pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
@@ -71,241 +61,6 @@ class GMOSLongslit():
         raise ValueError("GMOSLongslit objects cannot be instantiated without"
                          " specifying 'adinputs'. Please instantiate either"
                          "'GMOSClassicLongslit' or 'GMOSNSLongslit' instead.")
-
-class CustomParametersUI(fit1d.FittingParametersUI):
-    def __init__(self, interp_update_function, *args, **kw):
-        interp_allowed = ["Not-a-knot", "Clamped", "Natural", "Custom"]
-        self.interpolation_type = bm.Select(title="Interpolation Mode:", value="Custom",
-                                           options=interp_allowed)
-        # Parameters for make_interp_spline
-        # x0 = [(1, 0.0)] or [(2, 0.0)] or None
-        # x1 = [(1, 0.0)] or [(2, 0.0)] or None
-        boundary_options = ["(1, 0.0)", "(2, 0.0)", "None"]
-        self.k = bineditor.NumericInputControl(title="B-Spline Degree", value=3)
-        self.x0 = bm.Select(title="X0", options=boundary_options, value="(1, 0.0)")
-        self.x1 = bm.Select(title="X1", options=boundary_options, value="(1, 0.0)")
-
-        def fn_change(attr, old, new):
-            print("Calling interp_update_function")
-            interp_update_function()
-
-        self.interpolation_type.on_change('value', fn_change)
-        self.k.component.on_change('value', fn_change)
-        self.x0.on_change('value', fn_change)
-        self.x1.on_change('value', fn_change)
-        super().__init__(*args, **kw)
-
-    def build_column(self):
-        column_list = super().build_column()
-        # Parameters for make_interp_spline
-        # x0 = [(1, 0.0)] or [(2, 0.0)] or None
-        # x1 = [(1, 0.0)] or [(2, 0.0)] or None
-        # k  = natural number
-        column_list.extend([
-            self.k.build(),
-            self.interpolation_type,
-            bm.Div(
-                text=f"If custom, use the following boundaries:",
-                min_width=100,
-                max_width=202,
-                sizing_mode='stretch_width',
-                style={"color": "black", "font-size": "115%", "margin-top": "5px"},
-                width_policy='max'
-            ),
-            self.x0,
-            self.x1
-        ])
-
-        return column_list
-
-class CustomFit1DPanel(fit1d.Fit1DPanel):
-    """
-    Specialization of Fit1DPanel to change the figure building method,
-    allowing to overlay additional data over the main plot.
-    """
-    def __init__(self, *args, reconstruct_overlay_points=None,
-                 **kw):
-        """
-        reconstruct_overlay_points: callable
-            A function that will provide an updated overlay dataset
-            whenever the view is reset.
-        """
-        self.reconstruct = reconstruct_overlay_points
-        self.segments_data = bm.ColumnDataSource(data={})
-        self.interp_data1 = bm.ColumnDataSource(data={})
-        self.interp_data2 = bm.ColumnDataSource(data={})
-        self.interp_data3 = bm.ColumnDataSource(data={})
-        self.overlay_data = bm.ColumnDataSource(data={})
-        self._update_overlay_data()
-        self.with_interactive_interpolation = False
-
-        def generate_params_ui(*args, **kw):
-            if self.with_interactive_interpolation:
-                return CustomParametersUI(self._update_interp_curve, *args, **kw)
-            else:
-                return fit1d.FittingParametersUI(*args, **kw)
-
-        super().__init__(show_rejection_panel=False, paramsui_class=generate_params_ui, *args, **kw)
-
-        # Add extra listeners to update our data
-        if 'function' in self.visualizer.ui_params.fields:
-            def fn_select_change(attr, old, new):
-                self._update_segment_data()
-            self.fitting_parameters_ui.function.on_change('value', fn_select_change)
-
-    def _update_overlay_data(self):
-        """
-        Internal function to update the overlay data since it's done
-        at several places.
-        """
-        self.overlay_data.data = self.reconstruct()
-
-    def _update_interp_curve(self):
-        fitted_data_x = self.model.data.data['x']
-        fitted_data_y = self.model.data.data['y']
-        #doesn't let to use k>3
-       # f1 = interp1d(fitted_data_x, fitted_data_y, kind="cubic", fill_value="extrapolate", bounds_error=False)
-        f1 = InterpolatedUnivariateSpline(fitted_data_x, fitted_data_y, k=3)
-        # t, c, k = splrep(fitted_data_x, fitted_data_y, k=5, s=0)
-        # f3 = BSpline.construct_fast(t, c, k, extrapolate=True)
-        #
-        # if self.with_interactive_interpolation:
-        #     fpars = self.fitting_parameters_ui
-        #     k = fpars.k.value
-        #     bc_type = self.fitting_parameters_ui.interpolation_type.value.lower()
-        #     if bc_type == 'custom':
-        #         bc_type = ([eval(fpars.x0.value)], [eval(fpars.x1.value)])
-        #
-        #     f2 = make_interp_spline(fitted_data_x, fitted_data_y, k=k, bc_type=bc_type)
-        # else:
-        #     f2 = make_interp_spline(fitted_data_x, fitted_data_y, k=5, bc_type=None)
-        overlay_data_x = self.overlay_data.data['x']
-
-        x_points = np.arange(overlay_data_x.min(),overlay_data_x.max())
-        self.interp_data1.data = {
-            'x': x_points,
-            'y': f1(x_points)
-        }
-        # self.interp_data2.data = {
-        #     'x': x_points,
-        #     'y': f2(x_points)
-        # }
-        #
-        # self.interp_data3.data = {
-        #     'x': x_points,
-        #     'y': f3(x_points)
-        # }
-
-    def _update_segment_data(self):
-        fitted_data_x = self.model.data.data['x']
-        first_fitted = (fitted_data_x[0], self.model.evaluate(fitted_data_x[0]))
-        last_fitted = (fitted_data_x[-1], self.model.evaluate(fitted_data_x[-1]))
-        overlay_data_x = self.overlay_data.data['x']
-        left_bound = overlay_data_x.min()
-        right_bound = overlay_data_x.max()
-
-        self.segments_data.data = {
-            'x0': [left_bound,      last_fitted[0]],
-            'y0': [first_fitted[1], last_fitted[1]],
-            'x1': [first_fitted[0], right_bound],
-            'y1': [first_fitted[1], last_fitted[1]]
-        }
-
-    def build_figures(self, *args, **kw):
-        """
-        Overrides the parents' method in order to pass an alternative
-        figure plotting function.
-        """
-        kw["figure_building_fn"] = self._overlay_orig_data
-        kw["y_range"] = (0.6, 1.4)
-        return super().build_figures(*args, **kw)
-
-    def _overlay_orig_data(self, *args, **kw):
-        """
-        Call fit1d_figure to produce the main and supplemental figures,
-        and overlay additional data.
-
-        Returns the same data as `fit1d.fid1d_figure`
-        """
-        p_main, p_supp = fit1d.fit1d_figure(*args, **kw)
-
-        p_main.scatter(
-            x='x', y='y', source=self.overlay_data,
-            size=5, legend_label = 'normalized image data',
-            color="blue", alpha=0.1, level = "underlay"
-        )
-
-        # This is needed to plot how the data stretching beyond the fitting
-        # points is set to constant values (same y as first/last center bins)
-        self._update_segment_data()
-        self._update_interp_curve()
-        p_main.segment(source=self.segments_data,
-                       color="crimson", line_width=3)
-
-        p_main.line(
-            x='x', y='y', source=self.interp_data1,
-            line_width=3, legend_label = 'interpolated curve1',
-            color="green", alpha=1
-        )
-        # p_main.line(
-        #     x='x', y='y', source=self.interp_data2,
-        #     line_width=3, legend_label = 'interpolated curve2',
-        #     color="blue", alpha=0.5
-        # )
-        # p_main.line(
-        #     x='x', y='y', source=self.interp_data3,
-        #     line_width=3, legend_label = 'interpolated curve3',
-        #     color="pink", alpha=0.5
-        # )
-
-        return p_main, p_supp
-
-    def reset_view(self, clip_y_range=True):
-        """
-        This calculates the x and y ranges for the figure with some custom padding.
-
-        This is used when initially building the figure, but also as a listener for
-        whenever the data changes.
-
-        clip_y_range: bool
-            Sigma clip the y range
-        """
-        if not hasattr(self, 'p_main') or self.p_main is None:
-            return
-
-        self._update_overlay_data()
-        self._update_segment_data()
-        self._update_interp_curve()
-
-        try:
-            xdata = self.model.data.data[self.xpoint]
-            overlay_xdata = self.overlay_data.data['x']
-            ydata = self.model.data.data[self.ypoint]
-            overlay_ydata = self.overlay_data.data['y']
-        except (AttributeError, KeyError):
-            pass
-        else:
-            x_min, x_max = min(min(xdata), min(overlay_xdata)), max(max(xdata), max(overlay_xdata))
-            if x_min != x_max:
-                x_pad = (x_max - x_min) * 0.1
-                self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
-
-            if clip_y_range:
-                clipped_data = sigma_clip(overlay_ydata, sigma=5)
-            else:
-                clipped_data = overlay_ydata
-            y_min, y_max = min(min(ydata), clipped_data.min()), max(max(ydata), clipped_data.max())
-
-            #ToDo: fix this
-            y_pad = 0.1  # just in case
-            if y_min != y_max:
-                y_pad = (y_max - y_min) * 0.1
-            else:
-                # let's use +/- 10%
-                if y_min > 0:
-                    y_pad = y_min * 0.1
-            self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
-
 
 @parameter_override
 @capture_provenance
@@ -484,9 +239,10 @@ class GMOSClassicLongslit(GMOSSpect):
     def makeSlitIllum(self, adinputs=None, **params):
         """
         Makes the processed Slit Illumination Function by binning a 2D
-        spectrum along the dispersion direction, fitting a smooth function
-        for each bin, then using mean bin values at bin centers to fit
-        each row along spatial direction.
+        spectrum in wavelength, averaging data points withing each bin along dispersion
+        axis, then fitting a smooth function to each bin in spatial direction.
+        Each fitted function is then normalized to slit center, and a 2D slit illumination
+        function is created by interpolating between dispersion points for each row.
 
         The implementation is based on the IRAF's `noao.twodspec.longslit.illumination`
         task following the algorithm described in [Valdes, 1968].
@@ -504,39 +260,41 @@ class GMOSClassicLongslit(GMOSSpect):
             slit of a source free of illumination problems. The data needs to
             have been overscan and bias corrected and it is expected to have a
             Data Quality mask.
-        bins : {None, str, int}, optional
+        bins : int/str/None
             Either an integer number of equally-spaced bins covering the whole dispersion
             range, or a comma-separated list of pixel coordinate pairs defining the
             dispersion bins to be used for the slit profile fitting. If None, the number
             of bins is max of 12 or the number of extensions.
-        regions : str or None
+        regions : str/None
             Sample region(s) selected along the spatial axis to use for fitting each dispersion
             bin, as a comma-separated list of pixel ranges. Any pixels outside these
             ranges will be ignored when fitting each dispersion bin.
-        spat_function : str
+        function : str/None
             Type of function to fit along the the spatial axis (for dispersion bin fitting).
-             Default value is "spline3"
-        spat_order : int
-            Order of the bin fitting function. Default value is 20.
+            None => "spline3".
+        order : int/None
+            Order of the bin fitting function (None => 20)
         lsigma : float/None
-            Lower rejection limit in standard deviations of the bin fit. Default value is 3.
+            Lower rejection limit in standard deviations of the bin fit (None => 3).
         hsigma : float/None
-            Upper rejection limit in standard deviations of the bin fit. Default value is 3.
-        niter : int
-            Maximum number of rejection iterations of the bin fit. Default value is 3.
-        grow : float/False
-            Growth radius for rejected pixels of the bin fit. Default value is 0.
-        disp_function: str
-            Type of function to fit along the the dispersion axis (for row fitting). Default
-            value is "spline3".
-        disp_order: int
-            Order of the fitting function in dispersion direction. Default value is 6.
-        interactive : bool
-            Set to True in order to activate an interactive preview to fine tune the
-            input parameters
-        border : int, optional
+            Upper rejection limit in standard deviations of the bin fit (None => 3).
+        niter : int/None
+            Maximum number of rejection iterations of the bin fit (None => 3).
+        grow : float/None
+            Growth radius for rejected pixels of the bin fit (None => 0).
+        interp_order: int/None
+            Order of the spline interpolator (1 <= interp_order <= 5). None => 3.
+        debug_boundary_ext: bool/None
+            Controls the extrapolation mode for the elements outside the interpolation interval
+            (before the first bin center and after the last bin center). If set to "False" (default
+            value), the row ends are set to constant values equal to the interpolation boundary values.
+            If set to "True", the row ends are extrapolated.
+        interactive : bool/None
+            Activate the interactive preview of bin selection and bin fitting steps to fine tune the
+            input parameters (None => "False")
+        border : int/None
             Border size that is added on every edge of the slit illumination
-            image before cutting it down to the input AstroData frame. Default value is 2.
+            image before cutting it down to the input AstroData frame (None => 2)
 
         Return
         ------
@@ -554,55 +312,13 @@ class GMOSClassicLongslit(GMOSSpect):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        def generate_ui_parameters(config, prefix, extras=None, reinit_params=None):
-            """
-            Generate an `UIParameter` instance out of a :class:`gempy.library.config.Config`
-            object passing additional copies of its fields as `extra`. These fields are
-            identified because their names start with `prefix`
-
-            The need for this arises from the fact that the interactive fitting code
-            requires certain fields to be present in the configuration, but `makeSlitIllum`
-            lacks "order" and "function", as it defines two of them instead, for different
-            steps.
-
-            As the `Config` objects can't be modified with extra parameters, they are "aliased"
-            in the `UIParameter` instance instead.
-
-            Parameters
-            ----------
-            config: gempy.library.config.Config
-                The config to be copied
-            prefix: str
-                The prefix for the fields in `config` that map into the missing ones
-                for a standard 1D fitting configuration.
-            extras: dict/None
-                An optional dictionary of names to new Fields to track
-            reinit_params: list/None
-                List of names of configuration fields to show in the reinit panel
-
-            Returns
-            -------
-            A `geminidr.interactive.interactive.UIParameter` instance
-            """
-            extras = {} if extras is None else extras.copy()
-            for name in config.keys():
-                if name.startswith(prefix):
-                    extras[name[len(prefix):]] = config._fields[name]
-
-            return UIParameters(config, extras=extras, reinit_params=reinit_params)
-
         suffix = params["suffix"]
         bins = params["bins"]
         border = params["border"]
-        debug_plot = params["debug_plot"]
         interactive_reduce = params["interactive"]
-        disp_order = params["disp_order"]
-        disp_function = params["disp_function"]
-        spat_params = params.copy()
-        spat_params.update({
-            'order': spat_params['spat_order'],
-            'function': spat_params['spat_function']
-        })
+        spat_params = fit_1D.translate_params(params)
+        interp_order = params["interp_order"]
+        boundary_ext = params["debug_boundary_ext"]
         ad_outputs = []
 
         for ad in adinputs:
@@ -651,7 +367,6 @@ class GMOSClassicLongslit(GMOSSpect):
                 bin_list = list(zip(bin_limits[:-1], bin_limits[1:]))
             else:
                 bin_list = _parse_user_bins(bins, height)
-                bin_limits = np.array(sum(bin_list, ()))
                 nbins = len(bin_list)
 
             if ad.filename:
@@ -680,14 +395,13 @@ class GMOSClassicLongslit(GMOSSpect):
                                                      filename_info=filename_info)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 bin_list = _parse_user_bins(''.join(visualizer.results().split()))
-                bin_limits = np.array(sum(bin_list, ()))
                 nbins = len(bin_list)
 
             cols_val = np.arange(-border, height+border)
             rows_val = np.arange(-border, width+border)
             binned_shape = (nbins, len(rows_val))
-            bin_data_avg = np.ma.empty((nbins, data.shape[1]))
-            bin_std_avg = np.ma.empty((nbins, data.shape[1]))
+            bin_data_avg = np.ma.empty((nbins, width))
+            bin_std_avg = np.ma.empty((nbins, width))
             bin_data_fits = np.ma.zeros(binned_shape)
             bin_std_fits = np.ma.zeros(binned_shape)
             for i, bin in enumerate(bin_list):
@@ -695,7 +409,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 bin_std_avg[i] = np.ma.mean(std[bin[0]:bin[1]], axis=0)
             spat_fitting_pars = []
             for _ in range(nbins):
-                spat_fitting_pars.append(fit_1D.translate_params(spat_params))
+                spat_fitting_pars.append(spat_params)
             spat_fit_points = np.arange(width)
 
             log.info("Smooth binned data and variance, and normalize them by "
@@ -717,7 +431,9 @@ class GMOSClassicLongslit(GMOSSpect):
                     data_with_weights["y"].append(avg_data)
                     data_with_weights["weights"].append(at.divide0(1., avg_std))
 
-                uiparams = generate_ui_parameters(config, prefix="spat_")
+                config.update(**params)
+                uiparams = UIParameters(config)
+
                 x_label = "Rows" if dispaxis == 1 else "Columns"
                 first_label = 'cols' if dispaxis == 1 else 'rows'
                 tab_names = [f'[{start+1}:{end}]' for (start, end) in bin_list]
@@ -770,73 +486,17 @@ class GMOSClassicLongslit(GMOSSpect):
                                   dtype=int)
             slit_response_data = np.zeros((len(cols_val), len(rows_val)))
             slit_response_std = np.zeros((len(cols_val), len(rows_val)))
-            normalized_data = np.zeros(data.shape)
-            for r, row in enumerate(data):
-                normalized_data[r,:] = data[r, :] / data[r, data.shape[1] // 2]
 
-            disp_fitting_pars = {"order": disp_order, "function": disp_function,
-                                    "regions": None, "niter": 0, "sigma_upper": 0, "sigma_lower": 0}
-
-            # Interactive interface for fitting image rows at bin center locations. Image data, normalized
-            # to the center of the slit, gets displayed along with fitting points and fitting curve
-            interactive_reduce3=True
-            if interactive_reduce3 and nbins > 1:
-                reinit_params = ["row", ]
-
-                extras = {"row": RangeField("Row of data to operate on", int, int(len(rows_val)/3), min=1, max=len(rows_val))}
-                uiparams = generate_ui_parameters(config, prefix="disp_", reinit_params=reinit_params, extras=extras)
-
-                def reconstruct_points(ui_params):
-                    r = max(0, ui_params.values['row'] - 1)
-                    ret_data = {
-                        "x": [bin_center],
-                        "y": [bin_data_fits[:, r]],
-                    }
-                    return ret_data
-
-                def reconstruct_overlay_points(ui_params=uiparams):
-                    r = max(0, ui_params.values['row'] - 1)
-                    ret_data = {
-                        "x": np.arange(0, normalized_data.shape[0]),
-                        "y": normalized_data[:,r]
-                    }
-                    return ret_data
-                tab_name = "rows" if dispaxis == 1 else "columns"
-                visualizer = fit1d.Fit1DVisualizer(reconstruct_points, [disp_fitting_pars],
-                                                   tab_name_fmt=f"Fitting {tab_name} at bin centers",
-                                                   xlabel='Column (pixels)', ylabel='Normalized signal',
-                                                   domains=[(bin_center[0], bin_center[-1])],
-                                                   title="Make Slit Illumination Function",
-                                                   primitive_name="makeSlitIllum",
-                                                   filename_info=filename_info,
-                                                   enable_user_masking=False,
-                                                   enable_regions=False,
-                                                #  help_text=NORMALIZE_FLAT_HELP_TEXT,
-                                                   recalc_inputs_above=True,
-                                                   modal_message="Recalculating",
-                                                   ui_params=uiparams,
-                                                   panel_class=CustomFit1DPanel,
-                                                   reconstruct_overlay_points=reconstruct_overlay_points)
-                geminidr.interactive.server.interactive_fitter(visualizer)
-
-                fits = visualizer.results()
-                disp_fitting_pars = fits[0].extract_params()
-
+            # Interpolation between dispersion points along the rows
             if nbins > 1:
-                # for k, (data_row, std_row) in enumerate(zip(bin_data_fits.T, bin_std_fits.T)):
-                #     slit_response_data[:, k] = fit_1D(data_row, points=bin_center, **disp_fitting_pars, axis=0,
-                #                                       domain=(cols_val[0], cols_val[-1])).evaluate(cols_val)
-                #     slit_response_std[:,k] = fit_1D(std_row, points=bin_center, **disp_fitting_pars, axis=0,
-                #                                     domain=(cols_val[0], cols_val[-1])).evaluate(cols_val)
                 for k, (data_row, std_row) in enumerate(zip(bin_data_fits.T, bin_std_fits.T)):
-                    f1 = InterpolatedUnivariateSpline(bin_center, data_row, k=3)
-                    f2 = InterpolatedUnivariateSpline(bin_center, std_row, k=3)
+                    # Set extrapolated row ends to interpolation boundary value, or extrapolate
+                    ext_val = 0 if boundary_ext else 3
+                    f1 = InterpolatedUnivariateSpline(bin_center, data_row, k=interp_order, ext=ext_val)
+                    f2 = InterpolatedUnivariateSpline(bin_center, std_row, k=interp_order, ext=ext_val)
                     slit_response_data[:,k] = f1(cols_val)
                     slit_response_std[:,k] = f2(cols_val)
-                # Set extrapolated row ends (before the first bin center and after the last one) to
-                # the constant value of the last fitted point
-                slit_response_data[0:bin_center[0],:] = slit_response_data[bin_center[0],:]
-                slit_response_data[bin_center[-1]:-1,:] = slit_response_data[bin_center[-1],:]
+
             # If there is only one bin, copy the slit profile to each column
             elif nbins == 1:
                 slit_response_data[:] = bin_data_fits
@@ -878,187 +538,6 @@ class GMOSClassicLongslit(GMOSSpect):
 
             slit_response_ad.update_filename(suffix=suffix, strip=True)
             ad_outputs.append(slit_response_ad)
-
-            # Plotting ------
-            if debug_plot:
-
-                log.info("Creating plots")
-                palette = copy(plt.cm.cividis)
-                palette.set_bad('r', 0.75)
-
-                norm = vis.ImageNormalize(data[~data.mask],
-                                          stretch=vis.LinearStretch(),
-                                          interval=vis.PercentileInterval(97))
-
-                fig = plt.figure(
-                    num="Slit Response from MEF - {}".format(ad.filename),
-                    figsize=(12, 9), dpi=110)
-
-                gs = gridspec.GridSpec(nrows=2, ncols=3, figure=fig)
-
-                # Display raw mosaicked data and its bins ---
-                ax1 = fig.add_subplot(gs[0, 0])
-                im1 = ax1.imshow(data, cmap=palette, origin='lower',
-                                 vmin=norm.vmin, vmax=norm.vmax)
-
-                ax1.set_title("Mosaicked Data\n and Spectral Bins", fontsize=10)
-                ax1.set_xlim(-1, data.shape[1])
-                ax1.set_xticks([])
-                ax1.set_ylim(-1, data.shape[0])
-                ax1.set_yticks(bin_center)
-                ax1.tick_params(axis=u'both', which=u'both', length=0)
-
-                ax1.set_yticklabels(
-                    ["Bin {}".format(i) for i in range(len(bin_center))],
-                    fontsize=6)
-
-                _ = [ax1.spines[s].set_visible(False) for s in ax1.spines]
-                _ = [ax1.axhline(b, c='w', lw=0.5) for b in bin_limits]
-
-                divider = make_axes_locatable(ax1)
-                cax1 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im1, cax=cax1)
-
-                # # Doesn't work on custom bins
-                # # Display non-smoothed bins ---
-                # ax2 = fig.add_subplot(gs[0, 1])
-                # im2 = ax2.imshow(binned_data, cmap=palette, origin='lower')
-                #
-                # ax2.set_title("Binned, smoothed\n and normalized data ", fontsize=10)
-                # ax2.set_xlim(0, data.shape[1])
-                # ax2.set_xticks([])
-                # ax2.set_ylim(0, data.shape[0])
-                # ax2.set_yticks(bin_center)
-                # ax2.tick_params(axis=u'both', which=u'both', length=0)
-                #
-                # ax2.set_yticklabels(
-                #     ["Bin {}".format(i) for i in range(len(bin_center))],
-                #     fontsize=6)
-                #
-                # _ = [ax2.spines[s].set_visible(False) for s in ax2.spines]
-                # _ = [ax2.axhline(b, c='w', lw=0.5) for b in bin_limits]
-                #
-                # divider = make_axes_locatable(ax2)
-                # cax2 = divider.append_axes("right", size="5%", pad=0.05)
-                # plt.colorbar(im2, cax=cax2)
-
-                # Display reconstructed slit response ---
-                vmin = slit_response_data.min()
-                vmax = sigma_clip(slit_response_data, sigma=2).max()
-
-                ax3 = fig.add_subplot(gs[1, 0])
-                im3 = ax3.imshow(slit_response_data, cmap=palette,
-                                 origin='lower', vmin=vmin, vmax=vmax)
-
-                ax3.set_title("Reconstructed\n Slit response", fontsize=10)
-                ax3.set_xlim(0, data.shape[1])
-                ax3.set_xticks([])
-                ax3.set_ylim(0, data.shape[0])
-                ax3.set_yticks([])
-                ax3.tick_params(axis=u'both', which=u'both', length=0)
-                _ = [ax3.spines[s].set_visible(False) for s in ax3.spines]
-
-                divider = make_axes_locatable(ax3)
-                cax3 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im3, cax=cax3)
-
-                # Display extensions ---
-                ax4 = fig.add_subplot(gs[1, 1])
-                ax4.set_xticks([])
-                ax4.set_yticks([])
-                _ = [ax4.spines[s].set_visible(False) for s in ax4.spines]
-
-                sub_gs4 = gridspec.GridSpecFromSubplotSpec(
-                    nrows=len(ad), ncols=1, subplot_spec=gs[1, 1], hspace=0.03)
-
-                # The [::-1] is needed to put the fist extension in the bottom
-                for i, ext in enumerate(slit_response_ad[::-1]):
-
-                    ext_data, ext_mask, ext_variance = at.transpose_if_needed(
-                        ext.data, ext.mask, ext.variance, transpose=dispaxis == 1)
-
-                    ext_data = np.ma.masked_array(ext_data, mask=ext_mask)
-
-                    sub_ax = fig.add_subplot(sub_gs4[i])
-
-                    im4 = sub_ax.imshow(ext_data, origin="lower", vmin=vmin,
-                                        vmax=vmax, cmap=palette)
-
-                    sub_ax.set_xlim(0, ext_data.shape[1])
-                    sub_ax.set_xticks([])
-                    sub_ax.set_ylim(0, ext_data.shape[0])
-                    sub_ax.set_yticks([ext_data.shape[0] // 2])
-
-                    sub_ax.set_yticklabels(
-                        ["Ext {}".format(len(slit_response_ad) - i - 1)],
-                        fontsize=6)
-
-                    _ = [sub_ax.spines[s].set_visible(False) for s in sub_ax.spines]
-
-                    if i == 0:
-                        sub_ax.set_title("Multi-extension\n Slit Response Function")
-
-                divider = make_axes_locatable(ax4)
-                cax4 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im4, cax=cax4)
-
-                # Display Signal-To-Noise Ratio ---
-                snr = data / np.sqrt(variance)
-
-                norm = vis.ImageNormalize(snr[~snr.mask],
-                                          stretch=vis.LinearStretch(),
-                                          interval=vis.PercentileInterval(97))
-
-                ax5 = fig.add_subplot(gs[0, 2])
-
-                im5 = ax5.imshow(snr, cmap=palette, origin='lower',
-                                 vmin=norm.vmin, vmax=norm.vmax)
-
-                ax5.set_title("Mosaicked Data SNR", fontsize=10)
-                ax5.set_xlim(-1, data.shape[1])
-                ax5.set_xticks([])
-                ax5.set_ylim(-1, data.shape[0])
-                ax5.set_yticks(bin_center)
-                ax5.tick_params(axis=u'both', which=u'both', length=0)
-
-                ax5.set_yticklabels(
-                    ["Bin {}".format(i) for i in range(len(bin_center))],
-                    fontsize=6)
-
-                _ = [ax5.spines[s].set_visible(False) for s in ax5.spines]
-                _ = [ax5.axhline(b, c='w', lw=0.5) for b in bin_limits]
-
-                divider = make_axes_locatable(ax5)
-                cax5 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im5, cax=cax5)
-
-                # Display Signal-To-Noise Ratio of Slit Illumination ---
-                slit_response_snr = np.ma.masked_array(
-                    slit_response_data / np.sqrt(slit_response_var),
-                    mask=slit_response_mask)
-
-                ax6 = fig.add_subplot(gs[1, 2])
-
-                im6 = ax6.imshow(slit_response_snr, origin="lower",
-                                 vmin=norm.vmin, vmax=norm.vmax, cmap=palette)
-
-                ax6.set_xlim(0, slit_response_snr.shape[1])
-                ax6.set_xticks([])
-                ax6.set_ylim(0, slit_response_snr.shape[0])
-                ax6.set_yticks([])
-                ax6.set_title("Reconstructed\n Slit Response SNR")
-
-                _ = [ax6.spines[s] .set_visible(False) for s in ax6.spines]
-
-                divider = make_axes_locatable(ax6)
-                cax6 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im6, cax=cax6)
-
-                # Save plots ---
-                fig.tight_layout(rect=[0, 0, 0.95, 1], pad=0.5)
-                fname = slit_response_ad.filename.replace(".fits", ".png")
-                log.info("Saving plots to {}".format(fname))
-                plt.savefig(fname)
 
         return ad_outputs
 

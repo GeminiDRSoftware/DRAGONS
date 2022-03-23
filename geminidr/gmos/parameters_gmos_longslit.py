@@ -35,29 +35,17 @@ class makeSlitIllumConfig(config.Config):
                         "or a comma-separated list \n                                          "
                         "of pixel coordinate pairs defining then dispersion bins, e.g. 1:300,301:500",
                         (int, str), None, optional=True)
-    debug_plot = config.Field("Create diagnosis plots?",
-                              bool, False, optional=True)
+    regions = config.Field("Sample regions along the slit", str, None, optional=True)
     suffix = config.Field("Filename suffix",
                           str, "_slitIllum", optional=True)
-    interactive = config.Field("Set to activate an interactive preview to fine tune the input parameters",
-                               bool, False, optional=True)
-    regions = config.Field("Sample regions along the slit", str, None, optional=True)
-    spat_function = config.ChoiceField("Fitting function to use for bin fitting (spatial direction)", str,
+    function = config.ChoiceField("Fitting function to use for bin fitting (spatial direction)", str,
                            allowed={"spline3": "Cubic spline",
                                     "chebyshev": "Chebyshev polynomial",
                                     "legendre": "Legendre polynomial",
                                     "spline1": "Linear spline"},
                            default="spline3", optional=False)
-    spat_order = config.Field("Order of the bin fitting function",
+    order = config.Field("Order of the bin fitting function",
                                 int, 20, optional=True)
-    disp_function = config.ChoiceField("Fitting function to use for row fitting (dispersion direction)", str,
-                           allowed={"spline3": "Cubic spline",
-                                    "chebyshev": "Chebyshev polynomial",
-                                    "legendre": "Legendre polynomial",
-                                    "spline1": "Linear spline"},
-                           default="spline3", optional=False)
-    disp_order = config.Field("Order of the row fitting function",
-                                int, 6, optional=True)
     hsigma = config.RangeField("High rejection threshold (sigma) of the bin fit",
                                float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma) of the bin fit",
@@ -66,6 +54,12 @@ class makeSlitIllumConfig(config.Config):
                               int, 3, min = 0, optional=True)
     grow = config.RangeField("Growth radius for rejected pixels of the bin fit",
                              float, 0, min=0, optional=True)
+    interp_order = config.RangeField("Order of the spline interpolator",
+                            int, 3, min=1, max=5, optional=True)
+    debug_boundary_ext = config.Field("Extrapolate outside interpolation interval? If 'False'" 
+                            "boundary values are used", bool, False, optional=True)
+    interactive = config.Field("Set to activate an interactive preview to fine tune the input parameters",
+                               bool, False, optional=True)
     border = config.Field("Size of the border added to the reconstructed slit illumination image",
                           int, 2, optional=True)
 
