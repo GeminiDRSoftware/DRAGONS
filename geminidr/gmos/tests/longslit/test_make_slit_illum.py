@@ -61,7 +61,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
         assert hasattr(ad[0], "wcs")
 
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.makeSlitIllum(bins=25, border=10, debug_plot=plot)
+        p.makeSlitIllum(bins=25, border=10)
         slit_illum_ad = p.writeOutputs(
             suffix="_mosaickedSlitIllum",  strip=True)[0]
 
@@ -120,7 +120,7 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
         cwd = os.getcwd()
         print("Running tests inside folder:\n  {}".format(cwd))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.makeSlitIllum(bins=25, border=10, debug_plot=plot)
+        p.makeSlitIllum(bins=25, border=10)
         slit_illum_ad = p.writeOutputs()[0]
 
         for ext, slit_ext in zip(ad, slit_illum_ad):
