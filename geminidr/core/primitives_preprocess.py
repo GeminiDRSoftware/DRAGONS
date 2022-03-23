@@ -1176,7 +1176,9 @@ class Preprocess(PrimitivesBASE):
                 # time, so if it already exists, leave it alone!
                 if "ORIGTEXP" not in ad.phu:
                     ad.phu.set("ORIGTEXP", exptime, "Original exposure time")
-                ad.phu.set(kw_exptime, exptime * scaling,
+                # The new exposure time should probably be the reference's
+                # exposure time, so that all the outputs have the same value
+                ad.phu.set(kw_exptime, ref_texp,
                            comment=self.keyword_comments[kw_exptime])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
