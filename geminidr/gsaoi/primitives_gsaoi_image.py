@@ -495,19 +495,20 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 sdmodel = (models.Shift(arrsec.x1 + 1) &
                            models.Shift(arrsec.y1 + 1) | sdmodel)
                 static_frame = cf.Frame2D(unit=(u.arcsec, u.arcsec), name="static")
-                sky_model = models.Scale(1 / 3600) & models.Scale(1 / 3600)
                 # the PA header keyword isn't good enough
                 wcs_dict = adwcs.gwcs_to_fits(ad[ref_location[0]].nddata)
                 pa = np.arctan2(wcs_dict["CD2_1"] - wcs_dict["CD1_2"],
                                 wcs_dict["CD1_1"] + wcs_dict["CD2_2"])
-                if abs(pa) > 0.00175:  # radians ~ 0.01 degrees
-                    # Rotation2D() breaks things because it explicitly converts
-                    # the Column objects to Quantity objects, which retain units
-                    # of "pix" that Pix2Sky objects to. The AffineTransformation2D
-                    # does some multiplications (like Scale) which are agnostic to
-                    # the presence or absence of units.
-                    sky_model |= models.AffineTransformation2D(matrix=[[math.cos(pa), -math.sin(pa)],
-                                                                       [math.sin(pa), math.cos(pa)]])
+                if abs(pa) < 0.00175:  # radians ~ 0.01 degrees
+                    pa = 0
+                # Rotation2D() breaks things because it explicitly converts
+                # the Column objects to Quantity objects, which retain units
+                # of "pix" that Pix2Sky objects to. The AffineTransformation2D
+                # does some multiplications (like Scale) which are agnostic to
+                # the presence or absence of units.
+                sky_model = models.AffineTransformation2D(
+                    matrix=np.array([[math.cos(pa), -math.sin(pa)],
+                                     [math.sin(pa), math.cos(pa)]]) / 3600)
                 sky_model |= models.Pix2Sky_TAN() | models.RotateNative2Celestial(ra, dec, 180)
                 ext.wcs = gWCS([(ext.wcs.input_frame, sdmodel),
                                 (static_frame, sky_model),
