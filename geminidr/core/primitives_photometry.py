@@ -75,6 +75,8 @@ class Photometry(PrimitivesBASE):
             identifier for server to be used for catalog search or filename
         format: str/None
             format of catalog on disk (passed to Table.read())
+        timeout: float/None
+            timeout for remote services in seconds, or None for default
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -82,6 +84,7 @@ class Photometry(PrimitivesBASE):
         source = params["source"]
         radius = params["radius"]
         format = params["format"]
+        timeout = params["timeout"]
 
         if source is None:
             log.stdinfo("No source provided for reference catalog.")
@@ -128,7 +131,7 @@ class Photometry(PrimitivesBASE):
                              f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
-                    refcat = get_fits_table(source, ra, dec, radius)
+                    refcat = get_fits_table(source, ra, dec, radius, timeout=timeout)
 
             if refcat is None:
                 log.stdinfo("No reference catalog sources found for {}".

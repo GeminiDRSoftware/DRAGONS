@@ -7,6 +7,7 @@ class addReferenceCatalogConfig(config.Config):
     radius = config.RangeField("Search radius (degrees)", float, 0.067, min=0.)
     source = config.Field("Name of catalog to search", str, "gmos", optional=True)
     format = config.Field("Format of catalog (if user-supplied)", str, None, optional=True)
+    timeout = config.RangeField("Timeout for remote services in seconds", float, 120.0, min=0.)
 
 class detectSourcesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sourcesDetected", optional=True)
