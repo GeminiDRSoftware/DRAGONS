@@ -21,7 +21,7 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
 from astropy.stats import sigma_clip
-from astropy.table import Table, vstack, MaskedColumn
+from astropy.table import Table, hstack, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
@@ -49,9 +49,8 @@ from gempy.library import tracing, transform, wavecal
 from gempy.library.astrotools import array_from_list, transpose_if_needed
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
+from gempy.library.matching import fit_model, KDTreeFitter
 from gempy.library.spectral import Spek1D
-from gempy.library.tracing import (find_wavelet_peaks, trace_lines,
-                                   reject_bad_peaks)
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
@@ -1047,6 +1046,178 @@ class Spect(Resample):
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+    def determineSlitEdges(self, adinputs=None, **params):
+        """
+        Finds the edges of the illuminated regions of the CCD and stores the
+        Chebyshev polynomials used to fit them in a SLITEDGE table.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images with a `SLITEDGE` table attached
+            to each extension.
+        """
+
+        # Set up log
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        # log.stdinfo('Finding and fitting the slit edges.')
+
+        # arsec/mm for f/16 on an 8m telescope.
+        arcsecmm = 1.61144
+
+        # Parse parameters
+        debug = params['debug']
+
+        fit1d_params = fit_1D.translate_params({"function": "chebyshev",
+                                                "order": 2})
+
+        for ad in adinputs:
+
+            try:
+                mdf = ad.MDF
+            except AttributeError:
+                log.warning(f"MDF not found for {ad.filename} - cannot "
+                            "determine slit edges from it.")
+                continue
+
+            log.stdinfo(f'Finding edges for {ad.filename}')
+            x_ccd = mdf['x_ccd'][0]
+            slitsize_mx = mdf['slitsize_mx'][0]
+
+            # Here, 'm' in a variable name means 'in millimeters', 'p' means
+            # 'in pixels'. pixel_scale() is in arcsec/pixel. Slit widths are in
+            # mm, so we need to convert to pixels.
+            slitsize_px = slitsize_mx * arcsecmm / ad.pixel_scale()
+            mdf_left_edge = x_ccd - (slitsize_px / 2.)
+            mdf_right_edge = x_ccd + (slitsize_px / 2.)
+
+            # Clip bounds at detector size if necessary.
+            mdf_left_edge = max(0, mdf_left_edge)
+            mdf_right_edge = min(ad[0].shape[0], mdf_right_edge)
+            y1, y2 = 0, ad[0].shape[1]  # full frame for longslit
+            if debug:
+                log.stdinfo(f'Calculated slit edges at = {mdf_left_edge:.2f}, '
+                            f'{mdf_right_edge:.2f}; calculated slit width is '
+                            f'{slitsize_mx:.2f} mm, '
+                            f'{mdf_right_edge - mdf_left_edge:.2f} pixels')
+            edge_guesses = [mdf_left_edge, mdf_right_edge]
+
+            for ext in ad:
+
+                model_fits = []
+
+                dispaxis = 2 - ext.dispersion_axis()
+
+                # Take the first derivative of flux to find the slit edges.
+                diffarr = abs(np.diff(ext.data, axis=1-dispaxis))
+
+                # Find the peaks those slit edges register as. Halfway along
+                # the array is likely to be near the maximum constrast with the
+                # unilluminated regions.
+                half = diffarr.shape[1 - dispaxis] // 2
+
+                # Take median of a small slice to avoid effects of cosmic rays:
+                median_slice = np.median(diffarr[half-5:half+5, :],
+                                          axis=[dispaxis])
+
+                # Search for position of peaks in the first derivative of flux
+                # perpendicular to the dispersion direction. Apply some
+                # minimal SNR and speration limits to avoid picking up too many
+                # noise peaks, but otherwise it shouldn't matter if we pick up
+                # a few extra; KDTreeFitter later on should pick out the real
+                # ones.
+                position, snr = tracing.find_wavelet_peaks(
+                    median_slice,
+                    widths=np.array([3.]),
+                    min_snr=10,
+                    min_sep=2)
+
+                edges = np.array([loc[0] for loc in zip(position, snr)])
+                if debug:
+                    log.stdinfo(f'Found {len(edges)} possible edges '
+                                f'at {edges}.')
+                    if len(edges) == 2:
+                        log.stdinfo(f'Width is {edges[1] - edges[0]:.2f} '
+                                    'pixels.')
+
+                    plt.plot(median_slice)
+                    plt.show()
+
+                m_recenter = models.Shift(-x_ccd, fixed={'offset': True})
+                m_shift = models.Shift(0, bounds={'offset': (-70, 70)})
+                m_init = m_recenter | m_shift | m_recenter.inverse
+                shift = 0
+                n_sigma = 3
+                while shift == 0:
+                    if debug:
+                        log.stdinfo(f'Trying with sigma={n_sigma}...')
+                    if n_sigma > 8:
+                        raise RuntimeError('Unable to fit slit edges even '
+                                           'with generous parameter values. '
+                                           'Something may be wrong with the '
+                                           'file.')
+                    f = KDTreeFitter(sigma=n_sigma)
+                    m_final=f(m_init, edges, edge_guesses)
+                    # m_final returns three attributes 'offset_N' (for N=1 to
+                    # 3), the first and last are the shifts from recentering
+                    # the model, so we want the middle one for the shift
+                    # necessary to align the slit with the array.
+                    shift = m_final.offset_1.value
+                    n_sigma += 1
+                if debug:
+                    log.stdinfo(f'Found a shift of {shift}.')
+                    log.stdinfo(f'Looking for edges at {edge_guesses-shift}.')
+
+                # Apply the shift found from modeling.
+                edge_guesses -= shift
+
+                ref_coords, in_coords = tracing.trace_lines(
+                    diffarr, dispaxis, start=half, initial=edge_guesses)
+
+                # This complicated bit of code parses out coordinates for the
+                # traced edges.
+                for i, loc in enumerate(sorted(edge_guesses)):
+                    coords = np.array([list(c1) + list(c2)
+                                       for c1, c2 in
+                                       zip(ref_coords.T, in_coords.T)
+                                       if abs(c1[dispaxis] - loc) < 1.])
+                    values = np.array(sorted(coords,
+                                             key=lambda c: c[1 - dispaxis])).T
+                    ref_coords_new, in_coords_new = values[:2], values[2:]
+
+                    # Log the trace.
+                    min_value = in_coords_new[1 - dispaxis].min()
+                    max_value = in_coords_new[1 - dispaxis].max()
+                    log.debug(f"Edge at {loc:.1f} traced from {min_value} "
+                              f"to {max_value}.")
+
+                    # Perform the fit of the coordinates for the traced edges.
+                    _fit_1d = fit_1D(
+                        in_coords_new[dispaxis],
+                        domain=[0, ext.shape[1 - dispaxis] - 1],
+                        axis=dispaxis,
+                        points=in_coords_new[1 - dispaxis],
+                        plot=debug,
+                        **fit1d_params)
+
+                    # Create a table from the model.
+                    row = Table(np.array([1, i]), names=('slit', 'edge'))
+                    model_fit = am.model_to_table(_fit_1d.model)
+                    row = hstack([row, model_fit], join_type='inner')
+                    model_fits.append(row)
+
+                # Attach the table to the extension as a new plane.
+                new_slit_table = vstack(model_fits)
+                ext.SLITEDGE = new_slit_table
 
         return adinputs
 
@@ -2289,6 +2460,25 @@ class Spect(Resample):
 
         return adoutputs
 
+
+    def maskBeyondSlit(self, adinputs=None, **params):
+        """
+
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Spectra with unilluminated regions.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Spectra with regions outside the illuminated region masked.
+
+        """
+        pass
+
+
     def normalizeFlat(self, adinputs=None, **params):
         """
         This primitive normalizes a spectroscopic flatfield, by fitting
@@ -3317,80 +3507,6 @@ class Spect(Resample):
                     log.warning(f"{filename} already exists - cannot write")
 
         return adinputs
-
-    def determineSlitEdges(self, adinputs=None, **params):
-        """
-        Finds the edges of the illuminated regions of the CCD and stores the
-        Chebyshev polynomials used to fit them in a SLITEDGE table.
-
-        Parameters
-        ----------
-        adinputs : list of :class:`~astrodata.AstroData`
-            Science data as 2D spectral images.
-
-        Returns
-        -------
-        list of :class:`~astrodata.AstroData`
-            Science data as 2D spectral images with a `SLITEDGE` table attached
-            to the first array.
-        """
-
-        # Set up log
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        # Parse parameters
-        order = params["order"]
-
-        fit1d_params = fit_1D.translate_params(
-                {**params, "function": "chebyshev"})
-        order = fit1d_params.pop("order")
-
-        for ad in adinputs:
-
-            for ext in ad:
-                # Need to date the first derivative perpendicular to the
-                # dispersion axis to find the slit edges.
-                dispaxis = 2 - ext.dispersion_axis()
-                # Need to get the spatial axis.
-                # spatialaxis = 1 if (dispaxis == 2) else 0
-
-                # Take the first derivative of flux to find the slit edges.
-                diffarr = abs(np.diff(ext.data, axis=1-dispaxis))
-
-                # Find the peaks those slit edges register as. Halfway along
-                # the array is likely to be near the maximum constrast with the
-                # unilluminated regions.
-                half = diffarr.shape[1 - dispaxis] // 2
-                edge_guesses = find_wavelet_peaks(diffarr[half],
-                                                  widths=np.array([3.]),
-                                                  min_snr=10, min_sep=20)
-                edge_gueses = reject_bad_peaks(edge_guesses)
-                ref_coords, in_coords = trace_lines(ext, 1-dispaxis,
-                                                    initial=edge_guesses)
-
-                for loc in edge_guesses:
-                    coords = np.array([list(c1) + list(c2)
-                                       for c1, c2 in
-                                       zip(ref_coords.T, in_coords.T)
-                                       if c1[dispaxis] == loc])
-                    values = np.array(sorted(coords,
-                                             key=lambda c: c[1 - dispaxis])).T
-                    ref_coords, in_coords = values[:2], values[2:]
-
-                    # Log the trace
-                    min_value = in_coords[1 - dispaxis].min()
-                    max_value = in_coords[1 - dispaxis].max()
-                    log.debug(f"Edge at {loc:.1f} traced from {min_value} "
-                              f"to {max_value}.")
-
-                    _fit_1d = fit_1D(
-                        in_coords[1 - dispaxis],
-                        domain=[0, ext.shape[1 - dispaxis] - 1],
-                        order=order,
-                        points=in_coords[1 - dispaxis],
-                        **fit1d_params)
-
 
     def _get_arc_linelist(self, waves=None):
         """

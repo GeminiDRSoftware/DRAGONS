@@ -36,3 +36,60 @@ class GNIRSLongslit(GNIRS, Spect, NearIR):
     def addIllumMaskToDQ(self, adinputs=None, **params):
 
         pass
+
+    def addMDF(self, adinputs=None, suffix=None, mdf=None):
+        """This GNIRS-specific implementation of addMDF() corrects for the fact
+        that GNIRS MDFs have dimensions in arcseconds, instead of in millimeters
+        like other instruments. It calls primitives_gemini.addMDF() to attach
+        the MDFs, then performs two calculations on the "slitsize_mx" and
+        "slitsize_my" fields. First it multiplies by 0.96 ("slitsize_mx" only)
+        to correct for the fact that the GNIRS slit width given in the MDFs is
+        slightly too large, and then multiplies by 1.61144 to convert from
+        arcsec to millimeters (for f/16 on an 8m telescope).
+
+        Any parameters given will be passed to primitives_gemini.addMDF().
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        mdf: str/None
+            name of MDF to add (None => use default)
+        """
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        if not isinstance(adinputs, list):
+            adinputs = list(adinputs)
+
+        # Delegate up to primitives_gemini.addMDF() to attach the MDFs.
+        adinputs = super().addMDF(adinputs=adinputs, suffix=suffix, mdf=mdf)
+
+        for ad in adinputs:
+
+            try:
+                mdf = ad.MDF
+            except AttributeError:
+                log.warning(f"MDF not found for {ad.filename} - cannot "
+                            "convert values in arcsec to millimeters.")
+                continue
+
+            # This is an empirically-determined correction factor for the fact
+            # that the slitsize in the MDFS appears to be slightly larger than
+            # in reality.
+            slit_correction_factor = 0.96
+
+            # This is the conversion factor from arcseconds to millimeters of
+            # slit width for f/16 on an 8m telescope.
+            arcsec_to_mm = 1.61144
+
+            # Only the 'slitsize_mx' value needs the width correction; the
+            # 'slitsize_my' isn't actually used, but we convert it for
+            # consistency.
+            mdf['slitsize_mx'][0] *= slit_correction_factor / arcsec_to_mm
+            mdf['slitsize_my'][0] *= arcsec_to_mm
+
+            log.stdinfo('Converted slit sizes from arcseconds to millimeters '
+                        f'in {ad.filename}.')
