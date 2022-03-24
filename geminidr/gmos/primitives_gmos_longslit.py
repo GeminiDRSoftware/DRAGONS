@@ -168,8 +168,8 @@ class GMOSClassicLongslit(GMOSSpect):
                     yccd = ((c0 + y * (c1 + y * (c2 + y * c3))) *
                             1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
                     model[yccd[0]:yccd[1]+1] = 1
-                    log.stdinfo("Expected slit location from pixels "
-                                 f"{yccd[0]+1} to {yccd[1]+1}")
+                    log.debug("Expected slit location from pixels "
+                              f"{yccd[0]+1} to {yccd[1]+1}")
 
                 if 'NODANDSHUFFLE' in ad.tags:
                     shuffle_pixels = ad.shuffle_pixels() // ybin
@@ -221,9 +221,14 @@ class GMOSClassicLongslit(GMOSSpect):
                         row_mask[yshift:] = 1 - model[:-yshift]
                     else:
                         row_mask[:] = 1 - model
+                    row_mask = at.boxcar(row_mask, operation=np.bitwise_or, size=2)
                     for ext in ad:
                         ext.mask |= (row_mask * DQ.unilluminated).astype(
                             DQ.datatype)[:, np.newaxis]
+                    slices = np.ma.clump_masked(
+                        np.ma.masked_array(np.zeros_like(row_mask), row_mask))
+                    for _slice in slices:
+                        log.debug(f"Masking rows {_slice.start+1} to {_slice.stop}")
 
             if has_48rows:
                 actual_rows = 48 // ybin

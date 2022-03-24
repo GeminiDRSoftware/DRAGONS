@@ -1,5 +1,6 @@
 import re
 from abc import ABC, abstractmethod
+from copy import copy
 from enum import Enum, auto
 from functools import cmp_to_key
 
@@ -554,7 +555,8 @@ class PrimitiveVisualizer(ABC):
             self._message_holder.text = message
 
     def make_widgets_from_parameters(self, params, reinit_live: bool = True,
-                                     slider_width: int = 256, add_spacer=False):
+                                     slider_width: int = 256, add_spacer=False,
+                                     hide_textbox=None):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
@@ -571,12 +573,16 @@ class PrimitiveVisualizer(ABC):
             Width of the sliders
         add_spacer : bool
             If True, add a spacer between sliders and their text-boxes
+        hide_textbox : list
+            If set, a list of range field names for which we don't want a textbox
 
         Returns
         -------
         list : Returns a list of widgets to display in the UI.
         """
         widgets = []
+        if hide_textbox is None:
+            hide_textbox = []
         if params.reinit_params:
             for key in params.reinit_params:
                 field = params.fields[key]
@@ -591,8 +597,7 @@ class PrimitiveVisualizer(ABC):
                         attr=key, slider_width=slider_width, allow_none=field.optional, throttled=True,
                         is_float=is_float,
                         handler=self.slider_handler_factory(key, reinit_live=reinit_live),
-                        add_spacer=False)
-                        # add_spacer=add_spacer)
+                        add_spacer=add_spacer, hide_textbox=key in hide_textbox)
 
                     self.widgets[key] = widget.children[0]
                     widgets.append(widget)
@@ -689,7 +694,7 @@ class PrimitiveVisualizer(ABC):
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
                       slider_width=256, config=None, allow_none=False,
-                      is_float=None, add_spacer=False):
+                      is_float=None, add_spacer=False, hide_textbox=False):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -719,6 +724,8 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         nature of parameter (None => try to figure it out)
     add_spacer : bool
         Add a spacer element between the slider and the text input (default False)
+    hide_textbox : bool
+        If True, don't show a text box and just use a slider (default False)
 
     Returns
     -------
@@ -770,34 +777,38 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     # offers no feedback to the user when it does.  Since some of our
     # inputs are capped and others open-ended, we use the js callbacks
     # below to enforce the range limits, if any.
-    text_input = NumericInput(width=64, value=value,
-                              format=fmt,
-                              mode='float' if is_float else 'int')
+    if not hide_textbox:
+        text_input = NumericInput(width=64, value=value,
+                                  format=fmt,
+                                  mode='float' if is_float else 'int')
 
-    # Custom range enforcement with alert messages
-    if max_value is not None:
-        text_input.js_on_change('value', CustomJS(
-            args=dict(inp=text_input),
-            code="""
-                if (%s inp.value > %s) {
-                    alert('Maximum is %s');
-                    inp.value = %s;
-                }
-            """ % ("inp.value != null && " if allow_none else "", max_value, max_value, max_value)))
-    if min_value is not None:
-        text_input.js_on_change('value', CustomJS(
-            args=dict(inp=text_input),
-            code="""
-                if (%s inp.value < %s) {
-                    alert('Minimum is %s');
-                    inp.value = %s;
-                }
-            """ % ("inp.value != null && " if allow_none else "", min_value, min_value, min_value)))
+        # Custom range enforcement with alert messages
+        if max_value is not None:
+            text_input.js_on_change('value', CustomJS(
+                args=dict(inp=text_input),
+                code="""
+                    if (%s inp.value > %s) {
+                        alert('Maximum is %s');
+                        inp.value = %s;
+                    }
+                """ % ("inp.value != null && " if allow_none else "", max_value, max_value, max_value)))
+        if min_value is not None:
+            text_input.js_on_change('value', CustomJS(
+                args=dict(inp=text_input),
+                code="""
+                    if (%s inp.value < %s) {
+                        alert('Minimum is %s');
+                        inp.value = %s;
+                    }
+                """ % ("inp.value != null && " if allow_none else "", min_value, min_value, min_value)))
 
-    if add_spacer:
-        component = row(slider, Spacer(width_policy='max'), text_input, css_classes=["text_slider_%s" % attr, ])
+        if add_spacer:
+            component = row(slider, Spacer(width_policy='max'), text_input, css_classes=["text_slider_%s" % attr, ])
+        else:
+            component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
     else:
-        component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
+        text_input = None
+        component = row(slider, css_classes=["text_slider_%s" % attr, ])
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
@@ -818,7 +829,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
 
     def update_slider(attrib, old, new):
         # Update the slider with the new value from the text input
-        if not _input_check(new):
+        if text_input is not None and not _input_check(new):
             if _input_check(old):
                 text_input.value = old
             return
@@ -843,7 +854,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
 
     def update_text_input(attrib, old, new):
         # Update the text input
-        if new != old:
+        if text_input is not None and new != old:
             text_input.value = new
 
     def handle_value(attrib, old, new):
@@ -857,9 +868,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
                     obj.__setattr__(attr, new)
             except FieldValidationError:
                 # reset textbox
-                text_input.remove_on_change("value", handle_value)
-                text_input.value = old
-                text_input.on_change("value", handle_value)
+                if text_input is not None:
+                    text_input.remove_on_change("value", handle_value)
+                    text_input.value = old
+                    text_input.on_change("value", handle_value)
             else:
                 update_slider(attrib, old, new)
         if handler:
@@ -872,13 +884,19 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Since here the text_input calls handle_value, we don't
         # have to call it from the slider as it will happen as
         # a side-effect of update_text_input
-        slider.on_change("value_throttled", update_text_input)
-        text_input.on_change("value", handle_value)
+        if text_input is not None:
+            slider.on_change("value_throttled", update_text_input)
+            text_input.on_change("value", handle_value)
+        else:
+            slider.on_change("value_throttled", handle_value)
     else:
-        slider.on_change("value", update_text_input)
-        # since slider is listening to value, this next line will cause the slider
-        # to call the handle_value method and we don't need to do so explicitly
-        text_input.on_change("value", handle_value)
+        if text_input is not None:
+            slider.on_change("value", update_text_input)
+            # since slider is listening to value, this next line will cause the slider
+            # to call the handle_value method and we don't need to do so explicitly
+            text_input.on_change("value", handle_value)
+        else:
+            slider.on_change("value", handle_value)
     return component
 
 
@@ -1635,11 +1653,11 @@ class UIParameters:
 
         if config:
             for fname, field in config._fields.items():
-                self.fields[fname] = field
+                self.fields[fname] = copy(field)
                 self.values[fname] = getattr(config, fname)
         if extras:
             for fname, field in extras.items():
-                self.fields[fname] = field
+                self.fields[fname] = copy(field)
                 self.values[fname] = field.default
 
         if placeholders:
