@@ -546,7 +546,7 @@ def ad_to_hdulist(ad):
                  default=0)
 
     for ext in ad._nddata:
-        header = ext.meta['header']
+        header = ext.meta['header'].copy()
 
         if not isinstance(header, fits.Header):
             header = fits.Header(header)
