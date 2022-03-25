@@ -336,7 +336,10 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False, time
 
     """
     # OK, do the query
-    svr = _cat_servers[catalog][server]
+    just_server = server
+    if just_server is not None and catalog is not None and just_server.startswith(catalog):
+        just_server = just_server[len(catalog)+1:]
+    svr = _cat_servers[catalog][just_server]
     # url = svr.url
     # cols = svr.cat_cols
     # server_cols = svr.server_cols
