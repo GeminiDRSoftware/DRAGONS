@@ -436,9 +436,13 @@ def read_fits(cls, source, extname_parser=None):
     # Only SCI HDUs
     sci_units = [hdu for hdu in hdulist[1:] if hdu.name == DEFAULT_EXTENSION]
 
+    seen_vers = []
     for idx, hdu in enumerate(sci_units):
         seen.add(hdu)
         ver = hdu.header.get('EXTVER', -1)
+        if ver > -1 and seen_vers.count(ver) == 1:
+            LOGGER.warning(f"Multiple SCI extension with EXTVER {ver}")
+        seen_vers.append(ver)
         parts = {
             'data': hdu,
             'uncertainty': None,
