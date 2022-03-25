@@ -291,7 +291,10 @@ def get_fits_table(catalog, ra, dec, sr, server=None, verbose=False, timeout=Non
                          ' '.join(_cat_servers))
 
     # Check server if given is valid
-    if server is not None and server not in _cat_servers[catalog]:
+    check_server = server
+    if check_server is not None and catalog is not None and check_server.startswith(catalog):
+        check_server = check_server[len(catalog)+1:]
+    if server is not None and check_server not in _cat_servers[catalog]:
         raise ValueError('Invalid Server')
 
     servers = [server] if server else _cat_servers[catalog].keys()
