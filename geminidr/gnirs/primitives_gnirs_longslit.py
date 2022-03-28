@@ -79,11 +79,17 @@ class GNIRSLongslit(GNIRS, Spect, NearIR):
             # This is an empirically-determined correction factor for the fact
             # that the slitsize in the MDFS appears to be slightly larger than
             # in reality.
-            slit_correction_factor = 0.96
+            if 'Short' in ad.camera():
+                slit_correction_factor = 0.96
+            elif 'Long' in ad.camera():
+                slit_correction_factor = 0.97
 
             # This is the conversion factor from arcseconds to millimeters of
             # slit width for f/16 on an 8m telescope.
             arcsec_to_mm = 1.61144
+
+            if (ad.telescope() == 'Gemini-South') and ('Short' in ad.camera()):
+                ad.MDF['slitsize_mx'][0] = 103
 
             # Only the 'slitsize_mx' value needs the width correction; the
             # 'slitsize_my' isn't actually used, but we convert it for
