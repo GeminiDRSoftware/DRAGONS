@@ -49,7 +49,7 @@ from gempy.library import tracing, transform, wavecal
 from gempy.library.astrotools import array_from_list, transpose_if_needed
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
-from gempy.library.matching import fit_model, KDTreeFitter
+from gempy.library.matching import KDTreeFitter, match_sources
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
@@ -1069,7 +1069,6 @@ class Spect(Resample):
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        # log.stdinfo('Finding and fitting the slit edges.')
 
         # arsec/mm for f/16 on an 8m telescope.
         arcsecmm = 1.61144
@@ -1079,7 +1078,6 @@ class Spect(Resample):
 
         fit1d_params = fit_1D.translate_params({"function": "chebyshev",
                                                 "order": 2})
-
         for ad in adinputs:
 
             try:
@@ -1090,6 +1088,7 @@ class Spect(Resample):
                 continue
 
             log.stdinfo(f'Finding edges for {ad.filename}')
+            # Get values from the MDF.
             x_ccd = mdf['x_ccd'][0]
             slitsize_mx = mdf['slitsize_mx'][0]
 
@@ -1106,7 +1105,7 @@ class Spect(Resample):
             y1, y2 = 0, ad[0].shape[1]  # full frame for longslit
             if debug:
                 log.stdinfo(f'Calculated slit edges at = {mdf_left_edge:.2f}, '
-                            f'{mdf_right_edge:.2f}; calculated slit width is '
+                            f'{mdf_right_edge:.2f}; slit width is '
                             f'{slitsize_mx:.2f} mm, '
                             f'{mdf_right_edge - mdf_left_edge:.2f} pixels')
             edge_guesses = [mdf_left_edge, mdf_right_edge]
@@ -1139,7 +1138,7 @@ class Spect(Resample):
                     median_slice,
                     widths=np.array([3.]),
                     min_snr=10,
-                    min_sep=2)
+                    min_sep=1)
 
                 edges = np.array([loc[0] for loc in zip(position, snr)])
                 if debug:
@@ -1152,20 +1151,27 @@ class Spect(Resample):
                     plt.plot(median_slice)
                     plt.show()
 
+                # Create the model to shift the slit to the found edges.
                 m_recenter = models.Shift(-x_ccd, fixed={'offset': True})
                 m_shift = models.Shift(0, bounds={'offset': (-70, 70)})
                 m_init = m_recenter | m_shift | m_recenter.inverse
+                # If sigma is too small, KDTreeFitter won't be able to find the
+                # edges, and will return a shift of 0. We start with a fairly
+                # tight search area (small sigmaa), then progressively increase
+                # it until we find something or sigma becomes so large that
+                # anything it finds is effectively meaningless (i.e., there's
+                # really nothing to find in this image).
                 shift = 0
-                n_sigma = 3
+                n_sigma = 5
+                max_sigma = 20
                 while shift == 0:
                     if debug:
                         log.stdinfo(f'Trying with sigma={n_sigma}...')
-                    if n_sigma > 8:
+                    if n_sigma > max_sigma:
                         raise RuntimeError('Unable to fit slit edges even '
-                                           'with generous parameter values. '
-                                           'Something may be wrong with the '
-                                           'file.')
-                    f = KDTreeFitter(sigma=n_sigma)
+                                           'with generous parameter values.')
+                    f = KDTreeFitter(sigma=n_sigma,
+                                     proximity_function=KDTreeFitter.gaussian)
                     m_final=f(m_init, edges, edge_guesses)
                     # m_final returns three attributes 'offset_N' (for N=1 to
                     # 3), the first and last are the shifts from recentering
@@ -1175,17 +1181,19 @@ class Spect(Resample):
                     n_sigma += 1
                 if debug:
                     log.stdinfo(f'Found a shift of {shift}.')
-                    log.stdinfo(f'Looking for edges at {edge_guesses-shift}.')
+                    log.stdinfo(f'Looking for edges at '
+                                f'{m_final.inverse(edge_guesses)}.')
 
                 # Apply the shift found from modeling.
                 edge_guesses -= shift
 
                 ref_coords, in_coords = tracing.trace_lines(
-                    diffarr, dispaxis, start=half, initial=edge_guesses)
+                    diffarr, dispaxis, start=half,
+                    initial=m_final.inverse(edge_guesses))
 
                 # This complicated bit of code parses out coordinates for the
                 # traced edges.
-                for i, loc in enumerate(sorted(edge_guesses)):
+                for i, loc in enumerate(sorted(m_final.inverse(edge_guesses))):
                     coords = np.array([list(c1) + list(c2)
                                        for c1, c2 in
                                        zip(ref_coords.T, in_coords.T)
