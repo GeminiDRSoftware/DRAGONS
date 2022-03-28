@@ -28,6 +28,8 @@ def test_unrecognized_uparm(parm, expected):
     # quick argparse to mimic a call from reduce.py
     testfile = download_from_archive("N20160524S0119.fits")
 
+    assert False  # forcing a failure to see if I can keep the outputs around on Jenkins for inspection
+    
     with pytest.raises(UnrecognizedParameterException) as upe:
         GMOSLongslit(astrodata.open(testfile), mode='sq', ucals={}, uparms=parm, upload=None, config_file=None)
     assert expected in str(upe.value)
