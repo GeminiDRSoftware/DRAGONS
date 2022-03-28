@@ -111,25 +111,26 @@ class GSAOIImage(GSAOI, Image, Photometry):
             refcoords = var_transform(*refcoords)
 
         # This is the last transform in the pipeline, from the variable frame
-        # to the world frame. This *should* be the same for all extensions,
-        # but we can't check that
+        # (or static frame if there's no variable frame) to the world frame.
+        # This should be the same for all extensions but we can't check easily
         ref_transform = adref[0].wcs.pipeline[-2].transform
 
         # This means a warning will be triggered if images have a rotation that
-        # differs by an amount large enough to avoid an object-to-object match
+        # differs by an amount large enough to prevent an object-to-object match
         faux_shape = (4000 / (final / adref.pixel_scale()),) * 2
 
         for ad in adinputs[1:]:
             objcat = merge_gsaoi_objcats(ad, cull_sources=cull_sources)
             incoords = (objcat['X_STATIC'], objcat['Y_STATIC'])
-            transform = ad[0].wcs.get_transform("static", ad[0].wcs.output_frame) | ref_transform.inverse
+            transform = ad[0].wcs.get_transform(
+                "static", ad[0].wcs.output_frame) | ref_transform.inverse
 
             if ("variable" in ad[0].wcs.available_frames and
                     self.timestamp_keys["determineAstrometricSolution"] in ad.phu):
                 log.stdinfo(f"Matching sources between {ad.filename} and "
                             f"{adref.filename} using distortion determined "
                             "by determineAstrometricSolution.")
-                # This order will assign the closest OBJCAT to each REFCAT source
+                # This order will assign the closest OBJCAT to each ref-OBJCAT source
                 matched = match_sources(refcoords, transform(*incoords),
                                         radius=final)
             else:
@@ -552,6 +553,7 @@ def merge_gsaoi_objcats(ad, cull_sources=False):
                                                         objcat['Y_IMAGE'] - 1)
         objcats.append(objcat)
     return table.vstack(objcats, metadata_conflicts='silent')
+
 
 def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
                                 max_iters=5, match_radius=0.1, clip=True,
