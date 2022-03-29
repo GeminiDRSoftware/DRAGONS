@@ -1087,6 +1087,8 @@ class Spect(Resample):
                             "determine slit edges from it.")
                 continue
 
+            mdf_edges_l, mdf_edges_r = [], []
+
             log.stdinfo(f'Finding edges for {ad.filename}')
             # Get values from the MDF.
             x_ccd = mdf['x_ccd'][0]
@@ -1096,132 +1098,161 @@ class Spect(Resample):
             # 'in pixels'. pixel_scale() is in arcsec/pixel. Slit widths are in
             # mm, so we need to convert to pixels.
             slitsize_px = slitsize_mx * arcsecmm / ad.pixel_scale()
-            mdf_left_edge = x_ccd - (slitsize_px / 2.)
-            mdf_right_edge = x_ccd + (slitsize_px / 2.)
+            mdf_edges_l.append(x_ccd - (slitsize_px / 2.))
+            mdf_edges_r.append(x_ccd + (slitsize_px / 2.))
 
             # Clip bounds at detector size if necessary.
-            mdf_left_edge = max(0, mdf_left_edge)
-            mdf_right_edge = min(ad[0].shape[0], mdf_right_edge)
-            y1, y2 = 0, ad[0].shape[1]  # full frame for longslit
+            # mdf_left_edge = max(0, mdf_left_edge)
+            # mdf_right_edge = min(ad[0].shape[0], mdf_right_edge)
             if debug:
-                log.stdinfo(f'Calculated slit edges at = {mdf_left_edge:.2f}, '
-                            f'{mdf_right_edge:.2f}; slit width is '
-                            f'{slitsize_mx:.2f} mm, '
-                            f'{mdf_right_edge - mdf_left_edge:.2f} pixels')
-            edge_guesses = [mdf_left_edge, mdf_right_edge]
+                log.stdinfo('From MDF:\n'
+                            f'Left edges: {mdf_edges_l}\n'
+                            f'Right edges: {mdf_edges_r}\n')
+            mdf_edge_guesses = [(l, r) for l, r in zip(mdf_edges_l,
+                                                       mdf_edges_r)]
 
             for ext in ad:
 
                 model_fits = []
 
                 dispaxis = 2 - ext.dispersion_axis()
+                # Halfway along the array is likely to be near the maximum
+                # constrast with the unilluminated regions.
+                half = ext.data.shape[1 - dispaxis] // 2
 
                 # Take the first derivative of flux to find the slit edges.
-                diffarr = abs(np.diff(ext.data, axis=1-dispaxis))
+                # Left edges will be peaks, right edges troughs, so make a
+                # second negative copy later to find right edges separately.
+                diffarr_l = np.diff(ext.data, axis=1-dispaxis)
+                diffarr_r = -diffarr_l
 
-                # Find the peaks those slit edges register as. Halfway along
-                # the array is likely to be near the maximum constrast with the
-                # unilluminated regions.
-                half = diffarr.shape[1 - dispaxis] // 2
-
-                # Take median of a small slice to avoid effects of cosmic rays:
-                median_slice = np.median(diffarr[half-5:half+5, :],
-                                          axis=[dispaxis])
+                # Take median of a small slice to smooth over cosmic rays:
+                median_slice_l = np.median(diffarr_l[half-5:half+5, :],
+                                           axis=[dispaxis])
+                median_slice_r = np.median(diffarr_r[half-5:half+5, :],
+                                           axis=[dispaxis])
 
                 # Search for position of peaks in the first derivative of flux
                 # perpendicular to the dispersion direction. Apply some
                 # minimal SNR and speration limits to avoid picking up too many
-                # noise peaks, but otherwise it shouldn't matter if we pick up
-                # a few extra; KDTreeFitter later on should pick out the real
-                # ones.
-                position, snr = tracing.find_wavelet_peaks(
-                    median_slice,
+                # noise peaks, but KDTreeFitter later on should pick out the
+                # real ones.
+                positions_l, _ = tracing.find_wavelet_peaks(
+                    median_slice_l,
                     widths=np.array([3.]),
-                    min_snr=10,
+                    min_snr=25,
                     min_sep=1)
 
-                edges = np.array([loc[0] for loc in zip(position, snr)])
-                if debug:
-                    log.stdinfo(f'Found {len(edges)} possible edges '
-                                f'at {edges}.')
-                    if len(edges) == 2:
-                        log.stdinfo(f'Width is {edges[1] - edges[0]:.2f} '
-                                    'pixels.')
+                positions_r, _ = tracing.find_wavelet_peaks(
+                    median_slice_r,
+                    widths=np.array([3.]),
+                    min_snr=25,
+                    min_sep=1)
 
-                    plt.plot(median_slice)
+                if (positions_l == []) and (positions_r == []):
+                    raise RuntimeError("No edge positions could be found.")
+
+                edge_ids_l = match_sources(positions_l, mdf_edges_l, radius=50)
+                edge_ids_r = match_sources(positions_r, mdf_edges_r, radius=50)
+
+                # Generate pairs of slit edges.
+                edges_l = [positions_l[i] for i, j in
+                           enumerate(edge_ids_l) if j > -1]
+                edges_r = [positions_r[i] for i, j in
+                           enumerate(edge_ids_r) if j > -1]
+                edge_pairs = [(l, r) for l, r in zip(edges_l, edges_r)]
+
+                if debug:
+                    log.stdinfo(f'Found {len(edge_pairs)} possible pairs of '
+                                f'edges at {edge_pairs}.')
+                    plt.plot(median_slice_l, label='normal')
+                    plt.plot(median_slice_r, label='inverted')
+                    for pair in edge_pairs:
+                        for pos in pair:
+                            plt.axvline(pos, color='Red', alpha=0.5)
+                    plt.legend()
                     plt.show()
 
                 # Create the model to shift the slit to the found edges.
                 m_recenter = models.Shift(-x_ccd, fixed={'offset': True})
                 m_shift = models.Shift(0, bounds={'offset': (-70, 70)})
                 m_init = m_recenter | m_shift | m_recenter.inverse
+
+                model_fits = []
+                edge_num = 0
                 # If sigma is too small, KDTreeFitter won't be able to find the
                 # edges, and will return a shift of 0. We start with a fairly
                 # tight search area (small sigmaa), then progressively increase
                 # it until we find something or sigma becomes so large that
                 # anything it finds is effectively meaningless (i.e., there's
                 # really nothing to find in this image).
-                shift = 0
-                n_sigma = 5
-                max_sigma = 20
-                while shift == 0:
+                for pair, guess in zip(edge_pairs, mdf_edge_guesses):
+                    shift = 0
+                    n_sigma = 5
+                    max_sigma = 20
+                    while shift == 0:
+                        if debug:
+                            log.stdinfo(f'Trying with sigma={n_sigma}...')
+                        if n_sigma > max_sigma:
+                            raise RuntimeError('Unable to fit slit edges.')
+                        f = KDTreeFitter(
+                            sigma=n_sigma,
+                            proximity_function=KDTreeFitter.gaussian
+                            )
+                        m_final=f(m_init, pair, guess)
+                        # m_final returns three attributes 'offset_N' (for N=1
+                        # to 3), the first and last are the shifts from
+                        # recentering the model, so we want the middle one for
+                        # the shift necessary to align the slit with the array.
+                        shift = m_final.offset_1.value
+
+                        n_sigma += 1
+
                     if debug:
-                        log.stdinfo(f'Trying with sigma={n_sigma}...')
-                    if n_sigma > max_sigma:
-                        raise RuntimeError('Unable to fit slit edges even '
-                                           'with generous parameter values.')
-                    f = KDTreeFitter(sigma=n_sigma,
-                                     proximity_function=KDTreeFitter.gaussian)
-                    m_final=f(m_init, edges, edge_guesses)
-                    # m_final returns three attributes 'offset_N' (for N=1 to
-                    # 3), the first and last are the shifts from recentering
-                    # the model, so we want the middle one for the shift
-                    # necessary to align the slit with the array.
-                    shift = m_final.offset_1.value
-                    n_sigma += 1
-                if debug:
-                    log.stdinfo(f'Found a shift of {shift}.')
-                    log.stdinfo(f'Looking for edges at '
-                                f'{m_final.inverse(edge_guesses)}.')
+                        log.stdinfo(f'Found a shift of {shift}.')
+                        log.stdinfo(f'Looking for edges at '
+                                    f'{m_final.inverse(guess)}.')
 
-                # Apply the shift found from modeling.
-                edge_guesses -= shift
+                    # This complicated bit of code parses out coordinates for
+                    # the traced edges.
+                    for loc, arr in zip(m_final.inverse(guess),
+                                        [diffarr_l, diffarr_r]):
 
-                ref_coords, in_coords = tracing.trace_lines(
-                    diffarr, dispaxis, start=half,
-                    initial=m_final.inverse(edge_guesses))
+                        ref_coords, in_coords = tracing.trace_lines(
+                            arr, dispaxis, start=half,
+                            initial=m_final.inverse(guess))
 
-                # This complicated bit of code parses out coordinates for the
-                # traced edges.
-                for i, loc in enumerate(sorted(m_final.inverse(edge_guesses))):
-                    coords = np.array([list(c1) + list(c2)
-                                       for c1, c2 in
-                                       zip(ref_coords.T, in_coords.T)
-                                       if abs(c1[dispaxis] - loc) < 1.])
-                    values = np.array(sorted(coords,
-                                             key=lambda c: c[1 - dispaxis])).T
-                    ref_coords_new, in_coords_new = values[:2], values[2:]
+                        coords = np.array([list(c1) + list(c2)
+                                           for c1, c2 in
+                                           zip(ref_coords.T, in_coords.T)
+                                           if abs(c1[dispaxis] - loc) < 1.])
+                        values = np.array(sorted(coords,
+                                                 key=lambda c: c[1 - dispaxis])).T
+                        # ref_coords_new, in_coords_new = values[:2], values[2:]
+                        in_coords_new = values[2:]
 
-                    # Log the trace.
-                    min_value = in_coords_new[1 - dispaxis].min()
-                    max_value = in_coords_new[1 - dispaxis].max()
-                    log.debug(f"Edge at {loc:.1f} traced from {min_value} "
-                              f"to {max_value}.")
+                        # Log the trace.
+                        min_value = in_coords_new[1 - dispaxis].min()
+                        max_value = in_coords_new[1 - dispaxis].max()
+                        log.debug(f"Edge at {loc:.1f} traced from {min_value} "
+                                  f"to {max_value}.")
 
-                    # Perform the fit of the coordinates for the traced edges.
-                    _fit_1d = fit_1D(
-                        in_coords_new[dispaxis],
-                        domain=[0, ext.shape[1 - dispaxis] - 1],
-                        axis=dispaxis,
-                        points=in_coords_new[1 - dispaxis],
-                        plot=debug,
-                        **fit1d_params)
+                        # Perform the fit of the coordinates for the traced edges.
+                        _fit_1d = fit_1D(
+                            in_coords_new[dispaxis],
+                            domain=[0, ext.shape[1 - dispaxis] - 1],
+                            axis=dispaxis,
+                            points=in_coords_new[1 - dispaxis],
+                            plot=debug,
+                            **fit1d_params)
 
-                    # Create a table from the model.
-                    row = Table(np.array([1, i]), names=('slit', 'edge'))
-                    model_fit = am.model_to_table(_fit_1d.model)
-                    row = hstack([row, model_fit], join_type='inner')
-                    model_fits.append(row)
+                        # Create a table from the model.
+                        row = Table(np.array([1, edge_num]),
+                                    names=('slit', 'edge'))
+                        model_fit = am.model_to_table(_fit_1d.model)
+                        row = hstack([row, model_fit], join_type='inner')
+                        model_fits.append(row)
+                        edge_num += 1
 
                 # Attach the table to the extension as a new plane.
                 new_slit_table = vstack(model_fits)
