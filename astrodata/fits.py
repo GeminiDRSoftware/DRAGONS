@@ -581,6 +581,9 @@ def ad_to_hdulist(ad):
                         for kw in (f'CD{i}_{j}', f'PC{i}_{j}', f'CRPIX{j}'):
                             if kw in header:
                                 del header[kw]
+                # Delete this if it's left over from a previous save
+                if 'FITS-WCS' in header:
+                    del header['FITS-WCS']
                 header.update(wcs_dict)
                 # Use "in" here as the dict entry may be (value, comment)
                 if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
