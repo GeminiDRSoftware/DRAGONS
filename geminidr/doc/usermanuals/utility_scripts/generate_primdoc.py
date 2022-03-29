@@ -134,6 +134,15 @@ def find_prims_params(module):
     paramclasses_in_module = []
 
     for name, clss in inspect.getmembers(module, inspect.isclass):
+        # exceptions to skip
+        if clss.__module__ == 'geminidr.core.parameters_generic':
+            continue
+            # This parameter module is not associated with any primitive
+            # module.  Just skip it.
+        if name == 'core_stacking_config':
+            continue
+            # This is a utility parameter config class. Skip it.
+
         if clss.__module__ == module.__name__ and hasattr(clss, 'tagset'):
             primclasses_in_module.append(clss)
         elif issubclass(clss, config.Config):
@@ -166,7 +175,12 @@ def write_primitives_rst(primclass, destination):
             # first the docstring
             filename = f'{rootfilename}_docstring.rst'
             f = open(os.path.join(destination, filename), 'w')
-            f.write(textwrap.dedent(getattr(primclass_instance, name).__doc__))
+            docstring = getattr(primclass_instance, name).__doc__
+            if docstring:
+                f.write(textwrap.dedent(docstring))
+            else: # no docstring
+                f.write('')
+                print('WARNING: no docstring for ', primclass.__name__, name)
             f.close()
 
             # then the overridden parameters
@@ -210,7 +224,7 @@ def write_parameters_rst(paramclass, destination, module):
 
             rootfilename = f'{primmod.__name__}.{clss.__name__}.{associated_primname}'
 
-            filename = f'{rootfilename}-param.rst'
+            filename = f'{rootfilename}_param.rst'
             f = open(os.path.join(destination, filename), 'w')
             f.write(PARAMHEADER)
             for k, v in params.items():
