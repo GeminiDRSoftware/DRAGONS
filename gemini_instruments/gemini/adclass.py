@@ -2097,6 +2097,8 @@ class AstroDataGemini(AstroData):
         """
         def empirical_pixel_scale(ext):
             """Brute-force calculation of pixel scale"""
+            if ext.wcs is None:
+                return None
             yc, xc = [0.5 * l for l in ext.shape]
             ra, dec = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc])[-2:]
             cosdec = math.cos(dec[0] * np.pi / 180)
@@ -2117,7 +2119,9 @@ class AstroDataGemini(AstroData):
             try:
                 pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
             except (IndexError, AttributeError):
-                pixel_scale_list.append(empirical_pixel_scale(ext))
+                scale = empirical_pixel_scale(ext)
+                if scale is not None:
+                    pixel_scale_list.append(scale)
         if mean:
             if pixel_scale_list:
                 return np.mean(pixel_scale_list)
