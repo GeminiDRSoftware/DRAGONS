@@ -54,6 +54,7 @@ def ad(path_to_inputs, request):
         Input spectrum processed up to right before the
         `determineWavelengthSolution` primitive.
     """
+    print(f"test_write_1d_spectra fixture got path_to_inputs={path_to_inputs}")
     filename = request.param
     path = os.path.join(path_to_inputs, filename)
 
