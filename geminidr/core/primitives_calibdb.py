@@ -286,19 +286,22 @@ class CalibDB(PrimitivesBASE):
         prior to storing AD objects as calibrations
         """
         for ad in adinputs:
+            if 'PROCMODE' not in ad.phu:
+                ad.phu.set('PROCMODE', self.mode)
+            mode = ad.phu['PROCMODE']
+
             # if user mode: not uploading and sq, don't add mode.
-            if self.mode is 'sq' and (not self.upload or 'calibs' not in self.upload) :
+            if mode is 'sq' and (not self.upload or 'calibs' not in self.upload) :
                 proc_suffix = f""
             else:
-                proc_suffix = f"_{self.mode}"
+                proc_suffix = f"_{mode}"
 
             if suffix:
                 proc_suffix += suffix
             ad.update_filename(suffix=proc_suffix, strip=True)
             if update_datalab:
-                _update_datalab(ad, suffix, self.keyword_comments)
+                _update_datalab(ad, suffix, mode, self.keyword_comments)
             gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
-            ad.phu.set('PROCMODE', self.mode)
         return adinputs
 
     def storeProcessedArc(self, adinputs=None, suffix=None, force=False):
@@ -400,11 +403,19 @@ class CalibDB(PrimitivesBASE):
                     else:
                         suffix = ''
 
-            ad.phu.set('PROCMODE', self.mode)
+            # if store has already been run and PROCMODE set, do not let
+            # a subsequent call to store change the PROCMODE.  Eg. a subsequent
+            # call to do the actual upload to archive should not change the
+            # procmode that was used when the data was reduced.
+            if 'PROCMODE' not in ad.phu:
+                ad.phu.set('PROCMODE', self.mode)
+            mode = ad.phu['PROCMODE']
 
-            if self.mode != 'qa' and self.upload and 'science' in self.upload:
+            _update_datalab(ad, suffix, mode, self.keyword_comments)
+
+            if mode != 'qa' and self.upload and 'science' in self.upload:
                 old_filename = ad.filename
-                ad.update_filename(suffix=f"_{self.mode}"+suffix, strip=True)
+                ad.update_filename(suffix=f"_{mode}"+suffix, strip=True)
                 ad.write(overwrite=True)
                 try:
                     upload_calibration(ad.filename, is_science=True)
@@ -469,18 +480,22 @@ class CalibDB(PrimitivesBASE):
 
 ##################
 
-def _update_datalab(ad, suffix, keyword_comments_lut):
+def _update_datalab(ad, suffix, mode, keyword_comments_lut):
     # Update the DATALAB. It should end with 'suffix'.  DATALAB will
     # likely already have '_stack' suffix that needs to be replaced.
 
     # replace the _ with a - to match fitsstore datalabel standard
     # or add the - if "suffix" doesn't have a leading _
-    if suffix[0] == '_':
+    if suffix == '':
+        extension = ''
+    elif suffix[0] == '_':
         extension = suffix.replace('_', '-', 1).upper()
     else:
         extension = '-'+suffix.upper()
 
+    extension = '-'+mode.upper()+extension
+
     datalab = ad.data_label()
-    new_datalab = re.sub(r'-[a-zA-Z]+$', '', datalab) + extension
+    new_datalab = re.sub(r'(-[a-zA-Z]+)+$', '', datalab) + extension
     ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return
