@@ -482,6 +482,13 @@ class GSAOIImage(GSAOI, Image, Photometry):
             sdmodels.append(sdmodel)
 
         for ad in adinputs:
+            # TODO: make this work when a detector is missing
+            # Ideally we should be able to handle data where some detectors
+            # are missing. But we require that the reference extension exists
+            # because we build the WCS from it, so we can't cater for *all*
+            # missing detectors.
+            if len(ad) != 4:
+                raise ValueError(f"{ad.filename} does not have 4 extensions")
             applied_static = sum("static" in ext.wcs.available_frames for ext in ad)
             if applied_static not in (0, len(ad)):
                 raise OSError(f"Some (but not all) extensions in {ad.filename}"
