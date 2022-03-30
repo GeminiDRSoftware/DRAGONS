@@ -50,7 +50,6 @@ class core_stacking_config(config.Config):
                                     min=0, optional=True)
     save_rejection_map = config.Field("Save rejection map?", bool, False)
 
-
 class stackFramesConfig(core_stacking_config):
     separate_ext = config.Field("Handle extensions separately?", bool, True)
     scale = config.Field("Scale images to the same intensity?", bool, False)
@@ -68,11 +67,21 @@ class stackSkyFramesConfig(stackFramesConfig):
         self.scale = True
         self.zero = False
 
-class stackFlatsConfig(core_stacking_config):
-    scale = config.Field("Scale images to the same intensity?", bool, False)
+class stackBiasesConfig(stackFramesConfig):
+    def setDefaults(self):
+        self.reject_method = 'varclip'
+        del self.zero
+        del self.scale
+
+class stackFlatsConfig(stackFramesConfig):
     def setDefaults(self):
         self.reject_method = "minmax"
         self.nlow = 1
         self.nhigh = 1
+
+class stackDarksConfig(stackFramesConfig):
+    def setDefaults(self):
+        del self.zero
+        del self.scale
 
 # TODO: Do we want stackSkyFlats with object removal?

@@ -13,7 +13,7 @@ import dateutil.parser
 import numpy as np
 
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 
 from astrodata import AstroData
 from astrodata import astro_data_tag
@@ -169,6 +169,7 @@ def get_specphot_name(ad):
     if separations[i] < 2 or separations[i] < 10 and all_names[i] == target_name:
         return all_names[i]
 
+
 # ------------------------------------------------------------------------------
 class AstroDataGemini(AstroData):
     __keyword_dict = gemini_keyword_names
@@ -319,6 +320,60 @@ class AstroDataGemini(AstroData):
     def _type_extracted(self):
         if 'EXTRACT' in self.phu:
             return TagSet(['EXTRACTED'])
+
+    def _ra(self):
+        """
+        Parse RA from header.
+
+        Utility method to pull the right ascension from the header, parsing text if appropriate.
+
+        Returns
+        -------
+        float : right ascension in degrees, or None
+        """
+        ra = self.phu.get(self._keyword_for('ra'), None)
+        if type(ra) == str:
+            # maybe it's just a float
+            try:
+                return float(ra)
+            except:
+                try:
+                    if not ra.endswith('hours') and not ra.endswith('degrees'):
+                        rastr = f'{ra} hours'
+                    else:
+                        rastr = ra
+                    return Angle(rastr).degree
+                except:
+                    self._logger.warning(f"Unable to parse RA from {ra}")
+                    return None
+        return ra
+
+    def _dec(self):
+        """
+        Parse DEC from header.
+
+        Utility method to pull the declination from the header, parsing text if appropriate.
+
+        Returns
+        -------
+        float : declination in degrees, or None
+        """
+        dec = self.phu.get(self._keyword_for('dec'), None)
+        if type(dec) == str:
+            # maybe it's just a float
+            try:
+                return float(dec)
+            except:
+                try:
+                    if not dec.endswith('degrees'):
+                        decstr = f'{dec} degrees'
+                    else:
+                        decstr = dec
+                    return Angle(decstr).degree
+                except:
+                    self._logger.warning(f"Unable to parse dec from {dec}")
+                    return None
+        return dec
 
     def _parse_section(self, keyword, pretty):
         try:
@@ -625,7 +680,7 @@ class AstroDataGemini(AstroData):
         """
         dec = self.wcs_dec()
         if dec is None:
-            dec = self.phu.get('DEC', None)
+            dec = self._dec()
         return dec
 
     @astro_data_descriptor
@@ -1399,7 +1454,7 @@ class AstroDataGemini(AstroData):
         """
         ra = self.wcs_ra()
         if ra is None:
-            ra = self.phu.get('RA', None)
+            ra = self._ra()
         return ra
 
     @astro_data_descriptor
@@ -1594,7 +1649,7 @@ class AstroDataGemini(AstroData):
         """
 
         try:
-            ra = self.phu['RA']
+            ra = self._ra()
         except KeyError:
             return None
 
@@ -1664,7 +1719,7 @@ class AstroDataGemini(AstroData):
             Declination of the target in degrees.
         """
         try:
-            dec = self.phu['DEC']
+            dec = self._dec()
         except KeyError:
             return None
 

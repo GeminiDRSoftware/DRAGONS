@@ -2,10 +2,12 @@
 """
 Tests for GMOS Spect findApertures.
 """
-
+import glob
 import os
 import numpy as np
 import pytest
+
+from itertools import product as cart_product
 
 import astrodata
 import gemini_instruments
@@ -22,6 +24,44 @@ test_data = [
     ("S20180919S0139_distortionCorrected.fits", 257),  # GS-2018B-Q-209-13-003 B600 0.45um
     ("S20191005S0051_distortionCorrected.fits", 261),  # GS-2019B-Q-132-35-001 R400 0.73um
 ]
+
+
+# More real-world test cases with target aperture and snr parameter
+# Filename, aperture location, tolerance, snr, # expected results
+extra_test_data = [
+    ("S20210219S0076_align.fits", [1169], [[1154, 1184]], 5, None),  # GS-2021A-DD-102 Supernova within a galaxy bg
+    ("N20210730S0037_mosaic.fits", [1068], [[1063, 1073]], 4, 1)                   # Kathleen test data via Chris, expecting 1 ap
+]
+extra_test_data.clear()
+
+#################################
+# Fake Background Aperture Tests
+#################################
+
+# Edit these to provide iterables to iterate over
+BACKGROUNDS = (0, 5,)  # overall background level
+PEAKS = (50, 75)  # signal in galaxy peak
+CONTRASTS = (0.25, 0.3)  # ratio of SN peak to galaxy peak
+SEPARATIONS = (8, 12)  # pixel separation between galaxy/SN peaks
+GAL_FWHMS = (40,)  # FWHM (pixels) of galaxy
+SN_FWHMS = (3, 4)  # FWHM (pixels) of SN
+
+extra_test_data.extend([
+    (f"fake_bkgd{bkgd:04.0f}_peak{peak:03.0f}_con{contrast:4.2f}_"
+                f"sep{sep:05.2f}_gal{gal_fwhm:5.2f}_sn{sn_fwhm:4.2f}.fits",
+     [1024, 1024+sep], [[1024-gal_fwhm, 1023+sep], [1025-sep, 1039]], 3, None)
+    for bkgd, peak, contrast, sep, gal_fwhm, sn_fwhm in cart_product(
+            BACKGROUNDS, PEAKS, CONTRASTS, SEPARATIONS, GAL_FWHMS, SN_FWHMS)
+])
+
+# Some iterations are known to be failure cases
+# we mark them accordingly so we can see if they start passing
+_xfail_indices = (0, 1, 5, 9, 12, 13, 17, 20, 24, 25, 29)
+for idx in _xfail_indices:
+    args = extra_test_data[idx]
+    extra_test_data[idx] = pytest.param(args, marks=pytest.mark.xfail)
+
+##################################
 
 # Parameters for test_find_apertures_with_fake_data(...)
 # ToDo - Explore a bit more the parameter space (e.g., larger seeing)
@@ -58,7 +98,7 @@ def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrof
     for ext in ad:
         ext.data = model(rows)
         ext.data += np.random.poisson(ext.data)
-        ext.data += (np.random.random(size=ext.data.shape) - 0.5) * gmos_fake_noise
+        ext.data += np.random.normal(scale=gmos_fake_noise, size=ext.shape)
         ext.mask = np.zeros_like(ext.data, dtype=np.uint)
 
     p = GMOSSpect([ad])
@@ -84,6 +124,34 @@ def test_find_apertures_using_standard_star(ad_and_center):
     assert hasattr(ad[0], 'APERTURE')
     assert len(ad[0].APERTURE) == 1
     np.testing.assert_allclose(ad[0].APERTURE['c0'], expected_center, 3)
+
+
+@pytest.mark.skip("MUST WORK; temporary skip")
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad_center_tolerance_snr", extra_test_data, indirect=True)
+def test_find_apertures_extra_cases(ad_center_tolerance_snr):
+    """
+    Test that p.findApertures can find apertures in special test cases, such as
+    with galaxy background
+    """
+    ad, expected_centers, ranges, snr, count = ad_center_tolerance_snr
+    args = dict()
+    if snr is not None:
+        args["min_snr"] = snr
+    p = GMOSSpect([ad])
+    _ad = p.findApertures(**args).pop()
+
+    assert hasattr(ad[0], 'APERTURE')
+    if count is not None:
+        assert(len(ad[0].APERTURE) == count)
+    if expected_centers is not None:
+        apertures = ", ".join([str(ap) for ap in ad[0].APERTURE["c0"]])
+        for expected_center, range in zip(expected_centers, ranges):
+            range = (expected_center-2, expected_center+2)
+            assert len([ap for ap in ad[0].APERTURE['c0'] if (ap <= range[1] and ap >= range[0])]) >= 1, \
+                f'{ad.filename} check for aperture at {expected_center} not found within range {range} aps at ' \
+                f'{apertures}'
 
 
 # -- Fixtures -----------------------------------------------------------------
@@ -114,6 +182,43 @@ def ad_and_center(path_to_inputs, request):
         raise FileNotFoundError(path)
 
     return ad, center
+
+
+@pytest.fixture(scope='function')
+def ad_center_tolerance_snr(path_to_inputs, request):
+    """
+    Returns the pre-processed spectrum file and some additional input/check parameters.
+
+    Parameters
+    ----------
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    request : pytest.fixture
+        PyTest built-in fixture containing information about parent test.
+
+    Returns
+    -------
+    AstroData
+        Input spectrum processed up to right before the `applyQECorrection`.
+    center
+        expected location of aperture center(s)
+    tolerance
+        valid range(s) for each aperture
+    snr
+        min_snr parameter for find_apertures
+    count
+        number of apertures expected
+    """
+    filename, center, range, snr, count = request.param
+    path = os.path.join(path_to_inputs, filename)
+
+    if os.path.exists(path):
+        ad = astrodata.open(path)
+    else:
+        raise FileNotFoundError(path)
+
+    return ad, center, range, snr, count
 
 
 def create_inputs_recipe():
@@ -182,9 +287,87 @@ def create_inputs_recipe():
     os.chdir(cwd)
 
 
+def create_inputs_automated_recipe():
+    from astropy.io import fits as pf
+    import numpy as np
+    from astropy.modeling.models import Gaussian1D
+    from itertools import product as cart_product
+    from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
+
+    module_name, _ = os.path.splitext(os.path.basename(__file__))
+    path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
+    os.makedirs(path, exist_ok=True)
+    os.chdir(path)
+    os.makedirs("inputs", exist_ok=True)
+    cwd = os.getcwd()
+    print(cwd)
+    os.chdir("inputs/")
+
+    SHAPE = (2048, 200)
+    RDNOISE = 4
+
+    # # Edit these to provide iterables to iterate over
+    # BACKGROUNDS = (0,)  # overall background level
+    # PEAKS = (50,)  # signal in galaxy peak
+    # CONTRASTS = (0.25,)  # ratio of SN peak to galaxy peak
+    # SEPARATIONS = (8,)  # pixel separation between galaxy/SN peaks
+    # GAL_FWHMS = (40,)  # FWHM (pixels) of galaxy
+    # SN_FWHMS = (3,)  # FWHM (pixels) of SN
+
+    phu_dict = dict(
+        INSTRUME='GMOS-N',
+        OBJECT='FAKE',
+        OBSTYPE='OBJECT',
+    )
+    hdr_dict = dict(
+        WCSAXES=3,
+        WCSDIM=3,
+        CD1_1=-0.1035051453281131,
+        CD2_1=0.0,
+        CD1_2=0.0,
+        CD2_2=-1.6608167576414E-05,
+        CD3_2=4.17864941757412E-05,
+        CD1_3=0.0,
+        CD2_3=0.0,
+        CD3_3=1.0,
+        CRVAL2=76.3775200034826,
+        CRVAL3=52.8303306863311,
+        CRVAL1=495.0,
+        CTYPE1='AWAV    ',
+        CTYPE2='RA---TAN',
+        CTYPE3='DEC--TAN',
+        CRPIX1=1575.215466689882,
+        CRPIX2=-555.7218408956066,
+        CRPIX3=0.0,
+        CUNIT1='nm      ',
+        CUNIT2='deg     ',
+        CUNIT3='deg     ',
+        DATASEC='[1:{1},1:{0}]'.format(*SHAPE),
+    )
+
+    yc = 0.5 * SHAPE[0]
+    for bkgd, peak, contrast, sep, gal_fwhm, sn_fwhm in cart_product(
+            BACKGROUNDS, PEAKS, CONTRASTS, SEPARATIONS, GAL_FWHMS, SN_FWHMS):
+        gal_std = 0.42466 * gal_fwhm
+        sn_std = 0.42466 * sn_fwhm
+        model = (Gaussian1D(amplitude=peak, mean=yc, stddev=gal_std) +
+                 Gaussian1D(amplitude=peak * contrast, mean=yc + sep, stddev=sn_std))
+        profile = model(np.arange(SHAPE[0]))
+        data = np.zeros(SHAPE) + profile[:, np.newaxis]
+        data += np.random.normal(scale=RDNOISE, size=data.size).reshape(data.shape)
+
+        hdulist = pf.HDUList([pf.PrimaryHDU(header=pf.Header(phu_dict)),
+                              pf.ImageHDU(data=data, header=pf.Header(hdr_dict))])
+        filename = (f"fake_bkgd{bkgd:04.0f}_peak{peak:03.0f}_con{contrast:4.2f}_"
+                    f"sep{sep:05.2f}_gal{gal_fwhm:5.2f}_sn{sn_fwhm:4.2f}.fits")
+        hdulist.writeto(filename, overwrite=True)
+    os.chdir(cwd)
+
+
 if __name__ == '__main__':
     import sys
     if "--create-inputs" in sys.argv[1:]:
         create_inputs_recipe()
+        create_inputs_automated_recipe()
     else:
         pytest.main()

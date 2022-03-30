@@ -3,6 +3,7 @@ import pytest
 import astrodata
 import astrodata.testing
 import gemini_instruments
+from gemini_instruments.gnirs import AstroDataGnirs
 
 test_files = [
     "N20190206S0279.fits",
@@ -155,6 +156,14 @@ def test_ra_and_dec_wcs_fallback(ad, monkeypatch):
     monkeypatch.setattr(ad, 'wcs_dec', _fake_wcs_call)
     assert(ad.ra() == ad.phu.get('RA', None))
     assert(ad.dec() == ad.phu.get('DEC', None))
+
+
+def test_ra_dec_from_text():
+    ad = AstroDataGnirs()
+    ad.phu['RA'] = '03:48:30.113'
+    ad.phu['DEC'] = '+24:20:43.00'
+    assert pytest.approx(ad.target_ra(), 57.12547083333333)
+    assert pytest.approx(ad.target_dec(), 24.345277777777778)
 
 
 if __name__ == "__main__":
