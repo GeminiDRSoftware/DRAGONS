@@ -112,7 +112,7 @@ class scaleByExposureTimeConfig(config.Config):
     time = config.RangeField("Output exposure time", float, None, min=0.1, optional=True)
 
 
-class scaleByObjectFluxConfig(config.Config):
+class scaleCountsToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_scaledByObjectFlux", optional=True)
     tolerance = config.RangeField("Tolerance for scaling compared to exposure time",
                                   float, 0, min=0, max=1, inclusiveMax=True)

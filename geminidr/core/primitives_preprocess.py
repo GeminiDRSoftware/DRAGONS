@@ -1027,7 +1027,7 @@ class Preprocess(PrimitivesBASE):
                 ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
-    def scaleByObjectFlux(self, adinputs=None, **params):
+    def scaleCountsToReference(self, adinputs=None, **params):
         """
         This primitive scales the input images so that the scaled fluxes of
         the sources in the OBJCAT match those in the reference image (the
@@ -1746,7 +1746,7 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
 
-# Helper functions for scaleByObjectFlux() follow
+# Helper functions for scaleCountsToReference() follow
 def mkcat_image(ad):
     """Produce a catalog of sources from a single-extension AstroData IMAGE"""
     try:

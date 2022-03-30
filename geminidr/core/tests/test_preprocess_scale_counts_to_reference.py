@@ -17,14 +17,14 @@ from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 
 @pytest.mark.parametrize("tolerance", (0, 1))
 @pytest.mark.parametrize("use_common", (False, True))
-def test_scale_by_object_flux_image(p_niri_image, tolerance, use_common):
+def test_scale_counts_to_reference_image(p_niri_image, tolerance, use_common):
     expected_results = {(0, False): (1, 1/2, 1/3),
                         (0, True): (1, 1/2, 1/3),
                         (1, False): (1, 170100/170201, 100200/100404),  # 0.9994054, 0.00796915
                         (1, True): (1, 100/101, 100/102)  # 0.990985, 0.9803924
                         }
 
-    p_niri_image.scaleByObjectFlux(tolerance=tolerance, use_common=use_common)
+    p_niri_image.scaleCountsToReference(tolerance=tolerance, use_common=use_common)
     adoutputs = p_niri_image.streams['main']
     scalings = [ad[0].data.mean() for ad in adoutputs]
     np.testing.assert_allclose(scalings, expected_results[tolerance, use_common],
@@ -34,7 +34,7 @@ def test_scale_by_object_flux_image(p_niri_image, tolerance, use_common):
 @pytest.mark.parametrize("tolerance", (0, 1))
 @pytest.mark.parametrize("use_common", (False, True))
 @pytest.mark.parametrize("extracted", (False, True))
-def test_scale_by_object_flux_spect(p_gmos_ls, tolerance, use_common, extracted):
+def test_scale_counts_to_reference_spect(p_gmos_ls, tolerance, use_common, extracted):
     expected_results = {(0, False): (1, 1/2, 1/3),
                         (0, True): (1, 1/2, 1/3),
                         (1, False): (1, 360/371, 745/769),
@@ -44,7 +44,7 @@ def test_scale_by_object_flux_spect(p_gmos_ls, tolerance, use_common, extracted)
     if extracted:
         p_gmos_ls.extractSpectra()
     adinputs = [deepcopy(ad) for ad in p_gmos_ls.streams['main']]
-    p_gmos_ls.scaleByObjectFlux(tolerance=tolerance, use_common=use_common)
+    p_gmos_ls.scaleCountsToReference(tolerance=tolerance, use_common=use_common)
     adoutputs = p_gmos_ls.streams['main']
     # Only need to look at first extension, even for multi-extension 1D spectra
     scalings = [np.mean(adout[0].data[adout[0].data > 0] /
@@ -77,10 +77,8 @@ def p_niri_image(astrofaker):
 
 
 @pytest.fixture
-def p_gmos_ls():
+def p_gmos_ls(astrofaker):
     """A pretty messy fixture to create 3 fake 2D spectrograms"""
-    import astrofaker
-
     # Create a longslit gWCS object
     m_wave = models.Shift(500, name='WAVE')
     m_sky = (models.Mapping((0, 0)) | (models.Shift(-125) & models.Shift(0)) |
