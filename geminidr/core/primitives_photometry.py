@@ -203,7 +203,6 @@ class Photometry(PrimitivesBASE):
         for key in ("suffix", "set_saturation", "replace_flags", "mask"):
             del params[key]
 
-        adoutputs = []
         for ad in adinputs:
             # Get a seeing estimate from the header, if available
             seeing_estimate = ad.phu.get('MEANFWHM')
@@ -280,7 +279,7 @@ class Photometry(PrimitivesBASE):
             # Run some profiling code on the best sources to produce a
             # more IRAF-like FWHM number, adding two columns to the OBJCAT
             # (PROFILE_FWHM, PROFILE_EE50)
-            ad = _profile_sources(ad, seeing_estimate)
+            _profile_sources(ad, seeing_estimate)
 
             # We've added a new OBJMASK. It's possible the AD already had an
             # OBJMASK that was dilated. Need to remove this keyword from PHU
@@ -291,8 +290,8 @@ class Photometry(PrimitivesBASE):
             # Timestamp and update filename, and append to output list
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
-            adoutputs.append(ad)
-        return adoutputs
+
+        return adinputs
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
