@@ -1250,10 +1250,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.recalc_inputs_above = recalc_inputs_above
         self.pad_buttons = pad_buttons
 
-        # Make the widgets accessible from external code so we can update
-        # their properties if the default setup isn't great
-        self.widgets = {}
-
         # Keep a list of panels for access later
         self.panels = list()
 
@@ -1278,21 +1274,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     reinit_widgets.append(self.reinit_button)
                     self.modal_widget = self.reinit_button
 
-                    reset_reinit_button = bm.Button(
-                        button_type='warning',
-                        height=35,
-                        id='reset-reinit-pars',
-                        label="Reset",
-                        width=202)
-
-                    def reset_dialog_handler(result):
-                        if result:
-                            self.reset_reinit_panel()
-
-                    self.make_ok_cancel_dialog(
-                        btn=reset_reinit_button,
-                        message='Do you want to reset the input parameters?',
-                        callback=reset_dialog_handler)
+                    reset_reinit_button = self.build_reset_button()
                     reinit_widgets.append(reset_reinit_button)
 
                 elif len(reinit_widgets) == 1:
@@ -1410,6 +1392,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             if 'value_throttled' in self.widgets[fname]._callbacks:
                 for callback in self.widgets[fname]._callbacks['value_throttled']:
                     callback(attrib='value_throttled', old=old, new=reset_value)
+
 
     def visualize(self, doc):
         """

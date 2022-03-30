@@ -169,6 +169,14 @@ class AstroDataMixin:
             raise TypeError("wcs value must be None or a gWCS object")
         self._wcs = value
 
+    @property
+    def shape(self):
+        return self._data.shape
+
+    @property
+    def size(self):
+        return self._data.size
+
 
 class FakeArray:
 
@@ -354,10 +362,6 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
 
         """
         return NDWindowing(self)
-
-    @property
-    def shape(self):
-        return self._data.shape
 
     def _get_uncertainty(self, section=None):
         """Return the ADVarianceUncertainty object, or a slice of it."""

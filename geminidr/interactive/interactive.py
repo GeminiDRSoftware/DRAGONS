@@ -1,13 +1,13 @@
 import re
 from abc import ABC, abstractmethod
+from copy import copy
 from enum import Enum, auto
 from functools import cmp_to_key
 
 from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
-from bokeh.models import (BoxAnnotation, Button, CustomJS, Dropdown,
-                          NumeralTickFormatter, Slider, TextInput, Div, NumericInput, PreText, ColumnDataSource,
-                          Whisker)
+from bokeh.models import (BoxAnnotation, Button, CustomJS, NumeralTickFormatter, Slider, TextInput, Div,
+                          NumericInput, PreText, Spacer, Select, ColumnDataSource, Whisker)
 from bokeh import models as bm
 
 from geminidr.interactive import server
@@ -30,6 +30,28 @@ _visualizer = None
 
 
 _log = logutils.get_logger(__name__)
+
+
+def _title_from_field(field):
+    """
+    Extract a suitable UI Field Title from a Field instance
+
+    Parameters
+    ----------
+
+    field : :class:`~gempy.library.config.config.Field`
+        Field object to infer title for
+
+    returns
+    -------
+        str : Title string for UI
+    """
+    if hasattr(field, 'title'):
+        title = field.title
+    elif hasattr(field, 'name'):
+        title = field.name.replace('_', ' ').title()
+    else:
+        raise ValueError("Field has neither title nor name, unable to parse a title")
 
 
 class FitQuality(Enum):
@@ -63,6 +85,10 @@ class PrimitiveVisualizer(ABC):
         """
         global _visualizer
         _visualizer = self
+
+        # Make the widgets accessible from external code so we can update
+        # their properties if the default setup isn't great
+        self.widgets = {}
 
         # set help to default, subclasses should override this with something specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
@@ -122,7 +148,6 @@ class PrimitiveVisualizer(ABC):
         # JS callbacks in bokeh)
         self.submit_button.on_click(self.submit_button_handler)
         self.submit_button.js_on_change('disabled', callback)
-        # self.submit_button.js_on_click(callback)
 
         abort_callback = CustomJS(code="""
             $.ajax('/shutdown?user_satisfied=false').done(function()
@@ -143,7 +168,70 @@ class PrimitiveVisualizer(ABC):
         # Text widget for triggering ok/cancel via DOM text change event
         self._ok_cancel_holder = None
 
+        self._reinit_params = {k: v for k, v in ui_params.values.items()}
+
         self.fits = []
+
+    # noinspection PyProtectedMember
+    def reset_reinit_panel(self, param=None):
+        """
+        Reset all the parameters in the Tracing Panel (leftmost column).
+        If a param is provided, it resets only this parameter in particular.
+
+        Parameters
+        ----------
+        param : str
+            Parameter name
+        """
+        for fname in self.ui_params.reinit_params:
+            if param is None or fname == param:
+                reset_value = self._reinit_params[fname]
+            else:
+                continue
+
+            # Handle CheckboxGroup widgets
+            if hasattr(self.widgets[fname], "value"):
+                attr = "value"
+            else:
+                attr = "active"
+                reset_value = [0] if reset_value else []
+            old = getattr(self.widgets[fname], attr)
+
+            # Update widget value
+            if reset_value is None:
+                if not isinstance(self.widgets[fname], TextInput):
+                    kwargs = {attr: self.widgets[fname].start, "show_value": False}
+                else:
+                    kwargs = {attr: ""}
+            else:
+                kwargs = {attr: reset_value}
+            self.widgets[fname].update(**kwargs)
+
+            # Update Text Field via callback function
+            if 'value' in self.widgets[fname]._callbacks:
+                for callback in self.widgets[fname]._callbacks['value']:
+                    callback('value', old=old, new=reset_value)
+            if 'value_throttled' in self.widgets[fname]._callbacks:
+                for callback in self.widgets[fname]._callbacks['value_throttled']:
+                    callback(attrib='value_throttled', old=old, new=reset_value)
+
+    def build_reset_button(self):
+        reset_reinit_button = bm.Button(
+            button_type='warning',
+            height=35,
+            id='reset-reinit-pars',
+            label="Reset",
+            width=202)
+
+        def reset_dialog_handler(result):
+            if result:
+                self.reset_reinit_panel()
+
+        self.make_ok_cancel_dialog(
+            btn=reset_reinit_button,
+            message='Do you want to reset the input parameters?',
+            callback=reset_dialog_handler)
+        return reset_reinit_button
 
     def make_ok_cancel_dialog(self, btn, message, callback):
         """
@@ -508,7 +596,8 @@ class PrimitiveVisualizer(ABC):
             _log.info(message)
 
     def make_widgets_from_parameters(self, params, reinit_live: bool = True,
-                                     slider_width: int = 256):
+                                     slider_width: int = 256, add_spacer=False,
+                                     hide_textbox=None):
         """
         Makes appropriate widgets for all the parameters in params,
         using the config to determine the type. Also adds these widgets
@@ -523,12 +612,18 @@ class PrimitiveVisualizer(ABC):
             Currently only viable for text-slider style inputs
         slider_width : int
             Width of the sliders
+        add_spacer : bool
+            If True, add a spacer between sliders and their text-boxes
+        hide_textbox : list
+            If set, a list of range field names for which we don't want a textbox
 
         Returns
         -------
         list : Returns a list of widgets to display in the UI.
         """
         widgets = []
+        if hide_textbox is None:
+            hide_textbox = []
         if params.reinit_params:
             for key in params.reinit_params:
                 field = params.fields[key]
@@ -542,23 +637,52 @@ class PrimitiveVisualizer(ABC):
                         params.titles[key], params.values[key], step, field.min, field.max, obj=params.values,
                         attr=key, slider_width=slider_width, allow_none=field.optional, throttled=True,
                         is_float=is_float,
-                        handler=self.slider_handler_factory(key, reinit_live=reinit_live))
+                        handler=self.slider_handler_factory(key, reinit_live=reinit_live),
+                        add_spacer=add_spacer, hide_textbox=key in hide_textbox)
 
                     self.widgets[key] = widget.children[0]
+                    widgets.append(widget)
                 elif hasattr(field, 'allowed'):
                     # ChoiceField => drop-down menu
-                    widget = Dropdown(label=field.title, menu=list(field.allowed.keys()))
+                    if key in params.titles:
+                        title = params.titles[key]
+                    else:
+                        title = _title_from_field(field)
+                    widget = Select(width=96,
+                                    value=params.values[key], options=list(field.allowed.keys()))
+                    def _select_handler(attr, old, new):
+                        self.extras[key] = new
+                        if reinit_live:
+                            self.reconstruct_points()
+                    widget.on_change('value', _select_handler)
                     self.widgets[key] = widget
+                    widgets.append(row([Div(text=title, align='center'), widget]))
                 elif field.dtype is bool:
-                    widget = bm.CheckboxGroup(labels=[params.titles[key]],
-                                              active=[0] if params.values[key] else [])
+                    widget = bm.CheckboxGroup(labels=[" "],
+                                              active=[0] if params.values[key] else [],
+                                              width_policy="min")
+                    cb_key = key
+                    def _cb_handler(cbkey, val):
+                        self.extras[cbkey] = True if len(val) else False
+                        if reinit_live:
+                            self.reconstruct_points()
+                    widget.on_click(lambda v: _cb_handler(cb_key, v))
                     self.widgets[key] = widget
+                    widgets.append(row([Div(text=params.titles[key], align='start'), widget]))
                 else:
                     # Anything else
-                    widget = TextInput(title=field.title)
+                    if key in params.titles:
+                        title = params.titles[key]
+                    else:
+                        title = _title_from_field(field)
+                    widget = TextInput(title=title,
+                                       min_width=100,
+                                       max_width=256,
+                                       width_policy="fit",
+                                       placeholder=params.placeholders[key]
+                                       if key in params.placeholders else None)
                     self.widgets[key] = widget
-
-                widgets.append(widget)
+                    widgets.append(widget)
         return widgets
 
     def slider_handler_factory(self, key, reinit_live=False):
@@ -618,11 +742,34 @@ class PrimitiveVisualizer(ABC):
     def reset_all(self):
         self.load(self.reset_all_state)
 
+    def select_handler_factory(self, key, reinit_live=False):
+        """
+        Returns a function that updates the `extras` attribute.
+
+        Parameters
+        ----------
+        key : str
+            The parameter name to be updated.
+        reinit_live : bool, optional
+            Update the reconstructed points on "real time".
+
+        Returns
+        -------
+        function : callback called when we change the slider value.
+        """
+
+        def handler(val):
+            self.extras[key] = val
+            if reinit_live:
+                self.reconstruct_points()
+
+        return handler
+
 
 def build_text_slider(title, value, step, min_value, max_value, obj=None,
                       attr=None, handler=None, throttled=False,
                       slider_width=256, config=None, allow_none=False,
-                      is_float=None):
+                      is_float=None, add_spacer=False, hide_textbox=False):
     """
     Make a slider widget to use in the bokeh interface.
 
@@ -650,6 +797,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         Set to `True` to allow an empty text entry to specify a `None` value
     is_float : bool
         nature of parameter (None => try to figure it out)
+    add_spacer : bool
+        Add a spacer element between the slider and the text input (default False)
+    hide_textbox : bool
+        If True, don't show a text box and just use a slider (default False)
 
     Returns
     -------
@@ -701,31 +852,38 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     # offers no feedback to the user when it does.  Since some of our
     # inputs are capped and others open-ended, we use the js callbacks
     # below to enforce the range limits, if any.
-    text_input = NumericInput(width=64, value=value,
-                              format=fmt,
-                              mode='float' if is_float else 'int')
+    if not hide_textbox:
+        text_input = NumericInput(width=64, value=value,
+                                  format=fmt,
+                                  mode='float' if is_float else 'int')
 
-    # Custom range enforcement with alert messages
-    if max_value is not None:
-        text_input.js_on_change('value', CustomJS(
-            args=dict(inp=text_input),
-            code="""
-                if (%s inp.value > %s) {
-                    alert('Maximum is %s');
-                    inp.value = %s;
-                }
-            """ % ("inp.value != null && " if allow_none else "", max_value, max_value, max_value)))
-    if min_value is not None:
-        text_input.js_on_change('value', CustomJS(
-            args=dict(inp=text_input),
-            code="""
-                if (%s inp.value < %s) {
-                    alert('Minimum is %s');
-                    inp.value = %s;
-                }
-            """ % ("inp.value != null && " if allow_none else "", min_value, min_value, min_value)))
+        # Custom range enforcement with alert messages
+        if max_value is not None:
+            text_input.js_on_change('value', CustomJS(
+                args=dict(inp=text_input),
+                code="""
+                    if (%s inp.value > %s) {
+                        alert('Maximum is %s');
+                        inp.value = %s;
+                    }
+                """ % ("inp.value != null && " if allow_none else "", max_value, max_value, max_value)))
+        if min_value is not None:
+            text_input.js_on_change('value', CustomJS(
+                args=dict(inp=text_input),
+                code="""
+                    if (%s inp.value < %s) {
+                        alert('Minimum is %s');
+                        inp.value = %s;
+                    }
+                """ % ("inp.value != null && " if allow_none else "", min_value, min_value, min_value)))
 
-    component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
+        if add_spacer:
+            component = row(slider, Spacer(width_policy='max'), text_input, css_classes=["text_slider_%s" % attr, ])
+        else:
+            component = row(slider, text_input, css_classes=["text_slider_%s" % attr, ])
+    else:
+        text_input = None
+        component = row(slider, css_classes=["text_slider_%s" % attr, ])
 
     def _input_check(val):
         # Check if the value is viable as an int or float, according to our type
@@ -746,7 +904,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
 
     def update_slider(attrib, old, new):
         # Update the slider with the new value from the text input
-        if not _input_check(new):
+        if text_input is not None and not _input_check(new):
             if _input_check(old):
                 text_input.value = old
             return
@@ -771,7 +929,7 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
 
     def update_text_input(attrib, old, new):
         # Update the text input
-        if new != old:
+        if text_input is not None and new != old:
             text_input.value = new
 
     def handle_value(attrib, old, new):
@@ -785,9 +943,10 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
                     obj.__setattr__(attr, new)
             except FieldValidationError:
                 # reset textbox
-                text_input.remove_on_change("value", handle_value)
-                text_input.value = old
-                text_input.on_change("value", handle_value)
+                if text_input is not None:
+                    text_input.remove_on_change("value", handle_value)
+                    text_input.value = old
+                    text_input.on_change("value", handle_value)
             else:
                 update_slider(attrib, old, new)
         if handler:
@@ -800,13 +959,19 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # Since here the text_input calls handle_value, we don't
         # have to call it from the slider as it will happen as
         # a side-effect of update_text_input
-        slider.on_change("value_throttled", update_text_input)
-        text_input.on_change("value", handle_value)
+        if text_input is not None:
+            slider.on_change("value_throttled", update_text_input)
+            text_input.on_change("value", handle_value)
+        else:
+            slider.on_change("value_throttled", handle_value)
     else:
-        slider.on_change("value", update_text_input)
-        # since slider is listening to value, this next line will cause the slider
-        # to call the handle_value method and we don't need to do so explicitly
-        text_input.on_change("value", handle_value)
+        if text_input is not None:
+            slider.on_change("value", update_text_input)
+            # since slider is listening to value, this next line will cause the slider
+            # to call the handle_value method and we don't need to do so explicitly
+            text_input.on_change("value", handle_value)
+        else:
+            slider.on_change("value", handle_value)
     return component
 
 
@@ -1537,7 +1702,7 @@ class UIParameters:
     Holder class for the set of UI-adjustable parameters
     """
     def __init__(self, config: Config = None, extras: dict = None, reinit_params: list = None,
-                 title_overrides: dict = None):
+                 title_overrides: dict = None, placeholders: dict = None):
         """
         Create a UIParameters set of parameters for the UI.
 
@@ -1556,20 +1721,26 @@ class UIParameters:
             List of names of configuration fields to show in the reinit panel
         :titles_overrides: dict
             Dictionary of overrides for labeling the fields in the UI
+        :placeholders: dict
+            Dictionary of placeholder text to use for text inputs
         """
         self.fields = dict()
         self.values = dict()
         self.reinit_params = reinit_params
         self.titles = dict()
+        self.placeholders = dict()
 
         if config:
             for fname, field in config._fields.items():
-                self.fields[fname] = field
+                self.fields[fname] = copy(field)
                 self.values[fname] = getattr(config, fname)
         if extras:
             for fname, field in extras.items():
-                self.fields[fname] = field
+                self.fields[fname] = copy(field)
                 self.values[fname] = field.default
+
+        if placeholders:
+            self.placeholders = placeholders
 
         # Parse the titles once and be done, grab initial values
         for fname, field in self.fields.items():
@@ -1577,6 +1748,8 @@ class UIParameters:
                 title = title_overrides[fname]
             else:
                 title = field.doc.split('\n')[0]
+            if not title:
+                title = _title_from_field(field)
             self.titles[fname] = title
 
     def update_values(self, **kwargs):

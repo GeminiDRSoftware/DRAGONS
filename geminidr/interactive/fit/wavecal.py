@@ -336,7 +336,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 eps = np.finfo(np.float32).eps  # Minimum representative data
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
                 try:
-                    peak = pinpoint_peaks(pinpoint_data, None, [pixel])[0]
+                    peak = pinpoint_peaks(pinpoint_data, None, [pixel])[0][0]
                     print(f"Found peak at pixel {peak}")
                 except IndexError:  # no peak
                     print("Couldn't find a peak")

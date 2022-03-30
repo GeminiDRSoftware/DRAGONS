@@ -17,7 +17,7 @@ from geminidr.interactive.interactive import PrimitiveVisualizer, build_text_sli
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from geminidr.interactive.server import interactive_fitter
-from gempy.library.tracing import (find_apertures, find_apertures_peaks,
+from gempy.library.tracing import (find_apertures, find_wavelet_peaks,
                                    get_limits, pinpoint_peaks)
 from gempy.utils import logutils
 
@@ -110,112 +110,6 @@ def avoid_multiple_update(func):
     return wrapper
 
 
-class CustomWidget:
-    """Defines a default handler that set the value on the model."""
-
-    def __init__(self, title, model, attr, handler=None, **kwargs):
-        self.title = title
-        self.attr = attr
-        self.model = model
-        self._handler = handler
-        self.kwargs = kwargs
-
-    @property
-    def value(self):
-        """The value from the model."""
-        return getattr(self.model, self.attr)
-
-    def handler(self, attr, old, new):
-        if self._handler is not None:
-            self._handler(new)
-        else:
-            setattr(self.model, self.attr, new)
-
-
-class SpinnerInputLine(CustomWidget):
-    def build(self):
-        self.spinner = Spinner(value=self.value, width=64, **self.kwargs)
-        self.spinner.on_change("value", self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.spinner])
-
-    def reset(self):
-        self.spinner.value = self.value
-
-
-class TextInputLine(CustomWidget):
-    def build(self):
-        self.text_input = TextInput(value=self.value if self.value else '', width=256, **self.kwargs)
-        self.text_input.on_change("value", self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.text_input])
-
-    def reset(self):
-        self.text_input.value = self.value
-
-
-class TextSlider(CustomWidget):
-    def build(self):
-        self.in_update = False
-        self.spinner = Spinner(value=self.value, width=64,
-                               step=self.kwargs.get('step'),
-                               low=self.kwargs.get('start'),
-                               high=self.kwargs.get('end'))
-        self.slider = Slider(start=self.kwargs.get('start'),
-                             end=self.kwargs.get('end'),
-                             step=self.kwargs.get('step'),
-                             value=self.value, title=self.title, width=256)
-        self.spinner.on_change("value", self.handler)
-        self.slider.on_change("value", self.handler)
-
-        return row([self.slider,
-                    Spacer(width_policy='max'),
-                    self.spinner])
-
-    def reset(self):
-        self.spinner.value = self.value
-        self.slider.value = self.value
-
-    @avoid_multiple_update
-    def handler(self, attr, old, new):
-        self.spinner.value = new
-        self.slider.value = new
-        super().handler(attr, old, new)
-
-
-class CheckboxLine(CustomWidget):
-    def build(self):
-        self.checkbox = CheckboxGroup(labels=[""],
-                                      active=[0] if self.value else [],
-                                      width=40, width_policy='fixed',
-                                      align='center')
-        self.checkbox.on_click(self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.checkbox])
-
-    def reset(self):
-        self.checkbox.active = [0] if self.value else []
-
-    def handler(self, new):
-        super().handler(None, None, new)
-
-
-class SelectLine(CustomWidget):
-    def build(self):
-        self.select = Select(value=self.value, options=["peak", "integral"],
-                             width=128)
-        self.select.on_change("value", self.handler)
-        return row([Div(text=self.title, align='center'),
-                    Spacer(width_policy='max'),
-                    self.select])
-
-    def reset(self):
-        self.select.value = self.value
-
-
 class ApertureModel:
     def __init__(self, aperture_id, location, start, end, parent):
         self.source = ColumnDataSource({
@@ -267,8 +161,24 @@ class FindSourceAperturesModel:
             'y': np.zeros(self.profile_shape),
         })
 
+        # target_location is the row from the target coords
+        # max_width is the largest distance (in arcsec) from there to the edge of the slit
+        # Note: although the ext may have been transposed to ensure that
+        # the slit is vertical, the WCS has not been modified
+        target_location = ext.wcs.invert(
+            ext.central_wavelength(asNanometers=True), ext.target_ra(),
+            ext.target_dec())[2 - ext.dispersion_axis()]
+        # gWCS will return NaN coords if sent Nones, so assume target is in center
+        if np.isnan(target_location):
+            target_location = (self.profile_shape - 1) / 2
+            self.max_width = target_location
+        else:
+            self.max_width = max(target_location, self.profile_shape - 1 - target_location)
+        self.max_width = int(np.ceil(self.max_width * ext.pixel_scale()))
+
         # initial parameters are set as attributes
         self.reset()
+        del self._aper_params['direction']  # no longer passed to find_apertures()
 
     @property
     def aper_params(self):
@@ -291,6 +201,8 @@ class FindSourceAperturesModel:
         """Reset model to its initial values."""
         for name, value in self._aper_params.items():
             setattr(self, name, value)
+        if self.max_separation is None:
+            self.max_separation = self.max_width
 
     def find_closest(self, x, x_start, x_end, prefer_selected=True):
         """
@@ -352,17 +264,23 @@ class FindSourceAperturesModel:
     def find_peak(self, x):
         # Find local maximum to help pinpoint_peaks
         data = np.ma.array(self.profile, mask=self.prof_mask)
-        initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
+        #initx = np.ma.argmax(data[int(x) - 20:int(x) + 21]) + int(x) - 20
+        peaks = find_wavelet_peaks(self.profile, [2], reject_bad=False)[0]
+        if peaks.size:
+            initx = peaks[np.argmin(abs(peaks - x))]
+            if abs(initx - x) <= 20:
+                peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])[0]
+                limits = get_limits(np.nan_to_num(self.profile),
+                                    self.prof_mask,
+                                    peaks=peaks,
+                                    threshold=self.threshold,
+                                    min_snr=self.min_snr)
+                log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
+                self.add_aperture(peaks[0], *limits[0])
 
-        peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])
-        if len(peaks) > 0:
-            limits = get_limits(np.nan_to_num(self.profile),
-                                self.prof_mask,
-                                peaks=peaks,
-                                threshold=self.threshold,
-                                method=self.sizing_method)
-            log.stdinfo(f"Found source at {self.direction}: {peaks[0]:.1f}")
-            self.add_aperture(peaks[0], *limits[0])
+    def update(self, extras):
+        for k in extras.keys():
+            setattr(self, k, extras[k])
 
     def recalc_apertures(self):
         """
@@ -395,10 +313,10 @@ class FindSourceAperturesModel:
                 find_apertures(self.ext, **self.aper_params)
             self.profile_source.patch({'y': [(slice(None), self.profile)]})
         else:
-            # otherwise we can redo only the peak detection
-            locations, all_limits = find_apertures_peaks(
-                self.profile, self.prof_mask, self.max_apertures,
-                self.threshold, self.sizing_method, self.min_snr)
+            # otherwise pass the existing profile for speed
+            locations, all_limits, _, _ = \
+                find_apertures(self.ext, **self.aper_params,
+                               profile=np.ma.masked_array(self.profile, self.prof_mask))
 
         self.aperture_models.clear()
 
@@ -827,7 +745,9 @@ class ApertureView:
         if ymax and self._old_ymax is None or self._old_ymax != ymax:
             self._old_ymax = ymax
             self.fig.y_range.end = np.nanmax(self.model.profile) * 1.1
+            self.fig.y_range.start = np.nanmin(self.model.profile) * 0.9
             self.fig.y_range.reset_end = self.fig.y_range.end
+            self.fig.y_range.reset_start = self.fig.y_range.start
 
     def _prepare_data_for_holoviews(self, aperture_model, x_max, y_max):
         if hasattr(self, 'fig'):
@@ -871,7 +791,7 @@ class ApertureView:
 
 
 class FindSourceAperturesVisualizer(PrimitiveVisualizer):
-    def __init__(self, model, filename_info=''):
+    def __init__(self, model, filename_info='', ui_params=None):
         """
         Create a view for finding apertures with the given
         :class:`FindSourceAperturesModel`
@@ -884,7 +804,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         super().__init__(title='Find Source Apertures',
                          primitive_name='findApertures',
-                         filename_info=filename_info)
+                         filename_info=filename_info,
+                         ui_params=ui_params)
         self.model = model
         self.fig = None
         self.help_text = DETAILED_HELP
@@ -893,6 +814,21 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # moving this here so widgets are initialized in case
         # we are reloading state from saved json via --record/--replay
         self.params = self.parameters_view()
+
+        # Customize the max_separation behavior away from the defaults.  In particular,
+        # we depend on extracting some information from the model which was not readily
+        # available in the primitive.
+        self.ui_params = ui_params
+        self.ui_params.fields["max_separation"].min = 5
+        self.ui_params.fields["max_separation"].max = self.model.max_width
+        if self.ui_params.fields["max_separation"].default is None:
+            self.ui_params.fields["max_separation"].default = self.model.max_separation
+        if self.ui_params.values['max_separation'] is None:
+            self.ui_params.values['max_separation'] = self.model.max_separation
+        if self._reinit_params['max_separation'] is None:
+            self._reinit_params['max_separation'] = self.model.max_separation
+        # Not necessary since the TextBox is disabled and so the user cannot set to None
+        self.ui_params.fields["max_separation"].optional = False
 
     def add_aperture(self):
         """
@@ -908,12 +844,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
     def parameters_view(self):
         model = self.model
 
-        def _maxaper_handler(new):
-            model.max_apertures = int(new) if new is not None else None
-
-        def _use_snr_handler(new):
-            model.use_snr = 0 in new
-
         reset_button = Button(label="Reset", button_type='warning',
                               default_size=200)
 
@@ -922,9 +852,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 reset_button.disabled = True
                 def fn():
                     model.reset()
-                    for widget in (maxaper, minsky, use_snr, min_snr,
-                                   threshold, percentile, sizing):
-                        widget.reset()
+                    self.reset_reinit_panel()
                     self.model.recalc_apertures()
                     reset_button.disabled = False
                 self.do_later(fn)
@@ -936,35 +864,13 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             if result:
                 find_button.disabled = True
                 def fn():
+                    self.model.update(self.extras)
                     self.model.recalc_apertures()
                     find_button.disabled = False
                 self.do_later(fn)
 
-        # Profile parameters
-        percentile_panel = build_text_slider(
-            "Percentile (use mean if no value)", getattr(model, "percentile"), 1, 0, 100, obj=model,
-            attr="percentile", slider_width=256, allow_none=True, throttled=True,
-            is_float=False,
-            handler=self.slider_handler_factory("percentile", reinit_live=False))
-        percentile_panel.children.insert(1, Spacer(width_policy='max'))
-
-        # TODO the rest of these should reuse generic calls like build_text_slider
-        minsky = SpinnerInputLine("Min sky region", model,
-                                  attr="min_sky_region", low=0)
-        use_snr = CheckboxLine("Use S/N ratio in spatial profile?", model,
-                               attr="use_snr", handler=_use_snr_handler)
-        min_snr = TextSlider("SNR threshold for peak detection", model,
-                             attr="min_snr", start=0.1, end=10, step=0.1)
-        sections = TextInputLine("Sections", model, attr="section",
-                                 placeholder="e.g. 100:900,1500:2000")
-
-        # Peak finding parameters
-        maxaper = SpinnerInputLine("Max Apertures (empty means no limit)",
-                                   model, attr="max_apertures",
-                                   handler=_maxaper_handler, low=0)
-        threshold = TextSlider("Threshold", model, attr="threshold",
-                               start=0, end=1, step=0.01)
-        sizing = SelectLine("Sizing method", model, attr="sizing_method")
+        widgets = self.make_widgets_from_parameters(self.ui_params, reinit_live=False, slider_width=256,
+                                                    add_spacer=True, hide_textbox=['max_separation'])
 
         self.make_ok_cancel_dialog(reset_button,
                                    'Reset will change all inputs for this tab '
@@ -982,17 +888,12 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         retval = column(
             Div(text="Parameters to compute the profile:",
                 css_classes=['param_section']),
-            percentile_panel,
-            minsky.build(),
-            use_snr.build(),
-            min_snr.build(),
-            sections.build(),
+            *widgets[0:5],
             Div(text="Parameters to find peaks:",
                 css_classes=['param_section']),
-            maxaper.build(),
-            threshold.build(),
-            sizing.build(),
+            *widgets[5:],
             row([reset_button, find_button]),
+            width_policy="min",
         )
 
         # save our input widgets for record/load if needed
@@ -1107,7 +1008,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         """
         models = self.model.aperture_models
         res = (models[id_].result() for id_ in sorted(models.keys()))
-        locations, limits = zip(*res)
+        try:
+            locations, limits = zip(*res)
+        except ValueError:
+            # There were no results.  Can't check ahead because they are generators
+            return [[], []]
         return np.array(locations), limits
 
     def record(self):
@@ -1162,7 +1067,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             self.model.add_aperture(aperture["location"], aperture["start"], aperture["end"])
 
 
-def interactive_find_source_apertures(ext, **kwargs):
+def interactive_find_source_apertures(ext, ui_params=None, **kwargs):
     """
     Perform an interactive find of source apertures with the given initial
     parameters.
@@ -1174,6 +1079,6 @@ def interactive_find_source_apertures(ext, **kwargs):
     to the caller.
     """
     model = FindSourceAperturesModel(ext, **kwargs)
-    fsav = FindSourceAperturesVisualizer(model, filename_info=ext.filename)
+    fsav = FindSourceAperturesVisualizer(model, ui_params=ui_params, filename_info=ext.filename)
     interactive_fitter(fsav)
     return fsav.result()
