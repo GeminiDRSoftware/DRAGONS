@@ -12,15 +12,16 @@ from gempy.library import matching
 
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
-def test_gsaoi_adjust_wcs_no_refcat(path_to_outputs, path_to_refs, adinputs):
-    p = GSAOIImage(adinputs)
-    p.adjustWCSToReference(order=3, final=0.2)
-    p.resampleToCommonFrame()
-    p.writeOutputs()
-    for ad in p.streams['main']:
-        ad = astrodata.open(os.path.join(path_to_outputs, ad.filename))
-        ref_ad = astrodata.open(os.path.join(path_to_refs, ad.filename))
-        ad_compare(ad, ref_ad)
+def test_gsaoi_adjust_wcs_no_refcat(change_working_dir, path_to_refs, adinputs):
+    with change_working_dir():
+        p = GSAOIImage(adinputs)
+        p.adjustWCSToReference(order=3, final=0.2)
+        p.resampleToCommonFrame()
+        p.writeOutputs()
+        for ad in p.streams['main']:
+            ad = astrodata.open(ad.filename)
+            ref_ad = astrodata.open(os.path.join(path_to_refs, ad.filename))
+            ad_compare(ad, ref_ad)
 
 
 @pytest.mark.slow
