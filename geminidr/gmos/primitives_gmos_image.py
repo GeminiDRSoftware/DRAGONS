@@ -24,9 +24,12 @@ from .lookups import geometry_conf
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups.fringe_control_pairs import control_pairs
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GMOSImage(GMOS, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives
@@ -35,8 +38,8 @@ class GMOSImage(GMOS, Image, Photometry):
     """
     tagset = {"GEMINI", "GMOS", "IMAGE"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_image)
 
     def addOIWFSToDQ(self, adinputs=None, **params):

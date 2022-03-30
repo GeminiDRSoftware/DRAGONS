@@ -15,7 +15,7 @@ class combineNodAndShuffleBeamsConfig(config.Config):
                           str, None, optional=True, check=validate_section)
     tolerance = config.RangeField("Maximum distance from the header offset "
                                   "for the correlation method (arcsec)",
-                                  float, 1, min=0., optional=True)
+                                  float, 0.5, min=0., optional=True)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 

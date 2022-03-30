@@ -569,7 +569,8 @@ def ad_to_hdulist(ad):
                 # Must delete keywords if image WCS has been downscaled
                 # from a higher number of dimensions
                 for i in range(1, 5):
-                    for kw in (f'CDELT{i}', f'CRVAL{i}', f'CUNIT{i}', f'CTYPE{i}'):
+                    for kw in (f'CDELT{i}', f'CRVAL{i}', f'CUNIT{i}',
+                               f'CTYPE{i}', f'NAXIS{i}'):
                         if kw in header:
                             del header[kw]
                     for j in range(1, 5):
@@ -607,6 +608,9 @@ def ad_to_hdulist(ad):
     if ad._tables is not None:
         for name, table in sorted(ad._tables.items()):
             hdul.append(table_to_bintablehdu(table, extname=name))
+
+    # Additional FITS compatibility, add to PHU
+    hdul[0].header['NEXTEND'] = len(hdul) - 1
 
     return hdul
 

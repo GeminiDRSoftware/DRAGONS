@@ -298,6 +298,7 @@ class UnivariateSplineWithOutlierRemoval:
                 wmin = w[w > 0].min()
             except ValueError:  # all w==0
                 wts = np.ones_like(x)
+                wmin = 1.0
             else:
                 wts = w / wmin
 
@@ -363,6 +364,9 @@ class UnivariateSplineWithOutlierRemoval:
             avg_y = np.average(y, weights=wts)
             rank = 0
             if order is None or order > 0:
+                # Explicitly send s since we've modified the weights
+                if spline_kwargs["task"] == 0:
+                    spline_kwargs["s"] = len(wts[sort_indices]) / (wmin * wmin)
                 tck = splrep(xunique[sort_indices], y[sort_indices],
                              w=wts[sort_indices], **spline_kwargs)
                 spline = BSpline(*tck)

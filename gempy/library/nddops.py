@@ -20,6 +20,7 @@ from functools import wraps
 from astrodata import NDAstroData
 from .astrotools import divide0
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from ..utils.decorators import unpack_nddata
 try:
     from . import cython_utils
 except ImportError:  # pragma: no cover
@@ -90,24 +91,6 @@ def stack_nddata(fn):
         ret_value = NDAstroData(out_data, mask=out_mask, variance=out_var)
         if rejmap is not None:
             ret_value.meta['other'] = {'REJMAP': NDAstroData(rejmap)}
-        return ret_value
-    return wrapper
-
-
-def unpack_nddata(fn):
-    """
-    This decorator wraps a function/staticmethod that expects separate
-    data, mask, and variance parameters and allows an NDAstroData instance
-    to be sent instead. This is similar to nddata.support_nddata, but
-    handles variance and doesn't give warnings if the NDData instance has
-    attributes set which aren't picked up by the function.
-    """
-    @wraps(fn)
-    def wrapper(data, mask=None, variance=None, **kwargs):
-        if isinstance(data, NDAstroData):
-            ret_value = fn(data.data, mask=data.mask, variance=data.variance, **kwargs)
-        else:
-            ret_value = fn(data, mask=mask, variance=variance, **kwargs)
         return ret_value
     return wrapper
 

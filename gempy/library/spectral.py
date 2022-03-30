@@ -5,7 +5,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from specutils import Spectrum1D, SpectralRegion
 from astropy import units as u
-from astropy.nddata import NDData
+from astropy.nddata import NDData, NDDataRef
 import numpy as np
 from astropy.modeling import models
 from gwcs import wcs as gWCS
@@ -14,7 +14,7 @@ from gwcs import coordinate_frames as cf
 from . import astromodels as am
 
 
-class Spek1D(AstroDataMixin, Spectrum1D):
+class Spek1D(AstroDataMixin, NDDataRef):
     """
     Spectrum container for 1D spectral data, utilizing benefits of
     AstroData. This enhances :class:`~specutils.Spectrum1D` by having
@@ -30,38 +30,57 @@ class Spek1D(AstroDataMixin, Spectrum1D):
     wcs: `astropy.wcs.WCS` or `gwcs.wcs.WCS`
         WCS information (if not included in `spectrum`)
     """
-    def __init__(self, spectrum=None, spectral_axis=None, wcs=None, **kwargs):
-        # This handles cases where arithmetic is being performed, and an
-        # object is created that's just a number
-        if not isinstance(spectrum, (AstroData, NDData)):
-            super().__init__(spectrum, spectral_axis=spectral_axis, wcs=wcs, **kwargs)
-            return
+    __add__ = AstroData.__add__
+    __sub__ = AstroData.__sub__
+    __mul__ = AstroData.__mul__
+    __truediv__ = AstroData.__truediv__
+    __iadd__ = AstroData.__iadd__
+    __isub__ = AstroData.__isub__
+    __imul__ = AstroData.__imul__
+    __itruediv__ = AstroData.__itruediv__
+    __rmul__ = __mul__
+    __rtruediv__ = AstroData.__rtruediv__
 
+    # Cannot __radd__ or __rsub__ as the units appear to get lost
+
+    add = __iadd__
+    subtract = __isub__
+    multiply = __imul__
+    divide = __itruediv__
+
+    def __init__(self, spectrum=None, spectral_axis=None, wcs=None, unit=None,
+                 copy=False):
         if isinstance(spectrum, AstroData) and not spectrum.is_single:
             raise TypeError("Input spectrum must be a single AstroData slice")
 
-        # Unit handling
-        try:  # for NDData-like
-            flux_unit = spectrum.unit
-        except AttributeError:
-            try:  # for AstroData
-                flux_unit = u.Unit(spectrum.hdr.get('BUNIT'))
-            except (TypeError, ValueError):  # unknown/missing
-                flux_unit = None
-        if flux_unit is None:
-            flux_unit = u.dimensionless_unscaled
-        try:
-            kwargs['mask'] = spectrum.mask
-        except AttributeError:
-            flux = spectrum
+        if isinstance(spectrum, (AstroData, NDData)):
+            data = spectrum.data
+            mask = spectrum.mask
+            uncertainty = spectrum.uncertainty
+            # Unit handling
+            if unit is None:
+                if getattr(spectrum, 'unit', None) is None:
+                    try:  # for AstroData
+                        unit = u.Unit(spectrum.hdr.get('BUNIT'))
+                    except (TypeError, ValueError):  # unknown/missing
+                        unit = None
+                else:
+                    unit = spectrum.unit
         else:
-            flux = spectrum.data
-            kwargs['uncertainty'] = spectrum.uncertainty
+            if isinstance(spectrum, u.Quantity):
+                if unit is None:
+                    unit = spectrum.unit
+                spectrum = spectrum.value
+            try:  # MaskedArray
+                mask = spectrum.mask
+                data = spectrum.data
+            except AttributeError:
+                data = spectrum
+        #if self.unit is None:
+        #    self.unit = u.dimensionless_unscaled
 
-        # If spectrum was a Quantity, it already has units so we'd better
-        # not multiply them in again!
-        if not isinstance(flux, u.Quantity):
-            flux *= flux_unit
+        if len(data.shape) != 1:
+            raise ValueError("Input spectrum must be one-dimensional")
 
         # If no wavelength information is included, get it from the input
         if spectral_axis is None and wcs is None:
@@ -88,8 +107,41 @@ class Spek1D(AstroDataMixin, Spectrum1D):
             else:
                 wcs = spectrum.wcs  # from an NDData-like object
 
-        super().__init__(flux=flux, spectral_axis=spectral_axis, wcs=wcs, **kwargs)
+        super().__init__(data=data, mask=mask, uncertainty=uncertainty,
+                         wcs=wcs, unit=unit, copy=copy)
+        if spectral_axis is None:
+            self.spectral_axis = (wcs(np.arange(0, data.size)) *
+                                  self.wcs.output_frame.unit[0])
+        else:
+            self.spectral_axis = spectral_axis
         self.filename = getattr(spectrum, 'filename', None)
+
+    @property
+    def flux(self):
+        if self.unit:
+            return self.data * self.unit
+        return self.data * u.dimensionless_unscaled
+
+    @flux.setter
+    def flux(self, value):
+        if value is None:
+            raise ValueError("Flux cannot be None")
+        if not hasattr(value, 'shape') or value.shape != self.shape:
+            raise ValueError("Flux must be an array of same shape as existing")
+        if isinstance(value, u.Quantity):
+            self._data = value.value
+            self.unit = value.unit
+        else:
+            self._data = value
+
+    def _standard_nddata_op(self, fn, operand):
+        """Here to cope with our mask-handling, mainly"""
+        result = fn(self, operand, handle_mask=np.bitwise_or, handle_meta='first_found')
+        self._data = result.data
+        self._mask = result.mask
+        self._uncertainty = result.uncertainty
+        self._unit = result.unit
+        del result
 
     def _get_pixel_limits(self, subregion, constrain=True):
         """
@@ -185,7 +237,7 @@ class Spek1D(AstroDataMixin, Spectrum1D):
             # We need to cope with limits[1]==len(flux)-0.5, i.e.,
             # at the right-hand edge of the spectrum
             edges = np.r_[limits[0],
-                          np.arange(ix1, min(ix2, len(self.flux)-1)) + 0.5,
+                          np.arange(ix1, min(ix2, self.size-1)) + 0.5,
                           limits[1]]
             x = self.wcs.pixel_to_world(edges) if flux_density else edges
             widths = np.diff(x)
@@ -209,3 +261,11 @@ class Spek1D(AstroDataMixin, Spectrum1D):
                              widths.sum() / widths[included_pixels].sum())
 
         return flux, mask, variance
+
+    def asSpectrum1D(self):
+        """Create a :class:`~specutils.Spectrum1D` object of this spectrum"""
+        kwargs = {}
+        if self.wcs is None:
+            kwargs['spectral_axis'] = self.spectral_axis
+        return Spectrum1D(flux=self.flux, mask=self.mask, uncertainty=self.uncertainty,
+                          wcs=self.wcs, **kwargs)

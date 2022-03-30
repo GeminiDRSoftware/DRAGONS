@@ -9,9 +9,12 @@ from geminidr.core import Image, Photometry
 from .primitives_f2 import F2
 from . import parameters_f2_image
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class F2Image(F2, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives
@@ -20,8 +23,8 @@ class F2Image(F2, Image, Photometry):
     """
     tagset = {"GEMINI", "F2", "IMAGE"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2_image)
 
     def makeLampFlat(self, adinputs=None, **params):

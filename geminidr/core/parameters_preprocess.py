@@ -39,6 +39,8 @@ class associateSkyConfig(config.Config):
     max_skies = config.RangeField("Maximum number of sky frames to associate",
                              int, None, min=1, optional=True)
     use_all = config.Field("Use all frames as skies?", bool, False)
+    sky = config.ListField("Sky-only frames stored on disk", (AstroData, str),
+                           None, optional=True, single=True)
 
 class correctBackgroundToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_backgroundCorrected", optional=True)

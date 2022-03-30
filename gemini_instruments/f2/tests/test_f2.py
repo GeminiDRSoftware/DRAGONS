@@ -4,6 +4,7 @@ import pytest
 import astrodata
 import astrodata.testing
 import gemini_instruments
+from gemini_instruments.f2 import AstroDataF2
 
 test_files = [
     "S20131121S0094.fits",
@@ -94,6 +95,14 @@ def test_descriptor_matches_type(descriptor, expected_type, ad):
     value = getattr(ad, descriptor)()
     assert isinstance(value, expected_type) or value is None, \
         "Assertion failed for file: {}".format(ad)
+
+
+def test_ra_dec_from_text(astrofaker):
+    ad = AstroDataF2()
+    ad.phu['RA'] = '03:48:30.113'
+    ad.phu['DEC'] = '+24:20:43.00'
+    assert pytest.approx(ad.target_ra(), 57.12547083333333)
+    assert pytest.approx(ad.target_dec(), 24.345277777777778)
 
 
 if __name__ == "__main__":

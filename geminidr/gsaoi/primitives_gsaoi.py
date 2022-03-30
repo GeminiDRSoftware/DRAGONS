@@ -9,12 +9,13 @@ from astropy.table import vstack
 from geminidr.core import NearIR
 from geminidr.gemini.primitives_gemini import Gemini
 from gempy.gemini import gemini_tools as gt
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from . import parameters_gsaoi
 
 
 @parameter_override
+@capture_provenance
 class GSAOI(Gemini, NearIR):
     """
     This is the class containing all of the preprocessing primitives
@@ -23,9 +24,9 @@ class GSAOI(Gemini, NearIR):
     """
     tagset = {"GEMINI", "GSAOI"}
 
-    def __init__(self, adinputs, **kwargs):
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gsaoi.lookups'
-        super().__init__(adinputs, **kwargs)
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gsaoi)
 
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):

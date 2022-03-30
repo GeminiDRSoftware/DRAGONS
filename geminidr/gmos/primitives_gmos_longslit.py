@@ -33,7 +33,7 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
 from .primitives_gmos_spect import GMOSSpect
@@ -48,6 +48,7 @@ from ..interactive.interactive import UIParameters
 
 
 @parameter_override
+@capture_provenance
 class GMOSLongslit():
     """
     "Magic" class to provide the correct class for N&S and classic data
@@ -64,6 +65,7 @@ class GMOSLongslit():
 
 
 @parameter_override
+@capture_provenance
 class GMOSClassicLongslit(GMOSSpect):
     """
     This is the class containing all of the preprocessing primitives
@@ -71,8 +73,8 @@ class GMOSClassicLongslit(GMOSSpect):
     the primitives from the level above
     """
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)
 
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
@@ -168,8 +170,8 @@ class GMOSClassicLongslit(GMOSSpect):
                     yccd = ((c0 + y * (c1 + y * (c2 + y * c3))) *
                             1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
                     model[yccd[0]:yccd[1]+1] = 1
-                    log.stdinfo("Expected slit location from pixels "
-                                 f"{yccd[0]+1} to {yccd[1]+1}")
+                    log.debug("Expected slit location from pixels "
+                              f"{yccd[0]+1} to {yccd[1]+1}")
 
                 if 'NODANDSHUFFLE' in ad.tags:
                     shuffle_pixels = ad.shuffle_pixels() // ybin
@@ -221,9 +223,14 @@ class GMOSClassicLongslit(GMOSSpect):
                         row_mask[yshift:] = 1 - model[:-yshift]
                     else:
                         row_mask[:] = 1 - model
+                    row_mask = at.boxcar(row_mask, operation=np.bitwise_or, size=2)
                     for ext in ad:
                         ext.mask |= (row_mask * DQ.unilluminated).astype(
                             DQ.datatype)[:, np.newaxis]
+                    slices = np.ma.clump_masked(
+                        np.ma.masked_array(np.zeros_like(row_mask), row_mask))
+                    for _slice in slices:
+                        log.debug(f"Masking rows {_slice.start+1} to {_slice.stop}")
 
             if has_48rows:
                 actual_rows = 48 // ybin
@@ -1022,7 +1029,8 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
 
 
 @parameter_override
+@capture_provenance
 class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle):
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)

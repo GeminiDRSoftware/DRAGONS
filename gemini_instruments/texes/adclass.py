@@ -86,8 +86,8 @@ class AstroDataTexes(AstroDataGemini):
 
     @astro_data_descriptor
     def ra(self):
-        return self.phu.get(self._keyword_for('ra'))
+        return self._ra()
 
     @astro_data_descriptor
     def dec(self):
-        return self.phu.get(self._keyword_for('dec'))
+        return self._dec()

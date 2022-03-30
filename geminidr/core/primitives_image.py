@@ -3,15 +3,20 @@
 #
 #                                                            primitives_image.py
 # ------------------------------------------------------------------------------
-from datetime import datetime
-
 import numpy as np
-from copy import deepcopy
-from scipy.ndimage import binary_dilation
+from copy import copy, deepcopy
+from scipy.ndimage import affine_transform, binary_dilation
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astropy.modeling import models, Model
+from gwcs.wcs import WCS as gWCS
 
+import astrodata, gemini_instruments
 from astrodata.provenance import add_provenance
 from astrodata import Section
+from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
+from gempy.library import transform
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from recipe_system.utils.md5 import md5sum
 
@@ -20,18 +25,89 @@ from .primitives_register import Register
 from .primitives_resample import Resample
 from . import parameters_image
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Image(Preprocess, Register, Resample):
     """
     This is the class containing the generic imaging primitives.
     """
     tagset = {"IMAGE"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_image)
+
+    def applyStackedObjectMask(self, adinputs=None, **params):
+        """
+        This primitive takes an image with an OBJMASK and transforms that
+        OBJMASK onto the pixel planes of the input images, using their WCS
+        information. If the first image is a stack, this allows us to mask
+        fainter objects than can be detected in the individual input images.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        source: str
+            name of stream containing single stacked image
+        order: int (0-5)
+            order of interpolation
+        threshold: float
+            threshold above which an interpolated pixel should be flagged
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        source = params["source"]
+        order = params["order"]
+        threshold = params["threshold"]
+        sfx = params["suffix"]
+        force_affine = True
+
+        try:
+            source_stream = self.streams[source]
+        except KeyError:
+            try:
+                ad_source = astrodata.open(source)
+            except:
+                log.warning(f"Cannot find stream or file named {source}. Continuing.")
+                return adinputs
+        else:
+            if len(source_stream) != 1:
+                log.warning(f"Stream {source} does not contain single "
+                            "AstroData object. Continuing.")
+                return adinputs
+            ad_source = source_stream[0]
+
+        # There's no reason why we can't handle multiple extensions
+        if any(len(ad) != len(ad_source) for ad in adinputs):
+            log.warning("At least one AstroData input has a different number "
+                        "of extensions to the reference. Continuing.")
+            return adinputs
+
+        for ad in adinputs:
+            for ext, source_ext in zip(ad, ad_source):
+                if getattr(ext, 'OBJMASK') is not None:
+                    t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
+                    if force_affine:
+                        affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
+                        objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
+                                                   affine.matrix, affine.offset,
+                                                   output_shape=ext.shape, order=order,
+                                                   cval=0)
+                    else:
+                        objmask = transform.Transform(t_align).apply(source_ext.OBJMASK.astype(np.float32),
+                                                                     output_shape=ext.shape, order=order,
+                                                                     cval=0)
+                    ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
+                # We will deliberately keep the input image's OBJCAT (if it
+                # exists) since this will be required for aligning the inputs.
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
 
     def fringeCorrect(self, adinputs=None, **params):
         """
@@ -336,6 +412,158 @@ class Image(Preprocess, Register, Resample):
             adinputs[0].phu['OBSID'] = '+'.join(group_ids)
 
         return adinputs
+
+    def resampleToCommonFrame(self, adinputs=None, **params):
+        """
+        This primitive applies the transformation encoded in the input images
+        WCSs to align them with a reference image, in reference image pixel
+        coordinates. The reference image is taken to be the first image in
+        the input list if not explicitly provided as a parameter.
+
+        By default, the transformation into the reference frame is done via
+        interpolation. The variance plane, if present, is transformed in
+        the same way as the science data.
+
+        The data quality plane, if present, is handled in a bitwise manner
+        with each bit of each pixel in the output image being set it it has
+        >1% influence from that bit of a bad pixel. The transformed masks are
+        then added back together to generate the transformed DQ plane.
+
+        The WCS objects of the output images are updated to reflect the
+        transformation.
+
+        Parameters
+        ----------
+        suffix : str
+            suffix to be added to output files
+        order : int (0-5)
+            order of interpolation (0=nearest, 1=linear, etc.)
+        trim_data : bool
+            trim image to size of reference image?
+        clean_data : bool
+            replace bad pixels with a ring median of their values to avoid
+            ringing if using a high-order interpolation?
+        conserve : bool
+            conserve flux when resampling to a different pixel scale?
+        force_affine : bool
+            convert the true resampling transformation to an affine
+            approximation? This speeds up the calculation and has a negligible
+            effect for instruments lacking significant distortion
+        reference : str/AstroData/None
+            reference image for resampling (if not provided, the first image
+            in the list will be used)
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params.pop("suffix")
+        reference = params.pop("reference")
+        trim_data = params.pop("trim_data")
+        force_affine = params.pop("force_affine")
+        # These two parameters are only for GSAOI and will help to define
+        # the output WCS if there's no reference image
+        pixel_scale = params.pop("pixel_scale", None)
+        position_angle = params.pop("pa", None)
+
+        # TODO: Can we make it so that we don't need to mosaic detectors
+        # before doing this? That would mean we only do one interpolation,
+        # not two, and that's definitely better!
+        if not all(len(ad) == 1 or ad.instrument() == "GSAOI" for ad in adinputs):
+            raise OSError("All input images must have only one extension.")
+
+        if isinstance(reference, str):
+            reference = astrodata.open(reference)
+        elif reference is None and pixel_scale is None:
+            # Reference image will be the first AD, so we need 2+
+            if len(adinputs) < 2:
+                log.warning("No alignment will be performed, since at least "
+                            "two input AstroData objects are required for "
+                            "resampleToCommonFrame")
+                return adinputs
+
+        if reference is None and pixel_scale:
+            # This must be GSAOI projecting to the requested geometry
+            ad0 = adinputs[0]
+            ra, dec = ad0.target_ra(), ad0.target_dec()
+            # using SkyCoord facilitates formatting the log
+            center = SkyCoord(ra * u.deg, dec * u.deg)
+            ra_str = center.ra.to_string(u.hour, precision=3)
+            dec_str = center.dec.to_string(u.deg, precision=2, alwayssign=True)
+            log.stdinfo(f"Projecting with center {ra_str} {dec_str}\n"
+                        f"at PA={position_angle} with pixel scale={pixel_scale}")
+            pixel_scale /= 3600
+            new_wcs = (models.Scale(-pixel_scale) & models.Scale(pixel_scale) |
+                       models.Rotation2D(position_angle) |
+                       models.Pix2Sky_TAN() |
+                       models.RotateNative2Celestial(ra, dec, 180))
+            ref_wcs = gWCS([(ad0[0].wcs.input_frame, new_wcs),
+                            (ad0[0].wcs.output_frame, None)])
+            if trim_data:
+                log.warning("Setting trim_data=False as required when no "
+                            "reference imagevis provided.")
+                trim_data = False
+        else:
+            if reference is None:
+                reference = adinputs[0]
+            else:
+                log.stdinfo(f"Using {reference.filename} as reference image")
+                if not trim_data:
+                    log.warning("Setting trim_data=True to trim to size of the "
+                                "reference image.")
+                    trim_data = True
+            if len(reference) != 1:
+                raise OSError("Reference image must have only one extension.")
+            ref_wcs = reference[0].wcs
+
+        if trim_data:
+            params.update({'origin': (0,) * len(reference[0].shape),
+                           'output_shape': reference[0].shape})
+
+        # No transform for the reference AD
+        for ad in adinputs:
+            transforms = []
+            if reference is ad:
+                transforms.append(models.Identity(len(ad[0].shape)))
+            else:
+                for ext in ad:
+                    t_align = ext.wcs.forward_transform | ref_wcs.backward_transform
+                    if force_affine:
+                        affine = adwcs.calculate_affine_matrices(t_align, ext.shape)
+                        t_align = models.AffineTransformation2D(matrix=affine.matrix[::-1, ::-1],
+                                                                translation=affine.offset[::-1])
+                    transforms.append(t_align)
+
+            for ext, t_align in zip(ad, transforms):
+                resampled_frame = copy(ext.wcs.input_frame)
+                resampled_frame.name = "resampled"
+                ext.wcs = gWCS([(ext.wcs.input_frame, t_align),
+                                (resampled_frame, ref_wcs.pipeline[0].transform)] +
+                                 ref_wcs.pipeline[1:])
+
+        adoutputs = self._resample_to_new_frame(adinputs, frame="resampled",
+                                                process_objcat=False, **params)
+        for ad in adoutputs:
+            try:
+                trans_data = ad.nddata[0].meta.pop('transform')
+            except KeyError:
+                pass
+            else:
+                corners = np.array(trans_data['corners'][0])
+                ncorners = len(corners)
+                ad.hdr["AREATYPE"] = (f"P{ncorners}",
+                                      f"Region with {ncorners} vertices")
+                for i, corner in enumerate(zip(*corners), start=1):
+                    for axis, value in enumerate(reversed(corner), start=1):
+                        key_name = f"AREA{i}_{axis}"
+                        key_comment = f"Vertex {i}, dimension {axis}"
+                        ad.hdr[key_name] = (value + 1, key_comment)
+                jfactor = trans_data['jfactors'][0]
+                ad.hdr["JFACTOR"] = (jfactor, "J-factor in resampling")
+
+            ad.update_filename(suffix=sfx, strip=True)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+
+        return adoutputs
 
     def scaleByIntensity(self, adinputs=None, **params):
         """

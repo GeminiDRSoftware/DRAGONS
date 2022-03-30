@@ -76,8 +76,8 @@ def test_tile_arrays_raises_warning_with_different_gains(astrofaker, caplog):
     assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 3
     caplog.clear()
     p = GMOSImage([ad])
-    p.prepare()  # should set gain=1
-    p.ADUToElectrons()
+    p.prepare()
+    p.ADUToElectrons()  # should set gain=1
     p.tileArrays(tile_all=False)
     assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 0
 

@@ -232,10 +232,12 @@ class AstroDataGsaoi(AstroDataGemini):
         """
         return self._look_up_arr_property('coeffs')
 
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
         """
-        Returns the level at which the data become non-linear, in ADU.
+        Returns the level at which the data become non-linear, in the units
+        of the data.
 
         Returns
         -------
@@ -294,18 +296,28 @@ class AstroDataGsaoi(AstroDataGemini):
         # The number of non-destructive reads is the key in the dict
         return lookup.read_modes.get(self.phu.get('LNRS'), 'Unknown')
 
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level in ADU for each extension, as a list
-        or a single value
+        Returns the saturation level in the units of the data for each
+        extension, as a list or a single value. Values are obtained from
+        a LUT which has the saturation level in ADU, so this is converted
+        to electrons using the original gain (from the LUT) and then
+        divided by the current gain (from the descriptor), which should
+        have been set to 1.0 if the data have been converted to electrons.
 
         Returns
         -------
         int/list
-            saturation level in ADU
+            saturation level
         """
-        return self._look_up_arr_property('welldepth')
+        welldepth = self._look_up_arr_property('welldepth')
+        orig_gain = self._look_up_arr_property('gain')
+        gain = self.gain()
+        if self.is_single:
+            return welldepth * orig_gain / gain
+        return [w * o / g for w, o, g in zip(welldepth, orig_gain, gain)]
 
     @astro_data_descriptor
     def wcs_ra(self):
