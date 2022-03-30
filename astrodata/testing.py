@@ -494,10 +494,9 @@ class ADCompare:
                 errorlist.append(f'Slice {i} world coords differ: {world1} v {world2}')
         return errorlist
 
-    @staticmethod
-    def format_errordict(errordict):
+    def format_errordict(self, errordict):
         """Format the errordict into a str for reporting"""
-        errormsg = ''
+        errormsg = f'Comparison between {self.ad1.filename} and {self.ad2.filename}'
         for k, v in errordict.items():
             errormsg += f'\nComparison failure in {k}'
             errormsg += '\n' + ('-' * (22 + len(k))) + '\n'
