@@ -145,6 +145,8 @@ def get_specphot_name(ad):
     -------
     str/None: name of the standard (or None if it's not a standard)
     """
+    if ad.phu.get('OBSTYPE').upper() != 'OBJECT':
+        return
     target_name = ad.object().lower().replace(' ', '')
     try:
         target = SkyCoord(ad.target_ra(), ad.target_dec(), unit=u.deg)
