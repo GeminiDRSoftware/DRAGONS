@@ -34,7 +34,7 @@ class adjustWCSToReferenceConfig(config.Config):
                                 allowed={"sources_wcs": "Match sources using WCS",
                                          "sources_offsets": "Match sources using telescope offsets",
                                          "offsets": "Use telescope offsets only"},
-                                default="sources_wcs")
+                                default="sources_wcs", optional=False)
     fallback = config.ChoiceField("Fallback method", str,
                                   allowed={"sources_offsets": "Match sources using telescope offsets",
                                            "offsets": "Use telescope offsets only"},
@@ -44,6 +44,7 @@ class adjustWCSToReferenceConfig(config.Config):
     tolerance = config.RangeField("Maximum distance from the header offset, "
                                   "for the correlation method (arcsec)",
                                   float, 1, min=0., optional=True)
+    debug_block_resampling = config.Field("Block resampling in the spatial direction?", bool, False)
 
 
 class attachWavelengthSolutionConfig(config.Config):
@@ -163,22 +164,20 @@ class findAperturesConfig(config.Config):
     max_apertures = config.RangeField("Maximum number of sources to find",
                                       int, None, min=1, optional=True)
     percentile = config.RangeField("Percentile to determine signal for each spatial pixel",
-                                   float, 95, min=1, max=100, optional=True)
+                                   int, 80, min=1, max=100, optional=True, inclusiveMax=True)
     section = config.Field("Pixel section(s) for measuring the spatial profile",
                            str, None, optional=True, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
-                                       "between sky lines", int, 20, min=1)
+                                       "between sky lines", int, 50, min=1)
     min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",
                                 float, 3.0, min=0.1)
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
-                           "collapsed profile?", bool, False)
+                           "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
                                   float, 0.1, min=0, max=1)
-    sizing_method = config.ChoiceField("Method for automatic width determination", str,
-                                       allowed={"peak": "height relative to peak",
-                                                "integral": "integrated flux"},
-                                       default="peak")
     interactive = config.Field("Use interactive interface", bool, False)
+    max_separation = config.RangeField("Maximum separation from target location (arcsec)",
+                                       int, None, min=1, inclusiveMax=True, optional=True)
 
 
 class flagCosmicRaysConfig(config.Config):
@@ -415,7 +414,8 @@ class resampleToCommonFrameConfig(config.Config):
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
     conserve = config.Field("Conserve flux?", bool, None, optional=True)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
-    trim_data = config.Field("Trim to field of view of reference image?", bool, False)
+    trim_spatial = config.Field("Trim spatial range to fully-covered region?", bool, True)
+    trim_spectral = config.Field("Trim wavelength range to fully-covered region?", bool, False)
     force_linear = config.Field("Force linear wavelength solution?", bool, True)
 
     def validate(self):

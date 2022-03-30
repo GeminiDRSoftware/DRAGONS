@@ -409,7 +409,7 @@ class GMOSSpect(Spect, GMOS):
             if ad.instrument() == "GMOS-S" and cenwave > 950:
                 cenwave += (6.89483617 - 0.00332086 * cenwave) * cenwave - 3555.048
             else:
-                cenwave = None
+                cenwave = cenwave
             transform.add_longslit_wcs(ad, central_wavelength=cenwave)
 
             # Timestamp and update filename

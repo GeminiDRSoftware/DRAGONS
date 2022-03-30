@@ -122,7 +122,7 @@ class AstroDataHokupaaQUIRC(AstroDataGemini):
             right ascension
 
         """
-        return self.phu.get(self._keyword_for('ra'))
+        return self._ra()
 
     @astro_data_descriptor
     def dec(self):
@@ -135,7 +135,7 @@ class AstroDataHokupaaQUIRC(AstroDataGemini):
             declination
 
         """
-        return self.phu.get(self._keyword_for('dec'))
+        return self._dec()
 
     @astro_data_descriptor
     def wavelength_band(self):

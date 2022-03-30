@@ -55,7 +55,7 @@ def test_find_peaks(noise):
     np.random.seed(0)
     y += (np.random.random(x.size) - 0.5) * noise
 
-    peaks_detected, _ = tracing.find_peaks(y, np.ones_like(y) * stddev)
+    peaks_detected, _ = tracing.find_wavelet_peaks(y, np.ones_like(y) * stddev)
 
     np.testing.assert_allclose(peaks_detected, peaks, atol=1)
 
@@ -63,12 +63,10 @@ def test_find_peaks(noise):
 def test_get_limits():
     CENT, SIG = 250, 20
     x = np.arange(CENT * 2)
-    y = np.exp(-0.5 * ((x - CENT) / SIG) ** 2)
+    y = 100 * np.exp(-0.5 * ((x - CENT) / SIG) ** 2)
 
-    limits = tracing.get_limits(y, None, peaks=[CENT], threshold=0.01, method='peak')[0]
-    for l in limits:
-        assert abs(l - CENT) - (SIG * np.sqrt(2 * np.log(100))) < 0.1 * SIG
-
-    limits = tracing.get_limits(y, None, peaks=[CENT], threshold=0.01, method='integral')[0]
-    for l in limits:
-        assert abs(l - CENT) - (SIG * 2.576) < 0.1 * SIG
+    limits = np.asarray(tracing.get_limits(y, mask=None, peaks=[CENT],
+                                           threshold=0.05)[0])
+    np.testing.assert_allclose(abs(limits - CENT),
+                               SIG * np.sqrt(2 * np.log(20)),
+                               atol=0.1*SIG)
