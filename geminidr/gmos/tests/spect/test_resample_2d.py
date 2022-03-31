@@ -29,58 +29,68 @@ test_datasets2 = [
 # Tests Definitions -----------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_correlation(adinputs, caplog):
-    add_fake_offset(adinputs, offset=10)
+@pytest.mark.parametrize("offset", (5.5, 10))
+def test_simple_correlation_test(path_to_inputs, offset):
+    """A simple correlation test that uses a single image, shifted, to avoid
+    difficulties in centroiding. Placed here because it uses datasets and
+    functions in this module"""
+    adinputs = [astrodata.open(os.path.join(path_to_inputs, test_datasets[0]))
+                for i in (0, 1, 2)]
+    add_fake_offset(adinputs, offset=offset)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
-
-    assert adout[1].phu['SLITOFF'] == -10
-    assert adout[2].phu['SLITOFF'] == -20
-
-    p.resampleToCommonFrame(dw=0.15)
-    _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
-
     p.findApertures(max_apertures=1)
-    np.testing.assert_allclose([ad[0].APERTURE['c0']
-                                for ad in p.streams['main']], 260.6, atol=0.25)
-
-    ad = p.stackFrames(reject_method="sigclip")[0]
-    assert ad[0].shape == (512, 3869)
-
-    caplog.clear()
-    ad = p.findApertures(max_apertures=1)[0]
-    assert len(ad[0].APERTURE) == 1
-    #assert caplog.records[3].message == 'Found sources at rows: 260.6'
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
-
-    ad = p.extractSpectra()[0]
-    assert ad[0].shape == (3869,)
+    center = p.streams['main'][0][0].APERTURE['c0']
+    p.adjustWCSToReference(method='offsets')
+    p.resampleToCommonFrame(dw=0.15)
+    p.findApertures(max_apertures=1)
+    for ad in p.streams['main']:
+        assert abs(ad[0].APERTURE['c0'] - center) < 0.1
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_correlation_and_trim(adinputs, caplog):
-    add_fake_offset(adinputs, offset=10)
+@pytest.mark.parametrize("offset", (5.5, 10))
+def test_resampling(adinputs, caplog, offset):
+    add_fake_offset(adinputs, offset=offset)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
-    assert adout[1].phu['SLITOFF'] == -10
-    assert adout[2].phu['SLITOFF'] == -20
+    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.001
+    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
 
-    p.resampleToCommonFrame(dw=0.15, trim_data=True)
+    p.resampleToCommonFrame(dw=0.15)
+    _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
+    assert all(ad[0].shape == (int(512 - 2*offset), 3869) for ad in p.streams['main'])
+
+
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("offset", (5.5, 10))
+def test_resampling_and_trim(adinputs, caplog, offset):
+    add_fake_offset(adinputs, offset=offset)
+    p = GMOSLongslit(adinputs)
+    adout = p.adjustWCSToReference(method='offsets')
+
+    assert abs(adout[1].phu['SLITOFF'] + offset) < 0.001
+    assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
+
+    p.resampleToCommonFrame(dw=0.15, trim_spectral=True)
     _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
+    for ad in p.streams['main']:
+        assert ad[0].shape == (int(512 - 2*offset), 3139)
 
-    p.findApertures(max_apertures=1)
-    np.testing.assert_allclose([ad[0].APERTURE['c0']
-                                for ad in p.streams['main']], 260.6, atol=0.25)
+    # Location of apertures is not important for this test
+    #p.findApertures(max_apertures=1)
+    #np.testing.assert_allclose([ad[0].APERTURE['c0']
+    #                            for ad in p.streams['main']], 260.4, atol=0.25)
 
     ad = p.stackFrames(reject_method="sigclip")[0]
-    assert ad[0].shape == (512, 3139)
+    #assert ad[0].shape == (492, 3139)  # checked above
 
     caplog.clear()
     ad = p.findApertures(max_apertures=1)[0]
     assert len(ad[0].APERTURE) == 1
-    np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.6, atol=0.25)
+    #np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.4, atol=0.25)
 
     ad = p.extractSpectra()[0]
     assert ad[0].shape == (3139,)
@@ -88,10 +98,10 @@ def test_correlation_and_trim(adinputs, caplog):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_correlation_and_w1_w2(adinputs, caplog):
+def test_resampling_and_w1_w2(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -100,15 +110,15 @@ def test_correlation_and_w1_w2(adinputs, caplog):
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
     adstack = p.stackFrames()
-    assert adstack[0][0].shape == (512, 1001)
+    assert adstack[0][0].shape == (492, 1001)
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_correlation_non_linearize(adinputs, caplog):
+def test_resampling_non_linearize(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
     p = GMOSLongslit(adinputs)
-    adout = p.adjustWCSToReference()
+    adout = p.adjustWCSToReference(method='offsets')
 
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
@@ -121,43 +131,7 @@ def test_correlation_non_linearize(adinputs, caplog):
     _check_params(caplog.records, 'w1=508.198 w2=1088.232 dw=0.150 npix=3868')
 
     adstack = p.stackFrames()
-    assert adstack[0][0].shape == (512, 3868)
-
-
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-def test_header_offset(adinputs2, caplog):
-    """Test that the offset is correctly read from the headers."""
-    p = GMOSLongslit(adinputs2)
-    adout = p.adjustWCSToReference(method='offsets')
-
-    for rec in caplog.records:
-        assert not rec.message.startswith('WARNING')
-
-    assert np.isclose(adout[0].phu['SLITOFF'], 0)
-    assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[3].phu['SLITOFF'], 0)
-
-
-@pytest.mark.gmosls
-@pytest.mark.preprocessed_data
-@pytest.mark.skip("Improved primitive doesn't fail any more")
-def test_header_offset_fallback(adinputs2, caplog):
-    """For this dataset the correlation method fails, and give an offset very
-    different from the header one. So we check that the fallback to the header
-    offset works.
-    """
-    p = GMOSLongslit(adinputs2)
-    adout = p.adjustWCSToReference()
-
-    # WARNING when offset is too large
-    assert caplog.records[3].message.startswith('WARNING - No cross')
-
-    assert np.isclose(adout[0].phu['SLITOFF'], 0)
-    assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
-    assert np.isclose(adout[3].phu['SLITOFF'], 0, atol=0.2, rtol=0)
+    assert adstack[0][0].shape == (492, 3868)
 
 
 # Local Fixtures and Helper Functions -----------------------------------------
@@ -169,10 +143,19 @@ def _check_params(records, expected):
 
 def add_fake_offset(adinputs, offset=10):
     # introduce fake offsets
+    # CJS hack so this can handle fractional offsets by linear interpolation
     for i, ad in enumerate(adinputs[1:], start=1):
-        ad[0].data = np.roll(ad[0].data, offset * i, axis=0)
-        ad[0].mask = np.roll(ad[0].mask, offset * i, axis=0)
-        ad[0].variance = np.roll(ad[0].variance, offset * i, axis=0)
+        int_offset =int(np.floor(i * offset))
+        frac_offset = i * offset - int_offset
+        for attr in ('data', 'mask', 'variance'):
+            setattr(ad[0], attr, np.roll(getattr(ad[0], attr), int_offset, axis=0))
+            if frac_offset > 0:
+                plus_one = np.roll(getattr(ad[0], attr), 1, axis=0)
+                if attr == 'mask':
+                    setattr(ad[0], attr, getattr(ad[0], attr) | plus_one)
+                else:
+                    setattr(ad[0], attr, (1 - frac_offset) * getattr(ad[0], attr) +
+                            frac_offset * plus_one)
         ad.phu['QOFFSET'] += offset * i * ad.pixel_scale()
 
 

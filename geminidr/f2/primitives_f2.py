@@ -12,10 +12,11 @@ from geminidr.core import NearIR
 from geminidr.gemini.primitives_gemini import Gemini
 from . import parameters_f2
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 
 @parameter_override
+@capture_provenance
 class F2(Gemini, NearIR):
     """
     This is the class containing all of the preprocessing primitives
@@ -24,9 +25,9 @@ class F2(Gemini, NearIR):
     """
     tagset = {"GEMINI", "F2"}
 
-    def __init__(self, adinputs, **kwargs):
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.f2.lookups'
-        super().__init__(adinputs, **kwargs)
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2)
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):

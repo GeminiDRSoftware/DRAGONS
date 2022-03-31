@@ -27,7 +27,7 @@ def makeProcessedDark(p):
     p.addVAR(poisson_noise=True)
     p.addToList(purpose="forStack")
     p.getList(purpose="forStack")
-    p.stackFrames()
+    p.stackDarks()
     p.storeProcessedDark()
     return
 

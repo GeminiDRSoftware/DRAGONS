@@ -614,7 +614,7 @@ class ApertureTask(Task):
         <b>A</b> to start the aperture or set the value<br/>
         <b>S</b> to select an existing aperture<br/>
         <b>C</b> to clear the selection<br/>
-        <b>F</b> to find a peak close to the cursor (+/- 20 pixels)<br/>
+        <b>F</b> to find a peak close to the cursor<br/>
         <b>[</b> to edit the left edge of selected or closest<br/>
         <b>]</b> to edit the right edge of selected or closest<br/>
         <b>L</b> to edit the location of selected or closest<br/>

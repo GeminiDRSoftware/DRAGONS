@@ -344,17 +344,18 @@ class AstroDataGnirs(AstroDataGemini):
             return [zpt - (2.5 * math.log10(g) if in_adu else 0) if zpt and g
                     else None for g in gain]
 
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
         """
-        Returns the level at which the array becomes non-linear.  The
-        return units are ADUs.  A lookup table is used and the value
+        Returns the level at which the array becomes non-linear, in the same
+        units as of the data. A lookup table is used and the value
         is based on read_mode, well_depth_setting, and saturation_level.
 
         Returns
         -------
         int/list
-            Level in ADU at which the non-linear regime starts.
+            Level at which the non-linear regime starts.
 
         """
         read_mode = self.read_mode()
@@ -433,7 +434,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         wcs_ra = self.wcs_ra()
         if wcs_ra is None:
-            return self.phu.get('RA', None)
+            return self._ra()
         try:
             tgt_ra = self.target_ra(offset=True, icrs=True)
         except:  # Return WCS value if we can't get our sanity check
@@ -473,7 +474,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         wcs_dec = self.wcs_dec()
         if wcs_dec is None:
-            return self.phu.get('DEC', None)
+            return self._dec()
         try:
             tgt_dec = self.target_dec(offset=True, icrs=True)
         except:  # Return WCS value if we can't get our sanity check
@@ -530,17 +531,19 @@ class AstroDataGnirs(AstroDataGemini):
         except TypeError:
             return None
 
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level or the observation, in ADUs.
-        A lookup table indexed on read_mode and well_depth_setting is used
-        to retrieve the saturation level.
+        Returns the saturation level or the observation, in the units of the
+        data. A lookup table indexed on read_mode and well_depth_setting is used
+        to retrieve the saturation level for raw data, and it is expected that
+        this will be inserted into the headers as processing continues.
 
         Returns
         -------
         int/list
-            Saturation level in ADUs.
+            Saturation level in the units of the data
         """
         gain = self.gain()
         coadds = self.coadds()

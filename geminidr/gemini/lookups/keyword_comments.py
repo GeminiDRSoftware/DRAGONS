@@ -30,7 +30,7 @@ keyword_comments = {
     "FILTER": "Combined filter name",
     "FLATIM": "Flat image used",
     "FRINGEIM": "Fringe image used",
-    "GAIN": "Gain [electrons/ADU]",
+    "GAIN": "Gain [electrons/data value]",
     "GAINSET": "Gain setting (low / high)",
     "GEMPRGID": "Gemini program ID",
     "MEANFWHM": "Mean point source FWHM (arcsec)",
@@ -63,5 +63,9 @@ keyword_comments = {
     "SUBSKYBG": "Sky background subtracted",
     "TRIMMED": "Overscan section trimmed",
     "TRIMSEC": "Data section prior to trimming",
-    "VARNOISE": "Types of noise included in VAR plane"
+    "VARNOISE": "Types of noise included in VAR plane",
+    "XTRACTLO": "Aperture lower limit",
+    "XTRACTHI": "Aperture upper limit",
+    "XTRACTRA": "RA of extracted spectrum",
+    "XTRACTDE": "DEC of extracted spectrum",
 }

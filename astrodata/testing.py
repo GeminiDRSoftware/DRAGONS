@@ -12,6 +12,9 @@ import pytest
 from astropy.table import Table
 from astropy.utils.data import download_file
 
+from geminidr.gemini.lookups.timestamp_keywords import timestamp_keys
+from gempy.library import astrotools as at
+
 URL = 'https://archive.gemini.edu/file/'
 
 
@@ -226,7 +229,7 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
     root_cache_path = os.getenv(env_var)
 
     if root_cache_path is None:
-        raise ValueError('Environment variable not set: {:s}'.format(env_var))
+        raise ValueError(f'Environment variable not set: {env_var}')
 
     root_cache_path = os.path.expanduser(root_cache_path)
 
@@ -274,3 +277,247 @@ def get_associated_calibrations(filename, nbias=5):
     tbl.sort('filename')
     tbl.remove_rows(np.where(tbl['caltype'] == 'bias')[0][nbias:])
     return tbl
+
+
+class ADCompare:
+    """
+    Compare two AstroData instances to determine whether they are basically
+    the same. Various properties (both data and metadata) can be compared
+    """
+    # These are the keywords relating to a FITS WCS that we won't check
+    # because we check the gWCS objects instead
+    fits_keys = set(['WCSAXES', 'WCSDIM', 'RADESYS'])
+    for i in range(1, 6):
+        fits_keys.update([f'CUNIT{i}', f'CTYPE{i}', f'CDELT{i}', f'CRVAL{i}',
+                          f'CRPIX{i}'])
+    fits_keys.update([f'CD{i}_{j}' for i in range(1, 6) for j in range(1, 6)])
+
+    def __init__(self, ad1, ad2):
+        self.ad1 = ad1
+        self.ad2 = ad2
+
+    def run_comparison(self, max_miss=0, rtol=1e-7, atol=0, compare=None,
+                       ignore=None, ignore_fits_wcs=True,
+                       raise_exception=True):
+        """
+        Perform a comparison between the two AD objects in this instance.
+
+        Parameters
+        ----------
+        max_miss: int
+            maximum number of elements in each array that can disagree
+        rtol: float
+            relative tolerance allowed between array elements
+        atol: float
+            absolute tolerance allowed between array elements
+        compare: list/None
+            list of comparisons to perform
+        ignore: list/None
+            list of comparisons to ignore
+        ignore_fits_wcs: bool
+            ignore FITS keywords relating to WCS (to allow a comparison
+            between an in-memory AD and one on disk if you're not interested
+            in these, without needed to save to disk)
+        raise_exception: bool
+            raise an AssertionError if the comparison fails? If False,
+            the errordict is returned, which may be useful if a very
+            specific mismatch is permitted
+
+        Raises
+        -------
+        AssertionError if the AD objects do not agree.
+        """
+        self.max_miss = max_miss
+        self.rtol = rtol
+        self.atol = atol
+        self.ignore_fits_wcs = ignore_fits_wcs
+        if compare is None:
+            compare = ('filename', 'tags', 'numext', 'refcat', 'phu',
+                           'hdr', 'attributes', 'wcs')
+        if ignore is not None:
+            compare = [c for c in compare if c not in ignore]
+
+        errordict = {}
+        for func_name in compare:
+            errorlist = getattr(self, func_name)()
+            if errorlist:
+                errordict[func_name] = errorlist
+        if errordict and raise_exception:
+            raise AssertionError(self.format_errordict(errordict))
+        return errordict
+
+    def numext(self):
+        """Check the number of extensions is equal"""
+        numext1, numext2 = len(self.ad1), len(self.ad2)
+        if numext1 != numext2:
+            return [f'{numext1} v {numext2}']
+
+    def filename(self):
+        """Check the filenames are equal"""
+        fname1, fname2 = self.ad1.filename, self.ad2.filename
+        if fname1 != fname2:
+            return [f'{fname1} v {fname2}']
+
+    def tags(self):
+        """Check the tags are equal"""
+        tags1, tags2 = self.ad1.tags, self.ad2.tags
+        if tags1 != tags2:
+            return [f'{tags1}\n  v {tags2}']
+
+    def phu(self):
+        """Check the PHUs agree"""
+        # Ignore NEXTEND as only recently added and len(ad) handles it
+        errorlist = self._header(self.ad1.phu, self.ad2.phu, ignore=['NEXTEND'])
+        if errorlist:
+            return errorlist
+
+    def hdr(self):
+        """Check the extension headers agree"""
+        errorlist = []
+        for i, (hdr1, hdr2) in enumerate(zip(self.ad1.hdr, self.ad2.hdr)):
+            elist = self._header(hdr1, hdr2, ignore=self.fits_keys
+                if self.ignore_fits_wcs else None)
+            if elist:
+                errorlist.extend([f'Slice {i} HDR mismatch'] + elist)
+        return errorlist
+
+    def _header(self, hdr1, hdr2, ignore=None):
+        """General method for comparing headers, ignoring some keywords"""
+        errorlist = []
+        s1 = set(hdr1.keys()) - {'HISTORY', 'COMMENT'}
+        s2 = set(hdr2.keys()) - {'HISTORY', 'COMMENT'}
+        if ignore:
+            s1 -= set(ignore)
+            s2 -= set(ignore)
+        if s1 != s2:
+            if s1 - s2:
+                errorlist.append(f'Header 1 contains keywords {s1 - s2}')
+            if s2 - s1:
+                errorlist.append(f'Header 2 contains keywords {s2 - s1}')
+
+        for kw in hdr1:
+            # GEM-TLM is "time last modified"
+            if kw not in timestamp_keys.values() and kw not in ['GEM-TLM',
+                                                    'HISTORY', 'COMMENT', '']:
+                try:
+                    v1, v2 = hdr1[kw], hdr2[kw]
+                except KeyError:  # Missing keyword in AD2
+                    continue
+                try:
+                    if abs(v1 - v2) >= 0.01:
+                        errorlist.append(f'{kw} value mismatch: {v1} v {v2}')
+                except TypeError:
+                    if v1 != v2:
+                        errorlist.append(f'{kw} value inequality: {v1} v {v2}')
+        return errorlist
+
+    def refcat(self):
+        """Check both ADs have REFCATs (or not) and that the lengths agree"""
+        refcat1 = getattr(self.ad1, 'REFCAT', None)
+        refcat2 = getattr(self.ad2, 'REFCAT', None)
+        if (refcat1 is None) ^ (refcat2 is None):
+            return [f'presence: {refcat1 is not None} v {refcat2 is not None}']
+        elif refcat1 is not None:  # and refcat2 must also exist
+            len1, len2 = len(refcat1), len(refcat2)
+            if len1 != len2:
+                return [f'lengths: {len1} v {len2}']
+
+    def attributes(self):
+        """Check extension-level attributes"""
+        errorlist = []
+        for i, (ext1, ext2) in enumerate(zip(self.ad1, self.ad2)):
+            elist = self._attributes(ext1, ext2)
+            if elist:
+                errorlist.extend([f'Slice {i} attribute mismatch'] + elist)
+        return errorlist
+
+    def _attributes(self, ext1, ext2):
+        """Helper method for checking attributes"""
+        errorlist = []
+        for attr in ['data', 'mask', 'variance', 'OBJMASK', 'OBJCAT']:
+            attr1 = getattr(ext1, attr, None)
+            attr2 = getattr(ext2, attr, None)
+            if (attr1 is None) ^ (attr2 is None):
+                errorlist.append(f'Attribute error for {attr}: '
+                                 f'{attr1 is not None} v {attr2 is not None}')
+            elif attr1 is not None:
+                if isinstance(attr, Table):
+                    if len(attr1) != len(attr2):
+                        errorlist.append(f'attr lengths differ: '
+                                         f'{len(attr1)} v {len(attr2)}')
+                else:  # everything else is pixel-like
+                    if attr1.dtype.name != attr2.dtype.name:
+                        errorlist.append(f'Datatype mismatch for {attr}: '
+                                         f'{attr1.dtype} v {attr2.dtype}')
+                    if attr1.shape != attr2.shape:
+                        errorlist.append(f'Shape mismatch for {attr}: '
+                                         f'{attr1.shape} v {attr2.shape}')
+                    if 'int' in attr1.dtype.name:
+                        try:
+                            assert_most_equal(attr1, attr2, max_miss=self.max_miss)
+                        except AssertionError as e:
+                            errorlist.append(f'Inequality for {attr}: '+str(e))
+                    else:
+                        try:
+                            assert_most_close(attr1, attr2, max_miss=self.max_miss,
+                                              rtol=self.rtol, atol=self.atol)
+                        except AssertionError as e:
+                            errorlist.append(f'Mismatch for {attr}: '+str(e))
+        return errorlist
+
+    def wcs(self):
+        """Check WCS agrees"""
+        def compare_frames(frame1, frame2):
+            """Compare the important stuff of two CoordinateFrame instances"""
+            for attr in ("naxes", "axes_type", "axes_order", "unit", "axes_names"):
+                assert getattr(frame1, attr) == getattr(frame2, attr)
+
+        errorlist = []
+        for i, (ext1, ext2) in enumerate(zip(self.ad1, self.ad2)):
+            wcs1, wcs2 = ext1.wcs, ext2.wcs
+            frames1, frames2 = wcs1.available_frames, wcs2.available_frames
+            if frames1 != frames2:
+                errorlist.append(f'Slice {i}rames differ: {frames1} v {frames2}')
+                return errorlist
+            for frame in frames1:
+                frame1, frame2 = getattr(wcs1, frame), getattr(wcs2, frame)
+                try:
+                    compare_frames(frame1, frame2)
+                except AssertionError:
+                    errorlist.compare(f'Slice {i} {frame} differs: '
+                                      f'{frame1} v {frame2}')
+            corners = at.get_corners(ext1.shape)
+            world1, world2 = wcs1(*zip(*corners)), wcs2(*zip(*corners))
+            try:
+                np.testing.assert_allclose(world1, world2)
+            except AssertionError:
+                errorlist.append(f'Slice {i} world coords differ: {world1} v {world2}')
+        return errorlist
+
+    def format_errordict(self, errordict):
+        """Format the errordict into a str for reporting"""
+        errormsg = f'Comparison between {self.ad1.filename} and {self.ad2.filename}'
+        for k, v in errordict.items():
+            errormsg += f'\nComparison failure in {k}'
+            errormsg += '\n' + ('-' * (22 + len(k))) + '\n'
+            errormsg += '\n  '.join(v)
+        return errormsg
+
+def ad_compare(ad1, ad2, **kwargs):
+    """
+    Compares the tags, headers, and pixel values of two images. This is simply
+    a wrapper for ADCompare.run_comparison() for backward-compatibility.
+
+    Parameters
+    ----------
+    ad1: AstroData
+        first AD objects
+    ad2: AstroData
+        second AD object
+
+    Returns
+    -------
+    bool: are the two AD instances basically the same?
+    """
+    compare = ADCompare(ad1, ad2).run_comparison(**kwargs)
+    return compare == {}

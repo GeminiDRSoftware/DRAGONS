@@ -12,12 +12,16 @@ import dateutil.parser
 
 import numpy as np
 
+from astropy import units as u
+from astropy.coordinates import SkyCoord, Angle
+
 from astrodata import AstroData
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
 from astrodata import TagSet, Section
 
-from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
+from .lookup import (wavelength_band, nominal_extinction,
+                     filter_wavelengths, specphot_standards)
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -123,6 +127,50 @@ def use_keyword_if_prepared(fn):
                 pass
         return fn(self)
     return gn
+
+
+def get_specphot_name(ad):
+    """
+    Return the name of the specphotometric standard of which this AD object
+    is an observation, or None if it is not an observation of a specphot.
+    The name is returned in a whitespace-stripped, all-lowercase format
+    corresponding to the filename containing the specphot data in
+    geminidr.gemini.lookups.spectrophotometric_standards
+
+    Parameters
+    ----------
+    ad: AstroData object which might be a specphot standard
+
+    Returns
+    -------
+    str/None: name of the standard (or None if it's not a standard)
+    """
+    if ad.phu.get('OBSTYPE') != 'OBJECT':
+        return
+    target_name = ad.object().lower().replace(' ', '')
+    try:
+        target = SkyCoord(ad.target_ra(), ad.target_dec(), unit=u.deg)
+    except (TypeError, ValueError):
+        return
+    try:
+        dt = ad.ut_datetime() - datetime.datetime(2000, 1, 1, 12)
+    except TypeError:
+        dt = datetime.timedelta(days=3652.5)  # 10 years
+
+    all_names, all_coords, all_pm_ra, all_pm_dec = [], [], [], []
+    for name, (coords, pm_ra, pm_dec) in specphot_standards.items():
+        all_names.append(name)
+        all_coords.append(coords)
+        all_pm_ra.append(pm_ra)
+        all_pm_dec.append(pm_dec)
+    c = SkyCoord(all_coords, unit=(u.hourangle, u.deg),
+                 pm_ra_cosdec=all_pm_ra*u.mas/u.yr, pm_dec=all_pm_dec*u.mas/u.yr,
+                 distance=10*u.pc)
+    separations = target.separation(c.apply_space_motion(dt=dt)).arcsec
+    i = separations.argmin()
+    if separations[i] < 2 or separations[i] < 10 and all_names[i] == target_name:
+        return all_names[i]
+
 
 # ------------------------------------------------------------------------------
 class AstroDataGemini(AstroData):
@@ -274,6 +322,60 @@ class AstroDataGemini(AstroData):
     def _type_extracted(self):
         if 'EXTRACT' in self.phu:
             return TagSet(['EXTRACTED'])
+
+    def _ra(self):
+        """
+        Parse RA from header.
+
+        Utility method to pull the right ascension from the header, parsing text if appropriate.
+
+        Returns
+        -------
+        float : right ascension in degrees, or None
+        """
+        ra = self.phu.get(self._keyword_for('ra'), None)
+        if type(ra) == str:
+            # maybe it's just a float
+            try:
+                return float(ra)
+            except:
+                try:
+                    if not ra.endswith('hours') and not ra.endswith('degrees'):
+                        rastr = f'{ra} hours'
+                    else:
+                        rastr = ra
+                    return Angle(rastr).degree
+                except:
+                    self._logger.warning(f"Unable to parse RA from {ra}")
+                    return None
+        return ra
+
+    def _dec(self):
+        """
+        Parse DEC from header.
+
+        Utility method to pull the declination from the header, parsing text if appropriate.
+
+        Returns
+        -------
+        float : declination in degrees, or None
+        """
+        dec = self.phu.get(self._keyword_for('dec'), None)
+        if type(dec) == str:
+            # maybe it's just a float
+            try:
+                return float(dec)
+            except:
+                try:
+                    if not dec.endswith('degrees'):
+                        decstr = f'{dec} degrees'
+                    else:
+                        decstr = dec
+                    return Angle(decstr).degree
+                except:
+                    self._logger.warning(f"Unable to parse dec from {dec}")
+                    return None
+        return dec
 
     def _parse_section(self, keyword, pretty):
         try:
@@ -580,7 +682,7 @@ class AstroDataGemini(AstroData):
         """
         dec = self.wcs_dec()
         if dec is None:
-            dec = self.phu.get('DEC', None)
+            dec = self._dec()
         return dec
 
     @astro_data_descriptor
@@ -1354,7 +1456,7 @@ class AstroDataGemini(AstroData):
         """
         ra = self.wcs_ra()
         if ra is None:
-            ra = self.phu.get('RA', None)
+            ra = self._ra()
         return ra
 
     @astro_data_descriptor
@@ -1501,14 +1603,15 @@ class AstroDataGemini(AstroData):
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level of the data, in ADU. This is expected
-        to be overridden by the individual instruments, so at the Gemini
-        level it returns the values of the SATLEVEL keywords (or None)
+        Returns the saturation level of the data, in the units of the data.
+        This is expected to be overridden by the individual instruments,
+        so at the Gemini level it returns the values of the SATLEVEL keyword
+        (or None).
 
         Returns
         -------
         list/float
-            saturation level in ADU
+            saturation level (in units of the data)
         """
         return self.hdr.get(self._keyword_for('saturation_level'))
 
@@ -1548,7 +1651,7 @@ class AstroDataGemini(AstroData):
         """
 
         try:
-            ra = self.phu['RA']
+            ra = self._ra()
         except KeyError:
             return None
 
@@ -1580,7 +1683,8 @@ class AstroDataGemini(AstroData):
             obsepoch = year + fraction
             years = obsepoch - epoch
             pmra *= years
-            pmra *= 15.0*math.cos(math.radians(self.target_dec(offset=True)))
+            # PMRA is to be in time-seconds/yr so cos(dec) term is not needed
+            pmra *= 15.0 #*math.cos(math.radians(self.target_dec(offset=True)))
             pmra /= 3600.0
             ra += pmra
 
@@ -1617,7 +1721,7 @@ class AstroDataGemini(AstroData):
             Declination of the target in degrees.
         """
         try:
-            dec = self.phu['DEC']
+            dec = self._dec()
         except KeyError:
             return None
 
@@ -1977,7 +2081,7 @@ class AstroDataGemini(AstroData):
         coords["lat"] = dec
         return coords
 
-    # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?
+    # TODO: Move to AstroDataFITS?
     def _get_wcs_pixel_scale(self, mean=True):
         """
         Returns a list of pixel scales (in arcseconds), derived from the
@@ -1993,19 +2097,33 @@ class AstroDataGemini(AstroData):
         list of floats/float
             List of pixel scales, one per extension
         """
+        def empirical_pixel_scale(ext):
+            """Brute-force calculation of pixel scale"""
+            if ext.wcs is None:
+                return None
+            yc, xc = [0.5 * l for l in ext.shape]
+            ra, dec = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc])[-2:]
+            cosdec = math.cos(dec[0] * np.pi / 180)
+            a = (ra[2] - ra[0]) * cosdec
+            b = (ra[1] - ra[0]) * cosdec
+            c = dec[2] - dec[0]
+            d = dec[1] - dec[0]
+            return 3600 * np.sqrt(abs(a * d - b * c))
+
         if self.is_single:
             try:
                 return 3600 * np.sqrt(abs(np.linalg.det(self.wcs.forward_transform['cd_matrix'].matrix)))
             except (IndexError, AttributeError):
-                return None
+                return empirical_pixel_scale(self)
 
         pixel_scale_list = []
         for ext in self:
             try:
                 pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
             except (IndexError, AttributeError):
-                if not mean:
-                    pixel_scale_list.append(None)
+                scale = empirical_pixel_scale(ext)
+                if scale is not None:
+                    pixel_scale_list.append(scale)
         if mean:
             if pixel_scale_list:
                 return np.mean(pixel_scale_list)

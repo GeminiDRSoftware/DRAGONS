@@ -25,18 +25,42 @@ def insert_descriptor_values(*descriptors):
             if descriptors:
                 all_descriptors = descriptors
 
-            new_kwargs = {p.name: p.default
-                          for p in inspect.signature(fn).parameters.values()
-                          if p.default is not p.empty}
-            new_kwargs.update(**kwargs)
-            for k, v in new_kwargs.items():
-                if k in all_descriptors and v is None:
+            fn_kwargs = {p.name: p.default
+                         for p in inspect.signature(fn).parameters.values()
+                         if p.default is not p.empty}
+            for k, v in fn_kwargs.items():
+                if k in all_descriptors and k not in kwargs:
                     desc_kwargs = DESCRIPTOR_KWARGS.get(k, {})
                     # Because we can't expect other people to use the IRAF system
                     if k == "dispersion_axis":
-                        new_kwargs[k] = len(ext.shape) - ext.dispersion_axis()
+                        kwargs[k] = len(ext.shape) - ext.dispersion_axis()
                     else:
-                        new_kwargs[k] = getattr(ext, k)(**desc_kwargs)
-            return fn(ext, *args, **new_kwargs)
+                        kwargs[k] = getattr(ext, k)(**desc_kwargs)
+            return fn(ext, *args, **kwargs)
         return gn
     return inner_decorator
+
+
+def unpack_nddata(fn):
+    """
+    This decorator wraps a function/staticmethod that expects separate
+    data, mask, and variance parameters and allows an NDAstroData instance
+    to be sent instead. This is similar to nddata.support_nddata, but
+    handles variance and doesn't give warnings if the NDData instance has
+    attributes set which aren't picked up by the function.
+
+    It's also now happy with an np.ma.masked_array
+    """
+    @wraps(fn)
+    def wrapper(data, *args, **kwargs):
+        if hasattr(data, 'mask'):
+            if 'mask' not in kwargs:
+                kwargs['mask'] = data.mask
+            if ('variance' in inspect.signature(fn).parameters and
+                    'variance' not in kwargs and hasattr(data, 'variance')):
+                kwargs['variance'] = data.variance
+            ret_value = fn(data.data, *args, **kwargs)
+        else:
+            ret_value = fn(data, *args, **kwargs)
+        return ret_value
+    return wrapper

@@ -28,7 +28,7 @@ def makeProcessedDark(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     # Force "varclip" due to large number of CRs
-    p.stackFrames(zero=False, scale=False, reject_method="varclip")
+    p.stackDarks(reject_method="varclip")
     p.makeIRAFCompatible()
     p.storeProcessedDark()
     return
