@@ -818,8 +818,6 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         if val is None and allow_none:
             return True
         try:
-            if isinstance(val, str) and ',' in val:
-                val.replace(',', '')
             if is_float:
                 float(val)
             else:
