@@ -57,7 +57,8 @@ def test_tag_as_standard_fake(astrofaker):
     ad = astrofaker.create('GMOS-S', ['SPECT'],
                            extra_keywords={'RA': 176.46534847,
                                            'DEC': -64.84352513,
-                                           'DATE-OBS': '2021-01-01T12:00:00.000'}
+                                           'DATE-OBS': '2021-01-01T12:00:00.000',
+                                           'OBSTYPE': 'OBJECT'}
                            )
     assert 'STANDARD' in ad.tags
 
