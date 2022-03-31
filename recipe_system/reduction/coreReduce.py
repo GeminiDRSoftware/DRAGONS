@@ -464,7 +464,7 @@ def _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_fi
         for cal in ucals.keys():
             log.debug(cal.ljust(33) + ":: " + ucals[cal])
     if upload:
-        log.debug("Upload".ljust(33) + ":: " + upload)
+        log.debug("%s:: %s" % ("Upload".ljust(33), upload))
     if config_file:
         log.debug("Config File".ljust(33) + ":: " + config_file)
     if suffix:
