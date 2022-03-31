@@ -32,7 +32,7 @@ def reduce(p):
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
     p.flagCosmicRaysByStacking()
-    p.scaleByExposureTime()
+    p.scaleCountsToReference()
     p.stackFrames(zero=True)
     p.storeProcessedScience()
     return
@@ -74,7 +74,7 @@ def reduceSeparateCCDsCentral(p):
         p.resampleToCommonFrame(instream=f"ccd{ccd}")
         p.detectSources()
         p.flagCosmicRaysByStacking()
-        p.scaleByExposureTime()
+        p.scaleCountsToReference()
         p.stackFrames(zero=True)
         p.appendStream(stream="all", from_stream="main", copy=False)
     p.mergeInputs(instream="all")
@@ -116,7 +116,7 @@ def reduceSeparateCCDs(p):
         p.resampleToCommonFrame(instream=f"ccd{ccd}")
         p.detectSources()
         p.flagCosmicRaysByStacking()
-        p.scaleByExposureTime()
+        p.scaleCountsToReference()
         p.stackFrames(zero=True)
         p.appendStream(stream="all", from_stream="main", copy=False)
     p.mergeInputs(instream="all")
@@ -161,7 +161,7 @@ def alignAndStack(p):
     p.detectSources()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
-    p.scaleByExposureTime()
+    p.scaleCountsToReference()
     p.stackFrames(zero=True)
     return
 
