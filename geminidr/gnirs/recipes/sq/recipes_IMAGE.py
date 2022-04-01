@@ -36,7 +36,7 @@ def reduce(p):
     p.scaleByExposureTime()
     p.stackFrames()
     p.writeOutputs()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
     return
 
 _default = reduce

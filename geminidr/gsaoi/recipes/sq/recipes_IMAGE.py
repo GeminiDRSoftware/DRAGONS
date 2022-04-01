@@ -33,7 +33,7 @@ def reduce_nostack(p):
     p.skyCorrect(mask_objects=True)
     p.scaleByExposureTime()
     p.writeOutputs()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
     return
 
 
