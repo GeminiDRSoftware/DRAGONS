@@ -1123,6 +1123,7 @@ class Preprocess(PrimitivesBASE):
                 time_scaling = ref_texp / texp
                 if tolerance == 0:
                     scale_factors.append(time_scaling)
+                    nmatched.append(0)
                     continue
                 try:
                     objcat = mkcat(ad)
@@ -1134,6 +1135,7 @@ class Preprocess(PrimitivesBASE):
                         break
                     log.warning(f"{e} - scaling by exposure times ({time_scaling})")
                     scale_factors.append(time_scaling)
+                    nmatched.append(0)
                     continue
 
                 log.debug(f"{ad.filename} catalog has {len(objcat)} sources")
