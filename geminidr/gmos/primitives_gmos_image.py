@@ -454,7 +454,34 @@ class GMOSImage(GMOS, Image, Photometry):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        ref_mean = None
+        # Check that the all the files have the same structure
+        structure_okay = True
+        ref_nbext = None
+        ref_shape = None
+        ref_filename = None
+        for ad in adinputs:
+            nbext = len(ad)
+            shape = ad[0].data.shape  # should we check all extensions?
+            if ref_nbext is None:
+                ref_nbext = nbext
+                ref_shape = shape
+                ref_filename = ad.filename
+            else:
+                if nbext != ref_nbext:
+                    structure_okay = False
+                    log.warning("{} - Different number of extensions compared "
+                                "reference frame ({}).".
+                                format(ad.filename, ref_filename))
+                if shape != ref_shape:
+                    structure_okay = False
+                    log.warning("{} - Different shape compared to reference "
+                                " frame ({}).").\
+                                format(ad.filename, ref_filename)
+        if not structure_okay:
+            raise ValueError('The input data have different file structure.')
+
+        ref_stat_region = None
+        ref_mask = None
         for ad in adinputs:
             # If this input hasn't been tiled at all, tile it
             ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
@@ -463,8 +490,10 @@ class GMOSImage(GMOS, Image, Photometry):
             # Use CCD2, or the entire mosaic if we can't find a second extn
             try:
                 data = ad_for_stats[1].data
+                mask = ad_for_stats[1].mask
             except IndexError:
                 data = ad_for_stats[0].data
+                mask = ad_for_stats[0].mask
 
             # Take off 5% of the width as a border
             xborder = max(int(0.05 * data.shape[1]), 20)
@@ -474,11 +503,27 @@ class GMOSImage(GMOS, Image, Photometry):
                                              yborder, data.shape[0] - yborder))
 
             stat_region = data[yborder:-yborder, xborder:-xborder]
-            mean = np.mean(stat_region)
+            if ref_stat_region is None:
+                ref_stat_region = data[yborder:-yborder, xborder:-xborder]
+                ref_mask = mask
+
+            combined_mask = None
+            if mask is not None and ref_mask is not None:
+                combined_mask = ref_mask | mask
+            elif mask is not None:
+                combined_mask = mask
+            elif ref_mask is not None:
+                combined_mask = ref_mask
+
+            if combined_mask is not None:
+                mask_region = combined_mask[yborder:-yborder, xborder:-xborder]
+                mean = np.mean(stat_region[mask_region == 0])
+                ref_mean = np.mean(ref_stat_region[mask_region == 0])
+            else:
+                mean = np.mean(stat_region)
+                ref_mean = np.mean(ref_stat_region)
 
             # Set reference level to the first image's mean
-            if ref_mean is None:
-                ref_mean = mean
             scale = ref_mean / mean
 
             # Log and save the scale factor, and multiply by it
