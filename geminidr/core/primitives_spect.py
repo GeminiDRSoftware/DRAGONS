@@ -8,6 +8,7 @@
 import os
 import re
 import warnings
+from contextlib import suppress
 from copy import copy
 from functools import partial, reduce
 from importlib import import_module
@@ -1972,9 +1973,15 @@ class Spect(Resample):
                 skyfit, objfit, skyfit_input = None, None, None
 
             # Save the figure
-            fig.set_size_inches(5, 15)
-            fig.savefig(ad.filename.replace('.fits', '.pdf'),
-                        bbox_inches='tight', dpi=300)
+            figy, figx = ext.data.shape
+            fig.set_size_inches(figx*3/300, figy*5/300)
+            figname, _ = os.path.splitext(ad.orig_filename)
+            figname = figname + '_flagCosmicRays.pdf'
+            # This context manager prevents two harmless RuntimeWarnings from
+            # image normalization if bkgmodel != 'both' (due to empty panels)
+            # which we don't want to worry users with.
+            with np.errstate(divide='ignore', invalid='ignore'):
+                fig.savefig(figname, bbox_inches='tight', dpi=300)
             plt.close(fig)
 
             # Set flags in the original (un-tiled) ad
