@@ -9,7 +9,7 @@ from argparse import RawDescriptionHelpFormatter
 import astrodata
 import gemini_instruments
 
-from .reduceActions import PosArgAction
+from .reduceActions import PosArgAction, UploadArgumentAction
 from .reduceActions import BooleanAction
 from .reduceActions import ParameterAction
 from .reduceActions import CalibrationAction
@@ -147,7 +147,7 @@ def buildParser(version):
                         "strip all other suffixes marked by '_'; ")
 
     parser.add_argument("--upload", dest='upload', default=None,
-                        action=UnitaryArgumentAction, nargs="*",
+                        action=UploadArgumentAction, nargs="*",
                         help="Send these pipeline products to fitsstore."
                         "Default is None."
                         "Eg., --upload metrics calibs science")
