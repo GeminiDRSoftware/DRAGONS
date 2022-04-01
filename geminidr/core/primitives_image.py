@@ -541,7 +541,7 @@ class Image(Preprocess, Register, Resample):
                                  ref_wcs.pipeline[1:])
 
         adoutputs = self._resample_to_new_frame(adinputs, frame="resampled",
-                                                process_objcat=False, **params)
+                                                process_objcat=True, **params)
         for ad in adoutputs:
             try:
                 trans_data = ad.nddata[0].meta.pop('transform')

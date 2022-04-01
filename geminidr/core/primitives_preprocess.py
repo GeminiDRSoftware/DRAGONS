@@ -1087,9 +1087,9 @@ class Preprocess(PrimitivesBASE):
 
         ref_ad = adinputs[0]
         if tolerance > 0:
-            if all_image and set(len(ad) for ad in adinputs) != {1}:
-                raise ValueError(f"{self.myself()} requires all inputs to have "
-                                 "only 1 extension")
+            #if all_image and set(len(ad) for ad in adinputs) != {1}:
+            #    raise ValueError(f"{self.myself()} requires all inputs to have "
+            #                     "only 1 extension")
             try:
                 ref_objcat = mkcat(ref_ad)
             except ValueError as e:
@@ -1104,6 +1104,7 @@ class Preprocess(PrimitivesBASE):
         kw_exptime = ref_ad._keyword_for('exposure_time')
         ref_texp = ref_ad.exposure_time()
         scale_factors = [1]  # for first (reference) image
+        nmatched = [0]
         exptimes = [ref_texp]
 
         # If use_common is True, we'll have two passes through this loop:
@@ -1135,6 +1136,7 @@ class Preprocess(PrimitivesBASE):
                     scale_factors.append(time_scaling)
                     continue
 
+                log.debug(f"{ad.filename} catalog has {len(objcat)} sources")
                 coords = get_coords(objcat)
                 idx, d2d, _ = ref_coords.match_to_catalog_sky(coords)
                 matched = d2d < radius * u.arcsec
@@ -1155,11 +1157,14 @@ class Preprocess(PrimitivesBASE):
                         if (scaling > 0 and (tolerance == 1 or
                                             ((1 - tolerance) <= scaling <= 1 / (1 - tolerance)))):
                             scale_factors.append(scaling)
+                            nmatched.append(matched.sum())
                         else:
                             log.warning(f"Scaling factor {scaling:.3f} for "
-                                        f"{ad.filename} is inconsisent with "
-                                        f"exposure time scaling {time_scaling:.3f}")
+                                        f"{ad.filename} (from {matched.sum()} "
+                                        "sources is inconsisent with exposure "
+                                        f"time scaling {time_scaling:.3f}")
                             scale_factors.append(time_scaling)
+                            nmatched.append(0)
                     else:
                         log.warning(f"No sources matched between {ref_ad.filename}"
                                     f" and {ad.filename}")
@@ -1168,8 +1173,13 @@ class Preprocess(PrimitivesBASE):
                 break
             use_common = False
 
-        for ad, scaling, exptime in zip(adinputs, scale_factors, exptimes):
-            log.stdinfo(f"Scaling {ad.filename} by {scaling:.3f}")
+        for ad, scaling, exptime, num in zip(adinputs, scale_factors,
+                                             exptimes, nmatched):
+            if num > 0:
+                log.stdinfo(f"Scaling {ad.filename} by {scaling:.3f} "
+                            f"(from {num} sources)")
+            else:
+                log.stdinfo(f"Scaling {ad.filename} by {scaling:.3f}")
             if scaling != 1:
                 ad.multiply(scaling)
                 # ORIGTEXP should always be the *original* exposure
@@ -1749,17 +1759,22 @@ class Preprocess(PrimitivesBASE):
 # Helper functions for scaleCountsToReference() follow
 def mkcat_image(ad):
     """Produce a catalog of sources from a single-extension AstroData IMAGE"""
-    try:
-        objcat = ad[0].OBJCAT
-        cat = {(row['X_WORLD'], row['Y_WORLD']):
-               (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat}
-    except (AttributeError, KeyError):
-        raise ValueError(f"{ad.filename} either has no OBJCAT or it "
-                        "is lacking the required columns")
+    cat = {}
+    for ext in ad:
+        try:
+            objcat = ext.OBJCAT
+            cat.update({(row['X_WORLD'], row['Y_WORLD']):
+                        (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat})
+        except (AttributeError, KeyError):
+            pass
+    if not cat:
+        raise ValueError(f"{ad.filename} either has no OBJCAT(s) or they "
+                        "are lacking the required columns")
     return cat
 
 
 def calc_scaling_image(ad, ref_ad, objcat, ref_objcat, idx, matched, log):
+    """Return an appropriate scaling"""
     ref_fluxes = np.array(list(ref_objcat.values()))[matched].T
     obj_fluxes = np.array(list(objcat.values()))[idx[matched]].T
     return at.calculate_scaling(x=obj_fluxes[0], y=ref_fluxes[0],
@@ -1791,6 +1806,7 @@ def mkcat_spect(ad):
 
 
 def calc_scaling_spect(ad, ref_ad, objcat, ref_objcat, idx, matched, log):
+    """Return an appropriate scaling"""
     ref_values = list(ref_objcat.values())
     values = list(objcat.values())
     data = None
