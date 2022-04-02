@@ -56,10 +56,10 @@ datasets = {
 }
 
 
-@pytest.mark.skip("Can't run in Jenkins - Need more investigation")
+#@pytest.mark.skip("Can't run in Jenkins - Need more investigation")
 @pytest.mark.integration_test
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("test_case", datasets.keys())
+@pytest.mark.parametrize("test_case", list(datasets.keys())[:1])
 def test_reduce_image(change_working_dir, keep_data, test_case):
     """
     Tests that we can run all the data reduction steps on a complete dataset.
@@ -150,8 +150,8 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
 
     if save_to:
         calib_files.append("{}:{}".format(
-            save_to, os.path.join("calibrations", save_to, r.output_filenames[0])))
-        [os.remove(f) for f in r.output_filenames]
+            save_to, os.path.join("calibrations", save_to, r._output_filenames[0])))
+        [os.remove(f) for f in r._output_filenames]
 
     # check that we are not leaking objects
     assert len(objgraph.by_type('NDAstroData')) == 0
