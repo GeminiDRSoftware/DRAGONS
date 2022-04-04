@@ -1925,6 +1925,8 @@ class Spect(Resample):
                                     order=spectral_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                else:
+                    objfit = np.zeros_like(data)
                 if debug:
                     ext.OBJFIT = objfit.copy()
 
@@ -1942,6 +1944,8 @@ class Spect(Resample):
                                     order=spatial_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                else:
+                    skyfit = np.zeros_like(data)
                 if debug:
                     ext.SKYFIT = skyfit
 
