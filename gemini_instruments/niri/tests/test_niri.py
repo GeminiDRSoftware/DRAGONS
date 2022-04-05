@@ -66,16 +66,3 @@ def test_read_a_keyword_from_hdr(ad):
     except KeyError:
         # KeyError only accepted if it's because headers out of range
         assert len(ad) == 1
-
-
-def test_ra_dec_from_text(astrofaker):
-    ad = astrofaker.create('NIRI', ['SPECT'],
-                           extra_keywords={'RA': '03:48:30.113',
-                                           'DEC': '+24:20:43.00',
-                                           'DATE-OBS': '2021-01-01T12:00:00.000'}
-                           )
-    assert ad.target_ra() == pytest.approx(57.12547083333333)
-    assert ad.target_dec() == pytest.approx(24.345277777777778)
-
-    from astropy import units as u
-
