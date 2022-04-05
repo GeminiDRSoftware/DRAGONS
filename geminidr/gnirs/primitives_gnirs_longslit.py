@@ -72,8 +72,7 @@ class GNIRSLongslit(GNIRS, Spect, NearIR):
             try:
                 mdf = ad.MDF
             except AttributeError:
-                log.warning(f"MDF not found for {ad.filename} - cannot "
-                            "convert values in arcsec to millimeters.")
+                log.warning(f"MDF not found for {ad.filename}, continuing.")
                 continue
 
             # This is an empirically-determined correction factor for the fact
@@ -88,8 +87,19 @@ class GNIRSLongslit(GNIRS, Spect, NearIR):
             # slit width for f/16 on an 8m telescope.
             arcsec_to_mm = 1.61144
 
+            # The MDFs for Gemini-South data report a slitwidth of 100",
+            # but from measuring slitwidths in observations it appears that the
+            # 103" used in Gemini-North MDFs is actually the correct value, so
+            # add 3" here.
             if (ad.telescope() == 'Gemini-South') and ('Short' in ad.camera()):
-                ad.MDF['slitsize_mx'][0] = 103
+                ad.MDF['slitsize_mx'][0] += 3
+
+            # Flats from the LongBlue and LongRed cameras appear to have
+            # physically different slit widths, despite both drawing from the
+            # same MDF. LongRed data appears to be 3" narrower than LongBlue,
+            # so subtract that here.
+            if ('LongRed' in ad.camera()):
+                ad.MDF['slitsize_mx'][0] -= 3
 
             # Only the 'slitsize_mx' value needs the width correction; the
             # 'slitsize_my' isn't actually used, but we convert it for
