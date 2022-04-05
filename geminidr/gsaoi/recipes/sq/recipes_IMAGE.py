@@ -29,6 +29,7 @@ def reduce(p):
     p.clearStream(stream='skysub')
     p.associateSky()
     p.skyCorrect(mask_objects=True)
+    p.detectSources()
     p.writeOutputs()
     p.addReferenceCatalog()
     p.determineAstrometricSolution()

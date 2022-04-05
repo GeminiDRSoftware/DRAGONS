@@ -500,7 +500,7 @@ class Image(Preprocess, Register, Resample):
                             (ad0[0].wcs.output_frame, None)])
             if trim_data:
                 log.warning("Setting trim_data=False as required when no "
-                            "reference imagevis provided.")
+                            "reference image is provided.")
                 trim_data = False
         else:
             if reference is None:
