@@ -20,8 +20,8 @@ def test_separate_ccd_reduction_astrometry(change_working_dir):
     each CCD separately. It then runs detectSources on each of the outputs
     and matches the world coordinates the objects to confirm they are very
     close. Some offsets will be large because the same objects aren't being
-    matched in each of the images, so it compares the 25th percentile and
-    median to check they are small.
+    matched in each of the images, so it compares the 25th percentile to
+    check it's small.
 
     Obviously if there is, for example, a pixel shift, then the minimum
     separation will be a pixel and these comparisons will fail.
@@ -49,7 +49,5 @@ def test_separate_ccd_reduction_astrometry(change_working_dir):
     pixscale = adoutputs[0].pixel_scale()
     idx, d2d, _ = c1.match_to_catalog_sky(c2)
     assert np.percentile(d2d.arcsec, 25) < 0.1 * pixscale
-    assert np.median(d2d.arcsec) < 0.5 * pixscale
     idx, d2d, _ = c1.match_to_catalog_sky(c3)
     assert np.percentile(d2d.arcsec, 25) < 0.1 * pixscale
-    assert np.median(d2d.arcsec) < 0.5 * pixscale

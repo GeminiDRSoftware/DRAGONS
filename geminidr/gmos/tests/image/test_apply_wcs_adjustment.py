@@ -81,11 +81,11 @@ def test_apply_wcs_adjustment(m_error, mosaic, gmos_tiled_images):
     # Mimic behaviour of adjustWCSToReference() by modifying second image's WCS
     wcs = p.streams[ref_stream][1][0].wcs
     if mosaic:
-        # (1059,0) is the (x,y) offset from the mosaic to CCD2, since m_error
+        # (1058,0) is the (x,y) offset from the mosaic to CCD2, since m_error
         # is in the frame of CCD2, so this is equivalent to the transform that
         # adjustWCSToReference() will obtain for the mosaic
-        m_fix = models.Shift(-1059) & models.Shift(0) | m_error.inverse | (
-            models.Shift(1059) & models.Shift(0))
+        m_fix = models.Shift(-1058) & models.Shift(0) | m_error.inverse | (
+            models.Shift(1058) & models.Shift(0))
     else:
         m_fix = m_error.inverse
     wcs.insert_transform(wcs.input_frame, m_fix, after=True)
