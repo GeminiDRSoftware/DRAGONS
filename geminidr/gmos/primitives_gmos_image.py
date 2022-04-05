@@ -256,7 +256,6 @@ class GMOSImage(GMOS, Image, Photometry):
                 continue
 
             geom = geometry_conf.geometry[ad.detector_name()]
-            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             origins = [k for k in geom if isinstance(k, tuple)]
             ccd2_xorigin = sorted(origins)[1][0]
 
@@ -278,8 +277,8 @@ class GMOSImage(GMOS, Image, Photometry):
                                 f"{ad.filename} will be incorrect.")
                 else:
                     xc, yc = mask.shape[1] // 2, mask.shape[0] // 2
-                    xorig = xc - np.argmax(mask[yc, xc::-1] & DQ.no_data) + 2
-                    yorig = yc - np.argmax(mask.T[xc, yc::-1] & DQ.no_data) + 2
+                    xorig = xc - np.argmax(mask[yc, xc::-1] & DQ.no_data) + 1
+                    yorig = yc - np.argmax(mask.T[xc, yc::-1] & DQ.no_data) + 1
                     if xorig > xc:  # no pixels are NO_DATA
                         xorig = 0
                     if yorig > yc:
