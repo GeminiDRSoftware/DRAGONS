@@ -67,6 +67,10 @@ class GNIRSLongslit(GNIRS, Spect, NearIR):
         # Delegate up to primitives_gemini.addMDF() to attach the MDFs.
         adinputs = super().addMDF(adinputs=adinputs, suffix=suffix, mdf=mdf)
 
+        # This is the conversion factor from arcseconds to millimeters of
+        # slit width for f/16 on an 8m telescope.
+        arcsec_to_mm = 1.61144
+
         for ad in adinputs:
 
             try:
@@ -75,17 +79,15 @@ class GNIRSLongslit(GNIRS, Spect, NearIR):
                 log.warning(f"MDF not found for {ad.filename}, continuing.")
                 continue
 
-            # This is an empirically-determined correction factor for the fact
-            # that the slitsize in the MDFS appears to be slightly larger than
-            # in reality.
+            # TODO: fix GNIRS WCS handling
+            # At some point, when the WCS for GNIRS is fixed, this code
+            # block can be removed. This is an empirically-determined
+            # correction factor for the fact that the pixel scale is a few
+            # percent different from the nominal value.
             if 'Short' in ad.camera():
                 slit_correction_factor = 0.96
             elif 'Long' in ad.camera():
                 slit_correction_factor = 0.97
-
-            # This is the conversion factor from arcseconds to millimeters of
-            # slit width for f/16 on an 8m telescope.
-            arcsec_to_mm = 1.61144
 
             # The MDFs for Gemini-South data report a slitwidth of 100",
             # but from measuring slitwidths in observations it appears that the
@@ -105,7 +107,8 @@ class GNIRSLongslit(GNIRS, Spect, NearIR):
             # 'slitsize_my' isn't actually used, but we convert it for
             # consistency.
             mdf['slitsize_mx'][0] *= slit_correction_factor / arcsec_to_mm
-            mdf['slitsize_my'][0] *= arcsec_to_mm
+            # mdf['slitsize_mx'][0] /= arcsec_to_mm * slit_correction_factor
+            mdf['slitsize_my'][0] /= arcsec_to_mm
 
             log.stdinfo('Converted slit sizes from arcseconds to millimeters '
                         f'in {ad.filename}.')
