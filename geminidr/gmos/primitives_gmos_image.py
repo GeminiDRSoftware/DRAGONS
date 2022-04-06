@@ -343,7 +343,7 @@ class GMOSImage(GMOS, Image, Photometry):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def scaleByIntensity(self, adinputs=None, **params):
+    def scaleFlats(self, adinputs=None, **params):
         """
         This primitive scales input images to the mean value of the first
         image. It is intended to be used to scale flats to the same
@@ -358,34 +358,15 @@ class GMOSImage(GMOS, Image, Photometry):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        # Check that the all the files have the same structure
-        structure_okay = True
-        ref_nbext = None
-        ref_shape = None
-        ref_filename = None
-        for ad in adinputs:
-            nbext = len(ad)
-            shape = ad[0].data.shape  # should we check all extensions?
-            if ref_nbext is None:
-                ref_nbext = nbext
-                ref_shape = shape
-                ref_filename = ad.filename
-            else:
-                if nbext != ref_nbext:
-                    structure_okay = False
-                    log.warning("{} - Different number of extensions compared "
-                                "reference frame ({}).".
-                                format(ad.filename, ref_filename))
-                if shape != ref_shape:
-                    structure_okay = False
-                    log.warning("{} - Different shape compared to reference "
-                                " frame ({}).").\
-                                format(ad.filename, ref_filename)
-        if not structure_okay:
-            raise ValueError('The input data have different file structure.')
+        if len(set(len(ad) for ad in adinputs)) > 1:
+            raise ValueError("Not all inputs have the same number of "
+                             "extensions")
+        if not all(len(set(ad[i].shape for ad in adinputs)) == 1
+                   for i in range(len(adinputs[0]))):
+            raise ValueError("Not all inputs have extensions with the same "
+                             "shapes")
 
-        ref_stat_region = None
-        ref_mask = None
+        ref_data_region = None
         for ad in adinputs:
             # If this input hasn't been tiled at all, tile it
             ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
@@ -395,44 +376,48 @@ class GMOSImage(GMOS, Image, Photometry):
             try:
                 data = ad_for_stats[1].data
                 mask = ad_for_stats[1].mask
+                stat_provider = "CCD2"
             except IndexError:
                 data = ad_for_stats[0].data
                 mask = ad_for_stats[0].mask
+                stat_provider = "mosaic"
 
             # Take off 5% of the width as a border
-            xborder = max(int(0.05 * data.shape[1]), 20)
-            yborder = max(int(0.05 * data.shape[0]), 20)
-            log.fullinfo("Using data section [{}:{},{}:{}] from CCD2 for "
-                         "statistics".format(xborder, data.shape[1] - xborder,
-                                             yborder, data.shape[0] - yborder))
-
-            stat_region = data[yborder:-yborder, xborder:-xborder]
-            if ref_stat_region is None:
-                ref_stat_region = data[yborder:-yborder, xborder:-xborder]
+            if ref_data_region is None:
+                xborder = max(int(0.05 * data.shape[1]), 20)
+                yborder = max(int(0.05 * data.shape[0]), 20)
+                log.fullinfo(
+                    f"Using data section [{xborder+1}:{data.shape[1]-xborder}"
+                    f",{yborder+1}:{data.shape[0]-yborder}] from {stat_provider}"
+                    " for statistics")
+                region = (slice(yborder, -yborder), slice(xborder, -xborder))
+                ref_data_region = data[region]
                 ref_mask = mask
-
-            combined_mask = None
-            if mask is not None and ref_mask is not None:
-                combined_mask = ref_mask | mask
-            elif mask is not None:
-                combined_mask = mask
-            elif ref_mask is not None:
-                combined_mask = ref_mask
-
-            if combined_mask is not None:
-                mask_region = combined_mask[yborder:-yborder, xborder:-xborder]
-                mean = np.mean(stat_region[mask_region == 0])
-                ref_mean = np.mean(ref_stat_region[mask_region == 0])
+                scale = 1
             else:
-                mean = np.mean(stat_region)
-                ref_mean = np.mean(ref_stat_region)
+                data_region = data[region]
 
-            # Set reference level to the first image's mean
-            scale = ref_mean / mean
+                combined_mask = None
+                if mask is not None and ref_mask is not None:
+                    combined_mask = ref_mask | mask
+                elif mask is not None:
+                    combined_mask = mask
+                elif ref_mask is not None:
+                    combined_mask = ref_mask
+
+                if combined_mask is not None:
+                    mask_region = combined_mask[region]
+                    mean = np.mean(data_region[mask_region == 0])
+                    ref_mean = np.mean(ref_data_region[mask_region == 0])
+                else:
+                    mean = np.mean(data_region)
+                    ref_mean = np.mean(ref_data_region)
+
+                # Set reference level to the first image's mean
+                scale = ref_mean / mean
 
             # Log and save the scale factor, and multiply by it
-            log.fullinfo("Relative intensity for {}: {:.3f}".format(
-                ad.filename, scale))
+            log.fullinfo(f"Relative intensity for {ad.filename}: {scale:.3f}")
             ad.phu.set("RELINT", scale,
                                  comment=self.keyword_comments["RELINT"])
             ad.multiply(scale)
@@ -474,6 +459,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # parameter is overridden, these parameters will just be
             # ignored
             stack_params = self._inherit_params(params, "stackFrames")
+            stack_params["reject_method"] = "minmax"
             nlow, nhigh = 0, 0
             if nframes <= 2:
                 stack_params["reject_method"] = "none"
@@ -486,13 +472,13 @@ class GMOSImage(GMOS, Image, Photometry):
             stack_params.update({'nlow': nlow, 'nhigh': nhigh,
                                  'zero': False, 'scale': False,
                                  'statsec': None, 'separate_ext': False})
-            log.fullinfo("For {} input frames, using reject_method={}, "
-                         "nlow={}, nhigh={}".format(nframes,
-                         stack_params["reject_method"], nlow, nhigh))
+            log.fullinfo(f"For {nframes} input frames, using reject_method="
+                         f"{stack_params['reject_method']}, "
+                         f"nlow={nlow}, nhigh={nhigh}")
 
             # Run the scaleByIntensity primitive to scale flats to the
             # same level, and then stack
-            adinputs = self.scaleByIntensity(adinputs)
+            adinputs = self.scaleFlats(adinputs)
             adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 
