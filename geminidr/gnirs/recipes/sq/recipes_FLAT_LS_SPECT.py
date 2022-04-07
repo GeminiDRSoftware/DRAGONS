@@ -12,10 +12,11 @@ def makeProcessedFlat(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.determineSlitEdges()
+    p.maskBeyondSlit()
     p.stackFlats()
     p.normalizeFlat()
     p.thresholdFlatfield()
-    # p.makeIRAFCompatible()
+    p.makeIRAFCompatible()
     p.storeProcessedFlat()
 
 _default = makeProcessedFlat

@@ -400,6 +400,10 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
+class maskBeyondSlitConfig(config.Config):
+    debug = config.Field("Plot the mask created.",
+                         bool, False)
+
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)

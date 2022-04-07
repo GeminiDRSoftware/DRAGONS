@@ -6,6 +6,7 @@
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
 from copy import deepcopy
+from itertools import islice
 import os
 import re
 import warnings
@@ -1068,7 +1069,6 @@ class Spect(Resample):
             Science data as 2D spectral images with a `SLITEDGE` table attached
             to each extension.
         """
-
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -2566,7 +2566,8 @@ class Spect(Resample):
 
     def maskBeyondSlit(self, adinputs=None, **params):
         """
-
+        This primitive masks unilluminated regions defined by a mask definition
+        file (MDF).
 
         Parameters
         ----------
@@ -2579,7 +2580,57 @@ class Spect(Resample):
             Spectra with regions outside the illuminated region masked.
 
         """
-        pass
+        # Set up log
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        # Parse parameters
+        debug = params['debug']
+
+        for ad in adinputs:
+
+            for ext in ad:
+
+                # If there's no SLITEDGE table from determineSlitEdge, we can't
+                # create a mask, so just pass.
+                # log.stdinfo(f"Masking unilluminated regions in {ad.filename}")
+                try:
+                    slittab = ext.SLITEDGE
+                except AttributeError:
+                    log.warning(f"No SLITEDGE table found for {ad.filename} - "
+                                "no masking will be performed.")
+                    continue
+
+                dispaxis = 2 - ext.dispersion_axis()
+                # Create pairs of slit edge models by zipping consecutive pairs
+                # of entries from the table.
+                pairs = [(m, n) for m, n in zip(islice(slittab, 0, None, 2),
+                                                islice(slittab, 1, None, 2))]
+
+                if len(pairs) == 1:  # longslit data
+
+                    model1 = am.table_to_model(pairs[0][0])
+                    model2 = am.table_to_model(pairs[0][1])
+
+                    height = ext.data.shape[0 - dispaxis]
+                    width = ext.data.shape[1 - dispaxis]
+
+                    # Create a NumPy mesh grid to hold the mask.
+                    x, y = np.mgrid[0:width, 0:height]
+                    y1 = model1(y)
+                    y2 = model2(y)
+
+                    # Mask outside the two edges of the (single) longslit.
+                    mask = (x < y1) | (x > y2)
+                    ext.mask |= mask.T * DQ.unilluminated
+
+                    if debug:
+                        # Show a plot of the DQ plane after applying the mask
+                        plt.subplot(111)
+                        plt.imshow(ext.mask, origin='lower', cmap='gray')
+                        plt.show()
+
+        return adinputs
 
 
     def normalizeFlat(self, adinputs=None, **params):
