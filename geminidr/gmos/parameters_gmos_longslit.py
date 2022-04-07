@@ -41,7 +41,6 @@ class makeSlitIllumConfig(config.Config):
     function = config.ChoiceField("Fitting function to use for bin fitting (spatial direction)", str,
                            allowed={"spline3": "Cubic spline",
                                     "chebyshev": "Chebyshev polynomial",
-                                    "legendre": "Legendre polynomial",
                                     "spline1": "Linear spline"},
                            default="spline3", optional=False)
     order = config.Field("Order of the bin fitting function",
