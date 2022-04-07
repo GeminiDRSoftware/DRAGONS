@@ -53,7 +53,7 @@ class makeSlitIllumConfig(config.Config):
     niter = config.RangeField("Maximum number of iterations",
                               int, 3, min = 0, optional=True)
     grow = config.RangeField("Growth radius for rejected pixels of the bin fit",
-                             float, 0, min=0, optional=True)
+                             int, 0, min=0)
     interp_order = config.RangeField("Order of the spline interpolator",
                             int, 3, min=1, max=5, optional=True)
     debug_boundary_ext = config.Field("Extrapolate outside interpolation interval? If 'False'" 
