@@ -345,10 +345,12 @@ class GMOSClassicLongslit(GMOSSpect):
                 # deepcopy prevents modifying input `ad` inplace
                 mosaicked_ad = deepcopy(ad)
 
+            # Arrays transposed if necessary so they are always in the GMOS
+            # orientation, with the first axis being spatial and the second
+            # being spectral.
             log.info("Transposing data if needed")
             dispaxis = 2 - mosaicked_ad[0].dispersion_axis()  # python sense
             should_transpose = dispaxis == 1
-
             data, mask, variance = at.transpose_if_needed(
                 mosaicked_ad[0].data, mosaicked_ad[0].mask,
                 mosaicked_ad[0].variance, transpose=should_transpose)
@@ -402,6 +404,11 @@ class GMOSClassicLongslit(GMOSSpect):
                 bin_list = _parse_user_bins(''.join(visualizer.results().split()))
                 nbins = len(bin_list)
 
+            # We create a border around the image so we can extrapolate the
+            # fit beyond the edges. This ensures that when we resample back
+            # to to the original extensions ("unmosaicking") there are always
+            # data points between which to interpolate and we don't have edge
+            # effects causing the edge pixels to be "blank".
             cols_val = np.arange(-border, height+border)
             rows_val = np.arange(-border, width+border)
             binned_shape = (nbins, len(rows_val))
@@ -412,7 +419,7 @@ class GMOSClassicLongslit(GMOSSpect):
             for i, bin in enumerate(bin_list):
                 bin_data_avg[i] = np.ma.mean(data[bin[0]:bin[1]], axis=0)
                 bin_std_avg[i] = np.ma.mean(std[bin[0]:bin[1]], axis=0)
-            spat_fitting_pars = []
+            spat_fitting_pars = [spat_params]
             for _ in range(nbins):
                 spat_fitting_pars.append(spat_params)
             spat_fit_points = np.arange(width)
@@ -422,7 +429,7 @@ class GMOSClassicLongslit(GMOSSpect):
 
             config = self.params[self.myself()]
 
-            # Interactive interface for fitting dispersion bins
+            # Make a spatial fit for each of the dispersion bins
             if interactive_reduce:
                 all_pixels = []
                 all_domains = []
@@ -475,6 +482,7 @@ class GMOSClassicLongslit(GMOSSpect):
                                           **fit_params, axis=0).evaluate(rows_val)
                     bin_data_fits[bin_idx,:] = bin_data_fit
 
+            # Normalize each spatial fit to the value at the center of the slit
             for bin_idx, (fit_params, avg_std, bin_data_fit) in \
                     enumerate(zip(spat_fitting_pars, bin_std_avg, bin_data_fits)):
                 bin_std_fit = fit_1D(avg_std,
@@ -487,12 +495,18 @@ class GMOSClassicLongslit(GMOSSpect):
 
             log.info("Reconstruct 2D mosaicked data")
 
+            # TODO: the bin centers should probably be weighted towards the
+            # good pixels, e.g., if a bin contains half of the bad amp #5 and
+            # half of the good amp #6, then the centre is really 25% of the way
+            # onto amp #6, not at the boundary, because all the amp #5 pixels
+            # were flagged as bad.
             bin_center = np.array([0.5 * (bin_start + bin_end) for (bin_start, bin_end) in bin_list],
                                   dtype=int)
             slit_response_data = np.zeros((len(cols_val), len(rows_val)))
             slit_response_std = np.zeros((len(cols_val), len(rows_val)))
 
-            # Interpolation between dispersion points along the rows
+            # Interpolate along each row, assigning each spatial fit to the
+            # column of the bin center
             if nbins > 1:
                 for k, (data_row, std_row) in enumerate(zip(bin_data_fits.T, bin_std_fits.T)):
                     # Set extrapolated row ends to interpolation boundary value, or extrapolate
@@ -510,6 +524,7 @@ class GMOSClassicLongslit(GMOSSpect):
             slit_response_var = slit_response_std ** 2
             slit_response_mask = np.pad(mask, border, mode='edge')
 
+            # Ensure 2D fit has the same orientation as the original data
             _data, _mask, _variance = at.transpose_if_needed(
                 slit_response_data, slit_response_mask, slit_response_var,
                 transpose=dispaxis == 1)
