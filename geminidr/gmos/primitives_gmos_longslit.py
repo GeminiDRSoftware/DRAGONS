@@ -411,7 +411,6 @@ class GMOSClassicLongslit(GMOSSpect):
             bin_data_avg = np.ma.empty((nbins, width))
             bin_snrs = np.ma.empty((nbins, width))
             bin_data_fits = np.ma.zeros(binned_shape)
-            bin_snr_fits = np.ma.zeros(binned_shape)
             for i, bin in enumerate(bin_list):
                 bin_data_avg[i] = np.ma.mean(data[bin[0]:bin[1]], axis=0)
                 bin_snrs[i] = at.divide0(np.ma.sum(data[bin[0]:bin[1]], axis=0),
@@ -459,7 +458,6 @@ class GMOSClassicLongslit(GMOSSpect):
                                                    ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fits = visualizer.results()
-                spat_fitting_pars = [fit.extract_params() for fit in fits]
                 for bin_idx, bin_fit in enumerate(fits):
                     bin_data_fit = bin_fit.evaluate(rows_val)
                     bin_data_fits[bin_idx,:] = bin_data_fit
@@ -473,14 +471,6 @@ class GMOSClassicLongslit(GMOSSpect):
                                           domain=(-border, width+border),
                                           **fit_params, axis=0).evaluate(rows_val)
                     bin_data_fits[bin_idx,:] = bin_data_fit
-
-            for bin_idx, (fit_params, bin_snr, bin_data_fit) in \
-                    enumerate(zip(spat_fitting_pars, bin_snrs, bin_data_fits)):
-                bin_snr_fit = fit_1D(bin_snr,
-                                     points=spat_fit_points,
-                                     **fit_params,
-                                     axis=0).evaluate(rows_val)
-                bin_snr_fits[bin_idx,:] = bin_snr_fit
 
             # Normalize each spatial fit to the value at the center of the slit
             slit_central_values = bin_data_fits[:, width // 2 + border]
@@ -496,34 +486,27 @@ class GMOSClassicLongslit(GMOSSpect):
             bin_center = np.array([0.5 * (bin_start + bin_end) for (bin_start, bin_end) in bin_list],
                                   dtype=int)
             slit_response_data = np.zeros((len(cols_val), len(rows_val)))
-            slit_response_std = np.zeros((len(cols_val), len(rows_val)))
 
             # Interpolate along each row, assigning each spatial fit to the
             # column of the bin center
             if nbins > 1:
-                for k, (data_row, snr_row) in enumerate(zip(bin_data_fits.T, bin_snr_fits.T)):
+                for k, data_row in enumerate(bin_data_fits.T):
                     # Set extrapolated row ends to interpolation boundary value, or extrapolate
                     ext_val = 0 if boundary_ext else 3
                     f1 = InterpolatedUnivariateSpline(bin_center, data_row, k=interp_order, ext=ext_val)
-                    f2 = InterpolatedUnivariateSpline(bin_center, snr_row, k=interp_order, ext=ext_val)
                     slit_response_data[:,k] = f1(cols_val)
-                    slit_response_std[:,k] = at.divide0(slit_response_data[:,k], f2(cols_val))
 
             # If there is only one bin, copy the slit profile to each column
-            elif nbins == 1:
+            else:
                 slit_response_data[:] = bin_data_fits
-                slit_response_std[:] = at.divide0(bin_data_fits, bin_snrs)
-
-            slit_response_var = slit_response_std ** 2
 
             # Ensure 2D fit has the same orientation as the original data
-            _data, _variance = at.transpose_if_needed(
-                slit_response_data, slit_response_var, transpose=dispaxis == 1)
+            _data = at.transpose_if_needed(slit_response_data, transpose=dispaxis == 1)
 
             log.info("Update slit response data and data_section")
             mosaicked_ad[0].data = _data
             mosaicked_ad[0].mask = None
-            mosaicked_ad[0].variance = _variance
+            mosaicked_ad[0].variance = None
 
             if "mosaic" in ad[0].wcs.available_frames:
 

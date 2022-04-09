@@ -432,8 +432,9 @@ def transpose_if_needed(*args, transpose=False, section=slice(None)):
     list of arrays
         The input arrays, or their transposed versions.
     """
-    return list(None if arg is None
-                else arg.T[section] if transpose else arg[section] for arg in args)
+    ret_value = list(None if arg is None
+                     else arg.T[section] if transpose else arg[section] for arg in args)
+    return ret_value if len(args) > 1 else ret_value[0]
 
 
 def rotate_2d(degs):
