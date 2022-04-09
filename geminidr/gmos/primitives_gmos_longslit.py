@@ -981,51 +981,21 @@ def _parse_user_bins(bins, frame_size:int=None):
     -------
     A sorted list of 2-value tuples lying within the specified frame range, with no overlapping.
     """
-    bin_list = []
-    for bin in re.split(",|;| ", bins.strip("[]()'")):
-        bin = bin.strip("()[]' ")
-        bin_limits = re.split(":|-", bin)
-        if not len(bin_limits) == 2:
-            raise TypeError("Bin limits must be specified as comma-separated list "
-                            "of colon- or hyphen-separated pixel sections, e.g. 1:300,301:500")
-        int_bin_limits = []
-        for bin_limit in bin_limits:
-            try:
-                int_bin_limit = int(bin_limit)
-            except ValueError:
-                raise TypeError("Bin ranges must be integer")
-            if frame_size is not None:
-                int_bin_limits.append(min(int_bin_limit, frame_size))
-            else:
-                int_bin_limits.append(int_bin_limit)
-        int_bin_limits.sort()
-
-        # trim off the bins that are outside the frame pixel range
-        if frame_size is not None and int_bin_limits[0] == frame_size:
-            break
-
-        bin_list.append(tuple(int_bin_limits))
-    bin_list = sorted(bin_list, key=lambda tup: tup[0])
+    slices = sorted(at.cartesian_regions_to_slices(bins),
+                    key=lambda _slice: _slice.start or 0)
+    bin_list = [(_slice.start or 0, _slice.stop or frame_size)
+                for _slice in slices]
 
     # merge overlapping bins
-    merged_list = [bin_list[0]]
+    merged_list = bin_list[:1]
     for bin in bin_list[1:]:
         last = merged_list[-1]
         if last[1] > bin[0]:
-            print("Merging the overlapping bins")
             merged_list[-1] = (last[0], max(last[1], bin[1]))
-        elif last[1] == bin[0]:
-            merged_list.append((bin[0]+1, bin[1]))
         else:
             merged_list.append(bin)
 
-    adjusted_bin_list = []
-    for i, bin in enumerate(merged_list):
-        if i == 0 and bin[0] == 0:
-            adjusted_bin_list.append(bin)
-        else:
-            adjusted_bin_list.append((bin[0]-1, bin[1]))
-    return adjusted_bin_list
+    return merged_list
 
 
 @parameter_override
