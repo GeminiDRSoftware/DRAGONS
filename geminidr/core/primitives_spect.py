@@ -2734,7 +2734,7 @@ class Spect(PrimitivesBASE):
                                 yunits, equivalencies=equivalencies)
                         except u.core.UnitConversionError:
                             log.warning(f"Cannot convert spectrum in {ad.filename}:"
-                                        f"{ext.id} from {ydata.unit} to {yunits}")
+                                        f"{ext.hdr['EXTVER']} from {ydata.unit} to {yunits}")
                             yunits = data_unit
                 else:
                     yunits = data_unit
