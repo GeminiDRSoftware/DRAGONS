@@ -347,9 +347,9 @@ class GMOSClassicLongslit(GMOSSpect):
                 # deepcopy prevents modifying input `ad` inplace
                 mosaicked_ad = deepcopy(ad)
 
-            # Arrays transposed if necessary so they are always in the GMOS
-            # orientation, with the first axis being spatial and the second
-            # being spectral.
+            # Arrays transposed if necessary so they are always in the non-GMOS
+            # orientation, with the first axis being spectral and the second
+            # being spatial
             log.info("Transposing data if needed")
             dispaxis = 2 - mosaicked_ad[0].dispersion_axis()  # python sense
             should_transpose = dispaxis == 1
@@ -364,6 +364,7 @@ class GMOSClassicLongslit(GMOSSpect):
 
             log.info("Creating bins for data and variance")
 
+            # So height is the spectral axis, and width the spatial axis!
             height = data.shape[0]
             width = data.shape[1]
             if bins is None:
@@ -421,9 +422,7 @@ class GMOSClassicLongslit(GMOSSpect):
             for i, bin in enumerate(bin_list):
                 bin_data_avg[i] = np.ma.mean(data[bin[0]:bin[1]], axis=0)
                 bin_std_avg[i] = np.ma.mean(std[bin[0]:bin[1]], axis=0)
-            spat_fitting_pars = [spat_params]
-            for _ in range(nbins):
-                spat_fitting_pars.append(spat_params)
+            spat_fitting_pars = [spat_params] * nbins
             spat_fit_points = np.arange(width)
 
             log.info("Smooth binned data and variance, and normalize them by "
@@ -433,11 +432,8 @@ class GMOSClassicLongslit(GMOSSpect):
 
             # Make a spatial fit for each of the dispersion bins
             if interactive_reduce:
-                all_pixels = []
-                all_domains = []
-                for _ in range(nbins):
-                    all_pixels.append(spat_fit_points)
-                    all_domains.append([-border, width + border])
+                all_pixels = [spat_fit_points] * nbins
+                all_domains = [[-border, width + border]] * nbins
 
                 data_with_weights = {"x": [], "y": [], "weights": []}
                 for rppixels, avg_data, avg_std in zip(all_pixels, bin_data_avg, bin_std_avg):
