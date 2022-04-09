@@ -255,8 +255,10 @@ class GMOSClassicLongslit(GMOSSpect):
         It expects an input calibration image to be an a dispersed image of the
         slit without illumination problems (e.g, twilight flat). The spectra is
         not required to be smooth in wavelength and may contain strong emission
-        and absorption lines. The image should contain a `.mask` attribute in
-        each extension, and it is expected to be overscan and bias corrected.
+        and absorption lines. The image should be overscan and bias corrected.
+
+        The output has no DQ plane because it is a binned/fitted/interpolated
+        construction where input bad pixels have been masked.
 
         Parameters
         ----------
@@ -522,42 +524,37 @@ class GMOSClassicLongslit(GMOSSpect):
                 slit_response_std[:] = bin_std_fits
 
             slit_response_var = slit_response_std ** 2
-            slit_response_mask = np.pad(mask, border, mode='edge')
 
             # Ensure 2D fit has the same orientation as the original data
-            _data, _mask, _variance = at.transpose_if_needed(
-                slit_response_data, slit_response_mask, slit_response_var,
-                transpose=dispaxis == 1)
+            _data, _variance = at.transpose_if_needed(
+                slit_response_data, slit_response_var, transpose=dispaxis == 1)
 
             log.info("Update slit response data and data_section")
-            slit_response_ad = deepcopy(mosaicked_ad)
-            slit_response_ad[0].data = _data
-            slit_response_ad[0].mask = _mask
-            slit_response_ad[0].variance = _variance
+            mosaicked_ad[0].data = _data
+            mosaicked_ad[0].mask = None
+            mosaicked_ad[0].variance = _variance
 
             if "mosaic" in ad[0].wcs.available_frames:
 
                 log.info("Map coordinates between slit function and mosaicked data") # ToDo: Improve message?
-                slit_response_ad = _split_mosaic_into_extensions(
-                    ad, slit_response_ad, border_size=border)
+                mosaicked_ad = _split_mosaic_into_extensions(
+                    ad, mosaicked_ad, border_size=border)
 
             elif len(ad) == 1:
 
                 log.info("Trim out borders")
 
-                slit_response_ad[0].data = \
-                    slit_response_ad[0].data[border:-border, border:-border]
-                slit_response_ad[0].mask = \
-                    slit_response_ad[0].mask[border:-border, border:-border]
-                slit_response_ad[0].variance = \
-                    slit_response_ad[0].variance[border:-border, border:-border]
+                mosaicked_ad[0].data = \
+                    mosaicked_ad[0].data[border:-border, border:-border]
+                mosaicked_ad[0].variance = \
+                    mosaicked_ad[0].variance[border:-border, border:-border]
 
             log.info("Update metadata and filename")
             gt.mark_history(
-                slit_response_ad, primname=self.myself(), keyword=timestamp_key)
+                mosaicked_ad, primname=self.myself(), keyword=timestamp_key)
 
-            slit_response_ad.update_filename(suffix=suffix, strip=True)
-            ad_outputs.append(slit_response_ad)
+            mosaicked_ad.update_filename(suffix=suffix, strip=True)
+            ad_outputs.append(mosaicked_ad)
 
         return ad_outputs
 
