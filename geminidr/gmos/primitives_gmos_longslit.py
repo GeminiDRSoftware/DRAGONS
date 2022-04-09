@@ -520,8 +520,8 @@ class GMOSClassicLongslit(GMOSSpect):
 
                 mosaicked_ad[0].data = \
                     mosaicked_ad[0].data[border:-border, border:-border]
-                mosaicked_ad[0].variance = \
-                    mosaicked_ad[0].variance[border:-border, border:-border]
+                mosaicked_ad[0].mask = None
+                mosaicked_ad[0].variance = None
 
             log.info("Update metadata and filename")
             gt.mark_history(
