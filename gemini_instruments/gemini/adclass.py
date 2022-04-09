@@ -145,6 +145,8 @@ def get_specphot_name(ad):
     -------
     str/None: name of the standard (or None if it's not a standard)
     """
+    if ad.phu.get('OBSTYPE') != 'OBJECT':
+        return
     target_name = ad.object().lower().replace(' ', '')
     try:
         target = SkyCoord(ad.target_ra(), ad.target_dec(), unit=u.deg)
@@ -2079,7 +2081,7 @@ class AstroDataGemini(AstroData):
         coords["lat"] = dec
         return coords
 
-    # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?
+    # TODO: Move to AstroDataFITS?
     def _get_wcs_pixel_scale(self, mean=True):
         """
         Returns a list of pixel scales (in arcseconds), derived from the
@@ -2095,19 +2097,33 @@ class AstroDataGemini(AstroData):
         list of floats/float
             List of pixel scales, one per extension
         """
+        def empirical_pixel_scale(ext):
+            """Brute-force calculation of pixel scale"""
+            if ext.wcs is None:
+                return None
+            yc, xc = [0.5 * l for l in ext.shape]
+            ra, dec = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc])[-2:]
+            cosdec = math.cos(dec[0] * np.pi / 180)
+            a = (ra[2] - ra[0]) * cosdec
+            b = (ra[1] - ra[0]) * cosdec
+            c = dec[2] - dec[0]
+            d = dec[1] - dec[0]
+            return 3600 * np.sqrt(abs(a * d - b * c))
+
         if self.is_single:
             try:
                 return 3600 * np.sqrt(abs(np.linalg.det(self.wcs.forward_transform['cd_matrix'].matrix)))
             except (IndexError, AttributeError):
-                return None
+                return empirical_pixel_scale(self)
 
         pixel_scale_list = []
         for ext in self:
             try:
                 pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
             except (IndexError, AttributeError):
-                if not mean:
-                    pixel_scale_list.append(None)
+                scale = empirical_pixel_scale(ext)
+                if scale is not None:
+                    pixel_scale_list.append(scale)
         if mean:
             if pixel_scale_list:
                 return np.mean(pixel_scale_list)

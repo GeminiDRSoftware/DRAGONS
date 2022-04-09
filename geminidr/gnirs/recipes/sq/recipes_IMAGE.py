@@ -31,7 +31,7 @@ def reduce(p):
     p.detectSources()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
-    p.scaleByExposureTime()
+    p.scaleCountsToReference()
     p.stackFrames()
     p.writeOutputs()
     p.storeProcessedScience()
@@ -53,6 +53,6 @@ def alignAndStack(p):
     p.detectSources()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
-    p.scaleByExposureTime()
+    p.scaleCountsToReference()
     p.stackFrames()
     return

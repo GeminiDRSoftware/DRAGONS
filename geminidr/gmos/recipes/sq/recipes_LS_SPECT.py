@@ -33,6 +33,7 @@ def reduceScience(p):
     p.skyCorrectFromSlit()
     p.adjustWCSToReference()
     p.resampleToCommonFrame(conserve=True)  # default force_linear=True, ie. linearized.
+    p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
     p.traceApertures()
@@ -68,6 +69,7 @@ def reduceStandard(p):
     p.traceApertures()
     p.extractSpectra()
     p.resampleToCommonFrame(conserve=True)  # default force_linear=True, ie. linearized.
+    p.scaleCountsToReference()
     p.stackFrames()
     p.calculateSensitivity()
     p.storeProcessedStandard()
