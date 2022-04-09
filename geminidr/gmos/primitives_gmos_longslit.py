@@ -365,13 +365,10 @@ class GMOSClassicLongslit(GMOSSpect):
             log.info("Creating bins for data and variance")
 
             # So height is the spectral axis, and width the spatial axis!
-            height = data.shape[0]
-            width = data.shape[1]
+            height, width = data.shape
             if bins is None:
-                nbins = max(len(ad), 12)
-                bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
-                bin_list = list(zip(bin_limits[:-1], bin_limits[1:]))
-            elif isinstance(bins, int):
+                bins = max(len(ad), 12)
+            if isinstance(bins, int):
                 nbins = bins
                 bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
                 bin_list = list(zip(bin_limits[:-1], bin_limits[1:]))
@@ -379,11 +376,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 bin_list = _parse_user_bins(bins, height)
                 nbins = len(bin_list)
 
-            if ad.filename:
-                filename_info = ad.filename
-            else:
-                filename_info = ''
-
+            filename_info = ad.filename or ''
             bin_parameters = {
                 'nbins': nbins,
                 'bin_list': bin_list,
