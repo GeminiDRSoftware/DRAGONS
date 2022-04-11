@@ -7,10 +7,11 @@ The astroTools module contains astronomy specific utility functions
 import os
 import re
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate, optimize
 
 from astropy import units as u
 from astropy import stats
+from astropy.modeling import models, fitting
 
 
 def array_from_list(list_of_quantities, unit=None):
@@ -60,6 +61,63 @@ def boxcar(data, operation=np.ma.median, size=1):
         boxarray = np.array([operation.reduce(data[max(i-size, 0):i+size+1])
                              for i in range(len(data))])
     return boxarray
+
+
+def calculate_scaling(x, y, sigma_x=None, sigma_y=None, sigma=3, niter=2):
+    """
+    Determine the optimum value by which to scale inputs so that they match
+    a set of reference values
+
+    Parameters
+    ----------
+    x: array
+        values to be scaled (inputs)
+    y: array
+        values to be scaled to (references)
+    sigma_x: array/None
+        standard deviations on each input value
+    sigma_y: array/None
+        standard deviations on each reference value
+    sigma: float/None
+        sigma_clipping value (None => no clipping)
+    niter: int
+        number of clipping iterations
+
+    Returns
+    -------
+    factor: float
+        the best-fitting scaling factor
+    """
+    x, y = np.asarray(x), np.asarray(y)
+    if sigma_x is None and sigma_y is None:
+        weights = None
+        init_guess = (x * y).sum() / (x * x).sum()
+    elif sigma_x is None:
+        weights = 1 / np.asarray(sigma_y)
+        init_guess = (x * y *weights**2).sum() / (x * x *weights**2).sum()
+    elif sigma_y is None:
+        weights = 1 / np.asarray(sigma_x)
+        init_guess = np.square(y * weights).sum() / (x * y *weights**2).sum()
+    else:
+        # Calculus has failed me here, I don't think this is linear
+        fun = lambda f, x, y, sx, sy: np.square((f * x - y) / (f*f*sx*sx + sy*sy)).sum()
+        result = optimize.minimize(fun, [1.], args=(x, y, sigma_x, sigma_y))
+        init_guess = result.x[0]
+        # Assume the initial guess is pretty good and so the weights are these
+        # We really want scipy.odr (Orthogonal Distance Regression) but we
+        # have to choose between that and outlier removal, and outlier
+        # removal is more important
+        weights = 1 / np.sqrt(sigma_y ** 2 + (init_guess * sigma_x)**2)
+
+    if sigma is None:
+        return init_guess
+
+    m_init = models.Scale(init_guess)
+    fit_it = fitting.FittingWithOutlierRemoval(
+        fitting.LinearLSQFitter(), outlier_func=stats.sigma_clip, niter=niter,
+        sigma=sigma)
+    m_final, _ = fit_it(m_init, x, y, weights=weights)
+    return m_final.factor.value
 
 
 def divide0(numerator, denominator):
@@ -184,51 +242,6 @@ def std_from_pixel_variations(array, separation=5, **kwargs):
     return stats.sigma_clipped_stats(diffs[ok], **kwargs)[2] / np.sqrt(2)
 
 
-def rasextodec(string):
-    """
-    Convert hh:mm:ss.sss to decimal degrees
-    """
-    match_ra = re.match(r"(\d+):(\d+):(\d+\.\d+)", string)
-    if match_ra:
-        hours = float(match_ra.group(1))
-        minutes = float(match_ra.group(2))
-        secs = float(match_ra.group(3))
-
-        minutes += (secs/60.0)
-        hours += (minutes/60.0)
-
-        degrees = hours * 15.0
-    else:
-        raise ValueError('Invalid RA string')
-
-    return degrees
-
-def degsextodec(string):
-    """
-    Convert [-]dd:mm:ss.sss to decimal degrees
-    """
-    match_dec = re.match(r"(-*)(\d+):(\d+):(\d+\.\d+)", string)
-    if match_dec:
-        sign = match_dec.group(1)
-        if sign == '-':
-            sign = -1.0
-        else:
-            sign = +1.0
-
-        degs = float(match_dec.group(2))
-        minutes = float(match_dec.group(3))
-        secs = float(match_dec.group(4))
-
-        minutes += (secs/60.0)
-        degs += (minutes/60.0)
-
-        degs *= sign
-    else:
-        raise ValueError('Invalid Dec string')
-
-    return degs
-
-
 def cartesian_regions_to_slices(regions):
     """
     Convert a sample region(s) string, consisting of a comma-separated list
@@ -253,8 +266,6 @@ def cartesian_regions_to_slices(regions):
                         .format(regions))
 
     origin = 1
-
-    ranges = regions.strip('[]').split(',')
 
     slices = []
     ranges = parse_user_regions(regions, allow_step=True)
@@ -317,6 +328,7 @@ def parse_user_regions(regions, dtype=int, allow_step=False):
             raise ValueError(f"Failed to parse sample regions '{regions}'")
         ranges.append(tuple(values))
     return ranges
+
 
 def create_mask_from_regions(points, regions=None):
     """
@@ -436,19 +448,6 @@ def transpose_if_needed(*args, transpose=False, section=slice(None)):
                 else arg.T[section] if transpose else arg[section] for arg in args)
 
 
-def rotate_2d(degs):
-    """
-    Little helper function to return a basic 2-D rotation matrix.
-
-    :param degs: rotation amount, in degrees
-    :type degs: float
-    """
-    rads = np.radians(degs)
-    sine = np.sin(rads)
-    cosine = np.cos(rads)
-    return np.array([[cosine, -sine], [sine, cosine]])
-
-
 def clipped_mean(data):
     num_total = len(data)
     mean = data.mean()
@@ -478,50 +477,6 @@ def clipped_mean(data):
             break
 
     return mean, sigma
-
-def rasextodec(string):
-    """
-    Convert hh:mm:ss.sss to decimal degrees
-    """
-    match_ra = re.match(r"(\d+):(\d+):(\d+\.\d+)", string)
-    if match_ra:
-        hours = float(match_ra.group(1))
-        minutes = float(match_ra.group(2))
-        secs = float(match_ra.group(3))
-
-        minutes += (secs/60.0)
-        hours += (minutes/60.0)
-
-        degrees = hours * 15.0
-    else:
-        raise ValueError('Invalid RA string')
-
-    return degrees
-
-def degsextodec(string):
-    """
-    Convert [-]dd:mm:ss.sss to decimal degrees
-    """
-    match_dec = re.match(r"(-*)(\d+):(\d+):(\d+\.\d+)", string)
-    if match_dec:
-        sign = match_dec.group(1)
-        if sign == '-':
-            sign = -1.0
-        else:
-            sign = +1.0
-
-        degs = float(match_dec.group(2))
-        minutes = float(match_dec.group(3))
-        secs = float(match_dec.group(4))
-
-        minutes += (secs/60.0)
-        degs += (minutes/60.0)
-
-        degs *= sign
-    else:
-        raise ValueError('Invalid Dec string')
-
-    return degs
 
 
 # The following functions and classes were borrowed from STSCI's spectools

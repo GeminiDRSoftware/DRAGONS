@@ -29,11 +29,13 @@ def reduce(p):
     p.clearStream(stream='skysub')
     p.associateSky()
     p.skyCorrect(mask_objects=True)
+    p.detectSources()
     p.writeOutputs()
     p.addReferenceCatalog()
     p.determineAstrometricSolution()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
+    p.scaleCountsToReference()
     p.stackFrames()
     p.storeProcessedScience()
     return
@@ -63,7 +65,6 @@ def reduce_nostack(p):
     p.clearStream(stream='skysub')
     p.associateSky()
     p.skyCorrect(mask_objects=True)
-    p.scaleByExposureTime()
     p.storeProcessedScience()
     return
 
@@ -81,6 +82,7 @@ def alignAndStack(p):
     p.determineAstrometricSolution()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
+    p.scaleCountsToReference()
     p.stackFrames()
     p.storeProcessedScience()
     return

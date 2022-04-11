@@ -500,7 +500,7 @@ class Image(Preprocess, Register, Resample):
                             (ad0[0].wcs.output_frame, None)])
             if trim_data:
                 log.warning("Setting trim_data=False as required when no "
-                            "reference imagevis provided.")
+                            "reference image is provided.")
                 trim_data = False
         else:
             if reference is None:
@@ -541,7 +541,7 @@ class Image(Preprocess, Register, Resample):
                                  ref_wcs.pipeline[1:])
 
         adoutputs = self._resample_to_new_frame(adinputs, frame="resampled",
-                                                process_objcat=False, **params)
+                                                process_objcat=True, **params)
         for ad in adoutputs:
             try:
                 trans_data = ad.nddata[0].meta.pop('transform')
