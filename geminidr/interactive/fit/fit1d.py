@@ -907,13 +907,18 @@ class Fit1DPanel:
         except (AttributeError, KeyError):
             pass
         else:
-            x_min, x_max = min(xdata), max(xdata)
+            def min_max_pad(data, default_min, default_max):
+                if data is None or len(data) == 0:
+                    return default_min, default_max, 0.0
+                mx = max(data)
+                mn = min(data)
+                return mn, mx, 0.1 * (mx - mn)
+            # if xdata or ydata are empty, we set some arbitrary values so the UI is ok
+            x_min, x_max, x_pad = min_max_pad(xdata, 0, 4000)
             if x_min != x_max:
-                x_pad = (x_max - x_min) * 0.1
                 self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
-            y_min, y_max = min(ydata), max(ydata)
+            y_min, y_max, y_pad = min_max_pad(ydata, 0, 100)
             if y_min != y_max:
-                y_pad = (y_max - y_min) * 0.1
                 self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
         if x_range is not None:
             self.p_main.x_range = x_range
