@@ -447,8 +447,8 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
             warnings.simplefilter("ignore")
             width = signal.peak_widths(data, [index], 0.5)[0][0]
         # Block 2 * FWHM
-        hi = int(index + width + 1.5)
-        lo = int(index - width)
+        hi = min(int(index + width + 1.5), len(data))
+        lo = max(int(index - width), 0)
         if all(goodpix[lo:hi]) and width > 0:
             widths.append(width)
         goodpix[lo:hi] = False
