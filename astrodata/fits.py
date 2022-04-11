@@ -436,9 +436,13 @@ def read_fits(cls, source, extname_parser=None):
     # Only SCI HDUs
     sci_units = [hdu for hdu in hdulist[1:] if hdu.name == DEFAULT_EXTENSION]
 
+    seen_vers = []
     for idx, hdu in enumerate(sci_units):
         seen.add(hdu)
         ver = hdu.header.get('EXTVER', -1)
+        if ver > -1 and seen_vers.count(ver) == 1:
+            LOGGER.warning(f"Multiple SCI extension with EXTVER {ver}")
+        seen_vers.append(ver)
         parts = {
             'data': hdu,
             'uncertainty': None,
@@ -550,7 +554,7 @@ def ad_to_hdulist(ad):
                  default=0)
 
     for ext in ad._nddata:
-        header = ext.meta['header']
+        header = ext.meta['header'].copy()
 
         if not isinstance(header, fits.Header):
             header = fits.Header(header)
@@ -585,6 +589,9 @@ def ad_to_hdulist(ad):
                         for kw in (f'CD{i}_{j}', f'PC{i}_{j}', f'CRPIX{j}'):
                             if kw in header:
                                 del header[kw]
+                # Delete this if it's left over from a previous save
+                if 'FITS-WCS' in header:
+                    del header['FITS-WCS']
                 header.update(wcs_dict)
                 # Use "in" here as the dict entry may be (value, comment)
                 if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):
