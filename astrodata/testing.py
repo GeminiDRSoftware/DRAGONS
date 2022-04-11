@@ -441,7 +441,7 @@ class ADCompare:
                 errorlist.append(f'Attribute error for {attr}: '
                                  f'{attr1 is not None} v {attr2 is not None}')
             elif attr1 is not None:
-                if isinstance(attr, Table):
+                if isinstance(attr1, Table):
                     if len(attr1) != len(attr2):
                         errorlist.append(f'attr lengths differ: '
                                          f'{len(attr1)} v {len(attr2)}')

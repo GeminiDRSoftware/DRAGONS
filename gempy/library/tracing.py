@@ -81,6 +81,11 @@ class Aperture:
         else:
             raise ValueError("Width must be positive ()".format(value))
 
+    @property
+    def center(self):
+        """Return value of the model in the middle of the domain"""
+        return self.model(0.5 * np.sum(self.model.domain))
+
     def limits(self):
         """Return maximum and minimum values of the model across the domain"""
         pixels = np.arange(*self.model.domain)
@@ -442,8 +447,8 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
             warnings.simplefilter("ignore")
             width = signal.peak_widths(data, [index], 0.5)[0][0]
         # Block 2 * FWHM
-        hi = int(index + width + 1.5)
-        lo = int(index - width)
+        hi = min(int(index + width + 1.5), len(data))
+        lo = max(int(index - width), 0)
         if all(goodpix[lo:hi]) and width > 0:
             widths.append(width)
         goodpix[lo:hi] = False
@@ -801,7 +806,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
             if width > height / min_snr * 20:
                 ok_apertures[i] = False
             # Eliminate things with square edges that are likely artifacts
-            if (flimits[side] - peak) / (limits[side] - peak) > 0.85:
+            if (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
                 ok_apertures[i] = False
         # Remove apertures that don't appear in a smoothed version of the
         # data (these are basically noise peaks)
