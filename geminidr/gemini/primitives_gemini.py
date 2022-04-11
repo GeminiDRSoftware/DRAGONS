@@ -11,9 +11,12 @@ from geminidr.core import Visualize, Standardize, Stack
 from .primitives_qa import QA
 from . import parameters_gemini
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
              CalibDB):
     """
@@ -22,8 +25,8 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
     """
     tagset = {"GEMINI"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gemini)
 
     def addMDF(self, adinputs=None, suffix=None, mdf=None):

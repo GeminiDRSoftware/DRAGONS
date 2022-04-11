@@ -12,9 +12,12 @@ from geminidr.core import Spect
 from .primitives_f2 import F2
 from . import parameters_f2_spect
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class F2Spect(F2, Spect):
     """
     This is the class containing all of the preprocessing primitives
@@ -23,8 +26,8 @@ class F2Spect(F2, Spect):
     """
     tagset = {"GEMINI", "F2", "SPECT"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2_spect)
 
     def _get_linelist_filename(self, ext, cenwave, dw):

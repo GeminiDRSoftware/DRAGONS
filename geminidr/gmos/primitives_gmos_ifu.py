@@ -5,9 +5,12 @@ from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
 from . import parameters_gmos_ifu
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GMOSIFU(GMOSSpect, GMOSNodAndShuffle):
     """
     This is the class containing all of the preprocessing primitives
@@ -16,6 +19,6 @@ class GMOSIFU(GMOSSpect, GMOSNodAndShuffle):
     """
     tagset = {"GEMINI", "GMOS", "SPECT", "IFU"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_ifu)

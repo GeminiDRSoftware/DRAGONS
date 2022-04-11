@@ -6,6 +6,73 @@ Default is "reduceScience".
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
 blocked_tags = {'NODANDSHUFFLE'}
 
-from ..ql.recipes_LS_SPECT import reduceScience, reduceStandard
+from geminidr.gmos.recipes.ql.recipes_common import makeIRAFCompatible
+
+def reduceScience(p):
+    """
+    todo: add docstring
+
+    Parameters
+    ----------
+    p : :class:`geminidr.gmos.primitives_gmos_longslit.GMOSLongslit`
+
+    """
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.attachWavelengthSolution()
+    p.flatCorrect()
+    p.QECorrect()
+    p.flagCosmicRays()
+    p.distortionCorrect()
+    p.findApertures()
+    p.skyCorrectFromSlit()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame(conserve=True)  # default force_linear=True, ie. linearized.
+    p.scaleCountsToReference()
+    p.stackFrames()
+    p.findApertures()
+    p.traceApertures()
+    p.storeProcessedScience(suffix="_2D")
+    p.extractSpectra()
+    p.fluxCalibrate()
+    p.storeProcessedScience(suffix="_1D")
+
+
+def reduceStandard(p):
+    """
+    todo: add docstring
+
+    Parameters
+    ----------
+    p : :class:`geminidr.gmos.primitives_gmos_longslit.GMOSLongslit`
+
+    """
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.attachWavelengthSolution()
+    p.flatCorrect()
+    p.QECorrect()
+    p.flagCosmicRays()
+    p.distortionCorrect()
+    p.findApertures(max_apertures=1)
+    p.skyCorrectFromSlit()
+    p.traceApertures()
+    p.extractSpectra()
+    p.resampleToCommonFrame(conserve=True)  # default force_linear=True, ie. linearized.
+    p.scaleCountsToReference()
+    p.stackFrames()
+    p.calculateSensitivity()
+    p.storeProcessedStandard()
+    p.writeOutputs()
 
 _default = reduceScience

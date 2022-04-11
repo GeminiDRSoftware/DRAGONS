@@ -46,7 +46,22 @@ class AstroDataMixin:
         2.  The WCS must be a ``gwcs.WCS`` object and slicing results in
             the model being modified.
         3.  There is a settable ``variance`` attribute.
+        4.  Additional attributes such as OBJMASK can be extracted from
+            the .meta['other'] dict
     """
+    def __getattr__(self, attribute):
+        """
+        Allow access to attributes stored in self.meta['other'], as we do
+        with AstroData objects.
+        """
+        if attribute.isupper():
+            try:
+                return self.meta['other'][attribute]
+            except KeyError:
+                pass
+        raise AttributeError(f"{self.__class__.__name__!r} object has no "
+                             f"attribute {attribute!r}")
+
     def _arithmetic(self, operation, operand, propagate_uncertainties=True,
                     handle_mask=np.bitwise_or, handle_meta=None,
                     uncertainty_correlation=0, compare_wcs='first_found',
@@ -154,6 +169,14 @@ class AstroDataMixin:
             raise TypeError("wcs value must be None or a gWCS object")
         self._wcs = value
 
+    @property
+    def shape(self):
+        return self._data.shape
+
+    @property
+    def size(self):
+        return self._data.size
+
 
 class FakeArray:
 
@@ -179,7 +202,7 @@ class NDWindowing:
         return NDWindowingAstroData(self._target, window=slice)
 
 
-class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
+class NDWindowingAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
     """
     Allows "windowed" access to some properties of an ``NDAstroData`` instance.
     In particular, ``data``, ``uncertainty``, ``variance``, and ``mask`` return
@@ -188,6 +211,19 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def __init__(self, target, window):
         self._target = target
         self._window = window
+
+    def __getattr__(self, attribute):
+        """
+        Allow access to attributes stored in self.meta['other'], as we do
+        with AstroData objects.
+        """
+        if attribute.isupper():
+            try:
+                return self._target._get_simple(attribute, section=self._window)
+            except KeyError:
+                pass
+        raise AttributeError(f"{self.__class__.__name__!r} object has no "
+                             f"attribute {attribute!r}")
 
     @property
     def unit(self):
@@ -327,10 +363,6 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
         """
         return NDWindowing(self)
 
-    @property
-    def shape(self):
-        return self._data.shape
-
     def _get_uncertainty(self, section=None):
         """Return the ADVarianceUncertainty object, or a slice of it."""
         if self._uncertainty is not None:
@@ -346,6 +378,8 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
                 return self._uncertainty
 
     def _get_simple(self, target, section=None):
+        """Only use 'section' for image-like objects that have the same shape
+        as the NDAstroData object; otherwise, return the whole object"""
         source = getattr(self, target)
         if source is not None:
             if is_lazy(source):
@@ -356,10 +390,13 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
                 else:
                     ret = source[section]
                 return ret
-            elif section is not None:
-                return np.array(source, copy=False)[section]
+            elif hasattr(source, 'shape'):
+                if section is None or source.shape != self.shape:
+                    return np.array(source, copy=False)
+                else:
+                    return np.array(source, copy=False)[section]
             else:
-                return np.array(source, copy=False)
+                return source
 
     @property
     def data(self):

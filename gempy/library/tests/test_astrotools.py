@@ -17,6 +17,36 @@ def test_array_from_list():
     np.testing.assert_array_equal(result.value, values)
 
 
+def test_calculate_scaling_without_outlier_removal():
+    x = np.arange(1, 11)
+    y = 2 * x
+    y[3:5] = [5, 7]
+    sigma_x = np.ones_like(x)
+    sigma_y = np.full_like(x, 2.)
+    assert abs(at.calculate_scaling(x, y, sigma=None) - 1.92987013) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x, sigma=None)
+               - 1.95154778) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_y=sigma_y, sigma=None)
+               - 1.92987013) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x, sigma_y=sigma_y, sigma=None)
+               - 1.95100518) < 1e-7
+
+
+def test_calculate_scaling_with_outlier_removal():
+    x = np.arange(1, 11)
+    y = 2 * x
+    y[3:5] = [5, 7]
+    sigma_x = np.ones_like(x)
+    sigma_y = np.full_like(x, 2.)
+    assert abs(at.calculate_scaling(x, y, sigma=2, niter=2) - 2) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x, sigma=2, niter=2)
+               - 2) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_y=sigma_y, sigma=2, niter=2)
+               - 2) < 1e-7
+    assert abs(at.calculate_scaling(x, y, sigma_x=sigma_x, sigma_y=sigma_y, sigma=2, niter=2)
+               - 2) < 1e-7
+
+
 def test_divide0():
     ones = np.array([1, 1, 1])
     zeros = np.array([0, 0, 0])
@@ -36,18 +66,34 @@ def test_divide0():
     np.testing.assert_array_equal(at.divide0(twod, zeros), np.zeros_like(twod))
 
 
-def test_rasextodec():
-    rastring = '20:30:40.506'
-    ra = at.rasextodec(rastring)
-    assert abs(ra - 307.668775) < 0.0001
+def test_fit_spline_to_data():
+    rng = np.random.default_rng(0)
+    x = np.arange(100)
+    y = np.ones_like(x)
+    spline = at.fit_spline_to_data(y)
+    np.testing.assert_allclose(spline(x), y)
+
+    # Test with a curve and noise
+    y = x + x*x + rng.normal(size=x.size)
+    spline = at.fit_spline_to_data(y)
+    np.testing.assert_allclose(spline(x), y, atol=3)
+
+    # Test with some masking
+    mask = np.zeros_like(x, dtype=bool)
+    safe = y[10]
+    y[10] = 1000
+    mask[10] = True
+    spline = at.fit_spline_to_data(y, mask=mask)
+    y[10] = safe
+    np.testing.assert_allclose(spline(x), y, atol=3)
 
 
-def test_degsextodec():
-    decstringneg = '-60:50:40.302'
-    decstringpos = '60:50:40.302'
-    decneg = at.degsextodec(decstringneg)
-    decpos = at.degsextodec(decstringpos)
-    assert abs(decneg + decpos - 0.) < 0.0001
+@pytest.mark.parametrize("separation", [1,2,3,4,5])
+def test_std_from_pixel_variations(separation):
+    # Test passes with ths seed and number of samples
+    rng = np.random.default_rng(1)
+    data = rng.normal(size=10000)
+    assert abs(at.std_from_pixel_variations(data, separation=separation) - 1) < 0.02
 
 
 def test_get_corners_2d():
@@ -61,13 +107,6 @@ def test_get_corners_3d():
                         (299, 499, 0), (0, 0, 399), (299, 0, 399),
                         (0, 499, 399), (299, 499, 399)]
     assert corners == expected_corners
-
-
-def test_rotate_2d():
-    rotation_matrix = at.rotate_2d(30.)
-    expected_matrix = np.array([[0.8660254, -0.5],
-                                [0.5, 0.8660254]])
-    assert np.allclose(rotation_matrix, expected_matrix)
 
 
 def test_clipped_mean():

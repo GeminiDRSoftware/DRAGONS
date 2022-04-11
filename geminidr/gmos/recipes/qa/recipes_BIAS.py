@@ -23,7 +23,7 @@ def makeProcessedBias(p):
     p.overscanCorrect()
     p.addToList(purpose="forStack")
     p.getList(purpose="forStack")
-    p.stackFrames()
+    p.stackBiases()
     p.storeProcessedBias()
     return
 

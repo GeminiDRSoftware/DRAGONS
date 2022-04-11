@@ -7,6 +7,7 @@ import datetime
 import math
 from collections import defaultdict
 from copy import deepcopy
+from contextlib import suppress
 from functools import partial
 
 import astrodata
@@ -15,13 +16,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from astrodata import NDAstroData
 from astrodata.provenance import add_provenance
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
-from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library import astromodels as am, astrotools as at
+from gempy.library import tracing
 from gempy.library.filtering import ring_median_filter
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 from scipy.interpolate import interp1d
 from scipy.ndimage import binary_dilation
@@ -30,6 +34,7 @@ from . import parameters_preprocess
 
 
 @parameter_override
+@capture_provenance
 class Preprocess(PrimitivesBASE):
     """
     This is the class containing all of the preprocessing primitives.
@@ -37,8 +42,8 @@ class Preprocess(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_preprocess)
 
     def addObjectMaskToDQ(self, adinputs=None, suffix=None):
@@ -110,7 +115,22 @@ class Preprocess(PrimitivesBASE):
                     log.warning(f"  {ext.id} is already in electrons. "
                                 "Continuing.")
                     continue
-                ext.multiply(gt.array_from_descriptor_value(ext, "gain"))
+                gain = gt.array_from_descriptor_value(ext, "gain")
+                ext.multiply(gain)
+
+                # Update saturation and nonlinear levels with new value. We
+                # allowed these to return lists before this point but now a
+                # single (mean) value is going to be used.
+                for desc in ('saturation_level', 'non_linear_level'):
+                    try:
+                        kw = ad._keyword_for(desc)
+                    except AttributeError:
+                        continue
+                    new_value = np.mean(
+                        gain * gt.array_from_descriptor_value(ext, desc))
+                    # Make sure we update the comment too!
+                    new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
+                    ext.hdr[kw] = (new_value, new_comment)
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
@@ -216,6 +236,8 @@ class Preprocess(PrimitivesBASE):
             minimum separation (in arcseconds) required to use an image as sky
         max_skies: int/None
             maximum number of skies to associate to each input frame
+        min_skies: int/None
+            minimum number of skies to associate to each input frame
         sky: str/list
             name(s) of sky frame(s) to associate to each input
         time: float
@@ -618,7 +640,7 @@ class Preprocess(PrimitivesBASE):
                 ext, reg = 0, region  # applies to all extensions
 
             try:
-                slices = cartesian_regions_to_slices(reg.strip())
+                slices = at.cartesian_regions_to_slices(reg.strip())
             except ValueError:
                 log.warning(f'Failed to parse region: {reg}')
             else:
@@ -660,7 +682,8 @@ class Preprocess(PrimitivesBASE):
                     if debug:
                         log.debug(f'Replacing pixel {region} with a '
                                   'local median ')
-                        plot_slices = [slice(sl.start - 10, sl.stop + 10)
+                        plot_slices = [slice(None if sl.start is None else sl.start - 10,
+                                             None if sl.stop is None else sl.stop + 10)
                                        for sl in slices]
                         if len(plot_slices) > 2:
                             plot_slices = [Ellipsis] + plot_slices[-2:]
@@ -713,7 +736,7 @@ class Preprocess(PrimitivesBASE):
                         ext.data[tuple(slices_extract)] = data
 
                     # Mark the interpolated pixels as no_data
-                    ext.mask[slices] = DQ.no_data
+                    ext.mask[slices] |= DQ.no_data
 
                     if debug:
                         fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -834,11 +857,18 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
+        def linearize(counts, coeffs):
+            """Return a linearized version of the counts in electrons per coadd"""
+            ret_counts = np.zeros_like(counts)
+            for coeff in reversed(coeffs):
+                ret_counts[:] += coeff
+                ret_counts[:] *= counts
+            return ret_counts
+
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to %s, since it has "
-                            "already been processed by nonlinearityCorrect".
-                            format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, since "
+                            "it has already been processed by nonlinearityCorrect")
                 continue
 
             # Get the correction coefficients
@@ -846,42 +876,41 @@ class Preprocess(PrimitivesBASE):
                 nonlin_coeffs = ad.nonlinearity_coeffs()
             except:
                 log.warning("Unable to obtain nonlinearity coefficients for "
-                            "{}".format(ad.filename))
+                            f"{ad.filename}")
                 continue
 
             in_adu = ad.is_in_adu()
             # It's impossible to do this cleverly with a string of ad.mult()s
             # so use regular maths
-            log.status("Applying nonlinearity correction to {}".
-                       format(ad.filename))
-            for ext, coeffs in zip(ad, nonlin_coeffs):
-                log.status("   nonlinearity correction for extension {} is {}"
-                           .format(ext.id, coeffs))
-                pixel_data = np.zeros_like(ext.data)
+            log.status(f"Applying nonlinearity correction to {ad.filename}")
+            for ext, gain, coeffs in zip(ad, ad.gain(), nonlin_coeffs):
+                log.status("   nonlinearity correction for extension "
+                           f"{ext.id} is {coeffs}")
 
-                # Convert back to ADU per exposure if coadds have been summed
-                # or if the data have been converted to electrons
-                conv_factor = 1 if in_adu else ext.gain()
-                if ext.is_coadds_summed():
-                    conv_factor *= ext.coadds()
-                for n in range(len(coeffs), 0, -1):
-                    pixel_data += coeffs[n-1]
-                    pixel_data *= ext.data / conv_factor
-                pixel_data *= conv_factor
+                # Ensure we linearize the electrons per exposure
+                coadds = ext.coadds() if ext.is_coadds_summed() else 1
+                conv_factor = gain / coadds
+                pixel_data = linearize(ext.data * conv_factor, coeffs) / conv_factor
+
                 # Try to do something useful with the VAR plane, if it exists
                 # Since the data are fairly pristine, VAR will simply be the
                 # Poisson noise (divided by gain if in ADU, divided by COADDS
                 # if the coadds are averaged), possibly plus read-noise**2
                 # So making an additive correction will sort this out,
                 # irrespective of whether there's read noise
-                conv_factor = ext.gain() if in_adu else 1
-                if not ext.is_coadds_summed():
-                    conv_factor *= ext.coadds()
                 if ext.variance is not None and \
                    'poisson' in ext.hdr.get('VARNOISE', '').lower():
-                    ext.variance += (pixel_data - ext.data) / conv_factor
+                    ext.variance += ((pixel_data - ext.data) /
+                                     (gain * (1 if ext.is_coadds_summed() else ext.coadds())))
                 # Now update the SCI extension
                 ext.data = pixel_data
+
+                for desc in ('saturation_level', 'non_linear_level'):
+                    with suppress(AttributeError):
+                        current_value = getattr(ext, desc)()
+                        new_value = linearize(
+                            [current_value * conv_factor], coeffs)[0] / conv_factor
+                        ext.hdr[ad._keyword_for(desc)] = np.round(new_value, 3)
 
             # Timestamp the header and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -998,6 +1027,176 @@ class Preprocess(PrimitivesBASE):
                 ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
+    def scaleCountsToReference(self, adinputs=None, **params):
+        """
+        This primitive scales the input images so that the scaled fluxes of
+        the sources in the OBJCAT match those in the reference image (the
+        first image in the list). By setting the input parameter tolerance=0,
+        it is possible to simply scale the images by the exposure times.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        tolerance: float (0 <= tolerance <= 1)
+            tolerance within which scaling must match exposure time to be used
+        use_common: bool
+            use only sources common to all frames?
+        radius: float
+            matching radius in arcseconds
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        tolerance = params["tolerance"]
+        use_common = params["use_common"]
+        radius = params["radius"]
+
+        if len(adinputs) <= 1:
+            log.stdinfo("No scaling will be performed, since at least two "
+                        f"AstroData objects are required for {self.myself()}")
+            return adinputs
+
+        all_image = all('IMAGE' in ad.tags for ad in adinputs)
+        all_spect = all('SPECT' in ad.tags for ad in adinputs)
+        if not (all_image ^ all_spect):
+            raise TypeError("All inputs must be either IMAGE or SPECT")
+
+        if all_image:
+            mkcat = mkcat_image
+            calc_scaling = calc_scaling_image
+        else:
+            all_spect1d = all(len(ext.shape) == 1 for ad in adinputs for ext in ad)
+            all_spect2d = all(len(ad) == 1 and len(ad[0].shape) == 2
+                              for ad in adinputs)
+            if not (all_spect1d ^ all_spect2d):
+                raise TypeError("All inputs must either be single-extension "
+                                "2D spectra or multi-extension 1D spectra")
+            # Spectral extraction in this primitive does not subtract the sky
+            if (all_spect2d and tolerance > 0 and not
+                    all(self.timestamp_keys['skyCorrectFromSlit'] in ad for ad in adinputs)):
+                log.warning("Not all inputs have been sky-corrected. "
+                            "Scaling may be in error.")
+            mkcat = mkcat_spect
+            calc_scaling = calc_scaling_spect
+
+        # extract a SkyCoord object from a catalogue. Annoyingly, the list of
+        # RA and DEC must be a *list* and NOT a tuple, so abstract this ugliness
+        get_coords = lambda x: SkyCoord(*[list(k) for k in zip(*list(x.keys()))],
+                                        unit=u.deg)
+
+        ref_ad = adinputs[0]
+        if tolerance > 0:
+            #if all_image and set(len(ad) for ad in adinputs) != {1}:
+            #    raise ValueError(f"{self.myself()} requires all inputs to have "
+            #                     "only 1 extension")
+            try:
+                ref_objcat = mkcat(ref_ad)
+            except ValueError as e:
+                log.warning(f"Cannot construct catalogue from reference ({e})"
+                            " - continuing")
+                return adinputs
+            ref_coords = get_coords(ref_objcat)
+        else:
+            log.stdinfo("Scaling all images by exposure time only.")
+            use_common = False  # it's irrelevant
+
+        kw_exptime = ref_ad._keyword_for('exposure_time')
+        ref_texp = ref_ad.exposure_time()
+        scale_factors = [1]  # for first (reference) image
+        nmatched = [0]
+        exptimes = [ref_texp]
+
+        # If use_common is True, we'll have two passes through this loop:
+        # the first to identify the sources in common to all frames, and the
+        # second to do the work. If it's False, we only do the second pass.
+        # use_common is False when we want to calculate the scalings.
+
+        # Avoid two passes with only two images, since we'll use all matches
+        if len(adinputs) == 2:
+            use_common=False
+
+        while True:
+            for ad in adinputs[1:]:
+                texp = ad.exposure_time()
+                exptimes.append(texp)
+                time_scaling = ref_texp / texp
+                if tolerance == 0:
+                    scale_factors.append(time_scaling)
+                    nmatched.append(0)
+                    continue
+                try:
+                    objcat = mkcat(ad)
+                except ValueError as e:
+                    if use_common:
+                        log.warning(f"{e} - there will be no objects common "
+                                    "to all images. Setting use_common=False.")
+                        ref_objcat = mkcat(ref_ad)  # reset
+                        break
+                    log.warning(f"{e} - scaling by exposure times ({time_scaling})")
+                    scale_factors.append(time_scaling)
+                    nmatched.append(0)
+                    continue
+
+                log.debug(f"{ad.filename} catalog has {len(objcat)} sources")
+                coords = get_coords(objcat)
+                idx, d2d, _ = ref_coords.match_to_catalog_sky(coords)
+                matched = d2d < radius * u.arcsec
+                if use_common:  # still making the common source catalogue
+                    ref_objcat = {k: v for (k, v), m in zip(ref_objcat.items(), matched) if m}
+                    ref_coords = ref_coords[matched]
+                    log.debug(f"After {ad.filename} there are {len(ref_objcat)} "
+                              "sources in common.")
+                    if not ref_objcat:
+                        log.warning("No objects are common to all images. "
+                                    "Setting use_common=False.")
+                        ref_objcat = mkcat(ref_ad)  # reset
+                        break
+                else:  # calculate the scaling
+                    if matched.sum():
+                        scaling = calc_scaling(ad, ref_ad, objcat, ref_objcat,
+                                               idx, matched, self.log)
+                        if (scaling > 0 and (tolerance == 1 or
+                                            ((1 - tolerance) <= scaling <= 1 / (1 - tolerance)))):
+                            scale_factors.append(scaling)
+                            nmatched.append(matched.sum())
+                        else:
+                            log.warning(f"Scaling factor {scaling:.3f} for "
+                                        f"{ad.filename} (from {matched.sum()} "
+                                        "sources is inconsisent with exposure "
+                                        f"time scaling {time_scaling:.3f}")
+                            scale_factors.append(time_scaling)
+                            nmatched.append(0)
+                    else:
+                        log.warning(f"No sources matched between {ref_ad.filename}"
+                                    f" and {ad.filename}")
+                        scale_factors.append(time_scaling)
+            if not use_common:
+                break
+            use_common = False
+
+        for ad, scaling, exptime, num in zip(adinputs, scale_factors,
+                                             exptimes, nmatched):
+            if num > 0:
+                log.stdinfo(f"Scaling {ad.filename} by {scaling:.3f} "
+                            f"(from {num} sources)")
+            else:
+                log.stdinfo(f"Scaling {ad.filename} by {scaling:.3f}")
+            if scaling != 1:
+                ad.multiply(scaling)
+                # ORIGTEXP should always be the *original* exposure
+                # time, so if it already exists, leave it alone!
+                if "ORIGTEXP" not in ad.phu:
+                    ad.phu.set("ORIGTEXP", exptime, "Original exposure time")
+                # The new exposure time should probably be the reference's
+                # exposure time, so that all the outputs have the same value
+                ad.phu.set(kw_exptime, ref_texp,
+                           comment=self.keyword_comments[kw_exptime])
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+
     def separateSky(self, adinputs=None, **params):
         """
         Given a set of input exposures, sort them into separate but
@@ -1076,13 +1275,36 @@ class Preprocess(PrimitivesBASE):
         for sky_filename in ref_sky:
             for ad in adinputs:
                 if strip_fits(sky_filename) in ad.filename:
-                    objects.add(ad)
+                    skies.add(ad)
                     if 'OBJFRAME' in ad.phu and 'SKYFRAME' not in ad.phu:
                         log.warning("{} previously classified as OBJECT; "
                                 "added SKY as requested".format(ad.filename))
                     break
             else:
                 missing.append(sky_filename)
+
+        # Analyze the spatial clustering of exposures and attempt to sort them
+        # into dither groups around common nod positions.
+        groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
+        ngroups = len(groups)
+        log.fullinfo("Identified {} group(s) of exposures".format(ngroups))
+
+        # Loop over the nod groups identified above, record which group each
+        # exposure belongs to, propagate any already-known classification(s)
+        # to other members of the same group and determine whether everything
+        # is finally on source and/or sky:
+        for num, group in enumerate(groups):
+            adlist = group.list()
+            for ad in adlist:
+                ad.phu['EXPGROUP'] = num
+
+            # If any of these is already an OBJECT, then they all are:
+            if objects.intersection(adlist):
+                objects.update(adlist)
+
+            # And ditto for SKY:
+            if skies.intersection(adlist):
+                skies.update(adlist)
 
         for ad in adinputs:
             # Mark unguided exposures as skies
@@ -1108,29 +1330,6 @@ class Preprocess(PrimitivesBASE):
                 "via ref_obj/ref_sky parameters, in the input:")
             for name in missing:
                 log.warning("  {}".format(name))
-
-        # Analyze the spatial clustering of exposures and attempt to sort them
-        # into dither groups around common nod positions.
-        groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
-        ngroups = len(groups)
-        log.fullinfo("Identified {} group(s) of exposures".format(ngroups))
-
-        # Loop over the nod groups identified above, record which group each
-        # exposure belongs to, propagate any already-known classification(s)
-        # to other members of the same group and determine whether everything
-        # is finally on source and/or sky:
-        for num, group in enumerate(groups):
-            adlist = group.list()
-            for ad in adlist:
-                ad.phu['EXPGROUP'] = num
-
-            # If any of these is already an OBJECT, then they all are:
-            if objects.intersection(adlist):
-                objects.update(adlist)
-
-            # And ditto for SKY:
-            if skies.intersection(adlist):
-                skies.update(adlist)
 
         # If one set is empty, try to fill it. Put unassigned inputs in the
         # empty set. If all inputs are assigned, put them all in the empty set.
@@ -1251,15 +1450,8 @@ class Preprocess(PrimitivesBASE):
         sky: str/AD/list
             sky frame(s) to subtract
         """
-        #tpid = os.getpid()
-        #proc = psutil.Process(tpid)
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        # import os, psutil
-        # def memusage(proc):
-        #     return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
-        # print "STARTING", memusage(proc)
 
         save_sky = params["save_sky"]
         reset_sky = params["reset_sky"]
@@ -1352,7 +1544,6 @@ class Preprocess(PrimitivesBASE):
                 log.stdinfo("Creating sky frame for {}".format(ad.filename))
                 sky_inputs = [sky_dict[sky] for sky in skytable]
                 stacked_sky = self.stackSkyFrames(sky_inputs, **stack_params)
-                #print ad.filename, memusage(proc)
                 if len(stacked_sky) == 1:
                     stacked_sky = stacked_sky[0]
                     # Provide a more intelligent filename
@@ -1392,12 +1583,6 @@ class Preprocess(PrimitivesBASE):
                     # This deletes a reference to the AD sky object
                     stacked_skies[j] = None
 
-        # Now we have a list of skies to subtract, one per adinput, so send
-        # this to subtractSky as the "sky" parameter
-        #print("ABOUT TO SUBTRACT", memusage(proc))
-        #adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
-        #                            offset_sky=offset_sky, reset_sky=reset_sky)
-        #print("SUBTRACTED", memusage(proc))
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):
@@ -1571,3 +1756,102 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
+
+
+# Helper functions for scaleCountsToReference() follow
+def mkcat_image(ad):
+    """Produce a catalog of sources from a single-extension AstroData IMAGE"""
+    cat = {}
+    for ext in ad:
+        try:
+            objcat = ext.OBJCAT
+            cat.update({(row['X_WORLD'], row['Y_WORLD']):
+                        (row['FLUX_AUTO'], row['FLUXERR_AUTO']) for row in objcat})
+        except (AttributeError, KeyError):
+            pass
+    if not cat:
+        raise ValueError(f"{ad.filename} either has no OBJCAT(s) or they "
+                        "are lacking the required columns")
+    return cat
+
+
+def calc_scaling_image(ad, ref_ad, objcat, ref_objcat, idx, matched, log):
+    """Return an appropriate scaling"""
+    ref_fluxes = np.array(list(ref_objcat.values()))[matched].T
+    obj_fluxes = np.array(list(objcat.values()))[idx[matched]].T
+    return at.calculate_scaling(x=obj_fluxes[0], y=ref_fluxes[0],
+                                sigma_x=obj_fluxes[1], sigma_y=ref_fluxes[1])
+
+
+def mkcat_spect(ad):
+    """Produce a catalogue of sources from a spectroscopic AstroData object"""
+    if len(ad) > 1:  # extracted spectra
+        cat = {(ra, dec): ad[i].nddata for i, (ra, dec) in
+               enumerate(zip(ad.hdr['XTRACTRA'], ad.hdr['XTRACTDE']))}
+    else:  # 2D spectrum with multiple sources
+        try:
+            aptable = ad[0].APERTURE
+        except AttributeError:
+            raise ValueError(f"{ad.filename} has no APERTURE table")
+        dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
+        pix_coords = [0.5 * (length - 1) for length in ad[0].shape[::-1]]
+        cat = {}
+        for row in aptable:
+            trace_model = am.table_to_model(row)
+            aperture = tracing.Aperture(trace_model,
+                                        aper_lower=row['aper_lower'],
+                                        aper_upper=row['aper_upper'])
+            pix_coords[dispaxis] = aperture.center
+            wave, ra, dec = ad[0].wcs(*pix_coords)
+            cat[ra, dec] = aperture
+    return cat
+
+
+def calc_scaling_spect(ad, ref_ad, objcat, ref_objcat, idx, matched, log):
+    """Return an appropriate scaling"""
+    ref_values = list(ref_objcat.values())
+    values = list(objcat.values())
+    data = None
+    all_have_variance = True
+    size = 0
+    for i, (j, m) in enumerate(zip(idx, matched)):
+        if m:
+            log.stdinfo(f"Matched aperture {i+1} from {ref_ad.filename} "
+                        f"with aperture {j+1} from {ad.filename}")
+            ref_ap = ref_values[i]
+            if isinstance(ref_ap, tracing.Aperture):
+                log.debug(f"Extracting aperture {i+1} from {ref_ad.filename}")
+                ref_ap = ref_ap.extract(ref_ad[0])
+                ref_objcat[list(ref_objcat.keys())[i]] = ref_ap
+            ap = values[j]
+            if isinstance(ap, tracing.Aperture):
+                log.debug(f"Extracting aperture {j+1} from {ad.filename}")
+                ap = ap.extract(ad[0])
+                objcat[list(objcat.keys())[j]] = ap
+            if data is None:
+                data = np.empty((4, matched.sum() * ap.shape[0]))
+            good = np.ones_like(ref_ap.data, dtype=bool)
+            if ap.mask is not None:
+                good[:] &= ap.mask == 0
+            if ref_ap.mask is not None:
+                good[:] &= ref_ap.mask == 0
+            if ap.variance is not None:
+                good[:] &= ap.variance > 0
+            if ref_ap.variance is not None:
+                good[:] &= ref_ap.variance > 0
+            ngood = good.sum()
+            data[:2, size:size+ngood] = np.array([ref_ap.data[good],
+                                                  ap.data[good]])
+            if ap.variance is None or ref_ap.variance is None:
+                all_have_variance = False
+            else:
+                data[2:, size:size+ngood] = np.array([ref_ap.variance[good],
+                                                      ap.variance[good]])
+            size += ngood
+    if size > 0:
+        if all_have_variance:
+            return at.calculate_scaling(x=data[1, :size], y=data[0, :size],
+                                        sigma_x=np.sqrt(data[3, :size]),
+                                        sigma_y=np.sqrt(data[2, :size]))
+        return at.calculate_scaling(x=data[1, :size], y=data[0, :size])
+    return -1

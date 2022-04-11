@@ -11,7 +11,7 @@ from geminidr.core import CCD
 # from gempy.scripts.gmoss_fix_headers import correct_headers
 # from gempy.gemini.eti import gmosaiceti
 from gempy.gemini import gemini_tools as gt
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from ..gemini.primitives_gemini import Gemini
 from . import parameters_gmos
@@ -19,6 +19,7 @@ from .lookups import maskdb
 
 
 @parameter_override
+@capture_provenance
 class GMOS(Gemini, CCD):
     """
     This is the class containing all of the preprocessing primitives
@@ -27,9 +28,9 @@ class GMOS(Gemini, CCD):
     """
     tagset = {"GEMINI", "GMOS"}
 
-    def __init__(self, adinputs, **kwargs):
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gmos.lookups'
-        super().__init__(adinputs, **kwargs)
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos)
 
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
@@ -86,7 +87,7 @@ class GMOS(Gemini, CCD):
             # Update keywords in the image extensions. The descriptors return
             # the true values on unprepared data.
             descriptors = ['pixel_scale', 'read_noise', 'gain_setting',
-                               'gain', 'saturation_level']
+                           'gain', 'non_linear_level', 'saturation_level']
             for desc in descriptors:
                 keyword = ad._keyword_for(desc)
                 comment = self.keyword_comments[keyword]

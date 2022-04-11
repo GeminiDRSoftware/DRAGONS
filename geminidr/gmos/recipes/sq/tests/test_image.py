@@ -56,10 +56,10 @@ datasets = {
 }
 
 
-@pytest.mark.skip("Can't run in Jenkins - Need more investigation")
+#@pytest.mark.skip("Can't run in Jenkins - Need more investigation")
 @pytest.mark.integration_test
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("test_case", datasets.keys())
+@pytest.mark.parametrize("test_case", list(datasets.keys())[:1])
 def test_reduce_image(change_working_dir, keep_data, test_case):
     """
     Tests that we can run all the data reduction steps on a complete dataset.
@@ -80,38 +80,43 @@ def test_reduce_image(change_working_dir, keep_data, test_case):
         # Reducing bias
         bias_filenames = datasets[test_case]["bias"]
         bias_paths = [download_from_archive(f) for f in bias_filenames]
-        cals = reduce(bias_paths, f"bias_{test_case}", cals, save_to="processed_bias")
+        cals = run_reduce(bias_paths, f"bias_{test_case}", cals, save_to="processed_bias")
 
         # Reducing flats
         flat_filenames = datasets[test_case]["flat"]
         flat_paths = [download_from_archive(f) for f in flat_filenames]
-        cals = reduce(flat_paths, f"flat_{test_case}", cals, save_to="processed_flat")
+        cals = run_reduce(flat_paths, f"flat_{test_case}", cals, save_to="processed_flat")
 
         # Reducing standard stars
         if "std" in datasets[test_case]:
             std_filenames = datasets[test_case]["std"]
             std_paths = [download_from_archive(f) for f in std_filenames]
-            cals = reduce(std_paths, f"std_{test_case}", cals)
+            cals = run_reduce(std_paths, f"std_{test_case}", cals)
 
         # Reducing science
         if "sci" in datasets[test_case]:
             sci_filenames = datasets[test_case]["sci"]
             sci_paths = [download_from_archive(f) for f in sci_filenames]
-            cals = reduce(
-                sci_paths, f"fringe_{test_case}", cals,
-                recipe_name='makeProcessedFringe', save_to="processed_fringe")
-            _ = reduce(
-                sci_paths, f"sci_{test_case}", cals,
-                user_pars=datasets[test_case]["ucals"])
-            if not keep_data:
-                print(' Deleting pre-stack files.')
-                [os.remove(f) for f in glob.glob("*_CRMasked.fits")]
-                [os.remove(f) for f in glob.glob("*_align.fits")]
+            for recipe_name in (None, "reduceSeparateCCDs",
+                                "reduceSeparateCCDsCentral"):
+                cals = run_reduce(
+                    sci_paths, f"fringe_{test_case}", cals,
+                    recipe_name='makeProcessedFringe', save_to="processed_fringe")
+                run_reduce(sci_paths, f"sci_{test_case}", cals,
+                           recipe_name=recipe_name,
+                           user_pars=datasets[test_case]["ucals"])
+                if not keep_data:
+                    print(' Deleting pre-stack files.')
+                    [os.remove(f) for f in glob.glob("*_CRMasked.fits")]
+                    [os.remove(f) for f in glob.glob("*_align.fits")]
+                suffix = recipe_name or "default"
+                [os.rename(f, f.replace(".fits", f"_{suffix}.fits"))
+                 for f in glob.glob("*.fits")]
 
 
 # -- Helper functions ---------------------------------------------------------
-def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
-           user_pars=None):
+def run_reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
+               user_pars=None):
     """
     Helper function used to prevent replication of code.
 
@@ -134,7 +139,7 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
     -------
     list : an updated list of calibration files
     """
-    objgraph = pytest.importorskip("objgraph")
+    #objgraph = pytest.importorskip("objgraph")
 
     logutils.get_logger().info("\n\n\n")
     logutils.config(file_name=f"test_image_{label}.log")
@@ -150,11 +155,11 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
 
     if save_to:
         calib_files.append("{}:{}".format(
-            save_to, os.path.join("calibrations", save_to, r.output_filenames[0])))
-        [os.remove(f) for f in r.output_filenames]
+            save_to, os.path.join("calibrations", save_to, r._output_filenames[0])))
+        [os.remove(f) for f in r._output_filenames]
 
     # check that we are not leaking objects
-    assert len(objgraph.by_type('NDAstroData')) == 0
+    #assert len(objgraph.by_type('NDAstroData')) == 0
 
     return calib_files
 

@@ -19,7 +19,8 @@ TESFILE2 = "S20190808S0048_varAdded.fits"  # R400 at 0.740 um
 # Tests Definitions -----------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_cosmics_on_mosaiced_data(path_to_inputs, caplog):
+@pytest.mark.parametrize('bkgmodel', ['both', 'object', 'skyline', 'none'])
+def test_cosmics_on_mosaiced_data(path_to_inputs, caplog, bkgmodel):
     ad = astrodata.open(os.path.join(path_to_inputs, TESFILE1))
     ext = ad[0]
 
@@ -44,7 +45,8 @@ def test_cosmics_on_mosaiced_data(path_to_inputs, caplog):
 
     debug = os.getenv('DEBUG') is not None
     p = GMOSSpect([ad])
-    adout = p.flagCosmicRays(y_order=3, bkgfit_niter=5, debug=debug)[0]
+    adout = p.flagCosmicRays(spatial_order=3, bkgfit_niter=5, debug=debug,
+                             bkgmodel=bkgmodel)[0]
     if debug:
         p.writeOutputs()
     mask = adout[0].mask
@@ -58,7 +60,8 @@ def test_cosmics_on_mosaiced_data(path_to_inputs, caplog):
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
-def test_cosmics(path_to_inputs, caplog):
+@pytest.mark.parametrize('bkgmodel', ['both', 'object', 'skyline', 'none'])
+def test_cosmics(path_to_inputs, caplog, bkgmodel):
     ad = astrodata.open(os.path.join(path_to_inputs, TESFILE2))
 
     for ext in ad:
@@ -84,7 +87,8 @@ def test_cosmics(path_to_inputs, caplog):
 
     debug = os.getenv('DEBUG') is not None
     p = GMOSSpect([ad])
-    adout = p.flagCosmicRays(y_order=3, bkgfit_niter=5, debug=debug)[0]
+    adout = p.flagCosmicRays(spatial_order=3, bkgfit_niter=5, debug=debug,
+                             bkgmodel=bkgmodel)[0]
     if debug:
         p.writeOutputs()
 

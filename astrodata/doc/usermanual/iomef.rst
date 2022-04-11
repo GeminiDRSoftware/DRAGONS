@@ -109,7 +109,7 @@ packaged together by the |NDAstroData| object. They are represented as
 Tables
 ^^^^^^
 Tables in the MEF file will also be loaded into the |AstroData| object. If a table
-is associated with a specific science extension through the EXTVER header, that
+is associated with a specific science extension through the EXTVER header keyword, that
 table will be packaged within the same AstroData extension as the pixel data.
 The |AstroData| "extension" is the |NDAstroData| object plus any table or other pixel
 array. If the table is not associated with a specific extension and applies
@@ -214,9 +214,7 @@ on :ref:`the structure of the AstroData object <structure>`.
 Appending an extension
 ----------------------
 In this section, we take an extension from one |AstroData| object and append it
-to another. Because we are mapping a FITS file, the ``EXTVER`` keyword gets
-automatically updated to the next available value to ensure that when the
-|AstroData| object is written back to disk as MEF, it will be coherent.
+to another.
 
 Here is an example appending a whole AstroData extension, with pixel data,
 variance, mask and tables.
@@ -253,15 +251,16 @@ variance, mask and tables.
               .OBJMASK              ndarray           (2112, 256)    uint8
 
     >>> ad[4].hdr['EXTVER']
-    5
+    4
     >>> advar[3].hdr['EXTVER']
     4
 
 As you can see above, the fourth extension of ``advar``, along with everything
-it contains was appended at the end of the first |AstroData| object. Also, note
-that the EXTVER of the extension in ``advar`` was 4, but once appended
-to ``ad``, it had to be changed to the next available integer, 5, numbers 1 to
-4 being already used by ``ad``'s own extensions.
+it contains was appended at the end of the first |AstroData| object. However,
+note that, because the EXTVER of the extension in ``advar`` was 4, there are
+now two extensions in ``ad`` with this EXTVER. This is not a problem because
+EXTVER is not used by |AstroData| (it uses the index instead) and it is handled
+only when the file is written to disk.
 
 In this next example, we are appending only the pixel data, leaving behind the other
 associated data. One can attach the headers too, like we do here.
@@ -391,6 +390,27 @@ Now let's open 'new154.fits', and write to it ::
     >>> adnew = astrodata.open('new154.fits')
     >>> adnew.write(overwrite=True)
 
+
+A note on FITS header keywords
+------------------------------
+
+.. _fitskeys:
+
+When writing an |AstroData| object to disk as a FITS file, it is necessary to add or
+update header keywords to represent some of the internally-stored information. Any
+extensions that did not originally belong to this |AstroData| will be assigned new
+EXTVER keywords to avoid conflicts with existing extensions, and the internal WCS is
+converted to the appropriate FITS keywords. Note that in some cases it may not be
+possible for standard FITS keywords to accurately represent the true WCS. In such
+cases, the FITS keywords are written as an approximation to the true WCS, together
+with an additional keyword  ::
+
+   FITS-WCS= 'APPROXIMATE'        / FITS WCS is approximate
+
+to indicate this. The accurate WCS is written as an additional FITS extension with
+``EXTNAME='WCS'`` that AstroData will recognize when the file is read back in. The
+``WCS`` extension will not be written to disk if there is an accurate FITS
+representation of the WCS (e.g., for a simple image).
 
 
 Create New MEF Files

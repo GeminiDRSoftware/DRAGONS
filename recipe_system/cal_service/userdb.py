@@ -103,13 +103,13 @@ class UserDB(CalDB):
     def _set_calibrations(self, adinputs, caltype=None, calfile=None):
         """Add this calibration to the user_cache"""
         for ad in adinputs:
-            self.user_cache[ad.calibration_key, caltype] = calfile
+            self.user_cache[ad.calibration_key(), caltype] = calfile
         self.save_cache()
 
     def _unset_calibrations(self, adinputs, caltype=None):
         """Remove this calibration from the user_cache"""
         for ad in adinputs:
-            del self.user_cache[ad.calibration_key, caltype]
+            del self.user_cache[ad.calibration_key(), caltype]
         self.save_cache()
 
     def _clear_calibrations(self):

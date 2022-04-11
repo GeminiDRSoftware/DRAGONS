@@ -18,18 +18,19 @@ from geminidr.gemini.lookups import color_corrections
 from geminidr import PrimitivesBASE
 from . import parameters_photometry
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 
 @parameter_override
+@capture_provenance
 class Photometry(PrimitivesBASE):
     """
     This is the class containing all of the primitives for photometry.
     """
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_photometry)
 
     def addReferenceCatalog(self, adinputs=None, **params):
@@ -199,7 +200,6 @@ class Photometry(PrimitivesBASE):
         for key in ("suffix", "set_saturation", "replace_flags", "mask"):
             del params[key]
 
-        adoutputs = []
         for ad in adinputs:
             # Get a seeing estimate from the header, if available
             seeing_estimate = ad.phu.get('MEANFWHM')
@@ -225,13 +225,8 @@ class Photometry(PrimitivesBASE):
                     sexpars.update({key.upper(): value})
 
             for ext in ad:
-                # saturation_level() descriptor always returns level in ADU,
-                # so need to multiply by gain if image is not in ADU
                 if set_saturation:
-                    sat_level = ext.saturation_level()
-                    if not ext.is_in_adu():
-                        sat_level *= ext.gain()
-                    sexpars.update({'SATUR_LEVEL': sat_level})
+                    sexpars.update({'SATUR_LEVEL': ext.saturation_level()})
 
                 # If we don't have a seeing estimate, try to get one
                 if seeing_estimate is None:
@@ -281,7 +276,7 @@ class Photometry(PrimitivesBASE):
             # Run some profiling code on the best sources to produce a
             # more IRAF-like FWHM number, adding two columns to the OBJCAT
             # (PROFILE_FWHM, PROFILE_EE50)
-            ad = _profile_sources(ad, seeing_estimate)
+            _profile_sources(ad, seeing_estimate)
 
             # We've added a new OBJMASK. It's possible the AD already had an
             # OBJMASK that was dilated. Need to remove this keyword from PHU
@@ -292,8 +287,8 @@ class Photometry(PrimitivesBASE):
             # Timestamp and update filename, and append to output list
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
-            adoutputs.append(ad)
-        return adoutputs
+
+        return adinputs
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #

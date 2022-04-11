@@ -331,18 +331,23 @@ class KDTreeFitter(Fitter):
                     getattr(model_copy, p).value = 20 * xatol if pval == 0 \
                         else (np.sign(pval) * 20 * xatol)
 
-        if in_weights is None:
-            in_weights = np.ones((len(in_coords[0]),))
-        if ref_weights is None:
-            ref_weights = np.ones((len(ref_coords[0]),))
         # cKDTree.query() returns a value of n for no neighbour so make coding
         # easier by allowing this to match a zero-weighted reference
-        ref_weights = np.append(ref_weights, (0,))
+        self.match_weights = np.outer(np.ones(len(in_coords[0])) if in_weights is None else in_weights,
+                                      list([1.0] * len(ref_coords[0]) if ref_weights is None else list(ref_weights)) + [0])
+        if matches is not None:
+            for i, m in enumerate(matches):
+                if m >= 0:
+                    value = self.match_weights[i, m]
+                    self.match_weights[i] = 0
+                    self.match_weights[:, m] = 0
+                    self.match_weights[i, m] = value
+        self.in_range = tuple(range(self.match_weights.shape[0]))
 
         ref_coords = np.array(list(zip(*ref_coords)))
         tree = spatial.cKDTree(ref_coords)
         # avoid _convert_input since tree can't be coerced to a float
-        farg = (model_copy, in_coords, ref_coords, in_weights, ref_weights, matches, tree)
+        farg = (model_copy, in_coords, tree)
         p0, _ = _model_to_fit_params(model_copy)
 
         arg_names = inspect.getfullargspec(self._opt_method).args
@@ -380,8 +385,7 @@ class KDTreeFitter(Fitter):
     def lorentzian(distance, sigma):
         return 1. / (distance * distance + sigma * sigma)
 
-    def _kdstat(self, tree, updated_model, in_coords, ref_coords,
-                in_weights, ref_weights, matches=None):
+    def _kdstat(self, tree, updated_model, in_coords):
         """
         Compute the statistic for transforming coordinates onto a set of
         reference coordinates. This uses mathematical calculations and is not
@@ -414,32 +418,26 @@ class KDTreeFitter(Fitter):
         -------
         float : Statistic representing quality of fit to be minimized
         """
-        out_coords = updated_model(*in_coords)
-        if len(in_coords) == 1:
-            out_coords = (out_coords,)
-        out_coords = np.array(list(zip(*out_coords)))
-        dist, idx = tree.query(out_coords, k=self.k,
-                               distance_upper_bound=self.maxsep)
-
-        if matches is not None:
-            nr = len(ref_coords)
-            for i, m in enumerate(matches):
-                if m >= 0:
-                    d = np.linalg.norm(out_coords[i] - ref_coords[m])
-                    if self.k > 1:
-                        dist[i] = np.array([d] + [np.inf] * (self.k-1))
-                        idx[i] = np.array([m] + [nr] * (self.k-1))
-                    else:
-                        dist[i] = d
-                        idx[i] = m
-
-        if self.k > 1:
-            result = sum(in_wt * ref_weights[i] * self.proximity_function(d)
-                         for in_wt, dd, ii in zip(in_weights, dist, idx)
-                         for d, i in zip(dd, ii))
+        out_coords = np.asarray(updated_model(*in_coords))
+        #if len(in_coords) == 1:
+        #    out_coords = (out_coords,)
+        #out_coords = np.array(list(zip(*out_coords)))
+        #dist, idx = tree.query(out_coords, k=self.k,
+        #                       distance_upper_bound=self.maxsep)
+        if len(in_coords) > 1:
+            dist, idx = tree.query(out_coords.T, k=self.k,
+                                   distance_upper_bound=self.maxsep)
         else:
-            result = sum(in_wt * ref_weights[i] * self.proximity_function(d)
-                         for in_wt, d, i in zip(in_weights, dist, idx))
+            dist, idx = tree.query(np.expand_dims(out_coords, 1), k=self.k,
+                                   distance_upper_bound=self.maxsep)
+
+        # This if statement doesn't seem to speed things up very much
+        pf = self.proximity_function(dist)
+        if self.k > 1:
+           result = np.sum([(self.match_weights[self.in_range, tuple(idx.T[i])] * pf.T[i]).sum()
+                            for i in range(self.k)])
+        else:
+            result = (self.match_weights[self.in_range, tuple(idx)] * pf).sum()
 
         return -result  # to minimize
 

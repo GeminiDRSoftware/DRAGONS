@@ -8,19 +8,28 @@ from copy import deepcopy
 from scipy import ndimage, optimize
 from scipy.interpolate import UnivariateSpline
 
+from astropy.modeling import models
+from gwcs.wcs import WCS as gWCS
+from gwcs import coordinate_frames as cf
+
 from gempy.gemini import gemini_tools as gt
+from gempy.library import transform
 from gempy.library.nddops import NDStacker
 from gemini_instruments.gmu import detsec_to_pixels
 
 from geminidr.core import Image, Photometry
 from .primitives_gmos import GMOS
 from . import parameters_gmos_image
+from .lookups import geometry_conf
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups.fringe_control_pairs import control_pairs
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GMOSImage(GMOS, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives
@@ -29,8 +38,8 @@ class GMOSImage(GMOS, Image, Photometry):
     """
     tagset = {"GEMINI", "GMOS", "IMAGE"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_image)
 
     def addOIWFSToDQ(self, adinputs=None, **params):
@@ -208,6 +217,93 @@ class GMOSImage(GMOS, Image, Photometry):
 
         return adinputs
 
+    def applyWCSAdjustment(self, adinputs=None, suffix=None, reference_stream=None):
+        """
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        reference_stream: str
+            stream containing images which have already been processed by
+            adjustWCSToReference
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        try:
+            refstream = self.streams[reference_stream]
+        except KeyError:
+            raise ValueError(f"No stream called {reference_stream}")
+
+        # data_label() produces a unique ID for each observation
+        refstream_dict = {ad.data_label(): ad for ad in refstream}
+
+        for ad in adinputs:
+            datalab = ad.data_label()
+            try:
+                ref = refstream_dict[datalab]
+            except KeyError:
+                log.warning(f"{ad.filename} cannot be processed as no "
+                            f"image with data label {datalab} is present "
+                            "in the reference stream.")
+                continue
+
+            if len(ref) > 1:
+                log.warning(f"Reference file {ref.filename} has more than "
+                            "one extension. Continuing.")
+                continue
+
+            geom = geometry_conf.geometry[ad.detector_name()]
+            origins = [k for k in geom if isinstance(k, tuple)]
+            ccd2_xorigin = sorted(origins)[1][0]
+
+            # New gWCS objects are going to have the mosaicking transform to
+            # map to the frame of CCD2, the mapping from CCD2 to the reference
+            # image, and then the reference image's WCS. The reference image
+            # might just be CCD2 or it might be a mosaic, in which case we
+            # need to know the offset back to the CCD2 frame.
+            # We want to rename the input frame here to avoid conflicts.
+            ref_wcs = deepcopy(ref[0].wcs)
+            ref_wcs = gWCS([(cf.Frame2D(name="reference"),
+                             ref_wcs.pipeline[0].transform)]
+                           + ref_wcs.pipeline[1:])
+            if ref.detector_section()[0].x1 != ccd2_xorigin:
+                mask = ref[0].mask
+                if mask is None:
+                    log.warning(f"Reference file {ref.filename} is not CCD2 "
+                                "and does not have a mask. Relative WCS of "
+                                f"{ad.filename} will be incorrect.")
+                else:
+                    xc, yc = mask.shape[1] // 2, mask.shape[0] // 2
+                    xorig = xc - np.argmax(mask[yc, xc::-1] & DQ.no_data) + 1
+                    yorig = yc - np.argmax(mask.T[xc, yc::-1] & DQ.no_data) + 1
+                    if xorig > xc:  # no pixels are NO_DATA
+                        xorig = 0
+                    if yorig > yc:
+                        yorig = 0
+                    if xorig != 0 or yorig != 0:
+                        shift = models.Shift(xorig) & models.Shift(yorig)
+                        ref_wcs.insert_transform(ref_wcs.input_frame, shift, after=True)
+
+            array_info = gt.array_information(ad)
+            if len(array_info.origins) != len(ad):
+                raise ValueError(f"{ad.filename} has not been tiled")
+
+            transform.add_mosaic_wcs(ad, geometry_conf)
+
+            for ext, origin, detsec in zip(ad, array_info.origins,
+                                           ad.detector_section()):
+                ext.wcs = gWCS([(ext.wcs.input_frame, ext.wcs.get_transform(ext.wcs.input_frame, 'mosaic'))] +
+                               ref_wcs.pipeline)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
     def makeFringeForQA(self, adinputs=None, **params):
         """
         Performs the bookkeeping related to the construction of a GMOS fringe
@@ -343,7 +439,7 @@ class GMOSImage(GMOS, Image, Photometry):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def scaleByIntensity(self, adinputs=None, **params):
+    def scaleFlats(self, adinputs=None, **params):
         """
         This primitive scales input images to the mean value of the first
         image. It is intended to be used to scale flats to the same
@@ -358,7 +454,15 @@ class GMOSImage(GMOS, Image, Photometry):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        ref_mean = None
+        if len(set(len(ad) for ad in adinputs)) > 1:
+            raise ValueError("Not all inputs have the same number of "
+                             "extensions")
+        if not all(len(set(ad[i].shape for ad in adinputs)) == 1
+                   for i in range(len(adinputs[0]))):
+            raise ValueError("Not all inputs have extensions with the same "
+                             "shapes")
+
+        ref_data_region = None
         for ad in adinputs:
             # If this input hasn't been tiled at all, tile it
             ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
@@ -367,27 +471,49 @@ class GMOSImage(GMOS, Image, Photometry):
             # Use CCD2, or the entire mosaic if we can't find a second extn
             try:
                 data = ad_for_stats[1].data
+                mask = ad_for_stats[1].mask
+                stat_provider = "CCD2"
             except IndexError:
                 data = ad_for_stats[0].data
+                mask = ad_for_stats[0].mask
+                stat_provider = "mosaic"
 
             # Take off 5% of the width as a border
-            xborder = max(int(0.05 * data.shape[1]), 20)
-            yborder = max(int(0.05 * data.shape[0]), 20)
-            log.fullinfo("Using data section [{}:{},{}:{}] from CCD2 for "
-                         "statistics".format(xborder, data.shape[1] - xborder,
-                                             yborder, data.shape[0] - yborder))
+            if ref_data_region is None:
+                xborder = max(int(0.05 * data.shape[1]), 20)
+                yborder = max(int(0.05 * data.shape[0]), 20)
+                log.fullinfo(
+                    f"Using data section [{xborder+1}:{data.shape[1]-xborder}"
+                    f",{yborder+1}:{data.shape[0]-yborder}] from {stat_provider}"
+                    " for statistics")
+                region = (slice(yborder, -yborder), slice(xborder, -xborder))
+                ref_data_region = data[region]
+                ref_mask = mask
+                scale = 1
+            else:
+                data_region = data[region]
 
-            stat_region = data[yborder:-yborder, xborder:-xborder]
-            mean = np.mean(stat_region)
+                combined_mask = None
+                if mask is not None and ref_mask is not None:
+                    combined_mask = ref_mask | mask
+                elif mask is not None:
+                    combined_mask = mask
+                elif ref_mask is not None:
+                    combined_mask = ref_mask
 
-            # Set reference level to the first image's mean
-            if ref_mean is None:
-                ref_mean = mean
-            scale = ref_mean / mean
+                if combined_mask is not None:
+                    mask_region = combined_mask[region]
+                    mean = np.mean(data_region[mask_region == 0])
+                    ref_mean = np.mean(ref_data_region[mask_region == 0])
+                else:
+                    mean = np.mean(data_region)
+                    ref_mean = np.mean(ref_data_region)
+
+                # Set reference level to the first image's mean
+                scale = ref_mean / mean
 
             # Log and save the scale factor, and multiply by it
-            log.fullinfo("Relative intensity for {}: {:.3f}".format(
-                ad.filename, scale))
+            log.fullinfo(f"Relative intensity for {ad.filename}: {scale:.3f}")
             ad.phu.set("RELINT", scale,
                                  comment=self.keyword_comments["RELINT"])
             ad.multiply(scale)
@@ -429,6 +555,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # parameter is overridden, these parameters will just be
             # ignored
             stack_params = self._inherit_params(params, "stackFrames")
+            stack_params["reject_method"] = "minmax"
             nlow, nhigh = 0, 0
             if nframes <= 2:
                 stack_params["reject_method"] = "none"
@@ -441,13 +568,13 @@ class GMOSImage(GMOS, Image, Photometry):
             stack_params.update({'nlow': nlow, 'nhigh': nhigh,
                                  'zero': False, 'scale': False,
                                  'statsec': None, 'separate_ext': False})
-            log.fullinfo("For {} input frames, using reject_method={}, "
-                         "nlow={}, nhigh={}".format(nframes,
-                         stack_params["reject_method"], nlow, nhigh))
+            log.fullinfo(f"For {nframes} input frames, using reject_method="
+                         f"{stack_params['reject_method']}, "
+                         f"nlow={nlow}, nhigh={nhigh}")
 
             # Run the scaleByIntensity primitive to scale flats to the
             # same level, and then stack
-            adinputs = self.scaleByIntensity(adinputs)
+            adinputs = self.scaleFlats(adinputs)
             adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 

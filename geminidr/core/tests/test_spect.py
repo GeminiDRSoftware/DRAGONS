@@ -58,9 +58,12 @@ def test_extract_1d_spectra():
     # Running the test ----------------
     _p = primitives_spect.Spect([])
 
-    # todo: if input is a single astrodata,
-    #  should not the output have the same format?
     ad_out = _p.extractSpectra([ad])[0]
+
+    # AD only has an imaging WCS so cannot get RA, DEC of extraction region
+    assert 'XTRACTRA' not in ad_out[0].hdr
+    assert ad_out[0].hdr['XTRACTED'] == height // 2
+    assert ad_out[0].hdr['XTRACTHI'] - ad_out[0].hdr['XTRACTLO'] == 6
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)

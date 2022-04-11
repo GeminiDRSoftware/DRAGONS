@@ -12,9 +12,12 @@ from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
 from . import parameters_niri
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class NIRI(Gemini, NearIR):
     """
     This is the class containing all of the preprocessing primitives
@@ -23,9 +26,9 @@ class NIRI(Gemini, NearIR):
     """
     tagset = {"GEMINI", "NIRI"}
 
-    def __init__(self, adinputs, **kwargs):
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.niri.lookups'
-        super().__init__(adinputs, **kwargs)
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_niri)
 
     def nonlinearityCorrect(self, adinputs=None, suffix=None):
@@ -50,6 +53,10 @@ class NIRI(Gemini, NearIR):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
+        def linearize(counts, coeffs):
+            """Return a linearized version of the counts in electrons per coadd"""
+            return counts * (1 + counts * (coeffs.gamma + counts * coeffs.eta))
+
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -57,19 +64,17 @@ class NIRI(Gemini, NearIR):
                             format(ad.filename))
                 continue
 
-            in_adu = ad.is_in_adu()
             total_exptime = ad.exposure_time()
             coadds = ad.coadds()
             # Check the raw exposure time (i.e., per coadd). First, convert
             # the total exposure time returned by the descriptor back to
             # the raw exposure time
             exptime = total_exptime / coadds
-            if exptime > 600.:
-                log.warning("Exposure time {} for {} is outside the range "
-                             "used to derive correction.",format(exptime,
-                                                                 ad.filename))
+            if exptime > 600:
+                log.warning(f"Exposure time {exptime} for {ad.filename} is "
+                            "outside the range used to derive correction.")
 
-            for ext, coeffs in zip(ad, ad.nonlinearity_coeffs()):
+            for ext, gain, coeffs in zip(ad, ad.gain(), ad.nonlinearity_coeffs()):
                 if coeffs is None:
                     log.warning("No nonlinearity coefficients found for "
                                 f"{ad.filename} extension {ext.id} - "
@@ -83,22 +88,17 @@ class NIRI(Gemini, NearIR):
                 log.fullinfo("Coefficients used = {:.12f} {:.9e} {:.9e}".
                             format(coeffs.time_delta, coeffs.gamma, coeffs.eta))
 
-                # Convert back to ADU per exposure if data are in electrons
-                conv_factor = (1 if in_adu else ext.gain()) * coadds
-
-                raw_pixel_data = ext.data / conv_factor  # ADU per 1 coadd
                 # Create a new array that contains the corrected pixel data
-                corrected_pixel_data = raw_pixel_data * (1 + raw_pixel_data *
-                        (coeffs.gamma + coeffs.eta * raw_pixel_data)) * conv_factor
+                raw_pixel_data = ext.data * gain / coadds
+                corrected_pixel_data = linearize(raw_pixel_data, coeffs) * coadds / gain
 
                 # Try to do something useful with the VAR plane, if it exists
                 # Since the data are fairly pristine, VAR will simply be the
                 # Poisson noise (divided by gain if in ADU), possibly plus RN**2
                 # So making an additive correction will sort this out,
                 # irrespective of whether there's read noise
-                conv_factor = ext.gain() if in_adu else 1
                 if ext.variance is not None:
-                    ext.variance += (corrected_pixel_data - ext.data) / conv_factor
+                    ext.variance += (corrected_pixel_data - ext.data) / gain
                 # Now update the SCI extension
                 ext.data = corrected_pixel_data
 
@@ -113,7 +113,14 @@ class NIRI(Gemini, NearIR):
 
                 # Correct the exposure time by adding coeff1 * coadds
                 total_exptime = total_exptime + coeffs.time_delta * coadds
-                log.fullinfo("The true total exposure time = {}".format(total_exptime))
+
+                # Update descriptors for saturation and nonlinear thresholds
+                log.fullinfo(f"The true total exposure time = {total_exptime}")
+                for desc in ('saturation_level', 'non_linear_level'):
+                    current_value = getattr(ext, desc)()
+                    new_value = linearize(
+                        current_value * gain / coadds, coeffs) * coadds / gain
+                    ext.hdr[ad._keyword_for(desc)] = np.round(new_value, 3)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

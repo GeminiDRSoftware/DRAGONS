@@ -63,7 +63,7 @@ def test_resample_error_with_all(input_ad_list, caplog):
 @pytest.mark.preprocessed_data
 def test_resample_linearize_trim_and_stack(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
-    ads = p.resampleToCommonFrame(dw=0.15, trim_data=True)
+    ads = p.resampleToCommonFrame(dw=0.15, trim_spectral=True)
 
     assert len(ads) == len(test_datasets)
     assert len({ad[0].shape[0] for ad in ads}) == 1
@@ -93,7 +93,7 @@ def test_resample_only(input_ad_list, caplog):
 def test_resample_only_and_trim(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
     # Shouldn't change the first adinput
-    p.resampleToCommonFrame(trim_data=True, force_linear=False)
+    p.resampleToCommonFrame(trim_spectral=True, force_linear=False)
     _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3133')
 
     caplog.clear()

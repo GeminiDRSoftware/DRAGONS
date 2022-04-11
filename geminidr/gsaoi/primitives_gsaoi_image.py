@@ -23,7 +23,7 @@ from gempy.library.matching import find_alignment_transform, fit_model, match_so
 from gempy.gemini import qap_tools as qap
 
 from geminidr.core import Image, Photometry
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from .primitives_gsaoi import GSAOI
 from . import parameters_gsaoi_image
@@ -31,6 +31,7 @@ from .lookups import gsaoi_static_distortion_info as gsdi
 
 
 @parameter_override
+@capture_provenance
 class GSAOIImage(GSAOI, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives
@@ -39,8 +40,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
     """
     tagset = {"GEMINI", "GSAOI", "IMAGE"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gsaoi_image)
 
     def adjustWCSToReference(self, adinputs=None, **params):
@@ -110,25 +111,26 @@ class GSAOIImage(GSAOI, Image, Photometry):
             refcoords = var_transform(*refcoords)
 
         # This is the last transform in the pipeline, from the variable frame
-        # to the world frame. This *should* be the same for all extensions,
-        # but we can't check that
+        # (or static frame if there's no variable frame) to the world frame.
+        # This should be the same for all extensions but we can't check easily
         ref_transform = adref[0].wcs.pipeline[-2].transform
 
         # This means a warning will be triggered if images have a rotation that
-        # differs by an amount large enough to avoid an object-to-object match
+        # differs by an amount large enough to prevent an object-to-object match
         faux_shape = (4000 / (final / adref.pixel_scale()),) * 2
 
         for ad in adinputs[1:]:
             objcat = merge_gsaoi_objcats(ad, cull_sources=cull_sources)
             incoords = (objcat['X_STATIC'], objcat['Y_STATIC'])
-            transform = ad[0].wcs.get_transform("static", ad[0].wcs.output_frame) | ref_transform.inverse
+            transform = ad[0].wcs.get_transform(
+                "static", ad[0].wcs.output_frame) | ref_transform.inverse
 
             if ("variable" in ad[0].wcs.available_frames and
                     self.timestamp_keys["determineAstrometricSolution"] in ad.phu):
                 log.stdinfo(f"Matching sources between {ad.filename} and "
                             f"{adref.filename} using distortion determined "
                             "by determineAstrometricSolution.")
-                # This order will assign the closest OBJCAT to each REFCAT source
+                # This order will assign the closest OBJCAT to each ref-OBJCAT source
                 matched = match_sources(refcoords, transform(*incoords),
                                         radius=final)
             else:
@@ -480,6 +482,13 @@ class GSAOIImage(GSAOI, Image, Photometry):
             sdmodels.append(sdmodel)
 
         for ad in adinputs:
+            # TODO: make this work when a detector is missing
+            # Ideally we should be able to handle data where some detectors
+            # are missing. But we require that the reference extension exists
+            # because we build the WCS from it, so we can't cater for *all*
+            # missing detectors.
+            if len(ad) != 4:
+                raise ValueError(f"{ad.filename} does not have 4 extensions")
             applied_static = sum("static" in ext.wcs.available_frames for ext in ad)
             if applied_static not in (0, len(ad)):
                 raise OSError(f"Some (but not all) extensions in {ad.filename}"
@@ -494,19 +503,20 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 sdmodel = (models.Shift(arrsec.x1 + 1) &
                            models.Shift(arrsec.y1 + 1) | sdmodel)
                 static_frame = cf.Frame2D(unit=(u.arcsec, u.arcsec), name="static")
-                sky_model = models.Scale(1 / 3600) & models.Scale(1 / 3600)
                 # the PA header keyword isn't good enough
                 wcs_dict = adwcs.gwcs_to_fits(ad[ref_location[0]].nddata)
                 pa = np.arctan2(wcs_dict["CD2_1"] - wcs_dict["CD1_2"],
                                 wcs_dict["CD1_1"] + wcs_dict["CD2_2"])
-                if abs(pa) > 0.00175:  # radians ~ 0.01 degrees
-                    # Rotation2D() breaks things because it explicitly converts
-                    # the Column objects to Quantity objects, which retain units
-                    # of "pix" that Pix2Sky objects to. The AffineTransformation2D
-                    # does some multiplications (like Scale) which are agnostic to
-                    # the presence or absence of units.
-                    sky_model |= models.AffineTransformation2D(matrix=[[math.cos(pa), -math.sin(pa)],
-                                                                       [math.sin(pa), math.cos(pa)]])
+                if abs(pa) < 0.00175:  # radians ~ 0.01 degrees
+                    pa = 0
+                # Rotation2D() breaks things because it explicitly converts
+                # the Column objects to Quantity objects, which retain units
+                # of "pix" that Pix2Sky objects to. The AffineTransformation2D
+                # does some multiplications (like Scale) which are agnostic to
+                # the presence or absence of units.
+                sky_model = models.AffineTransformation2D(
+                    matrix=np.array([[math.cos(pa), -math.sin(pa)],
+                                     [math.sin(pa), math.cos(pa)]]) / 3600)
                 sky_model |= models.Pix2Sky_TAN() | models.RotateNative2Celestial(ra, dec, 180)
                 ext.wcs = gWCS([(ext.wcs.input_frame, sdmodel),
                                 (static_frame, sky_model),
@@ -550,6 +560,7 @@ def merge_gsaoi_objcats(ad, cull_sources=False):
                                                         objcat['Y_IMAGE'] - 1)
         objcats.append(objcat)
     return table.vstack(objcats, metadata_conflicts='silent')
+
 
 def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
                                 max_iters=5, match_radius=0.1, clip=True,

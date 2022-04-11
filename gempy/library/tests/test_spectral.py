@@ -2,27 +2,103 @@
 import numpy as np
 import pytest
 
-from astropy import units
+from astropy import units as u
 from astropy.io import fits
+
 from gempy.library import spectral
 
 
-def test_get_region_from_fake_spectrum():
-    ad = _create_fake_data()
-    np.testing.assert_allclose(ad[0].data, 1)
+def test_create_spek1d_from_astrodata(fake_astrodata):
+    spectrum = spectral.Spek1D(fake_astrodata[0])
+    assert spectrum.spectral_axis[0] == 350 * u.nm
+    np.testing.assert_allclose(np.diff(spectrum.spectral_axis), 0.1 * u.nm)
 
-    spectrum = spectral.Spek1D(ad[0])
-    region = spectral.SpectralRegion(400. * units.nm, 401. * units.nm)
+
+def test_get_region_from_fake_spectrum(fake_astrodata):
+    np.testing.assert_allclose(fake_astrodata[0].data, 1)
+
+    spectrum = spectral.Spek1D(fake_astrodata[0])
+    region = spectral.SpectralRegion(400. * u.nm, 401. * u.nm)
     data, mask, variance = spectrum.signal(region)
 
-    assert spectrum.unit == units.electron
-    assert isinstance(data, units.Quantity)
+    assert spectrum.unit == u.electron
+    assert isinstance(data, u.Quantity)
     assert isinstance(mask, np.uint16)
-    assert isinstance(variance, units.Quantity)
-    assert data == abs((400. - 401.) / ad[0].hdr['CD1_1'] * units.electron)
+    assert isinstance(variance, u.Quantity)
+    assert data == abs((400. - 401.) / fake_astrodata[0].hdr['CD1_1'] * u.electron)
 
 
-def _create_fake_data():
+def test_addition(fake_spectra):
+    spek1, spek2 = fake_spectra
+    result = spek2 + spek1
+    np.testing.assert_allclose(result.flux, 5 * u.electron)
+    np.testing.assert_allclose(result.variance, 2)
+
+    result = spek1 + 2. * u.electron
+    np.testing.assert_allclose(result.flux, 4 * u.electron)
+
+    with pytest.raises(u.core.UnitConversionError):
+        result = spek1 + 2
+
+    spek2.add(2 * u.electron)
+    np.testing.assert_allclose(spek2.flux, 5 * u.electron)
+
+
+def test_subtraction(fake_spectra):
+    spek1, spek2 = fake_spectra
+    result = spek2 - spek1
+    np.testing.assert_allclose(result.flux, 1 * u.electron)
+    np.testing.assert_allclose(result.variance, 2)
+
+    result = spek1 - 3. * u.electron
+    np.testing.assert_allclose(result.flux, -1 * u.electron)
+
+    with pytest.raises(u.core.UnitConversionError):
+        result = spek1 - 2
+
+    spek2.subtract(2 * u.electron)
+    np.testing.assert_allclose(spek2.flux, 1 * u.electron)
+
+
+def test_multiplication(fake_spectra):
+    spek1, spek2 = fake_spectra
+    result = spek1 * spek2
+    np.testing.assert_allclose(result.flux, 6 * u.electron**2)
+    np.testing.assert_allclose(result.variance, 13)
+
+    result = spek2 * 2.5
+    np.testing.assert_allclose(result.flux, 7.5 * u.electron)
+
+    result = spek1 * (-2 * u.m)
+    np.testing.assert_allclose(result.flux, -4 * u.m * u.electron)
+
+    spek1.multiply(-2 * u.m)
+    np.testing.assert_allclose(spek1.flux, -4 * u.m * u.electron)
+
+
+def test_division(fake_spectra):
+    spek1, spek2 = fake_spectra
+    result = spek2 / spek1
+    np.testing.assert_allclose(result.flux, 1.5)
+    np.testing.assert_allclose(result.variance, 13/16)
+
+    result = spek1 / (10 * u.s)
+    np.testing.assert_allclose(result.flux, 0.2 * u.electron / u.s)
+
+    spek1.divide(10 * u.s)
+    np.testing.assert_allclose(spek1.flux, 0.2 * u.electron / u.s)
+
+
+def test_as_specrtum1d(fake_spectra):
+    spek1, spek2 = fake_spectra
+    spectrum1d = spek1.asSpectrum1D()
+    np.testing.assert_allclose(spectrum1d.flux, 2 * u.electron)
+    np.testing.assert_allclose(spectrum1d.uncertainty.array, 1)
+    np.testing.assert_allclose(spectrum1d.spectral_axis, np.arange(350, 450, 0.1) * u.nm)
+
+
+@pytest.fixture(scope="module")
+def fake_astrodata():
     astrofaker = pytest.importorskip('astrofaker')
 
     hdu = fits.ImageHDU()
@@ -52,6 +128,14 @@ def _create_fake_data():
 
     return _ad
 
+
+@pytest.fixture(scope="function")
+def fake_spectra(fake_astrodata):
+    spek1 = spectral.Spek1D(fake_astrodata[0], copy=True)
+    spek2 = spectral.Spek1D(fake_astrodata[0], copy=True)
+    spek1._data = np.full_like(spek1.data, 2.)
+    spek2._data = np.full_like(spek2.data, 3.)
+    return spek1, spek2
 
 if __name__ == '__main__':
     pytest.main()
