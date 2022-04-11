@@ -8,6 +8,8 @@
 # ------------------------------------------------------------------------------
 import types
 import logging
+from datetime import time
+from logging import handlers
 
 STDFMT = '%(asctime)s %(levelname)-8s - %(message)s' 
 DBGFMT = '%(asctime)s %(name)-40s - %(levelname)-8s - %(message)s'
@@ -120,7 +122,7 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
 
     """
     logfmt = None
-    lmodes = ['debug', 'standard', 'quiet']
+    lmodes = ['debug', 'standard', 'quiet', 'rotating']
     fm = 'w' if stomp else 'a'
     mode = mode.lower()
     if mode not in lmodes:
@@ -170,6 +172,14 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
         console.setFormatter(formatter)
         console.setLevel(console_lvl)
         rootlog.addHandler(console)
+
+    elif mode == 'rotating':
+        log_handler = handlers.TimedRotatingFileHandler(file_name, when='midnight')
+        formatter = logging.Formatter(STDFMT, datefmt='%Y-%m-%d %H:%M:%S')
+        log_handler.setFormatter(formatter)
+        log_handler.setLevel(file_lvl)
+        rootlog.addHandler(log_handler)
+
     return
 
 def update_indent(li=0, mode=''):

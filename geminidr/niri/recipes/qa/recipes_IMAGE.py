@@ -42,6 +42,7 @@ def reduce(p):
     p.measureCC()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
+    p.scaleCountsToReference()
     p.stackFrames()
     p.detectSources()
     p.measureIQ(display=True)

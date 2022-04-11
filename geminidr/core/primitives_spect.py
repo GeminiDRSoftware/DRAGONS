@@ -8,6 +8,7 @@
 import os
 import re
 import warnings
+from contextlib import suppress
 from copy import copy
 from functools import partial, reduce
 from importlib import import_module
@@ -1502,8 +1503,7 @@ class Spect(Resample):
                 # Calculate world coords at middle of each dispersed spectrum
                 pix_coords = [[0.5 * (length-1)] * len(apertures)
                               for length in ext.shape[::-1]]
-                pix_coords[dispaxis] = [ap.model(coord) for ap, coord in
-                                        zip(apertures, pix_coords[1-dispaxis])]
+                pix_coords[dispaxis] = [ap.center for ap in apertures]
                 wcs_coords = ext.wcs(*pix_coords)
                 sky_axes = None
                 if isinstance(ext.wcs.output_frame, cf.CompositeFrame):
@@ -1924,6 +1924,8 @@ class Spect(Resample):
                                     order=spectral_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                else:
+                    objfit = np.zeros_like(data)
                 if debug:
                     ext.OBJFIT = objfit.copy()
 
@@ -1941,6 +1943,8 @@ class Spect(Resample):
                                     order=spatial_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                else:
+                    skyfit = np.zeros_like(data)
                 if debug:
                     ext.SKYFIT = skyfit
 
@@ -1972,9 +1976,15 @@ class Spect(Resample):
                 skyfit, objfit, skyfit_input = None, None, None
 
             # Save the figure
-            fig.set_size_inches(5, 15)
-            fig.savefig(ad.filename.replace('.fits', '.pdf'),
-                        bbox_inches='tight', dpi=300)
+            figy, figx = ext.data.shape
+            fig.set_size_inches(figx*3/300, figy*5/300)
+            figname, _ = os.path.splitext(ad.orig_filename)
+            figname = figname + '_flagCosmicRays.pdf'
+            # This context manager prevents two harmless RuntimeWarnings from
+            # image normalization if bkgmodel != 'both' (due to empty panels)
+            # which we don't want to worry users with.
+            with np.errstate(divide='ignore', invalid='ignore'):
+                fig.savefig(figname, bbox_inches='tight', dpi=300)
             plt.close(fig)
 
             # Set flags in the original (un-tiled) ad
@@ -3107,6 +3117,7 @@ class Spect(Resample):
                         c0 = int(loc + 0.5)
                         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
                         start = np.argmax(at.boxcar(spectrum, size=20))
+                        log.debug(f"Starting trace of aperture {i+1} at pixel {start+1}")
 
                         # The coordinates are always returned as (x-coords, y-coords)
                         ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
@@ -3236,6 +3247,10 @@ class Spect(Resample):
             write VAR (variance) plane?
         overwrite : bool
             overwrite existing files?
+        xunits: str
+            units of the x (wavelength/frequency) column
+        yunits: str
+            units of the data column
 
         Returns
         -------
@@ -3254,6 +3269,8 @@ class Spect(Resample):
         write_dq = params["dq"]
         write_var = params["var"]
         overwrite = params["overwrite"]
+        xunits = None if params["wave_units"] is None else u.Unit(params["wave_units"])
+        yunits = None if params["data_units"] is None else u.Unit(params["data_units"])
 
         for ad in adinputs:
             aperture_map = dict(zip(range(len(ad)), ad.hdr.get("APERTURE")))
@@ -3276,15 +3293,45 @@ class Spect(Resample):
                                 "1D array - continuing")
                     continue
 
+                output_frame = ext.wcs.output_frame
+                xdata = (ext.wcs(range(ext.data.size)) *
+                         (output_frame.unit[0] or u.nm))
+                if xunits is not None and xunits != xdata.unit:
+                    xdata = xdata.to(xunits)
                 data_unit = u.Unit(ext.hdr.get("BUNIT"))
-                t = Table((ext.wcs(range(ext.data.size)), ext.data),
+                ydata = ext.data * data_unit
+                equivalencies = u.spectral_density(xdata)
+                if yunits is not None:
+                    try:
+                        ydata = ydata.to(yunits, equivalencies=equivalencies)
+                    except u.core.UnitConversionError:
+                        try:
+                            ydata = (ydata / (ad.exposure_time() * u.s)).to(
+                                yunits, equivalencies=equivalencies)
+                        except u.core.UnitConversionError:
+                            log.warning(f"Cannot convert spectrum in {ad.filename}:"
+                                        f"{ext.id} from {ydata.unit} to {yunits}")
+                            yunits = data_unit
+                else:
+                    yunits = data_unit
+
+                t = Table((xdata.value, ydata.value),
                           names=("wavelength", "data"),
-                          units=(ext.wcs.output_frame.unit[0], str(data_unit)))
+                          units=(xdata.unit, ydata.unit))
+                t.meta['comments'] = [f"Wavelength in {xdata.unit}, "
+                                      f"Data in {ydata.unit}"]
                 if write_dq:
                     t.add_column(ext.mask, name="dq")
                 if write_var:
-                    t.add_column(ext.variance, name="variance")
-                    t["variance"].unit = str(data_unit ** 2)
+                    stddev = np.sqrt(ext.variance) * data_unit
+                    try:
+                        stddev = stddev.to(yunits, equivalencies=equivalencies)
+                    except u.core.UnitConversionError:
+                        stddev = (stddev / (ad.exposure_time() * u.s)).to(
+                            yunits, equivalencies=equivalencies)
+                    var = stddev * stddev
+                    t.add_column(var.value, name="variance")
+                    t["variance"].unit = var.unit
                     var_col = len(t.colnames)
 
                 filename = (os.path.splitext(ad.filename)[0] +
