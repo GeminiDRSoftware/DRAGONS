@@ -480,13 +480,14 @@ class GMOSClassicLongslit(GMOSSpect):
 
             log.info("Reconstruct 2D mosaicked data")
 
-            # TODO: the bin centers should probably be weighted towards the
-            # good pixels, e.g., if a bin contains half of the bad amp #5 and
-            # half of the good amp #6, then the centre is really 25% of the way
-            # onto amp #6, not at the boundary, because all the amp #5 pixels
-            # were flagged as bad.
-            bin_center = np.array([0.5 * (bin_start + bin_end) for (bin_start, bin_end) in bin_list],
-                                  dtype=int)
+            # The bin centers should be weighted towards the good pixels, e.g.
+            # if a bin contains half of the bad amp #5 and half of the good
+            # amp #6, then the centre is really 25% of the way onto amp #6,
+            # not at the boundary, because all the amp #5 pixels were flagged
+            good_pixel_rows = np.ma.masked_array(np.repeat(
+                np.arange(height), width).reshape(data.shape), mask=data.mask)
+            bin_center = np.array([good_pixel_rows[bin_start:bin_end].mean()
+                                   for (bin_start, bin_end) in bin_list])
             slit_response_data = np.zeros((len(cols_val), len(rows_val)))
 
             # Interpolate along each row, assigning each spatial fit to the
