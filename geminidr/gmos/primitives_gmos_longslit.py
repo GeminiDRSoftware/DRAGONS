@@ -329,21 +329,9 @@ class GMOSClassicLongslit(GMOSSpect):
         ad_outputs = []
 
         for ad in adinputs:
-            if len(ad) > 1 and "mosaic" not in ad[0].wcs.available_frames:
-
-                log.info('Add "mosaic" gWCS frame to input data')
-                geotable = import_module('.geometry_conf', self.inst_lookups)
-
-                # deepcopy prevents modifying input `ad` inplace
-                ad = transform.add_mosaic_wcs(deepcopy(ad), geotable)
-
-                log.info("Temporarily mosaicking multi-extension file")
-                mosaicked_ad = transform.resample_from_wcs(
-                    ad, "mosaic", attributes=None, order=1, process_objcat=False)
+            if len(ad) > 1:
+                mosaicked_ad = self.mosaicDetectors([ad]).pop()
             else:
-                log.info('Input data already has one extension and has a '
-                         '"mosaic" frame.')
-
                 # deepcopy prevents modifying input `ad` inplace
                 mosaicked_ad = deepcopy(ad)
 
