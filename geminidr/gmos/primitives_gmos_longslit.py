@@ -398,7 +398,10 @@ class GMOSClassicLongslit(GMOSSpect):
                                                      filename_info=filename_info)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 bin_list = _parse_user_bins(''.join(visualizer.results().split()))
-                nbins = len(bin_list)
+
+            # Remove any bins that are completely masked
+            bin_list = [bin for bin in bin_list if not data[bin[0]:bin[1]].mask.all()]
+            nbins = len(bin_list)
 
             # We create a border around the image so we can extrapolate the
             # fit beyond the edges. This ensures that when we resample back
@@ -421,8 +424,6 @@ class GMOSClassicLongslit(GMOSSpect):
             log.info("Smooth binned data and variance, and normalize them by "
                      "smoothed central value")
 
-            config = self.params[self.myself()]
-
             # Make a spatial fit for each of the dispersion bins
             if interactive_reduce:
                 all_pixels = [spat_fit_points] * nbins
@@ -434,6 +435,7 @@ class GMOSClassicLongslit(GMOSSpect):
                     data_with_weights["y"].append(avg_data)
                     data_with_weights["weights"].append(at.divide0(bin_snr, avg_data))
 
+                config = self.params[self.myself()]
                 config.update(**params)
                 uiparams = UIParameters(config)
 
