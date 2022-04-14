@@ -125,6 +125,7 @@ datasets = [
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.skip("No diagnostic value; the WCS test covers this")
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
@@ -195,6 +196,9 @@ def test_regression_for_determine_distortion_using_wcs(
     model = distortion_determined_ad[0].wcs.get_transform(
         "pixels", "distortion_corrected")[1]
     ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[1]
+
+    # Otherwise we're doing something wrong!
+    assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
 
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
