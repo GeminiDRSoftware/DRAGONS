@@ -18,6 +18,7 @@ def reduceScience(p):
     """
     p.prepare()
     p.addDQ()
+    p.maskAmp5()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.getProcessedBias()

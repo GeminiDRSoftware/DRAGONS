@@ -21,6 +21,7 @@ def makeProcessedBias(p):
 
     p.prepare()
     p.addDQ(static_bpm=None)
+    p.maskAmp5()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.stackFrames(zero=False)

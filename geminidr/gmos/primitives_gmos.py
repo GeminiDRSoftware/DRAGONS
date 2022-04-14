@@ -6,6 +6,8 @@
 import os
 from importlib import import_module
 
+import numpy as np
+
 import astrodata
 import gemini_instruments
 
@@ -36,6 +38,25 @@ class GMOS(Gemini, CCD):
         super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gmos.lookups'
         self._param_update(parameters_gmos)
+
+    def maskAmp5(self, adinputs=None, suffix=None):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = 'MASKAMP5'
+
+        if 'NORTH' in adinputs[0].tags:
+            return adinputs
+
+        for ad in adinputs:
+            log.status('Masking Amp 5')
+
+            amp5_mask = np.ones(ad[4].mask.shape, dtype=ad[4].mask.dtype)
+            ad[4].mask = amp5_mask
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
 
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
         """

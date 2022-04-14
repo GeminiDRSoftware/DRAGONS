@@ -13,6 +13,9 @@ class measureBGConfig(parameters_qa.measureBGConfig):
 class measureIQConfig(parameters_qa.measureIQConfig):
     remove_bias = config.Field("Remove estimated bias level before displaying?", bool, True)
 
+class maskAmp5Config(config.Config):
+    suffix = config.Field("Filename suffix", str, "_amp5Masked", optional=True)
+
 class subtractOverscanConfig(parameters_ccd.subtractOverscanConfig):
     nbiascontam = config.RangeField("Number of columns to exclude from averaging",
                                int, None, min=0, optional=True)
