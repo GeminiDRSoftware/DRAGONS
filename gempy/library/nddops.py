@@ -657,7 +657,10 @@ def sum1d(ndd, x1, x2, proportional_variance=True):
     fx2 = x2 - ix2 + 0.5
     mask = var = None
 
-    data = fx1*ndd.data[ix1] + ndd.data[ix1+1:ix2].sum() + fx2*ndd.data[ix2]
+    try:
+        data = fx1*ndd.data[ix1] + ndd.data[ix1+1:ix2].sum() + fx2*ndd.data[ix2]
+    except IndexError:  # catches the *entire* aperture being off the image
+        return NDD(0, DQ.no_data, 0)
     if ndd.mask is not None:
         mask = np.bitwise_or.reduce(ndd.mask[ix1:ix2+1])
     if ndd.variance is not None:
