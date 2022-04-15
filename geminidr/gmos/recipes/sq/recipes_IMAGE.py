@@ -34,7 +34,7 @@ def reduce(p):
     p.flagCosmicRaysByStacking()
     p.scaleCountsToReference()
     p.stackFrames(zero=True)
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
     return
 
 

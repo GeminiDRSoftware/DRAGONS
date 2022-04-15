@@ -1631,7 +1631,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
         raise TypeError("argument 'keyword' required")
 
     # Get the current time to use for the time of last modification
-    tlm = datetime.now().isoformat()[0:-7]
+    tlm = datetime.utcnow().isoformat()
 
     # Construct the default comment
     if comment is None:
