@@ -1381,7 +1381,6 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             # multiple steps because we have lost lines but they're not
             # completely lost yet.
             lookback = min(int((ypos - missing_but_not_lost) / step), max_missed)
-            print(ypos, missing_but_not_lost, lookback)
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             # There's always at least one such array
@@ -1462,7 +1461,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
                     coord_lists[i].append(new_coord)
                     last_coords[i] = new_coord.copy()
-                    missing_but_not_lost = direction * max(direction * last[0] for last in last_coords)
+                missing_but_not_lost = direction * min(
+                    direction * last[0] for last in last_coords if not np.isnan(last[1]))
             else:  # We don't bin across completely dead regions
                 missing_but_not_lost = None
 
