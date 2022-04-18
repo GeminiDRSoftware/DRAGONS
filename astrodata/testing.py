@@ -284,12 +284,21 @@ class ADCompare:
     Compare two AstroData instances to determine whether they are basically
     the same. Various properties (both data and metadata) can be compared
     """
+    # These are the keywords relating to a FITS WCS that we won't check
+    # because we check the gWCS objects instead
+    fits_keys = set(['WCSAXES', 'WCSDIM', 'RADESYS'])
+    for i in range(1, 6):
+        fits_keys.update([f'CUNIT{i}', f'CTYPE{i}', f'CDELT{i}', f'CRVAL{i}',
+                          f'CRPIX{i}'])
+    fits_keys.update([f'CD{i}_{j}' for i in range(1, 6) for j in range(1, 6)])
+
     def __init__(self, ad1, ad2):
         self.ad1 = ad1
         self.ad2 = ad2
 
     def run_comparison(self, max_miss=0, rtol=1e-7, atol=0, compare=None,
-                       ignore=None, raise_exception=True):
+                       ignore=None, ignore_fits_wcs=True,
+                       raise_exception=True):
         """
         Perform a comparison between the two AD objects in this instance.
 
@@ -305,6 +314,10 @@ class ADCompare:
             list of comparisons to perform
         ignore: list/None
             list of comparisons to ignore
+        ignore_fits_wcs: bool
+            ignore FITS keywords relating to WCS (to allow a comparison
+            between an in-memory AD and one on disk if you're not interested
+            in these, without needed to save to disk)
         raise_exception: bool
             raise an AssertionError if the comparison fails? If False,
             the errordict is returned, which may be useful if a very
@@ -317,6 +330,7 @@ class ADCompare:
         self.max_miss = max_miss
         self.rtol = rtol
         self.atol = atol
+        self.ignore_fits_wcs = ignore_fits_wcs
         if compare is None:
             compare = ('filename', 'tags', 'numext', 'refcat', 'phu',
                            'hdr', 'attributes', 'wcs')
@@ -361,7 +375,8 @@ class ADCompare:
         """Check the extension headers agree"""
         errorlist = []
         for i, (hdr1, hdr2) in enumerate(zip(self.ad1.hdr, self.ad2.hdr)):
-            elist = self._header(hdr1, hdr2)
+            elist = self._header(hdr1, hdr2, ignore=self.fits_keys
+                if self.ignore_fits_wcs else None)
             if elist:
                 errorlist.extend([f'Slice {i} HDR mismatch'] + elist)
         return errorlist
@@ -426,7 +441,7 @@ class ADCompare:
                 errorlist.append(f'Attribute error for {attr}: '
                                  f'{attr1 is not None} v {attr2 is not None}')
             elif attr1 is not None:
-                if isinstance(attr, Table):
+                if isinstance(attr1, Table):
                     if len(attr1) != len(attr2):
                         errorlist.append(f'attr lengths differ: '
                                          f'{len(attr1)} v {len(attr2)}')
@@ -479,10 +494,9 @@ class ADCompare:
                 errorlist.append(f'Slice {i} world coords differ: {world1} v {world2}')
         return errorlist
 
-    @staticmethod
-    def format_errordict(errordict):
+    def format_errordict(self, errordict):
         """Format the errordict into a str for reporting"""
-        errormsg = ''
+        errormsg = f'Comparison between {self.ad1.filename} and {self.ad2.filename}'
         for k, v in errordict.items():
             errormsg += f'\nComparison failure in {k}'
             errormsg += '\n' + ('-' * (22 + len(k))) + '\n'

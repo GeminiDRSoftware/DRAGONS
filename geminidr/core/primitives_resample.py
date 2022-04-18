@@ -15,6 +15,7 @@ import astrodata, gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform
 
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from . import parameters_resample
 
@@ -173,9 +174,12 @@ class Resample(PrimitivesBASE):
         adoutputs = []
         for ad in adinputs:
             log.stdinfo(f"Resampling {ad.filename}")
+            subsample = int(max(abs(np.linalg.det(transform.Transform(ext.wcs.get_transform(
+                frame, ext.wcs.input_frame)).inverse.affine_matrices().matrix)) for ext in ad) + 0.5)
+            log.debug(f"{ad.filename}: Subsampling factor of {subsample}")
             ad_out = transform.resample_from_wcs(ad, frame, order=order, conserve=conserve,
                                                  output_shape=output_shape, origin=origin,
-                                                 process_objcat=process_objcat)
+                                                 process_objcat=process_objcat, subsample=subsample)
             ad_out.filename = ad.filename
             adoutputs.append(ad_out)
 

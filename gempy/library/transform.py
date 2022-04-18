@@ -1705,7 +1705,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
                     cat_table[xcolumn] = newx + 1
                     cat_table[ycolumn] = newy + 1
                 if new_wcs is not None:
-                    ra, dec = new_wcs(cat_table['X_IMAGE']-1, cat_table['Y_IMAGE']-1)
+                    ra, dec = new_wcs(cat_table['X_IMAGE'].value-1,
+                                      cat_table['Y_IMAGE'].value-1)
                 cat_table["X_WORLD"][:] = ra
                 cat_table["Y_WORLD"][:] = dec
                 tables.append(cat_table)

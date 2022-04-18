@@ -192,9 +192,7 @@ class Image(Preprocess, Register, Resample):
 
             # Logic to deal with different exposure times where only
             # some inputs might require fringe correction
-            # KL: for now, I'm not allowing the "force" to do anything when
-            #     the correction is not needed.
-            if (do_cal == 'procmode' or do_cal == 'force') and not correct:
+            if do_cal == 'procmode' and not correct:
                 log.stdinfo("{} does not require a fringe correction".
                             format(ad.filename))
                 ad.update_filename(suffix=params["suffix"], strip=True)
@@ -500,7 +498,7 @@ class Image(Preprocess, Register, Resample):
                             (ad0[0].wcs.output_frame, None)])
             if trim_data:
                 log.warning("Setting trim_data=False as required when no "
-                            "reference imagevis provided.")
+                            "reference image is provided.")
                 trim_data = False
         else:
             if reference is None:
@@ -541,7 +539,7 @@ class Image(Preprocess, Register, Resample):
                                  ref_wcs.pipeline[1:])
 
         adoutputs = self._resample_to_new_frame(adinputs, frame="resampled",
-                                                process_objcat=False, **params)
+                                                process_objcat=True, **params)
         for ad in adoutputs:
             try:
                 trans_data = ad.nddata[0].meta.pop('transform')

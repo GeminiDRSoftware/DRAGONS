@@ -367,11 +367,11 @@ def flux_units_check(value):
     try:
         unit = u.Unit(value)
     except:
-        raise ValueError("{} is not a recognized unit".format(value))
+        raise ValueError(f"{value} is not a recognized unit")
     try:
         unit.to(u.W / u.m ** 3, equivalencies=u.spectral_density(1. * u.m))
     except u.UnitConversionError:
-        raise ValueError("Cannot convert {} to a flux density".format(value))
+        raise ValueError(f"Cannot convert {value} to a flux density")
     return True
 
 
@@ -470,6 +470,32 @@ class traceAperturesConfig(config.core_1Dfitting_config):
         self.order = 2
 
 
+def wavelength_units_check(value):
+    # Confirm that the specified units are suitable for wavelength or frequency
+    try:
+        unit = u.Unit(value)
+    except:
+        raise ValueError(f"{value} is not a recognized unit")
+    try:
+        unit.to(u.m)
+    except u.UnitConversionError:
+        raise ValueError(f"{value} is not a wavelength unit")
+    return True
+
+
+def wavelength_units_check(value):
+    # Confirm that the specified units are suitable for wavelength or frequency
+    try:
+        unit = u.Unit(value)
+    except:
+        raise ValueError(f"{value} is not a recognized unit")
+    try:
+        unit.to(u.m)
+    except u.UnitConversionError:
+        raise ValueError(f"{value} is not a wavelength unit")
+    return True
+
+
 class write1DSpectraConfig(config.Config):
     #format = config.Field("Format for writing", str, "ascii")
     format = config.ChoiceField("Format for writing", str,
@@ -482,6 +508,10 @@ class write1DSpectraConfig(config.Config):
     dq = config.Field("Write Data Quality values?", bool, False)
     var = config.Field("Write Variance values?", bool, False)
     overwrite = config.Field("Overwrite existing files?", bool, False)
+    wave_units = config.Field("Output wavelength units", str, None,
+                              check=wavelength_units_check, optional=True)
+    # Cannot check as we don't know what the input units are
+    data_units = config.Field("Output data units", str, None, optional=True)
 
     def validate(self):
         config.Config.validate(self)

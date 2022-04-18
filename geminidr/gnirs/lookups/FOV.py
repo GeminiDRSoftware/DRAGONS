@@ -95,7 +95,7 @@ def get_illum_mask_filename(ad):
     filter = ad.filter_name(pretty=True)
     if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
         key2 = 'Wings'
-    elif filter in ['JPHOT', 'HPHOT', 'KPHOT']:
+    elif filter in ['YPHOT', 'JPHOT', 'HPHOT', 'KPHOT']:
         key2 = 'NoWings'
     else:
         log.warning("Unrecognised filter, no illumination mask can "

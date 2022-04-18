@@ -81,6 +81,11 @@ class Aperture:
         else:
             raise ValueError("Width must be positive ()".format(value))
 
+    @property
+    def center(self):
+        """Return value of the model in the middle of the domain"""
+        return self.model(0.5 * np.sum(self.model.domain))
+
     def limits(self):
         """Return maximum and minimum values of the model across the domain"""
         pixels = np.arange(*self.model.domain)
@@ -442,8 +447,8 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
             warnings.simplefilter("ignore")
             width = signal.peak_widths(data, [index], 0.5)[0][0]
         # Block 2 * FWHM
-        hi = int(index + width + 1.5)
-        lo = int(index - width)
+        hi = min(int(index + width + 1.5), len(data))
+        lo = max(int(index - width), 0)
         if all(goodpix[lo:hi]) and width > 0:
             widths.append(width)
         goodpix[lo:hi] = False
@@ -801,7 +806,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
             if width > height / min_snr * 20:
                 ok_apertures[i] = False
             # Eliminate things with square edges that are likely artifacts
-            if (flimits[side] - peak) / (limits[side] - peak) > 0.85:
+            if (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
                 ok_apertures[i] = False
         # Remove apertures that don't appear in a smoothed version of the
         # data (these are basically noise peaks)
@@ -1358,20 +1363,24 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     mask = np.zeros_like(data, dtype=DQ.datatype)
     var = np.empty_like(data)
 
+
     coord_lists = [[] for peak in initial_peaks]
     for direction in (1, -1):
         ypos = start
         last_coords = [[ypos, peak] for peak in initial_peaks]
-        lookback = 0
+        missing_but_not_lost = None
 
         while True:
+            missing_but_not_lost = missing_but_not_lost or ypos
             ypos += step
-            # This is the number of steps we are allowed to look back if
-            # we don't find the peak in the current step
-            lookback = min(lookback + 1, max_missed)
             # Reached the bottom or top?
             if ypos < 0.5 * nsum or ypos > ext_data.shape[0] - 0.5 * nsum:
                 break
+
+            # This indicates we should start making profiles binned across
+            # multiple steps because we have lost lines but they're not
+            # completely lost yet.
+            lookback = min(int((ypos - missing_but_not_lost) / step), max_missed)
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             # There's always at least one such array
@@ -1420,6 +1429,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                             break
                         elif j < lookback:
                             # Investigate more heavily-binned profiles
+                            # new_peak calculated here may be added in the
+                            # next iteration of the loop
                             try:
                                 new_peak = pinpoint_peaks(
                                     data[j+1], peaks=[old_peak], mask=mask[j+1],
@@ -1430,7 +1441,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                         # We haven't found the continuation of this line.
                         # If it's gone for good, set the coord to NaN to avoid it
                         # picking up a different line if there's significant tilt
-                        if steps_missed > max_missed:
+                        if steps_missed >= max_missed:
                             #coord_lists[i].append([ypos, np.nan])
                             last_coords[i] = [ypos, np.nan]
                         continue
@@ -1450,8 +1461,10 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
                     coord_lists[i].append(new_coord)
                     last_coords[i] = new_coord.copy()
+                missing_but_not_lost = direction * min(
+                    direction * last[0] for last in last_coords if not np.isnan(last[1]))
             else:  # We don't bin across completely dead regions
-                lookback = 0
+                missing_but_not_lost = None
 
             # Lost all lines!
             if all(np.isnan(c[1]) for c in last_coords):

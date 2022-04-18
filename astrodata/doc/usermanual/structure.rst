@@ -170,6 +170,16 @@ should match that of the science extension.  Therefore such headers are not
 stored in |AstroData|. For example, the header of ``ad[0].OBJMASK`` is the
 same as that of the science, ``ad[0].hdr``.
 
+The world coordinate system (WCS) is stored internally in the ``wcs`` attribute
+of the |NDAstroData| object. It is constructed from the header keywords when
+the FITS file is read from disk, or directly from the ``WCS`` extension if
+present (see :ref:`the next chapter <fitskeys>`). If the WCS is modified (for
+example, by refining the pointing or attaching a more accurate wavelength
+calibration), the FITS header keywords are not updated and therefore they should
+never be used to determine the world coordinates of any pixel. These keywords are
+only updated when the object is written to disk as a FITS file.
+
+
 A Note on Memory Usage
 ======================
 When an file is opened, the headers are loaded into memory, but the pixels
