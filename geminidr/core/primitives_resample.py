@@ -15,6 +15,7 @@ import astrodata, gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform
 
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from . import parameters_resample
 
