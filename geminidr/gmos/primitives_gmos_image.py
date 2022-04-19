@@ -219,6 +219,18 @@ class GMOSImage(GMOS, Image, Photometry):
 
     def applyWCSAdjustment(self, adinputs=None, suffix=None, reference_stream=None):
         """
+        This primitive is used when performing separate-CCD reduction of GMOS
+        images and adjusts the WCS of the outer CCDs based on images of either
+        the complete mosaic or CCD2 only that have already been adjusted.
+
+        The name of a reference stream is supplied that contains images (either
+        the full mosaic or CCD2 only) whose WCS has already been corrected. For
+        each input AD (either CCD1 or CCD3 only) the WCS is calculated from the
+        mosaic geometry and the WCS of the corresponding image in the reference
+        stream (determined by matching the data_label). If the reference image
+        has been mosaicked, the location of CCD2 is determined from the DQ
+        plane, so this primitive will not work if the reference is a mosaic
+        without a DQ plane.
 
         Parameters
         ----------
