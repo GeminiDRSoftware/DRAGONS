@@ -1074,9 +1074,6 @@ class Spect(Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        # arsec/mm for f/16 on an 8m telescope.
-        arcsecmm = 1.61144
-
         # Parse parameters
         debug = params['debug']
 
@@ -1085,33 +1082,23 @@ class Spect(Resample):
         for ad in adinputs:
 
             try:
-                mdf = ad.MDF
+                getattr(ad, "MDF")
             except AttributeError:
                 log.warning(f"MDF not found for {ad.filename} - cannot "
                             "determine slit edges from it.")
-                continue
-
-            mdf_edges_l, mdf_edges_r = [], []
+                if ad.instrument() == 'GNIRS':
+                    continue
 
             log.stdinfo(f'Finding edges for {ad.filename}')
-            # Get values from the MDF.
-            x_ccd = mdf['x_ccd'][0]
-            slitsize_mx = mdf['slitsize_mx'][0]
 
-            # Here, 'm' in a variable name means 'in millimeters', 'p' means
-            # 'in pixels'. pixel_scale() is in arcsec/pixel. Slit widths are in
-            # mm, so we need to convert to pixels.
-            slitsize_px = slitsize_mx * arcsecmm / ad.pixel_scale()
-            mdf_edges_l.append(x_ccd - (slitsize_px / 2.))
-            mdf_edges_r.append(x_ccd + (slitsize_px / 2.))
+            mdf_edges_l, mdf_edges_r = self._get_slit_edge_estimates(ad)
+
             slit_widths = [r - l for l, r in zip(mdf_edges_l, mdf_edges_r)]
-
-            if debug:
-                log.stdinfo('From MDF:\n'
-                            f'Left edges: {mdf_edges_l}\n'
-                            f'Right edges: {mdf_edges_r}\n')
             mdf_edge_guesses = [(l, r) for l, r in zip(mdf_edges_l,
                                                        mdf_edges_r)]
+            log.debug('From MDF:\n'
+                      f'Left edges: {mdf_edges_l}\n'
+                      f'Right edges: {mdf_edges_r}\n')
 
             for ext in ad:
 
@@ -1122,7 +1109,7 @@ class Spect(Resample):
 
                 # Take the first derivative of flux to find the slit edges.
                 # Left edges will be peaks, right edges troughs, so make a
-                # second negative copy later to find right edges separately.
+                # second negative copy to find right edges separately.
                 diffarr_l = np.diff(ext.data, axis=1-dispaxis)
                 diffarr_r = -diffarr_l
 
@@ -1139,14 +1126,14 @@ class Spect(Resample):
                 # real ones.
                 positions_l, _ = tracing.find_wavelet_peaks(
                     median_slice_l,
-                    widths=np.array([3.]),
-                    min_snr=40,
+                    widths=np.array([1., 2., 3., 4.]),
+                    min_snr=35,
                     min_sep=1)
 
                 positions_r, _ = tracing.find_wavelet_peaks(
                     median_slice_r,
-                    widths=np.array([3.]),
-                    min_snr=40,
+                    widths=np.array([1., 2., 3., 4.]),
+                    min_snr=35,
                     min_sep=1)
 
                 if debug:
@@ -1196,9 +1183,7 @@ class Spect(Resample):
                     plt.show()
 
                 # Create the model to shift the slit to the found edges.
-                m_recenter = models.Shift(-x_ccd, fixed={'offset': True})
-                m_shift = models.Shift(0, bounds={'offset': (-100, 100)})
-                m_init = m_recenter | m_shift | m_recenter.inverse
+                m_init = models.Shift(0, bounds={'offset': (-100, 100)})
 
                 edge_num = 0
                 models_dict = {}
@@ -1228,7 +1213,7 @@ class Spect(Resample):
                         # to 3), the first and last are the shifts from
                         # recentering the model, so we want the middle one for
                         # the shift necessary to align the slit with the array.
-                        shift = m_final.offset_1.value
+                        shift = m_final.offset.value
 
                         n_sigma += 1
 
@@ -1246,6 +1231,8 @@ class Spect(Resample):
                         # underestimate and will likely need to be increased.
                         buffer = 4
 
+                        # The "- 1" here is because np.diff shrinks the array
+                        # by 1 in taking the first derivative.
                         if (loc < buffer) or\
                            (loc > ext.data.shape[1-dispaxis] - buffer - 1):
                             if debug:
@@ -1256,6 +1243,7 @@ class Spect(Resample):
 
                         ref_coords, in_coords = tracing.trace_lines(
                             arr, dispaxis, start=half,
+                            step=10,
                             initial=[loc])
 
                         # This complicated bit of code parses out coordinates
@@ -1266,7 +1254,6 @@ class Spect(Resample):
                                            if abs(c1[dispaxis] - loc) < 1.])
                         values = np.array(sorted(coords,
                                                  key=lambda c: c[1 - dispaxis])).T
-                        # ref_coords_new, in_coords_new = values[:2], values[2:]
                         in_coords_new = values[2:]
 
                         if len(in_coords_new) == 0:
@@ -3733,6 +3720,46 @@ class Spect(Resample):
                                                    self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir, 'linelist.dat')
         return wavecal.LineList(filename)
+
+
+    def _get_slit_edge_estimates(self, ad):
+        """Return a list of pairs of slit edges in the given observation.
+
+        This particular implementation works for GNIRS data. Other instruments will
+        need special handling.
+
+        Parameters
+        ----------
+        ad : AstroData instance
+
+        Returns
+        -------
+        tuple
+            A 2-length tuple of lists of expected pixel postions for the left and
+            right edges of slits.
+        """
+
+        if ad.instrument() == 'F2':
+            return [19], [1522]
+
+        # arsec/mm for f/16 on an 8m telescope.
+        arcsecmm = 1.61144
+
+        mdf_edges_l, mdf_edges_r = [], []
+
+        # Get values from the MDF attached to the ad object.
+        x_ccd = ad.MDF['x_ccd'][0]
+        slitsize_mx = ad.MDF['slitsize_mx'][0]
+
+        # Here, 'm' in a variable name means 'in millimeters', 'p' means
+        # 'in pixels'. pixel_scale() is in arcsec/pixel. Slit widths are in
+        # mm, so we need to convert to pixels.
+        slitsize_px = slitsize_mx * arcsecmm / ad.pixel_scale()
+        mdf_edges_l.append(x_ccd - (slitsize_px / 2.))
+        mdf_edges_r.append(x_ccd + (slitsize_px / 2.))
+
+        return mdf_edges_l, mdf_edges_r
+
 
     def _get_spectrophotometry(self, filename, in_vacuo=False):
         """
