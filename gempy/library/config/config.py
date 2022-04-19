@@ -78,10 +78,13 @@ def _autocast(x, dtype):
     if isinstance(x, str):
         for type in (int, float, bool):
             if dtype == type or (isinstance(dtype, tuple) and type in dtype):
-                try:
-                    return type(x)
-                except ValueError:  # Carry on and try a different coercion
-                    pass
+                if type == bool and x in ("True", "False"):
+                    return x == "True"
+                elif type != bool:
+                    try:
+                        return type(x)
+                    except ValueError:  # Carry on and try a different coercion
+                        pass
     return x
 
 
