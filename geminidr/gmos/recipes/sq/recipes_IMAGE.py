@@ -20,6 +20,7 @@ def reduce(p):
 
     p.prepare()
     p.addDQ()
+    p.maskAmp5()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.getProcessedBias()
@@ -57,6 +58,7 @@ def makeProcessedFringe(p):
     """
     p.prepare()
     p.addDQ()
+    p.maskAmp5()
     #p.addIllumMaskToDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
