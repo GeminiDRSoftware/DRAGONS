@@ -149,6 +149,12 @@ class AstroDataF2(AstroDataGemini):
         else:
             camera = self.lyot_stop()
 
+        if camera:
+            if stripID or pretty:
+                return gmu.removeComponentID(camera)
+            else:
+                return camera
+
         return self._may_remove_component(camera, stripID, pretty)
 
     # TODO: sort out the unit-handling here
@@ -384,7 +390,7 @@ class AstroDataF2(AstroDataGemini):
         # 2022-02-22:  The lyot wheel now contains filters and stops
         #  Gymnastic is required to figure out which is which.
 
-        if lyot[0:1] != "f" and lyot[0:4] != "GEMS" and lyot[0:4] != "Hart":
+        if lyot is not None and lyot[0:1] != "f" and lyot[0:4] != "GEMS" and lyot[0:4] != "Hart":
             filter3 = lyot
         else:
             filter3 = None
