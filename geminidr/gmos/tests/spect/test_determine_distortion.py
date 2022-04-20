@@ -124,6 +124,7 @@ datasets = [
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.skip("No diagnostic value; the WCS test covers this")
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", datasets, indirect=True)
@@ -203,7 +204,7 @@ def test_regression_for_determine_distortion_using_fitcoord_table(
 
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
-    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=1)
+    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.1)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
