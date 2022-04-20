@@ -451,6 +451,110 @@ class GMOSImage(GMOS, Image, Photometry):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
+    def QECorrect(self, adinputs=None, **params):
+        """
+        This primitive adjusts the background levels of CCDs 1 and 3 with
+        multiplicative scalings to match them to the background level of CCD2.
+        This is required because of the heterogeneous Hamamatsu CCDs with
+        their different QE profiles. The user can provide their own scaling
+        factors, or else factors will be calculated by measuring the background
+        levels of each CCD.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        factors: list of 2-floats/None
+            multiplicative factors to apply to CCDs 1 and 3
+            None => calculate from background levels
+        common: bool
+            if factors is None, calculate and apply the same 2 factors for
+            all inputs?
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        factors = params["factors"]
+        common = params["common"]
+        calc_scaling = not isinstance(factors, list)
+
+        scalings, scaling_samples = [], []
+        ads_to_correct = []
+        for ad in adinputs:
+            if 'Hamamatsu' not in ad.detector_name(pretty=True):
+                log.stdinfo(f"{ad.filename} needs no correction as it does "
+                            "not have the Hamamatsu CCDs")
+                continue
+
+            array_info = gt.array_information(ad)
+            if array_info.detector_shape != (1, 3):
+                log.warning(f"{ad.filename} it not comprised of separate CCDs "
+                            f"so cannot run {self.myself()} - continuing")
+                continue
+
+            bg_measurements = [[], [], []]
+            for ccd, extensions in enumerate(array_info.extensions):
+                for index in extensions:
+                    if calc_scaling:
+                        bg, bg_std, nbg = gt.measure_bg_from_image(ad[index])
+                        if bg is not None:
+                            bg_measurements[ccd].append([bg, nbg])
+                    elif ccd != 1:  # should already be validated as 2 elements
+                        log.debug(f"Multiplying {ad.filename}:{ad[index].id} by "
+                                  f"{factors[ccd // 2]}")
+                        ad[index].multiply(factors[ccd // 2])
+
+            if calc_scaling:
+                # weight by number of samples in each slice
+                bg_measurements = [np.asarray(m) for m in bg_measurements]
+                bg_levels = [np.average(m[:, 0], weights=m[:, 1])
+                             for m in bg_measurements]
+                log.debug("{} background levels: {:.3f}, {:.3f}, {:.3f}".
+                          format(ad.filename, *bg_levels))
+                scale_factors = [bg_levels[i] / bg_levels[1] for i in (0, 2)]
+                if common:
+                    # store scale factors and samples on CCDs 1 and 3
+                    scalings.append(scale_factors)
+                    scaling_samples.append([bg_measurements[i][:, 1].sum()
+                                            for i in (0, 2)])
+                    ads_to_correct.append(ad)  # reference for later correction
+                else:
+                    scale_factors = [1 / factor for factor in scale_factors]
+                    log.stdinfo("Calculated scale factors of {:.3f}, {:.3f} for "
+                                "{}".format(*scale_factors, ad.filename))
+                    for factor, extensions in zip(scale_factors, array_info.extensions[::2]):
+                        for index in extensions:
+                            log.debug(f"Multiplying {ad.filename}:{ad[index].id} "
+                                      f"by {factor}")
+                            ad[index].multiply(factor)
+
+            # Timestamp and update filename
+            if not (calc_scaling and common):
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=suffix, strip=True)
+
+        # If we had to wait in order to calculate a single pair of scaling
+        # factors for all inputs, calculate and apply that now
+        if calc_scaling and common:
+            scale_factors = 1 / np.average(
+                np.asarray(scalings), weights=np.asarray(scaling_samples), axis=0)
+            log.stdinfo("Calculated scale factors of {:.3f}, {:.3f} for all "
+                        "inputs".format(*scale_factors))
+            for ad in ads_to_correct:
+                for factor, extensions in zip(
+                        scale_factors, gt.array_information(ad).extensions[::2]):
+                    for index in extensions:
+                        log.debug(f"Multiplying {ad.filename}:{ad[index].id} "
+                                  f"by {factor:.3f}")
+                        ad[index].multiply(factor)
+
+                # Timestamp and update filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
     def scaleFlats(self, adinputs=None, **params):
         """
         This primitive scales input images to the mean value of the first
