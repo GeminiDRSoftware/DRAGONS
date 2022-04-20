@@ -504,6 +504,23 @@ class AstroDataF2(AstroDataGemini):
     #     """
     #     return 'F2'
 
+    @astro_data_descriptor
+    def lyot_stop(self):
+        """
+        Returns the LYOT filter used for the observation.  This works around
+        inconsistencies in the header keywords.
+
+        Returns
+        -------
+        str
+            LYOT filter name, or None
+
+        """
+        lyot = self.phu.get('LYOT', None)
+        if lyot:
+            return lyot
+        return self.phu.get('LYOTPOS', None)
+
     @returns_list
     @astro_data_descriptor
     def nominal_photometric_zeropoint(self):
