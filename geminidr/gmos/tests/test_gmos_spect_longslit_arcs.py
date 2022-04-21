@@ -435,8 +435,9 @@ class TestGmosSpectLongslitArcs:
         os.rename(filename, os.path.join(config.output_dir, filename))
         # Evaluate them ---
 
-        for ext in ad_out:
-            coefficients = dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
+        # This is not how the FITCOORD file is formatted any more
+        #for ext in ad_out:
+        #    coefficients = dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
 
             # print(coefficients)
         # for ext_out, ext_ref in zip(ad_out, ad_ref):
