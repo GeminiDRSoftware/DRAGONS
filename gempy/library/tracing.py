@@ -1461,14 +1461,13 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
                     coord_lists[i].append(new_coord)
                     last_coords[i] = new_coord.copy()
-                missing_but_not_lost = direction * min(
-                    direction * last[0] for last in last_coords if not np.isnan(last[1]))
+                try:
+                    missing_but_not_lost = direction * min(
+                        direction * last[0] for last in last_coords if not np.isnan(last[1]))
+                except ValueError:  # lost all lines
+                    break
             else:  # We don't bin across completely dead regions
                 missing_but_not_lost = None
-
-            # Lost all lines!
-            if all(np.isnan(c[1]) for c in last_coords):
-                break
 
         step *= -1
 
