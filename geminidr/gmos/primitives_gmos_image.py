@@ -460,6 +460,16 @@ class GMOSImage(GMOS, Image, Photometry):
         factors, or else factors will be calculated by measuring the background
         levels of each CCD.
 
+        Note that this corrects for differences in the *shape* of the QE across
+        the imaging filter which cause the relative count rates on each of the
+        CCDs to depend on the color of the illumination. Since the twilight sky
+        used to flatfield has a different color from the dark night sky of the
+        science observations, flatfielding may not return the same count rates
+        on all CCDs. The effect is strongest in g.
+
+        This step can effectively be turned off in a recipe by setting the
+        parameter factors=1,1
+
         Parameters
         ----------
         suffix: str
@@ -481,6 +491,10 @@ class GMOSImage(GMOS, Image, Photometry):
 
         scalings, scaling_samples = [], []
         ads_to_correct = []
+        if not calc_scaling:
+            log.stdinfo("Using user-supplied scaling factors: "
+                        "{:.3f} {:.3f}".format(*factors))
+
         for ad in adinputs:
             if 'Hamamatsu' not in ad.detector_name(pretty=True):
                 log.stdinfo(f"{ad.filename} needs no correction as it does "
@@ -489,6 +503,9 @@ class GMOSImage(GMOS, Image, Photometry):
 
             array_info = gt.array_information(ad)
             if array_info.detector_shape != (1, 3):
+                # TODO? We could use the mask to find the locations of the
+                # separate CCDs and still be able to perform this step, and
+                # then it could be done after detectSources() on the mosaic
                 log.warning(f"{ad.filename} it not comprised of separate CCDs "
                             f"so cannot run {self.myself()} - continuing")
                 continue
