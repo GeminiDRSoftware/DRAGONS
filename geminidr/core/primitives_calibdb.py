@@ -175,13 +175,13 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeBPM(self, adinputs=None, suffix=None):
+    def storeProcessedBPM(self, adinputs=None, suffix=None):
         caltype = 'bpm'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
         adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
                                             keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                                           primname=self.myself(), update_datalab=False, keyword="BPM")
+                                           primname=self.myself(), update_datalab=False, keyword="PROCBPM")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
