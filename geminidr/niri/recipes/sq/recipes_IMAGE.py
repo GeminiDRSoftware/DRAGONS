@@ -39,7 +39,7 @@ def reduce(p):
     p.resampleToCommonFrame()
     p.scaleCountsToReference()
     p.stackFrames()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
     return
 
 def makeSkyFlat(p):

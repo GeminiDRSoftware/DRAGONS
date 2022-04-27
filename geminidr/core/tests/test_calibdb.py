@@ -34,12 +34,12 @@ def test_update_datalab(ad, idx=1):
     kw_datalab = ad._keyword_for('data_label')
     orig_datalab = f'GN-2001A-Q-9-52-{idx:03}'
     ad.phu[kw_datalab] = orig_datalab
-    _update_datalab(ad, '_flat', kw_lut)
-    assert ad.phu[kw_datalab] == orig_datalab + '-FLAT'
-    _update_datalab(ad, '_flat', kw_lut)
-    assert ad.phu[kw_datalab] == orig_datalab + '-FLAT'
-    _update_datalab(ad, '_bias', kw_lut)
-    assert ad.phu[kw_datalab] == orig_datalab + '-BIAS'
+    _update_datalab(ad, '_flat', 'sq', kw_lut)
+    assert ad.phu[kw_datalab] == orig_datalab + '-SQ-FLAT'
+    _update_datalab(ad, '_flat', 'sq', kw_lut)
+    assert ad.phu[kw_datalab] == orig_datalab + '-SQ-FLAT'
+    _update_datalab(ad, '_bias', 'sq', kw_lut)
+    assert ad.phu[kw_datalab] == orig_datalab + '-SQ-BIAS'
 
 
 def test_set_calibration(ad, monkeypatch):
@@ -323,7 +323,7 @@ def test_store_processed_arc(ad, monkeypatch):
     assert(saved_arc.filename == 'N20010101S0001_ql_arc.fits')
     assert(saved_arc.phu['PROCMODE'] == 'ql')
     assert(saved_arc.phu['PROCARC'])
-    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-ARC')
+    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-QL-ARC')
 
 
 def test_store_processed_bias(ad, monkeypatch):
@@ -342,7 +342,7 @@ def test_store_processed_bias(ad, monkeypatch):
     assert(saved_arc.filename == 'N20010101S0001_ql_bias.fits')
     assert(saved_arc.phu['PROCMODE'] == 'ql')
     assert(saved_arc.phu['PROCBIAS'])
-    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-BIAS')
+    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-QL-BIAS')
 
 
 def test_store_processed_dark(ad, monkeypatch):
@@ -361,7 +361,7 @@ def test_store_processed_dark(ad, monkeypatch):
     assert(saved_arc.filename == 'N20010101S0001_ql_dark.fits')
     assert(saved_arc.phu['PROCMODE'] == 'ql')
     assert(saved_arc.phu['PROCDARK'])
-    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-DARK')
+    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-QL-DARK')
 
 
 def test_store_processed_flat(ad, monkeypatch):
@@ -380,7 +380,7 @@ def test_store_processed_flat(ad, monkeypatch):
     assert(saved_arc.filename == 'N20010101S0001_ql_flat.fits')
     assert(saved_arc.phu['PROCMODE'] == 'ql')
     assert(saved_arc.phu['PROCFLAT'])
-    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-FLAT')
+    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-QL-FLAT')
 
 
 def test_store_processed_fringe(ad, monkeypatch):
@@ -419,7 +419,7 @@ def test_store_processed_science(ad, monkeypatch):
     assert(sci.filename == 'N20010101S0001_stack.fits')
     assert(sci.phu['PROCMODE'] == 'ql')
     assert(sci.phu['PROCSCI'])
-    assert(sci.phu['DATALAB'] == 'GN-2021A-Q-1-1-001')
+    assert(sci.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-QL-STACK')
 
 
 def test_store_processed_standard(ad, monkeypatch):
@@ -438,7 +438,7 @@ def test_store_processed_standard(ad, monkeypatch):
     assert(saved_arc.filename == 'N20010101S0001_ql_standard.fits')
     assert(saved_arc.phu['PROCMODE'] == 'ql')
     assert(saved_arc.phu['PROCSTND'])
-    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-STANDARD')
+    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-QL-STANDARD')
 
 
 def test_store_processed_slitillum(ad, monkeypatch):
@@ -458,7 +458,7 @@ def test_store_processed_slitillum(ad, monkeypatch):
     assert(saved_arc.filename == 'N20010101S0001_ql_slitIllum.fits')
     assert(saved_arc.phu['PROCMODE'] == 'ql')
     assert(saved_arc.phu['PROCILLM'])
-    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-SLITILLUM')
+    assert(saved_arc.phu['DATALAB'] == 'GN-2021A-Q-1-1-001-QL-SLITILLUM')
 
 
 def test_store_bpm(ad, monkeypatch):

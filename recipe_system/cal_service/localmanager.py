@@ -318,7 +318,7 @@ class LocalManager:
         File, DiskFile = file.File, diskfile.DiskFile
 
         try:
-            query = self.session.query(File.name, DiskFile.path).join(DiskFile)
+            query = self.session.query(File.name, DiskFile.path).join(DiskFile).filter(DiskFile.canonical)
             for res in query.order_by(File.name):
                 yield FileData(res[0], res[1])
         except OperationalError:

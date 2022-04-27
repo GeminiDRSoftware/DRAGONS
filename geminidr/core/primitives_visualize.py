@@ -355,7 +355,7 @@ class Visualize(PrimitivesBASE):
                 ad_out[0].hdr[ad._keyword_for('read_noise')] = np.mean(ad.read_noise())
             propagate_gain(ad_out[0], ad.gain())
 
-            ad_out.orig_filename = ad.filename
+            ad_out.orig_filename = ad.orig_filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
             adoutputs.append(ad_out)
