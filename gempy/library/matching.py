@@ -63,7 +63,7 @@ class BruteLandscapeFitter(Fitter):
 
         out_coords = (np.array(self.grid_model(*updated_model(*in_coords))) + 0.5).astype(np.int32)
         if len(in_coords) == 1:
-            out_coords = out_coords[np.new_axis, :]
+            out_coords = out_coords[np.newaxis, :]
         #result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords))
         result = cython_utils.landstat(landscape.ravel(), out_coords.ravel(),
                                        np.array(landscape.shape, dtype=np.int32),
@@ -138,6 +138,9 @@ class BruteLandscapeFitter(Fitter):
             iter(ref_coords[0])
         except TypeError:
             ref_coords = (ref_coords,)
+            output1d = True
+        else:
+            output1d = False
 
         # Remember, coords are x-first (reversed python order)
         self.grid_model = models.Identity(len(in_coords))
@@ -152,6 +155,13 @@ class BruteLandscapeFitter(Fitter):
             else:
                 scale = 1
                 landshape = tuple(int(_max) for _max in maxs)[::-1]
+
+        # We need to fiddle around a bit here to ensure a 1D output gets
+        # returned in a way that can be unpacked (like higher-D outputs)
+        if output1d:
+            m = self.grid_model.copy()
+            self.grid_model = lambda *args: m(args)
+        if landscape is None:
             landscape = self.mklandscape(ref_coords, sigma*scale, maxsig, landshape)
 
         farg = (model_copy, np.asanyarray(in_coords, dtype=float), landscape)
