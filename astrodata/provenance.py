@@ -105,8 +105,8 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
         primitive_arr = []
         args_arr = []
 
-    timestamp_start_arr.append(timestamp_start.isoformat())
-    timestamp_stop_arr.append(timestamp_stop.isoformat())
+    timestamp_start_arr.append(timestamp_start)
+    timestamp_stop_arr.append(timestamp_stop)
     primitive_arr.append(primitive)
     args_arr.append(args)
 
