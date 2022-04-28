@@ -145,7 +145,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 try:
                     mdf = ad.MDF
                 except AttributeError:
-                    log.warning(f"MDF not found for {ad.filename} - cannot "
+                    log.warning(f"MDF not present in {ad.filename} - cannot "
                                 "add illumination mask.")
                     continue
 
@@ -153,12 +153,11 @@ class GMOSClassicLongslit(GMOSSpect):
                 # Sadly, we cannot do this reliably without concatenating the
                 # arrays and using a big chunk of memory.
                 row_medians = np.percentile(np.concatenate(
-                    [ext.data for ext in ad], axis=1),
-                    95, axis=1)
-
+                    [ext.data for ext in ad], axis=1), 95, axis=1)
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
                 model = np.zeros_like(row_medians, dtype=int)
+                slit_location_msg = ""
                 for ypos, ysize in mdf['slitpos_my', 'slitsize_my']:
                     y = ypos + np.array([-0.5, 0.5]) * ysize
                     c0 = offset_dict[ad.instrument(), ad.detector_name(pretty=True)]
@@ -170,8 +169,8 @@ class GMOSClassicLongslit(GMOSSpect):
                     yccd = ((c0 + y * (c1 + y * (c2 + y * c3))) *
                             1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
                     model[yccd[0]:yccd[1]+1] = 1
-                    log.debug("Expected slit location from pixels "
-                              f"{yccd[0]+1} to {yccd[1]+1}")
+                    slit_location_msg += ("Expected slit location from pixels "
+                                          f"{yccd[0]+1} to {yccd[1]+1}\n")
 
                 if 'NODANDSHUFFLE' in ad.tags:
                     shuffle_pixels = ad.shuffle_pixels() // ybin
@@ -211,10 +210,12 @@ class GMOSClassicLongslit(GMOSSpect):
                                     " untrustworthy so not adding illumination "
                                     "mask. Please re-run with a specified shift.")
                         yshift = None
+                        log.stdinfo(slit_location_msg)
                 else:
                     yshift = shift
 
                 if yshift is not None:
+                    log.debug(slit_location_msg)
                     log.stdinfo(f"{ad.filename}: Shifting mask by {yshift} pixels")
                     row_mask = np.ones_like(model, dtype=int)
                     if yshift < 0:
