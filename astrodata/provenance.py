@@ -4,10 +4,6 @@ from astropy.table import Table
 from datetime import datetime
 
 
-PROVENANCE_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
-PROVENANCE_DATE_FORMAT_ISO = "%Y-%m-%dT%H:%M:%S.%f"
-
-
 def add_provenance(ad, filename, md5, primitive, timestamp=None):
     """
     Add the given provenance entry to the full set of provenance records on
