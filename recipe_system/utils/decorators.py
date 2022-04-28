@@ -246,7 +246,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
     none
     """
     try:
-        timestamp = datetime.now()
+        timestamp = datetime.utcnow()
         for ad in ret_value:
             if ad.data_label() in provenance_inputs:
                 # output corresponds to an input, we only need to copy from there
@@ -285,7 +285,7 @@ def capture_provenance(fn):
         # Determine if this is a top-level primitive, by checking if the
         # calling function contains a self that is also a primitive
         toplevel = _top_level_primitive()
-        timestamp_start = datetime.now()
+        timestamp_start = datetime.utcnow()
 
         if toplevel:
             provenance_inputs = _get_provenance_inputs(kwargs["adinputs"])

@@ -5,6 +5,7 @@ from datetime import datetime
 
 
 PROVENANCE_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
+PROVENANCE_DATE_FORMAT_ISO = "%Y-%m-%dT%H:%M:%S.%f"
 
 
 def add_provenance(ad, filename, md5, primitive, timestamp=None):
@@ -30,7 +31,7 @@ def add_provenance(ad, filename, md5, primitive, timestamp=None):
         return
 
     if timestamp is None:
-        timestamp = datetime.now().strftime(PROVENANCE_DATE_FORMAT)
+        timestamp = datetime.utcnow().isoformat()
 
     if hasattr(ad, 'PROVENANCE'):
         existing_provenance = ad.PROVENANCE
@@ -108,8 +109,8 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
         primitive_arr = []
         args_arr = []
 
-    timestamp_start_arr.append(timestamp_start)
-    timestamp_stop_arr.append(timestamp_stop)
+    timestamp_start_arr.append(timestamp_start.isoformat())
+    timestamp_stop_arr.append(timestamp_stop.isoformat())
     primitive_arr.append(primitive)
     args_arr.append(args)
 
