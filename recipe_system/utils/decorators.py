@@ -262,7 +262,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
                     if clone_hist:
                         clone_provenance_history(provenance_input['provenance_history'], ad)
         for ad in ret_value:
-            add_provenance_history(ad, timestamp_start, timestamp, fn.__name__, args)
+            add_provenance_history(ad, timestamp_start.isoformat(), timestamp.isoformat(), fn.__name__, args)
     except Exception as e:
         # we don't want provenance failures to prevent data reduction
         log.warn("Unable to save provenance information, continuing on: %s" % e)
