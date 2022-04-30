@@ -147,7 +147,7 @@ class AstroDataGmos(AstroDataGemini):
         # if not self._tag_is_spect():
         #    return
 
-        if self._tag_is_bias() or self._tag_is_bpm:
+        if self._tag_is_bias() or self._tag_is_bpm():
             return
 
         if self.phu.get('MASKTYP') == 1 and self.phu.get('MASKNAME', '').endswith('arcsec'):
