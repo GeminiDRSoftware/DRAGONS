@@ -414,7 +414,7 @@ class InteractiveModel1D(InteractiveModel):
 
 
 class FittingParametersUI:
-    def __init__(self, vis, fit, fitting_parameters):
+    def __init__(self, vis, fit, fitting_parameters, show_rejection_panel=True):
         """
         Class to manage the set of UI controls for the inputs to the fitting model.
 
@@ -431,10 +431,14 @@ class FittingParametersUI:
             The parameters for performing the fit using fit_1D.  These can be generated with
             :meth:`fit_1D.translate_params(params)` where params are the parameters for the primitive.
             This will be passed down from the top level :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
+        show_rejection_panel: bool
+            Whether to display sigma rejection parameter controls. Useful
+            when the parameters are supposed to be fixed and thus can be hidden.
         """
         self.vis = vis
         self.fit = fit
         self.saved_sigma_clip = self.fit.sigma_clip
+        self.show_rejection = show_rejection_panel
         self.fitting_parameters = fitting_parameters
         self.fitting_parameters_for_reset = {x: y for x, y in self.fitting_parameters.items()}
 
@@ -535,19 +539,23 @@ class FittingParametersUI:
         list : elements displayed in the column.
         """
 
-        rejection_title = bm.Div(
-            text="Rejection Parameters",
-            min_width=100,
-            max_width=202,
-            sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
-            width_policy='max',
-        )
+        if self.show_rejection:
+            rejection_title = bm.Div(
+                text="Rejection Parameters",
+                min_width=100,
+                max_width=202,
+                sizing_mode='stretch_width',
+                style={"color": "black", "font-size": "115%", "margin-top": "10px"},
+                width_policy='max',
+            )
+
+            rejection_column = [rejection_title, self.sigma_button, self.niter_slider,
+                                self.sigma_lower_slider, self.sigma_upper_slider]
+        else:
+            rejection_column = []
 
         if self.function:
-            column_list = [self.function, self.order_slider, rejection_title,
-                           self.sigma_button, self.niter_slider,
-                           self.sigma_lower_slider, self.sigma_upper_slider]
+            column_list = [self.function, self.order_slider] + rejection_column
         else:
             column_title = bm.Div(
                 text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
@@ -557,10 +565,7 @@ class FittingParametersUI:
                 style={"color": "black", "font-size": "115%", "margin-top": "5px"},
                 width_policy='max',
             )
-            column_list = [column_title, self.order_slider, rejection_title,
-                           self.sigma_button, self.niter_slider,
-                           self.sigma_lower_slider,
-                           self.sigma_upper_slider]
+            column_list = [column_title, self.order_slider] + rejection_column
         if hasattr(self, "grow_slider"):
             column_list.append(self.grow_slider)
 
@@ -709,7 +714,8 @@ class Fit1DPanel:
     def __init__(self, visualizer, fitting_parameters, domain=None,
                  x=None, y=None, weights=None, idx=0, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
-                 enable_user_masking=True, enable_regions=True, central_plot=True, extra_masks=None):
+                 enable_user_masking=True, enable_regions=True, central_plot=True, extra_masks=None,
+                 show_rejection_panel=True, paramsui_class=FittingParametersUI):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -745,6 +751,8 @@ class Fit1DPanel:
             True if we want to allow user-defind regions as a means of masking the data
         extra_masks : dict of boolean arrays
             points to display but not use in the fit
+        show_rejection_panel: bool
+            Show or not rejection parameters in the Fitting Parameters UI
         """
         # Just to get the doc later
         self.visualizer = visualizer
@@ -770,8 +778,9 @@ class Fit1DPanel:
                                         band_model=band_model, extra_masks=extra_masks)
         self.model.add_listener(self.model_change_handler)
 
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, self.model,
-                                                         fitting_parameters)
+        self.fitting_parameters_ui = paramsui_class(visualizer, self.model,
+                                                    fitting_parameters,
+                                                    show_rejection_panel=show_rejection_panel)
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
         reset_button = bm.Button(label="Reset", align='center',
@@ -815,7 +824,8 @@ class Fit1DPanel:
 
     def build_figures(self, domain=None, controller_div=None,
                       plot_residuals=True, plot_ratios=True,
-                      extra_masks=None):
+                      extra_masks=None,
+                      figure_building_fn=None, y_range=None):
         """
         Construct the figures containing the various plots needed for this
         Visualizer.
@@ -832,6 +842,10 @@ class Fit1DPanel:
             make a residuals plot?
         extra_masks : dict/list/None
             names of additional masks to inform the user about
+        figure_building_fn: callable
+            function that returns the main and supplemental plots
+        y_range : tuple or None
+            Range for y-axis, or None for default behavior
 
         Returns
         -------
@@ -839,10 +853,12 @@ class Fit1DPanel:
             list of bokeh objects with attached listeners
         """
 
-        p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
-                                      xpoint=self.xpoint, ypoint=self.ypoint,
-                                      xlabel=self.xlabel, ylabel=self.ylabel, model=self.model,
-                                      enable_user_masking=self.enable_user_masking)
+        # If figure_building_fn is not define, use the default
+        fig_fn = figure_building_fn or fit1d_figure
+        p_main, p_supp = fig_fn(width=self.width, height=self.height,
+                                xpoint=self.xpoint, ypoint=self.ypoint,
+                                xlabel=self.xlabel, ylabel=self.ylabel, model=self.model,
+                                enable_user_masking=self.enable_user_masking, y_range=y_range)
         if self.enable_regions:
             self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
             connect_region_model(p_main, self.model.band_model)
@@ -1120,7 +1136,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
     """
     def __init__(self, data_source, fitting_parameters,
                  modal_message=None, modal_button_label=None,
-                 tab_name_fmt='{}', xlabel='x', ylabel='y',
+                 tab_name_fmt='{}', tab_names=None, xlabel='x', ylabel='y',
                  domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None, recalc_inputs_above=False,
                  ui_params=None, turbo_tabs=False, panel_class=Fit1DPanel, pad_buttons=False,
@@ -1147,6 +1163,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             label on the recalculate button.  It is not required.
         tab_name_fmt : str
             Format string for naming the tabs
+        tab_names: sequence of strings
+            If not `None`, ignore tab_name_fmt and use these for tab naming.
         xlabel : str
             String label for X axis
         ylabel : str
@@ -1261,6 +1279,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         elif turbo_tabs:
             self.turbo = TabsTurboInjector(self.tabs)
 
+        if tab_names is None:
+            tab_names = [tab_name_fmt.format(i+1) for i in range(self.nfits)]
         for i in range(self.nfits):
             extra_masks = {}
             if self.returns_list:
@@ -1277,9 +1297,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             tui = panel_class(self, fitting_params, domain=domain,
                               **this_dict, **kwargs, extra_masks=extra_masks)
             if turbo_tabs:
-                self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i+1))
+                self.turbo.add_tab(tui.component, title=tab_names[i])
             else:
-                tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i+1))
+                tab = bm.Panel(child=tui.component, title=tab_names[i])
                 self.tabs.tabs.append(tab)
             self.fits.append(tui.model)
             self.panels.append(tui)
@@ -1442,7 +1462,8 @@ def prep_fit1d_params_for_fit1d(fit1d_params):
 def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
                  xline='xlinspace', yline='model',
                  xlabel=None, ylabel=None, model=None, plot_ratios=True,
-                 plot_residuals=True, enable_user_masking=True):
+                 plot_residuals=True, enable_user_masking=True,
+                 y_range=None):
     """
     Fairly generic function to produce bokeh objects for the main scatter/fit
     plot and the residuals and/or ratios plot. Listeners are not added here.
@@ -1468,6 +1489,8 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
         make a residuals plot?
     enable_user_masking : bool
         is user masking enabled? If so, additional tools are required
+    y_range: tuple or None
+        range for y-axis
 
     Returns
     -------
@@ -1482,7 +1505,7 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
     p_main = figure(plot_width=width, plot_height=height, min_width=400,
                     title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                     tools=tools,
-                    output_backend="webgl", x_range=None, y_range=None,
+                    output_backend="webgl", x_range=None, y_range=y_range,
                     min_border_left=80)
     p_main.height_policy = 'fixed'
     p_main.width_policy = 'fit'

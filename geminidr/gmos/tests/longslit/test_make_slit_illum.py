@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """
-Tests for the `makeSlitIllum` primitive. The primitive itself is
-defined in :mod:`~geminidr.core.primitives_spect` but these tests use GMOS Spect
-data.
+Tests for the `makeSlitIllum` primitive.
 """
 import os
 import pytest
@@ -49,7 +47,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
     constant.
 
     There are several ways of doing this but, given the noise levels, we bin
-    the data, fit a polynomium, and check that the fitted polynomium has its 1st
+    the data, fit a polynomial, and check that the fitted polynomial has its 1st
     and 2nd coefficients almost zero.
     """
     plot = request.config.getoption("--do-plots")
@@ -63,7 +61,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
         assert hasattr(ad[0], "wcs")
 
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.makeSlitIllum(bins=25, border=10, debug_plot=plot)
+        p.makeSlitIllum(bins=25, border=10)
         slit_illum_ad = p.writeOutputs(
             suffix="_mosaickedSlitIllum",  strip=True)[0]
 
@@ -122,7 +120,7 @@ def test_create_slit_illumination_with_multi_extension_data(ad, change_working_d
         cwd = os.getcwd()
         print("Running tests inside folder:\n  {}".format(cwd))
         p = primitives_gmos_longslit.GMOSLongslit([ad])
-        p.makeSlitIllum(bins=25, border=10, debug_plot=plot)
+        p.makeSlitIllum(bins=25, border=10)
         slit_illum_ad = p.writeOutputs()[0]
 
         for ext, slit_ext in zip(ad, slit_illum_ad):

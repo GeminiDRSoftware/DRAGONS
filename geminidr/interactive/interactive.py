@@ -154,7 +154,7 @@ class PrimitiveVisualizer(ABC):
         # Text widget for triggering ok/cancel via DOM text change event
         self._ok_cancel_holder = None
 
-        self._reinit_params = {k: v for k, v in ui_params.values.items()}
+        self._reinit_params = {k: v for k, v in ui_params.values.items()} if ui_params else {}
 
         self.fits = []
 
@@ -1400,11 +1400,14 @@ class GIRegionView(GIRegionListener):
         def fn():
             if region_id in self.regions:
                 region = self.regions[region_id]
+                self.whisker_data.patch({'base': [(region.whisker_id, 0)], 'lower': [(region.whisker_id, 0)],
+                                         'upper': [(region.whisker_id, 0)]})
                 region.annotation.left = 0
                 region.annotation.right = 0
                 region.start = 0
                 region.stop = 0
-                # TODO remove it (impossible?)
+                # TODO remove it?  Bokeh can't clean up the annotations, so I prefer to keep it available for reuse
+                # TODO Also, the whisker data can't be delete-patched, we'd have to rebuild and resend
         # We have to defer this as the delete may come via the keypress URL
         # But we aren't in the PrimitiveVisualizaer so we reference the
         # document and queue it directly

@@ -4,9 +4,11 @@
 #                                                     primtives_gmos_longslit.py
 # ------------------------------------------------------------------------------
 
-from copy import copy, deepcopy
+from copy import deepcopy
 from importlib import import_module
 from itertools import groupby
+
+import re
 
 from gempy.library.config import RangeField
 
@@ -14,24 +16,20 @@ import astrodata
 import geminidr
 import numpy as np
 from scipy.signal import correlate
+from scipy.interpolate.fitpack2 import InterpolatedUnivariateSpline
 
 from astrodata.provenance import add_provenance
-from astropy import visualization as vis
-from astropy.modeling import models, fitting
+from astropy.modeling import models
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.fitting import fit_1D
-from gempy.library import astromodels, transform
+from gempy.library import transform
 from gempy.library import astrotools as at
 
 from gwcs import coordinate_frames
 from gwcs.wcs import WCS as gWCS
-
-from matplotlib import gridspec
-from matplotlib import pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
@@ -43,6 +41,7 @@ from . import parameters_gmos_longslit
 
 # ------------------------------------------------------------------------------
 from ..interactive.fit import fit1d
+from ..interactive.fit import bineditor
 from ..interactive.fit.help import NORMALIZE_FLAT_HELP_TEXT
 from ..interactive.interactive import UIParameters
 
@@ -62,7 +61,6 @@ class GMOSLongslit():
         raise ValueError("GMOSLongslit objects cannot be instantiated without"
                          " specifying 'adinputs'. Please instantiate either"
                          "'GMOSClassicLongslit' or 'GMOSNSLongslit' instead.")
-
 
 @parameter_override
 @capture_provenance
@@ -247,11 +245,12 @@ class GMOSClassicLongslit(GMOSSpect):
     def makeSlitIllum(self, adinputs=None, **params):
         """
         Makes the processed Slit Illumination Function by binning a 2D
-        spectrum along the dispersion direction, fitting a smooth function
-        for each bin, fitting a smooth 2D model, and reconstructing the 2D
-        array using this last model.
+        spectrum in wavelength, averaging data points withing each bin along dispersion
+        axis, then fitting a smooth function to each bin in spatial direction.
+        Each fitted function is then normalized to slit center, and a 2D slit illumination
+        function is created by interpolating between dispersion points for each row.
 
-        Its implementation based on the IRAF's `noao.twodspec.longslit.illumination`
+        The implementation is based on the IRAF's `noao.twodspec.longslit.illumination`
         task following the algorithm described in [Valdes, 1968].
 
         It expects an input calibration image to be an a dispersed image of the
@@ -265,30 +264,49 @@ class GMOSClassicLongslit(GMOSSpect):
         adinputs : list
             List of AstroData objects containing the dispersed image of the
             slit of a source free of illumination problems. The data needs to
-            have been overscan and bias corrected and is expected to have a
+            have been overscan and bias corrected and it is expected to have a
             Data Quality mask.
-        bins : {None, int}, optional
-            Total number of bins across the dispersion axis. If None,
-            the number of bins will match the number of extensions on each
-            input AstroData object. It it is an int, it will create N bins
-            with the same size.
-        border : int, optional
+        bins : int/str/None
+            Either an integer number of equally-spaced bins covering the whole dispersion
+            range, or a comma-separated list of pixel coordinate pairs defining the
+            dispersion bins to be used for the slit profile fitting. If None, the number
+            of bins is max of 12 or the number of extensions.
+        regions : str/None
+            Sample region(s) selected along the spatial axis to use for fitting each dispersion
+            bin, as a comma-separated list of pixel ranges. Any pixels outside these
+            ranges will be ignored when fitting each dispersion bin.
+        function : str/None
+            Type of function to fit along the the spatial axis (for dispersion bin fitting).
+            None => "spline3".
+        order : int/None
+            Order of the bin fitting function (None => 20)
+        lsigma : float/None
+            Lower rejection limit in standard deviations of the bin fit (None => 3).
+        hsigma : float/None
+            Upper rejection limit in standard deviations of the bin fit (None => 3).
+        niter : int/None
+            Maximum number of rejection iterations of the bin fit (None => 3).
+        grow : float/None
+            Growth radius for rejected pixels of the bin fit (None => 0).
+        interp_order: int/None
+            Order of the spline interpolator (1 <= interp_order <= 5). None => 3.
+        debug_boundary_ext: bool/None
+            Controls the extrapolation mode for the elements outside the interpolation interval
+            (before the first bin center and after the last bin center). If set to "False" (default
+            value), the row ends are set to constant values equal to the interpolation boundary values.
+            If set to "True", the row ends are extrapolated.
+        interactive : bool/None
+            Activate the interactive preview of bin selection and bin fitting steps to fine tune the
+            input parameters (None => "False")
+        border : int/None
             Border size that is added on every edge of the slit illumination
-            image before cutting it down to the input AstroData frame.
-        smooth_order : int, optional
-            Order of the spline that is used in each bin fitting to smooth
-            the data (Default: 3)
-        x_order : int, optional
-            Order of the x-component in the Chebyshev2D model used to
-            reconstruct the 2D data from the binned data.
-        y_order : int, optional
-            Order of the y-component in the Chebyshev2D model used to
-            reconstruct the 2D data from the binned data.
+            image before cutting it down to the input AstroData frame (None => 2)
 
         Return
         ------
-        List of AstroData : containing an AstroData with the Slit Illumination
-            Response Function for each of the input object.
+        List of AstroData :
+            Contains an AstroData with the Slit Illumination Response Function for each
+            of the input object.
 
         References
         ----------
@@ -303,14 +321,13 @@ class GMOSClassicLongslit(GMOSSpect):
         suffix = params["suffix"]
         bins = params["bins"]
         border = params["border"]
-        debug_plot = params["debug_plot"]
-        smooth_order = params["smooth_order"]
-        cheb2d_x_order = params["x_order"]
-        cheb2d_y_order = params["y_order"]
-
+        interactive_reduce = params["interactive"]
+        spat_params = fit_1D.translate_params(params)
+        interp_order = params["interp_order"]
+        boundary_ext = params["debug_boundary_ext"]
         ad_outputs = []
-        for ad in adinputs:
 
+        for ad in adinputs:
             if len(ad) > 1 and "mosaic" not in ad[0].wcs.available_frames:
 
                 log.info('Add "mosaic" gWCS frame to input data')
@@ -322,9 +339,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 log.info("Temporarily mosaicking multi-extension file")
                 mosaicked_ad = transform.resample_from_wcs(
                     ad, "mosaic", attributes=None, order=1, process_objcat=False)
-
             else:
-
                 log.info('Input data already has one extension and has a '
                          '"mosaic" frame.')
 
@@ -345,67 +360,156 @@ class GMOSClassicLongslit(GMOSSpect):
             std = np.sqrt(variance)  # Easier to work with
 
             log.info("Creating bins for data and variance")
+
             height = data.shape[0]
             width = data.shape[1]
-
             if bins is None:
                 nbins = max(len(ad), 12)
                 bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
+                bin_list = list(zip(bin_limits[:-1], bin_limits[1:]))
             elif isinstance(bins, int):
                 nbins = bins
                 bin_limits = np.linspace(0, height, nbins + 1, dtype=int)
+                bin_list = list(zip(bin_limits[:-1], bin_limits[1:]))
             else:
-                # ToDo: Handle input bins as array
-                raise TypeError("Expected None or Int for `bins`. "
-                                "Found: {}".format(type(bins)))
+                bin_list = _parse_user_bins(bins, height)
+                nbins = len(bin_list)
 
-            bin_top = bin_limits[1:]
-            bin_bot = bin_limits[:-1]
-            binned_data = np.zeros_like(data)
-            binned_std = np.zeros_like(std)
+            if ad.filename:
+                filename_info = ad.filename
+            else:
+                filename_info = ''
+
+            bin_parameters = {
+                'nbins': nbins,
+                'bin_list': bin_list,
+                'height': height
+            }
+            # Interactive interface for bin inspection and editing
+            if interactive_reduce:
+                model = {
+                    'x': np.arange(height),
+                    'y': np.ma.mean(data, axis=1),
+                    'regions': [(left, right) for (left, right) in
+                           bin_list]
+                }
+                visualizer = bineditor.BinVisualizer(model, domain=[0, height],
+                                                     title='Set Dispersion Bins',
+                                                     primitive_name='makeSlitIllum',
+                                                     central_plot=False,
+                                                     bin_parameters=bin_parameters,
+                                                     filename_info=filename_info)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                bin_list = _parse_user_bins(''.join(visualizer.results().split()))
+                nbins = len(bin_list)
+
+            cols_val = np.arange(-border, height+border)
+            rows_val = np.arange(-border, width+border)
+            binned_shape = (nbins, len(rows_val))
+            bin_data_avg = np.ma.empty((nbins, width))
+            bin_std_avg = np.ma.empty((nbins, width))
+            bin_data_fits = np.ma.zeros(binned_shape)
+            bin_std_fits = np.ma.zeros(binned_shape)
+            for i, bin in enumerate(bin_list):
+                bin_data_avg[i] = np.ma.mean(data[bin[0]:bin[1]], axis=0)
+                bin_std_avg[i] = np.ma.mean(std[bin[0]:bin[1]], axis=0)
+            spat_fitting_pars = []
+            for _ in range(nbins):
+                spat_fitting_pars.append(spat_params)
+            spat_fit_points = np.arange(width)
 
             log.info("Smooth binned data and variance, and normalize them by "
                      "smoothed central value")
-            for bin_idx, (b0, b1) in enumerate(zip(bin_bot, bin_top)):
 
-                rows = np.arange(width)
+            config = self.params[self.myself()]
 
-                avg_data = np.ma.mean(data[b0:b1], axis=0)
-                model_1d_data = astromodels.UnivariateSplineWithOutlierRemoval(
-                    rows, avg_data, order=smooth_order)
+            # Interactive interface for fitting dispersion bins
+            if interactive_reduce:
+                all_pixels = []
+                all_domains = []
+                for _ in range(nbins):
+                    all_pixels.append(spat_fit_points)
+                    all_domains.append([-border, width + border])
 
-                avg_std = np.ma.mean(std[b0:b1], axis=0)
-                model_1d_std = astromodels.UnivariateSplineWithOutlierRemoval(
-                    rows, avg_std, order=smooth_order)
+                data_with_weights = {"x": [], "y": [], "weights": []}
+                for rppixels, avg_data, avg_std in zip(all_pixels, bin_data_avg, bin_std_avg):
+                    data_with_weights["x"].append(rppixels)
+                    data_with_weights["y"].append(avg_data)
+                    data_with_weights["weights"].append(at.divide0(1., avg_std))
 
-                slit_central_value = model_1d_data(rows)[width // 2]
-                binned_data[b0:b1] = model_1d_data(rows) / slit_central_value
-                binned_std[b0:b1] = model_1d_std(rows) / slit_central_value
+                config.update(**params)
+                uiparams = UIParameters(config)
+
+                x_label = "Rows" if dispaxis == 1 else "Columns"
+                first_label = 'cols' if dispaxis == 1 else 'rows'
+                tab_names = [f'[{start+1}:{end}]' for (start, end) in bin_list]
+                tab_names[0] = f"Mean of {first_label} {tab_names[0]}"
+
+                visualizer = fit1d.Fit1DVisualizer(data_with_weights, spat_fitting_pars,
+                                                   tab_names=tab_names,
+                                                   xlabel=x_label, ylabel='Counts',
+                                                   domains=all_domains,
+                                                   title="Make Slit Illumination Function",
+                                                   primitive_name="makeSlitIllum",
+                                                   filename_info=filename_info,
+                                                   enable_user_masking=True,
+                                                   enable_regions=True,
+                                                  # help_text=NORMALIZE_FLAT_HELP_TEXT,
+                                                   recalc_inputs_above=True,
+                                                   modal_message="Recalculating",
+                                                   pad_buttons=True,
+                                                   ui_params=uiparams)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                fits = visualizer.results()
+                spat_fitting_pars = [fit.extract_params() for fit in fits]
+                for bin_idx, bin_fit in enumerate(fits):
+                    bin_data_fit = bin_fit.evaluate(rows_val)
+                    bin_data_fits[bin_idx,:] = bin_data_fit
+
+            else:
+                for bin_idx, (fit_params, avg_data, avg_std) in \
+                        enumerate(zip(spat_fitting_pars, bin_data_avg, bin_std_avg)):
+                    bin_data_fit = fit_1D(avg_data,
+                                          points=spat_fit_points,
+                                          weights=at.divide0(1., avg_std),
+                                          domain=(-border, width+border),
+                                          **fit_params, axis=0).evaluate(rows_val)
+                    bin_data_fits[bin_idx,:] = bin_data_fit
+
+            for bin_idx, (fit_params, avg_std, bin_data_fit) in \
+                    enumerate(zip(spat_fitting_pars, bin_std_avg, bin_data_fits)):
+                bin_std_fit = fit_1D(avg_std,
+                                     points=spat_fit_points,
+                                     **fit_params,
+                                     axis=0).evaluate(rows_val)
+                slit_central_value = bin_data_fit[(width+2*border) // 2]
+                bin_data_fits[bin_idx,:] = bin_data_fit / slit_central_value
+                bin_std_fits[bin_idx,:] = bin_std_fit / slit_central_value
 
             log.info("Reconstruct 2D mosaicked data")
-            bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
-            cols_fit, rows_fit = np.meshgrid(np.arange(width), bin_center)
 
-            fitter = fitting.SLSQPLSQFitter()
-            model_2d_init = models.Chebyshev2D(
-                x_degree=cheb2d_x_order, x_domain=(0, width),
-                y_degree=cheb2d_y_order, y_domain=(0, height))
+            bin_center = np.array([0.5 * (bin_start + bin_end) for (bin_start, bin_end) in bin_list],
+                                  dtype=int)
+            slit_response_data = np.zeros((len(cols_val), len(rows_val)))
+            slit_response_std = np.zeros((len(cols_val), len(rows_val)))
 
-            model_2d_data = fitter(model_2d_init, cols_fit, rows_fit,
-                                   binned_data[rows_fit, cols_fit])
+            # Interpolation between dispersion points along the rows
+            if nbins > 1:
+                for k, (data_row, std_row) in enumerate(zip(bin_data_fits.T, bin_std_fits.T)):
+                    # Set extrapolated row ends to interpolation boundary value, or extrapolate
+                    ext_val = 0 if boundary_ext else 3
+                    f1 = InterpolatedUnivariateSpline(bin_center, data_row, k=interp_order, ext=ext_val)
+                    f2 = InterpolatedUnivariateSpline(bin_center, std_row, k=interp_order, ext=ext_val)
+                    slit_response_data[:,k] = f1(cols_val)
+                    slit_response_std[:,k] = f2(cols_val)
 
-            model_2d_std = fitter(model_2d_init, cols_fit, rows_fit,
-                                  binned_std[rows_fit, cols_fit])
+            # If there is only one bin, copy the slit profile to each column
+            elif nbins == 1:
+                slit_response_data[:] = bin_data_fits
+                slit_response_std[:] = bin_std_fits
 
-            rows_val, cols_val = \
-                np.mgrid[-border:height+border, -border:width+border]
-
-            slit_response_data = model_2d_data(cols_val, rows_val)
-            slit_response_mask = np.pad(mask, border, mode='edge')  # ToDo: any update to the mask?
-            slit_response_std = model_2d_std(cols_val, rows_val)
             slit_response_var = slit_response_std ** 2
-
-            del cols_fit, cols_val, rows_fit, rows_val
+            slit_response_mask = np.pad(mask, border, mode='edge')
 
             _data, _mask, _variance = at.transpose_if_needed(
                 slit_response_data, slit_response_mask, slit_response_var,
@@ -419,7 +523,7 @@ class GMOSClassicLongslit(GMOSSpect):
 
             if "mosaic" in ad[0].wcs.available_frames:
 
-                log.info("Map coordinates between slit function and mosaicked data")  # ToDo: Improve message?
+                log.info("Map coordinates between slit function and mosaicked data") # ToDo: Improve message?
                 slit_response_ad = _split_mosaic_into_extensions(
                     ad, slit_response_ad, border_size=border)
 
@@ -440,186 +544,6 @@ class GMOSClassicLongslit(GMOSSpect):
 
             slit_response_ad.update_filename(suffix=suffix, strip=True)
             ad_outputs.append(slit_response_ad)
-
-            # Plotting ------
-            if debug_plot:
-
-                log.info("Creating plots")
-                palette = copy(plt.cm.cividis)
-                palette.set_bad('r', 0.75)
-
-                norm = vis.ImageNormalize(data[~data.mask],
-                                          stretch=vis.LinearStretch(),
-                                          interval=vis.PercentileInterval(97))
-
-                fig = plt.figure(
-                    num="Slit Response from MEF - {}".format(ad.filename),
-                    figsize=(12, 9), dpi=110)
-
-                gs = gridspec.GridSpec(nrows=2, ncols=3, figure=fig)
-
-                # Display raw mosaicked data and its bins ---
-                ax1 = fig.add_subplot(gs[0, 0])
-                im1 = ax1.imshow(data, cmap=palette, origin='lower',
-                                 vmin=norm.vmin, vmax=norm.vmax)
-
-                ax1.set_title("Mosaicked Data\n and Spectral Bins", fontsize=10)
-                ax1.set_xlim(-1, data.shape[1])
-                ax1.set_xticks([])
-                ax1.set_ylim(-1, data.shape[0])
-                ax1.set_yticks(bin_center)
-                ax1.tick_params(axis=u'both', which=u'both', length=0)
-
-                ax1.set_yticklabels(
-                    ["Bin {}".format(i) for i in range(len(bin_center))],
-                    fontsize=6)
-
-                _ = [ax1.spines[s].set_visible(False) for s in ax1.spines]
-                _ = [ax1.axhline(b, c='w', lw=0.5) for b in bin_limits]
-
-                divider = make_axes_locatable(ax1)
-                cax1 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im1, cax=cax1)
-
-                # Display non-smoothed bins ---
-                ax2 = fig.add_subplot(gs[0, 1])
-                im2 = ax2.imshow(binned_data, cmap=palette, origin='lower')
-
-                ax2.set_title("Binned, smoothed\n and normalized data ", fontsize=10)
-                ax2.set_xlim(0, data.shape[1])
-                ax2.set_xticks([])
-                ax2.set_ylim(0, data.shape[0])
-                ax2.set_yticks(bin_center)
-                ax2.tick_params(axis=u'both', which=u'both', length=0)
-
-                ax2.set_yticklabels(
-                    ["Bin {}".format(i) for i in range(len(bin_center))],
-                    fontsize=6)
-
-                _ = [ax2.spines[s].set_visible(False) for s in ax2.spines]
-                _ = [ax2.axhline(b, c='w', lw=0.5) for b in bin_limits]
-
-                divider = make_axes_locatable(ax2)
-                cax2 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im2, cax=cax2)
-
-                # Display reconstructed slit response ---
-                vmin = slit_response_data.min()
-                vmax = slit_response_data.max()
-
-                ax3 = fig.add_subplot(gs[1, 0])
-                im3 = ax3.imshow(slit_response_data, cmap=palette,
-                                 origin='lower', vmin=vmin, vmax=vmax)
-
-                ax3.set_title("Reconstructed\n Slit response", fontsize=10)
-                ax3.set_xlim(0, data.shape[1])
-                ax3.set_xticks([])
-                ax3.set_ylim(0, data.shape[0])
-                ax3.set_yticks([])
-                ax3.tick_params(axis=u'both', which=u'both', length=0)
-                _ = [ax3.spines[s].set_visible(False) for s in ax3.spines]
-
-                divider = make_axes_locatable(ax3)
-                cax3 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im3, cax=cax3)
-
-                # Display extensions ---
-                ax4 = fig.add_subplot(gs[1, 1])
-                ax4.set_xticks([])
-                ax4.set_yticks([])
-                _ = [ax4.spines[s].set_visible(False) for s in ax4.spines]
-
-                sub_gs4 = gridspec.GridSpecFromSubplotSpec(
-                    nrows=len(ad), ncols=1, subplot_spec=gs[1, 1], hspace=0.03)
-
-                # The [::-1] is needed to put the fist extension in the bottom
-                for i, ext in enumerate(slit_response_ad[::-1]):
-
-                    ext_data, ext_mask, ext_variance = at.transpose_if_needed(
-                        ext.data, ext.mask, ext.variance, transpose=dispaxis == 1)
-
-                    ext_data = np.ma.masked_array(ext_data, mask=ext_mask)
-
-                    sub_ax = fig.add_subplot(sub_gs4[i])
-
-                    im4 = sub_ax.imshow(ext_data, origin="lower", vmin=vmin,
-                                        vmax=vmax, cmap=palette)
-
-                    sub_ax.set_xlim(0, ext_data.shape[1])
-                    sub_ax.set_xticks([])
-                    sub_ax.set_ylim(0, ext_data.shape[0])
-                    sub_ax.set_yticks([ext_data.shape[0] // 2])
-
-                    sub_ax.set_yticklabels(
-                        ["Ext {}".format(len(slit_response_ad) - i - 1)],
-                        fontsize=6)
-
-                    _ = [sub_ax.spines[s].set_visible(False) for s in sub_ax.spines]
-
-                    if i == 0:
-                        sub_ax.set_title("Multi-extension\n Slit Response Function")
-
-                divider = make_axes_locatable(ax4)
-                cax4 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im4, cax=cax4)
-
-                # Display Signal-To-Noise Ratio ---
-                snr = data / np.sqrt(variance)
-
-                norm = vis.ImageNormalize(snr[~snr.mask],
-                                          stretch=vis.LinearStretch(),
-                                          interval=vis.PercentileInterval(97))
-
-                ax5 = fig.add_subplot(gs[0, 2])
-
-                im5 = ax5.imshow(snr, cmap=palette, origin='lower',
-                                 vmin=norm.vmin, vmax=norm.vmax)
-
-                ax5.set_title("Mosaicked Data SNR", fontsize=10)
-                ax5.set_xlim(-1, data.shape[1])
-                ax5.set_xticks([])
-                ax5.set_ylim(-1, data.shape[0])
-                ax5.set_yticks(bin_center)
-                ax5.tick_params(axis=u'both', which=u'both', length=0)
-
-                ax5.set_yticklabels(
-                    ["Bin {}".format(i) for i in range(len(bin_center))],
-                    fontsize=6)
-
-                _ = [ax5.spines[s].set_visible(False) for s in ax5.spines]
-                _ = [ax5.axhline(b, c='w', lw=0.5) for b in bin_limits]
-
-                divider = make_axes_locatable(ax5)
-                cax5 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im5, cax=cax5)
-
-                # Display Signal-To-Noise Ratio of Slit Illumination ---
-                slit_response_snr = np.ma.masked_array(
-                    slit_response_data / np.sqrt(slit_response_var),
-                    mask=slit_response_mask)
-
-                ax6 = fig.add_subplot(gs[1, 2])
-
-                im6 = ax6.imshow(slit_response_snr, origin="lower",
-                                 vmin=norm.vmin, vmax=norm.vmax, cmap=palette)
-
-                ax6.set_xlim(0, slit_response_snr.shape[1])
-                ax6.set_xticks([])
-                ax6.set_ylim(0, slit_response_snr.shape[0])
-                ax6.set_yticks([])
-                ax6.set_title("Reconstructed\n Slit Response SNR")
-
-                _ = [ax6.spines[s] .set_visible(False) for s in ax6.spines]
-
-                divider = make_axes_locatable(ax6)
-                cax6 = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im6, cax=cax6)
-
-                # Save plots ---
-                fig.tight_layout(rect=[0, 0, 0.95, 1], pad=0.5)
-                fname = slit_response_ad.filename.replace(".fits", ".png")
-                log.info("Saving plots to {}".format(fname))
-                plt.savefig(fname)
 
         return ad_outputs
 
@@ -896,6 +820,11 @@ class GMOSClassicLongslit(GMOSSpect):
                      "slit illumination file:  \n{}".format(ad.filename, slit_illum_ad.filename))
 
             ad_out = deepcopy(ad)
+
+
+            log.stdinfo(f"{ad.filename}: dividing by the slit illumination function "
+                         f"{slit_illum_ad.filename}")
+
             ad_out.divide(slit_illum_ad)
 
             # Update the header and filename, copying QECORR keyword from flat
@@ -1027,6 +956,69 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
         ad_out.append(temp_ad[0])
 
     return ad_out
+
+def _parse_user_bins(bins, frame_size:int=None):
+    """
+    Parse a string of bin ranges containing a comma-separated list of colon- or hyphen-separated
+    pixel sections into a list of Python tuples. Arrange the bins in ascending order, remove the ones outside
+    the frame pixel range, merge the overlapping bins.
+
+    Parameters
+    ----------
+    bins: str
+        Comma-separated list of colon- or hyphen-separated pixel ranges
+    frame_size: int
+        The size of the frame dimension along which the bins are selected.
+
+    Returns
+    -------
+    A sorted list of 2-value tuples lying within the specified frame range, with no overlapping.
+    """
+    bin_list = []
+    for bin in re.split(",|;| ", bins.strip("[]()'")):
+        bin = bin.strip("()[]' ")
+        bin_limits = re.split(":|-", bin)
+        if not len(bin_limits) == 2:
+            raise TypeError("Bin limits must be specified as comma-separated list "
+                            "of colon- or hyphen-separated pixel sections, e.g. 1:300,301:500")
+        int_bin_limits = []
+        for bin_limit in bin_limits:
+            try:
+                int_bin_limit = int(bin_limit)
+            except ValueError:
+                raise TypeError("Bin ranges must be integer")
+            if frame_size is not None:
+                int_bin_limits.append(min(int_bin_limit, frame_size))
+            else:
+                int_bin_limits.append(int_bin_limit)
+        int_bin_limits.sort()
+
+        # trim off the bins that are outside the frame pixel range
+        if frame_size is not None and int_bin_limits[0] == frame_size:
+            break
+
+        bin_list.append(tuple(int_bin_limits))
+    bin_list = sorted(bin_list, key=lambda tup: tup[0])
+
+    # merge overlapping bins
+    merged_list = [bin_list[0]]
+    for bin in bin_list[1:]:
+        last = merged_list[-1]
+        if last[1] > bin[0]:
+            print("Merging the overlapping bins")
+            merged_list[-1] = (last[0], max(last[1], bin[1]))
+        elif last[1] == bin[0]:
+            merged_list.append((bin[0]+1, bin[1]))
+        else:
+            merged_list.append(bin)
+
+    adjusted_bin_list = []
+    for i, bin in enumerate(merged_list):
+        if i == 0 and bin[0] == 0:
+            adjusted_bin_list.append(bin)
+        else:
+            adjusted_bin_list.append((bin[0]-1, bin[1]))
+    return adjusted_bin_list
 
 
 @parameter_override
