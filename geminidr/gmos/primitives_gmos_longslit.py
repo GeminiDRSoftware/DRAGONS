@@ -23,7 +23,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.fitting import fit_1D
-from gempy.library import astromodels, transform
+from gempy.library import astromodels, tracing, transform
 from gempy.library import astrotools as at
 
 from gwcs import coordinate_frames
@@ -78,7 +78,7 @@ class GMOSClassicLongslit(GMOSSpect):
         self._param_update(parameters_gmos_longslit)
 
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
-                         shift=None, max_shift=20):
+                         shift=None, max_shift=20, debug_plot=False):
         """
         Adds an illumination mask to each AD object. This is only done for
         full-frame (not Central Spectrum) GMOS spectra, and is calculated by
@@ -124,6 +124,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 continue
 
             ybin = ad.detector_y_bin()
+            mshift = max_shift // ybin
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
                              for detsec in ad_detsec)
@@ -152,11 +153,13 @@ class GMOSClassicLongslit(GMOSSpect):
                 # Default operation for GMOS full-frame LS
                 # Sadly, we cannot do this reliably without concatenating the
                 # arrays and using a big chunk of memory.
+                #####row_medians = np.zeros((ad[0].shape[0] + 2 * mshift,))
                 row_medians = np.percentile(np.concatenate(
                     [ext.data for ext in ad], axis=1), 95, axis=1)
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
-                model = np.zeros_like(row_medians, dtype=int)
+                # Pad model to ensure cross-correlation doesn't go off the edge
+                model = np.zeros((row_medians.size + 2 * mshift,), dtype=int)
                 slit_location_msg = ""
                 for ypos, ysize in mdf['slitpos_my', 'slitsize_my']:
                     y = ypos + np.array([-0.5, 0.5]) * ysize
@@ -167,11 +170,14 @@ class GMOSClassicLongslit(GMOSSpect):
                         c1, c2, c3 = (0.99591859227, 5.3042211333437e-8,
                                       1.7447902551997e-7)
                     yccd = ((c0 + y * (c1 + y * (c2 + y * c3))) *
-                            1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
-                    model[yccd[0]:yccd[1]+1] = 1
+                            1.611444 / ad.pixel_scale() + 0.5 * row_medians.size).astype(int)
+                    model[yccd[0]+mshift:yccd[1]+mshift+1] = 1
                     slit_location_msg += ("Expected slit location from pixels "
                                           f"{yccd[0]+1} to {yccd[1]+1}\n")
 
+                print(slit_location_msg)
+
+                # For N&S data, repeat the slit below where the MDF locates it
                 if 'NODANDSHUFFLE' in ad.tags:
                     shuffle_pixels = ad.shuffle_pixels() // ybin
                     model[:-shuffle_pixels] += model[shuffle_pixels:]
@@ -183,29 +189,40 @@ class GMOSClassicLongslit(GMOSSpect):
                     longest_gap = max([len(list(group)) for item, group in
                                        groupby(model) if item == 0])
                     row_medians -= at.boxcar(row_medians, size=longest_gap // 2)
+                # Remove single bad rows
+                row_medians = at.boxcar(row_medians, size=2)
+
+                if debug_plot:
+                    plt.ioff()
+                    fig, ax = plt.subplots()
+                    ax.plot(row_medians / row_medians.max(), 'b-')
+                    ax.plot(model[mshift:-mshift], 'k-')
 
                 if shift is None:
-                    mshift = max_shift // ybin + 2
-                    mshift2 = mshift + edges
-                    # model[] indexing avoids reduction in signal as slit
-                    # is shifted off the top of the image
-                    cntr = model.size - edges - mshift2 - 1
-                    xcorr = correlate(row_medians[edges:-edges], model[mshift2:-mshift2],
-                                      mode='full')[cntr - mshift:cntr + mshift]
-                    # This line avoids numerical errors in the spline fit
+                    xcorr = correlate(model, row_medians[edges:-edges], mode='valid')
+                    cntr = xcorr.size // 2
+                    xcorr = xcorr[cntr-mshift:cntr+mshift+1]
+                    # This line avoids numerical errors
                     xcorr -= np.median(xcorr)
 
-                    # This calculates the offsets of each point from the
-                    # straight line between its neighbours
-                    std = (xcorr[1:-1] - 0.5 *
-                           (xcorr + np.roll(xcorr, 2))[2:]).std()
-                    xspline = fit_1D(xcorr, function="spline3", order=None,
-                                     weights=np.full(len(xcorr), 1. / std)).evaluate()
-                    yshift = xspline.argmax() - mshift
-                    maxima = xspline[1:-1][np.logical_and(np.diff(xspline[:-1]) > 0,
-                                                          np.diff(xspline[1:]) < 0)]
-                    significant_maxima = (maxima > xspline.max() - 3 * std).sum()
-                    if significant_maxima > 1 or abs(yshift // ybin) > max_shift:
+                    # Only keep maxima if the fitted peak value is close to
+                    # the actual peak (should remove single-pixel peaks)
+                    extrema = tracing.get_extrema(xcorr)
+                    if debug_plot:
+                        print(extrema)
+                    maxima = [int(x[0] + 0.5) for x in extrema if x[2]]
+
+                    if debug_plot:
+                        xpixels = row_medians.size // 2 - mshift + np.arange(xcorr.size)
+                        ax.plot(xpixels, xcorr / xcorr.max(), 'r-')
+                        ax.plot([row_medians.size // 2] * 2, [0, 1], 'r:')
+                        ax.set_ylim(-0.01, 1.01)
+                        plt.show()
+                        plt.ion()
+
+                    yshift = mshift - maxima[0]
+                    if len(maxima) > 1 or abs(yshift) > max_shift:
+                        print(yshift // ybin)
                         log.warning(f"{ad.filename}: cross-correlation peak is"
                                     " untrustworthy so not adding illumination "
                                     "mask. Please re-run with a specified shift.")
@@ -217,6 +234,8 @@ class GMOSClassicLongslit(GMOSSpect):
                 if yshift is not None:
                     log.debug(slit_location_msg)
                     log.stdinfo(f"{ad.filename}: Shifting mask by {yshift} pixels")
+                    # Trim excess to return model to same size as slit profile
+                    model = model[mshift:-mshift]
                     row_mask = np.ones_like(model, dtype=int)
                     if yshift < 0:
                         row_mask[:yshift] = 1 - model[-yshift:]
