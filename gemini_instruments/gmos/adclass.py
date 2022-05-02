@@ -43,6 +43,14 @@ class AstroDataGmos(AstroDataGemini):
         else:
             return False
 
+    def _tag_is_bpm(self):
+        if self.phu.get('OBSTYPE') == 'BPM':
+            return True
+        elif 'BPMASK' in self.phu:
+            return True
+        else:
+            return False
+
     @astro_data_tag
     def _tag_bias(self):
         if self._tag_is_bias():
@@ -139,7 +147,7 @@ class AstroDataGmos(AstroDataGemini):
         # if not self._tag_is_spect():
         #    return
 
-        if self._tag_is_bias():
+        if self._tag_is_bias() or self._tag_is_bpm():
             return
 
         if self.phu.get('MASKTYP') == 1 and self.phu.get('MASKNAME', '').endswith('arcsec'):
