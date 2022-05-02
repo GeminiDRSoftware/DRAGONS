@@ -550,7 +550,7 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
     return profile, prof_mask
 
 
-def get_extrema(profile, prof_mask, min_snr=3):
+def get_extrema(profile, prof_mask=None, min_snr=3):
     """
     Find all the significant maxima and minima in a 1D profile. Significance
     is calculated from the prominence of each peak divided by an estimate of
@@ -609,13 +609,20 @@ def get_extrema(profile, prof_mask, min_snr=3):
     if not extrema:
         return []
 
+    # Delete a maximum if there is no minimum between it and the edge,
+    # unless it's the ONLY maximum
     if extrema[0][2]:
         if len(extrema) == 1:
             extrema = [(1, profile[1], False)] + extrema + [(xpixels[-1], profile[-2], False)]
+        elif len(extrema) == 2:
+            extrema = [(1, profile[1], False)] + extrema
         else:
             del extrema[0]
     if extrema and extrema[-1][2]:
-        del extrema[-1]
+        if len(extrema) == 2:
+            extrema = extrema + [(xpixels[-1], profile[-2], False)]
+        else:
+            del extrema[-1]
 
     if not extrema:
         return []
@@ -652,6 +659,9 @@ def get_extrema(profile, prof_mask, min_snr=3):
 
     ### WE NEED TO GET RID OF THEM IN A SMARTER WAY. PERCOLATING?
     apertures = [0] * (len(extrema) // 2)
+    if not apertures:
+        return []
+
     apnext = 1
     niter = 0
     while True:
