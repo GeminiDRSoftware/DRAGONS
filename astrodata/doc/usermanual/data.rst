@@ -49,8 +49,8 @@ the pixel data. ::
 
 In this example, we first access the pixels for the second extensions.
 Remember that in Python, list are zero-indexed, hence we access the second
-extension as ``ad[1]``.   The ``.data`` attribute contains a numpy ``ndarray``.
-In the for-loop, for each extension, we get the data and use the numpy
+extension as ``ad[1]``.   The ``.data`` attribute contains a NumPy ``ndarray``.
+In the for-loop, for each extension, we get the data and use the NumPy
 ``.sum()`` method to sum the pixel values.   Anything that can be done
 with a ``ndarray`` can be done on ``AstroData`` pixel data.
 
@@ -233,7 +233,7 @@ in one frame, saturated in another (value 4), and fine in all the other
 the frames (value 0).  The mask of the resulting stack will be assigned
 a value of 5 for that pixel.
 
-These bitmasks will work like any other numpy True/False mask.  There is a
+These bitmasks will work like any other NumPy True/False mask.  There is a
 usage example below using the mask.
 
 The mask can be accessed as follow::
@@ -246,7 +246,7 @@ The mask can be accessed as follow::
 
 Display
 =======
-Since the data is stored in the ``AstroData`` object as a numpy ``ndarray``
+Since the data is stored in the ``AstroData`` object as a NumPy ``ndarray``
 any tool that works on ``ndarray`` can be used.  To display to DS9 there
 is the ``imexam`` package.  The ``numdisplay`` package is still available for
 now but it is no longer supported by STScI.  We will show
@@ -397,7 +397,7 @@ too many to cover here, but here are a couple examples.
     >>> np.median(data)
 
 Note how ``mean()`` is called differently from the other two. ``mean()``
-is a ``ndarray`` method, the others are numpy functions. The implementation
+is a ``ndarray`` method, the others are NumPy functions. The implementation
 details are clearly well beyond the scope of this manual, but when looking
 for the tool you need, keep in mind that there are two sets of functions to
 look into. Duplications like ``.mean()`` and ``np.average()`` can happen,

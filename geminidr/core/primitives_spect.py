@@ -8,6 +8,7 @@
 import os
 import re
 import warnings
+from contextlib import suppress
 from copy import copy
 from functools import partial, reduce
 from importlib import import_module
@@ -35,7 +36,7 @@ from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
-from geminidr import PrimitivesBASE
+from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
 from geminidr.interactive.fit import fit1d
@@ -65,15 +66,15 @@ matplotlib.rcParams.update({'figure.max_open_warning': 0})
 # noinspection SpellCheckingInspection
 @parameter_override
 @capture_provenance
-class Spect(PrimitivesBASE):
+class Spect(Resample):
     """
     This is the class containing all of the pre-processing primitives
     for the `Spect` level of the type hierarchy tree.
     """
     tagset = {"GEMINI", "SPECT"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
     def adjustWCSToReference(self, adinputs=None, **params):
@@ -106,6 +107,7 @@ class Spect(PrimitivesBASE):
         methods = (params["method"], params["fallback"])
         region = slice(*at.parse_user_regions(params["region"])[0])
         tolerance = params["tolerance"]
+        integer_offsets = params["debug_block_resampling"]
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least two "
@@ -158,8 +160,8 @@ class Spect(PrimitivesBASE):
                     profile = tracing.stack_slit(ad[0], section=region)
                     corr = np.correlate(ref_profile, profile, mode='full')
                     expected_peak = corr.size // 2 + hdr_offset
-                    peaks, snrs = tracing.find_peaks(corr, np.arange(3,20),
-                                                     reject_bad=False, pinpoint_index=0)
+                    peaks, snrs = tracing.find_wavelet_peaks(corr, widths=np.arange(3, 20),
+                                                             reject_bad=False, pinpoint_index=0)
                     if peaks.size:
                         if tolerance is None:
                             found_peak = peaks[snrs.argmax()]
@@ -191,6 +193,8 @@ class Spect(PrimitivesBASE):
                 if adjust:
                     wcs = ad[0].wcs
                     frames = wcs.available_frames
+                    if integer_offsets:
+                        offset = np.round(offset)
                     for input_frame, output_frame in zip(frames[:-1], frames[1:]):
                         t = wcs.get_transform(input_frame, output_frame)
                         try:
@@ -961,8 +965,9 @@ class Spect(PrimitivesBASE):
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                    initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask & DQ.not_signal,
-                                                          variance=variance, min_snr=min_snr)
+                    initial_peaks, _ = tracing.find_wavelet_peaks(
+                        data, widths=widths, mask=mask & DQ.not_signal,
+                        variance=variance, min_snr=min_snr)
                     log.stdinfo(f"Found {len(initial_peaks)} peaks")
 
                 # The coordinates are always returned as (x-coords, y-coords)
@@ -1498,8 +1503,7 @@ class Spect(PrimitivesBASE):
                 # Calculate world coords at middle of each dispersed spectrum
                 pix_coords = [[0.5 * (length-1)] * len(apertures)
                               for length in ext.shape[::-1]]
-                pix_coords[dispaxis] = [ap.model(coord) for ap, coord in
-                                        zip(apertures, pix_coords[1-dispaxis])]
+                pix_coords[dispaxis] = [ap.center for ap in apertures]
                 wcs_coords = ext.wcs(*pix_coords)
                 sky_axes = None
                 if isinstance(ext.wcs.output_frame, cf.CompositeFrame):
@@ -1639,16 +1643,12 @@ class Spect(PrimitivesBASE):
             minimum number of contiguous pixels between sky lines
             for a region to be added to the spectrum before collapsing to 1D.
         min_snr : float
-            minimum S/N ratio for detecting peaks (passed to find_peaks)
+            minimum S/N ratio for detecting peaks
         use_snr : bool
             Convert data to SNR per pixel before collapsing and peak-finding?
         threshold : float (0 - 1)
             parameter describing either the height above background (relative
-            to peak) or the integral under the spectrum (relative to the
-            integral to the next minimum) at which to define the edges of
-            the aperture.
-        sizing_method : str ("peak" or "integral")
-            which method to use
+            to peak) at which to define the edges of the aperture.
         interactive : bool
             Show interactive controls for fine tuning source aperture detection
 
@@ -1669,8 +1669,8 @@ class Spect(PrimitivesBASE):
         interactive = params["interactive"]
 
         aper_params = {key: params[key] for key in (
-            'max_apertures', 'min_sky_region', 'percentile',
-            'section', 'sizing_method', 'threshold', 'min_snr', 'use_snr')}
+            'max_apertures', 'min_sky_region', 'percentile', 'section',
+            'threshold', 'min_snr', 'use_snr', 'max_separation')}
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -1688,11 +1688,28 @@ class Spect(PrimitivesBASE):
                 if dispaxis == 0:
                     ext = ext.transpose()
 
-                aper_params['direction'] = "column" if dispaxis == 0 else "row"
-
                 if interactive:
+                    # build config for interactive
+                    config = self.params[self.myself()]
+                    config.update(**params)
+                    reinit_params = ["percentile", "min_sky_region", "use_snr", "min_snr", "section", "max_apertures",
+                                     "threshold", "max_separation"]
+                    title_overrides = {
+                        "percentile": "Percentile (use mean if no value)",
+                        "min_sky_region": "Min sky region",
+                        "use_snr": "Use S/N ratio in spatial profile?",
+                        "min_snr": "SNR threshold for peak detection",
+                        "max_apertures": "Max Apertures (empty means no limit)",
+                        "threshold": "Threshold",
+                        "max_separation": "Maximum separation from target",
+                    }
+                    ui_params = UIParameters(config, reinit_params=reinit_params, extras={},
+                                             title_overrides=title_overrides,
+                                             placeholders={"section": "e.g. 100:900,1500:2000"})
+
+                    # pass "direction" purely for logging purposes
                     locations, all_limits = interactive_find_source_apertures(
-                        ext, **aper_params)
+                        ext, ui_params=ui_params, **aper_params, direction="column" if dispaxis == 0 else "row")
                 else:
                     locations, all_limits, _, _ = tracing.find_apertures(
                         ext, **aper_params)
@@ -1907,6 +1924,8 @@ class Spect(PrimitivesBASE):
                                     order=spectral_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                else:
+                    objfit = np.zeros_like(data)
                 if debug:
                     ext.OBJFIT = objfit.copy()
 
@@ -1924,6 +1943,8 @@ class Spect(PrimitivesBASE):
                                     order=spatial_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                else:
+                    skyfit = np.zeros_like(data)
                 if debug:
                     ext.SKYFIT = skyfit
 
@@ -1955,9 +1976,15 @@ class Spect(PrimitivesBASE):
                 skyfit, objfit, skyfit_input = None, None, None
 
             # Save the figure
-            fig.set_size_inches(5, 15)
-            fig.savefig(ad.filename.replace('.fits', '.pdf'),
-                        bbox_inches='tight', dpi=300)
+            figy, figx = ext.data.shape
+            fig.set_size_inches(figx*3/300, figy*5/300)
+            figname, _ = os.path.splitext(ad.orig_filename)
+            figname = figname + '_flagCosmicRays.pdf'
+            # This context manager prevents two harmless RuntimeWarnings from
+            # image normalization if bkgmodel != 'both' (due to empty panels)
+            # which we don't want to worry users with.
+            with np.errstate(divide='ignore', invalid='ignore'):
+                fig.savefig(figname, bbox_inches='tight', dpi=300)
             plt.close(fig)
 
             # Set flags in the original (un-tiled) ad
@@ -2264,7 +2291,7 @@ class Spect(PrimitivesBASE):
         for ad in adinputs:
             ad_out = self.resampleToCommonFrame([ad], suffix=sfx, w1=w1, w2=w2, npix=npix,
                                                 conserve=conserve, order=order,
-                                                trim_data=False)[0]
+                                                trim_spectral=False)[0]
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(ad_out)
 
@@ -2424,8 +2451,12 @@ class Spect(PrimitivesBASE):
             Conserve flux (rather than interpolate)?
         order : int
             order of interpolation during the resampling
-        trim_data : bool
-            Trim spectra to size of reference spectra?
+        trim_spatial : bool
+            Output data will cover the intersection (rather than union) of
+            the inputs' spatial coverage?
+        trim_spectral: bool
+            Output data will cover the intersection (rather than union) of
+            the inputs' wavelength coverage?
         force_linear : bool
             Force a linear output wavelength solution?
 
@@ -2451,7 +2482,8 @@ class Spect(PrimitivesBASE):
         dw = params["dw"]
         npix = params["npix"]
         conserve = params["conserve"]
-        trim_data = params["trim_data"]
+        trim_spatial = params["trim_spatial"]
+        trim_spectral = params["trim_spectral"]
         force_linear = params["force_linear"]
 
         # Check that all ad objects are either 1D or 2D
@@ -2473,14 +2505,25 @@ class Spect(PrimitivesBASE):
                             "alignment is required.")
             if not all(len(ad) == 1 for ad in adinputs):
                 raise ValueError('inputs must have only 1 extension')
+            dispaxis = {ad[0].dispersion_axis() for ad in adinputs}
+            if len(dispaxis) > 1:  # this shouldn't happen!
+                raise ValueError('Not all inputs have the same dispersion axis')
+            dispaxis_wcs = dispaxis.pop() - 1  # for gWCS axes
+            dispaxis = ndim - 1 - dispaxis_wcs  # python sense
             # Store these values for later!
             refad = adinputs[0]
             ref_coords = (refad.central_wavelength(asNanometers=True),
                           refad.target_ra(), refad.target_dec())
-            ref_pixels = refad[0].wcs.backward_transform(*ref_coords)
+            ref_pixels = [np.asarray(ad[0].wcs.invert(*ref_coords)[::-1])
+                          for ad in adinputs]
+            # Locations in frame of reference AD. The spectral axis is
+            # unimportant here.
+            all_corners = [(np.array(at.get_corners(ad[0].shape)) -
+                            r + ref_pixels[0]).T.astype(int)
+                           for ad, r in zip(adinputs, ref_pixels)]
 
         # If only one variable is missing we compute it from the others
-        nparams = sum(x is not None for x in (w1, w2, dw, npix))
+        nparams = 4 - [w1, w2, dw, npix].count(None)
         if nparams == 3:
             if npix is None:
                 npix = int(np.ceil((w2 - w1) / dw)) + 1
@@ -2510,7 +2553,7 @@ class Spect(PrimitivesBASE):
                 if w1 is None:
                     if w1out is None:
                         w1out = model_info['w1']
-                    elif trim_data:
+                    elif trim_spectral:
                         w1out = max(w1out, model_info['w1'])
                     else:
                         w1out = min(w1out, model_info['w1'])
@@ -2518,13 +2561,13 @@ class Spect(PrimitivesBASE):
                 if w2 is None:
                     if w2out is None:
                         w2out = model_info['w2']
-                    elif trim_data:
+                    elif trim_spectral:
                         w2out = min(w2out, model_info['w2'])
                     else:
                         w2out = max(w2out, model_info['w2'])
             info.append(adinfo)
 
-        if trim_data:
+        if trim_spectral:
             if w1 is None:
                 w1out = info[0][0]['w1']
             if w2 is None:
@@ -2572,6 +2615,28 @@ class Spect(PrimitivesBASE):
         else:
             new_wcs_model = refad[0].wcs.forward_transform.replace_submodel('WAVE', new_wave_model)
 
+        # Now let's think about the spatial direction
+        if ndim > 1:
+            if trim_spatial:
+                if ndim == 2:
+                    mins = [min(ac[dispaxis_wcs]) for ac in all_corners]
+                    maxs = [max(ac[dispaxis_wcs]) for ac in all_corners]
+                    origin = [max(mins)] * 2
+                    output_shape = [min(maxs) - max(mins) + 1] * 2
+                else:  # TODO: revisit!
+                    # for cubes, treat the imaging plane like the Image version
+                    # and trim to the reference, not the intersection
+                    origin = [0] * ndim
+                    output_shape = list(refad[0].shape)
+            else:
+                origin = np.concatenate(all_corners, axis=1).min(axis=1)
+                output_shape = list(np.concatenate(all_corners, axis=1).max(axis=1) - origin + 1)
+            output_shape[dispaxis] = npixout
+            origin[dispaxis] = 0
+        else:
+            origin = (0,)
+            output_shape = (npixout,)
+
         adoutputs = []
         for i, ad in enumerate(adinputs):
             flux_calibrated = self.timestamp_keys["fluxCalibrate"] in ad.phu
@@ -2591,13 +2656,13 @@ class Spect(PrimitivesBASE):
                     dispaxis = 0
                     resampling_model = wave_resample
                 else:
-                    pixels = ext.wcs.backward_transform(*ref_coords)
-                    dispaxis = 2 - ext.dispersion_axis()  # python sense
-                    slit_offset = models.Shift(ref_pixels[dispaxis] - pixels[dispaxis])
+                    spatial_offset = reduce(
+                        Model.__and__, [models.Shift(r0 - ref_pixels[i][j])
+                                        for j, r0 in enumerate(ref_pixels[0]) if j != dispaxis])
                     if dispaxis == 0:
-                        resampling_model = slit_offset & wave_resample
+                        resampling_model = spatial_offset & wave_resample
                     else:
-                        resampling_model = wave_resample & slit_offset
+                        resampling_model = wave_resample & spatial_offset
 
                 this_conserve = conserve_or_interpolate(ext, user_conserve=conserve,
                                         flux_calibrated=flux_calibrated, log=log)
@@ -2607,8 +2672,8 @@ class Spect(PrimitivesBASE):
                 msg = "Resampling"
                 if linearize:
                     msg += " and linearizing"
-                log.stdinfo("{} {}: w1={:.3f} w2={:.3f} dw={:.3f} npix={}"
-                            .format(msg, extn, w1out, w2out, dwout, npixout))
+                log.stdinfo(f"{msg} {extn}: w1={w1out:.3f} w2={w2out:.3f} "
+                            f"dw={dwout:.3f} npix={npixout}")
 
                 # If we resample to a coarser pixel scale, we may
                 # interpolate over features. We avoid this by subsampling
@@ -2624,9 +2689,6 @@ class Spect(PrimitivesBASE):
                                 (resampled_frame, new_wcs_model),
                                 (ext.wcs.output_frame, None)])
 
-                origin = (0,) * ndim
-                output_shape = list(ext.shape)
-                output_shape[dispaxis] = npixout
                 new_ext = transform.resample_from_wcs(ext, 'resampled', subsample=subsample,
                                                       attributes=attributes, conserve=this_conserve,
                                                       origin=origin, output_shape=output_shape)
@@ -3055,6 +3117,7 @@ class Spect(PrimitivesBASE):
                         c0 = int(loc + 0.5)
                         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
                         start = np.argmax(at.boxcar(spectrum, size=20))
+                        log.debug(f"Starting trace of aperture {i+1} at pixel {start+1}")
 
                         # The coordinates are always returned as (x-coords, y-coords)
                         ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
@@ -3184,6 +3247,10 @@ class Spect(PrimitivesBASE):
             write VAR (variance) plane?
         overwrite : bool
             overwrite existing files?
+        xunits: str
+            units of the x (wavelength/frequency) column
+        yunits: str
+            units of the data column
 
         Returns
         -------
@@ -3202,6 +3269,8 @@ class Spect(PrimitivesBASE):
         write_dq = params["dq"]
         write_var = params["var"]
         overwrite = params["overwrite"]
+        xunits = None if params["wave_units"] is None else u.Unit(params["wave_units"])
+        yunits = None if params["data_units"] is None else u.Unit(params["data_units"])
 
         for ad in adinputs:
             aperture_map = dict(zip(range(len(ad)), ad.hdr.get("APERTURE")))
@@ -3224,15 +3293,45 @@ class Spect(PrimitivesBASE):
                                 "1D array - continuing")
                     continue
 
+                output_frame = ext.wcs.output_frame
+                xdata = (ext.wcs(range(ext.data.size)) *
+                         (output_frame.unit[0] or u.nm))
+                if xunits is not None and xunits != xdata.unit:
+                    xdata = xdata.to(xunits)
                 data_unit = u.Unit(ext.hdr.get("BUNIT"))
-                t = Table((ext.wcs(range(ext.data.size)), ext.data),
+                ydata = ext.data * data_unit
+                equivalencies = u.spectral_density(xdata)
+                if yunits is not None:
+                    try:
+                        ydata = ydata.to(yunits, equivalencies=equivalencies)
+                    except u.core.UnitConversionError:
+                        try:
+                            ydata = (ydata / (ad.exposure_time() * u.s)).to(
+                                yunits, equivalencies=equivalencies)
+                        except u.core.UnitConversionError:
+                            log.warning(f"Cannot convert spectrum in {ad.filename}:"
+                                        f"{ext.id} from {ydata.unit} to {yunits}")
+                            yunits = data_unit
+                else:
+                    yunits = data_unit
+
+                t = Table((xdata.value, ydata.value),
                           names=("wavelength", "data"),
-                          units=(ext.wcs.output_frame.unit[0], str(data_unit)))
+                          units=(xdata.unit, ydata.unit))
+                t.meta['comments'] = [f"Wavelength in {xdata.unit}, "
+                                      f"Data in {ydata.unit}"]
                 if write_dq:
                     t.add_column(ext.mask, name="dq")
                 if write_var:
-                    t.add_column(ext.variance, name="variance")
-                    t["variance"].unit = str(data_unit ** 2)
+                    stddev = np.sqrt(ext.variance) * data_unit
+                    try:
+                        stddev = stddev.to(yunits, equivalencies=equivalencies)
+                    except u.core.UnitConversionError:
+                        stddev = (stddev / (ad.exposure_time() * u.s)).to(
+                            yunits, equivalencies=equivalencies)
+                    var = stddev * stddev
+                    t.add_column(var.value, name="variance")
+                    t["variance"].unit = var.unit
                     var_col = len(t.colnames)
 
                 filename = (os.path.splitext(ad.filename)[0] +

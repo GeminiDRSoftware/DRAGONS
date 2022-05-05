@@ -893,13 +893,18 @@ class Fit1DPanel:
         except (AttributeError, KeyError):
             pass
         else:
-            x_min, x_max = min(xdata), max(xdata)
+            def min_max_pad(data, default_min, default_max):
+                if data is None or len(data) == 0:
+                    return default_min, default_max, 0.0
+                mx = max(data)
+                mn = min(data)
+                return mn, mx, 0.1 * (mx - mn)
+            # if xdata or ydata are empty, we set some arbitrary values so the UI is ok
+            x_min, x_max, x_pad = min_max_pad(xdata, 0, 4000)
             if x_min != x_max:
-                x_pad = (x_max - x_min) * 0.1
                 self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
-            y_min, y_max = min(ydata), max(ydata)
+            y_min, y_max, y_pad = min_max_pad(ydata, 0, 100)
             if y_min != y_max:
-                y_pad = (y_max - y_min) * 0.1
                 self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
         if x_range is not None:
             self.p_main.x_range = x_range
@@ -1179,10 +1184,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.recalc_inputs_above = recalc_inputs_above
         self.pad_buttons = pad_buttons
 
-        # Make the widgets accessible from external code so we can update
-        # their properties if the default setup isn't great
-        self.widgets = {}
-
         # Keep a list of panels for access later
         self.panels = list()
 
@@ -1207,21 +1208,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     reinit_widgets.append(self.reinit_button)
                     self.modal_widget = self.reinit_button
 
-                    reset_reinit_button = bm.Button(
-                        button_type='warning',
-                        height=35,
-                        id='reset-reinit-pars',
-                        label="Reset",
-                        width=202)
-
-                    def reset_dialog_handler(result):
-                        if result:
-                            self.reset_reinit_panel()
-
-                    self.make_ok_cancel_dialog(
-                        btn=reset_reinit_button,
-                        message='Do you want to reset the input parameters?',
-                        callback=reset_dialog_handler)
+                    reset_reinit_button = self.build_reset_button()
                     reinit_widgets.append(reset_reinit_button)
 
                 elif len(reinit_widgets) == 1:
@@ -1296,48 +1283,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 self.tabs.tabs.append(tab)
             self.fits.append(tui.model)
             self.panels.append(tui)
-
-        self._reinit_params = {k: v for k, v in ui_params.values.items()}
-
-    # noinspection PyProtectedMember
-    def reset_reinit_panel(self, param=None):
-        """
-        Reset all the parameters in the Tracing Panel (leftmost column).
-        If a param is provided, it resets only this parameter in particular.
-
-        Parameters
-        ----------
-        param : str
-            Parameter name
-        """
-        for fname in self.ui_params.reinit_params:
-            if param is None or fname == param:
-                reset_value = self._reinit_params[fname]
-            else:
-                continue
-
-            # Handle CheckboxGroup widgets
-            if hasattr(self.widgets[fname], "value"):
-                attr = "value"
-            else:
-                attr = "active"
-                reset_value = [0] if reset_value else []
-            old = getattr(self.widgets[fname], attr)
-
-            # Update widget value
-            if reset_value is None:
-                kwargs = {attr: self.widgets[fname].start, "show_value": False}
-            else:
-                kwargs = {attr: reset_value}
-            self.widgets[fname].update(**kwargs)
-
-            # Update Text Field via callback function
-            if 'value' in self.widgets[fname]._callbacks:
-                for callback in self.widgets[fname]._callbacks['value']:
-                    callback('value', old=old, new=reset_value)
-            if 'value_throttled' in self.widgets[fname]._callbacks:
-                for callback in self.widgets[fname]._callbacks['value_throttled']:
-                    callback(attrib='value_throttled', old=old, new=reset_value)
 
     def visualize(self, doc):
         """

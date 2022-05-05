@@ -28,14 +28,56 @@ class Stack(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_stack)
 
+    def stackBiases(self, adinputs=None, **params):
+        """
+        This primitive stacks the inputs without any scaling or offsetting,
+        suitable for biases.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitve", self.myself(), "starting"))
+
+        if not all('BIAS' in bias.tags for bias in adinputs):
+            raise ValueError("Not all inputs have BIAS tag")
+
+        stack_params = self._inherit_params(params, "stackFrames")
+        stack_params.update({'zero': False, 'scale': False})
+        adinputs = self.stackFrames(adinputs, **stack_params)
+        return adinputs
+
     def stackFlats(self, adinputs=None, **params):
-        """Default behaviour is just to stack images as normal"""
-        params["zero"] = False
-        return self.stackFrames(adinputs, **params)
+        """This primitive stacks the inputs without offsetting, suitable
+        for flats."""
+        log = self.log
+        log.debug(gt.log_message("primitve", self.myself(), "starting"))
+
+        stack_params = self._inherit_params(params, "stackFrames")
+        stack_params.update({'zero': False})
+        adinputs = self.stackFrames(adinputs, **stack_params)
+        return adinputs
+
+    def stackDarks(self, adinputs=None, **params):
+        """
+        This primitive checks the inputs have the same exposure time and
+        stacks them without any scaling or offsetting, suitable for darks.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        if not all('DARK' in dark.tags for dark in adinputs):
+            raise ValueError("Not all inputs have DARK tag")
+
+        if not all(dark.exposure_time() == adinputs[0].exposure_time()
+                   for dark in adinputs[1:]):
+                raise ValueError("Darks are not of equal exposure time")
+
+        stack_params = self._inherit_params(params, "stackFrames")
+        stack_params.update({'zero': False, 'scale': False})
+        adinputs = self.stackFrames(adinputs, **stack_params)
+        return adinputs
 
     def stackFrames(self, adinputs=None, **params):
         """
@@ -198,7 +240,7 @@ class Stack(PrimitivesBASE):
             for i, ad in enumerate(adinputs):
                 for index in range(num_ext):
                     nddata = (ad[index].nddata.window[:] if statsec is None
-                              else ad[i][index].nddata.window[statsec])
+                              else ad[index].nddata.window[statsec])
                     #levels[i, index] = np.median(nddata.data)
                     levels[i, index] = gt.measure_bg_from_image(nddata, value_only=True)
             if scale and zero:

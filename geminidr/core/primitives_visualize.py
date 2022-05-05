@@ -41,8 +41,8 @@ class Visualize(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_visualize)
 
     def display(self, adinputs=None, **params):
@@ -355,7 +355,7 @@ class Visualize(PrimitivesBASE):
                 ad_out[0].hdr[ad._keyword_for('read_noise')] = np.mean(ad.read_noise())
             propagate_gain(ad_out[0], ad.gain())
 
-            ad_out.orig_filename = ad.filename
+            ad_out.orig_filename = ad.orig_filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
             adoutputs.append(ad_out)

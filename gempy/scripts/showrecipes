@@ -13,7 +13,7 @@ def main():
                                                 args.adpkg, args.drpkg)
         print(recipes_found)
     else:
-        print(args)
+        #print(args)
         primitives_found = showrecipes.showprims(
             args.inputfile, args.mode, args.recipe, args.adpkg, args.drpkg)
         print(primitives_found)

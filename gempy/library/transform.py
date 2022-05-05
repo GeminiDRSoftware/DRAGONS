@@ -986,7 +986,7 @@ class DataGroup:
             # Since this may be modified, deepcopy to preserve the one if
             # the DataGroup's _transforms list
             transform = deepcopy(transform)
-            if self.origin:
+            if self.origin is not None and any(x != 0 for x in self.origin):
                 transform.append(reduce(Model.__and__,
                                  [models.Shift(-offset) for offset in self.origin[::-1]]))
             output_corners = self._prepare_for_output(input_array,
@@ -1239,13 +1239,18 @@ class DataGroup:
             Jacobian of transformation (basically the increase in pixel area)
         """
         trans_output_shape = tuple(length * subsample for length in output_shape)
+
+        # We want to transform any DQ bit arrays into floats so we can sample
+        # the "ringing" from the interpolation and flag appropriately
+        out_dtype = np.float32 if np.issubdtype(
+            input_array.dtype, np.unsignedinteger) else input_array.dtype
         if isinstance(mapping, GeoMap):
             out_array = ndimage.map_coordinates(input_array, mapping.coords,
-                                                cval=cval, order=order)
+                                                cval=cval, order=order, output=out_dtype)
         else:
             out_array = ndimage.affine_transform(input_array, mapping.matrix,
                                                  mapping.offset, trans_output_shape,
-                                                 cval=cval, order=order)
+                                                 cval=cval, order=order, output=out_dtype)
 
         # We average to undo the subsampling. This retains the "threshold" and
         # conserves flux according to the Jacobian of input/output arrays.
@@ -1700,7 +1705,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
                     cat_table[xcolumn] = newx + 1
                     cat_table[ycolumn] = newy + 1
                 if new_wcs is not None:
-                    ra, dec = new_wcs(cat_table['X_IMAGE']-1, cat_table['Y_IMAGE']-1)
+                    ra, dec = new_wcs(cat_table['X_IMAGE'].value-1,
+                                      cat_table['Y_IMAGE'].value-1)
                 cat_table["X_WORLD"][:] = ra
                 cat_table["Y_WORLD"][:] = dec
                 tables.append(cat_table)

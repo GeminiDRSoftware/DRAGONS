@@ -22,8 +22,8 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 class NearIR(Bookkeeping):
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_nearIR)
 
     def addLatencyToDQ(self, adinputs=None, **params):
@@ -254,20 +254,3 @@ class NearIR(Bookkeeping):
         self.streams.update({"flats" : flat_list})
         self.streams.update({"darks" : dark_list})
         return adoutputs
-
-    def stackDarks(self, adinputs=None, **params):
-        """
-        This primitive checks the inputs have the same exposure time and
-        stacks them without any scaling or offsetting, suitable for darks.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        if not all(dark.exposure_time() == adinputs[0].exposure_time()
-                   for dark in adinputs[1:]):
-                raise OSError("Darks are not of equal exposure time")
-
-        stack_params = self._inherit_params(params, "stackFrames")
-        stack_params.update({'zero': False, 'scale': False})
-        adinputs = self.stackFrames(adinputs, **stack_params)
-        return adinputs

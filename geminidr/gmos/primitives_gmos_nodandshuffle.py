@@ -34,8 +34,8 @@ class GMOSNodAndShuffle(GMOS):
     """
     tagset = set()
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_nodandshuffle)
 
     def combineNodAndShuffleBeams(self, adinputs=None, **params):
@@ -297,7 +297,7 @@ class GMOSNodAndShuffle(GMOS):
                     getattr(ext_nodded, attr)[shuffle:] = getattr(ext,
                                                         attr)[:-shuffle]
                     ext_nodded.data[:shuffle] = 0
-                    ext_nodded.mask[:shuffle] = DQ.no_data
+                    ext_nodded.mask[:shuffle] |= DQ.no_data
                     ext_nodded.variance[:shuffle] = 0
 
             # Normalize if the A and B nod counts differ

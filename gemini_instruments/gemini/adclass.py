@@ -13,7 +13,7 @@ import dateutil.parser
 import numpy as np
 
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 
 from astrodata import AstroData
 from astrodata import astro_data_tag
@@ -145,6 +145,8 @@ def get_specphot_name(ad):
     -------
     str/None: name of the standard (or None if it's not a standard)
     """
+    if ad.phu.get('OBSTYPE') != 'OBJECT':
+        return
     target_name = ad.object().lower().replace(' ', '')
     try:
         target = SkyCoord(ad.target_ra(), ad.target_dec(), unit=u.deg)
@@ -168,6 +170,7 @@ def get_specphot_name(ad):
     i = separations.argmin()
     if separations[i] < 2 or separations[i] < 10 and all_names[i] == target_name:
         return all_names[i]
+
 
 # ------------------------------------------------------------------------------
 class AstroDataGemini(AstroData):
@@ -211,12 +214,14 @@ class AstroDataGemini(AstroData):
     # GCALFLAT is still needed
     @astro_data_tag
     def _type_gcalflat(self):
-        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
+        gcallamp = self.phu.get('GCALLAMP')
+        if gcallamp == 'IRhigh' or (gcallamp is not None and gcallamp.startswith('QH')):
             return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
     def _type_gcal_lamp(self):
-        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
+        gcallamp = self.phu.get('GCALLAMP')
+        if gcallamp == 'IRhigh' or (gcallamp is not None and gcallamp.startswith('QH')):
             shut = self.phu.get('GCALSHUT')
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
@@ -269,10 +274,11 @@ class AstroDataGemini(AstroData):
     @astro_data_tag
     def _type_bad_pixel_mask(self):
         if 'BPMASK' in self.phu:
-            return TagSet(['BPM'], blocks=['IMAGE', 'SPECT', 'FLAT', 'PREPARED',
-                                          'GCALFLAT', 'CAL', 'LAMPON',
-                                          'GCAL_IR_ON', 'GCAL_IR_OFF', 'DARK',
-                                           'NON_SIDEREAL', 'AZEL_TARGET'])
+            return TagSet(['BPM', 'CAL', 'PROCESSED'],
+                            blocks=['IMAGE', 'SPECT', 'NON_SIDEREAL',
+                                    'AZEL_TARGET',
+                                    'GCALFLAT', 'LAMPON', 'GCAL_IR_ON',
+                                    'GCAL_IR_OFF', 'DARK'])
 
     @astro_data_tag
     def _type_mos_mask(self):
@@ -319,6 +325,60 @@ class AstroDataGemini(AstroData):
     def _type_extracted(self):
         if 'EXTRACT' in self.phu:
             return TagSet(['EXTRACTED'])
+
+    def _ra(self):
+        """
+        Parse RA from header.
+
+        Utility method to pull the right ascension from the header, parsing text if appropriate.
+
+        Returns
+        -------
+        float : right ascension in degrees, or None
+        """
+        ra = self.phu.get(self._keyword_for('ra'), None)
+        if type(ra) == str:
+            # maybe it's just a float
+            try:
+                return float(ra)
+            except:
+                try:
+                    if not ra.endswith('hours') and not ra.endswith('degrees'):
+                        rastr = f'{ra} hours'
+                    else:
+                        rastr = ra
+                    return Angle(rastr).degree
+                except:
+                    self._logger.warning(f"Unable to parse RA from {ra}")
+                    return None
+        return ra
+
+    def _dec(self):
+        """
+        Parse DEC from header.
+
+        Utility method to pull the declination from the header, parsing text if appropriate.
+
+        Returns
+        -------
+        float : declination in degrees, or None
+        """
+        dec = self.phu.get(self._keyword_for('dec'), None)
+        if type(dec) == str:
+            # maybe it's just a float
+            try:
+                return float(dec)
+            except:
+                try:
+                    if not dec.endswith('degrees'):
+                        decstr = f'{dec} degrees'
+                    else:
+                        decstr = dec
+                    return Angle(decstr).degree
+                except:
+                    self._logger.warning(f"Unable to parse dec from {dec}")
+                    return None
+        return dec
 
     def _parse_section(self, keyword, pretty):
         try:
@@ -625,7 +685,7 @@ class AstroDataGemini(AstroData):
         """
         dec = self.wcs_dec()
         if dec is None:
-            dec = self.phu.get('DEC', None)
+            dec = self._dec()
         return dec
 
     @astro_data_descriptor
@@ -1399,7 +1459,7 @@ class AstroDataGemini(AstroData):
         """
         ra = self.wcs_ra()
         if ra is None:
-            ra = self.phu.get('RA', None)
+            ra = self._ra()
         return ra
 
     @astro_data_descriptor
@@ -1594,7 +1654,7 @@ class AstroDataGemini(AstroData):
         """
 
         try:
-            ra = self.phu['RA']
+            ra = self._ra()
         except KeyError:
             return None
 
@@ -1664,7 +1724,7 @@ class AstroDataGemini(AstroData):
             Declination of the target in degrees.
         """
         try:
-            dec = self.phu['DEC']
+            dec = self._dec()
         except KeyError:
             return None
 
@@ -2024,7 +2084,7 @@ class AstroDataGemini(AstroData):
         coords["lat"] = dec
         return coords
 
-    # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?
+    # TODO: Move to AstroDataFITS?
     def _get_wcs_pixel_scale(self, mean=True):
         """
         Returns a list of pixel scales (in arcseconds), derived from the
@@ -2040,19 +2100,33 @@ class AstroDataGemini(AstroData):
         list of floats/float
             List of pixel scales, one per extension
         """
+        def empirical_pixel_scale(ext):
+            """Brute-force calculation of pixel scale"""
+            if ext.wcs is None:
+                return None
+            yc, xc = [0.5 * l for l in ext.shape]
+            ra, dec = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc])[-2:]
+            cosdec = math.cos(dec[0] * np.pi / 180)
+            a = (ra[2] - ra[0]) * cosdec
+            b = (ra[1] - ra[0]) * cosdec
+            c = dec[2] - dec[0]
+            d = dec[1] - dec[0]
+            return 3600 * np.sqrt(abs(a * d - b * c))
+
         if self.is_single:
             try:
                 return 3600 * np.sqrt(abs(np.linalg.det(self.wcs.forward_transform['cd_matrix'].matrix)))
             except (IndexError, AttributeError):
-                return None
+                return empirical_pixel_scale(self)
 
         pixel_scale_list = []
         for ext in self:
             try:
                 pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
             except (IndexError, AttributeError):
-                if not mean:
-                    pixel_scale_list.append(None)
+                scale = empirical_pixel_scale(ext)
+                if scale is not None:
+                    pixel_scale_list.append(scale)
         if mean:
             if pixel_scale_list:
                 return np.mean(pixel_scale_list)

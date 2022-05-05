@@ -3,9 +3,12 @@
 #
 #                                                          primitives_register.py
 # ------------------------------------------------------------------------------
+import re
 import math
 import numpy as np
 from astropy.modeling import models
+from astropy import units as u
+from astropy.coordinates import Angle
 
 from copy import deepcopy
 
@@ -34,8 +37,8 @@ class Register(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_register)
 
     def adjustWCSToReference(self, adinputs=None, **params):
@@ -248,6 +251,16 @@ class Register(PrimitivesBASE):
             except AttributeError:  # no WCS
                 ad[0].wcs = gWCS([(cf.Frame2D(name="pixels"), transform),
                                   (cf.Frame2D(name="world"), None)])
+
+            # Update X_WORLD and Y_WORLD (RA and DEC) in OBJCAT
+            try:
+                x, y = ad[0].OBJCAT['X_IMAGE']-1, ad[0].OBJCAT['Y_IMAGE']-1
+            except (AttributeError, KeyError):
+                pass
+            else:
+                ra, dec = ad[0].wcs(x, y)
+                ad[0].OBJCAT['X_WORLD'] = ra
+                ad[0].OBJCAT['Y_WORLD'] = dec
             adoutputs.append(ad)
 
         # Timestamp and update filenames

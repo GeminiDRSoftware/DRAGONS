@@ -26,8 +26,8 @@ class Bookkeeping(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_bookkeeping)
 
     def addToList(self, adinputs=None, purpose=None):
@@ -349,7 +349,7 @@ class Bookkeeping(PrimitivesBASE):
             make full deepcopies of the slices?
         """
         log = self.log
-        streams = []
+        streams = set()
         for ad in adinputs:
             for i in range(len(ad)):
                 stream_name = f'{root_stream_name}{ad[i].id}'
@@ -372,7 +372,7 @@ class Bookkeeping(PrimitivesBASE):
                     self.streams[stream_name].append(new_ad)
                 except KeyError:
                     self.streams[stream_name] = [new_ad]
-                    streams.append(stream_name)
+                streams.add(stream_name)
 
         log.stdinfo(f'Created {len(streams)} streams by slicing input files.')
         for stream in streams:

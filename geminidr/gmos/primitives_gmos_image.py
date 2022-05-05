@@ -38,8 +38,8 @@ class GMOSImage(GMOS, Image, Photometry):
     """
     tagset = {"GEMINI", "GMOS", "IMAGE"}
 
-    def __init__(self, adinputs, **kwargs):
-        super().__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_image)
 
     def addOIWFSToDQ(self, adinputs=None, **params):
@@ -219,6 +219,18 @@ class GMOSImage(GMOS, Image, Photometry):
 
     def applyWCSAdjustment(self, adinputs=None, suffix=None, reference_stream=None):
         """
+        This primitive is used when performing separate-CCD reduction of GMOS
+        images and adjusts the WCS of the outer CCDs based on images of either
+        the complete mosaic or CCD2 only that have already been adjusted.
+
+        The name of a reference stream is supplied that contains images (either
+        the full mosaic or CCD2 only) whose WCS has already been corrected. For
+        each input AD (either CCD1 or CCD3 only) the WCS is calculated from the
+        mosaic geometry and the WCS of the corresponding image in the reference
+        stream (determined by matching the data_label). If the reference image
+        has been mosaicked, the location of CCD2 is determined from the DQ
+        plane, so this primitive will not work if the reference is a mosaic
+        without a DQ plane.
 
         Parameters
         ----------
@@ -256,7 +268,6 @@ class GMOSImage(GMOS, Image, Photometry):
                 continue
 
             geom = geometry_conf.geometry[ad.detector_name()]
-            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             origins = [k for k in geom if isinstance(k, tuple)]
             ccd2_xorigin = sorted(origins)[1][0]
 
@@ -278,8 +289,8 @@ class GMOSImage(GMOS, Image, Photometry):
                                 f"{ad.filename} will be incorrect.")
                 else:
                     xc, yc = mask.shape[1] // 2, mask.shape[0] // 2
-                    xorig = xc - np.argmax(mask[yc, xc::-1] & DQ.no_data) + 2
-                    yorig = yc - np.argmax(mask.T[xc, yc::-1] & DQ.no_data) + 2
+                    xorig = xc - np.argmax(mask[yc, xc::-1] & DQ.no_data) + 1
+                    yorig = yc - np.argmax(mask.T[xc, yc::-1] & DQ.no_data) + 1
                     if xorig > xc:  # no pixels are NO_DATA
                         xorig = 0
                     if yorig > yc:
@@ -440,7 +451,128 @@ class GMOSImage(GMOS, Image, Photometry):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def scaleByIntensity(self, adinputs=None, **params):
+    def QECorrect(self, adinputs=None, **params):
+        """
+        This primitive adjusts the background levels of CCDs 1 and 3 with
+        multiplicative scalings to match them to the background level of CCD2.
+        This is required because of the heterogeneous Hamamatsu CCDs with
+        their different QE profiles. The user can provide their own scaling
+        factors, or else factors will be calculated by measuring the background
+        levels of each CCD.
+
+        Note that this corrects for differences in the *shape* of the QE across
+        the imaging filter which cause the relative count rates on each of the
+        CCDs to depend on the color of the illumination. Since the twilight sky
+        used to flatfield has a different color from the dark night sky of the
+        science observations, flatfielding may not return the same count rates
+        on all CCDs. The effect is strongest in g.
+
+        This step can effectively be turned off in a recipe by setting the
+        parameter factors=1,1
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        factors: list of 2-floats/None
+            multiplicative factors to apply to CCDs 1 and 3
+            None => calculate from background levels
+        common: bool
+            if factors is None, calculate and apply the same 2 factors for
+            all inputs?
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        factors = params["factors"]
+        common = params["common"]
+        calc_scaling = not isinstance(factors, list)
+
+        scalings, scaling_samples = [], []
+        ads_to_correct = []
+        if not calc_scaling:
+            log.stdinfo("Using user-supplied scaling factors: "
+                        "{:.3f} {:.3f}".format(*factors))
+
+        for ad in adinputs:
+            if 'Hamamatsu' not in ad.detector_name(pretty=True):
+                log.stdinfo(f"{ad.filename} needs no correction as it does "
+                            "not have the Hamamatsu CCDs")
+                continue
+
+            array_info = gt.array_information(ad)
+            if array_info.detector_shape != (1, 3):
+                # TODO? We could use the mask to find the locations of the
+                # separate CCDs and still be able to perform this step, and
+                # then it could be done after detectSources() on the mosaic
+                log.warning(f"{ad.filename} it not comprised of separate CCDs "
+                            f"so cannot run {self.myself()} - continuing")
+                continue
+
+            bg_measurements = [[], [], []]
+            for ccd, extensions in enumerate(array_info.extensions):
+                for index in extensions:
+                    if calc_scaling:
+                        bg, bg_std, nbg = gt.measure_bg_from_image(ad[index])
+                        if bg is not None:
+                            bg_measurements[ccd].append([bg, nbg])
+                    elif ccd != 1:  # should already be validated as 2 elements
+                        log.debug(f"Multiplying {ad.filename}:{ad[index].id} by "
+                                  f"{factors[ccd // 2]}")
+                        ad[index].multiply(factors[ccd // 2])
+
+            if calc_scaling:
+                # weight by number of samples in each slice
+                bg_measurements = [np.asarray(m) for m in bg_measurements]
+                bg_levels = [np.average(m[:, 0], weights=m[:, 1])
+                             for m in bg_measurements]
+                log.debug("{} background levels: {:.3f}, {:.3f}, {:.3f}".
+                          format(ad.filename, *bg_levels))
+                scale_factors = [bg_levels[i] / bg_levels[1] for i in (0, 2)]
+                if common:
+                    # store scale factors and samples on CCDs 1 and 3
+                    scalings.append(scale_factors)
+                    scaling_samples.append([bg_measurements[i][:, 1].sum()
+                                            for i in (0, 2)])
+                    ads_to_correct.append(ad)  # reference for later correction
+                else:
+                    scale_factors = [1 / factor for factor in scale_factors]
+                    log.stdinfo("Calculated scale factors of {:.3f}, {:.3f} for "
+                                "{}".format(*scale_factors, ad.filename))
+                    for factor, extensions in zip(scale_factors, array_info.extensions[::2]):
+                        for index in extensions:
+                            log.debug(f"Multiplying {ad.filename}:{ad[index].id} "
+                                      f"by {factor}")
+                            ad[index].multiply(factor)
+
+            # Timestamp and update filename
+            if not (calc_scaling and common):
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=suffix, strip=True)
+
+        # If we had to wait in order to calculate a single pair of scaling
+        # factors for all inputs, calculate and apply that now
+        if calc_scaling and common:
+            scale_factors = 1 / np.average(
+                np.asarray(scalings), weights=np.asarray(scaling_samples), axis=0)
+            log.stdinfo("Calculated scale factors of {:.3f}, {:.3f} for all "
+                        "inputs".format(*scale_factors))
+            for ad in ads_to_correct:
+                for factor, extensions in zip(
+                        scale_factors, gt.array_information(ad).extensions[::2]):
+                    for index in extensions:
+                        log.debug(f"Multiplying {ad.filename}:{ad[index].id} "
+                                  f"by {factor:.3f}")
+                        ad[index].multiply(factor)
+
+                # Timestamp and update filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def scaleFlats(self, adinputs=None, **params):
         """
         This primitive scales input images to the mean value of the first
         image. It is intended to be used to scale flats to the same
@@ -455,7 +587,15 @@ class GMOSImage(GMOS, Image, Photometry):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        ref_mean = None
+        if len(set(len(ad) for ad in adinputs)) > 1:
+            raise ValueError("Not all inputs have the same number of "
+                             "extensions")
+        if not all(len(set(ad[i].shape for ad in adinputs)) == 1
+                   for i in range(len(adinputs[0]))):
+            raise ValueError("Not all inputs have extensions with the same "
+                             "shapes")
+
+        ref_data_region = None
         for ad in adinputs:
             # If this input hasn't been tiled at all, tile it
             ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
@@ -464,27 +604,49 @@ class GMOSImage(GMOS, Image, Photometry):
             # Use CCD2, or the entire mosaic if we can't find a second extn
             try:
                 data = ad_for_stats[1].data
+                mask = ad_for_stats[1].mask
+                stat_provider = "CCD2"
             except IndexError:
                 data = ad_for_stats[0].data
+                mask = ad_for_stats[0].mask
+                stat_provider = "mosaic"
 
             # Take off 5% of the width as a border
-            xborder = max(int(0.05 * data.shape[1]), 20)
-            yborder = max(int(0.05 * data.shape[0]), 20)
-            log.fullinfo("Using data section [{}:{},{}:{}] from CCD2 for "
-                         "statistics".format(xborder, data.shape[1] - xborder,
-                                             yborder, data.shape[0] - yborder))
+            if ref_data_region is None:
+                xborder = max(int(0.05 * data.shape[1]), 20)
+                yborder = max(int(0.05 * data.shape[0]), 20)
+                log.fullinfo(
+                    f"Using data section [{xborder+1}:{data.shape[1]-xborder}"
+                    f",{yborder+1}:{data.shape[0]-yborder}] from {stat_provider}"
+                    " for statistics")
+                region = (slice(yborder, -yborder), slice(xborder, -xborder))
+                ref_data_region = data[region]
+                ref_mask = mask
+                scale = 1
+            else:
+                data_region = data[region]
 
-            stat_region = data[yborder:-yborder, xborder:-xborder]
-            mean = np.mean(stat_region)
+                combined_mask = None
+                if mask is not None and ref_mask is not None:
+                    combined_mask = ref_mask | mask
+                elif mask is not None:
+                    combined_mask = mask
+                elif ref_mask is not None:
+                    combined_mask = ref_mask
 
-            # Set reference level to the first image's mean
-            if ref_mean is None:
-                ref_mean = mean
-            scale = ref_mean / mean
+                if combined_mask is not None:
+                    mask_region = combined_mask[region]
+                    mean = np.mean(data_region[mask_region == 0])
+                    ref_mean = np.mean(ref_data_region[mask_region == 0])
+                else:
+                    mean = np.mean(data_region)
+                    ref_mean = np.mean(ref_data_region)
+
+                # Set reference level to the first image's mean
+                scale = ref_mean / mean
 
             # Log and save the scale factor, and multiply by it
-            log.fullinfo("Relative intensity for {}: {:.3f}".format(
-                ad.filename, scale))
+            log.fullinfo(f"Relative intensity for {ad.filename}: {scale:.3f}")
             ad.phu.set("RELINT", scale,
                                  comment=self.keyword_comments["RELINT"])
             ad.multiply(scale)
@@ -526,6 +688,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # parameter is overridden, these parameters will just be
             # ignored
             stack_params = self._inherit_params(params, "stackFrames")
+            stack_params["reject_method"] = "minmax"
             nlow, nhigh = 0, 0
             if nframes <= 2:
                 stack_params["reject_method"] = "none"
@@ -538,13 +701,13 @@ class GMOSImage(GMOS, Image, Photometry):
             stack_params.update({'nlow': nlow, 'nhigh': nhigh,
                                  'zero': False, 'scale': False,
                                  'statsec': None, 'separate_ext': False})
-            log.fullinfo("For {} input frames, using reject_method={}, "
-                         "nlow={}, nhigh={}".format(nframes,
-                         stack_params["reject_method"], nlow, nhigh))
+            log.fullinfo(f"For {nframes} input frames, using reject_method="
+                         f"{stack_params['reject_method']}, "
+                         f"nlow={nlow}, nhigh={nhigh}")
 
             # Run the scaleByIntensity primitive to scale flats to the
             # same level, and then stack
-            adinputs = self.scaleByIntensity(adinputs)
+            adinputs = self.scaleFlats(adinputs)
             adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 
