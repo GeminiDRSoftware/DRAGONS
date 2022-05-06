@@ -103,7 +103,7 @@ class CalibDB(PrimitivesBASE):
         self._assert_calibrations(adinputs, cals)
         return adinputs
 
-    def getProcessedBPM(self, adinputs=None):
+    def getBPM(self, adinputs=None):
         procmode = 'sq' if self.mode == 'sq' else None
         cals = self.caldb.get_processed_bpm(adinputs, procmode=procmode)
         self._assert_calibrations(adinputs, cals)
@@ -178,7 +178,7 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeProcessedBPM(self, adinputs=None, suffix=None):
+    def storeBPM(self, adinputs=None, suffix=None):
         caltype = 'bpm'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
         adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",

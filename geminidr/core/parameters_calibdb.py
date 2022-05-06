@@ -50,7 +50,7 @@ class getProcessedSlitIllumConfig(config.Config):
     pass
 
 
-class getProcessedBPMConfig(config.Config):
+class getBPMConfig(config.Config):
     pass
 
 
@@ -84,7 +84,7 @@ class storeProcessedBiasConfig(config.Config):
     force = config.Field("Force input to be identified as a bias?", bool, False)
 
 
-class storeProcessedBPMConfig(config.Config):
+class storeBPMConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_bpm", optional=True)
 
 
