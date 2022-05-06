@@ -214,12 +214,14 @@ class AstroDataGemini(AstroData):
     # GCALFLAT is still needed
     @astro_data_tag
     def _type_gcalflat(self):
-        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
+        gcallamp = self.phu.get('GCALLAMP')
+        if gcallamp == 'IRhigh' or (gcallamp is not None and gcallamp.startswith('QH')):
             return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
     def _type_gcal_lamp(self):
-        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
+        gcallamp = self.phu.get('GCALLAMP')
+        if gcallamp == 'IRhigh' or (gcallamp is not None and gcallamp.startswith('QH')):
             shut = self.phu.get('GCALSHUT')
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
@@ -272,10 +274,11 @@ class AstroDataGemini(AstroData):
     @astro_data_tag
     def _type_bad_pixel_mask(self):
         if 'BPMASK' in self.phu:
-            return TagSet(['BPM'], blocks=['IMAGE', 'SPECT', 'FLAT', 'PREPARED',
-                                          'GCALFLAT', 'CAL', 'LAMPON',
-                                          'GCAL_IR_ON', 'GCAL_IR_OFF', 'DARK',
-                                           'NON_SIDEREAL', 'AZEL_TARGET'])
+            return TagSet(['BPM', 'CAL', 'PROCESSED'],
+                            blocks=['IMAGE', 'SPECT', 'NON_SIDEREAL',
+                                    'AZEL_TARGET',
+                                    'GCALFLAT', 'LAMPON', 'GCAL_IR_ON',
+                                    'GCAL_IR_OFF', 'DARK'])
 
     @astro_data_tag
     def _type_mos_mask(self):

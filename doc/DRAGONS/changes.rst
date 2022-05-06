@@ -6,21 +6,77 @@
 Change Logs
 ***********
 
+3.0.2
+=====
+
+Bug Fixes
+---------
+
+**geminidr.core**
+
+* Continue without crashing when ``traceApertures`` cannot identify a
+  starting location for a trace.
+
+* Fix bug where manually-assigned sky frames in ``separateSky`` were added
+  to the list of science frames by mistake.
+
+* Fix bug where ``stackFrames`` crashed if using the ``statsec`` parameter
+  when scaling or zero-offsetting.
+
+* In fringeCorrect, ``do_cal=force`` has been reactivated.
+
+**geminidr.gnirs**
+
+* Added missing support for YPHOT filter.
+
+New Features
+------------
+
+** geminidr **
+
+* Add ``wave_units`` and ``data_units`` parameters to ``write1DSpectra`` to
+  configure the output
+
+Interface Modifications
+-----------------------
+* Internal Gemini catalog server URL updated.
+
+Documentation
+------------
+
+* Various fixes to the documentation affecting formatting, not the content.
+
+
 3.0.1
 =====
 
 Bug Fixes
 ---------
 
-**geminidr**
-
 **geminidr.core**
 
 * Fix bug where ``section`` start/end comparison was made on string, not
   numeric, values.
 
-* Expose ``min_snr`` parameter in ``findApertures`` and hide ``use_snr``
-  (and set its default to ``False``).
+**gempy.library.transform**
+
+* Fix bug that caused longslit spectra to have incorrect WCS, offset from true
+  slit location.
+
+
+Interface Modifications
+-----------------------
+
+**geminidr.core**
+
+* Expose ``min_snr`` parameter in ``findApertures``, make ``use_snr=False``
+  the default, and estimate noise from pixel-to-pixel variations, regardless
+  of its value.
+
+Documentation
+-------------
+
+* Various fixes to the documentation.
 
 
 3.0.0

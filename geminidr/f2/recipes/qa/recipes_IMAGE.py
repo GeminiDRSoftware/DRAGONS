@@ -41,7 +41,7 @@ def reduce(p):
     p.measureCC()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
-    p.scaleByExposureTime()
+    p.scaleCountsToReference()
     p.stackFrames()
     p.detectSources()
     p.determineAstrometricSolution()

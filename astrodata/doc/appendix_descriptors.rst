@@ -131,7 +131,7 @@ since only GMOS offers a Nod & Shuffle mode.
 | gain_setting                   | Human readable gain setting (eg. low, high)                    | str             |
 +--------------------------------+----------------------------------------------------------------+-----------------+
 | gcal_lamp                      | Returns the name of the GCAL lamp being used, or "Off" if no   | str             |
-|                                | lamp is in use.                                               |                 |
+|                                | lamp is in use.                                                |                 |
 +--------------------------------+----------------------------------------------------------------+-----------------+
 | group_id                       | Gemini observation group ID that identifies compatible data.   | str             |
 +--------------------------------+----------------------------------------------------------------+-----------------+
