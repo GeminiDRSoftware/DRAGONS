@@ -59,6 +59,7 @@ args_for_cals = {
     'processed_flat': ('flat', {'processed': True}),
     'processed_standard': ('standard', {'processed': True}),
     'processed_slitillum': ('slitillum', {'processed': True}),
+    'processed_bpm': ('bpm', {'processed': True})
 }
 
 ERROR_CANT_WIPE = 0

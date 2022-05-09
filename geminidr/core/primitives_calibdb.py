@@ -179,7 +179,7 @@ class CalibDB(PrimitivesBASE):
         return adinputs
 
     def storeBPM(self, adinputs=None, suffix=None):
-        caltype = 'bpm'
+        caltype = 'processed_bpm'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
         adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
                                             keyword_comments=self.keyword_comments)
