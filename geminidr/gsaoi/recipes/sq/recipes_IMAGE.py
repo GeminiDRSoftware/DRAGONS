@@ -37,7 +37,7 @@ def reduce(p):
     p.resampleToCommonFrame()
     p.scaleCountsToReference()
     p.stackFrames()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
     return
 
 def reduce_nostack(p):
@@ -65,7 +65,7 @@ def reduce_nostack(p):
     p.clearStream(stream='skysub')
     p.associateSky()
     p.skyCorrect(mask_objects=True)
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
     return
 
 def alignAndStack(p):
@@ -84,7 +84,7 @@ def alignAndStack(p):
     p.resampleToCommonFrame()
     p.scaleCountsToReference()
     p.stackFrames()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
     return
 
 

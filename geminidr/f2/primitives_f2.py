@@ -64,6 +64,12 @@ class F2(Gemini, NearIR):
             ad.phu.set('PIXSCALE', pixel_scale, self.keyword_comments['PIXSCALE'])
             ad.hdr.set('PIXSCALE', pixel_scale, self.keyword_comments['PIXSCALE'])
 
+            # KL: fix the WCS for AO
+            if ad.is_ao():
+                for ext in ad:
+                    ext.wcs.forward_transform['cd_matrix'].matrix *= \
+                        ext.pixel_scale() / ext._get_wcs_pixel_scale()
+
             for desc in ('read_noise', 'gain', 'non_linear_level',
                          'saturation_level'):
                 kw = ad._keyword_for(desc)
@@ -75,7 +81,7 @@ class F2(Gemini, NearIR):
 
             if 'SPECT' in ad.tags:
                 kw = ad._keyword_for('dispersion_axis')
-                self.hdr.set(kw, 2, self.keyword_comments(kw))
+                ad.hdr.set(kw, 2, self.keyword_comments[kw])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

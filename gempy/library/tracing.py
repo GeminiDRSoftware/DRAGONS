@@ -550,7 +550,7 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
     return profile, prof_mask
 
 
-def get_extrema(profile, prof_mask, min_snr=3):
+def get_extrema(profile, prof_mask=None, min_snr=3):
     """
     Find all the significant maxima and minima in a 1D profile. Significance
     is calculated from the prominence of each peak divided by an estimate of
@@ -609,13 +609,20 @@ def get_extrema(profile, prof_mask, min_snr=3):
     if not extrema:
         return []
 
+    # Delete a maximum if there is no minimum between it and the edge,
+    # unless it's the ONLY maximum
     if extrema[0][2]:
         if len(extrema) == 1:
             extrema = [(1, profile[1], False)] + extrema + [(xpixels[-1], profile[-2], False)]
+        elif len(extrema) == 2:
+            extrema = [(1, profile[1], False)] + extrema
         else:
             del extrema[0]
     if extrema and extrema[-1][2]:
-        del extrema[-1]
+        if len(extrema) == 2:
+            extrema = extrema + [(xpixels[-1], profile[-2], False)]
+        else:
+            del extrema[-1]
 
     if not extrema:
         return []
@@ -652,6 +659,9 @@ def get_extrema(profile, prof_mask, min_snr=3):
 
     ### WE NEED TO GET RID OF THEM IN A SMARTER WAY. PERCOLATING?
     apertures = [0] * (len(extrema) // 2)
+    if not apertures:
+        return []
+
     apnext = 1
     niter = 0
     while True:
@@ -1363,20 +1373,24 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     mask = np.zeros_like(data, dtype=DQ.datatype)
     var = np.empty_like(data)
 
+
     coord_lists = [[] for peak in initial_peaks]
     for direction in (1, -1):
         ypos = start
         last_coords = [[ypos, peak] for peak in initial_peaks]
-        lookback = 0
+        missing_but_not_lost = None
 
         while True:
+            missing_but_not_lost = missing_but_not_lost or ypos
             ypos += step
-            # This is the number of steps we are allowed to look back if
-            # we don't find the peak in the current step
-            lookback = min(lookback + 1, max_missed)
             # Reached the bottom or top?
             if ypos < 0.5 * nsum or ypos > ext_data.shape[0] - 0.5 * nsum:
                 break
+
+            # This indicates we should start making profiles binned across
+            # multiple steps because we have lost lines but they're not
+            # completely lost yet.
+            lookback = min(int((ypos - missing_but_not_lost) / step), max_missed)
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             # There's always at least one such array
@@ -1425,6 +1439,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                             break
                         elif j < lookback:
                             # Investigate more heavily-binned profiles
+                            # new_peak calculated here may be added in the
+                            # next iteration of the loop
                             try:
                                 new_peak = pinpoint_peaks(
                                     data[j+1], peaks=[old_peak], mask=mask[j+1],
@@ -1435,7 +1451,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                         # We haven't found the continuation of this line.
                         # If it's gone for good, set the coord to NaN to avoid it
                         # picking up a different line if there's significant tilt
-                        if steps_missed > max_missed:
+                        if steps_missed >= max_missed:
                             #coord_lists[i].append([ypos, np.nan])
                             last_coords[i] = [ypos, np.nan]
                         continue
@@ -1455,12 +1471,13 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
                     coord_lists[i].append(new_coord)
                     last_coords[i] = new_coord.copy()
+                try:
+                    missing_but_not_lost = direction * min(
+                        direction * last[0] for last in last_coords if not np.isnan(last[1]))
+                except ValueError:  # lost all lines
+                    break
             else:  # We don't bin across completely dead regions
-                lookback = 0
-
-            # Lost all lines!
-            if all(np.isnan(c[1]) for c in last_coords):
-                break
+                missing_but_not_lost = None
 
         step *= -1
 
