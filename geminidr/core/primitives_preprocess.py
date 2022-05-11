@@ -1074,7 +1074,8 @@ class Preprocess(PrimitivesBASE):
                                 "2D spectra or multi-extension 1D spectra")
             # Spectral extraction in this primitive does not subtract the sky
             if (all_spect2d and tolerance > 0 and not
-                    all(self.timestamp_keys['skyCorrectFromSlit'] in ad for ad in adinputs)):
+                    all(self.timestamp_keys['skyCorrectFromSlit'] in ad.phu
+                        for ad in adinputs)):
                 log.warning("Not all inputs have been sky-corrected. "
                             "Scaling may be in error.")
             mkcat = mkcat_spect
