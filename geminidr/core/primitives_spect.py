@@ -610,6 +610,10 @@ class Spect(Resample):
             default bandpass width (in nm) to use if not present in the
             spectrophotometric data table (default: 5.)
 
+        resampling: float/None
+            if not None, resample the specphot file to this wavelength
+            interval (in nm) before calculating the sensitivity
+
         interactive: bool, optional
             Run the interactive UI for selecting the fit parameters
 
@@ -1720,31 +1724,18 @@ class Spect(Resample):
                         del ext.APERTURE
                     continue
 
-                # This is a little convoluted because of the simplicity of the
-                # initial models, but we want to ensure that the APERTURE
-                # table is written in an identical way to other models, and so
-                # we should use the model_to_table() function
-                all_tables = []
-                for i, (loc, limits) in enumerate(zip(locations, all_limits),
-                                                  start=1):
-                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1],
-                                              c0=loc)
-                    aptable = am.model_to_table(cheb)
+                apmodels, sizes = [], []
+                for i, (loc, limits) in enumerate(zip(locations, all_limits), start=1):
+                    apmodels.append(models.Chebyshev1D(
+                        degree=0, domain=[0, npix-1], c0=loc))
                     lower, upper = limits - loc
-                    aptable["number"] = np.int32(i)
-                    aptable["aper_lower"] = lower
-                    aptable["aper_upper"] = upper
-                    all_tables.append(aptable)
                     log.stdinfo(f"Aperture {i} found at {loc:.2f} "
                                 f"({lower:.2f}, +{upper:.2f})")
                     if lower > 0 or upper < 0:
                         log.warning("Problem with automated sizing of "
                                     f"aperture {i}")
-
-                aptable = vstack(all_tables, metadata_conflicts="silent")
-                # Move "number" to be the first column
-                new_order = ["number"] + [c for c in aptable.colnames if c != "number"]
-                ext.APERTURE = aptable[new_order]
+                    sizes.append((lower, upper))
+                ext.APERTURE = make_aperture_table(apmodels, limits=sizes)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -3580,6 +3571,60 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
                         f"units of {ext_str} are {ext_unit}")
         this_conserve = user_conserve  # but do what we're told
     return this_conserve
+
+
+def make_aperture_table(apmodels, existing_table=None, limits=None):
+    """
+    Create a new APERTURE table from a list of aperture trace models. These
+    can either be updated models to apply to an existing table, or a new
+    table (in which case the limits must be provided).
+
+    Parameters
+    ----------
+    apmodels: list of Chebyshev1D models
+        the models defining the apertures
+    existing_table: Table/None
+        an existing Table (if updating apertures)
+    limits: list of 2-tuples/None
+        aperture limits (if creating a new table)
+
+    Returns
+    -------
+    Table: the new APERTURE table
+    """
+    all_tables = []
+    length = len(limits if existing_table is None else existing_table)
+    if len(apmodels) != length:
+        raise ValueError(f"Mismatch between apmodels length ({len(apmodels)})"
+                         f" and iterator length ({length})")
+
+    iterator = iter(limits if existing_table is None else existing_table)
+    for apmodel, item in zip(apmodels, iterator):
+        aptable = am.model_to_table(apmodel)
+        if existing_table is None:
+            aptable["aper_lower"] = item[0]
+            aptable["aper_upper"] = item[1]
+        else:
+            aptable["aper_lower"] = item["aper_lower"]
+            aptable["aper_upper"] = item["aper_upper"]
+        all_tables.append(aptable)
+
+    # If the traces have different orders, there will be missing
+    # values that vstack will mask, so we have to set those to zero
+    new_aptable = vstack(all_tables, metadata_conflicts="silent")
+    if existing_table is None:
+        new_aptable["number"] = np.arange(len(new_aptable), dtype=np.int32) + 1
+    else:
+        new_aptable["number"] = aptable["number"]
+    colnames = new_aptable.colnames
+    new_col_order = (["number"] + sorted(c for c in colnames
+                                         if c.startswith("c")) +
+                     ["aper_lower", "aper_upper"])
+    for col in colnames:
+        if isinstance(new_aptable[col], MaskedColumn):
+            new_aptable[col] = new_aptable[col].filled(fill_value=0)
+    return new_aptable[new_col_order]
+
 
 
 def QESpline(coeffs, waves, data, weights, boundaries, order):
