@@ -259,12 +259,12 @@ def test_get_processed_bpm(ad, monkeypatch):
         return {}
     monkeypatch.setattr(test_gemini.caldb, "get_processed_bpm", mock_get_processed_bpm)
     test_gemini.mode = 'ql'
-    adinputs_out = test_gemini.getProcessedBPM(adinputs)
+    adinputs_out = test_gemini.getBPM(adinputs)
     assert(saved_adinputs == adinputs)
     assert(saved_procmode is None)
     assert(adinputs_out == adinputs)
     test_gemini.mode = 'sq'
-    adinputs_out = test_gemini.getProcessedBPM(adinputs)
+    adinputs_out = test_gemini.getBPM(adinputs)
     assert(saved_adinputs == adinputs)
     assert(saved_procmode == 'sq')
     assert(adinputs_out == adinputs)
@@ -499,7 +499,7 @@ def test_store_bpm(ad, monkeypatch):
     test_gemini.storeBPM([bpm])
     assert(len(storecal_args) == 1)
     assert(len(storecal_args[0][0]) == 1)
-    assert(storecal_args[0][1] == 'bpm')
+    assert(storecal_args[0][1] == 'processed_bpm')
     saved_bpm = storecal_args[0][0][0]
     assert(saved_bpm.filename == 'N20010101S0001_ql_bpm.fits')
     assert(saved_bpm.phu['PROCMODE'] == 'ql')
