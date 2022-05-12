@@ -3104,26 +3104,33 @@ class Spect(Resample):
                     #  to start somewhere the source is bright enough, and there
                     #  may not be a single location where that is true for all
                     #  sources
+                    all_ref_coords = np.array([])
                     for i, loc in enumerate(locations):
                         c0 = int(loc + 0.5)
                         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-                        start = np.argmax(at.boxcar(spectrum, size=20))
-                        log.debug(f"Starting trace of aperture {i+1} at pixel {start+1}")
+                        if ext.mask is None:
+                            start = np.argmax(at.boxcar(spectrum, size=20))
+                        else:
+                            good = ((ext.mask[c0] if dispaxis == 1 else
+                                     ext.mask[:, c0]) & DQ.not_signal) == 0
+
+                            start = np.arange(spectrum.size)[good][np.argmax(
+                                at.boxcar(spectrum[good], size=20))]
+                        log.stdinfo(f"Starting trace of aperture {i+1} at pixel {start+1}")
 
                         # The coordinates are always returned as (x-coords, y-coords)
-                        ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                                    start=start, initial=[loc],
-                                                                    rwidth=None, cwidth=5, step=step,
-                                                                    nsum=nsum, max_missed=max_missed,
-                                                                    initial_tolerance=None,
-                                                                    max_shift=max_shift,
-                                                                    viewer=self.viewer if debug else None)
-                        if i:
-                            all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
-                            all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
-                        else:
-                            all_ref_coords = ref_coords
-                            all_in_coords = in_coords
+                        ref_coords, in_coords = tracing.trace_lines(
+                            ext, axis=dispaxis, start=start, initial=[loc],
+                            rwidth=None, cwidth=5, step=step, nsum=nsum,
+                            max_missed=max_missed, initial_tolerance=None,
+                            max_shift=max_shift, viewer=self.viewer if debug else None)
+                        if ref_coords.size:
+                            if all_ref_coords.size:
+                                all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
+                                all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
+                            else:
+                                all_ref_coords = ref_coords
+                                all_in_coords = in_coords
 
                     spectral_coords = np.arange(0, ext.shape[dispaxis], step)
 
@@ -3140,10 +3147,11 @@ class Spect(Resample):
                         ref_coords, in_coords = values[:2], values[2:]
 
                         # log aperture
-                        min_value = in_coords[1 - dispaxis].min()
-                        max_value = in_coords[1 - dispaxis].max()
-                        log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
-                                  f"to {max_value}")
+                        if in_coords.size:
+                            min_value = in_coords[1 - dispaxis].min()
+                            max_value = in_coords[1 - dispaxis].max()
+                            log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
+                                      f"to {max_value}")
 
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
@@ -3184,31 +3192,8 @@ class Spect(Resample):
 
                         aperture_models.append(_fit_1d.model)
 
-                all_aperture_tables = []
-                for model, aperture in zip(aperture_models, aptable):
-                    this_aptable = am.model_to_table(model)
-
-                    # Recalculate aperture limits after rectification
-                    #apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
-                    this_aptable["number"] = aperture["number"]
-                    this_aptable["aper_lower"] = \
-                        aperture["aper_lower"] #+ (location - apcoords.min())
-                    this_aptable["aper_upper"] = \
-                        aperture["aper_upper"] # - (apcoords.max() - location)
-                    all_aperture_tables.append(this_aptable)
-
-                # If the traces have different orders, there will be missing
-                # values that vstack will mask, so we have to set those to zero
-                new_aptable = vstack(all_aperture_tables,
-                                     metadata_conflicts="silent")
-                colnames = new_aptable.colnames
-                new_col_order = (["number"] + sorted(c for c in colnames
-                                                     if c.startswith("c")) +
-                                 ["aper_lower", "aper_upper"])
-                for col in colnames:
-                    if isinstance(new_aptable[col], MaskedColumn):
-                        new_aptable[col] = new_aptable[col].filled(fill_value=0)
-                ext.APERTURE = new_aptable[new_col_order]
+                ext.APERTURE = make_aperture_table(aperture_models,
+                                                   existing_table=aptable)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -3615,7 +3600,7 @@ def make_aperture_table(apmodels, existing_table=None, limits=None):
     if existing_table is None:
         new_aptable["number"] = np.arange(len(new_aptable), dtype=np.int32) + 1
     else:
-        new_aptable["number"] = aptable["number"]
+        new_aptable["number"] = existing_table["number"]
     colnames = new_aptable.colnames
     new_col_order = (["number"] + sorted(c for c in colnames
                                          if c.startswith("c")) +
