@@ -123,7 +123,7 @@ class GMOSClassicLongslit(GMOSSpect):
                             format(ad.filename))
                 continue
 
-            ybin = ad.detector_y_bin()
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             mshift = max_shift // ybin
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
@@ -152,10 +152,20 @@ class GMOSClassicLongslit(GMOSSpect):
 
                 # Default operation for GMOS full-frame LS
                 # Sadly, we cannot do this reliably without concatenating the
-                # arrays and using a big chunk of memory.
+                # arrays and using a big chunk of memory. Try at least to
+                # control memory usage
                 #####row_medians = np.zeros((ad[0].shape[0] + 2 * mshift,))
-                row_medians = np.percentile(np.concatenate(
-                    [ext.data for ext in ad], axis=1), 95, axis=1)
+                all_data = np.zeros((ad[0].shape[0], ad[-1].detector_section().x2 // xbin))
+                for ext in ad:
+                    _slice = (slice(None), slice(ext.detector_section().x1 // xbin,
+                                                 ext.detector_section().x2 // xbin))
+                    all_data[_slice] = ext.data[ext.data_section().asslice()]
+                    if ext.mask is not None:
+                        all_data[_slice][ext.mask[ext.data_section().asslice()]
+                                         & DQ.not_signal > 0] = np.nan
+                row_medians = np.nanpercentile(all_data, 95, axis=1)
+                del all_data
+
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
                 # Pad model to ensure cross-correlation doesn't go off the edge
