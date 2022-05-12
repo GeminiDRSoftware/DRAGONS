@@ -280,7 +280,7 @@ def start_server():
         _bokeh_server.start()
 
     if test_mode:
-        kwargs = {"browser": ["chrome", "--headless", "--disable-gpu"]}
+        kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
         # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu", "--dump-dom"]}
         # kwargs = {"browser": "chrome"}
     else:
