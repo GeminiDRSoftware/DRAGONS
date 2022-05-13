@@ -89,6 +89,12 @@ class determineDistortionConfig(config.Config):
     debug = config.Field("Display line traces on image display?", bool, False)
 
 class determineSlitEdgesConfig(config.Config):
+    edges1 = config.ListField("List of left edges of illuminated region(s)",
+                              float, default=None, minLength=1,
+                              optional=True, single=True)
+    edges2 = config.ListField("List of right edges of illuminated region(s)",
+                              float, default=None, minLength=1,
+                              optional=True, single=True)
     debug = config.Field("Plot fits of edges and print extra information?",
                          bool, False)
 
