@@ -1263,7 +1263,8 @@ def cwt_ricker(data, widths, **kwargs):
 @unpack_nddata
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                 cwidth=5, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
-                max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None):
+                max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
+                min_peak_value=None):
     """
     This function traces features along one axis of a two-dimensional image.
     Initial peak locations are provided and then these are matched to peaks
@@ -1311,6 +1312,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         variance as arguments, and returns 1D versions of all three
     viewer: imexam viewer or None
         Viewer to draw lines on.
+    min_peak_value: int or float
+        Minimum amplitude of fit to be considered as a real detection. Peaks
+        smaller than this value will be counted as a miss.
 
     Returns
     -------
@@ -1406,8 +1410,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             # the data array 0 as well, and we can't find any peaks
             if any(mask[0] == 0) and not all(np.isinf(var[0])):
                 last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
-                peaks = pinpoint_peaks(data[0], peaks=last_peaks, mask=mask[0],
-                                       halfwidth=halfwidth)[0]
+                peaks, peak_values = pinpoint_peaks(data[0], peaks=last_peaks, mask=mask[0],
+                                       halfwidth=halfwidth)
 
                 for i, (last_row, old_peak) in enumerate(last_coords):
                     if np.isnan(old_peak):
@@ -1416,7 +1420,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     # the loop but nothing will match
                     if peaks:
                         j = np.argmin(abs(np.array(peaks) - old_peak))
-                        new_peak = peaks[j]
+                        new_peak, new_peak_value = peaks[j], peak_values[j]
                     else:
                         new_peak = np.inf
 
@@ -1424,7 +1428,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     steps_missed = int(abs((ypos - last_row) / step)) - 1
                     for j in range(min(steps_missed, lookback) + 1):
                         tolerance = max_shift * (j + 1) * abs(step)
-                        if abs(new_peak - old_peak) <= tolerance:
+                        if abs(new_peak - old_peak) <= tolerance and\
+                              (min_peak_value is None or new_peak_value > min_peak_value):
                             new_coord = [ypos - 0.5 * j * step, new_peak]
                             break
                         elif j < lookback:
@@ -1432,9 +1437,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                             # new_peak calculated here may be added in the
                             # next iteration of the loop
                             try:
-                                new_peak = pinpoint_peaks(
+                                new_peak, new_peak_value = [x[0] for x in pinpoint_peaks(
                                     data[j+1], peaks=[old_peak], mask=mask[j+1],
-                                    halfwidth=halfwidth)[0][0]
+                                    halfwidth=halfwidth)]
                             except IndexError:  # No peak there
                                 new_peak = np.inf
                     else:
