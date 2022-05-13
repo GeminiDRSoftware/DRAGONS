@@ -9,7 +9,7 @@ import os
 import re
 import warnings
 from contextlib import suppress
-from copy import copy
+from copy import copy, deepcopy
 from functools import partial, reduce
 from importlib import import_module
 
@@ -2680,21 +2680,34 @@ class Spect(Resample):
                                 (resampled_frame, new_wcs_model),
                                 (ext.wcs.output_frame, None)])
 
-                new_ext = transform.resample_from_wcs(ext, 'resampled', subsample=subsample,
-                                                      attributes=attributes, conserve=this_conserve,
-                                                      origin=origin, output_shape=output_shape)
+                new_ext = transform.resample_from_wcs(
+                    ext, 'resampled', subsample=subsample,
+                    attributes=attributes, conserve=this_conserve,
+                    origin=origin, output_shape=output_shape)
                 if iext == 0:
                     ad_out = new_ext
                 else:
                     ad_out.append(new_ext[0])
-                #if ndim == 2:
-                #    try:
-                #        offset = slit_offset.offset.value
-                #        ext.APERTURE['c0'] += offset
-                #        log.fullinfo("Shifting aperture locations by {:.2f} "
-                #                     "pixels".format(offset))
-                #    except AttributeError:
-                #        pass
+
+                # We attempt to modify the APERTURE table (if it exists) so
+                # that it's still relevant. This involved applying a shift
+                # and redefining the domain to the pixel range that corresponds
+                # to the same wavelength range as before. This is still not
+                # perfect though, since the location of a specific wavelength
+                # within the domain (the normalized coordinate) will have
+                # changed slightly. The solution to this is to INITIALLY define
+                # the APERTURE model as a function of wavelength, not pixel.
+                # Currently this is accurate to <0.1 pixel for GMOS.
+                # TODO? Define APERTURE as a function of wavelength, not pixel.
+                if ndim == 2 and hasattr(ext, 'APERTURE'):
+                    offset = spatial_offset.offset.value
+                    ad_out[-1].APERTURE = deepcopy(ext.APERTURE)
+                    ad_out[-1].APERTURE['c0'] += offset
+                    log.fullinfo("Shifting aperture locations by "
+                                 f"{offset:.2f} pixels")
+                    for kw in ('DOMAIN_START', 'DOMAIN_END'):
+                        ad_out[-1].APERTURE.meta['header'][kw] = wave_resample(
+                            ext.APERTURE.meta['header'][kw])
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
@@ -3116,7 +3129,8 @@ class Spect(Resample):
 
                             start = np.arange(spectrum.size)[good][np.argmax(
                                 at.boxcar(spectrum[good], size=20))]
-                        log.stdinfo(f"Starting trace of aperture {i+1} at pixel {start+1}")
+                        log.stdinfo(f"{ad.filename}: Starting trace of "
+                                    f"aperture {i+1} at pixel {start+1}")
 
                         # The coordinates are always returned as (x-coords, y-coords)
                         ref_coords, in_coords = tracing.trace_lines(

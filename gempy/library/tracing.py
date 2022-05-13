@@ -94,13 +94,15 @@ class Aperture:
 
     def check_domain(self, npix):
         """Simple function to warn user if aperture model appears inconsistent
-        with the array containing the data"""
-        try:
-            if self.model.domain != (0, npix - 1):
-                log.warning("Model's domain is inconsistent with image size. "
-                            "Results may be incorrect.")
-        except AttributeError:  # no "domain" attribute
-            pass
+        with the array containing the data. Since resampleToCommonFrame() now
+        modifies the domain, this will raise unnecessary warnings if left as-is"""
+        pass
+        #try:
+        #    if self.model.domain != (0, npix - 1):
+        #        log.warning("Model's domain is inconsistent with image size. "
+        #                    "Results may be incorrect.")
+        #except AttributeError:  # no "domain" attribute
+        #    pass
 
     def aperture_mask(self, ext=None, width=None, aper_lower=None,
                       aper_upper=None, grow=None):
