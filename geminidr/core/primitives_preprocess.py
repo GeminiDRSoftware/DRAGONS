@@ -1786,7 +1786,7 @@ def calc_scaling_image(ad, ref_ad, objcat, ref_objcat, idx, matched, log):
 
 def mkcat_spect(ad):
     """Produce a catalogue of sources from a spectroscopic AstroData object"""
-    if len(ad) > 1:  # extracted spectra
+    if len(ad[0].shape) == 1:  # extracted spectra
         cat = {(ra, dec): ad[i].nddata for i, (ra, dec) in
                enumerate(zip(ad.hdr['XTRACTRA'], ad.hdr['XTRACTDE']))}
     else:  # 2D spectrum with multiple sources
