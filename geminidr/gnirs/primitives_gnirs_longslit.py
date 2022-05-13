@@ -57,6 +57,15 @@ class GNIRSLongslit(GNIRS, Spect, NearIR):
             name of MDF to add (None => use default)
         """
 
+        # "Slit" indicates a change in the expected length of the slit, "x"
+        # denotes a shift in the expected midpoint of the illuminated region.
+        corrections = {'slit_short_south': 103,  # arcsec
+                       'x_32/mm_south': 406,  # pixels
+                       'slit_long_north': 49,  # arcsec
+                       'x_longred_north': 482,  # pixels
+                       'x_longblue_north': 542,  # pixels
+                       }
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -89,25 +98,30 @@ class GNIRSLongslit(GNIRS, Spect, NearIR):
             elif 'Long' in ad.camera():
                 slit_correction_factor = 0.97
 
-            # The MDFs for Gemini-South data report a slitwidth of 100",
-            # but from measuring slitwidths in observations it appears that the
-            # 103" used in Gemini-North MDFs is actually the correct value, so
-            # add 3" here.
-            if (ad.telescope() == 'Gemini-South') and ('Short' in ad.camera()):
-                ad.MDF['slitsize_mx'][0] += 3
+            # The MDFs for GNIRS are sometimes incorrect, so apply the various
+            # corrections given above as appropriate.
+            if (ad.telescope() == 'Gemini-South'):
+                if ('Short' in ad.camera()):
+                    ad.MDF['slitsize_mx'][0] = corrections['slit_short_south']
 
-            # Flats from the LongBlue and LongRed cameras appear to have
-            # physically different slit widths, despite both drawing from the
-            # same MDF. LongRed data appears to be 3" narrower than LongBlue,
-            # so subtract that here.
-            if ('LongRed' in ad.camera()):
-                ad.MDF['slitsize_mx'][0] -= 3
+                if ('Long' in ad.camera()) and ('32/mm' in ad.disperser()):
+                    ad.MDF['x_ccd'][0] = corrections['x_32/mm_south']
+
+            elif (ad.telescope() == 'Gemini-North'):
+
+                if ('LongRed' in ad.camera()):
+                    ad.MDF['x_ccd'][0] = corrections['x_longred_north']
+                    if ('111/mm' in ad.disperser()):
+                        ad.MDF['slitsize_mx'][0] = corrections['slit_long_north']
+
+                if ('LongBlue' in ad.camera()):
+                    ad.MDF['x_ccd'][0] = corrections['x_longblue_north']
+
 
             # Only the 'slitsize_mx' value needs the width correction; the
             # 'slitsize_my' isn't actually used, but we convert it for
             # consistency.
             mdf['slitsize_mx'][0] *= slit_correction_factor / arcsec_to_mm
-            # mdf['slitsize_mx'][0] /= arcsec_to_mm * slit_correction_factor
             mdf['slitsize_my'][0] /= arcsec_to_mm
 
             log.stdinfo('Converted slit sizes from arcseconds to millimeters '
