@@ -3120,14 +3120,14 @@ class Spect(Resample):
                     all_ref_coords = np.array([])
                     for i, loc in enumerate(locations):
                         c0 = int(loc + 0.5)
-                        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
+                        spectrum = ext.data[c0, nsum:-nsum] if dispaxis == 1 else ext.data[nsum:-nsum, c0]
                         if ext.mask is None:
-                            start = np.argmax(at.boxcar(spectrum, size=20))
+                            start = np.argmax(at.boxcar(spectrum, size=20)) + nsum
                         else:
-                            good = ((ext.mask[c0] if dispaxis == 1 else
-                                     ext.mask[:, c0]) & DQ.not_signal) == 0
+                            good = ((ext.mask[c0, nsum:-nsum] if dispaxis == 1 else
+                                     ext.mask[nsum:-nsum, c0]) & DQ.not_signal) == 0
 
-                            start = np.arange(spectrum.size)[good][np.argmax(
+                            start = nsum + np.arange(spectrum.size)[good][np.argmax(
                                 at.boxcar(spectrum[good], size=20))]
                         log.stdinfo(f"{ad.filename}: Starting trace of "
                                     f"aperture {i+1} at pixel {start+1}")

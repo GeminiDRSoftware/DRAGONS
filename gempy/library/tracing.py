@@ -1345,7 +1345,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
     else:  # just to be sure
-        start = int(start)
+        start = int(min(max(start, nsum // 2), ext_data.shape[0] - nsum / 2))
 
     # Get accurate starting positions for all peaks
     halfwidth = cwidth // 2
@@ -1392,6 +1392,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     # can't compute the pixel-to-pixel variance and hence the S/N can't be calculated
     if ext_mask is not None:
         for i, s in reversed(list(enumerate(all_slices))):
+            print(i, s)
             if np.bincount((ext_mask[s] & DQ.not_signal).min(axis=1))[0] <= 1:
                 del step_centers[i]
 
