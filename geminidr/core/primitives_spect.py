@@ -2701,13 +2701,14 @@ class Spect(Resample):
                 # TODO? Define APERTURE as a function of wavelength, not pixel.
                 if ndim == 2 and hasattr(ext, 'APERTURE'):
                     offset = spatial_offset.offset.value
-                    ad_out[-1].APERTURE = deepcopy(ext.APERTURE)
-                    ad_out[-1].APERTURE['c0'] += offset
                     log.fullinfo("Shifting aperture locations by "
                                  f"{offset:.2f} pixels")
-                    for kw in ('DOMAIN_START', 'DOMAIN_END'):
-                        ad_out[-1].APERTURE.meta['header'][kw] = wave_resample(
-                            ext.APERTURE.meta['header'][kw])
+                    apmodels = [am.table_to_model(row) for row in ext.APERTURE]
+                    for model in apmodels:
+                        model.c0 += offset
+                        model.domain = wave_resample(model.domain)
+                    ad_out[-1].APERTURE = make_aperture_table(
+                        apmodels, existing_table=ext.APERTURE)
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
