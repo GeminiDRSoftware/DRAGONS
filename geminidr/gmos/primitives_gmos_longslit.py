@@ -673,7 +673,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     with np.errstate(invalid='ignore', divide='ignore'):
                         ext.divide(ext_fitted.nddata[slice_])
                     np.nan_to_num(ext.data, copy=False, posinf=0, neginf=0)
-                    np.nan_to_num(ext.variance, copy=False)
+                    np.nan_to_num(ext.variance, copy=False, posinf=0, neginf=0)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
