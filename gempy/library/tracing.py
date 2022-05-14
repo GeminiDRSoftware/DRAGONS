@@ -1392,7 +1392,6 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     # can't compute the pixel-to-pixel variance and hence the S/N can't be calculated
     if ext_mask is not None:
         for i, s in reversed(list(enumerate(all_slices))):
-            print(i, s)
             if np.bincount((ext_mask[s] & DQ.not_signal).min(axis=1))[0] <= 1:
                 del step_centers[i]
 
