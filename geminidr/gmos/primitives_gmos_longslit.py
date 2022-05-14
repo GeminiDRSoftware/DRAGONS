@@ -96,7 +96,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                             format(ad.filename))
                 continue
 
-            ybin = ad.detector_y_bin()
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
                              for detsec in ad_detsec)
@@ -125,9 +125,19 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # Default operation for GMOS full-frame LS
                 # Sadly, we cannot do this reliably without concatenating the
                 # arrays and using a big chunk of memory.
-                row_medians = np.percentile(np.concatenate(
-                    [ext.data for ext in ad], axis=1),
-                    95, axis=1)
+                all_data = np.zeros((ad[0].shape[0], ad[-1].detector_section().x2 // xbin))
+                data_sections = ad.data_section()
+                for ext, datasec in zip(ad, data_sections):
+                    out_slice = (slice(None), slice(ext.detector_section().x1 // xbin,
+                                                    ext.detector_section().x2 // xbin))
+                    in_slice = (slice(datasec.y1, datasec.y2),
+                                slice(datasec.x1, datasec.x2))
+                    all_data[out_slice] = ext.data[in_slice]
+                    if ext.mask is not None:
+                        all_data[out_slice][ext.mask[in_slice]
+                                            & DQ.not_signal > 0] = np.nan
+                row_medians = np.nanpercentile(all_data, 95, axis=1)
+                del all_data
                 row_medians -= at.boxcar(row_medians, size=50 // ybin)
 
                 # Construct a model of the slit illumination from the MDF
