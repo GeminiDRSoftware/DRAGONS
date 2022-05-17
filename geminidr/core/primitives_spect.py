@@ -1453,6 +1453,9 @@ class Spect(Resample):
                 # the edge pairs failed to be fit.
                 if all(make_table):
                     ext.SLITEDGE = vstack(slit_table)
+                    if debug:
+                        log.debug('Appending table below as "SLITEDGE".')
+                        log.fullinfo(ext.SLITEDGE)
 
         return adinputs
 
