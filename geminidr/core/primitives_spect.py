@@ -2840,6 +2840,9 @@ class Spect(Resample):
                 mosaicked = False
 
             # This will loop over MOS slits or XD orders
+            masked_data_arr = list()
+            waves_arr = list()
+            weights_arr = list()
             for ext in admos:
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
@@ -2879,9 +2882,17 @@ class Spect(Resample):
                         weights[slice_] /= coeff
                     log.stdinfo("QE scaling factors: " +
                                 " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
+                masked_data_arr.append(masked_data)
+                waves_arr.append(waves)
+                weights_arr.append(weights)
+
+            fit1d_arr = list()
+            for ext, masked_data, waves, weights in zip(admos, masked_data_arr, waves_arr, weights_arr):
                 fit1d = fit_1D(masked_data, points=waves, weights=weights,
                                **fit1d_params)
+                fit1d_arr.append(fit1d)
 
+            for ext, fit1d in zip(admos, fit1d_arr):
                 if not mosaicked:
                     flat_data = np.tile(fit1d.evaluate(), (ext.shape[1-dispaxis], 1))
                     ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
