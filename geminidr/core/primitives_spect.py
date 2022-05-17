@@ -2811,6 +2811,8 @@ class Spect(Resample):
             maximum number of rejection iterations
         grow : float/False
             growth radius for rejected pixels
+        interactive : bool
+            set to activate an interactive preview to fine tune the input parameters
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -2818,6 +2820,8 @@ class Spect(Resample):
         sfx = params["suffix"]
         center = params["center"]
         nsum = params["nsum"]
+        interactive_reduce = params["interactive"]
+
         fit1d_params = fit_1D.translate_params(params)
 
         for ad in adinputs:
