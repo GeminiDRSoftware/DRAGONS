@@ -241,6 +241,8 @@ class Preprocess(PrimitivesBASE):
             minimum separation (in arcseconds) required to use an image as sky
         max_skies: int/None
             maximum number of skies to associate to each input frame
+        min_skies: int/None
+            minimum number of skies to associate to each input frame
         sky: str/list
             name(s) of sky frame(s) to associate to each input
         time: float
@@ -918,31 +920,6 @@ class Preprocess(PrimitivesBASE):
             else:
                 missing.append(sky_filename)
 
-        for ad in adinputs:
-            # Mark unguided exposures as skies
-            if ad.wavefront_sensor() is None:
-                # Old Gemini data are missing the guiding keywords and the
-                # descriptor returns None. So look to see if the keywords
-                # exist; if so, it really is unguided.
-                if ('PWFS1_ST' in ad.phu and 'PWFS2_ST' in ad.phu and
-                   'OIWFS_ST' in ad.phu):
-                    if ad in objects:
-                        # Warn user but keep manual assignment
-                        log.warning("{} manually flagged as OBJECT but it's "
-                                    "unguided!".format(ad.filename))
-                    elif ad not in skies:
-                        log.fullinfo("Treating {} as SKY since it's unguided".
-                                    format(ad.filename))
-                        skies.add(ad)
-                # (else can't determine guiding state reliably so ignore it)
-
-        # Warn the user if they referred to non-existent input file(s):
-        if missing:
-            log.warning("Failed to find the following file(s), specified "
-                "via ref_obj/ref_sky parameters, in the input:")
-            for name in missing:
-                log.warning("  {}".format(name))
-
         # Analyze the spatial clustering of exposures and attempt to sort them
         # into dither groups around common nod positions.
         groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
@@ -965,6 +942,31 @@ class Preprocess(PrimitivesBASE):
             # And ditto for SKY:
             if skies.intersection(adlist):
                 skies.update(adlist)
+
+        for ad in adinputs:
+            # Mark unguided exposures as skies
+            if ad.wavefront_sensor() is None:
+                # Old Gemini data are missing the guiding keywords and the
+                # descriptor returns None. So look to see if the keywords
+                # exist; if so, it really is unguided.
+                if ('PWFS1_ST' in ad.phu and 'PWFS2_ST' in ad.phu and
+                   'OIWFS_ST' in ad.phu):
+                    if ad in objects:
+                        # Warn user but keep manual assignment
+                        log.warning("{} manually flagged as OBJECT but it's "
+                                    "unguided!".format(ad.filename))
+                    elif ad not in skies:
+                        log.stdinfo("Treating {} as SKY since it's unguided".
+                                    format(ad.filename))
+                        skies.add(ad)
+                # (else can't determine guiding state reliably so ignore it)
+
+        # Warn the user if they referred to non-existent input file(s):
+        if missing:
+            log.warning("Failed to find the following file(s), specified "
+                "via ref_obj/ref_sky parameters, in the input:")
+            for name in missing:
+                log.warning("  {}".format(name))
 
         # If one set is empty, try to fill it. Put unassigned inputs in the
         # empty set. If all inputs are assigned, put them all in the empty set.
