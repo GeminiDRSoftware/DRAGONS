@@ -143,7 +143,7 @@ class CalibDB(PrimitivesBASE):
             mode = ad.phu['PROCMODE']
 
             # if user mode: not uploading and sq, don't add mode.
-            if mode is 'sq' and (not self.upload or 'calibs' not in self.upload) :
+            if mode == 'sq' and (not self.upload or 'calibs' not in self.upload) :
                 proc_suffix = f""
             else:
                 proc_suffix = f"_{mode}"
