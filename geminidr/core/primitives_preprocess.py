@@ -1074,7 +1074,8 @@ class Preprocess(PrimitivesBASE):
                                 "2D spectra or multi-extension 1D spectra")
             # Spectral extraction in this primitive does not subtract the sky
             if (all_spect2d and tolerance > 0 and not
-                    all(self.timestamp_keys['skyCorrectFromSlit'] in ad for ad in adinputs)):
+                    all(self.timestamp_keys['skyCorrectFromSlit'] in ad.phu
+                        for ad in adinputs)):
                 log.warning("Not all inputs have been sky-corrected. "
                             "Scaling may be in error.")
             mkcat = mkcat_spect
@@ -1266,8 +1267,8 @@ class Preprocess(PrimitivesBASE):
                 if strip_fits(obj_filename) in ad.filename:
                     objects.add(ad)
                     if 'SKYFRAME' in ad.phu and 'OBJFRAME' not in ad.phu:
-                        log.warning("{} previously classified as SKY; added "
-                                "OBJECT as requested".format(ad.filename))
+                        log.warning(f"{ad.filename} previously classified as "
+                                    "SKY; added OBJECT as requested")
                     break
             else:
                 missing.append(obj_filename)
@@ -1277,8 +1278,8 @@ class Preprocess(PrimitivesBASE):
                 if strip_fits(sky_filename) in ad.filename:
                     skies.add(ad)
                     if 'OBJFRAME' in ad.phu and 'SKYFRAME' not in ad.phu:
-                        log.warning("{} previously classified as OBJECT; "
-                                "added SKY as requested".format(ad.filename))
+                        log.warning(f"{ad.filename} previously classified as "
+                                    "OBJECT; added SKY as requested")
                     break
             else:
                 missing.append(sky_filename)
@@ -1287,7 +1288,7 @@ class Preprocess(PrimitivesBASE):
         # into dither groups around common nod positions.
         groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
         ngroups = len(groups)
-        log.fullinfo("Identified {} group(s) of exposures".format(ngroups))
+        log.stdinfo(f"Identified {ngroups} group(s) of exposures")
 
         # Loop over the nod groups identified above, record which group each
         # exposure belongs to, propagate any already-known classification(s)
@@ -1313,23 +1314,23 @@ class Preprocess(PrimitivesBASE):
                 # descriptor returns None. So look to see if the keywords
                 # exist; if so, it really is unguided.
                 if ('PWFS1_ST' in ad.phu and 'PWFS2_ST' in ad.phu and
-                   'OIWFS_ST' in ad.phu):
+                        'OIWFS_ST' in ad.phu):
                     if ad in objects:
                         # Warn user but keep manual assignment
-                        log.warning("{} manually flagged as OBJECT but it's "
-                                    "unguided!".format(ad.filename))
+                        log.warning(f"{ad.filename} manually flagged as "
+                                    f"OBJECT but it's unguided!")
                     elif ad not in skies:
-                        log.fullinfo("Treating {} as SKY since it's unguided".
-                                    format(ad.filename))
+                        log.stdinfo(f"Treating {ad.filename} as SKY since "
+                                    "it's unguided")
                         skies.add(ad)
                 # (else can't determine guiding state reliably so ignore it)
 
         # Warn the user if they referred to non-existent input file(s):
         if missing:
             log.warning("Failed to find the following file(s), specified "
-                "via ref_obj/ref_sky parameters, in the input:")
+                        "via ref_obj/ref_sky parameters, in the input:")
             for name in missing:
-                log.warning("  {}".format(name))
+                log.warning(f"  {name}")
 
         # If one set is empty, try to fill it. Put unassigned inputs in the
         # empty set. If all inputs are assigned, put them all in the empty set.
@@ -1343,22 +1344,22 @@ class Preprocess(PrimitivesBASE):
         # so try to use the distance from the target
         if not objects and not skies:
             if ngroups < 2:  # Includes zero if adinputs=[]
-                log.fullinfo("Treating a single group as both object and sky")
+                log.stdinfo("Treating a single group as both object and sky")
                 objects = set(adinputs)
                 skies = set(adinputs)
             else:
                 distsq = [sum([x * x for x in g.group_center]) for g in groups]
                 if ngroups == 2:
-                    log.fullinfo("Treating 1 group as object and 1 as sky, "
-                                 "based on target proximity")
+                    log.stdinfo("Treating 1 group as object and 1 as sky, "
+                                "based on target proximity")
                     closest = np.argmin(distsq)
                     objects = set(groups[closest].list())
                     skies = set(adinputs) - objects
                 else:  # More than 2 groups
                     # Add groups by proximity until at least half the inputs
                     # are classified as objects
-                    log.fullinfo("Classifying groups based on target "
-                                 "proximity and observation efficiency")
+                    log.stdinfo("Classifying groups based on target "
+                                "proximity and observation efficiency")
                     for group in [groups[i] for i in np.argsort(distsq)]:
                         objects.update(group.list())
                         if len(objects) >= len(adinputs) // 2:
@@ -1378,7 +1379,7 @@ class Preprocess(PrimitivesBASE):
               "not be classified as object or sky after applying incomplete "
               "prior classifications from the input:")
             for ad in missing:
-                log.warning("  {}".format(ad.filename))
+                log.warning(f"  {ad.filename}")
 
         # Construct object & sky lists (preserving order in adinputs) from
         # the classifications, making a complete copy of the input for any
@@ -1389,12 +1390,12 @@ class Preprocess(PrimitivesBASE):
 
         log.stdinfo("Science frames:")
         for ad in ad_objects:
-            log.stdinfo("  {}".format(ad.filename))
+            log.stdinfo(f"  {ad.filename}")
             ad.phu['OBJFRAME'] = 'TRUE'
 
         log.stdinfo("Sky frames:")
         for ad in ad_skies:
-            log.stdinfo("  {}".format(ad.filename))
+            log.stdinfo(f"  {ad.filename}")
             ad.phu['SKYFRAME'] = 'TRUE'
 
         # Timestamp and update filename for all object/sky frames
@@ -1785,7 +1786,7 @@ def calc_scaling_image(ad, ref_ad, objcat, ref_objcat, idx, matched, log):
 
 def mkcat_spect(ad):
     """Produce a catalogue of sources from a spectroscopic AstroData object"""
-    if len(ad) > 1:  # extracted spectra
+    if len(ad[0].shape) == 1:  # extracted spectra
         cat = {(ra, dec): ad[i].nddata for i, (ra, dec) in
                enumerate(zip(ad.hdr['XTRACTRA'], ad.hdr['XTRACTDE']))}
     else:  # 2D spectrum with multiple sources

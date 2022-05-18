@@ -1024,10 +1024,6 @@ class DataGroup:
                     # Jacobian at every input point. This is done by numerical
                     # derivatives so expand the output pixel grid.
                     if conserve:
-
-                        self.log.warning("Flux conservation has not been fully "
-                                         "tested for non-affine transforms")
-
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
                         transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
 
@@ -1239,6 +1235,16 @@ class DataGroup:
             Jacobian of transformation (basically the increase in pixel area)
         """
         trans_output_shape = tuple(length * subsample for length in output_shape)
+
+        # Any NaN or Inf values in the array prior to resampling can cause
+        # havoc. There shouldn't be any, but let's check and spit out a
+        # warning if there are, so we at least produce a sensible output array.
+        isnan = np.isnan(input_array)
+        isinf = np.isinf(input_array)
+        if isnan.any() or isinf.any():
+            log.warning(f"There are {isnan.sum()} NaN and {isinf.sum()} inf "
+                        f"values in the {output_key} array. Setting to zero.")
+            input_array[isnan | isinf] = 0
 
         # We want to transform any DQ bit arrays into floats so we can sample
         # the "ringing" from the interpolation and flag appropriately
