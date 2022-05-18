@@ -86,6 +86,8 @@ class storeProcessedBiasConfig(config.Config):
 
 class storeBPMConfig(config.Config):
     suffix = config.Field("Filename suffix", str, None, optional=True)
+    force = config.Field("Force input to be identified as a bpm?",
+                         bool, False)
 
 
 class storeProcessedDarkConfig(config.Config):
