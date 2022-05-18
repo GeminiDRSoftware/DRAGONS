@@ -58,7 +58,8 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 from recipe_system.utils.md5 import md5sum
 
 from . import parameters_spect
-from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT
+from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT, \
+    NORMALIZE_FLAT_HELP_TEXT
 from ..interactive.interactive import UIParameters
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
@@ -2887,14 +2888,56 @@ class Spect(Resample):
                 weights_arr.append(weights)
 
             fit1d_arr = list()
-            for ext, masked_data, waves, weights in zip(admos, masked_data_arr, waves_arr, weights_arr):
-                fit1d = fit_1D(masked_data, points=waves, weights=weights,
-                               **fit1d_params)
-                fit1d_arr.append(fit1d)
 
-            for ext, fit1d in zip(admos, fit1d_arr):
+            if interactive_reduce:
+                all_domains = list()
+                all_fp_init = list()
+                for ext in admos:
+                    pixels = np.arange(ext.shape[1])
+
+                    dispaxis = 2 - ext.dispersion_axis()
+                    all_domains.append([0, ext.shape[dispaxis] - 1])
+                    all_fp_init.append(fit_1D.translate_params(params))
+
+                config = self.params[self.myself()]
+                config.update(**params)
+
+                if ad.filename:
+                    filename_info = ad.filename
+                else:
+                    filename_info = ''
+
+                uiparams = UIParameters(config)
+                points = {
+                    "x": [np.arange(len(md)) for md in masked_data_arr],
+                    "y": masked_data_arr,
+                    "weights": weights_arr
+                }
+                visualizer = fit1d.Fit1DVisualizer(points, # reconstruct_points,
+                                                   all_fp_init,
+                                                   tab_name_fmt="CCD {}",
+                                                   xlabel='x (pixels)', ylabel='counts',
+                                                   domains=all_domains,
+                                                   title="Normalize Flat",
+                                                   primitive_name="normalizeFlat",
+                                                   filename_info=filename_info,
+                                                   enable_user_masking=False,
+                                                   enable_regions=True,
+                                                   help_text=NORMALIZE_FLAT_HELP_TEXT,
+                                                   recalc_inputs_above=True,
+                                                   modal_message="Recalculating",
+                                                   ui_params=uiparams)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                fit1d_arr = visualizer.results()
+            else:
+                for ext, masked_data, waves, weights in zip(admos, masked_data_arr, waves_arr, weights_arr):
+                    fitted_data = fit_1D(masked_data, points=waves, weights=weights,
+                                         **fit1d_params)
+                    fit1d_arr.append(fitted_data)
+
+            for ext, fitted_data in zip(admos, fit1d_arr):
                 if not mosaicked:
-                    flat_data = np.tile(fit1d.evaluate(), (ext.shape[1-dispaxis], 1))
+                    flat_data = np.tile(fitted_data.evaluate(), (ext.shape[1-dispaxis], 1))
                     ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
 
             # If we've mosaicked, there's only one extension
