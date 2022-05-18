@@ -85,7 +85,7 @@ class storeProcessedBiasConfig(config.Config):
 
 
 class storeBPMConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_bpm", optional=True)
+    suffix = config.Field("Filename suffix", str, None, optional=True)
 
 
 class storeProcessedDarkConfig(config.Config):

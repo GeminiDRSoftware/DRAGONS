@@ -1051,6 +1051,8 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
 
         elif "bpm" in caltype:
             ad.phu.set("BPMASK", True, "Bad pixel mask")
+            ad.phu.set("OBSTYPE", "BPM", keyword_comments["OBSTYPE"])
+            ad.phu.set("OBJECT", "BPM", keyword_comments["OBJECT"])
         else:
             raise ValueError("Caltype {} not supported".format(caltype))
 
