@@ -112,6 +112,15 @@ class Bookkeeping(PrimitivesBASE):
         log.fullinfo('Clearing stream {}'.format(params.get('stream', 'main')))
         return []
 
+    def copyInputs(self, adinputs=None, **params):
+        """
+        This primitive results in deepcopies of the AD objects in one stream
+        being placed in another stream. All the work is handled by the
+        decorator, using the instream/outstream keywords, which is why this
+        primitive appears to do nothing.
+        """
+        return adinputs
+
     def flushPixels(self, adinputs=None, force=False):
         """
         This primitive saves the inputs to disk and then reopens them so

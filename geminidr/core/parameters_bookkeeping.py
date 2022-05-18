@@ -15,6 +15,9 @@ class clearAllStreamsConfig(config.Config):
 class clearStreamConfig(config.Config):
     stream = config.Field("Name of stream to clear", str, "main")
 
+class copyInputsConfig(config.Config):
+    pass
+
 class flushPixelsConfig(config.Config):
     force = config.Field("Force write-to-disk?", bool, False)
 
