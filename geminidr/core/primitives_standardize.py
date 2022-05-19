@@ -65,7 +65,11 @@ class Standardize(PrimitivesBASE):
         user_bpm_list = params['user_bpm']
 
         if static_bpm_list == "default":
-            static_bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
+            static_bpm_list = self.caldb.get_processed_bpm(adinputs)
+            if static_bpm_list is not None:
+                static_bpm_list = static_bpm_list.files
+            else:
+                static_bpm_list = [None] * len(adinputs)
 
         for ad, static, user in zip(*gt.make_lists(adinputs, static_bpm_list,
                                                    user_bpm_list, force_ad=True)):
