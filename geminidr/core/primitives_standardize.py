@@ -528,6 +528,7 @@ class Standardize(PrimitivesBASE):
             else:
                 ext.hdr['VARNOISE'] += ', read'
 
+    # TODO remove this if we truly migrate off of LUT based BPM lookups and rely on the calibration matching
     def _get_bpm_filename(self, ad):
         """
         Gets the BPM filename for an input science frame. Takes bpm_dict from
