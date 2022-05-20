@@ -90,19 +90,21 @@ class Image(Preprocess, Register, Resample):
 
         for ad in adinputs:
             for ext, source_ext in zip(ad, ad_source):
-                if getattr(ext, 'OBJMASK') is not None:
-                    t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
-                    if force_affine:
-                        affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
-                        objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
-                                                   affine.matrix, affine.offset,
-                                                   output_shape=ext.shape, order=order,
-                                                   cval=0)
-                    else:
-                        objmask = transform.Transform(t_align).apply(source_ext.OBJMASK.astype(np.float32),
-                                                                     output_shape=ext.shape, order=order,
-                                                                     cval=0)
-                    ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
+                if hasattr(ext, 'OBJMASK'):
+                    log.warning(f"{ad.filename}:{ext.id} already has an "
+                                "OBJMASK that will be overwritten")
+                t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
+                if force_affine:
+                    affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
+                    objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
+                                               affine.matrix, affine.offset,
+                                               output_shape=ext.shape, order=order,
+                                               cval=0)
+                else:
+                    objmask = transform.Transform(t_align).apply(source_ext.OBJMASK.astype(np.float32),
+                                                                 output_shape=ext.shape, order=order,
+                                                                 cval=0)
+                ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
                 # We will deliberately keep the input image's OBJCAT (if it
                 # exists) since this will be required for aligning the inputs.
             ad.update_filename(suffix=sfx, strip=True)
