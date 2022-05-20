@@ -27,6 +27,7 @@ def reduce(p):
     p.addVAR(poisson_noise=True)
     p.flatCorrect()
     p.fringeCorrect()
+    p.QECorrect()
     p.mosaicDetectors()
     p.detectSources()
     p.adjustWCSToReference()

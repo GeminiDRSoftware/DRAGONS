@@ -175,7 +175,7 @@ class Resample(PrimitivesBASE):
         for ad in adinputs:
             log.stdinfo(f"Resampling {ad.filename}")
             subsample = int(max(abs(np.linalg.det(transform.Transform(ext.wcs.get_transform(
-                frame, ext.wcs.input_frame)).inverse.affine_matrices().matrix)) for ext in ad) + 0.5)
+                frame, ext.wcs.input_frame)).affine_matrices().matrix)) for ext in ad) + 0.5)
             log.debug(f"{ad.filename}: Subsampling factor of {subsample}")
             ad_out = transform.resample_from_wcs(ad, frame, order=order, conserve=conserve,
                                                  output_shape=output_shape, origin=origin,

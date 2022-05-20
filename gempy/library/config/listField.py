@@ -244,6 +244,8 @@ class ListField(Field):
             at = getCallStack()
 
         if value is not None:
+            if isinstance(value, str) and ',' in value:
+                value = value.split(',')
             if not self.single or isinstance(value, (list, tuple)):
                 value = List(instance, self, value, at, label)
             else:
