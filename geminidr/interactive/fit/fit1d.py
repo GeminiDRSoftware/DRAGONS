@@ -1217,6 +1217,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     reinit_widgets[0].children[1].on_change('value', kickoff_modal)
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
+            else:
+                reset_reinit_button = self.build_reset_button()
+                reinit_widgets.append(reset_reinit_button)
             if recalc_inputs_above:
                 self.reinit_panel = row(*reinit_widgets)
             else:

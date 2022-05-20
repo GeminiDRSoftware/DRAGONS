@@ -2819,8 +2819,6 @@ class Spect(Resample):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        center = params["center"]
-        nsum = params["nsum"]
         interactive_reduce = params["interactive"]
 
         fit1d_params = fit_1D.translate_params(params)
@@ -2845,7 +2843,6 @@ class Spect(Resample):
                 masked_data_arr = list()
                 waves_arr = list()
                 weights_arr = list()
-                x_arr = list()
                 for ext in admos:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     direction = "row" if dispaxis == 1 else "column"
@@ -2888,10 +2885,7 @@ class Spect(Resample):
                     masked_data_arr.append(masked_data)
                     waves_arr.append(waves)
                     weights_arr.append(weights)
-                    x_arr.append(np.arange(ext.shape[dispaxis]))
-                # return { "y": masked_data_arr, "x": x_arr,
-                #          "waves": waves_arr, "weights": weights_arr }
-                return { "y": masked_data_arr, "x": x_arr,
+                return { "y": masked_data_arr, "x": waves_arr,
                          "weights": weights_arr }
 
             config = self.params[self.myself()]
@@ -2918,8 +2912,7 @@ class Spect(Resample):
                     pixels = np.arange(ext.shape[1])
 
                     dispaxis = 2 - ext.dispersion_axis()
-                    # all_domains.append([min(waves), max(waves)])  # [0, ext.shape[dispaxis] - 1])
-                    all_domains.append([0, ext.shape[dispaxis] - 1])
+                    all_domains.append([min(waves), max(waves)])
                     all_fp_init.append(fit_1D.translate_params(params))
 
                 config = self.params[self.myself()]
@@ -2942,7 +2935,7 @@ class Spect(Resample):
                                                    enable_regions=True,
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=False,
-                                                   modal_message="Recalculating",
+                                                   # modal_message="Recalculating",
                                                    ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fit1d_arr = visualizer.results()
