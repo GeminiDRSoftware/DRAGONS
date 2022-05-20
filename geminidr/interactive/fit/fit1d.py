@@ -1274,6 +1274,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             for k in list(this_dict.keys()):
                 if k.endswith("_mask"):
                     extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
+            # making the fit panel
             tui = panel_class(self, fitting_params, domain=domain,
                               **this_dict, **kwargs, extra_masks=extra_masks)
             if turbo_tabs:
