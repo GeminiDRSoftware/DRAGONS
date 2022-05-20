@@ -2909,7 +2909,7 @@ class Spect(Resample):
 
                 uiparams = UIParameters(config)
                 points = {
-                    "x": [np.arange(len(md)) for md in masked_data_arr],
+                    "x": waves_arr,
                     "y": masked_data_arr,
                     "weights": weights_arr
                 }
