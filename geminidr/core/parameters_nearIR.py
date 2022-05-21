@@ -30,6 +30,7 @@ class makeLampFlatConfig(parameters_stack.core_stacking_config):
 
 class removeFirstFrameConfig(config.Config):
     remove_first = config.Field("Remove first frame?", bool, True)
+    remove_files = config.ListField("List of files to remove", str, None, optional=True)
 
 class separateFlatsDarksConfig(config.Config):
     pass
