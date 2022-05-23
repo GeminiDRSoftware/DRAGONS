@@ -94,13 +94,15 @@ class Aperture:
 
     def check_domain(self, npix):
         """Simple function to warn user if aperture model appears inconsistent
-        with the array containing the data"""
-        try:
-            if self.model.domain != (0, npix - 1):
-                log.warning("Model's domain is inconsistent with image size. "
-                            "Results may be incorrect.")
-        except AttributeError:  # no "domain" attribute
-            pass
+        with the array containing the data. Since resampleToCommonFrame() now
+        modifies the domain, this will raise unnecessary warnings if left as-is"""
+        pass
+        #try:
+        #    if self.model.domain != (0, npix - 1):
+        #        log.warning("Model's domain is inconsistent with image size. "
+        #                    "Results may be incorrect.")
+        #except AttributeError:  # no "domain" attribute
+        #    pass
 
     def aperture_mask(self, ext=None, width=None, aper_lower=None,
                       aper_upper=None, grow=None):
@@ -1342,6 +1344,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     if start is None:
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
+    else:  # just to be sure
+        start = int(min(max(start, nsum // 2), ext_data.shape[0] - nsum / 2))
 
     # Get accurate starting positions for all peaks
     halfwidth = cwidth // 2
@@ -1373,8 +1377,25 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     mask = np.zeros_like(data, dtype=DQ.datatype)
     var = np.empty_like(data)
 
+    # Make a slice around a given row center
+    def _slice(center):
+        return slice(center - nsum // 2, center + nsum - nsum // 2)
 
-    coord_lists = [[] for peak in initial_peaks]
+    # We're going to make a list of valid step centers to help later. These
+    # will help us to calculate for how many steps a trace has been missed,
+    # since we don't count steps which cover masked regions.
+    step_centers = list(np.arange(start + 1, ext_data.shape[0] - nsum / 2, step, dtype=int))
+    step_centers.extend(list(np.arange(start - step, nsum / 2, -step, dtype=int)))
+    all_slices = [_slice(c) for c in step_centers]
+    # Eliminate blocks that are completely masked (e.g., chip gaps, bridges, amp5)
+    # Also need to eliminate regions with only one valid column because NDStacker
+    # can't compute the pixel-to-pixel variance and hence the S/N can't be calculated
+    if ext_mask is not None:
+        for i, s in reversed(list(enumerate(all_slices))):
+            if np.bincount((ext_mask[s] & DQ.not_signal).min(axis=1))[0] <= 1:
+                del step_centers[i]
+
+    coord_lists = [[(start, peak)] for peak in initial_peaks]
     for direction in (1, -1):
         ypos = start
         last_coords = [[ypos, peak] for peak in initial_peaks]
@@ -1384,7 +1405,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             missing_but_not_lost = missing_but_not_lost or ypos
             ypos += step
             # Reached the bottom or top?
-            if ypos < 0.5 * nsum or ypos > ext_data.shape[0] - 0.5 * nsum:
+            if not (min(step_centers) <= ypos <= max(step_centers)):
                 break
 
             # This indicates we should start making profiles binned across
@@ -1394,9 +1415,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             # There's always at least one such array
-            y2 = int(ypos + 0.5 * nsum + 0.5)
             for i in range(lookback + 1):
-                slices = [slice(y2 - j*step - nsum, y2 - j*step) for j in range(i + 1)]
+                slices = [_slice(ypos - j*step) for j in range(i+1)]
                 d, m, v = func(np.concatenate(list(ext_data[s] for s in slices)),
                                mask=None if ext_mask is None else np.concatenate(list(ext_mask[s] for s in slices)),
                                variance=None)
@@ -1431,7 +1451,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                         new_peak = np.inf
 
                     # Is this close enough to the existing peak?
-                    steps_missed = int(abs((ypos - last_row) / step)) - 1
+                    steps_missed = len([c for c in step_centers if (last_row < c < ypos) or (last_row > c > ypos)])
                     for j in range(min(steps_missed, lookback) + 1):
                         tolerance = max_shift * (j + 1) * abs(step)
                         if abs(new_peak - old_peak) <= tolerance:
