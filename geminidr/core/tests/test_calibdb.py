@@ -16,8 +16,11 @@ def make_ad(instr='GMOS-N', typ='IMAGE', idx=1):
     astrofaker = pytest.importorskip('astrofaker')
     ad = astrofaker.create('NIRI', 'IMAGE')
     kw_datalab = ad._keyword_for('data_label')
+    kw_obsid = 'OBSID'
     orig_datalab = f'GN-2021A-Q-1-1-{idx:03}'
+    orig_obsid = "GN-2021A-Q-1-1"
     ad.phu[kw_datalab] = orig_datalab
+    ad.phu[kw_obsid] = orig_obsid
     return ad
 
 
@@ -34,6 +37,7 @@ def test_update_datalab(ad, idx=1):
     kw_datalab = ad._keyword_for('data_label')
     orig_datalab = f'GN-2001A-Q-9-52-{idx:03}'
     ad.phu[kw_datalab] = orig_datalab
+    ad.phu['OBSID'] = "GN-2001A-Q-9-52"
     _update_datalab(ad, '_flat', 'sq', kw_lut)
     assert ad.phu[kw_datalab] == orig_datalab + '-SQ-FLAT'
     _update_datalab(ad, '_flat', 'sq', kw_lut)
