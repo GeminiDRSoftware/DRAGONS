@@ -425,8 +425,7 @@ class Bookkeeping(PrimitivesBASE):
             index_order = list(reversed(index_order))
         return [adinputs[i] for i in index_order]
 
-
-    def transferAttribute(self, adinputs=None, source=None, attribute=None):
+    def transferAttribute(self, adinputs=None, suffix=None, source=None, attribute=None):
         """
         This primitive takes an attribute (e.g., "mask", or "OBJCAT") from
         the AD(s) in another ("source") stream and applies it to the ADs in
@@ -435,6 +434,8 @@ class Bookkeeping(PrimitivesBASE):
 
         Parameters
         ----------
+        suffix: str
+            suffix to be added to output files
         source: str
             name of stream containing ADs whose attributes you want
         attribute: str
@@ -469,6 +470,7 @@ class Bookkeeping(PrimitivesBASE):
                 pass
             else:
                 found = True
+                ad1.update_filename(suffix=suffix, strip=True)
                 continue
 
             for ext1, ext2 in zip(ad1, ad2):
@@ -476,6 +478,8 @@ class Bookkeeping(PrimitivesBASE):
                     setattr(ext1, attribute,
                             deepcopy(getattr(ext2, attribute)))
                     found = True
+            if found:
+                ad1.update_filename(suffix=suffix, strip=True)
 
         if not found:
             log.warning(f"Did not find any {attribute} attributes to transfer")

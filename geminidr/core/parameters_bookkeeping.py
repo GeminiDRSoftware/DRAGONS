@@ -53,6 +53,7 @@ class sortInputsConfig(config.Config):
     reverse = config.Field("Reverse order of sort?", bool, False)
 
 class transferAttributeConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_attributeTransferred", optional=True)
     source = config.Field("Stream to transfer from", str, None)
     attribute = config.Field("Name of attribute to transfer", str, None)
 
