@@ -5,7 +5,7 @@
 #
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
-from copy import deepcopy
+from copy import copy, deepcopy
 from itertools import islice
 import os
 import re
@@ -1459,6 +1459,9 @@ class Spect(Resample):
                 # the edge pairs failed to be fit.
                 if all(make_table):
                     ext.SLITEDGE = vstack(slit_table)
+                    if debug:
+                        log.debug('Appending table below as "SLITEDGE".')
+                        log.fullinfo(ext.SLITEDGE)
 
         return adinputs
 
@@ -2833,7 +2836,7 @@ class Spect(Resample):
             # This will loop over MOS slits or XD orders
             def reconstruct_points(ui_params):
                 masked_data_arr = list()
-                waves_arr = list()
+                x_arr = list()
                 weights_arr = list()
                 for ext in admos:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -2849,8 +2852,10 @@ class Spect(Resample):
                     masked_data = np.ma.masked_array(data, mask=mask)
                     weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
                     center = (extract_slice.start + extract_slice.stop) // 2
-                    waves = ext.wcs(range(len(masked_data)),
-                                    np.full_like(masked_data, center))[0]
+                    # uncomment this to use if we want to calculate the waves as our x inputs
+                    # and wire it up appropriately
+                    # waves = ext.wcs(range(len(masked_data)),
+                    #                 np.full_like(masked_data, center))[0]
 
                     # We're only going to do CCD-to-CCD normalization if we've
                     # done the mosaicking in this primitive; if not, we assume
@@ -2874,10 +2879,10 @@ class Spect(Resample):
                             weights[slice_] /= coeff
                         log.stdinfo("QE scaling factors: " +
                                     " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
+                    x_arr.append(np.arange(len(masked_data)))
                     masked_data_arr.append(masked_data)
-                    waves_arr.append(waves)
                     weights_arr.append(weights)
-                return { "y": masked_data_arr, "x": waves_arr,
+                return { "y": masked_data_arr, "x": x_arr,
                          "weights": weights_arr }
 
             config = self.params[self.myself()]
@@ -2892,7 +2897,7 @@ class Spect(Resample):
 
             data = reconstruct_points(uiparams)
             masked_data_arr = data["y"]
-            waves_arr = data["x"]
+            x_arr = data["x"]
             weights_arr = data["weights"]
 
             fit1d_arr = list()
@@ -2900,11 +2905,11 @@ class Spect(Resample):
             if interactive_reduce:
                 all_domains = list()
                 all_fp_init = list()
-                for ext, waves in zip(admos, waves_arr):
+                for ext, x in zip(admos, x_arr):
                     pixels = np.arange(ext.shape[1])
 
                     dispaxis = 2 - ext.dispersion_axis()
-                    all_domains.append([min(waves), max(waves)])
+                    all_domains.append([min(x), max(x)])
                     all_fp_init.append(fit_1D.translate_params(params))
 
                 config = self.params[self.myself()]
@@ -2932,8 +2937,8 @@ class Spect(Resample):
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fit1d_arr = visualizer.results()
             else:
-                for ext, masked_data, waves, weights in zip(admos, masked_data_arr, waves_arr, weights_arr):
-                    fitted_data = fit_1D(masked_data, points=waves, weights=weights,
+                for ext, masked_data, x, weights in zip(admos, masked_data_arr, x_arr, weights_arr):
+                    fitted_data = fit_1D(masked_data, points=x, weights=weights,
                                          **fit1d_params)
                     fit1d_arr.append(fitted_data)
 
@@ -2947,6 +2952,7 @@ class Spect(Resample):
             # coordinate along the dispersion direction, and evaluate the
             # spline there.
             if mosaicked:
+                raise NotImplementedError("Mosaicked data handling not supported for core normalizeFlat")
                 #origin = admos.nddata[0].meta.pop('transform')['origin']
                 #origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
                 for ext, wcs in zip(ad, orig_wcs):
