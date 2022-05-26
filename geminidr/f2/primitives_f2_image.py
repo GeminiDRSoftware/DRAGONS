@@ -56,7 +56,7 @@ class F2Image(F2, Image, Photometry):
                 log.fullinfo("Subtracting stacked dark from stacked flat")
                 flat = flat_list[0]
                 flat.subtract(dark_list[0])
-                flat.update_filename(suffix="_flat")
+                flat.update_filename(suffix="_lampstack", strip=True)
                 return [flat]
             elif flat_list:
                 log.fullinfo("Only had flats to stack. Calling darkCorrect.")

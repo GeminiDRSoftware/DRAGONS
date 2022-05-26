@@ -1233,6 +1233,17 @@ class DataGroup:
             Jacobian of transformation (basically the increase in pixel area)
         """
         trans_output_shape = tuple(length * subsample for length in output_shape)
+
+        # Any NaN or Inf values in the array prior to resampling can cause
+        # havoc. There shouldn't be any, but let's check and spit out a
+        # warning if there are, so we at least produce a sensible output array.
+        n_nan = np.isnan(input_array).sum()
+        n_inf = np.isinf(input_array).sum()
+        if n_nan + n_inf:
+            log.warning(f"There are {n_nan} NaN and {n_inf} inf "
+                        f"values in the {output_key} array. Setting to zero.")
+            np.nan_to_num(input_array, copy=False, posinf=0, neginf=0)
+
         if isinstance(mapping, GeoMap):
             out_array = ndimage.map_coordinates(input_array, mapping.coords,
                                                 cval=cval, order=order)
