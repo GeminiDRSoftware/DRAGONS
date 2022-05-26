@@ -1,6 +1,7 @@
 import pytest
 import os
 
+from astrodata.testing import download_from_archive
 from recipe_system.reduction.coreReduce import Reduce
 
 
@@ -18,10 +19,11 @@ def test_ultradeep_recipe_niri(change_working_dir, path_to_inputs):
     """
     dark = os.path.join(path_to_inputs, niri_dark)
     with change_working_dir():
-        skyflat = run_reduce(niri_deep_dataset, {"dark": dark},
+        input_files = [download_from_archive(f) for f in niri_deep_dataset]
+        skyflat = run_reduce(input_files, {"dark": dark},
                              recipe_name='makeSkyFlat')
-        run_reduce(niri_deep_dataset, {"dark":dark,
-                                       "flat": skyflat}, recipe_name='ultradeep')
+        run_reduce(input_files, {"dark":dark, "flat": skyflat},
+                   recipe_name='ultradeep')
 
 
 def run_reduce(file_list, user_pars, recipe_name=None):
