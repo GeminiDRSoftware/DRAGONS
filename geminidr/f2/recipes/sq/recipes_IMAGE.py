@@ -71,6 +71,8 @@ def ultradeep(p):
     # since this doesn't modify the AD objects
     p.flushPixels(outstream='flat_corrected')
     p.separateSky()
+    assert len(p.streams['main']) == len(p.streams['sky']), \
+        "Sequence includes sky-only frames"
     p.associateSky(stream='sky')
     p.skyCorrect(instream='sky', mask_objects=False, outstream='skysub')
     p.detectSources(stream='skysub')
@@ -88,9 +90,7 @@ def ultradeep(p):
     p.stackFrames()
     p.detectSources()
     p.writeOutputs()  # effectively the standard recipe output
-    p.applyStackedObjectMask(stream='flat_corrected', source='main')
-    p.clearStream(stream='main')
-    p.dilateObjectMask(instream='flat_corrected', outstream='main', dilation=2)
+    p.transferObjectMask(instream='flat_corrected', outstream='main', source='main')
     p.clearStream(stream='flat_corrected')  # no longer needed
     p.separateSky()
     p.associateSky()
@@ -141,6 +141,8 @@ def ultradeep_part2(p):
     """
     p.copyInputs(outstream='flat_corrected')
     p.separateSky()
+    assert len(p.streams['main']) == len(p.streams['sky']), \
+        "Sequence must not contain sky-only frames"
     p.associateSky(stream='sky')
     p.skyCorrect(instream='sky', mask_objects=False, outstream='skysub')
     p.detectSources(stream='skysub')
@@ -158,15 +160,13 @@ def ultradeep_part2(p):
     p.stackFrames()
     p.detectSources()
     p.writeOutputs()  # effectively the standard recipe output
-    p.applyStackedObjectMask(stream='flat_corrected', source='main')
-    p.clearStream(stream='main')
-    p.dilateObjectMask(instream='flat_corrected', outstream='main', dilation=2)
+    p.transferObjectMask(instream='flat_corrected', outstream='main', source='main')
 
 
 def ultradeep_part3(p):
     """
     This recipe takes flat-corrected images with OBJMASKs as inputs and
-    produces a final stack. It should take the _objectMaskDilated outputs
+    produces a final stack. It should take the _objmaskTransferred outputs
     from part 2.
 
     Parameters

@@ -673,8 +673,8 @@ def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
     elif abs(rotation) > rot_threshold:
         m_rotate.angle.fixed = True
         m_init = m_rotate | m_init
-        log.warning("A rotation of {:.3f} degrees is expected but the "
-                    "rotation is fixed".format(rotation))
+        log.warning(f"A rotation of {rotation:.3f} degrees is applied but "
+                    "held fixed")
 
     m_magnify = Scale2D(magnification)
     if scale:
@@ -683,8 +683,8 @@ def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
     elif abs(magnification - 1) > mag_threshold:
         m_magnify.factor.fixed = True
         m_init = m_magnify | m_init
-        log.warning("A magnification of {:.4f} is expected but the "
-                    "magnification is fixed".format(magnification))
+        log.warning(f"A magnification of {magnification:.4f} is applied but "
+                    "held fixed")
 
     # Tolerance here aims to achieve <0.1 pixel differences in the tests
     try:

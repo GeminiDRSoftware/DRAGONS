@@ -52,6 +52,7 @@ class transferObjectMaskConfig(config.Config):
     source = config.Field("Filename of/Stream containing stacked image", str, None)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
     threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
+    dilation = config.RangeField("Dilation radius (pixels)", float, 1.5, min=0)
 
 
 class flagCosmicRaysByStackingConfig(config.Config):

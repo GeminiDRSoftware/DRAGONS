@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from copy import copy, deepcopy
+
 from scipy.ndimage import affine_transform, binary_dilation
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -596,14 +597,16 @@ class Image(Preprocess, Register, Resample):
             order of interpolation
         threshold: float
             threshold above which an interpolated pixel should be flagged
+        dilation: float
+            amount by which to dilate the OBJMASK after transference
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         source = params["source"]
         order = params["order"]
         threshold = params["threshold"]
+        dilation = params["dilation"]
         sfx = params["suffix"]
-        force_affine = True
 
         try:
             source_stream = self.streams[source]
@@ -620,29 +623,39 @@ class Image(Preprocess, Register, Resample):
                 return adinputs
             ad_source = source_stream[0]
 
-        # There's no reason why we can't handle multiple extensions
-        if any(len(ad) != len(ad_source) for ad in adinputs):
-            log.warning("At least one AstroData input has a different number "
-                        "of extensions to the reference. Continuing.")
-            return adinputs
+        xgrid, ygrid = np.mgrid[-int(dilation):int(dilation+1),
+                                -int(dilation):int(dilation+1)]
+        structure = np.where(xgrid*xgrid+ygrid*ygrid <= dilation*dilation,
+                             True, False)
 
         for ad in adinputs:
-            for ext, source_ext in zip(ad, ad_source):
+            force_affine = ad.instrument() != "GSAOI"
+            log.stdinfo(f"Transferring object mask to {ad.filename}")
+            for ext in ad:
                 if hasattr(ext, 'OBJMASK'):
                     log.warning(f"{ad.filename}:{ext.id} already has an "
                                 "OBJMASK that will be overwritten")
-                t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
-                if force_affine:
-                    affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
-                    objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
-                                               affine.matrix, affine.offset,
-                                               output_shape=ext.shape, order=order,
-                                               cval=0)
-                else:
-                    objmask = transform.Transform(t_align).apply(source_ext.OBJMASK.astype(np.float32),
-                                                                 output_shape=ext.shape, order=order,
-                                                                 cval=0)
-                ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
+                ext.OBJMASK = None
+                for source_ext in ad_source:
+                    t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
+                    # This line is needed until gWCS PR#405 is merged
+                    t_align.inverse = ext.wcs.forward_transform | source_ext.wcs.backward_transform
+                    if force_affine:
+                        affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
+                        objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
+                                                   affine.matrix, affine.offset,
+                                                   output_shape=ext.shape, order=order,
+                                                   cval=0)
+                    else:
+                        objmask = transform.Transform(t_align).apply(
+                            source_ext.OBJMASK.astype(np.float32),
+                            output_shape=ext.shape, order=order, cval=0)
+                    objmask = binary_dilation(np.where(abs(objmask) > threshold, 1, 0).
+                                              astype(np.uint8), structure).astype(np.uint8)
+                    if ext.OBJMASK is None:
+                        ext.OBJMASK = objmask
+                    else:
+                        ext.OBJMASK |= objmask
                 # We will deliberately keep the input image's OBJCAT (if it
                 # exists) since this will be required for aligning the inputs.
             ad.update_filename(suffix=sfx, strip=True)
