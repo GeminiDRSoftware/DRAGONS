@@ -353,6 +353,7 @@ before stacking. The tool for distortion correction and image stacking is
 
             conda install disco_stu
 
+.. note:: The ``disco_stu`` manual can be found at http://www.gemini.edu/sciops/data/software/disco_stu.pdf
 
 The simplest use of ``disco_stu`` is to run the command ``disco`` on the
 files to be stacked.
