@@ -2909,7 +2909,6 @@ class Spect(Resample):
                     pixels = np.arange(ext.shape[1])
 
                     dispaxis = 2 - ext.dispersion_axis()
-                    all_domains.append([min(x), max(x)])
                     all_fp_init.append(fit_1D.translate_params(params))
 
                 config = self.params[self.myself()]
@@ -2924,7 +2923,7 @@ class Spect(Resample):
                                                    all_fp_init,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x (pixels)', ylabel='counts',
-                                                   domains=all_domains,
+                                                   domains=None,
                                                    title="Normalize Flat",
                                                    primitive_name="normalizeFlat",
                                                    filename_info=filename_info,
@@ -2942,9 +2941,18 @@ class Spect(Resample):
                                          **fit1d_params)
                     fit1d_arr.append(fitted_data)
 
-            for ext, fitted_data in zip(admos, fit1d_arr):
+            for ext, fitted_data, x in zip(admos, fit1d_arr, x_arr):
                 if not mosaicked:
-                    flat_data = np.tile(fitted_data.evaluate(), (ext.shape[1-dispaxis], 1))
+                    # In the case where this was run interactively, the resulting fit has pre-masked points (x).
+                    # This happens before the interactive code builds the fit_1D.  Using the default evaluate()
+                    # points on these fit_1Ds will send a trimmed list of points, resulting in trimmed output which
+                    # we don't want - and also is inconsistent with the non-interactive code where the array
+                    # was masked but the x values were not.
+                    #
+                    # Instead, we want to call to evaluate with an explicit set of points using our pre-masked copy
+                    # of the x values to get a consistent and correctly-sized output.
+                    fdeval = fitted_data.evaluate(points=x)
+                    flat_data = np.tile(fdeval, (ext.shape[1-dispaxis], 1))
                     ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
 
             # If we've mosaicked, there's only one extension

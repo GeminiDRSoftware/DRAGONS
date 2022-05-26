@@ -141,7 +141,10 @@ class InteractiveModel1D(InteractiveModel):
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
 
-        xlinspace = np.linspace(*self.domain, 500)
+        if self.domain:
+            xlinspace = np.linspace(*self.domain, 500)
+        else:
+            xlinspace = np.linspace(min(x), max(x), 500)
         self.populate_bokeh_objects(x, y, weights=weights, mask=mask,
                                     extra_masks=extra_masks)
 
