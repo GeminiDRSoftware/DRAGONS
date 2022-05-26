@@ -2907,7 +2907,7 @@ class Spect(Resample):
                 all_fp_init = list()
                 for ext, x in zip(admos, x_arr):
                     pixels = np.arange(ext.shape[1])
-
+                    all_domains.append([min(pixels), max(pixels)])
                     dispaxis = 2 - ext.dispersion_axis()
                     all_fp_init.append(fit_1D.translate_params(params))
 
@@ -2923,7 +2923,7 @@ class Spect(Resample):
                                                    all_fp_init,
                                                    tab_name_fmt="CCD {}",
                                                    xlabel='x (pixels)', ylabel='counts',
-                                                   domains=None,
+                                                   domains=all_domains,
                                                    title="Normalize Flat",
                                                    primitive_name="normalizeFlat",
                                                    filename_info=filename_info,
