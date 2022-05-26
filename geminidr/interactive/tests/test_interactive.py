@@ -5,7 +5,7 @@ from astrodata.testing import ad_compare
 from geminidr.core.tests.test_spect import create_zero_filled_fake_astrodata, fake_point_source_spatial_profile, \
     get_aperture_table, SkyLines
 from geminidr.interactive import server
-import gemini_instruments
+import astrodata, gemini_instruments
 
 
 def interactive_test(tst):

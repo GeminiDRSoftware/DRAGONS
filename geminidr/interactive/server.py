@@ -279,12 +279,21 @@ def start_server():
                     raise
         _bokeh_server.start()
 
-    if test_mode:
-        kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu", "--dump-dom"]}
-        # kwargs = {"browser": "chrome"}
+    if test_mode and False:
+        from sys import platform
+        print(platform)
+        if 'Darwin' in platform:
+            # kwargs = {"browser": ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            #                       "--headless", "--disable-gpu"]}
+            kwargs = {"browser": "chrome"}
+        else:
+            kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
+        kwargs = {"browser": "chrome"}
     else:
         ic = interactive_conf()
         kwargs = {"browser": ic.browser}
+        # kwargs = {"browser": ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        #                       "--headless", "--disable-gpu"]}
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", **kwargs)
     _bokeh_server.io_loop.start()
 

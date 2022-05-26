@@ -385,10 +385,6 @@ class PrimitiveVisualizer(ABC):
 
         self.visualize(doc)
 
-        if server.test_mode:
-            # Simulate a click of the accept button
-            self.do_later(lambda: self.submit_button_handler(None))
-
         # Add a widget we can use for triggering a message
         # This is a workaround, since CustomJS calls can only
         # respond to DOM events.  We'll be able to trigger
@@ -451,6 +447,13 @@ class PrimitiveVisualizer(ABC):
         # subclass implementation does all of it's document setup.  So,
         # this widget will be added at the end.
         self.do_later(lambda: doc.add_root(row(self._ok_cancel_holder, )))
+
+        if server.test_mode:
+            print("Test mode detected, setup to submit later")
+            # Simulate a click of the accept button
+            self.do_later(lambda: self.submit_button_handler(None))
+        else:
+            print("Not Test mode, no submit queued")
 
     def show_ok_cancel(self, message, callback):
         """
