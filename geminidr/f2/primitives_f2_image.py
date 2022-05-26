@@ -38,6 +38,8 @@ class F2Image(F2, Image, Photometry):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
+        suffix = params["suffix"]
+
         # Since this primitive needs a reference, it must no-op without any
         if not adinputs:
             return adinputs
@@ -59,11 +61,11 @@ class F2Image(F2, Image, Photometry):
                 log.fullinfo("Subtracting stacked dark from stacked flat")
                 flat = flat_list[0]
                 flat.subtract(dark_list[0])
-                flat.update_filename(suffix="_flat")
+                flat.update_filename(suffix=suffix, strip=True)
                 return [flat]
             elif flat_list:
                 log.fullinfo("Only had flats to stack. Calling darkCorrect.")
-                flat_list = self.darkCorrect(flat_list, suffix="_flat",
+                flat_list = self.darkCorrect(flat_list, suffix=suffix,
                                              dark=None, do_cal='procmode')
                 return flat_list
             else:

@@ -1236,6 +1236,16 @@ class DataGroup:
         """
         trans_output_shape = tuple(length * subsample for length in output_shape)
 
+        # Any NaN or Inf values in the array prior to resampling can cause
+        # havoc. There shouldn't be any, but let's check and spit out a
+        # warning if there are, so we at least produce a sensible output array.
+        isnan = np.isnan(input_array)
+        isinf = np.isinf(input_array)
+        if isnan.any() or isinf.any():
+            log.warning(f"There are {isnan.sum()} NaN and {isinf.sum()} inf "
+                        f"values in the {output_key} array. Setting to zero.")
+            input_array[isnan | isinf] = 0
+
         # We want to transform any DQ bit arrays into floats so we can sample
         # the "ringing" from the interpolation and flag appropriately
         out_dtype = np.float32 if np.issubdtype(
