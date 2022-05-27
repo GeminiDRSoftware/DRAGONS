@@ -175,6 +175,8 @@ class NearIR(Bookkeeping):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
+        suffix = params["suffix"]
+
         lamp_on_list = self.selectFromInputs(adinputs, tags='LAMPON')
         lamp_off_list = self.selectFromInputs(adinputs, tags='LAMPOFF')
         self.showInputs(lamp_on_list, purpose='lampOn')
@@ -189,7 +191,7 @@ class NearIR(Bookkeeping):
             log.fullinfo("Subtracting lampOff stack from lampOn stack")
             flat = ad_on[0]
             flat.subtract(ad_off[0])
-            flat.update_filename(suffix="_lampOnOff", strip=True)
+            flat.update_filename(suffix=suffix, strip=True)
             return [flat]
         else:
             log.warning("Cannot subtract lampOff from lampOn flats as do not "
