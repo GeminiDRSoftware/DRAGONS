@@ -118,6 +118,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
+    absorption = config.Field("Is feature type absorption?", bool, False)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)

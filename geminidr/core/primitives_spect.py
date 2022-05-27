@@ -1690,6 +1690,9 @@ class Spect(Resample):
         nbright : int (or may not exist in certain class methods)
             Number of brightest lines to cull before fitting
 
+        absorption : bool
+            If feature type is absorption (default: "False")
+
         interactive : bool
             Use the interactive tool?
 
@@ -1757,6 +1760,9 @@ class Spect(Resample):
                     domains.append([0, ext.shape[axis] - 1])
                 reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
+                print(f"uiparams:{uiparams.values}")
+                print(f"reconstruct points:{reconstruct_points.keywords}")
+
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
@@ -3924,7 +3930,7 @@ class Spect(Resample):
 
         return adinputs
 
-    def _get_arc_linelist(self, waves=None):
+    def _get_arc_linelist(self, waves=None, ad=None):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
