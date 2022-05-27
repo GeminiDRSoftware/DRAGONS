@@ -42,10 +42,18 @@ def disable_when_identifying(fn):
 
 class WavelengthSolutionPanel(Fit1DPanel):
     def __init__(self, visualizer, fitting_parameters, domain=None,
-                 x=None, y=None, weights=None, meta=None, **kwargs):
+                 x=None, y=None, weights=None, absorption=False, meta=None, **kwargs):
         # No need to compute wavelengths here as the model_change_handler() does it
-        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
+        self.absorption = absorption
+        if absorption:
+            self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
+                                            'spectrum': -meta["spectrum"]})
+                                            # 'spectrum': [1 /sig for sig in meta["spectrum"]]})
+ #                                            'spectrum': [at.divide0(1, sig) for sig in meta["spectrum"]]})
+        else:
+            self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
                                              'spectrum': meta["spectrum"]})
+
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
 
@@ -56,6 +64,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # models are returned by the Visualizer, not the Panel instances
         self.model.meta = meta
         self.model.allow_poor_fits = False
+
+        if meta['display_initial_model'] == True:
+            print(f"self.model.data.data = {self.model.data.data}")
+            self.model.data.data = dict((key, list()) for key in self.model.data.data)
+            print(f"self.model.data.data = {self.model.data.data}")
 
         self.new_line_marker = bm.ColumnDataSource(
             {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]})
@@ -211,7 +224,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
             #height = (44 / 29 * self.spectrum.data['spectrum'].max() -
             #          1.1 * self.spectrum.data['spectrum'].min())
             height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
-        padding = 0.25 * height
+        if self.absorption:
+            padding = -0.05 * height
+        else:
+            padding = 0.25 * height
         try:
             return [self.spectrum.data["spectrum"][int(xx + 0.5)] + padding for xx in x]
         except TypeError:
@@ -223,6 +239,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if self.currently_identifying:
             lheight = 0.05 * (self.p_spectrum.y_range.end -
                               self.p_spectrum.y_range.start)
+#            if self.absorption:
+#                # TODO: check if this works -OS
+#                self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] - lheight
+#            else:
             self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
 
     # I could put the extra stuff in a second listener but the name of this
@@ -319,8 +339,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
             fwidth = self.model.meta["fwidth"]
             pixel = interp1d(self.spectrum.data["wavelengths"],
                              range(len(self.spectrum.data["wavelengths"])))(x)
+            print(f"Model.meta[peaks]={self.model.meta['peaks']}")
+            print(f"Mode.x={self.model.x}")
             new_peaks = np.setdiff1d(self.model.meta["peaks"],
                                      self.model.x, assume_unique=True)
+            print(f"new_peaks={new_peaks}")
             index = np.argmin(abs(new_peaks - pixel))
 
             # If we've clicked "close" to a real peak (based on viewport size),
@@ -331,12 +354,18 @@ class WavelengthSolutionPanel(Fit1DPanel):
             else:
                 # TODO: Check this behaves sensibly, and doesn't find
                 # all tiny bumps
-                pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
+                absorption=True
+                if absorption:
+                    pinpoint_data = cwt_ricker(-self.spectrum.data["spectrum"],
+                    #pinpoint_data = cwt_ricker([1/sig for sig in self.spectrum.data["spectrum"]],
+                                           [0.42466 * fwidth])[0]
+                else:
+                    pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
                                            [0.42466 * fwidth])[0]
                 eps = np.finfo(np.float32).eps  # Minimum representative data
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
                 try:
-                    peak = pinpoint_peaks(pinpoint_data, None, [pixel])[0][0]
+                    peak = pinpoint_peaks(pinpoint_data, None, np.array([pixel]))[0][0]
                     print(f"Found peak at pixel {peak}")
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
@@ -365,8 +394,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.new_line_dropdown.options = []
             self.new_line_dropdown.disabled = True
         self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
-        lheight = 0.05 * (self.p_spectrum.y_range.end -
-                          self.p_spectrum.y_range.start)
+        lheight = (self.p_spectrum.y_range.end -
+                   self.p_spectrum.y_range.start) * (-0.05 if self.absorption else 0.05)
+        # TODO: check what happens here in case of absorption -OS
         height = self.spectrum.data["spectrum"][int(peak + 0.5)]
         self.new_line_marker.data = {"x": [est_wave] * 2,
                                      "y": [height, height + lheight]}
@@ -382,6 +412,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         new_data = {col: list(values)[:index] + list(values)[index+1:]
                     for col, values in self.model.data.data.items()}
         self.model.data.data = new_data
+        print(f"model meta: {self.model.meta}")
+        print(f"self.model.data.data['fitted'] = {self.model.data.data['fitted'] }")
         self.model.perform_fit()
 
     def identify_lines(self):
@@ -468,6 +500,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         image = []
         for model in self.fits:
             goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
+            print(f"goodpix = {goodpix}")
             image.append(model.y[goodpix])
         return image
 

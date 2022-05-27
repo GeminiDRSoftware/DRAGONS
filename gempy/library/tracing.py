@@ -35,6 +35,8 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
+from matplotlib import pyplot as plt
+
 from . import astrotools as at
 from ..utils.decorators import insert_descriptor_values, unpack_nddata
 
@@ -582,6 +584,7 @@ def get_extrema(profile, prof_mask=None, min_snr=3):
     extrema: list of 3-element lists (float, float, bool)
         [position, value, is_maximum?]
     """
+    print("got into 'get_extrema'")
     diffs = np.array([np.diff(profile[:-1]), -np.diff(profile[1:])])
     extrema = np.multiply.reduce(diffs, axis=0) >= 0
     extrema_types = np.add.reduce(diffs, axis=0)
@@ -907,6 +910,17 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
                     where=variance > 0)
+
+    # debug, remove -OS
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    print(f'snr = {snr}')
+    ax.plot(snr)
+    plt.plot(peaks, snr[peaks], "x")
+    #plt.plot(ridge_lines[1],snr[ridge_lines[1]], "o")
+    fname = "/Users/osmirnov/data_reduction/NIR_LS_wvl/output/snr.png"
+    plt.savefig(fname)
+
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points

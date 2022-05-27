@@ -227,3 +227,24 @@ filter_wavelengths = {
     'M'           : 5.1000,
     'M_(order_1)' : 5.1000,
 }
+
+dispersion_by_config = {
+    # Dictionary keys are in the following order:
+    # "telescope", "grating", "camera".
+    # Dictionary values are in the following order:
+    # X, J, H, K, L, M.
+    # This is a concise version of gnirs$data/nsappwave.fits table
+    ("Gemini-South, 10/mm, Short")  : {"M": -19.39},
+    ("Gemini-South, 10/mm, Long")   : {},
+    ("Gemini-South, 32/mm, Short")  : {"X": -3.23, "J": -3.88, "H": -4.85, "K": -6.47}, # the last two values are borrowed from the GN table
+    ("Gemini-South, 32/mm, Long")   : {},
+    ("Gemini-South, 111/mm, Short") : {"X": -0.93, "J": -1.115, "H": -1.395, "K": -1.85, "L": -2.77,  "M": -5.61},
+    ("Gemini-South, 111/mm, Long")  : {"J": -0.371, "H": -0.463, "K": -0.6175},
+
+    ("Gemini-North, 10/mm, Short")  : {},
+    ("Gemini-North, 10/mm, Long")   : {"X":-3.2383, "J": -3.8867, "H": -4.8536, "K": -6.4743, "L": -9.755,  "M": -19.455},
+    ("Gemini-North, 32/mm, Short")  : {"X":-3.2356, "J": -3.876, "H": -4.8455, "K": -6.4541, "L": -9.7,  "M": -19.35},
+    ("Gemini-North, 32/mm, Long")   : {"X":-1.078, "J": -1.2925, "H": -1.6182, "K": -2.1572, "L": -3.247,  "M": -6.4467},
+    ("Gemini-North, 111/mm, Short") : {"X":-0.9225, "J": -1.1099, "H": -1.3869, "K": -1.8503, "L": -2.76,  "M": -5.625},
+    ("Gemini-North, 111/mm, Long")  : {"X":-0.3089, "J": -0.3712, "H": -0.4644, "K": -0.6186, "L": -0.92,  "M": -1.875}
+}
