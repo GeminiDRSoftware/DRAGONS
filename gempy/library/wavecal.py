@@ -353,8 +353,8 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
         central_wavelength = ext.central_wavelength(asNanometers=True)
         print(f"central_wavel from wcs model = {model(0.5 * (npix - 1))}")
         print(f"dispersion from wcs model= {np.diff(model([0, npix - 1]))[0] / (npix - 1)}")
-        print(f"central wvl from descriptor:{ext.central_wavelength(asNanometers=True)}")
-        print(f"dispersion from descriptor:{ext.dispersion()}")
+        print(f"central wvl as nano from descriptor:{ext.central_wavelength(asNanometers=True)}")
+        print(f"dispersion as nano from descriptor:{ext.dispersion(asNanometers=True)}")
 
         if dispersion or central_wavelength:
             actual_cenwave = model(0.5 * (npix - 1))

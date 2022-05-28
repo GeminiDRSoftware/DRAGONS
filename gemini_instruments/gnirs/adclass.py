@@ -137,7 +137,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         def get_dispersion_by_config(config, filter):
             try:
-                return (dispersion_by_config[config].get(filter)) / 10e3
+                return (dispersion_by_config[config].get(filter))
             except TypeError:
                 return None
 
@@ -169,7 +169,7 @@ class AstroDataGnirs(AstroDataGemini):
                 output_units = "angstroms"
 
         if dispersion is not None:
-            dispersion = gmu.convert_units('micrometers', dispersion, output_units)
+            dispersion = gmu.convert_units('angstroms', dispersion, output_units)
 
             if not self.is_single:
                 dispersion = [dispersion] * len(self)

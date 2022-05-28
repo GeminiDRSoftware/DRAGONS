@@ -4,7 +4,7 @@ import math
 from astrodata import (astro_data_tag, TagSet, astro_data_descriptor,
                        returns_list, Section)
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
-from .lookup import array_properties, nominal_zeropoints
+from .lookup import array_properties, nominal_zeropoints, dispersion_and_wavelength
 
 from ..common import build_group_id
 from .. import gmu
@@ -13,7 +13,7 @@ from .. import gmu
 class AstroDataF2(AstroDataGemini):
     __keyword_dict = dict(central_wavelength='GRWLEN',
                           disperser='GRISM',
-                          dispersion='DISPERSI',
+                         # dispersion='DISPERSI',
                           focal_plane_mask='MOSPOS',
                           lyot_stop='LYOT',
                           )
@@ -190,15 +190,24 @@ class AstroDataF2(AstroDataGemini):
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters.
             output_units = "meters"
+        # TODO: check if GRWLEN is ever correct -OS
+        # central_wavelength = float(self.phu['GRWLEN'])
+        # if self.phu['FILTER1'] == 'K-long-G0812':
+        #     central_wavelength = 2.2
 
-        central_wavelength = float(self.phu['GRWLEN'])
-        if self.phu['FILTER1'] == 'K-long-G0812':
-            central_wavelength = 2.2
+        grism = self.disperser(pretty=True)
+        filter = self.filter_name(pretty=True)
+        config = f"{grism}, {filter}"
+        print(f"grism = {grism}")
+        print(f"filter = {filter}")
+        print(f"config = {config}")
+        central_wavelength = dispersion_and_wavelength.get(config)[1]
+        print(f"central_wavl = {central_wavelength}")
 
         if central_wavelength < 0.0:
             return None
         else:
-            return gmu.convert_units('micrometers', central_wavelength,
+            return gmu.convert_units('angstroms', central_wavelength,
                                      output_units)
 
     @astro_data_descriptor
@@ -328,19 +337,35 @@ class AstroDataF2(AstroDataGemini):
         list/float
             The dispersion(s)
         """
-        # F2 header keyword value is in Angstroms, not meters
-        dispersion = super().dispersion(
-            asMicrometers=asMicrometers,
-            asNanometers=asNanometers,
-            asAngstroms=asAngstroms)
 
-        # Convert dispersion from Angstroms to Meters
-        if isinstance(dispersion, list):
-            dispersion = [disp * 1e-10 for disp in dispersion]
-        elif isinstance(dispersion, (int, float)):
-            dispersion = dispersion * 1e-10
-        else:
-            dispersion = None
+        # F2 header keyword value is in Angstroms, not meters
+
+        grism = self.disperser(pretty=True)
+        filter = self.filter_name(pretty=True)
+        config = f"{grism}, {filter}"
+        print(f"grism = {grism}")
+        print(f"filter = {filter}")
+        print(f"config = {config}")
+        dispersion = dispersion_and_wavelength.get(config)[0]
+        print(f"dispersion = {dispersion}")
+
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        output_units = "meters" # By default
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+
+        if dispersion is not None:
+            dispersion = gmu.convert_units('angstroms', dispersion, output_units)
+
+            if not self.is_single:
+                dispersion = [dispersion] * len(self)
 
         return dispersion
 
