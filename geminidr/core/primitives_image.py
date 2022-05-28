@@ -820,3 +820,34 @@ class Image(Preprocess, Register, Resample):
             ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
+
+    @staticmethod
+    def _fields_overlap(ad1, ad2, frac_FOV=1.0):
+        """
+        Checks whether the fields of view of two AD objects overlap
+        sufficiently to be considerd part of a single ExposureGroup.
+        This method, implemented at the Image level, assumes that both
+        AD objects have a single extension and a rectangular FOV.
+        Instruments which do not fulfil these criteria should have
+        their own methods implemented.
+
+        Parameters
+        ----------
+        ad1: AstroData
+            one of the input AD objects
+        ad2: AstroData
+            the other input AD object
+        frac_FOV: float (0 < frac_FOV <= 1)
+            fraction of the field of view for an overlap to be considered. If
+            frac_FOV=1, *any* overlap is considered to be OK
+
+        Returns
+        -------
+        bool: do the fields overlap sufficiently?
+        """
+        # Note that this is not symmetric in ad1 and ad2 if they have different
+        # shapes, but that is not expected to happen.
+        pos1 = [0.5 * (length - 1) for length in ad1[0].shape[::-1]]
+        pos2 = ad2[0].wcs.invert(*ad1[0].wcs(*pos1))
+        return all(abs(p1 - p2) < frac_FOV * length
+                   for p1, p2, length in zip(pos1, pos2, ad1[0].shape[::-1]))

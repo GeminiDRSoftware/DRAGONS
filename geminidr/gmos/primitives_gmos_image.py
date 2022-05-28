@@ -711,6 +711,10 @@ class GMOSImage(GMOS, Image, Photometry):
             adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 
+    @staticmethod
+    def _fields_overlap(ad1, ad2, frac_FOV=1.0):
+        raise NotImplementedError("GMOSImage has no _fields_overlap() method")
+
     def _needs_fringe_correction(self, ad):
         """
         This function determines whether an AstroData object needs a fringe

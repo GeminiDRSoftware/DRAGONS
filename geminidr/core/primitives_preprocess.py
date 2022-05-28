@@ -1286,7 +1286,8 @@ class Preprocess(PrimitivesBASE):
 
         # Analyze the spatial clustering of exposures and attempt to sort them
         # into dither groups around common nod positions.
-        groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
+        groups = gt.group_exposures(adinputs, fields_overlap=self._fields_overlap,
+                                    frac_FOV=frac_FOV, )
         ngroups = len(groups)
         log.stdinfo(f"Identified {ngroups} group(s) of exposures")
 
@@ -1348,21 +1349,26 @@ class Preprocess(PrimitivesBASE):
                 objects = set(adinputs)
                 skies = set(adinputs)
             else:
-                distsq = [sum([x * x for x in g.group_center]) for g in groups]
+                # Not all ADs necessarily have the same target coords, but
+                # we have to pick a single target location, so use the first
+                target = SkyCoord(adinputs[0].target_ra(),
+                                  adinputs[0].target_dec(), unit=u.deg)
+                dist = [target.separation(group.group_center).arcsec
+                        for group in groups]
                 if ngroups == 2:
                     log.stdinfo("Treating 1 group as object and 1 as sky, "
                                 "based on target proximity")
-                    closest = np.argmin(distsq)
-                    objects = set(groups[closest].list())
+                    closest = np.argmin(dist)
+                    objects = set(groups[closest].members)
                     skies = set(adinputs) - objects
                 else:  # More than 2 groups
                     # Add groups by proximity until at least half the inputs
                     # are classified as objects
                     log.stdinfo("Classifying groups based on target "
                                 "proximity and observation efficiency")
-                    for group in [groups[i] for i in np.argsort(distsq)]:
-                        objects.update(group.list())
-                        if len(objects) >= len(adinputs) // 2:
+                    for group in [groups[i] for i in np.argsort(dist)]:
+                        objects.update(group.members)
+                        if len(objects) >= len(adinputs) / 2:
                             break
                     # We might have everything become an object here, in
                     # which case, make them all skies too (better ideas?)
