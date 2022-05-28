@@ -63,3 +63,19 @@ nominal_zeropoints = {
     ('Ks', 'f/16'): 24.59+1.62,
 
 }
+    # Dictionary keys are in the following order:
+    # "grism, filter".
+    # Dictionary values are in the following order:
+    # (dispersion (A/pix), central_wavelength (A))
+    # This is a concise version of gnirs$data/nsappwave.fits table
+dispersion_and_wavelength = {
+    ("JH, JK"):     (-6.667, 13900),
+    ("HK, HK"):     (-7.826, 18710),
+    ("HK, JH"):     (-4.000, 13900),
+    ("R3K, Jlow"):  (-1.667, 11220),
+    ("R3K, Y"):     (-1.642, 10200),
+    ("R3K, J"):     (-2.022, 12550),
+    ("R3K, H"):     (-2.609, 16310),
+    ("R3K, Ks"):    (-3.462, 21570),
+    ("R3K, K-long"):(-3.462, 22000)
+}

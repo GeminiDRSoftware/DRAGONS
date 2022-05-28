@@ -230,9 +230,10 @@ filter_wavelengths = {
 
 dispersion_by_config = {
     # Dictionary keys are in the following order:
-    # "telescope", "grating", "camera".
+    # "telescope, grating, camera".
     # Dictionary values are in the following order:
     # X, J, H, K, L, M.
+    # Dispersion is in A/pix
     # This is a concise version of gnirs$data/nsappwave.fits table
     ("Gemini-South, 10/mm, Short")  : {"M": -19.39},
     ("Gemini-South, 10/mm, Long")   : {},
