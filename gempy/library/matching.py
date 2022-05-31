@@ -673,8 +673,8 @@ def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
     elif abs(rotation) > rot_threshold:
         m_rotate.angle.fixed = True
         m_init = m_rotate | m_init
-        log.warning("A rotation of {:.3f} degrees is expected but the "
-                    "rotation is fixed".format(rotation))
+        log.warning(f"A rotation of {rotation:.3f} degrees is applied but "
+                    "held fixed")
 
     m_magnify = Scale2D(magnification)
     if scale:
@@ -683,12 +683,21 @@ def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
     elif abs(magnification - 1) > mag_threshold:
         m_magnify.factor.fixed = True
         m_init = m_magnify | m_init
-        log.warning("A magnification of {:.4f} is expected but the "
-                    "magnification is fixed".format(magnification))
+        log.warning(f"A magnification of {magnification:.4f} is applied but "
+                    "held fixed")
 
     # Tolerance here aims to achieve <0.1 pixel differences in the tests
-    m_final = fit_model(m_init, incoords, refcoords, sigma=sigma, scale=factor,
-                        brute=brute, tolerance=sigma*1e-5)
+    try:
+        m_final = fit_model(m_init, incoords, refcoords, sigma=sigma, scale=factor,
+                            brute=brute, tolerance=sigma*1e-5)
+    except ValueError as e:
+        if any(np.logical_or(max(refco) < min(inco), min(refco) > max(inco))
+               for inco, refco in zip(incoords, refcoords)):
+            log.warning("No overlap between input and reference coords")
+            m_final = models.Identity(len(incoords))
+        else:
+            raise e
+
     if return_matches:
         matched = match_sources(m_final(*incoords), refcoords, radius=match_radius)
         ind2 = np.where(matched >= 0)
