@@ -94,13 +94,15 @@ class Aperture:
 
     def check_domain(self, npix):
         """Simple function to warn user if aperture model appears inconsistent
-        with the array containing the data"""
-        try:
-            if self.model.domain != (0, npix - 1):
-                log.warning("Model's domain is inconsistent with image size. "
-                            "Results may be incorrect.")
-        except AttributeError:  # no "domain" attribute
-            pass
+        with the array containing the data. Since resampleToCommonFrame() now
+        modifies the domain, this will raise unnecessary warnings if left as-is"""
+        pass
+        #try:
+        #    if self.model.domain != (0, npix - 1):
+        #        log.warning("Model's domain is inconsistent with image size. "
+        #                    "Results may be incorrect.")
+        #except AttributeError:  # no "domain" attribute
+        #    pass
 
     def aperture_mask(self, ext=None, width=None, aper_lower=None,
                       aper_upper=None, grow=None):
@@ -550,7 +552,7 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
     return profile, prof_mask
 
 
-def get_extrema(profile, prof_mask, min_snr=3):
+def get_extrema(profile, prof_mask=None, min_snr=3):
     """
     Find all the significant maxima and minima in a 1D profile. Significance
     is calculated from the prominence of each peak divided by an estimate of
@@ -609,13 +611,20 @@ def get_extrema(profile, prof_mask, min_snr=3):
     if not extrema:
         return []
 
+    # Delete a maximum if there is no minimum between it and the edge,
+    # unless it's the ONLY maximum
     if extrema[0][2]:
         if len(extrema) == 1:
             extrema = [(1, profile[1], False)] + extrema + [(xpixels[-1], profile[-2], False)]
+        elif len(extrema) == 2:
+            extrema = [(1, profile[1], False)] + extrema
         else:
             del extrema[0]
     if extrema and extrema[-1][2]:
-        del extrema[-1]
+        if len(extrema) == 2:
+            extrema = extrema + [(xpixels[-1], profile[-2], False)]
+        else:
+            del extrema[-1]
 
     if not extrema:
         return []
@@ -652,6 +661,9 @@ def get_extrema(profile, prof_mask, min_snr=3):
 
     ### WE NEED TO GET RID OF THEM IN A SMARTER WAY. PERCOLATING?
     apertures = [0] * (len(extrema) // 2)
+    if not apertures:
+        return []
+
     apnext = 1
     niter = 0
     while True:
@@ -1332,6 +1344,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     if start is None:
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
+    else:  # just to be sure
+        start = int(min(max(start, nsum // 2), ext_data.shape[0] - nsum / 2))
 
     # Get accurate starting positions for all peaks
     halfwidth = cwidth // 2
@@ -1363,26 +1377,46 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     mask = np.zeros_like(data, dtype=DQ.datatype)
     var = np.empty_like(data)
 
-    coord_lists = [[] for peak in initial_peaks]
+    # Make a slice around a given row center
+    def _slice(center):
+        return slice(center - nsum // 2, center + nsum - nsum // 2)
+
+    # We're going to make a list of valid step centers to help later. These
+    # will help us to calculate for how many steps a trace has been missed,
+    # since we don't count steps which cover masked regions.
+    step_centers = list(np.arange(start + 1, ext_data.shape[0] - nsum / 2, step, dtype=int))
+    step_centers.extend(list(np.arange(start - step, nsum / 2, -step, dtype=int)))
+    all_slices = [_slice(c) for c in step_centers]
+    # Eliminate blocks that are completely masked (e.g., chip gaps, bridges, amp5)
+    # Also need to eliminate regions with only one valid column because NDStacker
+    # can't compute the pixel-to-pixel variance and hence the S/N can't be calculated
+    if ext_mask is not None:
+        for i, s in reversed(list(enumerate(all_slices))):
+            if np.bincount((ext_mask[s] & DQ.not_signal).min(axis=1))[0] <= 1:
+                del step_centers[i]
+
+    coord_lists = [[(start, peak)] for peak in initial_peaks]
     for direction in (1, -1):
         ypos = start
         last_coords = [[ypos, peak] for peak in initial_peaks]
-        lookback = 0
+        missing_but_not_lost = None
 
         while True:
+            missing_but_not_lost = missing_but_not_lost or ypos
             ypos += step
-            # This is the number of steps we are allowed to look back if
-            # we don't find the peak in the current step
-            lookback = min(lookback + 1, max_missed)
             # Reached the bottom or top?
-            if ypos < 0.5 * nsum or ypos > ext_data.shape[0] - 0.5 * nsum:
+            if not (min(step_centers) <= ypos <= max(step_centers)):
                 break
+
+            # This indicates we should start making profiles binned across
+            # multiple steps because we have lost lines but they're not
+            # completely lost yet.
+            lookback = min(int((ypos - missing_but_not_lost) / step), max_missed)
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             # There's always at least one such array
-            y2 = int(ypos + 0.5 * nsum + 0.5)
             for i in range(lookback + 1):
-                slices = [slice(y2 - j*step - nsum, y2 - j*step) for j in range(i + 1)]
+                slices = [_slice(ypos - j*step) for j in range(i+1)]
                 d, m, v = func(np.concatenate(list(ext_data[s] for s in slices)),
                                mask=None if ext_mask is None else np.concatenate(list(ext_mask[s] for s in slices)),
                                variance=None)
@@ -1417,7 +1451,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                         new_peak = np.inf
 
                     # Is this close enough to the existing peak?
-                    steps_missed = int(abs((ypos - last_row) / step)) - 1
+                    steps_missed = len([c for c in step_centers if (last_row < c < ypos) or (last_row > c > ypos)])
                     for j in range(min(steps_missed, lookback) + 1):
                         tolerance = max_shift * (j + 1) * abs(step)
                         if abs(new_peak - old_peak) <= tolerance:
@@ -1425,6 +1459,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                             break
                         elif j < lookback:
                             # Investigate more heavily-binned profiles
+                            # new_peak calculated here may be added in the
+                            # next iteration of the loop
                             try:
                                 new_peak = pinpoint_peaks(
                                     data[j+1], peaks=[old_peak], mask=mask[j+1],
@@ -1435,7 +1471,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                         # We haven't found the continuation of this line.
                         # If it's gone for good, set the coord to NaN to avoid it
                         # picking up a different line if there's significant tilt
-                        if steps_missed > max_missed:
+                        if steps_missed >= max_missed:
                             #coord_lists[i].append([ypos, np.nan])
                             last_coords[i] = [ypos, np.nan]
                         continue
@@ -1455,12 +1491,13 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
                     coord_lists[i].append(new_coord)
                     last_coords[i] = new_coord.copy()
+                try:
+                    missing_but_not_lost = direction * min(
+                        direction * last[0] for last in last_coords if not np.isnan(last[1]))
+                except ValueError:  # lost all lines
+                    break
             else:  # We don't bin across completely dead regions
-                lookback = 0
-
-            # Lost all lines!
-            if all(np.isnan(c[1]) for c in last_coords):
-                break
+                missing_but_not_lost = None
 
         step *= -1
 

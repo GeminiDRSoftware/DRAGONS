@@ -48,6 +48,6 @@ def test_separate_ccd_reduction_astrometry(change_working_dir):
     c1, c2, c3 = cats
     pixscale = adoutputs[0].pixel_scale()
     idx, d2d, _ = c1.match_to_catalog_sky(c2)
-    assert np.percentile(d2d.arcsec, 25) < 0.1 * pixscale
+    assert np.percentile(d2d.arcsec, 25) < 0.2 * pixscale
     idx, d2d, _ = c1.match_to_catalog_sky(c3)
-    assert np.percentile(d2d.arcsec, 25) < 0.1 * pixscale
+    assert np.percentile(d2d.arcsec, 25) < 0.2 * pixscale

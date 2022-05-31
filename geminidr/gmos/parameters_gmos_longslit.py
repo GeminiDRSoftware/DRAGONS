@@ -22,7 +22,9 @@ class addIllumMaskToDQConfig(parameters_standardize.addIllumMaskToDQConfig):
     shift = config.RangeField("User-defined shift for illumination mask", int, None,
                               min=-100, max=100, inclusiveMax=True, optional=True)
     max_shift = config.RangeField("Maximum (unbinned) pixel shift for illumination mask",
-                                  int, 20, min=0, max=100, inclusiveMax=True)
+                                  int, 40, min=0, max=100, inclusiveMax=True)
+    debug_plot = config.Field("Plot spatial profile for debugging purposes?",
+                              bool, False)
 
 
 class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
