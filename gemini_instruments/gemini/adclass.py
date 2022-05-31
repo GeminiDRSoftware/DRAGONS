@@ -78,6 +78,7 @@ gemini_keyword_names = dict(
     nominal_photometric_zeropoint = 'NOMPHOTZ',
     non_linear_level = 'NONLINEA',
     observation_epoch = 'OBSEPOCH',
+    observation_id = 'OBSID',
     observation_mode = 'OBSMODE',
     oiwfs = 'OIWFS_ST',
     overscan_section = 'OVERSEC',

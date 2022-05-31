@@ -413,6 +413,8 @@ class Standardize(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
+        missing_wcs_list = []
+
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -444,9 +446,19 @@ class Standardize(PrimitivesBASE):
                               "number of extensions expected in raw {} "
                               "data.".format(len(ad), ad.filename, inst_name))
 
+            # Check for WCS
+            missing_wcs_list.extend([f"{ad.filename} EXTVER {ext.hdr['EXTVER']}"
+                                     for ext in ad if ext.wcs is None])
+
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
+
+        if missing_wcs_list:
+            msg = "The following extensions did not produce a valid WCS:\n    "
+            msg += '\n    '.join(extstr for extstr in missing_wcs_list)
+            raise ValueError(msg+"\n")
+
         return adinputs
 
     @staticmethod

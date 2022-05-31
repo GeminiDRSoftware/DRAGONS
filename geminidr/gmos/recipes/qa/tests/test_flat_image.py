@@ -63,7 +63,7 @@ def test_make_processed_flat(
         data = np.ma.masked_array(ext.data, mask=ext.mask)
 
         if not data.mask.all():
-            np.testing.assert_allclose(np.ma.median(data.ravel()), 1, atol=0.071)
+            np.testing.assert_allclose(np.ma.median(data.ravel()), 1, atol=0.072)
             np.testing.assert_allclose(data[~data.mask], 1, atol=0.45)
 
     # plot(ad)

@@ -56,6 +56,7 @@ timestamp_keys = {
     "resampleToLinearCoords": "LINCOORD",
     "scaleByExposureTime": "EXPSCALE",
     "scaleByIntensity": "SCALEINT",
+    "scaleFlats": "SCALEFLT",
     "separateSky": "SEPSKY",
     "skyCorrectFromSlit": "SKYCORR",
     "skyCorrectNodAndShuffle": "SKYCORR",

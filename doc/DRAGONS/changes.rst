@@ -29,6 +29,14 @@ Bug Fixes
 
 * Added missing support for YPHOT filter.
 
+New Features
+------------
+
+** geminidr **
+
+* Add ``wave_units`` and ``data_units`` parameters to ``write1DSpectra`` to
+  configure the output
+
 Interface Modifications
 -----------------------
 * Internal Gemini catalog server URL updated.

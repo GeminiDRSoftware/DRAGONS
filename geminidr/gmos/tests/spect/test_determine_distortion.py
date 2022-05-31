@@ -124,6 +124,7 @@ datasets = [
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.skip("No diagnostic value; the WCS test covers this")
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", datasets, indirect=True)
@@ -166,7 +167,7 @@ def test_regression_for_determine_distortion_using_models_coefficients(
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", datasets, indirect=True)
-def test_regression_for_determine_distortion_using_fitcoord_table(
+def test_regression_for_determine_distortion_using_wcs(
         ad, change_working_dir, ref_ad_factory):
     """
     Runs the `determineDistortion` primitive on a preprocessed data and compare
@@ -192,18 +193,16 @@ def test_regression_for_determine_distortion_using_fitcoord_table(
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
+    model = distortion_determined_ad[0].wcs.get_transform(
+        "pixels", "distortion_corrected")[1]
+    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[1]
 
-    table = ad[0].FITCOORD
-    model_dict = dict(zip(table['name'], table['coefficients']))
-    model = astromodels.dict_to_chebyshev(model_dict)
-
-    ref_table = ref_ad[0].FITCOORD
-    ref_model_dict = dict(zip(ref_table['name'], ref_table['coefficients']))
-    ref_model = astromodels.dict_to_chebyshev(ref_model_dict)
+    # Otherwise we're doing something wrong!
+    assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
 
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
-    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=1)
+    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.1)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
