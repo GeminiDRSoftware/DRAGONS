@@ -56,6 +56,7 @@ where we put it all together.
     >>> logutils.config(file_name='example.log')
     >>>
     >>> inputfiles = ['S20161025S0200.fits', 'S20161025S0201.fits']
+    >>> myreduce = Reduce()
     >>> myreduce.files = inputfiles
     >>> myreduce.runr()
 

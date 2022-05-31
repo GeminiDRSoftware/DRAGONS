@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from copy import copy, deepcopy
+
 from scipy.ndimage import affine_transform, binary_dilation
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -40,74 +41,6 @@ class Image(Preprocess, Register, Resample):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_image)
-
-    def applyStackedObjectMask(self, adinputs=None, **params):
-        """
-        This primitive takes an image with an OBJMASK and transforms that
-        OBJMASK onto the pixel planes of the input images, using their WCS
-        information. If the first image is a stack, this allows us to mask
-        fainter objects than can be detected in the individual input images.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        source: str
-            name of stream containing single stacked image
-        order: int (0-5)
-            order of interpolation
-        threshold: float
-            threshold above which an interpolated pixel should be flagged
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        source = params["source"]
-        order = params["order"]
-        threshold = params["threshold"]
-        sfx = params["suffix"]
-        force_affine = True
-
-        try:
-            source_stream = self.streams[source]
-        except KeyError:
-            try:
-                ad_source = astrodata.open(source)
-            except:
-                log.warning(f"Cannot find stream or file named {source}. Continuing.")
-                return adinputs
-        else:
-            if len(source_stream) != 1:
-                log.warning(f"Stream {source} does not contain single "
-                            "AstroData object. Continuing.")
-                return adinputs
-            ad_source = source_stream[0]
-
-        # There's no reason why we can't handle multiple extensions
-        if any(len(ad) != len(ad_source) for ad in adinputs):
-            log.warning("At least one AstroData input has a different number "
-                        "of extensions to the reference. Continuing.")
-            return adinputs
-
-        for ad in adinputs:
-            for ext, source_ext in zip(ad, ad_source):
-                if getattr(ext, 'OBJMASK') is not None:
-                    t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
-                    if force_affine:
-                        affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
-                        objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
-                                                   affine.matrix, affine.offset,
-                                                   output_shape=ext.shape, order=order,
-                                                   cval=0)
-                    else:
-                        objmask = transform.Transform(t_align).apply(source_ext.OBJMASK.astype(np.float32),
-                                                                     output_shape=ext.shape, order=order,
-                                                                     cval=0)
-                    ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
-                # We will deliberately keep the input image's OBJCAT (if it
-                # exists) since this will be required for aligning the inputs.
-            ad.update_filename(suffix=sfx, strip=True)
-
-        return adinputs
 
     def fringeCorrect(self, adinputs=None, **params):
         """
@@ -192,9 +125,7 @@ class Image(Preprocess, Register, Resample):
 
             # Logic to deal with different exposure times where only
             # some inputs might require fringe correction
-            # KL: for now, I'm not allowing the "force" to do anything when
-            #     the correction is not needed.
-            if (do_cal == 'procmode' or do_cal == 'force') and not correct:
+            if do_cal == 'procmode' and not correct:
                 log.stdinfo("{} does not require a fringe correction".
                             format(ad.filename))
                 ad.update_filename(suffix=params["suffix"], strip=True)
@@ -647,6 +578,88 @@ class Image(Preprocess, Register, Resample):
                             ad *= factor
 
             ad.update_filename(suffix=params["suffix"], strip=True)
+        return adinputs
+
+    def transferObjectMask(self, adinputs=None, **params):
+        """
+        This primitive takes an image with an OBJMASK and transforms that
+        OBJMASK onto the pixel planes of the input images, using their WCS
+        information. If the first image is a stack, this allows us to mask
+        fainter objects than can be detected in the individual input images.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        source: str
+            name of stream containing single stacked image
+        order: int (0-5)
+            order of interpolation
+        threshold: float
+            threshold above which an interpolated pixel should be flagged
+        dilation: float
+            amount by which to dilate the OBJMASK after transference
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        source = params["source"]
+        order = params["order"]
+        threshold = params["threshold"]
+        dilation = params["dilation"]
+        sfx = params["suffix"]
+
+        try:
+            source_stream = self.streams[source]
+        except KeyError:
+            try:
+                ad_source = astrodata.open(source)
+            except:
+                log.warning(f"Cannot find stream or file named {source}. Continuing.")
+                return adinputs
+        else:
+            if len(source_stream) != 1:
+                log.warning(f"Stream {source} does not contain single "
+                            "AstroData object. Continuing.")
+                return adinputs
+            ad_source = source_stream[0]
+
+        xgrid, ygrid = np.mgrid[-int(dilation):int(dilation+1),
+                                -int(dilation):int(dilation+1)]
+        structure = np.where(xgrid*xgrid+ygrid*ygrid <= dilation*dilation,
+                             True, False)
+
+        for ad in adinputs:
+            force_affine = ad.instrument() != "GSAOI"
+            log.stdinfo(f"Transferring object mask to {ad.filename}")
+            for ext in ad:
+                if hasattr(ext, 'OBJMASK'):
+                    log.warning(f"{ad.filename}:{ext.id} already has an "
+                                "OBJMASK that will be overwritten")
+                ext.OBJMASK = None
+                for source_ext in ad_source:
+                    t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
+                    # This line is needed until gWCS PR#405 is merged
+                    t_align.inverse = ext.wcs.forward_transform | source_ext.wcs.backward_transform
+                    if force_affine:
+                        affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
+                        objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
+                                                   affine.matrix, affine.offset,
+                                                   output_shape=ext.shape, order=order,
+                                                   cval=0)
+                    else:
+                        objmask = transform.Transform(t_align).apply(
+                            source_ext.OBJMASK.astype(np.float32),
+                            output_shape=ext.shape, order=order, cval=0)
+                    objmask = binary_dilation(np.where(abs(objmask) > threshold, 1, 0).
+                                              astype(np.uint8), structure).astype(np.uint8)
+                    if ext.OBJMASK is None:
+                        ext.OBJMASK = objmask
+                    else:
+                        ext.OBJMASK |= objmask
+                # We will deliberately keep the input image's OBJCAT (if it
+                # exists) since this will be required for aligning the inputs.
+            ad.update_filename(suffix=sfx, strip=True)
+
         return adinputs
 
     def _needs_fringe_correction(self, ad):

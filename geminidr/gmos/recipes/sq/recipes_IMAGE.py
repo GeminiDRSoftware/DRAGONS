@@ -27,6 +27,7 @@ def reduce(p):
     p.addVAR(poisson_noise=True)
     p.flatCorrect()
     p.fringeCorrect()
+    p.QECorrect()
     p.mosaicDetectors()
     p.detectSources()
     p.adjustWCSToReference()
@@ -34,7 +35,7 @@ def reduce(p):
     p.flagCosmicRaysByStacking()
     p.scaleCountsToReference()
     p.stackFrames(zero=True)
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
     return
 
 

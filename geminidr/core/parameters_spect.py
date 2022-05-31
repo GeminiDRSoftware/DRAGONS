@@ -476,6 +476,19 @@ def wavelength_units_check(value):
     return True
 
 
+def wavelength_units_check(value):
+    # Confirm that the specified units are suitable for wavelength or frequency
+    try:
+        unit = u.Unit(value)
+    except:
+        raise ValueError(f"{value} is not a recognized unit")
+    try:
+        unit.to(u.m)
+    except u.UnitConversionError:
+        raise ValueError(f"{value} is not a wavelength unit")
+    return True
+
+
 class write1DSpectraConfig(config.Config):
     #format = config.Field("Format for writing", str, "ascii")
     format = config.ChoiceField("Format for writing", str,

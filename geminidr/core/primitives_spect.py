@@ -9,7 +9,7 @@ import os
 import re
 import warnings
 from contextlib import suppress
-from copy import copy
+from copy import copy, deepcopy
 from functools import partial, reduce
 from importlib import import_module
 
@@ -609,6 +609,10 @@ class Spect(Resample):
         bandpass : float, optional
             default bandpass width (in nm) to use if not present in the
             spectrophotometric data table (default: 5.)
+
+        resampling: float/None
+            if not None, resample the specphot file to this wavelength
+            interval (in nm) before calculating the sensitivity
 
         interactive: bool, optional
             Run the interactive UI for selecting the fit parameters
@@ -1720,31 +1724,18 @@ class Spect(Resample):
                         del ext.APERTURE
                     continue
 
-                # This is a little convoluted because of the simplicity of the
-                # initial models, but we want to ensure that the APERTURE
-                # table is written in an identical way to other models, and so
-                # we should use the model_to_table() function
-                all_tables = []
-                for i, (loc, limits) in enumerate(zip(locations, all_limits),
-                                                  start=1):
-                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1],
-                                              c0=loc)
-                    aptable = am.model_to_table(cheb)
+                apmodels, sizes = [], []
+                for i, (loc, limits) in enumerate(zip(locations, all_limits), start=1):
+                    apmodels.append(models.Chebyshev1D(
+                        degree=0, domain=[0, npix-1], c0=loc))
                     lower, upper = limits - loc
-                    aptable["number"] = np.int32(i)
-                    aptable["aper_lower"] = lower
-                    aptable["aper_upper"] = upper
-                    all_tables.append(aptable)
                     log.stdinfo(f"Aperture {i} found at {loc:.2f} "
                                 f"({lower:.2f}, +{upper:.2f})")
                     if lower > 0 or upper < 0:
                         log.warning("Problem with automated sizing of "
                                     f"aperture {i}")
-
-                aptable = vstack(all_tables, metadata_conflicts="silent")
-                # Move "number" to be the first column
-                new_order = ["number"] + [c for c in aptable.colnames if c != "number"]
-                ext.APERTURE = aptable[new_order]
+                    sizes.append((lower, upper))
+                ext.APERTURE = make_aperture_table(apmodels, limits=sizes)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -2689,21 +2680,35 @@ class Spect(Resample):
                                 (resampled_frame, new_wcs_model),
                                 (ext.wcs.output_frame, None)])
 
-                new_ext = transform.resample_from_wcs(ext, 'resampled', subsample=subsample,
-                                                      attributes=attributes, conserve=this_conserve,
-                                                      origin=origin, output_shape=output_shape)
+                new_ext = transform.resample_from_wcs(
+                    ext, 'resampled', subsample=subsample,
+                    attributes=attributes, conserve=this_conserve,
+                    origin=origin, output_shape=output_shape)
                 if iext == 0:
                     ad_out = new_ext
                 else:
                     ad_out.append(new_ext[0])
-                #if ndim == 2:
-                #    try:
-                #        offset = slit_offset.offset.value
-                #        ext.APERTURE['c0'] += offset
-                #        log.fullinfo("Shifting aperture locations by {:.2f} "
-                #                     "pixels".format(offset))
-                #    except AttributeError:
-                #        pass
+
+                # We attempt to modify the APERTURE table (if it exists) so
+                # that it's still relevant. This involved applying a shift
+                # and redefining the domain to the pixel range that corresponds
+                # to the same wavelength range as before. This is still not
+                # perfect though, since the location of a specific wavelength
+                # within the domain (the normalized coordinate) will have
+                # changed slightly. The solution to this is to INITIALLY define
+                # the APERTURE model as a function of wavelength, not pixel.
+                # Currently this is accurate to <0.1 pixel for GMOS.
+                # TODO? Define APERTURE as a function of wavelength, not pixel.
+                if ndim == 2 and hasattr(ext, 'APERTURE'):
+                    offset = spatial_offset.offset.value
+                    log.fullinfo("Shifting aperture locations by "
+                                 f"{offset:.2f} pixels")
+                    apmodels = [am.table_to_model(row) for row in ext.APERTURE]
+                    for model in apmodels:
+                        model.c0 += offset
+                        model.domain = wave_resample(model.domain)
+                    ad_out[-1].APERTURE = make_aperture_table(
+                        apmodels, existing_table=ext.APERTURE)
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
@@ -3113,26 +3118,34 @@ class Spect(Resample):
                     #  to start somewhere the source is bright enough, and there
                     #  may not be a single location where that is true for all
                     #  sources
+                    all_ref_coords = np.array([])
                     for i, loc in enumerate(locations):
                         c0 = int(loc + 0.5)
-                        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-                        start = np.argmax(at.boxcar(spectrum, size=20))
-                        log.debug(f"Starting trace of aperture {i+1} at pixel {start+1}")
+                        spectrum = ext.data[c0, nsum:-nsum] if dispaxis == 1 else ext.data[nsum:-nsum, c0]
+                        if ext.mask is None:
+                            start = np.argmax(at.boxcar(spectrum, size=20)) + nsum
+                        else:
+                            good = ((ext.mask[c0, nsum:-nsum] if dispaxis == 1 else
+                                     ext.mask[nsum:-nsum, c0]) & DQ.not_signal) == 0
+
+                            start = nsum + np.arange(spectrum.size)[good][np.argmax(
+                                at.boxcar(spectrum[good], size=20))]
+                        log.stdinfo(f"{ad.filename}: Starting trace of "
+                                    f"aperture {i+1} at pixel {start+1}")
 
                         # The coordinates are always returned as (x-coords, y-coords)
-                        ref_coords, in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                                                                    start=start, initial=[loc],
-                                                                    rwidth=None, cwidth=5, step=step,
-                                                                    nsum=nsum, max_missed=max_missed,
-                                                                    initial_tolerance=None,
-                                                                    max_shift=max_shift,
-                                                                    viewer=self.viewer if debug else None)
-                        if i:
-                            all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
-                            all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
-                        else:
-                            all_ref_coords = ref_coords
-                            all_in_coords = in_coords
+                        ref_coords, in_coords = tracing.trace_lines(
+                            ext, axis=dispaxis, start=start, initial=[loc],
+                            rwidth=None, cwidth=5, step=step, nsum=nsum,
+                            max_missed=max_missed, initial_tolerance=None,
+                            max_shift=max_shift, viewer=self.viewer if debug else None)
+                        if ref_coords.size:
+                            if all_ref_coords.size:
+                                all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
+                                all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
+                            else:
+                                all_ref_coords = ref_coords
+                                all_in_coords = in_coords
 
                     spectral_coords = np.arange(0, ext.shape[dispaxis], step)
 
@@ -3149,10 +3162,11 @@ class Spect(Resample):
                         ref_coords, in_coords = values[:2], values[2:]
 
                         # log aperture
-                        min_value = in_coords[1 - dispaxis].min()
-                        max_value = in_coords[1 - dispaxis].max()
-                        log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
-                                  f"to {max_value}")
+                        if in_coords.size:
+                            min_value = in_coords[1 - dispaxis].min()
+                            max_value = in_coords[1 - dispaxis].max()
+                            log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
+                                      f"to {max_value}")
 
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
@@ -3193,31 +3207,8 @@ class Spect(Resample):
 
                         aperture_models.append(_fit_1d.model)
 
-                all_aperture_tables = []
-                for model, aperture in zip(aperture_models, aptable):
-                    this_aptable = am.model_to_table(model)
-
-                    # Recalculate aperture limits after rectification
-                    #apcoords = _fit_1d.evaluate(np.arange(ext.shape[dispaxis]))
-                    this_aptable["number"] = aperture["number"]
-                    this_aptable["aper_lower"] = \
-                        aperture["aper_lower"] #+ (location - apcoords.min())
-                    this_aptable["aper_upper"] = \
-                        aperture["aper_upper"] # - (apcoords.max() - location)
-                    all_aperture_tables.append(this_aptable)
-
-                # If the traces have different orders, there will be missing
-                # values that vstack will mask, so we have to set those to zero
-                new_aptable = vstack(all_aperture_tables,
-                                     metadata_conflicts="silent")
-                colnames = new_aptable.colnames
-                new_col_order = (["number"] + sorted(c for c in colnames
-                                                     if c.startswith("c")) +
-                                 ["aper_lower", "aper_upper"])
-                for col in colnames:
-                    if isinstance(new_aptable[col], MaskedColumn):
-                        new_aptable[col] = new_aptable[col].filled(fill_value=0)
-                ext.APERTURE = new_aptable[new_col_order]
+                ext.APERTURE = make_aperture_table(aperture_models,
+                                                   existing_table=aptable)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -3580,6 +3571,60 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
                         f"units of {ext_str} are {ext_unit}")
         this_conserve = user_conserve  # but do what we're told
     return this_conserve
+
+
+def make_aperture_table(apmodels, existing_table=None, limits=None):
+    """
+    Create a new APERTURE table from a list of aperture trace models. These
+    can either be updated models to apply to an existing table, or a new
+    table (in which case the limits must be provided).
+
+    Parameters
+    ----------
+    apmodels: list of Chebyshev1D models
+        the models defining the apertures
+    existing_table: Table/None
+        an existing Table (if updating apertures)
+    limits: list of 2-tuples/None
+        aperture limits (if creating a new table)
+
+    Returns
+    -------
+    Table: the new APERTURE table
+    """
+    all_tables = []
+    length = len(limits if existing_table is None else existing_table)
+    if len(apmodels) != length:
+        raise ValueError(f"Mismatch between apmodels length ({len(apmodels)})"
+                         f" and iterator length ({length})")
+
+    iterator = iter(limits if existing_table is None else existing_table)
+    for apmodel, item in zip(apmodels, iterator):
+        aptable = am.model_to_table(apmodel)
+        if existing_table is None:
+            aptable["aper_lower"] = item[0]
+            aptable["aper_upper"] = item[1]
+        else:
+            aptable["aper_lower"] = item["aper_lower"]
+            aptable["aper_upper"] = item["aper_upper"]
+        all_tables.append(aptable)
+
+    # If the traces have different orders, there will be missing
+    # values that vstack will mask, so we have to set those to zero
+    new_aptable = vstack(all_tables, metadata_conflicts="silent")
+    if existing_table is None:
+        new_aptable["number"] = np.arange(len(new_aptable), dtype=np.int32) + 1
+    else:
+        new_aptable["number"] = existing_table["number"]
+    colnames = new_aptable.colnames
+    new_col_order = (["number"] + sorted(c for c in colnames
+                                         if c.startswith("c")) +
+                     ["aper_lower", "aper_upper"])
+    for col in colnames:
+        if isinstance(new_aptable[col], MaskedColumn):
+            new_aptable[col] = new_aptable[col].filled(fill_value=0)
+    return new_aptable[new_col_order]
+
 
 
 def QESpline(coeffs, waves, data, weights, boundaries, order):

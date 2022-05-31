@@ -269,7 +269,7 @@ class FindSourceAperturesModel:
         if peaks.size:
             initx = peaks[np.argmin(abs(peaks - x))]
             if abs(initx - x) <= 20:
-                peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])[0]
+                peaks = pinpoint_peaks(data=self.profile, mask=self.prof_mask, peaks=[initx])[0]
                 limits = get_limits(np.nan_to_num(self.profile),
                                     self.prof_mask,
                                     peaks=peaks,
