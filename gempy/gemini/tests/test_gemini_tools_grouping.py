@@ -1,3 +1,5 @@
+import pytest
+
 import astrodata
 import gemini_instruments
 
@@ -70,6 +72,7 @@ def offdict_to_adlist(offdict):
     return adlist
 
 
+@pytest.mark.skip("While developing")
 def test_a_dith():
     # These are from Sandy's Q-15 programme:
     patt = {'S20140104S0094': (0., -0.),
@@ -89,6 +92,7 @@ def test_a_dith():
 
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG), (objgroup,))
 
+@pytest.mark.skip("While developing")
 def test_abba():
     # Simple 7' nod to sky without dithering (probably overly simple):
     patt = {'test01': (0., 0.),
@@ -109,6 +113,7 @@ def test_abba():
 
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG), (objgroup, skygroup))
 
+@pytest.mark.skip("While developing")
 def test_abbaacca():
     # Simple 7' nod to sky in opposite directions:
     patt = {'test01': (0., 0.),
@@ -132,6 +137,7 @@ def test_abbaacca():
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG),
                       (objgroup, skygroup1, skygroup2))
 
+@pytest.mark.skip("While developing")
 def test_abba_dith_1():
     # Dither 2x2 on source and on sky, with ~90% overlap between A&B fields
     # (borderline case for grouping):
@@ -157,6 +163,7 @@ def test_abba_dith_1():
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG, frac_FOV=1.0),
                       (allgroup,))
 
+@pytest.mark.skip("While developing")
 def test_abba_dith_2():
     # Dither on source and on sky, from GS-F2-RECOM13-RUN-1-124:
     patt = {'S20130427S0199': (0., 0.),
@@ -175,6 +182,7 @@ def test_abba_dith_2():
 
     assert same_lists(gt.group_exposures(adpatt, pkg=PKG), (objgroup, skygroup))
 
+@pytest.mark.skip("While developing")
 def test_abcde_dith():
     # A more exotic nod pattern between 3 sky & 2 off-centre object fields
     # with slight overlap between pointings. This particular pattern may not
