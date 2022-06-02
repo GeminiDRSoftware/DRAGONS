@@ -414,6 +414,8 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    threshold = config.RangeField("Threshold for flagging unilluminated pixels",
+                                  float, 0.01, min=0, inclusiveMin=False)
     interactive = config.Field("Interactive fitting?", bool, False)
 
     def setDefaults(self):
