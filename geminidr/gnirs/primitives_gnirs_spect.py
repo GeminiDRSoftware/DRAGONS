@@ -238,8 +238,6 @@ class GNIRSSpect(Spect, GNIRS):
                 for ext, fit1d, image, other in zip(ad, visualizer.results(),
                                                     visualizer.image, visualizer.meta):
                     fit1d.image = image
-                    print(f"FINAL SPECTRA PARAMETERS: wvl_start={fit1d.evaluate(-0.5)}, "
-                          f"wlv_end={fit1d.evaluate(1021.5)}, cen_wvl={fit1d.evaluate(511)}, dw={(fit1d.evaluate(-0.5)-fit1d.evaluate(1021.5))/1022}")
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
                 for ext in ad:
@@ -259,6 +257,10 @@ class GNIRSSpect(Spect, GNIRS):
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+
+            print(f"FINAL SPECTRA PARAMETERS: wvl_start={fit1d.evaluate(-0.5)}, "
+                f"wlv_end={fit1d.evaluate(1021.5)}, cen_wvl={fit1d.evaluate(511)}, dw={(fit1d.evaluate(-0.5)-fit1d.evaluate(1021.5))/1022}")
+
 
         return adinputs
 

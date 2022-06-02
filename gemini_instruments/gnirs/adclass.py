@@ -128,12 +128,6 @@ class AstroDataGnirs(AstroDataGemini):
         filter = str(self.filter_name(pretty=True))[0]
         config = f"{telescope}, {grating}, {camera}"
         config_other_site = f"{other_telescope}, {grating}, {camera}"
-        print(f"telescope = {telescope}")
-        print(f"grating = {grating}")
-        print(f"camera = {camera}")
-        print(f"filter = {filter}")
-        print(f"config = {config}")
-        print(f"config_other_site = {config_other_site}")
 
         def get_dispersion_by_config(config, filter):
             try:
@@ -155,7 +149,6 @@ class AstroDataGnirs(AstroDataGemini):
         except KeyError as exc:
             self.log.error(f"Unknown instrument configuration: {config}")
             return
-        print(f"Dispersion = {dispersion}")
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters" # By default
         if unit_arg_list.count(True) == 1:

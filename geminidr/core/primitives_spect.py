@@ -981,6 +981,7 @@ class Spect(Resample):
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
+                #.data[:,0:1500]
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1 - dispaxis,
                                                             start=start, initial=initial_peaks,
                                                             rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
@@ -1022,7 +1023,7 @@ class Spect(Resample):
                     model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
                     model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
 
-                self.viewer.color = "blue"
+                self.viewer.color = "red"
                 spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
                                              ext.shape[1 - dispaxis] // (step * 10))
                 spectral_coords = np.unique(ref_coords[1 - dispaxis])

@@ -350,7 +350,7 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
         model = (fix_inputs(fwd_transform, axis_dict) |
                  models.Mapping((0,), n_inputs=fwd_transform.n_outputs))
         # remove
-        central_wavelength = ext.central_wavelength(asNanometers=True)
+        #central_wavelength = ext.central_wavelength(asNanometers=True)
         print(f"central_wavel from wcs model = {model(0.5 * (npix - 1))}")
         print(f"dispersion from wcs model= {np.diff(model([0, npix - 1]))[0] / (npix - 1)}")
         print(f"central wvl as nano from descriptor:{ext.central_wavelength(asNanometers=True)}")
@@ -367,7 +367,8 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
 
     # The model might not have an actual domain but we want this information,
     # so stick it in the meta
-    print(f"INIT WVL START = {model(npix-1)}, INIT WVL END = {model(0)}")
+    print(f"INITIAL SPECTRA PARAMETERS: wvl_start={model(-0.5)}, "
+                f"wlv_end={model(2046.5)}, cen_wvl={model(1023)}, dw={(model(-0.5)-model(2046.5))/2047}")
     model.meta["domain"] = [0, npix - 1]
     return model
 

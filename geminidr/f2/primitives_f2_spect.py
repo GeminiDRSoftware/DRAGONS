@@ -279,6 +279,9 @@ class F2Spect(F2, Spect):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 
+            print(f"FINAL SPECTRA PARAMETERS: wvl_start={fit1d.evaluate(-0.5)}, "
+                f"wlv_end={fit1d.evaluate(2046.5)}, cen_wvl={fit1d.evaluate(1023)}, dw={(fit1d.evaluate(-0.5)-fit1d.evaluate(2046.5))/2047}")
+
         return adinputs
 
     def _get_arc_linelist(self, waves=None, ad=None):
