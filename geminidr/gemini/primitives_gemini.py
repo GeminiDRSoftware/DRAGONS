@@ -3,6 +3,13 @@
 #
 #                                                           primitives_gemini.py
 # ------------------------------------------------------------------------------
+import datetime
+from copy import deepcopy
+
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+from astropy.modeling import models
+
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.core import Bookkeeping, CalibDB, Preprocess
@@ -107,15 +114,15 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
+        log.status("Updating keywords that are common to all Gemini data")
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by standardize"
-                            "ObservatoryHeaders".format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "since it has already been processed by "
+                            "standardizeObservatoryHeaders")
                 continue
 
             # Update various header keywords
-            log.status("Updating keywords that are common to all Gemini data")
             ad.hdr.set('BUNIT', 'adu', self.keyword_comments['BUNIT'])
             for ext in ad:
                 if 'RADECSYS' in ext.hdr:
@@ -125,6 +132,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
+            log.debug(f"Successfully updated keywords for {ad.filename}")
         return adinputs
 
     def standardizeStructure(self, adinputs=None, **params):
@@ -162,3 +170,196 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
+
+    def standardizeWCS(self, adinputs=None, **params):
+        """
+        This primitive attempts to identify inputs with a bad WCS based on the
+        relationship between the WCS and other header keywords. If any such
+        inputs are found, the reduction may either exit, or it may attempt to
+        fix the WCS using header keywords describing the telescope offsets.
+        In addition, it is also possible to construct entirely new WCS objects
+        for each input based on the offsets.
+
+        The primitive defines "groups" which are sequences of ADs with the
+        same observation_id() and without a significant amount of dead time
+        between successive exposures. Within each group, a base "Pointing" is
+        constructed from the first AD with a self-consistent WCS, and the most
+        recent self-consistent WCS is also stored. When an AD with a bad WCS is
+        encountered, an attempt is made to fix it using the base Pointing first
+        and then the most recent. This is done because only GNIRS can handle
+        rotations between images and, if a sequence includes rotations, this
+        rotation could become large over the course of a group, but might be
+        small enough to ignore between successive images.
+
+        Note that this method must be called BEFORE any instrument-specific
+        WCS modifications, such as adding a spectroscopic axis. Child
+        standardizeWCS() methods should super() this one before doing their
+        own work.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        bad_wcs: str (exit | fix | bootstrap)
+            how to handle a bad WCS, or whether to create a complete new set
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        bad_wcs = params["bad_wcs"]
+        limit = params["debug_consistency_limit"]
+        max_deadtime = params["debug_max_deadtime"]
+
+        bad_wcs_list = []
+        current_pointing = None
+        last_pointing = None
+        last_obsid = None
+        last_endtime = None
+        for ad in adinputs:
+            this_datetime = ad.ut_datetime()
+            this_obsid = ad.observation_id()
+            if last_endtime is not None and (this_obsid != last_obsid or
+                    (this_datetime - last_endtime).seconds > max_deadtime):
+                if current_pointing is None:
+                    raise ValueError(f"Now processing {ad.filename} but could "
+                                     "not find a valid pointing in the "
+                                     "previous group")
+                log.debug(f"Starting new group with {ad.filename}")
+                current_pointing = None
+                last_pointing = None
+
+            p = Pointing(ad)
+            if not p.self_consistent(limit=limit):
+                if bad_wcs == 'exit' or current_pointing is None:
+                    # Do not want to, or cannot yet, fix
+                    bad_wcs_list.append(ad)
+                else:
+                    # Want to, and can, fix, so fix!
+                    if last_pointing is None:
+                        log.stdinfo(current_pointing.fix_wcs(ad))
+                    else:
+                        try:
+                            log.stdinfo(current_pointing.fix_wcs(ad))
+                        except NotImplementedError:
+                            log.debug(f"Could not fix {ad.filename} using "
+                                      f"{current_pointing.filename}")
+                            log.stdinfo(last_pointing.fix_wcs(ad))
+            else:
+                last_pointing = p
+                if current_pointing is None:
+                    # Found a reliable base WCS
+                    current_pointing = p
+                    # Fix all backed up ADs if we want to
+                    if bad_wcs != 'exit':
+                        while bad_wcs_list:
+                            log.stdinfo(current_pointing.fix_wcs(bad_wcs_list.pop(0)))
+
+            last_endtime = (this_datetime +
+                            datetime.timedelta(seconds=ad.exposure_time()))
+            last_obsid = this_obsid
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        if bad_wcs == 'exit' and bad_wcs_list:
+            log.stdinfo("The following files were identified as having bad "
+                        "WCS information:")
+            for ad in bad_wcs_list:
+                log.stdinfo(f"    {ad.filename}")
+            raise ValueError("Some files have bad WCS information and user "
+                             "has requested an exit")
+
+        return adinputs
+
+
+class Pointing:
+    # (x, y), 0-indexed
+    center_of_rotation_dict = {'GNIRS': (629., 519.)}
+
+    def __init__(self, ad):
+        self.phu = ad.phu.copy()
+        self.wcs = [ext.wcs for ext in ad]
+        self.target_coords = SkyCoord(ad.target_ra(), ad.target_dec(),
+                                      unit=u.deg)
+        self.coords = SkyCoord(ad.ra(), ad.dec(), unit=u.deg)
+        self.xoffset = ad.detector_x_offset()
+        self.yoffset = ad.detector_y_offset()
+        self.filename = ad.filename
+
+    def __repr__(self):
+        return f"Pointing object from {self.filename}"
+
+    def self_consistent(self, limit=10):
+        """
+        Determine whether the WCS information in this Pointing is
+        self-consistent and therefore (presumably) reliable
+
+        Parameters
+        ----------
+        limit: float
+            maximum discrepancy (in arcseconds) between the expected and
+            actual pointings for the pointing to be considered OK
+
+        Returns
+        -------
+        bool: is the pointing self-consistent?
+        """
+        expected_coords = self.target_coords.spherical_offsets_by(
+            self.phu['RAOFFSET']*u.arcsec, self.phu['DECOFFSE']*u.arcsec)
+        return self.coords.separation(expected_coords).arcsec <= limit
+
+    def fix_wcs(self, ad):
+        """
+        Fix another AD based on this pointing. The aim here is to preserve
+        the pixel location around which the Pix2Sky projection occurs.
+
+        Parameters
+        ----------
+        ad: AstroData object
+            the AD whose WCS needs fixing
+
+        Returns
+        -------
+        str: message indicating how the WCS has been fixed
+        """
+        xoffset, yoffset = ad.detector_x_offset(), ad.detector_y_offset()
+        delta_pa = self.phu['PA'] - ad.phu['PA']
+        rotate = abs(delta_pa) > 0.1
+        if rotate:
+            try:
+                x0, y0 = self.center_of_rotation_dict[ad.instrument()]
+            except KeyError:
+                raise NotImplementedError("No center of rotation defined for "
+                                          f"{ad.instrument()}. Please contact "
+                                          "the HelpDesk for advice.")
+            t = ((models.Shift(-xoffset - x0) & models.Shift(-yoffset - y0)) |
+                 models.Rotation2D(delta_pa) |
+                 (models.Shift(self.xoffset + x0) & models.Shift(self.yoffset + y0)))
+        else:
+            t = models.Shift(self.xoffset - xoffset) & models.Shift(self.yoffset - yoffset)
+
+        # Copy the WCS of each extension of the "Pointing" AD, but update
+        # the (RA, DEC) of the projection center, and the rotation matrix
+        for ext, wcs in zip(ad, self.wcs):
+            for m in wcs.forward_transform:
+                if isinstance(m, models.AffineTransformation2D):
+                    aftran = m
+                elif isinstance(m, models.RotateNative2Celestial):
+                    nat2cel = m
+                    break
+            else:
+                raise ValueError("Cannot find center point of projection")
+            x, y = wcs.invert(nat2cel.lon.value, nat2cel.lat.value)
+            xnew, ynew = t(x, y)
+            new_lon, new_lat = wcs(xnew, ynew)
+            ext.wcs = deepcopy(wcs)
+            for m in wcs.forward_transform:
+                if isinstance(m, models.AffineTransformation2D) and rotate:
+                    m.matrix = models.Rotation2D(delta_pa)(*aftran.matrix.value)
+                elif isinstance(m, models.RotateNative2Celestial):
+                    m.lon = new_lon
+                    m.lat = new_lat
+
+        return f"Fixing the WCS for {ad.filename} using {self.filename}"
