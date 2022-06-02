@@ -44,16 +44,16 @@ class F2(Gemini, NearIR):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
+        log.status("Updating keywords that are specific to FLAMINGOS-2")
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by "
-                            "standardizeInstrumentHeaders".format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "since it has already been processed by "
+                            "standardizeInstrumentHeaders")
                 continue
 
             # Standardize the headers of the input AstroData object. Update the
             # keywords in the headers that are specific to FLAMINGOS-2.
-            log.status("Updating keywords that are specific to FLAMINGOS-2")
 
             # Filter name (required for IRAF?)
             ad.phu.set('FILTER', ad.filter_name(stripID=True, pretty=True),
@@ -86,6 +86,7 @@ class F2(Gemini, NearIR):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
+            log.debug(f"Successfully updated keywords for {ad.filename}")
         return adinputs
 
     def standardizeStructure(self, adinputs=None, **params):
