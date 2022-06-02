@@ -112,6 +112,15 @@ class Bookkeeping(PrimitivesBASE):
         log.fullinfo('Clearing stream {}'.format(params.get('stream', 'main')))
         return []
 
+    def copyInputs(self, adinputs=None, **params):
+        """
+        This primitive results in deepcopies of the AD objects in one stream
+        being placed in another stream. All the work is handled by the
+        decorator, using the instream/outstream keywords, which is why this
+        primitive appears to do nothing.
+        """
+        return adinputs
+
     def flushPixels(self, adinputs=None, force=False):
         """
         This primitive saves the inputs to disk and then reopens them so
@@ -416,8 +425,7 @@ class Bookkeeping(PrimitivesBASE):
             index_order = list(reversed(index_order))
         return [adinputs[i] for i in index_order]
 
-
-    def transferAttribute(self, adinputs=None, source=None, attribute=None):
+    def transferAttribute(self, adinputs=None, suffix=None, source=None, attribute=None):
         """
         This primitive takes an attribute (e.g., "mask", or "OBJCAT") from
         the AD(s) in another ("source") stream and applies it to the ADs in
@@ -426,6 +434,8 @@ class Bookkeeping(PrimitivesBASE):
 
         Parameters
         ----------
+        suffix: str
+            suffix to be added to output files
         source: str
             name of stream containing ADs whose attributes you want
         attribute: str
@@ -435,16 +445,16 @@ class Bookkeeping(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         if source not in self.streams.keys():
-            log.info("Stream {} does not exist so nothing to transfer".format(source))
+            log.info(f"Stream {source} does not exist so nothing to transfer")
             return adinputs
 
         source_length = len(self.streams[source])
         if not (source_length == 1 or source_length == len(adinputs)):
-            log.warning("Incompatible stream lengths: {} and {}".
-                        format(len(adinputs), source_length))
+            log.warning("Incompatible stream lengths: "
+                        f"{len(adinputs)} and {source_length}")
             return adinputs
 
-        log.stdinfo("Transferring attribute {} from stream {}".format(attribute, source))
+        log.stdinfo(f"Transferring attribute {attribute} from stream {source}")
 
         # Keep track of whether we find anything to transfer, as failing to
         # do so might indicate a problem and we should warn the user
@@ -453,28 +463,26 @@ class Bookkeeping(PrimitivesBASE):
         for ad1, ad2 in zip(*gt.make_lists(adinputs, self.streams[source])):
             # Attribute could be top-level or extension-level
             # Use deepcopy so references to original object don't remain
-            if hasattr(ad2, attribute):
-
-                try:
-                    setattr(ad1, attribute,
-                            deepcopy(getattr(ad2, attribute)))
-
-                except ValueError:  # data, mask, are gettable not settable
-                    pass
-
-                else:
-                    found = True
-                    continue
+            try:
+                setattr(ad1, attribute,
+                        deepcopy(getattr(ad2, attribute)))
+            except (AttributeError, ValueError):  # data, mask, are gettable not settable
+                pass
+            else:
+                found = True
+                ad1.update_filename(suffix=suffix, strip=True)
+                continue
 
             for ext1, ext2 in zip(ad1, ad2):
-
                 if hasattr(ext2, attribute):
                     setattr(ext1, attribute,
                             deepcopy(getattr(ext2, attribute)))
                     found = True
+            if found:
+                ad1.update_filename(suffix=suffix, strip=True)
 
         if not found:
-            log.warning("Did not find any {} attributes to transfer".format(attribute))
+            log.warning(f"Did not find any {attribute} attributes to transfer")
 
         return adinputs
 
