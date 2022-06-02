@@ -198,11 +198,7 @@ class AstroDataF2(AstroDataGemini):
         grism = self.disperser(pretty=True)
         filter = self.filter_name(pretty=True)
         config = f"{grism}, {filter}"
-        print(f"grism = {grism}")
-        print(f"filter = {filter}")
-        print(f"config = {config}")
         central_wavelength = dispersion_and_wavelength.get(config)[1]
-        print(f"central_wavl = {central_wavelength}")
 
         if central_wavelength < 0.0:
             return None
@@ -343,11 +339,7 @@ class AstroDataF2(AstroDataGemini):
         grism = self.disperser(pretty=True)
         filter = self.filter_name(pretty=True)
         config = f"{grism}, {filter}"
-        print(f"grism = {grism}")
-        print(f"filter = {filter}")
-        print(f"config = {config}")
         dispersion = dispersion_and_wavelength.get(config)[0]
-        print(f"dispersion = {dispersion}")
 
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters" # By default
