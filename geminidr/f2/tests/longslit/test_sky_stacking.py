@@ -12,7 +12,7 @@ from geminidr.f2.primitives_f2_longslit import F2Longslit
 
 
 # ---- Tests ------------------------------------------------------------------
-
+@pytest.mark.skip("No data on Jenkins")
 def test_associate_sky(change_working_dir, path_to_inputs):
 
     files = ['S20200301S0071.fits', 'S20200301S0072.fits',
