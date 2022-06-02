@@ -276,6 +276,7 @@ def test_sky_correct_from_slit_with_multiple_sources():
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
+@pytest.mark.skip("Test needs rewriting")
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename,instrument',
                          [('N20121118S0375_stack.fits', 'GNIRS'),
