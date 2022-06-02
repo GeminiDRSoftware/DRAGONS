@@ -33,7 +33,7 @@ def test_select_from_inputs(change_working_dir, input_ad):
         with open("recursion.log", 'w') as _log:
 
             p = F2Image([input_ad])
-            p.prepare()
+            p.prepare(bad_wcs="ignore")
             p.addVAR(read_noise=True)
 
             try:
