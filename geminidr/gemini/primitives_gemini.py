@@ -217,6 +217,10 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         last_obsid = None
         last_endtime = None
         for ad in adinputs:
+            if ad.tags.intersection({'ARC', 'BIAS', 'DARK', 'FLAT'}):
+                log.debug(f"Skipping {ad.filename} due to its tags")
+                continue
+
             this_datetime = ad.ut_datetime()
             this_obsid = ad.observation_id()
             if last_endtime is not None and (this_obsid != last_obsid or
@@ -262,10 +266,6 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                             datetime.timedelta(seconds=ad.exposure_time()))
             last_obsid = this_obsid
 
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
-
         if bad_wcs == 'exit' and bad_wcs_list:
             log.stdinfo("The following files were identified as having bad "
                         "WCS information:")
@@ -273,6 +273,11 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                 log.stdinfo(f"    {ad.filename}")
             raise ValueError("Some files have bad WCS information and user "
                              "has requested an exit")
+
+        for ad in adinputs:
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
