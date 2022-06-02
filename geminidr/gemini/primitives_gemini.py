@@ -212,7 +212,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         max_deadtime = params["debug_max_deadtime"]
 
         bad_wcs_list = []
-        current_pointing = None
+        base_pointing = None
         last_pointing = None
         last_obsid = None
         last_endtime = None
@@ -221,39 +221,42 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             this_obsid = ad.observation_id()
             if last_endtime is not None and (this_obsid != last_obsid or
                     (this_datetime - last_endtime).seconds > max_deadtime):
-                if current_pointing is None:
+                if base_pointing is None:
                     raise ValueError(f"Now processing {ad.filename} but could "
                                      "not find a valid pointing in the "
                                      "previous group")
                 log.debug(f"Starting new group with {ad.filename}")
-                current_pointing = None
+                base_pointing = None
                 last_pointing = None
 
             p = Pointing(ad)
-            if not p.self_consistent(limit=limit):
-                if bad_wcs == 'exit' or current_pointing is None:
+            needs_fixing = not p.self_consistent(limit=limit)
+
+            if needs_fixing or bad_wcs == 'bootstrap':
+                if bad_wcs == 'exit' or base_pointing is None:
                     # Do not want to, or cannot yet, fix
                     bad_wcs_list.append(ad)
                 else:
                     # Want to, and can, fix, so fix!
                     if last_pointing is None:
-                        log.stdinfo(current_pointing.fix_wcs(ad))
-                    else:
+                        log.stdinfo(base_pointing.fix_wcs(ad))
+                    else:  # can try both the base and the last Pointings
                         try:
-                            log.stdinfo(current_pointing.fix_wcs(ad))
+                            log.stdinfo(base_pointing.fix_wcs(ad))
                         except NotImplementedError:
                             log.debug(f"Could not fix {ad.filename} using "
-                                      f"{current_pointing.filename}")
+                                      f"{base_pointing.filename}")
                             log.stdinfo(last_pointing.fix_wcs(ad))
-            else:
+
+            if not needs_fixing:
                 last_pointing = p
-                if current_pointing is None:
+                if base_pointing is None:
                     # Found a reliable base WCS
-                    current_pointing = p
+                    base_pointing = p
                     # Fix all backed up ADs if we want to
                     if bad_wcs != 'exit':
                         while bad_wcs_list:
-                            log.stdinfo(current_pointing.fix_wcs(bad_wcs_list.pop(0)))
+                            log.stdinfo(base_pointing.fix_wcs(bad_wcs_list.pop(0)))
 
             last_endtime = (this_datetime +
                             datetime.timedelta(seconds=ad.exposure_time()))
