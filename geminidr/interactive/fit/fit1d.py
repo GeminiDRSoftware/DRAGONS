@@ -141,7 +141,10 @@ class InteractiveModel1D(InteractiveModel):
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
 
-        xlinspace = np.linspace(*self.domain, 500)
+        if self.domain:
+            xlinspace = np.linspace(*self.domain, 500)
+        else:
+            xlinspace = np.linspace(min(x), max(x), 500)
         self.populate_bokeh_objects(x, y, weights=weights, mask=mask,
                                     extra_masks=extra_masks)
 
@@ -1217,6 +1220,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     reinit_widgets[0].children[1].on_change('value', kickoff_modal)
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
+            else:
+                reset_reinit_button = self.build_reset_button()
+                reinit_widgets.append(reset_reinit_button)
             if recalc_inputs_above:
                 self.reinit_panel = row(*reinit_widgets)
             else:
@@ -1274,6 +1280,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             for k in list(this_dict.keys()):
                 if k.endswith("_mask"):
                     extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
+            # making the fit panel
             tui = panel_class(self, fitting_params, domain=domain,
                               **this_dict, **kwargs, extra_masks=extra_masks)
             if turbo_tabs:

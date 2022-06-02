@@ -284,6 +284,7 @@ def test_sky_correct_from_slit_with_multiple_sources():
                           ('S20140728S0282_stack.fits', 'F2'),
                           ('S20131015S0043_stack.fits', 'F2'),
                           ('S20140111S0155_stack.fits', 'F2')])
+@pytest.mark.skip("Test needs rewriting")
 def test_determine_slit_edges(filename, instrument, change_working_dir,
                               path_to_inputs):
 
