@@ -24,7 +24,7 @@ class standardizeWCSConfig(parameters_standardize.standardizeWCSConfig):
                                           'ignore': "Do not check or fix the WCS"},
                                  default='exit')
     debug_consistency_limit = config.RangeField("Maximum discrepancy limit for pointing (arcsec)",
-                                                float, 10., min=2)
+                                                float, 20., min=2)
     debug_max_deadtime = config.RangeField("Maximum dead time between exposures to require a new pointing",
                                            float, 60., min=10)
 

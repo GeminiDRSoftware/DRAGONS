@@ -240,7 +240,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             needs_fixing = not p.self_consistent(limit=limit)
 
             if needs_fixing or bad_wcs == 'bootstrap':
-                if bad_wcs == 'exit' or base_pointing is None:
+                if bad_wcs in ('exit', 'ignore') or base_pointing is None:
                     # Do not want to, or cannot yet, fix
                     bad_wcs_list.append(ad)
                 else:
@@ -261,7 +261,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                     # Found a reliable base WCS
                     base_pointing = p
                     # Fix all backed up ADs if we want to
-                    if bad_wcs != 'exit':
+                    if bad_wcs not in ('exit', 'ignore'):
                         while bad_wcs_list:
                             log.stdinfo(base_pointing.fix_wcs(bad_wcs_list.pop(0)))
 
@@ -269,13 +269,16 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                             datetime.timedelta(seconds=ad.exposure_time()))
             last_obsid = this_obsid
 
-        if bad_wcs == 'exit' and bad_wcs_list:
+        if bad_wcs in ('exit', 'ignore') and bad_wcs_list:
             log.stdinfo("The following files were identified as having bad "
                         "WCS information:")
             for ad in bad_wcs_list:
                 log.stdinfo(f"    {ad.filename}")
-            raise ValueError("Some files have bad WCS information and user "
-                             "has requested an exit")
+            if bad_wcs == 'exit':
+                raise ValueError("Some files have bad WCS information and "
+                                 "user has requested an exit")
+            else:
+                log.stdinfo("This is being ignored as requested.")
 
         for ad in adinputs:
             # Timestamp and update filename
