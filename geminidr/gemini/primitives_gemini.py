@@ -210,9 +210,6 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         bad_wcs = params["bad_wcs"]
         limit = params["debug_consistency_limit"]
         max_deadtime = params["debug_max_deadtime"]
-        if bad_wcs == 'ignore':
-            log.stdinfo("No WCS checking will take place")
-            return adinputs
 
         bad_wcs_list = []
         base_pointing = None
