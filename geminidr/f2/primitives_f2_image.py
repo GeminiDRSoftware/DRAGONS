@@ -102,4 +102,4 @@ class F2Image(F2, Image, Photometry):
         diameter = 1300 if ad1.is_ao() else 2048
         c1 = SkyCoord(*ad1[0].wcs(1024, 1024), unit='deg')
         c2 = SkyCoord(*ad2[0].wcs(1024, 1024), unit='deg')
-        return c1.separation(c2).arcsec < frac_FOV * diameter / ad1.pixel_scale()
+        return c1.separation(c2).arcsec < frac_FOV * diameter * ad1.pixel_scale()
