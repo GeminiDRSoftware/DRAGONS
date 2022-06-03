@@ -10,6 +10,8 @@ from itertools import islice
 import os
 import re
 import warnings
+from contextlib import suppress
+from copy import copy, deepcopy
 from functools import partial, reduce
 from importlib import import_module
 
@@ -57,7 +59,8 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 from recipe_system.utils.md5 import md5sum
 
 from . import parameters_spect
-from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT
+from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT, \
+    NORMALIZE_FLAT_HELP_TEXT
 from ..interactive.interactive import UIParameters
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
@@ -2804,13 +2807,16 @@ class Spect(Resample):
             maximum number of rejection iterations
         grow : float/False
             growth radius for rejected pixels
+        interactive : bool
+            set to activate an interactive preview to fine tune the input parameters
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        center = params["center"]
-        nsum = params["nsum"]
+        threshold = params["threshold"]
+        interactive_reduce = params["interactive"]
+
         fit1d_params = fit_1D.translate_params(params)
 
         for ad in adinputs:
@@ -2829,57 +2835,142 @@ class Spect(Resample):
                 mosaicked = False
 
             # This will loop over MOS slits or XD orders
-            for ext in admos:
-                dispaxis = 2 - ext.dispersion_axis()  # python sense
-                direction = "row" if dispaxis == 1 else "column"
+            def reconstruct_points(ui_params):
+                masked_data_arr = list()
+                x_arr = list()
+                weights_arr = list()
+                for ext in admos:
+                    dispaxis = 2 - ext.dispersion_axis()  # python sense
+                    direction = "row" if dispaxis == 1 else "column"
 
-                data, mask, variance, extract_slice = tracing.average_along_slit(
-                    ext, center=center, nsum=nsum)
-                log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                            format(direction, extract_slice.start + 1, extract_slice.stop))
-                mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
-                slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
+                    data, mask, variance, extract_slice = tracing.average_along_slit(
+                        ext, center=ui_params.center, nsum=ui_params.nsum)
+                    log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
+                                format(direction, extract_slice.start + 1, extract_slice.stop))
+                    mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
+                    slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
-                masked_data = np.ma.masked_array(data, mask=mask)
-                weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
-                center = (extract_slice.start + extract_slice.stop) // 2
-                waves = ext.wcs(range(len(masked_data)),
-                                np.full_like(masked_data, center))[0]
+                    masked_data = np.ma.masked_array(data, mask=mask)
+                    weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
+                    center = (extract_slice.start + extract_slice.stop) // 2
+                    # uncomment this to use if we want to calculate the waves as our x inputs
+                    # and wire it up appropriately
+                    # waves = ext.wcs(range(len(masked_data)),
+                    #                 np.full_like(masked_data, center))[0]
 
-                # We're only going to do CCD-to-CCD normalization if we've
-                # done the mosaicking in this primitive; if not, we assume
-                # the user has already taken care of it (if it's required).
-                nslices = len(slices)
-                if nslices > 1 and mosaicked:
-                    coeffs = np.ones((nslices - 1,))
-                    boundaries = list(slice_.stop for slice_ in slices[:-1])
-                    result = optimize.minimize(QESpline, coeffs, args=(waves, masked_data,
-                                                                       weights, boundaries,
-                                                                       20),
-                                               tol=1e-7, method='Nelder-Mead')
-                    if not result.success:
-                        log.warning(f"Problem with spline fitting: {result.message}")
+                    # We're only going to do CCD-to-CCD normalization if we've
+                    # done the mosaicking in this primitive; if not, we assume
+                    # the user has already taken care of it (if it's required).
+                    nslices = len(slices)
+                    if nslices > 1 and mosaicked:
+                        coeffs = np.ones((nslices - 1,))
+                        boundaries = list(slice_.stop for slice_ in slices[:-1])
+                        result = optimize.minimize(QESpline, coeffs, args=(waves, masked_data,
+                                                                           weights, boundaries,
+                                                                           20),
+                                                   tol=1e-7, method='Nelder-Mead')
+                        if not result.success:
+                            log.warning(f"Problem with spline fitting: {result.message}")
 
-                    # Rescale coefficients so centre-left CCD is unscaled
-                    coeffs = np.insert(result.x, 0, [1])
-                    coeffs /= coeffs[len(coeffs) // 2]
-                    for coeff, slice_ in zip(coeffs, slices):
-                        masked_data[slice_] *= coeff
-                        weights[slice_] /= coeff
-                    log.stdinfo("QE scaling factors: " +
-                                " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
-                fit1d = fit_1D(masked_data, points=waves, weights=weights,
-                               **fit1d_params)
+                        # Rescale coefficients so centre-left CCD is unscaled
+                        coeffs = np.insert(result.x, 0, [1])
+                        coeffs /= coeffs[len(coeffs) // 2]
+                        for coeff, slice_ in zip(coeffs, slices):
+                            masked_data[slice_] *= coeff
+                            weights[slice_] /= coeff
+                        log.stdinfo("QE scaling factors: " +
+                                    " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
+                    x_arr.append(np.arange(len(masked_data)))
+                    masked_data_arr.append(masked_data)
+                    weights_arr.append(weights)
+                return { "y": masked_data_arr, "x": x_arr,
+                         "weights": weights_arr }
 
+            config = self.params[self.myself()]
+            config.update(**params)
+            uiparams = UIParameters(config, reinit_params=["center", "nsum"])
+
+            # let's updaet teh max center to something reasonable
+            dispaxis = 2 - ad[0].dispersion_axis()
+            npix = ad[0].shape[1 - dispaxis]
+            uiparams.fields['center'].max = npix
+            uiparams.fields['nsum'].max = npix
+
+            data = reconstruct_points(uiparams)
+            masked_data_arr = data["y"]
+            x_arr = data["x"]
+            weights_arr = data["weights"]
+
+            fit1d_arr = list()
+
+            if interactive_reduce:
+                all_domains = list()
+                all_fp_init = list()
+                for ext, x in zip(admos, x_arr):
+                    pixels = np.arange(ext.shape[1])
+                    all_domains.append([min(pixels), max(pixels)])
+                    dispaxis = 2 - ext.dispersion_axis()
+                    all_fp_init.append(fit_1D.translate_params(params))
+
+                config = self.params[self.myself()]
+                config.update(**params)
+
+                if ad.filename:
+                    filename_info = ad.filename
+                else:
+                    filename_info = ''
+
+                visualizer = fit1d.Fit1DVisualizer(reconstruct_points,
+                                                   all_fp_init,
+                                                   tab_name_fmt="CCD {}",
+                                                   xlabel='x (pixels)', ylabel='counts',
+                                                   domains=all_domains,
+                                                   title="Normalize Flat",
+                                                   primitive_name="normalizeFlat",
+                                                   filename_info=filename_info,
+                                                   enable_user_masking=False,
+                                                   enable_regions=True,
+                                                   help_text=NORMALIZE_FLAT_HELP_TEXT,
+                                                   recalc_inputs_above=False,
+                                                   # modal_message="Recalculating",
+                                                   ui_params=uiparams)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                fit1d_arr = visualizer.results()
+            else:
+                for ext, masked_data, x, weights in zip(admos, masked_data_arr, x_arr, weights_arr):
+                    fitted_data = fit_1D(masked_data, points=x, weights=weights,
+                                         **fit1d_params)
+                    fit1d_arr.append(fitted_data)
+
+            for ext, fitted_data, x in zip(admos, fit1d_arr, x_arr):
                 if not mosaicked:
-                    flat_data = np.tile(fit1d.evaluate(), (ext.shape[1-dispaxis], 1))
+                    # In the case where this was run interactively, the resulting fit has pre-masked points (x).
+                    # This happens before the interactive code builds the fit_1D.  Using the default evaluate()
+                    # points on these fit_1Ds will send a trimmed list of points, resulting in trimmed output which
+                    # we don't want - and also is inconsistent with the non-interactive code where the array
+                    # was masked but the x values were not.
+                    #
+                    # Instead, we want to call to evaluate with an explicit set of points using our pre-masked copy
+                    # of the x values to get a consistent and correctly-sized output.
+                    fdeval = fitted_data.evaluate(points=x)
+                    flat_data = np.tile(fdeval, (ext.shape[1-dispaxis], 1))
+                    flat_mask = at.transpose_if_needed(
+                        np.tile(np.where(fdeval / fdeval.max() < threshold,
+                                         DQ.unilluminated, DQ.good),
+                                (ext.shape[1-dispaxis], 1)).astype(DQ.datatype),
+                        transpose=(dispaxis==0))[0]
                     ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
+                    if ext.mask is None:
+                        ext.mask = flat_mask
+                    else:
+                        ext.mask |= flat_mask
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
             # coordinate along the dispersion direction, and evaluate the
             # spline there.
             if mosaicked:
+                raise NotImplementedError("Mosaicked data handling not supported for core normalizeFlat")
                 #origin = admos.nddata[0].meta.pop('transform')['origin']
                 #origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
                 for ext, wcs in zip(ad, orig_wcs):
