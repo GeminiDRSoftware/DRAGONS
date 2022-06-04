@@ -556,7 +556,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
         # which means we can't make assumptions about their relative positions
         # Compute center of FOV in ad[0] pixel coords
         centers = [[2048 + 0.5 * gap if p1 == 0 else -0.5 * gap
-                    for p1, gap in zip(ad[0].detector_section[::2], tile_gaps)]
+                    for p1, gap in zip(ad[0].detector_section()[::2], tile_gaps)]
                    for ad in (ad1, ad2)]
         pos2 = ad2[0].wcs.invert(*ad1[0].wcs(*centers[0]))
         return all(abs(p1 - p2) < frac_FOV * (4096 + gap)
