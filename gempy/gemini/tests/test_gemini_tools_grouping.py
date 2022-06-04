@@ -1,11 +1,11 @@
-import astrofaker
+import pytest
 
 from gempy.gemini import gemini_tools as gt
 from geminidr.f2.primitives_f2_image import F2Image
 
 
 # Support functions specific to these tests:
-def dummy_ad():
+def dummy_ad(astrofaker):
     """Create a dummy single-extension AD object"""
     ad = astrofaker.create('F2', ['IMAGE'])
     # A bit hacky but we want a 2D data array
@@ -59,7 +59,7 @@ def offdict_to_adlist(offdict):
     return adlist
 
 
-def test_a_dith():
+def test_a_dith(p_f2):
     # These are from Sandy's Q-15 programme:
     patt = {'S20140104S0094': (0., -0.),
             'S20140104S0095': (15., 15.),
@@ -75,13 +75,13 @@ def test_a_dith():
 
     adpatt = offdict_to_adlist(patt)
     objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj),
-                                fields_overlap=F2Image._fields_overlap)
+                                fields_overlap=p_f2._fields_overlap)
 
     assert same_lists(gt.group_exposures(
-        adpatt, fields_overlap=F2Image._fields_overlap), (objgroup,))
+        adpatt, fields_overlap=p_f2._fields_overlap), (objgroup,))
 
 
-def test_abba():
+def test_abba(p_f2):
     # Simple 7' nod to sky without dithering (probably overly simple):
     patt = {'test01': (0., 0.),
             'test02': (210., 363.734),
@@ -96,14 +96,14 @@ def test_abba():
     sky = ['test02', 'test03', 'test06', 'test07']
 
     adpatt = offdict_to_adlist(patt)
-    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj), fields_overlap=F2Image._fields_overlap)
-    skygroup = gt.ExposureGroup(get_ad_sublist(adpatt, sky), fields_overlap=F2Image._fields_overlap)
+    objgroup = gt.ExposureGroup(get_ad_sublist(adpatt, obj), fields_overlap=p_f2._fields_overlap)
+    skygroup = gt.ExposureGroup(get_ad_sublist(adpatt, sky), fields_overlap=p_f2._fields_overlap)
 
     assert same_lists(gt.group_exposures(
-        adpatt, fields_overlap=F2Image._fields_overlap), (objgroup, skygroup))
+        adpatt, fields_overlap=p_f2._fields_overlap), (objgroup, skygroup))
 
 
-def test_abbaacca():
+def test_abbaacca(p_f2):
     # Simple 7' nod to sky in opposite directions:
     patt = {'test01': (0., 0.),
             'test02': (210., 363.734),
@@ -120,17 +120,17 @@ def test_abbaacca():
 
     adpatt = offdict_to_adlist(patt)
     objgroup = gt.ExposureGroup(
-        get_ad_sublist(adpatt, obj), fields_overlap=F2Image._fields_overlap)
+        get_ad_sublist(adpatt, obj), fields_overlap=p_f2._fields_overlap)
     skygroup1 = gt.ExposureGroup(
-        get_ad_sublist(adpatt, sky1), fields_overlap=F2Image._fields_overlap)
+        get_ad_sublist(adpatt, sky1), fields_overlap=p_f2._fields_overlap)
     skygroup2 = gt.ExposureGroup(
-        get_ad_sublist(adpatt, sky2), fields_overlap=F2Image._fields_overlap)
+        get_ad_sublist(adpatt, sky2), fields_overlap=p_f2._fields_overlap)
 
-    assert same_lists(gt.group_exposures(adpatt, fields_overlap=F2Image._fields_overlap),
+    assert same_lists(gt.group_exposures(adpatt, fields_overlap=p_f2._fields_overlap),
                       (objgroup, skygroup1, skygroup2))
 
 
-def test_abba_dith_1():
+def test_abba_dith_1(p_f2):
     # Dither 2x2 on source and on sky, with ~90% overlap between A&B fields
     # (borderline case for grouping):
     patt = {'test01': (-5., -5.),
@@ -147,19 +147,19 @@ def test_abba_dith_1():
 
     adpatt = offdict_to_adlist(patt)
     objgroup = gt.ExposureGroup(
-        get_ad_sublist(adpatt, obj), fields_overlap=F2Image._fields_overlap)
+        get_ad_sublist(adpatt, obj), fields_overlap=p_f2._fields_overlap)
     skygroup = gt.ExposureGroup(
-        get_ad_sublist(adpatt, sky), fields_overlap=F2Image._fields_overlap)
+        get_ad_sublist(adpatt, sky), fields_overlap=p_f2._fields_overlap)
     allgroup = gt.ExposureGroup(
-        get_ad_sublist(adpatt, obj+sky), fields_overlap=F2Image._fields_overlap)
+        get_ad_sublist(adpatt, obj+sky), fields_overlap=p_f2._fields_overlap)
 
-    assert same_lists(gt.group_exposures(adpatt, fields_overlap=F2Image._fields_overlap, frac_FOV=0.9),
+    assert same_lists(gt.group_exposures(adpatt, fields_overlap=p_f2._fields_overlap, frac_FOV=0.9),
                       (objgroup, skygroup))
-    assert same_lists(gt.group_exposures(adpatt, fields_overlap=F2Image._fields_overlap, frac_FOV=1.0),
+    assert same_lists(gt.group_exposures(adpatt, fields_overlap=p_f2._fields_overlap, frac_FOV=1.0),
                       (allgroup,))
 
 
-def test_abba_dith_2():
+def test_abba_dith_2(p_f2):
     # Dither on source and on sky, from GS-F2-RECOM13-RUN-1-124:
     patt = {'S20130427S0199': (0., 0.),
             'S20130427S0200': (-20., -20.),
@@ -173,15 +173,14 @@ def test_abba_dith_2():
 
     adpatt = offdict_to_adlist(patt)
     objgroup = gt.ExposureGroup(
-        get_ad_sublist(adpatt, obj), fields_overlap=F2Image._fields_overlap)
+        get_ad_sublist(adpatt, obj), fields_overlap=p_f2._fields_overlap)
     skygroup = gt.ExposureGroup(
-        get_ad_sublist(adpatt, sky), fields_overlap=F2Image._fields_overlap)
+        get_ad_sublist(adpatt, sky), fields_overlap=p_f2._fields_overlap)
 
-    assert same_lists(gt.group_exposures(adpatt, fields_overlap=F2Image._fields_overlap), (objgroup, skygroup))
+    assert same_lists(gt.group_exposures(adpatt, fields_overlap=p_f2._fields_overlap), (objgroup, skygroup))
 
 
-
-def test_abcde_dith():
+def test_abcde_dith(p_f2):
     # A more exotic nod pattern between 3 sky & 2 off-centre object fields
     # with slight overlap between pointings. This particular pattern may not
     # be possible due to guide probe limits but it should still serve
@@ -206,12 +205,17 @@ def test_abcde_dith():
     sky3 = ['test09', 'test10']
 
     adpatt = offdict_to_adlist(patt)
-    skygroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, sky1), fields_overlap=F2Image._fields_overlap)
-    objgroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, obj1), fields_overlap=F2Image._fields_overlap)
-    skygroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, sky2), fields_overlap=F2Image._fields_overlap)
-    objgroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, obj2), fields_overlap=F2Image._fields_overlap)
-    skygroup3 = gt.ExposureGroup(get_ad_sublist(adpatt, sky3), fields_overlap=F2Image._fields_overlap)
+    skygroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, sky1), fields_overlap=p_f2._fields_overlap)
+    objgroup1 = gt.ExposureGroup(get_ad_sublist(adpatt, obj1), fields_overlap=p_f2._fields_overlap)
+    skygroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, sky2), fields_overlap=p_f2._fields_overlap)
+    objgroup2 = gt.ExposureGroup(get_ad_sublist(adpatt, obj2), fields_overlap=p_f2._fields_overlap)
+    skygroup3 = gt.ExposureGroup(get_ad_sublist(adpatt, sky3), fields_overlap=p_f2._fields_overlap)
 
-    assert same_lists(gt.group_exposures(adpatt, fields_overlap=F2Image._fields_overlap, frac_FOV=0.5),
+    assert same_lists(gt.group_exposures(adpatt, fields_overlap=p_f2._fields_overlap, frac_FOV=0.5),
                       (skygroup1, objgroup1,
                        skygroup2, objgroup2, skygroup3))
+
+
+@pytest.fixture(scope='module')
+def p_f2():
+    return F2Image([])

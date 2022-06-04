@@ -525,8 +525,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
         return adinputs
 
-    @staticmethod
-    def _fields_overlap(ad1, ad2, frac_FOV=1.0):
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
         """
         Checks whether the fields of view of two F2 images overlap
         sufficiently to be considerd part of a single ExposureGroup.

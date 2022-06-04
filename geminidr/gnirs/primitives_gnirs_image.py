@@ -3,6 +3,8 @@
 #
 #                                                      primitives_gnirs_image.py
 # ------------------------------------------------------------------------------
+import os
+
 import numpy as np
 import scipy.ndimage
 from skimage.morphology import binary_dilation
@@ -11,11 +13,10 @@ import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
-from .lookups import FOV as fov
-
 from .primitives_gnirs import GNIRS
 from ..core import Image, Photometry
 from . import parameters_gnirs_image
+from .lookups import maskdb
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -109,8 +110,27 @@ class GNIRSImage(GNIRS, Image, Photometry):
         -------
         str/None: Filename of the appropriate illumination mask
         """
-        # TODO: Look at the whole pointing_in_field situation
-        return fov.get_illum_mask_filename(ad)
+        log = self.log
+        key1 = ad.camera()
+        filter = ad.filter_name(pretty=True)
+        if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
+            key2 = 'Wings'
+        elif filter in ['YPHOT', 'JPHOT', 'HPHOT', 'KPHOT']:
+            key2 = 'NoWings'
+        else:
+            log.warning("Unrecognised filter, no illumination mask can "
+                        "be found for {}".format(ad.filename))
+            return None
+
+        try:
+            illum = os.path.join(maskdb.illumMask_dict[key1, key2])
+        except KeyError:
+            log.warning("No illumination mask found for {}".format(ad.filename))
+            return None
+
+        return illum if illum.startswith(os.path.sep) else \
+            os.path.join(os.path.dirname(maskdb.__file__), 'BPM', illum)
+
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
