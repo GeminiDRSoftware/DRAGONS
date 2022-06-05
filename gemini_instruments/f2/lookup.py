@@ -70,20 +70,20 @@ nominal_zeropoints = {
     # (dispersion (A/pix), central_wavelength (A))
     # This is a concise version of gnirs$data/nsappwave.fits table
 dispersion_and_wavelength = {
-    ("JH, JH"):     (-6.667, 13900),
-    ("HK, HK"):     (-7.826, 18710),
-    #("HK, JH"):     (-4.000, 13900), # clearly a mistake in GIRAF LUT (at least dispersion)
-    ("HK, JH"):     (-7.500, 18750),
+    ("JH, JH"):     (-6.667, 13900, -30),
+    ("HK, HK"):     (-7.826, 18710, -25),
+    ("HK, JH"):     (-4.000, 13900, 34), # clearly a mistake in GIRAF LUT (at least dispersion)
+    #("HK, JH"):     (-7.500, 18750, 34),
     #("HK, Ks"): ?? only SV data
     #("HK, K-long"): ?? only CAL data
     #("HK, J"): ?? only SV data
     #("HK, H"): ?? only SV data
-    ("R3K, Jlow"):  (-1.667, 11220),
-    ("R3K, Y"):     (-1.642, 10200),
-   # ("R3K, J"):     (-2.022, 12550), # as in IRAF and headers
-    ("R3K, J"):     (-2.022, 13350), # as measured from the images
-    ("R3K, H"):     (-2.609, 16310),
-    #("R3K, Ks"):    (-3.462, 21570),
-    ("R3K, Ks"):    (-3.462, 21950),
-    ("R3K, K-long"):(-3.462, 22000)
+    ("R3K, Jlow"):  (-1.667, 11220, 50),
+    ("R3K, Y"):     (-1.642, 10200, 630),
+    ("R3K, J"):     (-2.022, 12550, 390), # as in IRAF and headers
+    #("R3K, J"):     (-2.022, 13350, 390), # as measured from the images
+    ("R3K, H"):     (-2.609, 16310, 100),
+    ("R3K, Ks"):    (-3.462, 21570, 125),
+    #("R3K, Ks"):    (-3.462, 21950, 125),
+    ("R3K, K-long"):(-3.462, 22000, 127)
 }

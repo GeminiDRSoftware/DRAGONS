@@ -91,9 +91,8 @@ class F2Spect(F2, Spect):
 
         for ad in adinputs:
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-            cenwave = ad.central_wavelength(asNanometers=True)
-            print(f"central wvl as nano from descriptor:{ad.central_wavelength(asNanometers=True)}")
-            print(f"dispersion as nano from descriptor:{ad.dispersion(asNanometers=True)}")
+            cenwave = ad.central_wavelength(asNanometers=True) - ad.dispersion(asNanometers=True)[0] * ad.cenwave_offset()
+            print(f" centwave after correction: {cenwave}")
             transform.add_longslit_wcs(ad, central_wavelength=cenwave)
 
             # Timestamp and update filename
@@ -280,7 +279,7 @@ class F2Spect(F2, Spect):
             ad.update_filename(suffix=sfx, strip=True)
 
             print(f"FINAL SPECTRA PARAMETERS: wvl_start={fit1d.evaluate(-0.5)}, "
-                f"wlv_end={fit1d.evaluate(2046.5)}, cen_wvl={fit1d.evaluate(1023)}, dw={(fit1d.evaluate(-0.5)-fit1d.evaluate(2046.5))/2047}")
+                f"wlv_end={fit1d.evaluate(2046.5)}, cen_wvl={fit1d.evaluate(1023+ad.cenwave_offset())}, dw={(fit1d.evaluate(-0.5)-fit1d.evaluate(2046.5))/2047}")
 
         return adinputs
 
