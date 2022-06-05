@@ -1,11 +1,12 @@
 import pytest
+import astrofaker
 
 from gempy.gemini import gemini_tools as gt
 from geminidr.f2.primitives_f2_image import F2Image
 
 
 # Support functions specific to these tests:
-def dummy_ad(astrofaker):
+def dummy_ad():
     """Create a dummy single-extension AD object"""
     ad = astrofaker.create('F2', ['IMAGE'])
     # A bit hacky but we want a 2D data array

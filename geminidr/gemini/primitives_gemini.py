@@ -341,7 +341,7 @@ class Pointing:
         self.coords = SkyCoord(ad.ra(), ad.dec(), unit=u.deg)
         self.expected_coords = self.target_coords.spherical_offsets_by(
             self.phu['RAOFFSET']*u.arcsec, self.phu['DECOFFSE']*u.arcsec)
-        self.pa = self.phu['CRPA']  # TODO plus other stuff
+        self.pa = self.phu['PA']  # TODO plus other stuff
         self.xoffset = ad.detector_x_offset()
         self.yoffset = ad.detector_y_offset()
         self.pixel_scale = ad.pixel_scale()
