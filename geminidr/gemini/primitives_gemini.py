@@ -231,11 +231,15 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                 log.debug(f"Skipping {ad.filename} due to its tags")
                 continue
 
-            start = ad.phu['UTSTART']
-            if len(start) not in (12, 15):
-                start += '0' * (15 - len(start))
-            this_starttime = datetime.datetime.combine(
-                ad.ut_date(), datetime.time.fromisoformat(start))
+            try:
+                start = ad.phu['UTSTART']
+            except KeyError:
+                this_starttime = ad.ut_datetime()
+            else:
+                if len(start) not in (12, 15):
+                    start += '0' * (15 - len(start))
+                this_starttime = datetime.datetime.combine(
+                    ad.ut_date(), datetime.time.fromisoformat(start))
             this_obsid = ad.observation_id()
             if last_endtime is not None and (this_obsid != last_obsid or
                     (this_starttime - last_endtime).seconds > max_deadtime):
@@ -288,7 +292,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             # UTEND time is wrong for F2 data before 2015 Nov 30; it's the end
             # of the *previous* exposure. Hence just add the exposure time to
             # the start time to try to estimate the exposure end.
-            if (ad.instrument() == 'F2' and this_starttime <
+            if 'UTEND' not in ad.phu or (ad.instrument() == 'F2' and this_starttime <
                     datetime.datetime(year=2015, month=12, day=1)):
                 last_endtime = this_starttime + datetime.timedelta(
                     seconds=ad.exposure_time())
