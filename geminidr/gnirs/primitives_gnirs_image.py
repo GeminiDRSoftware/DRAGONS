@@ -6,11 +6,11 @@
 import os
 
 import numpy as np
-import scipy.ndimage
+from scipy import ndimage
 from skimage.morphology import binary_dilation
 
-import astrodata
-import gemini_instruments
+import astrodata, gemini_instruments
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
 
 from .primitives_gnirs import GNIRS
@@ -98,6 +98,39 @@ class GNIRSImage(GNIRS, Image, Photometry):
             # Update the filename
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
+
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
+        """
+        Checks whether the fields of view of two F2 images overlap
+        sufficiently to be considered part of a single ExposureGroup.
+        GNIRSImage requires its own code since it has a weird FOV.
+
+        Parameters
+        ----------
+        ad1: AstroData
+            one of the input AD objects
+        ad2: AstroData
+            the other input AD object
+        frac_FOV: float (0 < frac_FOV <= 1)
+            fraction of the field of view for an overlap to be considered. If
+            frac_FOV=1, *any* overlap is considered to be OK
+
+        Returns
+        -------
+        bool: do the fields overlap sufficiently?
+        """
+        center = np.array([512, 512])
+        # We inverse-scale by frac_FOV
+        shift = -(ad2[0].wcs.invert(*ad1[0].wcs(*center)) - center) / frac_FOV
+        illum = self._get_illum_mask_filename(ad1)
+        if illum:
+            illum_data = astrodata.open(illum)[0].data
+        else:
+            raise OSError(f"Cannot find illumination mask for {ad1.filename}")
+        shifted_data = ndimage.shift(illum_data, shift, order=0,
+                                     cval=DQ.unilluminated)
+        return (illum_data | shifted_data == 0).any()
+
 
     def _get_illum_mask_filename(self, ad):
         """

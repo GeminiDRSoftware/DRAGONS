@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import datetime
 from copy import deepcopy
+import numpy as np
 
 from astropy.coordinates import SkyCoord
 from astropy import units as u
@@ -200,8 +201,16 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         ----------
         suffix: str
             suffix to be added to output files
-        bad_wcs: str (exit | fix | bootstrap)
+        bad_wcs: str (exit | fix | bootstrap | ignore)
             how to handle a bad WCS, or whether to create a complete new set
+        debug_consistency_limit: float
+            maximum separation (in arcsec) between the WCS location and the
+            expected location to not flag this AD object
+        debug_max_deadtime: float
+            maximum time (in seconds) between the end of the previous exposure
+            and the start of this one for them to be considered part of the
+            same group (and hence have the same base pointing position), if
+            the observation_id()s also agree
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -211,6 +220,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         limit = params["debug_consistency_limit"]
         max_deadtime = params["debug_max_deadtime"]
 
+        want_to_fix = bad_wcs not in ('exit', 'ignore')
         bad_wcs_list = []
         base_pointing = None
         last_pointing = None
@@ -221,10 +231,14 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                 log.debug(f"Skipping {ad.filename} due to its tags")
                 continue
 
-            this_datetime = ad.ut_datetime()
+            start = ad.phu['UTSTART']
+            if len(start) not in (12, 15):
+                start += '0' * (15 - len(start))
+            this_starttime = datetime.datetime.combine(
+                ad.ut_date(), datetime.time.fromisoformat(start))
             this_obsid = ad.observation_id()
             if last_endtime is not None and (this_obsid != last_obsid or
-                    (this_datetime - last_endtime).seconds > max_deadtime):
+                    (this_starttime - last_endtime).seconds > max_deadtime):
                 if base_pointing is None:
                     raise ValueError(f"Now processing {ad.filename} but could "
                                      "not find a valid pointing in the "
@@ -234,10 +248,19 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                 last_pointing = None
 
             p = Pointing(ad)
-            needs_fixing = not p.self_consistent(limit=limit)
+            needs_fixing = (bad_wcs == 'bootstrap' or
+                            not p.self_consistent(limit=limit))
+            if base_pointing is not None:
+                needs_fixing |= not base_pointing.consistent_with(p)
 
-            if needs_fixing or bad_wcs == 'bootstrap':
-                if bad_wcs in ('exit', 'ignore') or base_pointing is None:
+            if needs_fixing:
+                if bad_wcs == 'bootstrap' and base_pointing is None:
+                    # Create a new base Pointing and update this AD
+                    log.stdinfo(p.fix_pointing())
+                    for ext, wcs in zip(ad, p.wcs):
+                        ext.wcs = wcs
+                    base_pointing = p
+                elif not want_to_fix or base_pointing is None:
                     # Do not want to, or cannot yet, fix
                     bad_wcs_list.append(ad)
                 else:
@@ -258,15 +281,26 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                     # Found a reliable base WCS
                     base_pointing = p
                     # Fix all backed up ADs if we want to
-                    if bad_wcs not in ('exit', 'ignore'):
+                    if want_to_fix:
                         while bad_wcs_list:
                             log.stdinfo(base_pointing.fix_wcs(bad_wcs_list.pop(0)))
 
-            last_endtime = (this_datetime +
-                            datetime.timedelta(seconds=ad.exposure_time()))
+            # UTEND time is wrong for F2 data before 2015 Nov 30; it's the end
+            # of the *previous* exposure. Hence just add the exposure time to
+            # the start time to try to estimate the exposure end.
+            if (ad.instrument() == 'F2' and this_starttime <
+                    datetime.datetime(year=2015, month=12, day=1)):
+                last_endtime = this_starttime + datetime.timedelta(
+                    seconds=ad.exposure_time())
+            else:
+                end = ad.phu['UTEND']
+                if len(end) not in (12, 15):
+                    end += '0' * (15 - len(start))
+                last_endtime = datetime.datetime.combine(
+                    ad.ut_date(), datetime.time.fromisoformat(end))
             last_obsid = this_obsid
 
-        if bad_wcs in ('exit', 'ignore') and bad_wcs_list:
+        if not want_to_fix and bad_wcs_list:
             log.stdinfo("The following files were identified as having bad "
                         "WCS information:")
             for ad in bad_wcs_list:
@@ -286,6 +320,12 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
 
 
 class Pointing:
+    """
+    A class that holds some information about the telescope pointing, both
+    from the PHU keywords and the WCS keywords. The class needs to contain
+    enough information to determine whether these two locations are consistent,
+    and to create a new WCS from the PHU information.
+    """
     # (x, y), 0-indexed
     center_of_rotation_dict = {'GNIRS': (629., 519.)}
 
@@ -295,8 +335,12 @@ class Pointing:
         self.target_coords = SkyCoord(ad.target_ra(), ad.target_dec(),
                                       unit=u.deg)
         self.coords = SkyCoord(ad.ra(), ad.dec(), unit=u.deg)
+        self.expected_coords = self.target_coords.spherical_offsets_by(
+            self.phu['RAOFFSET']*u.arcsec, self.phu['DECOFFSE']*u.arcsec)
+        self.pa = self.phu['CRPA']  # TODO plus other stuff
         self.xoffset = ad.detector_x_offset()
         self.yoffset = ad.detector_y_offset()
+        self.pixel_scale = ad.pixel_scale()
         self.filename = ad.filename
 
     def __repr__(self):
@@ -305,7 +349,9 @@ class Pointing:
     def self_consistent(self, limit=10):
         """
         Determine whether the WCS information in this Pointing is
-        self-consistent and therefore (presumably) reliable
+        self-consistent and therefore (presumably) reliable. This
+        is done by determining the sky distance between the WCS
+        coordinates and the target+offset coordinates.
 
         Parameters
         ----------
@@ -317,9 +363,81 @@ class Pointing:
         -------
         bool: is the pointing self-consistent?
         """
-        expected_coords = self.target_coords.spherical_offsets_by(
-            self.phu['RAOFFSET']*u.arcsec, self.phu['DECOFFSE']*u.arcsec)
-        return self.coords.separation(expected_coords).arcsec <= limit
+        return self.coords.separation(self.expected_coords).arcsec <= limit
+
+    def consistent_with(self, other):
+        """
+        Determine whether the WCS information in two Pointings is consistent.
+        The detector offsets indicate how sources move, so if an offset is +20
+        between two frames, then the sources will move 20 pixels in the +ve
+        direction. The test is made by computing the pixel coordinates of the
+        base Pointing's reference (RA, Dec) in both Pointings and confirming
+        that the pixel distance between these is at least half what it expected
+        from the detector offsets. This is a scalar calculation, rather than
+        checking each coordinate separately, in order to avoid issues where
+        the expected difference is small.
+
+        Parameters
+        ----------
+        other: Pointing object
+            a second Pointing
+
+        Returns
+        -------
+        bool: are these pointings consistent?
+        """
+        for wcs1, wcs2 in zip(self.wcs, other.wcs):
+            for m in wcs1.forward_transform:
+                if isinstance(m, models.RotateNative2Celestial):
+                    ra, dec = m.lon.value, m.lat.value
+                    break
+            else:
+                return False
+            x, y = wcs1.invert(ra, dec)
+            x2, y2 = wcs2.invert(ra, dec)
+            dx = other.xoffset - self.xoffset
+            dy = other.yoffset - self.yoffset
+            if (x-x2)**2 + (y-y2)**2 < 0.25 * (dx*dx+dy*dy):
+                return False
+        return True
+
+    def fix_pointing(self):
+        """
+        Fix the WCS objects in this Pointing object based on the target
+        coordinates.
+
+        Returns
+        -------
+        str: message indicating how the WCS has been fixed
+        """
+        for wcs in self.wcs:
+            for m in wcs.forward_transform:
+                if isinstance(m, models.AffineTransformation2D):
+                    aftran = m
+                elif isinstance(m, models.RotateNative2Celestial):
+                    nat2cel = m
+                    break
+            else:
+                raise ValueError("Cannot find center point of projection")
+            # Update projection center with coordinates
+            nat2cel.lon = self.target_coords.ra.value
+            nat2cel.lat = self.target_coords.dec.value
+            # Try to construct a new CD matrix. Whether East is to the left or
+            # right when North is up may depend on the port the instrument is
+            # on, but we can assume that the matrix in the header is correct
+            # in this regard since the instrument won't have switched ports.
+            flipped = (aftran.matrix[0, 0] * aftran.matrix[1, 1] > 0 or
+                       aftran.matrix[0, 1] * aftran.matrix[1, 0] < 0)
+            new_matrix = self.pixel_scale / 3600 * np.array([[1., 0.], [0., 1.]])
+            new_matrix = np.asarray(models.Rotation2D(self.pa)(*new_matrix))
+            if not flipped:
+                new_matrix[0] *= -1
+            aftran.matrix = new_matrix
+            # Put the offset at the start of the model
+            offset = models.Shift(-self.xoffset) & models.Shift(-self.yoffset)
+            wcs.insert_transform(wcs.input_frame, offset, after=True)
+
+        return f"Reset WCS for {self.filename} using target coordinates"
 
     def fix_wcs(self, ad):
         """
@@ -366,7 +484,7 @@ class Pointing:
             xnew, ynew = t(x, y)
             new_lon, new_lat = wcs(xnew, ynew)
             ext.wcs = deepcopy(wcs)
-            for m in wcs.forward_transform:
+            for m in ext.wcs.forward_transform:
                 if isinstance(m, models.AffineTransformation2D) and rotate:
                     m.matrix = models.Rotation2D(delta_pa)(*aftran.matrix.value)
                 elif isinstance(m, models.RotateNative2Celestial):
