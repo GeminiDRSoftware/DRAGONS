@@ -11,7 +11,7 @@ from .. import gmu
 
 
 class AstroDataF2(AstroDataGemini):
-    __keyword_dict = dict(central_wavelength='GRWLEN',
+    __keyword_dict = dict(central_wavelength='WAVELENG',
                           disperser='GRISM',
                          # dispersion='DISPERSI',
                           focal_plane_mask='MOSPOS',
@@ -153,7 +153,6 @@ class AstroDataF2(AstroDataGemini):
 
         return self._may_remove_component(camera, stripID, pretty)
 
-    # TODO: sort out the unit-handling here
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
                            asAngstroms=False):
@@ -190,21 +189,37 @@ class AstroDataF2(AstroDataGemini):
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters.
             output_units = "meters"
-        # TODO: check if GRWLEN is ever correct -OS
-        # central_wavelength = float(self.phu['GRWLEN'])
+
+        central_wavelength = float(self.phu['WAVELENG'])
         # if self.phu['FILTER1'] == 'K-long-G0812':
         #     central_wavelength = 2.2
 
-        grism = self.disperser(pretty=True)
-        filter = self.filter_name(pretty=True)
-        config = f"{grism}, {filter}"
-        central_wavelength = dispersion_and_wavelength.get(config)[1]
+        # grism = self.disperser(pretty=True)
+        # filter = self.filter_name(pretty=True)
+        # config = f"{grism}, {filter}"
+        # central_wavelength = dispersion_and_wavelength.get(config)[1]
 
         if central_wavelength < 0.0:
             return None
         else:
             return gmu.convert_units('angstroms', central_wavelength,
                                      output_units)
+
+    @astro_data_descriptor
+    def cenwave_offset(self):
+        """
+        Returns the offset from the central row to which central wavelength actually
+        corresponds to in pixels.
+
+        Returns
+        -------
+        float
+            Offset from the central row in pixels
+
+        """
+        config = f"{self.disperser(pretty=True)}, {self.filter_name(pretty=True)}"
+
+        return dispersion_and_wavelength.get(config)[2]
 
     @astro_data_descriptor
     def data_section(self, pretty=False):
@@ -339,7 +354,7 @@ class AstroDataF2(AstroDataGemini):
         grism = self.disperser(pretty=True)
         filter = self.filter_name(pretty=True)
         config = f"{grism}, {filter}"
-        dispersion = dispersion_and_wavelength.get(config)[0]
+        dispersion = float(dispersion_and_wavelength.get(config)[0])
 
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters" # By default
