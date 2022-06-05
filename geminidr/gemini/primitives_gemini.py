@@ -295,7 +295,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             else:
                 end = ad.phu['UTEND']
                 if len(end) not in (12, 15):
-                    end += '0' * (15 - len(start))
+                    end += '0' * (15 - len(end))
                 last_endtime = datetime.datetime.combine(
                     ad.ut_date(), datetime.time.fromisoformat(end))
             last_obsid = this_obsid
