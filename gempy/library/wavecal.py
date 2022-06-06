@@ -79,7 +79,6 @@ class LineList:
         within the specified bracket.
         """
 
-        print(f"Bracketing between: {lower_limit} and {higher_limit}")
         new = LineList()
         new._units = self._units
         new._in_vacuo = self._in_vacuo
@@ -349,13 +348,6 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
                      for i, length in enumerate(ext.shape) if i != dispersion_axis}
         model = (fix_inputs(fwd_transform, axis_dict) |
                  models.Mapping((0,), n_inputs=fwd_transform.n_outputs))
-        # remove
-        #central_wavelength = ext.central_wavelength(asNanometers=True)
-        print(f"central_wavel from wcs model = {model(0.5 * (npix - 1))}")
-        print(f"dispersion from wcs model= {np.diff(model([0, npix - 1]))[0] / (npix - 1)}")
-        print(f"central wvl as nano from descriptor:{ext.central_wavelength(asNanometers=True)}")
-        print(f"dispersion as nano from descriptor:{ext.dispersion(asNanometers=True)}")
-
         if dispersion or central_wavelength:
             actual_cenwave = model(0.5 * (npix - 1))
             model |= models.Shift(-actual_cenwave)
@@ -367,8 +359,6 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
 
     # The model might not have an actual domain but we want this information,
     # so stick it in the meta
-    print(f"INITIAL SPECTRA PARAMETERS: wvl_start={model(-0.5)}, "
-                f"wlv_end={model(2046.5)}, cen_wvl={model(1023)}, dw={(model(-0.5)-model(2046.5))/2047}")
     model.meta["domain"] = [0, npix - 1]
     return model
 
@@ -428,7 +418,6 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
 
     #is it needed? -OS
     input_data["display_initial_model"] = display_initial_model
-    print(f"display_initial_model? {display_initial_model}")
     return input_data, fit1d, acceptable_fit
 
 
@@ -561,21 +550,17 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     for loc_start, min_lines_per_fit, model in cart_product(
             (0.5, 0.4, 0.6), min_lines, init_models):
         domain = model.meta["domain"]
-        print(f"   LOC_START={loc_start}")
         len_data = np.diff(domain)[0]  # actually len(data)-1
-        print(f"LEN DATA-1={len_data}")
         pixel_start = domain[0] + loc_start * len_data
 
-         # instead of arclines(wlv) - wvl start and wvl end. instead of peaks=pixel start and pixel end
-        #TODO:do this properly, without the two fake lines on both ends -OS
+        #TODO: do this properly -OS
         if best_fit is None:
 
             fit1d = fit_1D((model(domain[0]),model(domain[1])),
-                points=(domain[0],domain[1]),
-                function="chebyshev", order=1, domain=domain,
-               niter=config.niter, sigma_lower=config.lsigma,
-               sigma_upper=config.hsigma)
-            print(f"fit1d.model = {fit1d.model}")
+                           points=(domain[0],domain[1]),
+                           function="chebyshev", order=1, domain=domain,
+                           niter=config.niter, sigma_lower=config.lsigma,
+                           sigma_upper=config.hsigma)
             fit1d.image = np.array((model(domain[0]),model(domain[1])))
             initial_model_fit = fit1d
 
@@ -588,7 +573,6 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         # we've made. This allows a high polynomial order to be
         # used without the risk of it going off the rails
         fit_it = fitting.LinearLSQFitter()
-        print(f"set(matches):{set(matches)}")
         if set(matches) != {-1}:
             m_init = models.Chebyshev1D(degree=config.order, domain=domain)
             for p, v in zip(model.param_names, model.parameters):
@@ -631,7 +615,6 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
             # Trial and error suggests this criterion works well
             if fit1d.rms < 0.2 * fwidth * abs(dw) and nmatched > config.order + 2:
-                print(f"***RETURNED BEST FIT ACCORDING TO GMOS CRITERIUM")
                 return fit1d, True, False
 
             # This seems to be a reasonably ranking for poor models
@@ -643,11 +626,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             # 2) Actual wavelength settings are accurate to better than 5 percent of the wavelength coverage.
             if ext.instrument()=="GNIRS":
                 wvl_toler = abs((len_data+1) * ext.dispersion(asNanometers=True) * 1.02 * 0.05)
-                print(f"wvl_toler = {wvl_toler}")
-              #  waves_init = m_init(np.array([0, len_data]))
                 waves_init = np.array([model(0),model(len_data)])
                 waves_final = m_final(np.array([0, len_data]))
-                print(f"abs(waves_init - waves_final)={abs(waves_init - waves_final)}")
                 if (abs(waves_init - waves_final) > wvl_toler).any():
                     is_within_wvl_toler = False
             if (score < best_score) and is_within_wvl_toler == True:
