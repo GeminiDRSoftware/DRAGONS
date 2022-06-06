@@ -377,9 +377,10 @@ class Pointing:
         direction. The test is made by computing the pixel coordinates of the
         base Pointing's reference (RA, Dec) in both Pointings and confirming
         that the pixel distance between these is at least half what it expected
-        from the detector offsets. This is a scalar calculation, rather than
-        checking each coordinate separately, in order to avoid issues where
-        the expected difference is small.
+        from the detector offsets (if the expected distance is at least 10
+        pixels). This is a scalar calculation, rather than checking each
+        coordinate separately, in order to avoid issues where the expected
+        difference is small.
 
         Parameters
         ----------
@@ -401,7 +402,8 @@ class Pointing:
             x2, y2 = wcs2.invert(ra, dec)
             dx = other.xoffset - self.xoffset
             dy = other.yoffset - self.yoffset
-            if (x-x2)**2 + (y-y2)**2 < 0.25 * (dx*dx+dy*dy):
+            distsq = dx * dx + dy * dy
+            if distsq > 100 and (x-x2)**2 + (y-y2)**2 < 0.25 * distsq:
                 return False
         return True
 
