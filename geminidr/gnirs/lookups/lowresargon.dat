@@ -1,8 +1,10 @@
-#Argon low resolution emission line wavelengths IN VACUUM, 9125 - 25132 Ang..
-#Text following wavelength, and intensity when present, indicates source.
-#KH=Hinkle et al, 2001 PASP 113, 548 (2nd number = relative intensity)
-#NOAO lines with lambda<9537A from vacidhenear.dat
+# Argon low resolution emission line wavelengths, 8115 - 25132 Ang.
 # units Angstroms
+# wavelengths in IN VACUUM
+#
+# Text following wavelength, and intensity when present, indicates source.
+# KH = Hinkle et al, 2001 PASP 113, 548 (2nd number = relative intensity)
+# NOAO lines with lambda<9537A from vacidhenear.dat
 #
 # This line list is for XD low resolution gratings and is a modified
 # version of argon.dat

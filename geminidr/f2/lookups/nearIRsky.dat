@@ -1,6 +1,6 @@
-    # Sky emission Line List 8778.607A - 25339.107A
-    # units Angstrom
-    # wavelengths in IN VACUUM
+# Sky emission Line List 8778.607A - 25339.107A
+# units Angstrom
+# wavelengths in IN VACUUM
 #
 # This list is a composite list of skylines derived from a reverse
 # engineered ESO model sky spectrum for the 0.8778 to 1.0um region,
