@@ -85,6 +85,7 @@ gemini_keyword_names = dict(
     oiwfs = 'OIWFS_ST',
     overscan_section = 'OVERSEC',
     pixel_scale = 'PIXSCALE',
+    position_angle = 'PA',
     prism = 'PRISM',
     pupil_mask = 'PUPILMSK',
     pwfs1 = 'PWFS1_ST',
@@ -1383,6 +1384,18 @@ class AstroDataGemini(AstroData):
             the pixel scale
         """
         return self._get_wcs_pixel_scale(mean=True)
+
+    @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return self.phu[self._keyword_for('position_angle')]
 
     @astro_data_descriptor
     def program_id(self):

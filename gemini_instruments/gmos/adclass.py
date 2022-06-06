@@ -803,6 +803,18 @@ class AstroDataGmos(AstroDataGemini):
         return (ayoff, byoff)
 
     @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return (self.phu[self._keyword_for('position_angle')] + 180) % 360
+
+    @astro_data_descriptor
     def shuffle_pixels(self):
         """
         Returns the number of rows that the charge has been shuffled, in

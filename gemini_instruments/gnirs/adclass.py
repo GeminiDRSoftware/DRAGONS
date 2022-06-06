@@ -412,6 +412,17 @@ class AstroDataGnirs(AstroDataGemini):
         else:
             raise ValueError("Unrecognized GNIRS camera, {}".format(camera))
 
+    @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return (self.phu[self._keyword_for('position_angle')] + 90) % 360
 
     @astro_data_descriptor
     def ra(self):

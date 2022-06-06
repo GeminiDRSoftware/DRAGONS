@@ -599,6 +599,18 @@ class AstroDataF2(AstroDataGemini):
             return self.phu.get('PIXSCALE')
 
     @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return (self.phu[self._keyword_for('position_angle')] + 90) % 360
+
+    @astro_data_descriptor
     def read_mode(self):
         """
         Returns the read mode (i.e., the number of non-destructive read pairs)

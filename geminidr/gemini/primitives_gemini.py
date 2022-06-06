@@ -341,7 +341,7 @@ class Pointing:
         self.coords = SkyCoord(ad.ra(), ad.dec(), unit=u.deg)
         self.expected_coords = self.target_coords.spherical_offsets_by(
             self.phu['RAOFFSET']*u.arcsec, self.phu['DECOFFSE']*u.arcsec)
-        self.pa = self.phu['PA']  # TODO plus other stuff
+        self.pa = ad.position_angle()
         self.xoffset = ad.detector_x_offset()
         self.yoffset = ad.detector_y_offset()
         self.pixel_scale = ad.pixel_scale()
@@ -432,8 +432,9 @@ class Pointing:
             # in this regard since the instrument won't have switched ports.
             flipped = (aftran.matrix[0, 0] * aftran.matrix[1, 1] > 0 or
                        aftran.matrix[0, 1] * aftran.matrix[1, 0] < 0)
-            new_matrix = self.pixel_scale / 3600 * np.array([[1., 0.], [0., 1.]])
-            new_matrix = np.asarray(models.Rotation2D(self.pa)(*new_matrix))
+            new_matrix = self.pixel_scale / 3600 * np.identity(2)
+            pa = -self.pa if flipped else self.pa
+            new_matrix = np.asarray(models.Rotation2D(pa)(*new_matrix))
             if not flipped:
                 new_matrix[0] *= -1
             aftran.matrix = new_matrix
