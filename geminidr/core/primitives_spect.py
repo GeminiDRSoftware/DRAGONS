@@ -1717,6 +1717,7 @@ class Spect(Resample):
         sfx = params["suffix"]
         arc_file = params["linelist"]
         interactive = params["interactive"]
+        absorption = params["absorption"]
 
         # TODO: This decision would prevent MOS data being reduced so need
         # to think a bit more about what we're going to do. Maybe make
@@ -1751,6 +1752,11 @@ class Spect(Resample):
             uiparams.fields["center"].max = min(
                 ext.shape[ext.dispersion_axis() - 1] for ext in ad)
 
+            if absorption:
+                ad = deepcopy(ad)
+                for i, data in enumerate(ad.data):
+                    ad[i].data = -data
+
             if interactive:
                 all_fp_init = [fit_1D.translate_params(
                     {**params, "function": "chebyshev"})] * len(ad)
@@ -1761,8 +1767,7 @@ class Spect(Resample):
                     domains.append([0, ext.shape[axis] - 1])
                 reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
-                print(f"uiparams:{uiparams.values}")
-                print(f"reconstruct points:{reconstruct_points.keywords}")
+
 
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
@@ -1770,6 +1775,7 @@ class Spect(Resample):
                     tab_name_fmt="Slit {}",
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
+                    absorption=absorption,
                     title="Wavelength Solution",
                     primitive_name=self.myself(),
                     filename_info=ad.filename,

@@ -67,23 +67,22 @@ nominal_zeropoints = {
     # Dictionary keys are in the following order:
     # "grism, filter".
     # Dictionary values are in the following order:
-    # (dispersion (A/pix), central_wavelength (A))
-    # This is a concise version of gnirs$data/nsappwave.fits table
-dispersion_and_wavelength = {
-    ("JH, JH"):     (-6.667, 13900, -30),
-    ("HK, HK"):     (-7.826, 18710, -25),
-    ("HK, JH"):     (-4.000, 13900, 34), # clearly a mistake in GIRAF LUT (at least dispersion)
-    #("HK, JH"):     (-7.500, 18750, 34),
-    #("HK, Ks"): ?? only SV data
-    #("HK, K-long"): ?? only CAL data
-    #("HK, J"): ?? only SV data
-    #("HK, H"): ?? only SV data
-    ("R3K, Jlow"):  (-1.667, 11220, 50),
-    ("R3K, Y"):     (-1.642, 10200, 630),
-    ("R3K, J"):     (-2.022, 12550, 390), # as in IRAF and headers
-    #("R3K, J"):     (-2.022, 13350, 390), # as measured from the images
-    ("R3K, H"):     (-2.609, 16310, 100),
-    ("R3K, Ks"):    (-3.462, 21570, 125),
-    #("R3K, Ks"):    (-3.462, 21950, 125),
-    ("R3K, K-long"):(-3.462, 22000, 127)
+    # (dispersion (A/pix), central_wavelength offset along the dispersion direction (pix))
+    # All values were refined using the archive F2 ARC images
+dispersion_and_offset = {
+    # The values for JH and HK filters work for both the old and the new filter..
+    ("JH, JH"):     (-6.510, -33),
+    ("HK, HK"):     (-7.580, 7),
+    ("HK, JH"):     (-7.800, 640),
+    ("R3K, Y"):     (-1.642, 630), # no data exists
+    ("R3K, J-lo"):  (-1.770, -160),
+    ("R3K, J"):     (-2.050, 410),
+    ("R3K, H"):     (-2.610, 20),
+    ("R3K, Ks"):    (-3.510, 130),
+    ("R3K, K-long"):(-3.462, -10)
+    # Consider adding the following modes:
+    #("HK, Ks"): # SV data only
+    #("HK, K-long"): # CAL data only
+    #("HK, J"): # SV data only
+    #("HK, H"): # SV data only
 }

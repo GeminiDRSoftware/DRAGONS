@@ -267,15 +267,17 @@ class GNIRSSpect(Spect, GNIRS):
     def _get_arc_linelist(self, waves=None, ad=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
+
+        is_lowres = ad.disperser(pretty=True).startswith('10') or \
+                    (ad.disperser(pretty=True).startswith('32') and
+                        ad.camera(pretty=True).startswith('Short'))
         if 'ARC' in ad.tags:
             if 'Xe' in ad.object():
                 linelist ='Ar_Xe.dat'
             elif "Ar" in ad.object():
-                # if ad.disperser(pretty=True).startswith('10') or \
-                #     (ad.disperser(pretty=True).startswith('32') and \
-                #     ad.camera(pretty=True).startswith('Short')):
-                #     linelist = 'lowresargon.dat' # file discription says it's meant for low-res XD. Any use for LS?
-                # else:
+                if is_lowres:
+                    linelist = 'lowresargon.dat'
+                else:
                     linelist = 'argon.dat'
             else:
                 raise ValueError(f"No default line list found for {ad.object()}-type arc. Please provide a line list.")
@@ -284,6 +286,8 @@ class GNIRSSpect(Spect, GNIRS):
                 linelist = 'skyLband.dat'
             elif ad.filter_name(pretty=True).startswith('M'):
                 linelist = 'skyMband.dat'
+            elif is_lowres:
+                linelist = 'sky.dat'
             else:
                 linelist = 'nearIRsky.dat'
 
