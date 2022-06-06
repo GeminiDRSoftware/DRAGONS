@@ -12,6 +12,7 @@ from astropy import units as u
 from astropy.modeling import models
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
 
 from geminidr.core import Bookkeeping, CalibDB, Preprocess
 from geminidr.core import Visualize, Standardize, Stack
@@ -392,11 +393,9 @@ class Pointing:
         bool: are these pointings consistent?
         """
         for wcs1, wcs2 in zip(self.wcs, other.wcs):
-            for m in wcs1.forward_transform:
-                if isinstance(m, models.RotateNative2Celestial):
-                    ra, dec = m.lon.value, m.lat.value
-                    break
-            else:
+            try:
+                ra, dec = at.get_center_of_projection(wcs1)
+            except TypeError:  # if this returns None
                 return False
             x, y = wcs1.invert(ra, dec)
             x2, y2 = wcs2.invert(ra, dec)

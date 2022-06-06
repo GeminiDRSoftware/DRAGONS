@@ -7,6 +7,7 @@
 import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
+from gempy.library import transform
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -29,3 +30,9 @@ class F2Longslit(F2, Spect, NearIR):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2_longslit)
+
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
+        slit_length = (1300 if ad1.is_ao() else 1460) * ad1.pixel_scale()
+        slit_width = int(ad1.focal_plane_mask()[0]) * ad1.pixel_scale()
+        return super()._fields_overlap(ad1, ad2, frac_FOV=frac_FOV,
+                                       slit_length=slit_length, slit_width=slit_width)

@@ -362,6 +362,23 @@ def create_mask_from_regions(points, regions=None):
     return mask
 
 
+def get_center_of_projection(wcs):
+    """
+    Determines the location of the center of projection from a gWCS object
+
+    Parameters
+    ----------
+    wcs: gWCS object
+
+    Returns
+    -------
+    ra, dec: location of pole
+    """
+    for m in wcs.forward_transform:
+        if isinstance(m, models.RotateNative2Celestial):
+            return (m.lon.value, m.lat.value)
+
+
 def get_corners(shape):
     """
     This is a recursive function to calculate the corner indices

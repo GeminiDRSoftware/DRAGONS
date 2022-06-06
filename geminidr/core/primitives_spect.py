@@ -4109,6 +4109,49 @@ class Spect(Resample):
                                   * u.Unit("erg cm-2 s-1") / u.Hz)
         return spec_table
 
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0, slit_length=None,
+                        slit_width=None):
+        """
+        Checks whether the fields of view of two AD objects overlap
+        sufficiently to be considerd part of a single ExposureGroup.
+        This method, implemented at the Spect level, assumes that both AD
+        objects have a single extension and, although it allows the length
+        and width of the slit to be passed, these parameters will not be
+        passed in normal usage. If not passed, the assumption is that the
+        slit is as long as the spatial axis of the image, and the width is
+        obtained from the descriptor. If either of these conditions is not
+        met, this method should be defined in a subclass and, if desired,
+        super() this method.
+
+        Parameters
+        ----------
+        ad1: AstroData
+            one of the input AD objects
+        ad2: AstroData
+            the other input AD object
+        frac_FOV: float (0 < frac_FOV <= 1)
+            fraction of the field of view for an overlap to be considered. If
+            frac_FOV=1, *any* overlap is considered to be OK
+        slit_length: float/None
+            length of the slit (in arcsec)
+        slit_width: float
+            width of the slit (in arcsec)
+
+        Returns
+        -------
+        bool: do the fields overlap sufficiently?
+        """
+        if slit_length is None:
+            slit_length = (ad1[0].shape[ad1[0].dispersion_axis()-1] *
+                           ad1.pixel_scale())
+        if slit_width is None:
+            slit_width = ad1.slit()  # not sure about this descriptor
+
+        # This function has been abstracted because it seems likely that
+        # it will be useful elsewhere in the codebase
+        dist_para, dist_perp = gt.offsets_relative_to_slit(ad1, ad2)
+        return (abs(dist_para) <= frac_FOV * slit_length and
+                abs(dist_perp) <= 0.5 * slit_width)
 
 # -----------------------------------------------------------------------------
 
