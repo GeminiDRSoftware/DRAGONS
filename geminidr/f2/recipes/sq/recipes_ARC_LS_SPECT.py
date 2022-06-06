@@ -14,7 +14,7 @@ def makeProcessedArc(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.darkCorrect() # opt for cals from skylines?
-  #  p.flatCorrect(do_cal=False) # opt for cals from skylines?
+    p.flatCorrect() # opt for cals from skylines?
     p.stackFrames()
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
