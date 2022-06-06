@@ -215,12 +215,8 @@ class GNIRSSpect(Spect, GNIRS):
                     ad = deepcopy(ad)
                     for i, data in enumerate(ad.data):
                         ad[i].data = -data
-                        # ad[i].data = np.reciprocal(data)
-                        # # ad[i].data = at.divide0(1, data)
                 reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
-                print(f"uiparams:{uiparams.values}")
-                print(f"reconstruct points:{reconstruct_points.keywords}")
 
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
@@ -292,7 +288,6 @@ class GNIRSSpect(Spect, GNIRS):
                 linelist = 'nearIRsky.dat'
 
         filename = os.path.join(lookup_dir, linelist)
-        print(f"filename=f{filename}")
 
         # According to GNIRS page:
         # 1) Wavelength coverages are accurate to +/-2 percent.

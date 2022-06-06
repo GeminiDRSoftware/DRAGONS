@@ -386,10 +386,8 @@ class InteractiveModel1D(InteractiveModel):
                     self.quality = FitQuality.GOOD
                 elif self.allow_poor_fits:
                     self.quality = FitQuality.POOR  # else stay BAD
-        print(f"self.quality = {self.quality}")
         if self.quality != FitQuality.BAD:  # don't update if it's BAD
             self.fit = new_fit
-            print(f"self.fit.points = {self.fit.points}")
             if 'residuals' in self.data.data:
                 self.data.data['residuals'] = self.y - self.evaluate(self.x)
             if 'ratio' in self.data.data:
