@@ -4160,9 +4160,11 @@ class Spect(Resample):
         if slit_width is None:
             slit_width = ad1.slit()  # not sure about this descriptor
 
-        # This function has been abstracted because it seems likely that
-        # it will be useful elsewhere in the codebase
-        dist_para, dist_perp = gt.offsets_relative_to_slit(ad1, ad2)
+        # I'm not sure where to put the abstraction here. This function in
+        # gemini_tools calls one in astrotools, so maybe the gemini_tools
+        # function should be brought here. We'll want to keep an eye on this
+        # as things develop.
+        dist_para, dist_perp = gt.offsets_relative_to_slit(ad1[0], ad2[0])
         return (abs(dist_para) <= frac_FOV * slit_length and
                 abs(dist_perp) <= 0.5 * slit_width)
 

@@ -1876,7 +1876,7 @@ def obsmode_del(ad):
     return ad
 
 
-def offsets_relative_to_slit(ad1, ad2):
+def offsets_relative_to_slit(ext1, ext2):
     """
     Determine the spatial offsets between the pointings of two AstroData
     objects, expressed parallel and perpendicular to the slit axis.
@@ -1890,7 +1890,7 @@ def offsets_relative_to_slit(ad1, ad2):
 
     Parameters
     ----------
-    ad1, ad2: AstroData instances
+    ext1, ext2: single-slice AstroData instances
         the two AD objects (assumed to be of the same subclass)
 
     Returns
@@ -1900,32 +1900,25 @@ def offsets_relative_to_slit(ad1, ad2):
     dist_perp: float
         separation (in arcsec) perpendicular to the slit
     """
-    wcs1 = ad1[0].wcs
+    wcs1 = ext1.wcs
     try:
         ra1, dec1 = at.get_center_of_projection(wcs1)
     except TypeError:
-        raise ValueError(f"Cannot get center of projection for {ad1.filename}")
-    dispaxis = 2 - ad1[0].dispersion_axis()  # python sense
-    cenwave, *_ = wcs1(*(0.5 * np.asarray(ad1[0].shape)[::-1]))
+        raise ValueError(f"Cannot get center of projection for {ext1.filename}")
+    dispaxis = 2 - ext1.dispersion_axis()  # python sense
+    cenwave, *_ = wcs1(*(0.5 * np.asarray(ext1.shape)[::-1]))
     x, y = wcs1.invert(cenwave, ra1, dec1)
 
     # Get PA of slit by finding coordinates along the slit
     coord1 = SkyCoord(ra1, dec1, unit='deg')
     ra2, dec2 = wcs1(x, y+500)[-2:] if dispaxis == 1 else wcs1(x+500, y)[-2:]
-    pa = coord1.position_angle(SkyCoord(ra2, dec2, unit='deg'))
+    pa = coord1.position_angle(SkyCoord(ra2, dec2, unit='deg')).deg
 
     # Calculate PA and angular distance between sky coords of the same pixel
     # on the two input ADs
-    ra2, dec2 = ad2[0].wcs(x, y)[-2:]
+    ra2, dec2 = ext2.wcs(x, y)[-2:]
     coord2 = SkyCoord(ra2, dec2, unit='deg')
-    sep_dist = coord1.separation(coord2).arcsec
-    sep_pa = coord1.position_angle(coord2)
-
-    # Assume separations are small enough that we're Euclidean (which is true)
-    delta_pa = (sep_pa - pa).rad
-    dist_para = sep_dist * np.cos(delta_pa)
-    dist_perp = sep_dist * np.sin(delta_pa)
-    return dist_para, dist_perp
+    return at.spherical_offsets_by_pa(coord1, coord2, pa)
 
 
 def parse_sextractor_param(param_file):
