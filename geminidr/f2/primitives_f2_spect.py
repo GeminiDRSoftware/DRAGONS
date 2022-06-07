@@ -3,56 +3,17 @@
 #
 #                                                          primtives_f2_spect.py
 # ------------------------------------------------------------------------------
-import numpy as np
+
+import os
 
 from importlib import import_module
-import os
 
 from geminidr.core import Spect
 from .primitives_f2 import F2
 from . import parameters_f2_spect
-
-#
-#                                                                  gemini_python
-#
-#                                                        primtives_gnirs_spect.py
-# ------------------------------------------------------------------------------
-import os
-
-import numpy as np
-from copy import copy
-from importlib import import_module
-from datetime import datetime
-from functools import reduce
-from copy import deepcopy
-
-from functools import partial
-
-from gempy.library import astrotools as at
-
-from astropy.table import Table
-
-from astropy.modeling import models, Model
-from astropy import units as u
-from scipy.interpolate import UnivariateSpline
-
-import geminidr.interactive.server
-from geminidr.core import Spect
-from gempy.library.fitting import fit_1D
-from .primitives_f2 import F2
-from . import parameters_f2_spect
-
-from geminidr.gemini.lookups import DQ_definitions as DQ
-from geminidr.gmos.lookups import geometry_conf as geotable
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels as am
 from gempy.library import transform, wavecal
-
-from recipe_system.utils.decorators import parameter_override, capture_provenance
-from ..interactive.fit.wavecal import WavelengthSolutionVisualizer
-from ..interactive.interactive import UIParameters
-from ..core import NearIR
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 

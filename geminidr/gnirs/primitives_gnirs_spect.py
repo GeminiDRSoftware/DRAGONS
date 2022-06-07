@@ -5,22 +5,11 @@
 # ------------------------------------------------------------------------------
 import os
 
-import numpy as np
 from copy import copy
 from importlib import import_module
-from datetime import datetime
-from functools import reduce
 from copy import deepcopy
 
 from functools import partial
-
-from gempy.library import astrotools as at
-
-from astropy.table import Table
-
-from astropy.modeling import models, Model
-from astropy import units as u
-from scipy.interpolate import UnivariateSpline
 
 import geminidr.interactive.server
 from geminidr.core import Spect
@@ -29,16 +18,13 @@ from .primitives_gnirs import GNIRS
 from . import parameters_gnirs_spect
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from geminidr.gmos.lookups import geometry_conf as geotable
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels as am
 from gempy.library import transform, wavecal
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from ..interactive.fit.wavecal import WavelengthSolutionVisualizer
 from ..interactive.interactive import UIParameters
-from ..core import NearIR
 
 
 @parameter_override

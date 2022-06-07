@@ -5,13 +5,7 @@
 # -----------------------------------------------------------------------------
 
 
-import astrodata
-import gemini_instruments
 from gempy.gemini import gemini_tools as gt
-
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
-from .primitives_gnirs import GNIRS
 
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
