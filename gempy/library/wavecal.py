@@ -453,7 +453,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     cenwave = config.central_wavelength
 
     log = FakeLog() if config.interactive else p.log
-
     # Create 1D spectrum for calibration
     if ext.data.ndim > 1:
         dispaxis = 2 - ext.dispersion_axis()  # python sense
