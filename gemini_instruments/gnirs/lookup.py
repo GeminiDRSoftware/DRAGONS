@@ -237,7 +237,7 @@ dispersion_by_config = {
     # This is a concise version of gnirs$data/nsappwave.fits table
     ("Gemini-South, 10/mm, Short")  : {"M": -19.39},
     ("Gemini-South, 10/mm, Long")   : {},
-    ("Gemini-South, 32/mm, Short")  : {"X": -3.23, "J": -3.88, "H": -4.85, "K": -6.47}, # the last two values are borrowed from the GN table
+    ("Gemini-South, 32/mm, Short")  : {"X": -3.23, "J": -3.88, "H": -4.85, "K": -6.47},
     ("Gemini-South, 32/mm, Long")   : {},
     ("Gemini-South, 111/mm, Short") : {"X": -0.93, "J": -1.115, "H": -1.395, "K": -1.85, "L": -2.77,  "M": -5.61},
     ("Gemini-South, 111/mm, Long")  : {"J": -0.371, "H": -0.463, "K": -0.6175},

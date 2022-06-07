@@ -5,7 +5,6 @@ from astrodata import astro_data_tag, astro_data_descriptor, TagSet, returns_lis
 
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from ..common import build_group_id
-from gempy.utils.logutils import get_logger
 
 from .lookup import detector_properties, nominal_zeropoints, read_modes
 from .lookup import pixel_scale_shrt, pixel_scale_long, dispersion_by_config
@@ -19,10 +18,6 @@ class AstroDataGnirs(AstroDataGemini):
     __keyword_dict = dict(central_wavelength='GRATWAVE',
                           array_name='ARRAYID',
                           grating_order='GRATORD')
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.log = get_logger("AstroDataGnirs")
 
     @staticmethod
     def _matches_data(source):
@@ -130,26 +125,15 @@ class AstroDataGnirs(AstroDataGemini):
         config = f"{telescope}, {grating}, {camera}"
         config_other_site = f"{other_telescope}, {grating}, {camera}"
 
-        def get_dispersion_by_config(config, filter):
-            try:
-                return (dispersion_by_config[config].get(filter))
-            except TypeError:
+        def get_dispersion_by_config(_config, _filter):
+            return dispersion_by_config.get(_config, {}).get(_filter)
+
+        dispersion = get_dispersion_by_config(config, filter)
+        if dispersion is None:
+            dispersion = get_dispersion_by_config(config_other_site, filter)
+            if dispersion is None:
                 return None
 
-        try:
-            dispersion = get_dispersion_by_config(config, filter)
-            if dispersion is None:
-                self.log.warning(f"Unknown dispersion. Trying dispersion value for {other_telescope}")
-                try:
-                    dispersion = get_dispersion_by_config(config_other_site, filter)
-                except KeyError:
-                    dispersion = None
-                if dispersion is None:
-                    self.log.error("Unknown dispersion")
-                    return
-        except KeyError as exc:
-            self.log.error(f"Unknown instrument configuration: {config}")
-            return
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters" # By default
         if unit_arg_list.count(True) == 1:
