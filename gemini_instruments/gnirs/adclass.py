@@ -76,6 +76,7 @@ class AstroDataGnirs(AstroDataGemini):
 
             return TagSet(['FLAT', 'CAL'])
 
+    @returns_list
     @astro_data_descriptor
     def array_name(self):
         """
