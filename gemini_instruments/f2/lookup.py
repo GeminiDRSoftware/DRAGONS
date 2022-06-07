@@ -64,25 +64,27 @@ nominal_zeropoints = {
     ('Ks', 'f/16'): 24.59+1.62,
 
 }
+
+dispersion_and_offset = {
     # Dictionary keys are in the following order:
     # "grism, filter".
     # Dictionary values are in the following order:
     # (dispersion (A/pix), central_wavelength offset along the dispersion direction (pix))
-    # All values were refined using the archive F2 ARC images
-dispersion_and_offset = {
-    # The values for JH and HK filters work for both the old and the new filter..
-    ("JH, JH"):     (-6.510, -33),
-    ("HK, HK"):     (-7.580, 7),
-    ("HK, JH"):     (-7.800, 640),
-    ("R3K, Y"):     (-1.642, 630), # no data exists
-    ("R3K, J-lo"):  (-1.770, -160),
-    ("R3K, J"):     (-2.050, 410),
-    ("R3K, H"):     (-2.610, 20),
-    ("R3K, Ks"):    (-3.510, 130),
-    ("R3K, K-long"):(-3.462, -10)
+    # All values were refined using the archive F2 ARC images.
+
+    # The values for JH and HK filters work for both the old and the new filter.
+    "JH, JH":     (-6.510, -33),
+    "HK, HK":     (-7.580, 7),
+    "HK, JH":     (-7.800, 640),
+    "R3K, Y":     (-1.642, 630), # no data exists
+    "R3K, J-lo":  (-1.770, -160),
+    "R3K, J":     (-2.050, 410),
+    "R3K, H":     (-2.610, 20),
+    "R3K, Ks":    (-3.510, 130),
+    "R3K, K-long":(-3.462, -10)
     # Consider adding the following modes:
-    #("HK, Ks"): # SV data only
-    #("HK, K-long"): # CAL data only
-    #("HK, J"): # SV data only
-    #("HK, H"): # SV data only
+    #"HK, Ks": # SV data only
+    #"HK, K-long": # CAL data only
+    #"HK, J": # SV data only
+    #"HK, H": # SV data only
 }

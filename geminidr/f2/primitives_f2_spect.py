@@ -57,6 +57,8 @@ class F2Spect(F2, Spect):
         for ad in adinputs:
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
             # Apply central wavelength offset
+            if ad.dispersion() is None:
+                raise ValueError(f"Unknown dispersion for {ad.filename}")
             cenwave = ad.central_wavelength(asNanometers=True) + abs(ad.dispersion(asNanometers=True)[0]) * ad.cenwave_offset()
             transform.add_longslit_wcs(ad, central_wavelength=cenwave)
 

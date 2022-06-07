@@ -192,7 +192,7 @@ class AstroDataF2(AstroDataGemini):
             output_units = "meters"
 
         central_wavelength = float(self.phu['WAVELENG'])
-        # The header value for this filter in early data is incorrect
+        # Header value for this filter in early data is incorrect:
         if self.phu['FILTER1'] == 'K-long_G0812':
               central_wavelength = 22000
 
@@ -216,7 +216,10 @@ class AstroDataF2(AstroDataGemini):
         """
         config = f"{self.disperser(pretty=True)}, {self.filter_name(pretty=True)}"
 
-        return dispersion_and_offset.get(config)[1]
+        if config not in dispersion_and_offset:
+            return None
+        else:
+            return dispersion_and_offset.get(config)[1]
 
     @astro_data_descriptor
     def data_section(self, pretty=False):
@@ -349,7 +352,10 @@ class AstroDataF2(AstroDataGemini):
         grism = self.disperser(pretty=True)
         filter = self.filter_name(pretty=True)
         config = f"{grism}, {filter}"
-        dispersion = float(dispersion_and_offset.get(config)[0])
+        if config not in dispersion_and_offset:
+            return None
+
+        dispersion = float(dispersion_and_offset[config][0])
 
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters" # By default

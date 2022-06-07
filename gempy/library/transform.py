@@ -1441,6 +1441,9 @@ def add_longslit_wcs(ad, central_wavelength=None):
     if len(crval1) * len(crval2) != 1:
         raise ValueError(f"Not all CRPIX1/CRPIX2 keywords are the same in {ad.filename}")
 
+    if ad.dispersion() is None:
+        raise ValueError(f"Unknown dispersion for {ad.filename}")
+
     for ext, dispaxis, dw in zip(ad, ad.dispersion_axis(), ad.dispersion(asNanometers=True)):
         wcs = ext.wcs
         if not isinstance(wcs.output_frame, cf.CelestialFrame):
