@@ -711,7 +711,7 @@ class Transform:
         else:
             mapping = GeoMap(self, output_shape, inverse=inverse)
             output_array = ndimage.map_coordinates(input_array, mapping.coords,
-                                        output_shape, order=order, cval=cval)
+                                        order=order, cval=cval)
         return output_array
 
     @classmethod

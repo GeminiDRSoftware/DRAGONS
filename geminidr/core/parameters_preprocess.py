@@ -113,7 +113,7 @@ class scaleByExposureTimeConfig(config.Config):
 
 
 class scaleCountsToReferenceConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_scaledByObjectFlux", optional=True)
+    suffix = config.Field("Filename suffix", str, "_countsScaled", optional=True)
     tolerance = config.RangeField("Tolerance for scaling compared to exposure time",
                                   float, 0, min=0, max=1, inclusiveMax=True)
     use_common = config.Field("Use only sources common to all frames?",

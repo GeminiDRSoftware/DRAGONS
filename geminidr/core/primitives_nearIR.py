@@ -213,15 +213,30 @@ class NearIR(Bookkeeping):
             remove the first frame? If False, this primitive no-ops (but logs
             a warning)
         """
-        if params["remove_first"]:
-            if len(adinputs):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        remove_first = params["remove_first"]
+        remove_files = params["remove_files"]
+
+        if remove_first:
+            if adinputs:
                 remove_ad = self.sortInputs(adinputs, descriptor="ut_datetime")[0]
+                log.stdinfo(f"Removing {remove_ad.filename} as a first frame")
                 adinputs = [ad for ad in adinputs if ad != remove_ad]
             else:
-                self.log.stdinfo("No frames, nothing to remove.")
-        else:
-            self.log.warning("The first frame is not being removed: "
-                             "data quality may suffer")
+                log.stdinfo("No frames, nothing to remove")
+
+        for f in (remove_files or []):
+            f_root = f.replace('.fits', '')
+            length = len(adinputs)
+            adinputs = [ad for ad in adinputs if f_root not in ad.filename]
+            if len(adinputs) == length:
+                log.warning(f"Filename {f} cannot be removed as it is not in input list")
+            else:
+                log.stdinfo(f"Removing {f} as requested")
+
+        if not (remove_first or remove_files):
+            log.warning("No frames are being removed: data quality may suffer")
         return adinputs
 
     def separateFlatsDarks(self, adinputs=None, **params):
