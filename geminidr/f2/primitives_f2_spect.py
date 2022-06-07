@@ -3,14 +3,17 @@
 #
 #                                                          primtives_f2_spect.py
 # ------------------------------------------------------------------------------
-import numpy as np
+
+import os
 
 from importlib import import_module
-import os
 
 from geminidr.core import Spect
 from .primitives_f2 import F2
 from . import parameters_f2_spect
+
+from gempy.gemini import gemini_tools as gt
+from gempy.library import transform, wavecal
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -30,7 +33,52 @@ class F2Spect(F2, Spect):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2_spect)
 
-    def _get_linelist_filename(self, ext, cenwave, dw):
-        lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
-        filename = 'lowresargon.dat'
-        return os.path.join(lookup_dir, filename)
+    def standardizeWCS(self, adinputs=None, suffix=None):
+        """
+        This primitive updates the WCS attribute of each NDAstroData extension
+        in the input AstroData objects. For spectroscopic data, it means
+        replacing an imaging WCS with an approximate spectroscopic WCS.
+
+        This is an F2-specific primitive due to the need to apply an offset to the
+        central wavelength derived from image header, which for F2 is specified for the middle of
+        the grism+filter transmission window, not for the central row.
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+
+        """
+
+        log = self.log
+        timestamp_key = self.timestamp_keys[self.myself()]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
+            # Apply central wavelength offset
+            if ad.dispersion() is None:
+                raise ValueError(f"Unknown dispersion for {ad.filename}")
+            cenwave = ad.central_wavelength(asNanometers=True) + abs(ad.dispersion(asNanometers=True)[0]) * ad.cenwave_offset()
+            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
+    def _get_arc_linelist(self, waves=None, ad=None):
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   self.inst_lookups).__file__)
+
+        if 'ARC' in ad.tags:
+            linelist = 'lowresargon.dat'
+        else:
+            linelist = 'sky.dat'
+
+        filename = os.path.join(lookup_dir, linelist)
+        return wavecal.LineList(filename)
+
+
+
+

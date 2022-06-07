@@ -73,6 +73,24 @@ class LineList:
         """Weights of the individual lines for fitting routines"""
         return self._weights
 
+    def copy_bracketed(self, lower_limit, higher_limit):
+        """
+        Create a new LineList but restricting the line wavelengths to those
+        within the specified bracket.
+        """
+
+        new = LineList()
+        new._units = self._units
+        new._in_vacuo = self._in_vacuo
+        new._decimals = self._decimals
+
+        mask = np.logical_and(self._lines >= lower_limit, self._lines <= higher_limit)
+        new._lines = self._lines[mask]
+        if self._weights is not None:
+            new._weights = self._weights[mask]
+
+        return new
+
     def read_linelist(self, filename):
         """
         Read a text file containing the reference line list
@@ -390,14 +408,16 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     init_models = input_data["init_models"]
     peaks, weights = input_data["peaks"], input_data["weights"]
     fwidth = input_data["fwidth"]
-
     dw = np.diff(init_models[0](np.arange(spectrum.size))).mean()
     kdsigma = fwidth * abs(dw)
     k = 1 if kdsigma < 3 else 2
-    fit1d, acceptable_fit = find_solution(
+    fit1d, acceptable_fit, display_initial_model = find_solution(
         init_models, ui_params, peaks=peaks, peak_weights=weights[ui_params.values["weighting"]],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
-        filename=ext.filename)
+        filename=ext.filename, ext=ext)
+
+    #is it needed? -OS
+    input_data["display_initial_model"] = display_initial_model
     return input_data, fit1d, acceptable_fit
 
 
@@ -433,7 +453,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     cenwave = config.central_wavelength
 
     log = FakeLog() if config.interactive else p.log
-
     # Create 1D spectrum for calibration
     if ext.data.ndim > 1:
         dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -482,7 +501,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     # user-defined file, only read it if arc_lines is undefined
     # (i.e., first time through the loop)
     if linelist is None:
-        linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)))
+        linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext)
     log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} arc lines")
 
     m_init = [m_init]
@@ -506,7 +525,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,
-                  kdsigma=1, k=1, filename=None):
+                  kdsigma=1, k=1, filename=None, ext=None):
     """
     Find the best wavelength solution from the set of initial models.
 
@@ -523,6 +542,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     best_score = np.inf
     arc_lines = linelist.wavelengths(in_vacuo=config.in_vacuo, units="nm")
     arc_weights = linelist.weights
+    best_fit = None
+    initial_model_fit = None
 
     # Iterate over models most rapidly
     for loc_start, min_lines_per_fit, model in cart_product(
@@ -530,6 +551,18 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
+
+        #TODO: do this properly -OS
+        if best_fit is None:
+
+            fit1d = fit_1D((model(domain[0]),model(domain[1])),
+                           points=(domain[0],domain[1]),
+                           function="chebyshev", order=1, domain=domain,
+                           niter=config.niter, sigma_lower=config.lsigma,
+                           sigma_upper=config.hsigma)
+            fit1d.image = np.array((model(domain[0]),model(domain[1])))
+            initial_model_fit = fit1d
+
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
                                         kdsigma, order=config.order,
                                         min_lines_per_fit=min_lines_per_fit,
@@ -581,14 +614,33 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
             # Trial and error suggests this criterion works well
             if fit1d.rms < 0.2 * fwidth * abs(dw) and nmatched > config.order + 2:
-                return fit1d, True
+                return fit1d, True, False
 
             # This seems to be a reasonably ranking for poor models
             score = fit1d.rms / max(nmatched - config.order - 1, np.finfo(float).eps)
-            if score < best_score:
-                best_fit = fit1d
 
-    return best_fit, False
+            is_within_wvl_toler = True
+            # According to GNIRS page:
+            # 1) Wavelength coverages are accurate to +/-2 percent.
+            # 2) Actual wavelength settings are accurate to better than 5 percent of the wavelength coverage.
+            if ext.instrument()=="GNIRS":
+                wvl_toler = abs((len_data+1) * ext.dispersion(asNanometers=True) * 1.02 * 0.05)
+                waves_init = np.array([model(0),model(len_data)])
+                waves_final = m_final(np.array([0, len_data]))
+                if (abs(waves_init - waves_final) > wvl_toler).any():
+                    is_within_wvl_toler = False
+            if (score < best_score) and is_within_wvl_toler == True:
+                best_fit = fit1d
+                best_score = score
+            # elif ext.instrument()=="GNIRS" and best_fit == None:
+            #     best_fit = initial_model_fit
+            #     display_initial_model = True
+            #     print(f"NO MODELS WITHIN WVL TOLERANCE, returning the initial model")
+            #TODO: catch the case where there is no best_fit and not interactive
+        elif config.interactive and ext.instrument()=="GNIRS" and best_fit == None:
+            print(f"NO LINE MATCHES, returning the initial model - well, not really initial?")
+            return initial_model_fit, False, True
+    return best_fit, False, False
 
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
@@ -638,7 +690,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
     dc0 = 10
-
+    print(f"pixel_start={pixel_start}, wave_start={wave_start}, dw_start={dw_start}, let_data={len_data}")
     fits_to_do = [(pixel_start, wave_start, dw_start)]
     while fits_to_do:
         p0, c0, dw = fits_to_do.pop()
@@ -648,6 +700,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             p1 = 0
         npeaks = narc_lines = 0
         while (min(npeaks, narc_lines) < min_lines_per_fit and
+        # TODO: see if this needs to be changed, doesn't seem to work as intended -OS
                not (p0 - p1 < 0 and p0 + p1 >= len_data)):
             p1 += 1
             i1 = bisect(peaks, p0 - p1)
@@ -745,7 +798,6 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     if ref_weights is not None:
         new_ref_weights *= ref_weights
     new_ref_weights = ref_weights
-
     # Maybe consider two fits here, one with a large kdsigma, and then
     # one with a small one (perhaps the second could use weights)?
     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')

@@ -5,29 +5,24 @@
 # -----------------------------------------------------------------------------
 
 
-import astrodata
-import gemini_instruments
 from gempy.gemini import gemini_tools as gt
-
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
-from .primitives_gnirs import GNIRS
-from ..core import NearIR, Spect
-from . import parameters_gnirs_longslit
 
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
 
+from .primitives_gnirs_spect import GNIRSSpect
+from . import parameters_gnirs_longslit
+
 # -----------------------------------------------------------------------------
 @parameter_override
 @capture_provenance
-class GNIRSLongslit(GNIRS, Spect, NearIR):
+class GNIRSLongslit(GNIRSSpect):
     """
     This class contains all of the preprocessing primitives for the
     GNIRSLongslit level of the type hierarchy tree. It inherits all the
     primitives from the above level.
     """
-    tagset = {'GEMINI', 'GNIRS', 'SPECT'}
+    tagset = {"GEMINI", "GNIRS", "SPECT", "LS"}
 
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)

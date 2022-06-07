@@ -981,6 +981,7 @@ class Spect(Resample):
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
+                #.data[:,0:1500]
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1 - dispaxis,
                                                             start=start, initial=initial_peaks,
                                                             rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
@@ -1022,7 +1023,7 @@ class Spect(Resample):
                     model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
                     model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
 
-                self.viewer.color = "blue"
+                self.viewer.color = "red"
                 spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
                                              ext.shape[1 - dispaxis] // (step * 10))
                 spectral_coords = np.unique(ref_coords[1 - dispaxis])
@@ -1690,6 +1691,9 @@ class Spect(Resample):
         nbright : int (or may not exist in certain class methods)
             Number of brightest lines to cull before fitting
 
+        absorption : bool
+            If feature type is absorption (default: "False")
+
         interactive : bool
             Use the interactive tool?
 
@@ -1713,6 +1717,7 @@ class Spect(Resample):
         sfx = params["suffix"]
         arc_file = params["linelist"]
         interactive = params["interactive"]
+        absorption = params["absorption"]
 
         # TODO: This decision would prevent MOS data being reduced so need
         # to think a bit more about what we're going to do. Maybe make
@@ -1747,6 +1752,11 @@ class Spect(Resample):
             uiparams.fields["center"].max = min(
                 ext.shape[ext.dispersion_axis() - 1] for ext in ad)
 
+            if absorption:
+                ad = deepcopy(ad)
+                for i, data in enumerate(ad.data):
+                    ad[i].data = -data
+
             if interactive:
                 all_fp_init = [fit_1D.translate_params(
                     {**params, "function": "chebyshev"})] * len(ad)
@@ -1757,12 +1767,15 @@ class Spect(Resample):
                     domains.append([0, ext.shape[axis] - 1])
                 reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
+
+
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
                     tab_name_fmt="Slit {}",
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
+                    absorption=absorption,
                     title="Wavelength Solution",
                     primitive_name=self.myself(),
                     filename_info=ad.filename,
@@ -3924,7 +3937,7 @@ class Spect(Resample):
 
         return adinputs
 
-    def _get_arc_linelist(self, waves=None):
+    def _get_arc_linelist(self, waves=None, ad=None):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter

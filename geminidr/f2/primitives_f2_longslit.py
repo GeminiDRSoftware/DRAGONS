@@ -4,16 +4,8 @@
 #                                                     primitives_f2_longslit.py
 # -----------------------------------------------------------------------------
 
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-from gempy.library import transform
-
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
-from .primitives_f2 import F2
-from ..core import NearIR, Spect
 from . import parameters_f2_longslit
+from .primitives_f2_spect import F2Spect
 
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
@@ -21,12 +13,12 @@ from recipe_system.utils.decorators import (parameter_override,
 # -----------------------------------------------------------------------------
 @parameter_override
 @capture_provenance
-class F2Longslit(F2, Spect, NearIR):
+class F2Longslit(F2Spect):
     """This class contains all of the processing primitives for the F2Longslit
     level of the type hiearchy tree. It inherits all the primitives from the
     above level.
     """
-    tagset = {'GEMINI', 'F2', 'SPECT'}
+    tagset = {'GEMINI', 'F2', 'SPECT', 'LS'}
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2_longslit)
