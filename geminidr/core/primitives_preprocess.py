@@ -1243,6 +1243,7 @@ class Preprocess(PrimitivesBASE):
         # gt.group_exposures(). If we want to check this parameter value up
         # front I'm assuming the infrastructure will do that at some point.
         frac_FOV = params["frac_FOV"]
+        max_perp_offset = params.get("debug_allowable_perpendicular_offset")
 
         # Primitive will construct sets of object and sky frames. First look
         # for pre-assigned header keywords (user can set them as a guide)
@@ -1286,8 +1287,13 @@ class Preprocess(PrimitivesBASE):
 
         # Analyze the spatial clustering of exposures and attempt to sort them
         # into dither groups around common nod positions.
-        groups = gt.group_exposures(adinputs, fields_overlap=self._fields_overlap,
-                                    frac_FOV=frac_FOV, )
+        if 'SPECT' in adinputs[0].tags:
+            overlap_func = partial(self._fields_overlap,
+                                   max_perpendicular_offset=max_perp_offset)
+        else:
+            overlap_func = self._fields_overlap
+        groups = gt.group_exposures(adinputs, fields_overlap=overlap_func,
+                                    frac_FOV=frac_FOV)
         ngroups = len(groups)
         log.stdinfo(f"Identified {ngroups} group(s) of exposures")
 

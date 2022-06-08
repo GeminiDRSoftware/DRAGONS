@@ -7,6 +7,8 @@ from astrodata import AstroData
 from geminidr.core import parameters_generic
 from gempy.library import config, astrotools as at
 
+from . import parameters_preprocess
+
 
 def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
@@ -439,6 +441,12 @@ class resampleToCommonFrameConfig(config.Config):
             raise ValueError("Maximum 3 of w1, w2, dw, npix must be specified")
         if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
             raise ValueError("Ending wavelength must be greater than starting wavelength")
+
+
+class separateSkyConfig(parameters_preprocess.separateSkyConfig):
+    debug_allowable_perpendicular_offset = config.RangeField(
+        "Maximum allowable offset perpendicular to the slit (arcsec)",
+        float, None, min=0, inclusiveMin=False)
 
 
 class skyCorrectFromSlitConfig(config.core_1Dfitting_config):

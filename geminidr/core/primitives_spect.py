@@ -4123,7 +4123,7 @@ class Spect(Resample):
         return spec_table
 
     def _fields_overlap(self, ad1, ad2, frac_FOV=1.0, slit_length=None,
-                        slit_width=None):
+                        slit_width=None, max_perpendicular_offset=None):
         """
         Checks whether the fields of view of two AD objects overlap
         sufficiently to be considerd part of a single ExposureGroup.
@@ -4149,6 +4149,8 @@ class Spect(Resample):
             length of the slit (in arcsec)
         slit_width: float
             width of the slit (in arcsec)
+        max_perpendicular_offset: float
+            maximum allowable offset perpendicular to the slit
 
         Returns
         -------
@@ -4158,7 +4160,8 @@ class Spect(Resample):
             slit_length = (ad1[0].shape[ad1[0].dispersion_axis()-1] *
                            ad1.pixel_scale())
         if slit_width is None:
-            slit_width = ad1.slit()  # not sure about this descriptor
+            slit_width = ad1.slit()  # TODO: not sure about this descriptor
+        max_perpendicular_offset = max(max_perpendicular_offset or 0, slit_width)
 
         # I'm not sure where to put the abstraction here. This function in
         # gemini_tools calls one in astrotools, so maybe the gemini_tools
@@ -4166,7 +4169,7 @@ class Spect(Resample):
         # as things develop.
         dist_para, dist_perp = gt.offsets_relative_to_slit(ad1[0], ad2[0])
         return (abs(dist_para) <= frac_FOV * slit_length and
-                abs(dist_perp) <= slit_width)
+                abs(dist_perp) <= max_perpendicular_offset)
 
 # -----------------------------------------------------------------------------
 
