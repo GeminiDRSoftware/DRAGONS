@@ -4166,7 +4166,7 @@ class Spect(Resample):
         # as things develop.
         dist_para, dist_perp = gt.offsets_relative_to_slit(ad1[0], ad2[0])
         return (abs(dist_para) <= frac_FOV * slit_length and
-                abs(dist_perp) <= 0.5 * slit_width)
+                abs(dist_perp) <= slit_width)
 
 # -----------------------------------------------------------------------------
 
