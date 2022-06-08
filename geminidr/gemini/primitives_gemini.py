@@ -409,7 +409,8 @@ class Pointing:
     def fix_pointing(self):
         """
         Fix the WCS objects in this Pointing object based on the target
-        coordinates.
+        coordinates and RA/DEC offsets. We do not change the pixel location
+        of the projection center.
 
         Returns
         -------
@@ -425,8 +426,8 @@ class Pointing:
             else:
                 raise ValueError("Cannot find center point of projection")
             # Update projection center with coordinates
-            nat2cel.lon = self.target_coords.ra.value
-            nat2cel.lat = self.target_coords.dec.value
+            nat2cel.lon = self.expected_coords.ra.value
+            nat2cel.lat = self.expected_coords.dec.value
             # Try to construct a new CD matrix. Whether East is to the left or
             # right when North is up may depend on the port the instrument is
             # on, but we can assume that the matrix in the header is correct
@@ -439,9 +440,8 @@ class Pointing:
             if not flipped:
                 new_matrix[0] *= -1
             aftran.matrix = new_matrix
-            # Put the offset at the start of the model
-            offset = models.Shift(-self.xoffset) & models.Shift(-self.yoffset)
-            wcs.insert_transform(wcs.input_frame, offset, after=True)
+            c1 = SkyCoord(*wcs(1024, 1024), unit='deg')
+            c2 = SkyCoord(*wcs(1524, 1024), unit='deg')
 
         return f"Reset WCS for {self.filename} using target coordinates"
 
