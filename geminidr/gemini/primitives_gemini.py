@@ -202,7 +202,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         ----------
         suffix: str
             suffix to be added to output files
-        bad_wcs: str (exit | fix | bootstrap | ignore)
+        bad_wcs: str (exit | fix | new | ignore)
             how to handle a bad WCS, or whether to create a complete new set
         debug_consistency_limit: float
             maximum separation (in arcsec) between the WCS location and the
@@ -237,6 +237,8 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             except KeyError:
                 this_starttime = ad.ut_datetime()
             else:
+                if '.' not in start:
+                    start + '.'
                 if len(start) not in (12, 15):
                     start += '0' * (15 - len(start))
                 this_starttime = datetime.datetime.combine(
@@ -253,13 +255,13 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                 last_pointing = None
 
             p = Pointing(ad)
-            needs_fixing = (bad_wcs == 'bootstrap' or
+            needs_fixing = (bad_wcs == 'new' or
                             not p.self_consistent(limit=limit))
             if base_pointing is not None:
                 needs_fixing |= not base_pointing.consistent_with(p)
 
             if needs_fixing:
-                if bad_wcs == 'bootstrap' and base_pointing is None:
+                if bad_wcs == 'new' and base_pointing is None:
                     # Create a new base Pointing and update this AD
                     log.stdinfo(p.fix_pointing())
                     for ext, wcs in zip(ad, p.wcs):
@@ -299,6 +301,8 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                     seconds=ad.exposure_time())
             else:
                 end = ad.phu['UTEND']
+                if '.' not in end:
+                    end += '.'
                 if len(end) not in (12, 15):
                     end += '0' * (15 - len(end))
                 last_endtime = datetime.datetime.combine(

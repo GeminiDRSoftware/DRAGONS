@@ -20,7 +20,7 @@ class standardizeWCSConfig(parameters_standardize.standardizeWCSConfig):
     bad_wcs = config.ChoiceField("Method for WCS handling", str,
                                  allowed={'exit': "Exit reduction if discrepant WCS found",
                                           'fix': "Attempt to fix discrepant WCS using offsets",
-                                          'bootstrap': "Create entirely new WCS from target coordinates and offsets",
+                                          'new': "Create new WCS from target coordinates and offsets",
                                           'ignore': "Do not check or fix the WCS"},
                                  default='exit')
     debug_consistency_limit = config.RangeField("Maximum discrepancy limit for pointing (arcsec)",
