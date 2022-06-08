@@ -280,9 +280,9 @@ def test_sky_correct_from_slit_with_multiple_sources():
 @pytest.mark.parametrize('filename,instrument',
                          [('N20121118S0375_stack.fits', 'GNIRS'),
                           ('S20040413S0268_stack.fits', 'GNIRS'),
-                          #('N20110718S0129_stack.fits', 'GNIRS'),
+                          ('N20110718S0129_stack.fits', 'GNIRS'),
                           ('S20140728S0282_stack.fits', 'F2'),
-                          #('S20131015S0043_stack.fits', 'F2'),
+                          ('S20131015S0043_stack.fits', 'F2'),
                           ('S20140111S0155_stack.fits', 'F2'),
                           ])
 def test_determine_slit_edges(filename, instrument, change_working_dir,
@@ -321,10 +321,10 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
         },
         'S20131015S0043_stack.fits': {
             # F2 2pix-slit, JH.
-            'c0': (45.17053063087425, 1504.0830405386002),
-            'c1': (11.25385774674868, 1.2270791863104045),
-            'c2': (13.246261896747969, -3.0923342892990133),
-            'c3': (3.8654265344995804, -0.35197477402917726)
+            'c0': (46.13487049752547, 1504.0830405386002),
+            'c1': (13.56201949988875, 1.2270791863104045),
+            'c2': (14.259955974765626, -3.0923342892990133),
+            'c3': (4.576909131898466, -0.35197477402917726)
         },
         'S20140111S0155_stack.fits': {
             # F2 2pix-slit, R3K. Efficiency drops to zero in middle.
@@ -357,7 +357,7 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
             for param in m.param_names:
                 setattr(m_ref, param, results_dict[filename][param][i])
             x = np.arange(*m.domain)
-            np.testing.assert_allclose(m(x), m_ref(x), atol=0.5)
+            np.testing.assert_allclose(m(x), m_ref(x), atol=1.)
 
 
 def test_trace_apertures():

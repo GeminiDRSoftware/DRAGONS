@@ -1327,7 +1327,7 @@ class Spect(Resample):
                            abs(expected[1] - pair[1]) < tolerance:
                             break
 
-                    log.fullinfo("Found a shift of {m_final.offset_1.value} "
+                    log.fullinfo(f"Found a shift of {m_final.offset_1.value} "
                                  "and a scale of "
                                  f"{m_final.factor_2.value}.")
                     log.fullinfo(f"Looking for edges at "
