@@ -385,26 +385,6 @@ class AstroDataNiri(AstroDataGemini):
             return [zpt - (2.5 * math.log10(g) if in_adu else 0) if zpt and g
                     else None for g in gain]
 
-    @astro_data_descriptor
-    def nonlinearity_coeffs(self):
-        """
-        Returns a namedtuple containing the necessary information to perform
-        a nonlinearity correction.
-
-        Returns
-        -------
-        namedtuple/list
-            nonlinearity info (max counts, exptime correction, gamma, eta)
-        """
-        read_mode = self.read_mode()
-        well_depth = self.well_depth_setting()
-        naxis2 = self.hdr.get('NAXIS2')
-        if self.is_single:
-            return lookup.nonlin_coeffs.get((read_mode, naxis2, well_depth))
-        else:
-            return [lookup.nonlin_coeffs.get((read_mode, size, well_depth))
-                    for size in naxis2]
-
     @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):

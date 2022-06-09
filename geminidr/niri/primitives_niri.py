@@ -76,7 +76,7 @@ class NIRI(Gemini, NearIR):
                 log.warning(f"Exposure time {exptime} for {ad.filename} is "
                             "outside the range used to derive correction.")
 
-            for ext, gain, coeffs in zip(ad, ad.gain(), ad.nonlinearity_coeffs()):
+            for ext, gain, coeffs in zip(ad, ad.gain(), self._nonlinearity_coeffs(ad)):
                 if coeffs is None:
                     log.warning("No nonlinearity coefficients found for "
                                 f"{ad.filename} extension {ext.id} - "
@@ -188,3 +188,21 @@ class NIRI(Gemini, NearIR):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
+
+    def _nonlinearity_coeffs(self, ad):
+        """
+        Returns a list of namedtuples containing the necessary information to
+        perform a nonlinearity correction. The list contains one namedtuple
+        per extension (although normal NIRI data only has a single extension).
+
+        Returns
+        -------
+        list of namedtuples
+            nonlinearity info (max counts, exptime correction, gamma, eta)
+        """
+        read_mode = ad.read_mode()
+        well_depth = ad.well_depth_setting()
+        naxis2 = ad.hdr.get('NAXIS2')
+        return [self.inst_adlookup.nonlin_coeffs.get((read_mode, size, well_depth))
+                    for size in naxis2]
+

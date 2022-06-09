@@ -109,11 +109,6 @@ class GSAOI(Gemini, NearIR):
 
         return adinputs
 
-    @staticmethod
-    def _has_valid_extensions(ad):
-        """Check the AD has a valid number of extensions"""
-        return len(ad) == 4
-
     def makeBPM(self, adinputs=None, **params):
         """
         To be run from recipe makeProcessedBPM.
@@ -213,3 +208,21 @@ class GSAOI(Gemini, NearIR):
         flat.phu.set('OBJECT', 'BPM')
         gt.mark_history(flat, primname=self.myself(), keyword=timestamp_key)
         return [flat]
+
+    def _nonlinearity_coeffs(self, ad):
+        """
+        For each extension, return a tuple (a0,a1,a2) of coefficients such
+        that the linearized counts are a0 + a1*c _ a2*c^2 for raw counts c
+
+        Returns
+        -------
+        tuple/list
+            coefficients
+        """
+        return ad._look_up_arr_property('coeffs')
+
+    @staticmethod
+    def _has_valid_extensions(ad):
+        """Check the AD has a valid number of extensions"""
+        return len(ad) == 4
+

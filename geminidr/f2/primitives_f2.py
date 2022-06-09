@@ -118,3 +118,8 @@ class F2(Gemini, NearIR):
             remove_single_length_dimension(ad)  # in-place
 
         return adinputs
+
+    def _nonlinearity_coeffs(self, ad):
+        coeffs = getattr(self.inst_adlookup.array_properties.get(ad.read_mode()),
+                         'coeffs', None)
+        return coeffs if ad.is_single else [coeffs] * len(ad)

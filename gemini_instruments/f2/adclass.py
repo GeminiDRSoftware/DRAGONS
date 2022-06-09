@@ -570,11 +570,6 @@ class AstroDataF2(AstroDataGemini):
                      else None) for g in gain]
 
     @returns_list
-    @astro_data_descriptor
-    def nonlinearity_coeffs(self):
-        return getattr(array_properties.get(self.read_mode()), 'coeffs', None)
-
-    @returns_list
     @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
