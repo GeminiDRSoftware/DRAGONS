@@ -60,7 +60,10 @@ class F2Spect(Spect, F2):
             # Apply central wavelength offset
             if ad.dispersion() is None:
                 raise ValueError(f"Unknown dispersion for {ad.filename}")
-            cenwave = ad.central_wavelength(asNanometers=True) + abs(ad.dispersion(asNanometers=True)[0]) * ad.cenwave_offset()
+            cenwave_offset = self.inst_adlookup.dispersion_and_offset[
+                ad.disperser(pretty=True), ad.filter_name(pretty=True)][1]
+            cenwave = (ad.central_wavelength(asNanometers=True) +
+                       abs(ad.dispersion(asNanometers=True)[0]) * cenwave_offset)
             transform.add_longslit_wcs(ad, central_wavelength=cenwave)
 
             # Timestamp. Suffix was updated in the super() call
@@ -78,7 +81,3 @@ class F2Spect(Spect, F2):
 
         filename = os.path.join(lookup_dir, linelist)
         return wavecal.LineList(filename)
-
-
-
-

@@ -203,25 +203,6 @@ class AstroDataF2(AstroDataGemini):
                                      output_units)
 
     @astro_data_descriptor
-    def cenwave_offset(self):
-        """
-        Returns the offset in pixels along the dispersion direction from the central row (1023)
-        to the row to which the central wavelength actually corresponds to.
-
-        Returns
-        -------
-        float
-            Offset from the central row in pixels
-
-        """
-        config = f"{self.disperser(pretty=True)}, {self.filter_name(pretty=True)}"
-
-        if config not in dispersion_and_offset:
-            return None
-        else:
-            return dispersion_and_offset.get(config)[1]
-
-    @astro_data_descriptor
     def data_section(self, pretty=False):
         """
         Returns the rectangular section that includes the pixels that would be
@@ -348,10 +329,7 @@ class AstroDataF2(AstroDataGemini):
         list/float
             The dispersion(s)
         """
-
-        grism = self.disperser(pretty=True)
-        filter = self.filter_name(pretty=True)
-        config = f"{grism}, {filter}"
+        config = (self.disperser(pretty=True), self.filter_name(pretty=True))
         if config not in dispersion_and_offset:
             return None
 
