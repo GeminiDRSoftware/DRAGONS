@@ -446,7 +446,7 @@ class resampleToCommonFrameConfig(config.Config):
 class separateSkyConfig(parameters_preprocess.separateSkyConfig):
     debug_allowable_perpendicular_offset = config.RangeField(
         "Maximum allowable offset perpendicular to the slit (arcsec)",
-        float, None, min=0, inclusiveMin=False)
+        float, None, min=0, inclusiveMin=False, optional=True)
 
 
 class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
