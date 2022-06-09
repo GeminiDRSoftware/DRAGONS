@@ -4,7 +4,7 @@ Tests for sky stacking and subtraction for GNIRS.
 """
 
 import astrodata
-from astrodata.test import download_from_archive
+from astrodata.testing import download_from_archive
 import gemini_instruments
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 import pytest
