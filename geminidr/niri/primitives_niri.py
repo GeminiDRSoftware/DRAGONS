@@ -7,6 +7,7 @@ import numpy as np
 from os import path
 
 from gempy.gemini import gemini_tools as gt
+from gemini_instruments.niri import lookup as adlookup
 
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
@@ -28,6 +29,7 @@ class NIRI(Gemini, NearIR):
 
     def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.niri.lookups'
+        self.inst_adlookup = adlookup
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_niri)
 

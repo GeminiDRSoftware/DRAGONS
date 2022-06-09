@@ -11,6 +11,7 @@ from gempy.adlibrary.manipulate_ad import remove_single_length_dimension
 from geminidr.core import NearIR
 from geminidr.gemini.primitives_gemini import Gemini
 from . import parameters_f2
+from gemini_instruments.f2 import lookup as adlookup
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -27,6 +28,7 @@ class F2(Gemini, NearIR):
 
     def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.f2.lookups'
+        self.inst_adlookup = adlookup
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2)
 

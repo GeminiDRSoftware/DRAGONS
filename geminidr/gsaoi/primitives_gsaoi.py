@@ -10,6 +10,7 @@ from geminidr.core import NearIR
 from geminidr.gemini.primitives_gemini import Gemini
 from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import parameter_override, capture_provenance
+from gemini_instruments.gsaoi import lookup as adlookup
 
 from . import parameters_gsaoi
 
@@ -26,6 +27,7 @@ class GSAOI(Gemini, NearIR):
 
     def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gsaoi.lookups'
+        self.inst_adlookup = adlookup
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gsaoi)
 
