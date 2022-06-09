@@ -18,8 +18,7 @@ def test_associate_sky(change_working_dir, path_to_inputs):
     files = ['S20200301S0071.fits', 'S20200301S0072.fits',
              'S20200301S0073.fits', 'S20200301S0074.fits']
 
-    with change_working_dir(path_to_inputs):
-        data = [astrodata.open(f) for f in files]
+    data = [astrodata.open(download_from_archive(f)) for f in files]
 
     p = F2Longslit(data)
     p.separateSky()
@@ -29,7 +28,7 @@ def test_associate_sky(change_working_dir, path_to_inputs):
     A_frames = {'S20200301S0071_skyAssociated.fits',
                 'S20200301S0074_skyAssociated.fits'}
     B_frames = {'S20200301S0072_skyAssociated.fits',
-               'S20200301S0073_skyAssociated.fits'}
+                'S20200301S0073_skyAssociated.fits'}
 
     for ad in (A1, A2):
         assert set(ad.SKYTABLE['SKYNAME']) == B_frames
