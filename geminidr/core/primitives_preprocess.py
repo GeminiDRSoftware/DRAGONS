@@ -873,7 +873,7 @@ class Preprocess(PrimitivesBASE):
 
             # Get the correction coefficients
             try:
-                nonlin_coeffs = ad.nonlinearity_coeffs()
+                nonlin_coeffs = self._nonlinearity_coeffs(ad)
             except:
                 log.warning("Unable to obtain nonlinearity coefficients for "
                             f"{ad.filename}")
