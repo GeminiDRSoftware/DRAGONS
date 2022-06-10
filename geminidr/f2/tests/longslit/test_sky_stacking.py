@@ -13,7 +13,7 @@ from geminidr.f2.primitives_f2_longslit import F2Longslit
 
 # ---- Tests ------------------------------------------------------------------
 
-def test_associate_sky(change_working_dir, path_to_inputs):
+def test_associate_sky():
 
     files = ['S20200301S0071.fits', 'S20200301S0072.fits',
              'S20200301S0073.fits', 'S20200301S0074.fits']
