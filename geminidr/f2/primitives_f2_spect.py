@@ -21,7 +21,7 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 # ------------------------------------------------------------------------------
 @parameter_override
 @capture_provenance
-class F2Spect(F2, Spect):
+class F2Spect(Spect, F2):
     """
     This is the class containing all of the preprocessing primitives
     for the F2Spect level of the type hierarchy tree. It inherits all
