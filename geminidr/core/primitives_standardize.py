@@ -82,7 +82,7 @@ class Standardize(PrimitivesBASE):
                 # So it can be zipped with the AD
                 final_static = [None] * len(ad)
             else:
-                log.fullinfo("Using {} as static BPM".format(static.filename))
+                log.stdinfo("Using {} as static BPM".format(static.filename))
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
                                                       aux_type='bpm',
                                                       return_dtype=DQ.datatype)
@@ -90,10 +90,13 @@ class Standardize(PrimitivesBASE):
             if user is None:
                 final_user = [None] * len(ad)
             else:
-                log.fullinfo("Using {} as user BPM".format(user.filename))
+                log.stdinfo("Using {} as user BPM".format(user.filename))
                 final_user = gt.clip_auxiliary_data(ad, aux=user,
                                                     aux_type='bpm',
                                                     return_dtype=DQ.datatype)
+
+            if static is None and user is None:
+                log.stdinfo(f"No BPMs found for {ad.filename} and non supplied by the user.")
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
                 if ext.mask is not None:
@@ -168,7 +171,10 @@ class Standardize(PrimitivesBASE):
                                              non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0).astype(DQ.datatype)
-
+            if static and static.filename:
+                add_provenance(ad, static.filename, md5sum(static.path) or "", self.myself())
+            if user and user.filename:
+                add_provenance(ad, user.filename, md5sum(user.path) or "", self.myself())
 
         # Handle latency if reqested
         if params.get("latency", False):
