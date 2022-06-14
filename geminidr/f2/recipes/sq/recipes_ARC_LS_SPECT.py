@@ -4,7 +4,7 @@ excluding data with tags ['FLAT', 'DARK', 'BIAS'].
 These are F2 longslit arc-lamp or sky-line calibrations.
 Default is "makeProcessedArc".
 """
-recipe_tags = {'F2', 'SPECT', 'LS'}
+recipe_tags = {'F2', 'SPECT', 'LS', 'ARC'}
 blocked_tags = {'FLAT', 'DARK', 'BIAS'}
 
 def makeProcessedArc(p):
