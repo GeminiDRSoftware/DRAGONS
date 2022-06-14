@@ -231,6 +231,10 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             if ad.tags.intersection({'ARC', 'BIAS', 'DARK', 'FLAT'}):
                 log.debug(f"Skipping {ad.filename} due to its tags")
                 continue
+            if (ad.instrument() == 'NIRI' and ad.is_ao() and
+                    ad.phu.get('CRFOLLOW') == 'no'):
+                log.fullinfo(f"Skipping {ad.filename} as the Cass rotator is fixed")
+                continue
 
             try:
                 start = ad.phu['UTSTART']
