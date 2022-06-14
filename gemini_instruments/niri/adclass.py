@@ -1,6 +1,7 @@
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
 import math
+import re
 
 from . import lookup
 from .. import gmu
@@ -494,6 +495,22 @@ class AstroDataNiri(AstroDataGemini):
                 return None
         else:
             return [int(well * coadds / g) if g and well else None for g in gain]
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.focal_plane_mask(pretty=True)
+        if 'pix' in fpmask:
+            m = re.match('f(.*)-(.*)pix', fpmask)
+            return int(m.group(2)) * 0.7 / int(m.group(1))
+        return None
 
     @astro_data_descriptor
     def well_depth_setting(self):

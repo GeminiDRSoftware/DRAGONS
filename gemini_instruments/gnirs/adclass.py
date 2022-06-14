@@ -689,6 +689,21 @@ class AstroDataGnirs(AstroDataGemini):
         return gmu.removeComponentID(slit) if stripID or pretty else slit
 
     @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.slit(pretty=True)
+        if 'arcsec' in fpmask:
+            return float(fpmask.replace('arcsec', ''))
+        return None
+
+    @astro_data_descriptor
     def well_depth_setting(self):
         """
         Returns the well depth setting used for the observation.

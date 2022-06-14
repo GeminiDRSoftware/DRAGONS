@@ -669,6 +669,21 @@ class AstroDataF2(AstroDataGemini):
                               for g in gain]
         return saturation_adu
 
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.focal_plane_mask(pretty=True)
+        if 'pix-slit' in fpmask:
+            return int(fpmask.replace('pix-slit', '')) * self.pixel_scale()
+        return None
+
     # TODO: document why these are reversed
     # Ruben Diaz thinks it has to do with the fact that the F2 long slit,
     # and the N-S direction in imaging at PA0, are along the X detector axis.

@@ -1087,6 +1087,21 @@ class AstroDataGmos(AstroDataGemini):
         return saturation
 
     @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.focal_plane_mask(pretty=True)
+        if 'arcsec' in fpmask:
+            return float(fpmask.replace('arcsec', ''))
+        return None
+
+    @astro_data_descriptor
     def wcs_ra(self):
         """
         Returns the Right Ascension of the center of the field based on the

@@ -1644,6 +1644,20 @@ class AstroDataGemini(AstroData):
         return self.phu.get(self._keyword_for('slit'))
 
     @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float
+            the slit width in arcseconds
+        """
+        if 'SPECT' in self.tags:
+            raise NotImplementedError("A slit width is not defined for this instrument")
+        return None
+
+    @astro_data_descriptor
     def target_ra(self, offset=False, pm=True, icrs=False):
         """
         Returns the Right Ascension of the target in degrees. Optionally, the

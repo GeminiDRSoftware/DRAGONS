@@ -4160,7 +4160,7 @@ class Spect(Resample):
             slit_length = (ad1[0].shape[ad1[0].dispersion_axis()-1] *
                            ad1.pixel_scale())
         if slit_width is None:
-            slit_width = ad1.slit()  # TODO: not sure about this descriptor
+            slit_width = ad1.slit_width()
         max_perpendicular_offset = max(max_perpendicular_offset or 0, slit_width)
 
         # I'm not sure where to put the abstraction here. This function in
