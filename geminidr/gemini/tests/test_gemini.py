@@ -30,11 +30,14 @@ from geminidr.f2.primitives_f2 import F2
 #                       mos.get_box_error_func(actual_area,
 #                                              box.unbinned_pixel_scale()))
 
-WCS_DATASETS = [("N20190120S0282", 5),  # NIRI+AO PA=0
-                ("N20191204S0170", 5),  # NIRI (not AO) PA=0
-                ("S20160102S0082", 5),  # F2 PA=0
-                ("N20200119S0150", 4),  # GNIRS PA=90
-                ("N20200119S0063", 8),  # GNIRS PA=110
+# First obs in sequence, number in sequence, required tolerance
+# The tolerance is larger for GNIRS because of the pixel scale uncertainty
+WCS_DATASETS = [("N20190120S0282", 5, 1.0),  # NIRI+AO PA=0
+                ("N20191204S0170", 5, 1.0),  # NIRI (not AO) PA=0
+                ("S20160102S0082", 5, 1.0),  # F2 PA=0
+                ("N20200119S0150", 4, 2.0),  # GNIRS PA=90
+                ("N20200119S0063", 8, 2.0),  # GNIRS PA=110
+                ("N20080821S0108", 7, 0.1),  # NIRI+AO PA=27.75
                 ]
 
 
@@ -149,7 +152,7 @@ def test_standardize_wcs_create_new(dataset):
 
     # NB. Because this is the Gemini version, the WCS remains in "imaging" form
     p = Gemini(adinputs)
-    p.standardizeWCS(bad_wcs="new")
+    p.standardizeWCS(bad_wcs="new", debug_max_deadtime=2000)
 
     new_coords = [ad[0].wcs(x, y) for ad in p.streams['main']]
     coords2 = [[SkyCoord(ra, dec, unit='deg') for ra, dec in zip(*c)] for c in new_coords]
@@ -158,9 +161,7 @@ def test_standardize_wcs_create_new(dataset):
     # and check that the standard deviation is small. If the PA or pixel scale
     # has been used incorrectly, the central point will be OK but the edge
     # points will be highly offset. We cannot use the maximum separation since
-    # there may be an absolute offset. The large value of 2.0" is needed because
-    # of uncertainty over the GNIRS pixel scale, which could be in error by ~1%
-    # making ~1.5" across the FOV.
+    # there may be an absolute offset.
     for c1, c2 in zip(coords1, coords2):
         separations = [cc1.separation(cc2).arcsec for cc1, cc2 in zip(c1, c2)]
-        assert np.std(separations) < 2.0
+        assert np.std(separations) < dataset[2]
