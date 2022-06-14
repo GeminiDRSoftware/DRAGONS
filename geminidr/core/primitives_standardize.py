@@ -96,7 +96,7 @@ class Standardize(PrimitivesBASE):
                                                     return_dtype=DQ.datatype)
 
             if static is None and user is None:
-                log.stdinfo(f"No BPMs found for {ad.filename} and non supplied by the user.")
+                log.stdinfo(f"No BPMs found for {ad.filename} and none supplied by the user.")
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
                 if ext.mask is not None:
