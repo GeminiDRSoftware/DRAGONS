@@ -340,6 +340,7 @@ class Pointing:
 
     def __init__(self, ad):
         self.phu = ad.phu.copy()
+        self.instrument = ad.instrument()
         self.wcs = [ext.wcs for ext in ad]
         self.target_coords = SkyCoord(ad.target_ra(), ad.target_dec(),
                                       unit=u.deg)
@@ -436,16 +437,17 @@ class Pointing:
             # right when North is up may depend on the port the instrument is
             # on, but we can assume that the matrix in the header is correct
             # in this regard since the instrument won't have switched ports.
+            # Not true for GNIRS where there was a sign error, but GNIRS is
+            # always flipped (East is to the right if North is up).
             flipped = (aftran.matrix[0, 0] * aftran.matrix[1, 1] > 0 or
-                       aftran.matrix[0, 1] * aftran.matrix[1, 0] < 0)
+                       aftran.matrix[0, 1] * aftran.matrix[1, 0] < 0 or
+                       self.instrument == "GNIRS")
             new_matrix = self.pixel_scale / 3600 * np.identity(2)
             pa = -self.pa if flipped else self.pa
             new_matrix = np.asarray(models.Rotation2D(pa)(*new_matrix))
             if not flipped:
                 new_matrix[0] *= -1
             aftran.matrix = new_matrix
-            c1 = SkyCoord(*wcs(1024, 1024), unit='deg')
-            c2 = SkyCoord(*wcs(1524, 1024), unit='deg')
 
         return f"Reset WCS for {self.filename} using target coordinates"
 

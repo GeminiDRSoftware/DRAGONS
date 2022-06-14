@@ -2,12 +2,15 @@ import copy
 import datetime
 import pytest
 
+import numpy as np
 from numpy.testing import assert_allclose
 from astropy.coordinates import SkyCoord
 
 import astrodata
+from astrodata.testing import download_from_archive
 from gempy.utils import logutils
 from geminidr.gemini.primitives_gemini import Gemini
+from geminidr.f2.primitives_f2 import F2
 
 # --- Delete me? ---
 # @pytest.fixture(scope='module')
@@ -27,6 +30,13 @@ from geminidr.gemini.primitives_gemini import Gemini
 #                       mos.get_box_error_func(actual_area,
 #                                              box.unbinned_pixel_scale()))
 
+WCS_DATASETS = [("N20190120S0282", 5),  # NIRI+AO PA=0
+                ("N20191204S0170", 5),  # NIRI (not AO) PA=0
+                ("S20160102S0082", 5),  # F2 PA=0
+                ("N20200119S0150", 4),  # GNIRS PA=90
+                ("N20200119S0063", 8),  # GNIRS PA=110
+                ]
+
 
 STAR_POSITIONS = [(200., 200.), (300.5, 800.5)]
 
@@ -44,10 +54,9 @@ def gemini_image(astrofaker):
 
 
 @pytest.fixture(scope='function')
-def niri_sequence():
+def niri_sequence(astrofaker):
     """Creates a 3x3 NIRI dither sequence but does not update the WCS;
     only the offsets show the dither"""
-    import astrofaker
     adinputs = [astrofaker.create('NIRI', 'IMAGE', filename=f"N20010101S{i:04d}.fits") for i in range(1, 10)]
     for i, ad in enumerate(adinputs):
         # All ADs have the same WCS. Modify the offsets to be inconsistent
@@ -113,3 +122,45 @@ def test_standardize_wcs_handle(bad_wcs, niri_sequence):
         else:
             # Does update them, so the pointing will all be around RA=270
             assert sep_from_target < 2
+
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("dataset", WCS_DATASETS)
+def test_standardize_wcs_create_new(dataset):
+    """Create a completely new WCS for a dither pattern and confirm that
+    the orientation/pixel scales are approximately correct."""
+    start = int(dataset[0][10:14])
+    filenames = [f"{dataset[0][:10]}{{:04d}}.fits".format(i)
+                 for i in range(start, start+dataset[1])]
+    files = [download_from_archive(f) for f in filenames]
+    adinputs = [astrodata.open(f) for f in files]
+
+    # Remove third dimension
+    if adinputs[0].instrument() == "F2":
+        p = F2(adinputs)
+        p.standardizeStructure()
+
+    # Create 3x3 grid of pixel locations at corners and centre
+    slices = [slice(None, l+1, l//2) for l in adinputs[0][0].shape]
+    y, x = np.mgrid[slices]
+
+    coords = [ad[0].wcs(x, y) for ad in adinputs]
+    coords1 = [[SkyCoord(ra, dec, unit='deg') for ra, dec in zip(*c)] for c in coords]
+
+    # NB. Because this is the Gemini version, the WCS remains in "imaging" form
+    p = Gemini(adinputs)
+    p.standardizeWCS(bad_wcs="new")
+
+    new_coords = [ad[0].wcs(x, y) for ad in p.streams['main']]
+    coords2 = [[SkyCoord(ra, dec, unit='deg') for ra, dec in zip(*c)] for c in new_coords]
+
+    # Compare WCS coords of those pixels in the pre- and post-modified ADs
+    # and check that the standard deviation is small. If the PA or pixel scale
+    # has been used incorrectly, the central point will be OK but the edge
+    # points will be highly offset. We cannot use the maximum separation since
+    # there may be an absolute offset. The large value of 2.0" is needed because
+    # of uncertainty over the GNIRS pixel scale, which could be in error by ~1%
+    # making ~1.5" across the FOV.
+    for c1, c2 in zip(coords1, coords2):
+        separations = [cc1.separation(cc2).arcsec for cc1, cc2 in zip(c1, c2)]
+        assert np.std(separations) < 2.0
