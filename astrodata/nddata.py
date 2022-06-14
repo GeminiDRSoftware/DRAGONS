@@ -490,8 +490,11 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
 
     def transpose(self):
         unc = self.uncertainty
+        new_wcs = deepcopy(self.wcs)
+        inframe = new_wcs.input_frame
+        new_wcs.insert_transform(inframe, models.Mapping(tuple(reversed(range(inframe.naxes)))), after=True)
         return self.__class__(
             self.data.T,
             uncertainty=None if unc is None else unc.__class__(unc.array.T),
-            mask=None if self.mask is None else self.mask.T, copy=False
+            mask=None if self.mask is None else self.mask.T, wcs=new_wcs, copy=False
         )
