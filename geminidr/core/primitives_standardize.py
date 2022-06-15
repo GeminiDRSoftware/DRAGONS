@@ -82,7 +82,7 @@ class Standardize(PrimitivesBASE):
                 # So it can be zipped with the AD
                 final_static = [None] * len(ad)
             else:
-                log.stdinfo("Using {} as static BPM".format(static.filename))
+                log.stdinfo("Using {} as static BPM\n".format(static.filename))
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
                                                       aux_type='bpm',
                                                       return_dtype=DQ.datatype)
