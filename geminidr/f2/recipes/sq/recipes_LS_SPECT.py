@@ -17,17 +17,16 @@ def reduceScience(p):
     p.prepare()
     p.addDQ()
     p.nonlinearityCorrect() # non-linearity correction tbd even for gemini iraf
-    #p.writeOutputs() # delete me after verification 
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
     p.darkCorrect()
     #p.writeOutputs() # delete me after dark correction verification
     p.flatCorrect()
     #p.writeOutputs() # delete me after flat correction verification
-    #p.attachWavelengthSolution()
+    p.attachWavelengthSolution()
     #p.writeOutputs() # delete me after wavecal verification
     # TBD below 
-    # p.distortionCorrect()
+    p.distortionCorrect()
     # p.writeOutputs()
     # p.separateSky()
     # p.associateSky()
@@ -36,11 +35,11 @@ def reduceScience(p):
     # p.resampleToCommonFrame()
     # p.scaleCountsToReference()
     # p.stackFrames()
-    # p.findApertures()
-    # p.traceApertures()
-    # p.storeProcessedScience(suffix="_2D")
-    # p.extractSpectra()
-    # p.storeProcessedScience(suffix="_1D")
+    p.findApertures()
+    p.traceApertures()
+    p.storeProcessedScience(suffix="_2D")
+    p.extractSpectra()
+    p.storeProcessedScience(suffix="_1D")
     
     
 _default = reduceScience

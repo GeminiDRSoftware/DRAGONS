@@ -942,10 +942,9 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         except IndexError:
             slit_model = models.Identity(1)
         slit_model.name = 'SKY'
-        if dispaxis == 1:
-            transform = m_final & slit_model
-        else:
-            transform = slit_model & m_final
+        transform = m_final & slit_model
+        if dispaxis == 0:
+            transform = models.Mapping((1, 0)) | transform
         ext.wcs = gWCS([(ext.wcs.input_frame, transform),
                         (output_frame, None)])
 

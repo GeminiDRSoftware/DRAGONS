@@ -806,7 +806,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
         max_separation /= ext.pixel_scale()
         target_location = ext.wcs.invert(
             ext.central_wavelength(asNanometers=True), ext.target_ra(),
-            ext.target_dec())[2 - ext.dispersion_axis()]
+            ext.target_dec())[1]
         if not np.isnan(target_location):
             ok_apertures.update({i: False for i, x in enumerate(peaks)
                                  if abs(target_location - x) > max_separation})

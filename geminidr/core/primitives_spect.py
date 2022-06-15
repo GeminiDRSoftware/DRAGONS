@@ -541,10 +541,9 @@ class Spect(Resample):
               enumerate(zip(ad, wave_models, wave_frames, sky_models,
                             output_frames)):
 
-                if ext.dispersion_axis() == 1:
-                    t = wave_model & sky_model
-                else:
-                    t = sky_model & wave_model
+                t = wave_model & sky_model
+                if ext.dispersion_axis() == 2:
+                    t = models.Mapping((1, 0)) | t
                 # We need to create a new output frame with a copy of the
                 # ARC's SpectralFrame in case there's a change from air->vac
                 # or vice versa
@@ -2115,7 +2114,10 @@ class Spect(Resample):
                 # data, mask, variance are all arrays in the GMOS orientation
                 # with spectra dispersed horizontally
                 if dispaxis == 0:
-                    ext = ext.transpose()
+                    ext_oriented = ext.__class__(
+                        nddata=ext.nddata.T, phu=ad.phu, is_single=True)
+                else:
+                    ext_oriented = ext
 
                 if interactive:
                     # build config for interactive
@@ -2138,10 +2140,11 @@ class Spect(Resample):
 
                     # pass "direction" purely for logging purposes
                     locations, all_limits = interactive_find_source_apertures(
-                        ext, ui_params=ui_params, **aper_params, direction="column" if dispaxis == 0 else "row")
+                        ext_oriented, ui_params=ui_params, **aper_params,
+                        direction="column" if dispaxis == 0 else "row")
                 else:
                     locations, all_limits, _, _ = tracing.find_apertures(
-                        ext, **aper_params)
+                        ext_oriented, **aper_params)
 
                 if locations is None or len(locations) == 0:
                     # Delete existing APERTURE table
