@@ -73,24 +73,6 @@ class LineList:
         """Weights of the individual lines for fitting routines"""
         return self._weights
 
-    def copy_bracketed(self, lower_limit, higher_limit):
-        """
-        Create a new LineList but restricting the line wavelengths to those
-        within the specified bracket.
-        """
-
-        new = LineList()
-        new._units = self._units
-        new._in_vacuo = self._in_vacuo
-        new._decimals = self._decimals
-
-        mask = np.logical_and(self._lines >= lower_limit, self._lines <= higher_limit)
-        new._lines = self._lines[mask]
-        if self._weights is not None:
-            new._weights = self._weights[mask]
-
-        return new
-
     def read_linelist(self, filename):
         """
         Read a text file containing the reference line list
@@ -343,6 +325,10 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
                                    c1=0.5 * dispersion * (npix - 1),
                                    domain=[0, npix-1])
     else:
+        # The next line is a quick fix of the central wavelength being
+        # shifted when calculated from the WCS model. Remove when it's fixed. -OS
+        central_wavelength = ext.central_wavelength(asNanometers=True)
+
         ndim = len(ext.shape)
         axis_dict = {ndim-i-1: axes.get(i, 0.5 * (length-1))
                      for i, length in enumerate(ext.shape) if i != dispersion_axis}
@@ -632,14 +618,14 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             if (score < best_score) and is_within_wvl_toler == True:
                 best_fit = fit1d
                 best_score = score
-            # elif ext.instrument()=="GNIRS" and best_fit == None:
-            #     best_fit = initial_model_fit
-            #     display_initial_model = True
-            #     print(f"NO MODELS WITHIN WVL TOLERANCE, returning the initial model")
+            elif ext.instrument()=="GNIRS" and best_fit == None:
+                print(f"NO MODELS WITHIN WVL TOLERANCE, returning the initial model")
+                return initial_model_fit, False, True
             #TODO: catch the case where there is no best_fit and not interactive
         elif config.interactive and ext.instrument()=="GNIRS" and best_fit == None:
-            print(f"NO LINE MATCHES, returning the initial model - well, not really initial?")
+            print(f"NO LINE MATCHES, returning the initial model")
             return initial_model_fit, False, True
+
     return best_fit, False, False
 
 
