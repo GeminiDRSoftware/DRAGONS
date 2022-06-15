@@ -292,21 +292,21 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
     # illuminated region of the given flats.
     results_dict = {
         'N20121118S0375_stack.fits': {
-            # GNIRS LongBlue, off right edge of detector.
+            # GNIRS 111/mm LongBlue, off right edge of detector.
             'c0': (33.532680341140335, 1025.8427086736597),
             'c1': (-6.962491642935299, -6.962491642935299),
             'c2': (-0.008639441981396224, -0.008639441981396224),
             'c3': (0.006629301489564899, 0.006629301489564899)
         },
         'S20040413S0268_stack.fits': {
-            # GNIRS ShortRed, centered
+            # GNIRS 32/mm ShortRed, centered
             'c0': (175.1038780784617, 833.0919423028884),
             'c1': (-1.539657063828468, -1.1023324795483416),
             'c2': (-0.18673502127430647, 0.2131179499350503),
             'c3': (-0.014948550646791112, 0.006686383003339903)
         },
         'N20110718S0129_stack.fits': {
-            # GNIRS LongRed, slit length shorter than normal this one night.
+            # GNIRS 10/mm LongRed, one-off slit length shorter than normal.
             'c0': (3.566833182251458, 897.1397974632922),
             'c1': (-6.0544148638266035, -9.960620341672538),
             'c2': (0.8947922316257532, 0.025634028590147614),

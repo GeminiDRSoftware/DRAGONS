@@ -3979,35 +3979,16 @@ class Spect(Resample):
             A 2-length tuple of lists of expected pixel postions for the left and
             right edges of slits.
         """
-
-        if ad.instrument() == 'F2':
-            # TODO: Revisit whether we want to create MDFs for F2 or stick with the
-            # LUT here.
-            f2_illum_edges = {'1pix': ([17], [1526]),
-                              '2pix': ([33], [1506]),
-                              '3pix': ([15], [1525]),
-                              '4pix': ([21], [1524]),
-                              '6pix': ([22], [1532]),
-                              '8pix': ([16], [1526])}
-
-            maskname = ad.phu['MASKNAME'].split('-')[0]
-            return f2_illum_edges[maskname]
-
-        # arsec/mm for f/16 on an 8m telescope.
-        arcsecmm = 1.61144
-
+        # TODO: Currently this only handles longslit MDFs.
         exp_edges_l, exp_edges_r = [], []
 
         # Get values from the MDF attached to the ad object.
         x_ccd = ad.MDF['x_ccd'][0]
-        slitsize_mx = ad.MDF['slitsize_mx'][0]
+        half_slit_px = ad.MDF['slitlength_pixels'][0] / 2.
 
-        # Here, 'm' in a variable name means 'in millimeters', 'p' means
-        # 'in pixels'. pixel_scale() is in arcsec/pixel. Slit widths are in
-        # mm, so we need to convert to pixels.
-        slitsize_px = slitsize_mx * arcsecmm / ad.pixel_scale()
-        exp_edges_l.append(x_ccd - (slitsize_px / 2.))
-        exp_edges_r.append(x_ccd + (slitsize_px / 2.))
+        # Calculate slit edges based on center and slit length.
+        exp_edges_l.append(x_ccd - (half_slit_px))
+        exp_edges_r.append(x_ccd + (half_slit_px))
 
         return exp_edges_l, exp_edges_r
 
