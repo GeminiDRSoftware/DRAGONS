@@ -4,8 +4,7 @@ excluding data with tags ['FLAT', 'DARK', 'BIAS'].
 These are GNIRS longslit arc-lamp or sky-line calibrations.
 Default is "makeProcessedArc".
 """
-recipe_tags = {'GNIRS', 'SPECT', 'LS'}
-blocked_tags = {'FLAT', 'DARK', 'BIAS'}
+recipe_tags = {'GNIRS', 'SPECT', 'LS', 'ARC'}
 
 def makeProcessedArc(p):
     p.prepare()

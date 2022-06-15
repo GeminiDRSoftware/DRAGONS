@@ -5,7 +5,6 @@ These are F2 longslit arc-lamp or sky-line calibrations.
 Default is "makeProcessedArc".
 """
 recipe_tags = {'F2', 'SPECT', 'LS', 'ARC'}
-blocked_tags = {'FLAT', 'DARK', 'BIAS'}
 
 def makeProcessedArc(p):
     p.prepare()
@@ -13,8 +12,8 @@ def makeProcessedArc(p):
     p.addVAR(read_noise=True)
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
-    p.darkCorrect() # opt for cals from skylines?
-    p.flatCorrect() # opt for cals from skylines?
+    p.darkCorrect()
+    p.flatCorrect()
     p.stackFrames()
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
