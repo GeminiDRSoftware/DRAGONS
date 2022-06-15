@@ -541,10 +541,9 @@ class Spect(Resample):
               enumerate(zip(ad, wave_models, wave_frames, sky_models,
                             output_frames)):
 
-                if ext.dispersion_axis() == 1:
-                    t = wave_model & sky_model
-                else:
-                    t = sky_model & wave_model
+                t = wave_model & sky_model
+                if ext.dispersion_axis() == 2:
+                    t = models.Mapping((1, 0)) | t
                 # We need to create a new output frame with a copy of the
                 # ARC's SpectralFrame in case there's a change from air->vac
                 # or vice versa
