@@ -155,7 +155,8 @@ class GMOSClassicLongslit(GMOSSpect):
                 # arrays and using a big chunk of memory. Try at least to
                 # control memory usage
                 #####row_medians = np.zeros((ad[0].shape[0] + 2 * mshift,))
-                all_data = np.zeros((ad[0].shape[0], ad[-1].detector_section().x2 // xbin))
+                max_xsize = max([ext.detector_section().x2 for ext in ad]) // xbin
+                all_data = np.zeros((ad[0].shape[0], max_xsize))
                 for ext in ad:
                     _slice = (slice(None), slice(ext.detector_section().x1 // xbin,
                                                  ext.detector_section().x2 // xbin))

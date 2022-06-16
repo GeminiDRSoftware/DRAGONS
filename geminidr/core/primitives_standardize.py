@@ -82,7 +82,7 @@ class Standardize(PrimitivesBASE):
                 # So it can be zipped with the AD
                 final_static = [None] * len(ad)
             else:
-                log.stdinfo("Using {} as static BPM".format(static.filename))
+                log.stdinfo("Using {} as static BPM\n".format(static.filename))
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
                                                       aux_type='bpm',
                                                       return_dtype=DQ.datatype)
@@ -96,7 +96,7 @@ class Standardize(PrimitivesBASE):
                                                     return_dtype=DQ.datatype)
 
             if static is None and user is None:
-                log.stdinfo(f"No BPMs found for {ad.filename} and none supplied by the user.")
+                log.stdinfo(f"No BPMs found for {ad.filename} and none supplied by the user.\n")
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
                 if ext.mask is not None:
