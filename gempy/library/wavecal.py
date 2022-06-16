@@ -325,9 +325,10 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
                                    c1=0.5 * dispersion * (npix - 1),
                                    domain=[0, npix-1])
     else:
-        # The next line is a quick fix of the central wavelength being
+        # The next two lines are a quick fix of the central wavelength being
         # shifted when calculated from the WCS model. Remove when it's fixed. -OS
-        central_wavelength = ext.central_wavelength(asNanometers=True)
+        if ext.instrument()=="GNIRS":
+            central_wavelength = ext.central_wavelength(asNanometers=True)
 
         ndim = len(ext.shape)
         axis_dict = {ndim-i-1: axes.get(i, 0.5 * (length-1))
