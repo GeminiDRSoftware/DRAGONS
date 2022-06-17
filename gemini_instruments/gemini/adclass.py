@@ -273,7 +273,7 @@ class AstroDataGemini(AstroData):
 
     @astro_data_tag
     def _type_bad_pixel_mask(self):
-        if 'BPMASK' or 'PROCBPM' in self.phu:
+        if 'BPMASK' in self.phu or 'PROCBPM' in self.phu:
             return TagSet(['BPM', 'CAL', 'PROCESSED'],
                             blocks=['IMAGE', 'SPECT', 'NON_SIDEREAL',
                                     'AZEL_TARGET',
