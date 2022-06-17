@@ -1,4 +1,4 @@
-+"""
+"""
 Recipes available to data with tags ['GNIRS', 'SPECT', LS'].
 Default is "reduceScience".
 """
