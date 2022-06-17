@@ -505,7 +505,8 @@ def test_store_bpm(ad, monkeypatch):
     assert(len(storecal_args[0][0]) == 1)
     assert(storecal_args[0][1] == 'processed_bpm')
     saved_bpm = storecal_args[0][0][0]
-    assert(saved_bpm.filename == 'N20010101S0001_ql_bpm.fits')
+    # _bpm is not added as in reality these files will be named bpm_xyz.fits
+    assert(saved_bpm.filename == 'N20010101S0001_ql.fits')
     assert(saved_bpm.phu['PROCMODE'] == 'ql')
     assert(saved_bpm.phu['PROCBPM'])
     # not checking datalab, it will be quite different from input, unlike the various cal types
