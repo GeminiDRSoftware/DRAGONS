@@ -316,8 +316,11 @@ class AstroDataGsaoi(AstroDataGemini):
         orig_gain = self._look_up_arr_property('gain')
         gain = self.gain()
         if self.is_single:
-            return welldepth * orig_gain / gain
-        return [w * o / g for w, o, g in zip(welldepth, orig_gain, gain)]
+            try:
+                return welldepth * orig_gain / gain
+            except TypeError:
+                return None
+        return [w * o / g if w and o and g else None for w, o, g in zip(welldepth, orig_gain, gain)]
 
     @astro_data_descriptor
     def wcs_ra(self):
