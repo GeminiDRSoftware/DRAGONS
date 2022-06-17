@@ -56,11 +56,11 @@ class F2Spect(Spect, F2):
 
         for ad in adinputs:
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-            # Apply central wavelength offset
             if ad.dispersion() is None:
                 raise ValueError(f"Unknown dispersion for {ad.filename}")
-            cenwave = ad.central_wavelength(asNanometers=True) + abs(ad.dispersion(asNanometers=True)[0]) * ad.cenwave_offset()
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
+            cenwave = ad.central_wavelength(asNanometers=True)
+            transform.add_longslit_wcs(ad, central_wavelength=cenwave,
+                           pointing=ad[0].wcs(1024, 1024 + ad.cenwave_offset()))
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
