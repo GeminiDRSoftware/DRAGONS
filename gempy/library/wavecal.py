@@ -405,7 +405,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     fit1d, acceptable_fit = find_solution(
         init_models, ui_params, peaks=peaks, peak_weights=weights[ui_params.values["weighting"]],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
-        filename=ext.filename)
+        filename=ext.filename, ext=ext)
 
     input_data["fit"] = fit1d
     return input_data, fit1d, acceptable_fit
@@ -515,7 +515,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,
-                  kdsigma=1, k=1, filename=None):
+                  kdsigma=1, k=1, filename=None, ext=None):
     """
     Find the best wavelength solution from the set of initial models.
 
@@ -532,6 +532,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     best_score = np.inf
     arc_lines = linelist.wavelengths(in_vacuo=config.in_vacuo, units="nm")
     arc_weights = linelist.weights
+    best_fit = None
 
     # Create an initial fit_1D object using the initial wavelength model
     # (always the first model in the init_models list) as a fallback in case
@@ -555,7 +556,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     fit1d.image = np.array([])
     fit1d.points = np.array([])
     fit1d.mask = np.array([], dtype=bool)
-    best_fit = fit1d
+    initial_model_fit = fit1d
 
     # Iterate over models most rapidly
     for loc_start, min_lines_per_fit, model in cart_product(
@@ -563,6 +564,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
+
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
                                         kdsigma, order=config.order,
                                         min_lines_per_fit=min_lines_per_fit,
@@ -621,6 +623,28 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             if score < best_score:
                 best_fit = fit1d
 
+            #is_within_wvl_toler = True
+            # According to GNIRS page:
+            # 1) Wavelength coverages are accurate to +/-2 percent.
+            # 2) Actual wavelength settings are accurate to better than 5 percent of the wavelength coverage.
+            #if ext.instrument()=="GNIRS":
+            #    wvl_toler = abs((len_data+1) * ext.dispersion(asNanometers=True) * 1.02 * 0.05)
+            #    waves_init = np.array([model(0),model(len_data)])
+            #    waves_final = m_final(np.array([0, len_data]))
+            #    if (abs(waves_init - waves_final) > wvl_toler).any():
+            #        is_within_wvl_toler = False
+            #if (score < best_score) and is_within_wvl_toler == True:
+            #    best_fit = fit1d
+            #    best_score = score
+            #elif ext.instrument()=="GNIRS" and best_fit == None:
+            #    print(f"NO MODELS WITHIN WVL TOLERANCE, returning the initial model")
+            #    return initial_model_fit, False, True
+            #TODO: catch the case where there is no best_fit and not interactive
+        #elif config.interactive and ext.instrument()=="GNIRS" and best_fit == None:
+        #    print(f"NO LINE MATCHES, returning the initial model")
+        #    return initial_model_fit, False, True
+
+    return initial_model_fit, False
     return best_fit, False
 
 
