@@ -1449,8 +1449,7 @@ def add_longslit_wcs(ad, central_wavelength=None, pointing=None):
         raise ValueError(f"Unknown dispersion for {ad.filename}")
 
     for ext, dispaxis, dw in zip(ad, ad.dispersion_axis(), ad.dispersion(asNanometers=True)):
-        wcs = ext.wcs
-        if not isinstance(wcs.output_frame, cf.CelestialFrame):
+        if not isinstance(ext.wcs.output_frame, cf.CelestialFrame):
             raise TypeError(f"Output frame of {ad.filename} extension {ext.id}"
                             " is not a CelestialFrame instance")
 
@@ -1463,14 +1462,17 @@ def add_longslit_wcs(ad, central_wavelength=None, pointing=None):
                                           axes_names='AWAV')
         output_frame = cf.CompositeFrame([spectral_frame, sky_frame], name='world')
 
-        transform = wcs.forward_transform
-        crpix = wcs.invert(*pointing)
+        transform = adwcs.create_new_image_projection(ext.wcs.forward_transform, pointing)
+        crpix = transform.inverse(*pointing)
+
         transform.name = None  # so we can reuse "SKY"
         #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :-crpix})
         if dispaxis == 1:
-            sky_model = models.Mapping((0, 0)) | (models.Const1D(0) & models.Shift(-crpix[1]))
+            sky_model = (models.Mapping((0, 0)) |
+                         (models.Const1D(0) & models.Shift(-crpix[1])))
         else:
-            sky_model = models.Mapping((0, 0)) | (models.Shift(-crpix[0]) & models.Const1D(0))
+            sky_model = (models.Mapping((0, 0)) |
+                         (models.Shift(-crpix[0]) & models.Const1D(0)))
         sky_model |= transform[2:]
         sky_model[-1].lon, sky_model[-1].lat = pointing
         sky_model.name = 'SKY'
@@ -1486,7 +1488,7 @@ def add_longslit_wcs(ad, central_wavelength=None, pointing=None):
                                  models.Mapping((0,), n_inputs=2))
             transform = models.Mapping((1, 0)) | wave_model & sky_model
 
-        new_wcs = gWCS([(wcs.input_frame, transform),
+        new_wcs = gWCS([(ext.wcs.input_frame, transform),
                         (output_frame, None)])
         ext.wcs = new_wcs
 

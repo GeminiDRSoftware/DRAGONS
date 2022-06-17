@@ -1,5 +1,6 @@
 import math
 import pytest
+import numpy as np
 from numpy.testing import assert_allclose
 
 from astropy.modeling import models
@@ -198,3 +199,29 @@ def test_adding_longslit_wcs(GMOS_LONGSLIT):
     gwcs_coords = new_gwcs(0, crpix2)
     new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
     assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
+
+
+# Coordinates of projection center and new projection center
+@pytest.mark.parametrize("coords", ([(0, 0), (0.1, -0.1)],
+                                    [(120, -50), (119.5, -49.5)],
+                                    [(270, 89.9), (0, 89)]))
+@pytest.mark.parametrize("flip", (True, False))
+def test_create_new_image_projection(flip, coords):
+    shifts = (100, 200)
+    shifts = models.Shift(shifts[0]) & models.Shift(shifts[1])
+    pixscale = 1.0
+    angle = 0
+    matrix = np.asarray(models.Rotation2D(angle)(*(np.identity(2) * pixscale / 3600)))
+    if not flip:
+        matrix[0] *= -1
+    lon, lat = coords[0]
+    projection = (models.AffineTransformation2D(matrix=matrix) |
+                  models.Pix2Sky_Gnomonic() |
+                  models.RotateNative2Celestial(lon=lon, lat=lat, lon_pole=180))
+    transform = shifts | projection
+    new_transform = adwcs.create_new_image_projection(transform, coords[1])
+    for x in (0, 1000):
+        for y in (0, 1000):
+            c1 = SkyCoord(*transform(x, y), unit='deg')
+            c2 = SkyCoord(*new_transform(x, y), unit='deg')
+            assert c1.separation(c2).arcsec < 0.5
