@@ -611,13 +611,14 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                         f"{nmatched} {fit1d.rms}")
 
             # Trial and error suggests this criterion works well
-            if fit1d.rms < 0.2 * fwidth * abs(dw) and nmatched > config.order + 2:
+            if fit1d.rms < 0.2 * fwidth * abs(dw) and nmatched >= config.order + 2:
                 return fit1d, True
 
             # This seems to be a reasonably ranking for poor models
             score = fit1d.rms / max(nmatched - config.order - 1, np.finfo(float).eps)
             if score < best_score:
                 best_fit = fit1d
+                best_score = score
 
             #is_within_wvl_toler = True
             # According to GNIRS page:
