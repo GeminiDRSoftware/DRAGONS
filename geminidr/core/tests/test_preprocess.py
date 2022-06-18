@@ -19,6 +19,9 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
                            assert_array_equal)
 
+from recipe_system.cal_service.userdb import UserDB
+from recipe_system.cal_service.caldb import CalReturn
+
 DEBUG = bool(os.getenv('DEBUG', False))
 
 nonlinearity_datasets = (
@@ -41,10 +44,14 @@ def niri_images(niri_image):
     return NIRIImage(adinputs)
 
 @pytest.fixture
-def niriprim():
+def niriprim(monkeypatch):
     file_path = download_from_archive("N20190120S0287.fits")
     ad = astrodata.open(file_path)
     p = NIRIImage([ad])
+
+    def mock_get_processed_bpm(*args, **kwargs):
+        return CalReturn(['/Users/ooberdorf/DRAGONS/geminidr/niri/lookups/BPM/NIRI_bpm.fits'], [None])
+    monkeypatch.setattr(p.caldb, "get_processed_bpm", mock_get_processed_bpm)
     p.addDQ()
     return p
 
