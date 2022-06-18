@@ -50,7 +50,7 @@ def niriprim(monkeypatch):
     p = NIRIImage([ad])
 
     def mock_get_processed_bpm(*args, **kwargs):
-        return CalReturn(['/Users/ooberdorf/DRAGONS/geminidr/niri/lookups/BPM/NIRI_bpm.fits'], [None])
+        return CalReturn(['geminidr/niri/lookups/BPM/NIRI_bpm.fits'], [None])
     monkeypatch.setattr(p.caldb, "get_processed_bpm", mock_get_processed_bpm)
     p.addDQ()
     return p
