@@ -487,7 +487,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     # (i.e., first time through the loop)
     if linelist is None:
         linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext)
-    log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} arc lines")
+    # This wants to be logged even in interactive mode
+    p.log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} arc lines")
 
     m_init = [m_init]
     kdsigma = fwidth * abs(dw0)
