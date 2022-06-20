@@ -610,8 +610,14 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             log.stdinfo(f"{filename} {repr(fit1d.model)} "
                         f"{nmatched} {fit1d.rms}")
 
+            # Calculate how many lines *could* be fit. We require a constrained
+            # fit but also that it fits some reasonable number of lines
+            wmin, wmax = sorted(fit1d.evaluate(points=(0, len_data)))
+            nfittable_lines = np.sum(np.logical_and(arc_lines > wmin, arc_lines < wmax))
+            min_matches_required = max(config.order + min(nfittable_lines // 2, 3), 2)
+
             # Trial and error suggests this criterion works well
-            if fit1d.rms < 0.2 * fwidth * abs(dw) and nmatched >= config.order + 2:
+            if fit1d.rms < 0.2 * fwidth * abs(dw) and nmatched >= min_matches_required:
                 return fit1d, True
 
             # This seems to be a reasonably ranking for poor models
@@ -641,6 +647,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         #    print(f"NO LINE MATCHES, returning the initial model")
         #    return initial_model_fit, False, True
 
+    # Need to reconsider exit model (maybe return initial if interactive and best otherwise?)
     return initial_model_fit, False
     return best_fit, False
 
