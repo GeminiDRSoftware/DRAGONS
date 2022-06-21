@@ -57,13 +57,12 @@ def test_set_calibration(ad, monkeypatch):
     :return:
     """
     test_gemini = gemini.Gemini([ad])
-    global test_adinputs
-    global test_parms
     test_adinputs = None
     test_parms = None
+
     def mock_set_calibrations(adinputs, **parms):
-        global test_adinputs
-        global test_parms
+        nonlocal test_adinputs
+        nonlocal test_parms
         test_adinputs = adinputs
         test_parms = parms
     monkeypatch.setattr(test_gemini.caldb, 'set_calibrations', mock_set_calibrations)
@@ -78,13 +77,12 @@ def test_set_calibration(ad, monkeypatch):
 def test_get_processed_arc(ad, monkeypatch):
     adinputs = [ad]
     test_gemini = gemini.Gemini(adinputs)
-    global saved_adinputs
-    global saved_procmode
     saved_adinputs = None
     saved_procmode = None
+
     def mock_get_processed_arc(adinputs, procmode=None):
-        global saved_adinputs
-        global saved_procmode
+        nonlocal saved_adinputs
+        nonlocal saved_procmode
         saved_adinputs = adinputs
         saved_procmode = procmode
         return {}
@@ -104,13 +102,12 @@ def test_get_processed_arc(ad, monkeypatch):
 def test_get_processed_bias(ad, monkeypatch):
     adinputs = [ad]
     test_gemini = gemini.Gemini(adinputs)
-    global saved_adinputs
-    global saved_procmode
     saved_adinputs = None
     saved_procmode = None
+
     def mock_get_processed_bias(adinputs, procmode=None):
-        global saved_adinputs
-        global saved_procmode
+        nonlocal saved_adinputs
+        nonlocal saved_procmode
         saved_adinputs = adinputs
         saved_procmode = procmode
         return {}
@@ -130,13 +127,12 @@ def test_get_processed_bias(ad, monkeypatch):
 def test_get_processed_dark(ad, monkeypatch):
     adinputs = [ad]
     test_gemini = gemini.Gemini(adinputs)
-    global saved_adinputs
-    global saved_procmode
     saved_adinputs = None
     saved_procmode = None
+
     def mock_get_processed_dark(adinputs, procmode=None):
-        global saved_adinputs
-        global saved_procmode
+        nonlocal saved_adinputs
+        nonlocal saved_procmode
         saved_adinputs = adinputs
         saved_procmode = procmode
         return {}
@@ -156,13 +152,12 @@ def test_get_processed_dark(ad, monkeypatch):
 def test_get_processed_flat(ad, monkeypatch):
     adinputs = [ad]
     test_gemini = gemini.Gemini(adinputs)
-    global saved_adinputs
-    global saved_procmode
     saved_adinputs = None
     saved_procmode = None
+
     def mock_get_processed_flat(adinputs, procmode=None):
-        global saved_adinputs
-        global saved_procmode
+        nonlocal saved_adinputs
+        nonlocal saved_procmode
         saved_adinputs = adinputs
         saved_procmode = procmode
         return {}
@@ -182,13 +177,12 @@ def test_get_processed_flat(ad, monkeypatch):
 def test_get_processed_fringe(ad, monkeypatch):
     adinputs = [ad]
     test_gemini = gemini.Gemini(adinputs)
-    global saved_adinputs
-    global saved_procmode
     saved_adinputs = None
     saved_procmode = None
+
     def mock_get_processed_fringe(adinputs, procmode=None):
-        global saved_adinputs
-        global saved_procmode
+        nonlocal saved_adinputs
+        nonlocal saved_procmode
         saved_adinputs = adinputs
         saved_procmode = procmode
         return {}
@@ -208,13 +202,12 @@ def test_get_processed_fringe(ad, monkeypatch):
 def test_get_processed_standard(ad, monkeypatch):
     adinputs = [ad]
     test_gemini = gemini.Gemini(adinputs)
-    global saved_adinputs
-    global saved_procmode
     saved_adinputs = None
     saved_procmode = None
+
     def mock_get_processed_standard(adinputs, procmode=None):
-        global saved_adinputs
-        global saved_procmode
+        nonlocal saved_adinputs
+        nonlocal saved_procmode
         saved_adinputs = adinputs
         saved_procmode = procmode
         return {}
@@ -234,13 +227,12 @@ def test_get_processed_standard(ad, monkeypatch):
 def test_get_processed_slitillum(ad, monkeypatch):
     adinputs = [ad]
     test_gemini = gemini.Gemini(adinputs)
-    global saved_adinputs
-    global saved_procmode
     saved_adinputs = None
     saved_procmode = None
+
     def mock_get_processed_slitillum(adinputs, procmode=None):
-        global saved_adinputs
-        global saved_procmode
+        nonlocal saved_adinputs
+        nonlocal saved_procmode
         saved_adinputs = adinputs
         saved_procmode = procmode
         return {}
@@ -257,16 +249,40 @@ def test_get_processed_slitillum(ad, monkeypatch):
     assert(adinputs_out == adinputs)
 
 
+def test_get_processed_bpm(ad, monkeypatch):
+    adinputs = [ad]
+    test_gemini = gemini.Gemini(adinputs)
+    saved_adinputs = None
+    saved_procmode = None
+
+    def mock_get_processed_bpm(adinputs, procmode=None):
+        nonlocal saved_adinputs
+        nonlocal saved_procmode
+        saved_adinputs = adinputs
+        saved_procmode = procmode
+        return {}
+    monkeypatch.setattr(test_gemini.caldb, "get_processed_bpm", mock_get_processed_bpm)
+    test_gemini.mode = 'ql'
+    adinputs_out = test_gemini.getBPM(adinputs)
+    assert(saved_adinputs == adinputs)
+    assert(saved_procmode is None)
+    assert(adinputs_out == adinputs)
+    test_gemini.mode = 'sq'
+    adinputs_out = test_gemini.getBPM(adinputs)
+    assert(saved_adinputs == adinputs)
+    assert(saved_procmode == 'sq')
+    assert(adinputs_out == adinputs)
+
+
 def test_get_mdf(ad, monkeypatch):
     adinputs = [ad]
     test_gemini = gemini.Gemini(adinputs)
-    global saved_adinputs
-    global saved_caltype
     saved_adinputs = None
     saved_caltype = None
+
     def mock_get_calibrations(adinputs, caltype=None):
-        global saved_adinputs
-        global saved_caltype
+        nonlocal saved_adinputs
+        nonlocal saved_caltype
         saved_adinputs = adinputs
         saved_caltype = caltype
         return {}
@@ -282,6 +298,7 @@ def test_store_calibration(ad, monkeypatch):
     cals2 = [make_ad('GMOS-N', 'IMAGE'), make_ad('GMOS-N', 'IMAGE')]
     test_gemini = gemini.Gemini([ad])
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -299,6 +316,7 @@ def test_store_calibration(ad, monkeypatch):
     cals2 = [make_ad('GMOS-N', 'IMAGE'), make_ad('GMOS-N', 'IMAGE')]
     test_gemini = gemini.Gemini([ad])
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -316,6 +334,7 @@ def test_store_processed_arc(ad, monkeypatch):
     test_gemini = gemini.Gemini([ad])
     test_gemini.mode = 'ql'
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -335,6 +354,7 @@ def test_store_processed_bias(ad, monkeypatch):
     test_gemini = gemini.Gemini([ad])
     test_gemini.mode = 'ql'
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -354,6 +374,7 @@ def test_store_processed_dark(ad, monkeypatch):
     test_gemini = gemini.Gemini([ad])
     test_gemini.mode = 'ql'
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -373,6 +394,7 @@ def test_store_processed_flat(ad, monkeypatch):
     test_gemini = gemini.Gemini([ad])
     test_gemini.mode = 'ql'
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -392,6 +414,7 @@ def test_store_processed_fringe(ad, monkeypatch):
     test_gemini = gemini.Gemini([ad])
     test_gemini.mode = 'ql'
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -412,6 +435,7 @@ def test_store_processed_science(ad, monkeypatch):
     test_gemini = gemini.Gemini([ad])
     test_gemini.mode = 'ql'
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -431,6 +455,7 @@ def test_store_processed_standard(ad, monkeypatch):
     test_gemini = gemini.Gemini([ad])
     test_gemini.mode = 'ql'
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -451,6 +476,7 @@ def test_store_processed_slitillum(ad, monkeypatch):
     test_gemini = gemini.Gemini([ad])
     test_gemini.mode = 'ql'
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
@@ -470,15 +496,17 @@ def test_store_bpm(ad, monkeypatch):
     test_gemini = gemini.Gemini([ad])
     test_gemini.mode = 'ql'
     storecal_args = list()
+
     def mock_store_calibration(cals, caltype):
         storecal_args.append((cals, caltype))
     monkeypatch.setattr(test_gemini, "storeCalibration", mock_store_calibration)
     test_gemini.storeBPM([bpm])
     assert(len(storecal_args) == 1)
     assert(len(storecal_args[0][0]) == 1)
-    assert(storecal_args[0][1] == 'bpm')
-    saved_arc = storecal_args[0][0][0]
-    assert(saved_arc.filename == 'N20010101S0001_ql_bpm.fits')
-    assert(saved_arc.phu['PROCMODE'] == 'ql')
-    assert(saved_arc.phu['BPM'])
+    assert(storecal_args[0][1] == 'processed_bpm')
+    saved_bpm = storecal_args[0][0][0]
+    # _bpm is not added as in reality these files will be named bpm_xyz.fits
+    assert(saved_bpm.filename == 'N20010101S0001_ql.fits')
+    assert(saved_bpm.phu['PROCMODE'] == 'ql')
+    assert(saved_bpm.phu['PROCBPM'])
     # not checking datalab, it will be quite different from input, unlike the various cal types

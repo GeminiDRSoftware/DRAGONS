@@ -16,6 +16,7 @@ REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
                      'processed_fringe': ['PROCESSED', 'FRINGE'],
                      'processed_standard': ['PROCESSED', 'STANDARD'],
                      'processed_slitillum': ['PROCESSED', 'SLITILLUM'],
+                     'processed_bpm': ['PROCESSED', 'BPM'],
                      'bpm': ['BPM'],
                      'mask': ['MASK'],
                      }

@@ -273,7 +273,7 @@ class AstroDataGemini(AstroData):
 
     @astro_data_tag
     def _type_bad_pixel_mask(self):
-        if 'BPMASK' in self.phu:
+        if 'BPMASK' in self.phu or 'PROCBPM' in self.phu:
             return TagSet(['BPM', 'CAL', 'PROCESSED'],
                             blocks=['IMAGE', 'SPECT', 'NON_SIDEREAL',
                                     'AZEL_TARGET',
@@ -614,6 +614,8 @@ class AstroDataGemini(AstroData):
         # We assume that the central_wavelength keyword is in microns
         keyword = self._keyword_for('central_wavelength')
         wave_in_microns = self.phu.get(keyword, -1)
+        # Convert to float if they saved it as a string
+        wave_in_microns = float(wave_in_microns) if isinstance(wave_in_microns, str) else wave_in_microns
         if wave_in_microns < 0:
             return None
         return gmu.convert_units('micrometers', wave_in_microns,

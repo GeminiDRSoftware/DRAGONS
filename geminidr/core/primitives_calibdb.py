@@ -103,6 +103,12 @@ class CalibDB(PrimitivesBASE):
         self._assert_calibrations(adinputs, cals)
         return adinputs
 
+    def getBPM(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_bpm(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
+        return adinputs
+
     def getMDF(self, adinputs=None):
         cals = self.caldb.get_calibrations(adinputs, caltype="mask")
         self._assert_calibrations(adinputs, cals)
@@ -137,7 +143,7 @@ class CalibDB(PrimitivesBASE):
             mode = ad.phu['PROCMODE']
 
             # if user mode: not uploading and sq, don't add mode.
-            if mode is 'sq' and (not self.upload or 'calibs' not in self.upload) :
+            if mode == 'sq' and (not self.upload or 'calibs' not in self.upload) :
                 proc_suffix = f""
             else:
                 proc_suffix = f"_{mode}"
@@ -172,13 +178,14 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeBPM(self, adinputs=None, suffix=None):
-        caltype = 'bpm'
+    def storeBPM(self, adinputs=None, suffix=None, force=False):
+        caltype = 'processed_bpm'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
-                                            keyword_comments=self.keyword_comments)
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
+                                                keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                                           primname=self.myself(), update_datalab=False, keyword="BPM")
+                                           primname=self.myself(), update_datalab=False, keyword="PROCBPM")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 

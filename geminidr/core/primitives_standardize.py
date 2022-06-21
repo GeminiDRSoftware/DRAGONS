@@ -65,7 +65,11 @@ class Standardize(PrimitivesBASE):
         user_bpm_list = params['user_bpm']
 
         if static_bpm_list == "default":
-            static_bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
+            static_bpm_list = self.caldb.get_processed_bpm(adinputs)
+            if static_bpm_list is not None:
+                static_bpm_list = static_bpm_list.files
+            else:
+                static_bpm_list = [None] * len(adinputs)
 
         for ad, static, user in zip(*gt.make_lists(adinputs, static_bpm_list,
                                                    user_bpm_list, force_ad=True)):
@@ -78,7 +82,7 @@ class Standardize(PrimitivesBASE):
                 # So it can be zipped with the AD
                 final_static = [None] * len(ad)
             else:
-                log.fullinfo("Using {} as static BPM".format(static.filename))
+                log.stdinfo("Using {} as static BPM\n".format(static.filename))
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
                                                       aux_type='bpm',
                                                       return_dtype=DQ.datatype)
@@ -86,10 +90,13 @@ class Standardize(PrimitivesBASE):
             if user is None:
                 final_user = [None] * len(ad)
             else:
-                log.fullinfo("Using {} as user BPM".format(user.filename))
+                log.stdinfo("Using {} as user BPM".format(user.filename))
                 final_user = gt.clip_auxiliary_data(ad, aux=user,
                                                     aux_type='bpm',
                                                     return_dtype=DQ.datatype)
+
+            if static is None and user is None:
+                log.stdinfo(f"No BPMs found for {ad.filename} and none supplied by the user.\n")
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
                 if ext.mask is not None:
@@ -164,7 +171,10 @@ class Standardize(PrimitivesBASE):
                                              non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0).astype(DQ.datatype)
-
+            if static and static.filename:
+                add_provenance(ad, static.filename, md5sum(static.path) or "", self.myself())
+            if user and user.filename:
+                add_provenance(ad, user.filename, md5sum(user.path) or "", self.myself())
 
         # Handle latency if reqested
         if params.get("latency", False):
@@ -524,6 +534,7 @@ class Standardize(PrimitivesBASE):
             else:
                 ext.hdr['VARNOISE'] += ', read'
 
+    # TODO remove this if we truly migrate off of LUT based BPM lookups and rely on the calibration matching
     def _get_bpm_filename(self, ad):
         """
         Gets the BPM filename for an input science frame. Takes bpm_dict from
