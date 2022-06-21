@@ -8,6 +8,8 @@ from importlib import import_module
 
 import numpy as np
 
+from datetime import datetime
+
 import astrodata
 import gemini_instruments
 
@@ -24,6 +26,8 @@ from .lookups import maskdb
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
 from recipe_system.utils.decorators import parameter_override
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class GMOS(Gemini, CCD):
@@ -39,19 +43,48 @@ class GMOS(Gemini, CCD):
         self.inst_lookups = 'geminidr.gmos.lookups'
         self._param_update(parameters_gmos)
 
-    def maskAmp5(self, adinputs=None, suffix=None):
+    def maskFaultyAmp(self, adinputs=None, **params):
         log = self.log
+
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = 'MASKAMP5'
 
-        if 'NORTH' in adinputs[0].tags:
+        suffix = params["suffix"]
+        instrument = params["instrument"]
+        badamps = params["bad_amps"]
+        validfromstr = params["valid_from"]
+        validtostr = params["valid_to"]
+
+        if badamps is None or instrument is None:
             return adinputs
+        elif badamps:
+            try:
+                badamplist = [int(x) for x in badamps.split(',')]
+            except AttributeError:  # not a str, must be int
+                badamplist = [badamps]
+
+        if validfromstr:
+            validfrom = datetime.strptime(validfromstr, '%Y%m%d')
+        else:
+            validfrom = datetime(1900, 1, 1)
+
+        if validtostr:
+            validto = datetime.strptime(validtostr, '%Y%m%d')
+        else:
+            validto = datetime(2200, 1, 1)
 
         for ad in adinputs:
-            log.status('Masking Amp 5')
+            if instrument == ad.instrument() and \
+                    validfrom.date() <= ad.ut_date() <= validto.date():
 
-            amp5_mask = np.ones(ad[4].mask.shape, dtype=ad[4].mask.dtype)
-            ad[4].mask = amp5_mask
+                ampsstr = ', '.join([str(i) for i in badamplist])
+                plural = 's' if len(ampsstr) > 1 else ''
+                log.status(f'Masking amp{plural} {ampsstr}')
+
+                for amp in badamplist:
+                    ext = amp - 1
+                    mask = np.ones(ad[ext].mask.shape, dtype=ad[ext].mask.dtype)
+                    ad[ext].mask = mask
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
@@ -112,7 +145,7 @@ class GMOS(Gemini, CCD):
             # Update keywords in the image extensions. The descriptors return
             # the true values on unprepared data.
             descriptors = ['pixel_scale', 'read_noise', 'gain_setting',
-                               'gain', 'saturation_level']
+                           'gain', 'saturation_level']
             for desc in descriptors:
                 keyword = ad._keyword_for(desc)
                 comment = self.keyword_comments[keyword]
@@ -201,9 +234,10 @@ class GMOS(Gemini, CCD):
                 dsec_list = ad.data_section()
                 osec_list = ad.overscan_section()
                 for ext, dsec, osec in zip(ad, dsec_list, osec_list):
-                    ext.hdr['BIASSEC'] = '[{}:{},{}:{}]'.format(osec.x1+1,
-                                                    osec.x2, y1+1, osec.y2)
-                    #ext.hdr['DATASEC'] = '[{}:{},{}:{}]'.format(dsec.x1+1,
+                    ext.hdr['BIASSEC'] = '[{}:{},{}:{}]'.format(osec.x1 + 1,
+                                                                osec.x2, y1 + 1,
+                                                                osec.y2)
+                    # ext.hdr['DATASEC'] = '[{}:{},{}:{}]'.format(dsec.x1+1,
                     #                                dsec.x2, y1+1, dsec.y2)
 
         adinputs = super().subtractOverscan(adinputs, **params)
@@ -231,7 +265,8 @@ class GMOS(Gemini, CCD):
         det = ad.detector_name(pretty=True)[:3]
         amps = '{}amp'.format(3 * ad.phu['NAMPS'])
         mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
-            or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
+                            or ad.phu.get(
+                    self.timestamp_keys['tileArrays'])) else ''
         mode_key = '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
 
         db_matches = sorted((k, v) for k, v in maskdb.bpm_dict.items() \
@@ -245,8 +280,8 @@ class GMOS(Gemini, CCD):
             return None
 
         # Prepend standard path if the filename doesn't start with '/'
-        return bpm if bpm.startswith(os.path.sep) else os.path.join(bpm_dir, bpm)
-
+        return bpm if bpm.startswith(os.path.sep) else os.path.join(bpm_dir,
+                                                                    bpm)
 
     def _get_illum_mask_filename(self, ad):
         """
@@ -272,7 +307,8 @@ class GMOS(Gemini, CCD):
         if mode:
             mode = mode.pop()
         else:  # DARK/BIAS (only F2 K-band darks for flats should get here)
-            log.fullinfo("{} not IMAGE or SPECT: no illumination mask".format(ad.filename))
+            log.fullinfo("{} not IMAGE or SPECT: no illumination mask".format(
+                ad.filename))
             return None
 
         try:
@@ -284,7 +320,7 @@ class GMOS(Gemini, CCD):
 
         # illumMask_dict is loaded.
         bpm_dir = os.path.join(os.path.dirname(masks.__file__), 'BPM')
-        key= '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
+        key = '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
 
         for illumkey in illum_dict.keys():
             if illumkey.startswith(key):
@@ -296,4 +332,5 @@ class GMOS(Gemini, CCD):
 
         log.stdinfo("Retrieved mask: {}".format(mask))
         # Prepend standard path if the filename doesn't start with '/'
-        return mask if mask.startswith(os.path.sep) else os.path.join(bpm_dir, mask)
+        return mask if mask.startswith(os.path.sep) else os.path.join(bpm_dir,
+                                                                      mask)
