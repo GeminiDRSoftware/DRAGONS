@@ -69,13 +69,12 @@ class F2Longslit(F2Spect):
             # anyything, but it will check if the file already has an MDF table
             self._addMDF(ad, suffix, mdf)
 
-            try:
-                mdf = ad.MDF
+            if hasattr(ad, 'MDF'):
                 continue
-            except AttributeError:
+            else:
                 log.stdinfo(f"Creating MDF table for F2 file {ad.filename}.")
 
-                maskname = ad.phu['MASKNAME'].split('-')[0]
+                maskname = ad.focal_plane_mask(pretty=True).split('-')[0]
 
                 mdf_table = Table(np.array(f2_slit_info[maskname]),
                                   names=('x_ccd', 'slitlength_arcsec',

@@ -1105,15 +1105,12 @@ class Spect(Resample):
                                                 "order": 3})
         for ad in adinputs:
 
-            # F2 doesn't have mask definition files, so only check for them if
-            # this is a GNIRS observation.
-            if ad.instrument() == 'GNIRS':
-                try:
-                    getattr(ad, "MDF")
-                except AttributeError:
-                    log.warning(f"MDF not found for {ad.filename} - no "
-                                "SLITEDGE table will be created.")
-                    continue
+            try:
+                getattr(ad, "MDF")
+            except AttributeError:
+                log.warning(f"MDF not found for {ad.filename} - no "
+                            "SLITEDGE table will be created.")
+                continue
 
             log.stdinfo(f'Finding edges of illuminated region for {ad.filename}')
 
@@ -1133,8 +1130,8 @@ class Spect(Resample):
             mdf_edge_guesses = [(l, r) for l, r in zip(exp_edges_l,
                                                        exp_edges_r)]
             log.fullinfo('Expected edge positions:\n'
-                         f'Left edges: {exp_edges_l}\n'
-                         f'Right edges: {exp_edges_r}\n')
+                         f'Left/bottom edges: {exp_edges_l}\n'
+                         f'Right/top edges: {exp_edges_r}\n')
 
             # This is the number of rows/columns to sum around the row with
             # the maxium flux to create the profile for finding edges, to
@@ -1149,6 +1146,7 @@ class Spect(Resample):
             for ext in ad:
 
                 dispaxis = 2 - ext.dispersion_axis()
+                log.fullinfo(f'Dispersion axis is axis {dispaxis}.')
 
                 # Find the row with the highest median flux, at least `offset`
                 # pixels away from the edge of the detector.
@@ -1157,7 +1155,8 @@ class Spect(Resample):
                     axis=ext.dispersion_axis()-1)
                 cut = collapsed[offset:-offset].argmax()
                 cut += offset
-                log.fullinfo(f'Creating profile around row {cut}.')
+                row_or_col = 'row' if dispaxis == 0 else 'column'
+                log.fullinfo(f'Creating profile around {row_or_col} {cut}.')
 
                 # Take the first derivative of flux to find the slit edges.
                 # Left edges will be peaks, right edges troughs, so make a
@@ -1166,10 +1165,17 @@ class Spect(Resample):
                 diffarr_r = -diffarr_l
 
                 # Take median of a small slice to smooth over cosmic rays:
-                median_slice_l = np.median(diffarr_l[cut-offset:cut+offset, :],
-                                            axis=[dispaxis])
-                median_slice_r = np.median(diffarr_r[cut-offset:cut+offset, :],
-                                            axis=[dispaxis])
+                s = slice(cut-offset, cut+offset)
+                if dispaxis == 0:
+                    median_slice_l = np.median(diffarr_l[s, :],
+                                                axis=[dispaxis])
+                    median_slice_r = np.median(diffarr_r[s, :],
+                                                axis=[dispaxis])
+                elif dispaxis == 1:
+                    median_slice_l = np.median(diffarr_l[:, s],
+                                                axis=[dispaxis])
+                    median_slice_r = np.median(diffarr_r[:, s],
+                                                axis=[dispaxis])
 
                 # Search for position of peaks in the first derivative of flux
                 # perpendicular to the dispersion direction. Apply a 3.5-sigma
@@ -1199,13 +1205,13 @@ class Spect(Resample):
                                                             peaks=positions_r)
 
                 log.fullinfo('Found edge candidates at:\n'
-                             f'Left: {positions_l}\n'
-                             f'Right: {positions_r}')
+                             f'Left/bottom: {positions_l}\n'
+                             f'Right/top: {positions_r}')
                 if debug:
                     # Print a diagnostic plot of the profile being fitted.
                     plt.plot(median_slice_l, label='1st-derivative of flux')
                     plt.plot(median_slice_r, label='Inverse')
-                    plt.xlabel('Column number')
+                    plt.xlabel(f'{row_or_col.capitalize()} number')
                     plt.legend()
 
                 # Check if both edges have been located; if the list returned
@@ -1398,7 +1404,7 @@ class Spect(Resample):
                             if debug:
                                 plt.plot(in_coords_new[1-dispaxis], weights,
                                          label='Weights')
-                                plt.xlabel('Row number')
+                                plt.xlabel(f'{row_or_col.capitalize()} number')
                                 plt.legend()
                                 plt.show()
 
@@ -1407,7 +1413,6 @@ class Spect(Resample):
                                 in_coords_new[dispaxis],
                                 weights=np.sqrt(weights),
                                 domain=[0, ext.shape[1 - dispaxis] - 1],
-                                axis=dispaxis,
                                 points=in_coords_new[1 - dispaxis],
                                 plot=debug,
                                 **fit1d_params,)
@@ -1422,12 +1427,12 @@ class Spect(Resample):
                     if pair['left'] is None and pair['right'] is not None:
                         pair['left'] = deepcopy(pair['right'])
                         pair['left']['c0'] -= slit_widths[key]
-                        log.debug("Copying right edge to left.")
+                        log.debug("Copying right/top edge to left/bottom.")
 
                     if pair['right'] is None and pair['left'] is not None:
                         pair['right'] = deepcopy(pair['left'])
                         pair['right']['c0'] += slit_widths[key]
-                        log.debug("Copying left edge to right.")
+                        log.debug("Copying left/bottom edge to right/top.")
 
                 # With all edges fitted (or not), create the SLITEDGE table.
                 edge_num = 0
@@ -2770,18 +2775,31 @@ class Spect(Resample):
 
                     # Create a NumPy mesh grid to hold the mask.
                     x, y = np.mgrid[0:width, 0:height]
-                    y1 = model1(y)
-                    y2 = model2(y)
 
-                    # Mask outside the two edges of the (single) longslit.
-                    mask = (x < y1) | (x > y2)
+                    if dispaxis == 0:
+                        y1 = model1(y)
+                        y2 = model2(y)
+
+                        # Mask outside the two edges of the (single) longslit.
+                        mask = (x < y1) | (x > y2)
+
+                    elif dispaxis == 1:
+                        x1 = model1(x)
+                        x2 = model2(x)
+
+                        mask = (y < x1) | (y > x2)
+
                     ext.mask |= mask.T * DQ.unilluminated
 
                     if debug:
                         # Show a plot of the DQ plane after applying the mask
                         plt.subplot(111)
                         plt.imshow(ext.mask, origin='lower', cmap='gray')
+                        plt.xlabel('X')
+                        plt.ylabel('Y')
                         plt.show()
+
+                # TODO: Handle MOS data.
 
         return adinputs
 
@@ -3969,12 +3987,10 @@ class Spect(Resample):
     def _get_slit_edge_estimates(self, ad):
         """Return a list of pairs of slit edges in the given observation.
 
-        This particular implementation works for GNIRS data. Other instruments will
-        need special handling.
-
         Parameters
         ----------
         ad : AstroData instance
+            The object to find the slit edges in.
 
         Returns
         -------
@@ -3986,12 +4002,15 @@ class Spect(Resample):
         exp_edges_l, exp_edges_r = [], []
 
         # Get values from the MDF attached to the ad object.
-        x_ccd = ad.MDF['x_ccd'][0]
+        if ad.dispersion_axis()[0] == 2:
+            center = ad.MDF['x_ccd'][0]
+        elif ad.dispersion_axis()[0] == 1:
+            center = ad.MDF['y_ccd'][0]
         half_slit_px = ad.MDF['slitlength_pixels'][0] / 2.
 
         # Calculate slit edges based on center and slit length.
-        exp_edges_l.append(x_ccd - (half_slit_px))
-        exp_edges_r.append(x_ccd + (half_slit_px))
+        exp_edges_l.append(center - (half_slit_px))
+        exp_edges_r.append(center + (half_slit_px))
 
         return exp_edges_l, exp_edges_r
 
