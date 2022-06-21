@@ -784,6 +784,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     # either noise spikes or artifacts
     # Start by removing low-S/N apertures
     ok_apertures = {i: snr >= min_snr for i, snr in enumerate(snrs)}
+
     # Remove apertures too close to other apertures
     for i, (peak1, limit1, snr1) in enumerate(zip(peaks, all_limits, snrs)):
         for j, (peak2, limit2, snr2) in enumerate(list(zip(peaks, all_limits, snrs))[i+1:], start=i+1):
@@ -804,7 +805,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
         max_separation /= ext.pixel_scale()
         target_location = ext.wcs.invert(
             ext.central_wavelength(asNanometers=True), ext.target_ra(),
-            ext.target_dec())[2 - ext.dispersion_axis()]
+            ext.target_dec())[1]
         if not np.isnan(target_location):
             ok_apertures.update({i: False for i, x in enumerate(peaks)
                                  if abs(target_location - x) > max_separation})
@@ -818,8 +819,11 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
             if width > height / min_snr * 20:
                 ok_apertures[i] = False
             # Eliminate things with square edges that are likely artifacts
-            elif (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
-                ok_apertures[i] = False
+            if (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
+                # But keep them if the square edge butts up against another aperture
+                if not ((i > 0 and limits[0] - all_limits[i-1][1] < 1) or
+                        (i < len(peaks) - 1 and all_limits[i+1][0] - limits[1] < 1)):
+                    ok_apertures[i] = False
         # Remove apertures that don't appear in a smoothed version of the
         # data (these are basically noise peaks)
         if spline(peak) - spline(limits).min() < stddev:
@@ -907,6 +911,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
                     where=variance > 0)
+
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
