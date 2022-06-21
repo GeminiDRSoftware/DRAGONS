@@ -786,6 +786,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     # either noise spikes or artifacts
     # Start by removing low-S/N apertures
     ok_apertures = {i: snr >= min_snr for i, snr in enumerate(snrs)}
+
     # Remove apertures too close to other apertures
     for i, (peak1, limit1, snr1) in enumerate(zip(peaks, all_limits, snrs)):
         for j, (peak2, limit2, snr2) in enumerate(list(zip(peaks, all_limits, snrs))[i+1:], start=i+1):
@@ -821,7 +822,10 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
                 ok_apertures[i] = False
             # Eliminate things with square edges that are likely artifacts
             if (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
-                ok_apertures[i] = False
+                # But keep them if the square edge butts up against another aperture
+                if not ((i > 0 and limits[0] - all_limits[i-1][1] < 1) or
+                        (i < len(peaks) - 1 and all_limits[i+1][0] - limits[1] < 1)):
+                    ok_apertures[i] = False
         # Remove apertures that don't appear in a smoothed version of the
         # data (these are basically noise peaks)
         if spline(peak) - spline(limits).min() < stddev:
