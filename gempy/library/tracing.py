@@ -35,8 +35,6 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
-from matplotlib import pyplot as plt
-
 from . import astrotools as at
 from ..utils.decorators import insert_descriptor_values, unpack_nddata
 
@@ -821,7 +819,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
             if width > height / min_snr * 20:
                 ok_apertures[i] = False
             # Eliminate things with square edges that are likely artifacts
-            if (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
+            elif (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
                 # But keep them if the square edge butts up against another aperture
                 if not ((i > 0 and limits[0] - all_limits[i-1][1] < 1) or
                         (i < len(peaks) - 1 and all_limits[i+1][0] - limits[1] < 1)):
