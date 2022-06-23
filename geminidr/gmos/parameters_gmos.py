@@ -4,6 +4,18 @@ from gempy.library import config
 from geminidr.core import parameters_visualize, parameters_ccd
 from geminidr.gemini import parameters_qa
 
+def badamps_check(value):
+    try:
+        badamps = [int(x) for x in value.split(',')]
+    except AttributeError:  # not a str, must be int
+        if value is None:
+            return True
+        return value > 0
+    except ValueError:  # items are not int-able
+        return False
+    else:
+        return len(badamps) >= 1 and min(badamps) > 0
+
 class displayConfig(parameters_visualize.displayConfig):
     remove_bias = config.Field("Remove estimated bias level before displaying?", bool, True)
 
@@ -12,6 +24,14 @@ class measureBGConfig(parameters_qa.measureBGConfig):
 
 class measureIQConfig(parameters_qa.measureIQConfig):
     remove_bias = config.Field("Remove estimated bias level before displaying?", bool, True)
+
+class maskFaultyAmpConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_badAmpMasked", optional=True)
+    instrument = config.Field("Applicable instrument", str, None, optional=True)
+    bad_amps = config.Field("Amps to mask as a list", (int, str), None,
+                                optional=True, check=badamps_check)
+    valid_from = config.Field("Mask data taken after this date (YYYYMMDD)", str, None, optional=True)
+    valid_to = config.Field("Mask data taken before this date (YYYYMMDD)", str, None, optional=True)
 
 class subtractOverscanConfig(parameters_ccd.subtractOverscanConfig):
     nbiascontam = config.RangeField("Number of columns to exclude from averaging",
