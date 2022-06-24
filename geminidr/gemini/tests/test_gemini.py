@@ -32,12 +32,16 @@ from geminidr.f2.primitives_f2 import F2
 
 # First obs in sequence, number in sequence, required tolerance
 # The tolerance is larger for GNIRS because of the pixel scale uncertainty
+# The same is true of F2 actually, there's a 5" difference along the entire
+# 6' slit
 WCS_DATASETS = [("N20190120S0282", 5, 1.0),  # NIRI+AO PA=0
                 ("N20191204S0170", 5, 1.0),  # NIRI (not AO) PA=0
                 ("S20160102S0082", 5, 1.0),  # F2 PA=0
                 ("N20200119S0150", 4, 2.0),  # GNIRS PA=90
                 ("N20200119S0063", 8, 2.0),  # GNIRS PA=110
                 ("N20080821S0108", 7, 0.1),  # NIRI+AO PA=27.75
+                ("S20170308S0070", 4, 0.75),  # F2 LS (ABBA) PA=135
+                ("N20120105S0104", 4, 1.0),  # GNIRS LS (ABBA) PA=15
                 ]
 
 
@@ -128,24 +132,29 @@ def test_standardize_wcs_handle(bad_wcs, niri_sequence):
 
 
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("dataset", WCS_DATASETS)
+@pytest.mark.parametrize("dataset", WCS_DATASETS[-1:])
 def test_standardize_wcs_create_new(dataset):
     """Create a completely new WCS for a dither pattern and confirm that
     the orientation/pixel scales are approximately correct."""
     start = int(dataset[0][10:14])
     filenames = [f"{dataset[0][:10]}{{:04d}}.fits".format(i)
                  for i in range(start, start+dataset[1])]
-    files = [download_from_archive(f) for f in filenames]
-    adinputs = [astrodata.open(f) for f in files]
+    #files = [download_from_archive(f) for f in filenames]
+    adinputs = [astrodata.open(f) for f in filenames]
 
     # Remove third dimension
     if adinputs[0].instrument() == "F2":
         p = F2(adinputs)
         p.standardizeStructure()
 
-    # Create 3x3 grid of pixel locations at corners and centre
-    slices = [slice(None, l+1, l//2) for l in adinputs[0][0].shape]
-    y, x = np.mgrid[slices]
+    if 'IMAGE' in adinputs[0].tags:
+        # Create 3x3 grid of pixel locations at corners and centre
+        slices = [slice(None, l + 1, l // 2) for l in adinputs[0][0].shape]
+        y, x = np.mgrid[slices]
+    else:
+        # 10 positions along the slit
+        x = np.linspace(0, adinputs[0][0].shape[1], 10)
+        y = np.full_like(x, adinputs[0][0].shape[0] // 2)
 
     coords = [ad[0].wcs(x, y) for ad in adinputs]
     coords1 = [[SkyCoord(ra, dec, unit='deg') for ra, dec in zip(*c)] for c in coords]

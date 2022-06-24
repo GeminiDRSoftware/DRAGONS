@@ -42,7 +42,7 @@ class GNIRSSpect(Spect, GNIRS):
         self._param_update(parameters_gnirs_spect)
 
     # TODO: for data prior 2015 update WCS? otherwise go to primitives_spect?
-    def standardizeWCS(self, adinputs=None, suffix=None):
+    def standardizeWCS(self, adinputs=None, **params):
         """
         This primitive updates the WCS attribute of each NDAstroData extension
         in the input AstroData objects. For spectroscopic data, it means
@@ -57,15 +57,15 @@ class GNIRSSpect(Spect, GNIRS):
         log = self.log
         timestamp_key = self.timestamp_keys[self.myself()]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        super().standardizeWCS(adinputs, **params)
 
         for ad in adinputs:
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
             cenwave = ad.central_wavelength(asNanometers=True)
             transform.add_longslit_wcs(ad, central_wavelength=cenwave)
 
-            # Timestamp and update filename
+            # Timestamp. Suffix was updated in the super() call
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def determineWavelengthSolution(self, adinputs=None, **params):
