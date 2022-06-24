@@ -139,8 +139,8 @@ def test_standardize_wcs_create_new(dataset):
     start = int(dataset[0][10:14])
     filenames = [f"{dataset[0][:10]}{{:04d}}.fits".format(i)
                  for i in range(start, start+dataset[1])]
-    #files = [download_from_archive(f) for f in filenames]
-    adinputs = [astrodata.open(f) for f in filenames]
+    files = [download_from_archive(f) for f in filenames]
+    adinputs = [astrodata.open(f) for f in files]
 
     # Remove third dimension
     if adinputs[0].instrument() == "F2":
