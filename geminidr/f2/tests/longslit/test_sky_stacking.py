@@ -17,6 +17,8 @@ def test_associate_sky_abba():
     files = ['S20200301S0071.fits', 'S20200301S0072.fits',
              'S20200301S0073.fits', 'S20200301S0074.fits']
 
+    data = [astrodata.open(download_from_archive(f)) for f in files]
+
     p = F2Longslit(data)
     p.separateSky()
     p.associateSky()
