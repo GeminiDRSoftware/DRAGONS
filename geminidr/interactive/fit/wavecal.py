@@ -57,6 +57,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
 
+        if len(x) == 0:
+            kwargs["initial_fit"] = meta["fit"]
+
         super().__init__(visualizer, fitting_parameters, domain, x, y,
                          weights=weights, **kwargs)
 
@@ -64,9 +67,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # models are returned by the Visualizer, not the Panel instances
         self.model.meta = meta
         self.model.allow_poor_fits = False
-
-        if meta['display_initial_model'] == True:
-            self.model.data.data = dict((key, list()) for key in self.model.data.data)
 
         self.new_line_marker = bm.ColumnDataSource(
             {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]})

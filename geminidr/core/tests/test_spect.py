@@ -44,6 +44,7 @@ from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from geminidr.niri.primitives_niri_image import NIRIImage
+from geminidr.niri.primitives_niri_longslit import NIRILongslit
 
 # -- Tests --------------------------------------------------------------------
 
@@ -280,10 +281,12 @@ def test_sky_correct_from_slit_with_multiple_sources():
 @pytest.mark.parametrize('filename,instrument',
                          [('N20121118S0375_stack.fits', 'GNIRS'),
                           ('S20040413S0268_stack.fits', 'GNIRS'),
-                          #('N20110718S0129_stack.fits', 'GNIRS'),
+                          ('N20110718S0129_stack.fits', 'GNIRS'),
                           ('S20140728S0282_stack.fits', 'F2'),
-                          #('S20131015S0043_stack.fits', 'F2'),
+                          ('S20131015S0043_stack.fits', 'F2'),
                           ('S20140111S0155_stack.fits', 'F2'),
+                          ('N20090925S0312_stack.fits', 'NIRI'),
+                          ('N20081223S0263_stack.fits', 'NIRI'),
                           ])
 def test_determine_slit_edges(filename, instrument, change_working_dir,
                               path_to_inputs):
@@ -292,63 +295,79 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
     # illuminated region of the given flats.
     results_dict = {
         'N20121118S0375_stack.fits': {
-            # GNIRS LongBlue, off right edge of detector.
+            # GNIRS 111/mm LongBlue, off right edge of detector.
             'c0': (33.532680341140335, 1025.8427086736597),
             'c1': (-6.962491642935299, -6.962491642935299),
             'c2': (-0.008639441981396224, -0.008639441981396224),
             'c3': (0.006629301489564899, 0.006629301489564899)
-        },
+            },
         'S20040413S0268_stack.fits': {
-            # GNIRS ShortRed, centered
+            # GNIRS 32/mm ShortRed, centered
             'c0': (175.1038780784617, 833.0919423028884),
             'c1': (-1.539657063828468, -1.1023324795483416),
             'c2': (-0.18673502127430647, 0.2131179499350503),
             'c3': (-0.014948550646791112, 0.006686383003339903)
-        },
+            },
         'N20110718S0129_stack.fits': {
-            # GNIRS LongRed, slit length shorter than normal this one night.
+            # GNIRS 10/mm LongRed, one-off slit length shorter than normal.
             'c0': (3.566833182251458, 897.1397974632922),
             'c1': (-6.0544148638266035, -9.960620341672538),
             'c2': (0.8947922316257532, 0.025634028590147614),
             'c3': (0.5814317533641548, 0.012033436540264349)
-        },
+            },
         'S20140728S0282_stack.fits': {
             # F2 1pix-slit, HK, off left edge of detector.
             'c0': (14.2347097150639, 1523.234709715064),
             'c1': (62.14113511752838, 62.14113511752838),
             'c2': (-1.9125412940944726, -1.9125412940944726),
             'c3': (-0.050606934418499595, -0.050606934418499595)
-        },
+            },
         'S20131015S0043_stack.fits': {
             # F2 2pix-slit, JH.
-            'c0': (45.17053063087425, 1504.0830405386002),
-            'c1': (11.25385774674868, 1.2270791863104045),
-            'c2': (13.246261896747969, -3.0923342892990133),
-            'c3': (3.8654265344995804, -0.35197477402917726)
-        },
+            'c0': (46.13487049752547, 1504.0830405386002),
+            'c1': (13.56201949988875, 1.2270791863104045),
+            'c2': (14.259955974765626, -3.0923342892990133),
+            'c3': (4.576909131898466, -0.35197477402917726)
+            },
         'S20140111S0155_stack.fits': {
             # F2 2pix-slit, R3K. Efficiency drops to zero in middle.
             'c0': (43.70026068842856, 1507.7421230551906),
             'c1': (-6.235410307377804, -6.578431648509839),
             'c2': (6.929845453000161, -2.996437641711837),
             'c3': (0.23347486719205496, -0.04967233624948784)
+            },
+        'N20081223S0263_stack.fits': {
+            # NIRI f/6 4pix "blue" slit
+            'c0': (275.5204150559385, 715.3069316746302),
+            'c1': (2.872550744587704, 2.712112393776839),
+            'c2': (-0.10925863620137954, 0.7216836016094347),
+            'c3': (0.00016773603353222372, -0.0023568404108366085)
+            },
+        'N20090925S0312_stack.fits': {
+            # NIRI f/32 10pix slit, which is also the f/6 2pix slit
+            'c0': (-1.7415119488127857, 1013.2584880511872),
+            'c1': (1.3095852317414478, 1.3095852317414478),
+            'c2': (-0.18732505002211716, -0.18732505002211716),
+            'c3': (-0.19919994899021326, -0.19919994899021326)
         }
     }
+
+    classes_dict = {'GNIRS': GNIRSLongslit,
+                    'F2': F2Longslit,
+                    'NIRI': NIRILongslit}
 
     with change_working_dir(path_to_inputs):
 
         ad = astrodata.open(filename)
 
-        if instrument == 'GNIRS':
-            p = GNIRSLongslit([ad])
-        elif instrument == 'F2':
-            p = F2Longslit([ad])
+        p = classes_dict[instrument]([ad])
 
         if filename == 'N20110718S0129_stack.fits':
             # Give edges explicitly.
             e1, e2 = [10], [906]
         else:
             e1, e2 = None, None
+
         ad_out = p.determineSlitEdges(edges1=e1, edges2=e2).pop()
 
         for i, row in enumerate(ad_out[0].SLITEDGE):
@@ -357,7 +376,7 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
             for param in m.param_names:
                 setattr(m_ref, param, results_dict[filename][param][i])
             x = np.arange(*m.domain)
-            np.testing.assert_allclose(m(x), m_ref(x), atol=0.5)
+            np.testing.assert_allclose(m(x), m_ref(x), atol=1.)
 
 
 def test_trace_apertures():

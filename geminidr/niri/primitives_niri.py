@@ -182,7 +182,7 @@ class NIRI(Gemini, NearIR):
 
             if 'SPECT' in ad.tags:
                 kw = ad._keyword_for('dispersion_axis')
-                self.hdr.set(kw, 1, self.keyword_comments(kw))
+                ad.hdr.set(kw, 1, self.keyword_comments[kw])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

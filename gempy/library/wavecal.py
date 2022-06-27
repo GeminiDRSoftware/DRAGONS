@@ -73,24 +73,6 @@ class LineList:
         """Weights of the individual lines for fitting routines"""
         return self._weights
 
-    def copy_bracketed(self, lower_limit, higher_limit):
-        """
-        Create a new LineList but restricting the line wavelengths to those
-        within the specified bracket.
-        """
-
-        new = LineList()
-        new._units = self._units
-        new._in_vacuo = self._in_vacuo
-        new._decimals = self._decimals
-
-        mask = np.logical_and(self._lines >= lower_limit, self._lines <= higher_limit)
-        new._lines = self._lines[mask]
-        if self._weights is not None:
-            new._weights = self._weights[mask]
-
-        return new
-
     def read_linelist(self, filename):
         """
         Read a text file containing the reference line list
@@ -343,6 +325,11 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
                                    c1=0.5 * dispersion * (npix - 1),
                                    domain=[0, npix-1])
     else:
+        # The next two lines are a quick fix of the central wavelength being
+        # shifted when calculated from the WCS model. Remove when it's fixed. -OS
+        if ext.instrument()=="GNIRS":
+            central_wavelength = ext.central_wavelength(asNanometers=True)
+
         ndim = len(ext.shape)
         axis_dict = {ndim-i-1: axes.get(i, 0.5 * (length-1))
                      for i, length in enumerate(ext.shape) if i != dispersion_axis}
@@ -385,12 +372,16 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
 
     Parameters
     ----------
-    ext : single-slice AstroData
+    ext: single-slice AstroData
         the extension
-    ui_params
-    p
-    linelist
-    bad_bits
+    ui_params: dict
+        dictionary of parameters for the UI, passed from the primitive's Config
+    p: PrimitivesBASE object
+        (needed to get the correct linelist... perhaps only need to pass that fn)
+    linelist: str
+        user-supplied linelist filename
+    bad_bits : int
+        bitwise-and the mask with this to produce the mask
 
     Returns
     -------
@@ -411,13 +402,12 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     dw = np.diff(init_models[0](np.arange(spectrum.size))).mean()
     kdsigma = fwidth * abs(dw)
     k = 1 if kdsigma < 3 else 2
-    fit1d, acceptable_fit, display_initial_model = find_solution(
+    fit1d, acceptable_fit = find_solution(
         init_models, ui_params, peaks=peaks, peak_weights=weights[ui_params.values["weighting"]],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
         filename=ext.filename, ext=ext)
 
-    #is it needed? -OS
-    input_data["display_initial_model"] = display_initial_model
+    input_data["fit"] = fit1d
     return input_data, fit1d, acceptable_fit
 
 
@@ -543,7 +533,30 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     arc_lines = linelist.wavelengths(in_vacuo=config.in_vacuo, units="nm")
     arc_weights = linelist.weights
     best_fit = None
-    initial_model_fit = None
+
+    # Create an initial fit_1D object using the initial wavelength model
+    # (always the first model in the init_models list) as a fallback in case
+    # don't get a better solution. Since we can't create a fit_1D object
+    # easily we evaluate the model at all pixels and fit. We do this by
+    # fitting increasing orders until we hit the order requested by the
+    # user or reach a low rms.
+    model = init_models[0]
+    domain = model.meta["domain"]
+    x = np.arange(*domain)
+    dw = abs(np.diff(model(domain))[0] / np.diff(domain)[0])
+    order = 0
+    while order < config.order:
+        order += 1
+        fit1d = fit_1D(model(x), points=x, function="chebyshev",
+                       order=order, domain=domain,
+                       niter=config.niter, sigma_lower=config.lsigma,
+                       sigma_upper=config.hsigma)
+        if fit1d.rms < 0.001 * dw:
+            break
+    fit1d.image = np.array([])
+    fit1d.points = np.array([])
+    fit1d.mask = np.array([], dtype=bool)
+    initial_model_fit = fit1d
 
     # Iterate over models most rapidly
     for loc_start, min_lines_per_fit, model in cart_product(
@@ -551,17 +564,6 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
-
-        #TODO: do this properly -OS
-        if best_fit is None:
-
-            fit1d = fit_1D((model(domain[0]),model(domain[1])),
-                           points=(domain[0],domain[1]),
-                           function="chebyshev", order=1, domain=domain,
-                           niter=config.niter, sigma_lower=config.lsigma,
-                           sigma_upper=config.hsigma)
-            fit1d.image = np.array((model(domain[0]),model(domain[1])))
-            initial_model_fit = fit1d
 
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
                                         kdsigma, order=config.order,
@@ -572,7 +574,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         # we've made. This allows a high polynomial order to be
         # used without the risk of it going off the rails
         fit_it = fitting.LinearLSQFitter()
-        if set(matches) != {-1}:
+        if len(matches) > 1:  # need at least 2 lines, right?
             m_init = models.Chebyshev1D(degree=config.order, domain=domain)
             for p, v in zip(model.param_names, model.parameters):
                 if p in m_init.param_names:
@@ -614,33 +616,36 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
             # Trial and error suggests this criterion works well
             if fit1d.rms < 0.2 * fwidth * abs(dw) and nmatched > config.order + 2:
-                return fit1d, True, False
+                return fit1d, True
 
             # This seems to be a reasonably ranking for poor models
             score = fit1d.rms / max(nmatched - config.order - 1, np.finfo(float).eps)
+            if score < best_score:
+                best_fit = fit1d
 
-            is_within_wvl_toler = True
+            #is_within_wvl_toler = True
             # According to GNIRS page:
             # 1) Wavelength coverages are accurate to +/-2 percent.
             # 2) Actual wavelength settings are accurate to better than 5 percent of the wavelength coverage.
-            if ext.instrument()=="GNIRS":
-                wvl_toler = abs((len_data+1) * ext.dispersion(asNanometers=True) * 1.02 * 0.05)
-                waves_init = np.array([model(0),model(len_data)])
-                waves_final = m_final(np.array([0, len_data]))
-                if (abs(waves_init - waves_final) > wvl_toler).any():
-                    is_within_wvl_toler = False
-            if (score < best_score) and is_within_wvl_toler == True:
-                best_fit = fit1d
-                best_score = score
-            # elif ext.instrument()=="GNIRS" and best_fit == None:
-            #     best_fit = initial_model_fit
-            #     display_initial_model = True
-            #     print(f"NO MODELS WITHIN WVL TOLERANCE, returning the initial model")
+            #if ext.instrument()=="GNIRS":
+            #    wvl_toler = abs((len_data+1) * ext.dispersion(asNanometers=True) * 1.02 * 0.05)
+            #    waves_init = np.array([model(0),model(len_data)])
+            #    waves_final = m_final(np.array([0, len_data]))
+            #    if (abs(waves_init - waves_final) > wvl_toler).any():
+            #        is_within_wvl_toler = False
+            #if (score < best_score) and is_within_wvl_toler == True:
+            #    best_fit = fit1d
+            #    best_score = score
+            #elif ext.instrument()=="GNIRS" and best_fit == None:
+            #    print(f"NO MODELS WITHIN WVL TOLERANCE, returning the initial model")
+            #    return initial_model_fit, False, True
             #TODO: catch the case where there is no best_fit and not interactive
-        elif config.interactive and ext.instrument()=="GNIRS" and best_fit == None:
-            print(f"NO LINE MATCHES, returning the initial model - well, not really initial?")
-            return initial_model_fit, False, True
-    return best_fit, False, False
+        #elif config.interactive and ext.instrument()=="GNIRS" and best_fit == None:
+        #    print(f"NO LINE MATCHES, returning the initial model")
+        #    return initial_model_fit, False, True
+
+    return initial_model_fit, False
+    return best_fit, False
 
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
@@ -690,7 +695,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
     dc0 = 10
-    print(f"pixel_start={pixel_start}, wave_start={wave_start}, dw_start={dw_start}, let_data={len_data}")
+    #print(f"pixel_start={pixel_start}, wave_start={wave_start}, dw_start={dw_start}, let_data={len_data}")
     fits_to_do = [(pixel_start, wave_start, dw_start)]
     while fits_to_do:
         p0, c0, dw = fits_to_do.pop()
@@ -886,19 +891,21 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
                 f"rms = {rms:.3f} nm.")
 
     dw = np.diff(m_final(domain))[0] / np.diff(domain)[0]
-    max_rms = 0.2 * rms / abs(dw)  # in pixels
+    max_rms = max(0.2 * rms / abs(dw), 1e-4)  # in pixels
     max_dev = 3 * max_rms
     m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
                                             max_deviation=max_dev)
-    inv_rms = np.std(m_inverse(m_final(incoords)) - incoords)
-    log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
+    if len(incoords) > 1:
+        inv_rms = np.std(m_inverse(m_final(incoords)) - incoords)
+        log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
     m_final.name = "WAVE"  # always WAVE, never AWAV
     m_final.inverse = m_inverse
 
-    indices = np.argsort(incoords)
-    # Add 1 to pixel coordinates so they're 1-indexed
-    incoords = np.float32(incoords[indices]) + 1
-    outcoords = np.float32(outcoords[indices])
+    if len(incoords):
+        indices = np.argsort(incoords)
+        # Add 1 to pixel coordinates so they're 1-indexed
+        incoords = np.float32(incoords[indices]) + 1
+        outcoords = np.float32(outcoords[indices])
     temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=u.nm)
 
     #### Temporary to ensure all the old stuff is still there
@@ -956,10 +963,9 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         except IndexError:
             slit_model = models.Identity(1)
         slit_model.name = 'SKY'
-        if dispaxis == 1:
-            transform = m_final & slit_model
-        else:
-            transform = slit_model & m_final
+        transform = m_final & slit_model
+        if dispaxis == 0:
+            transform = models.Mapping((1, 0)) | transform
         ext.wcs = gWCS([(ext.wcs.input_frame, transform),
                         (output_frame, None)])
 
@@ -985,10 +991,10 @@ def save_fit_as_pdf(data, peaks, arc_lines, filename):
     fig, ax = plt.subplots()
     ax.plot(data, 'b-')
     ax.set_ylim(0, data_max * 1.05)
-    if np.diff(arc_lines)[0] / np.diff(peaks)[0] > 0:
-        ax.set_xlim(-1, len(data))
-    else:
+    if len(arc_lines) and np.diff(arc_lines)[0] / np.diff(peaks)[0] < 0:
         ax.set_xlim(len(data), -1)
+    else:
+        ax.set_xlim(-1, len(data))
     #for p in peaks:
     #    ax.plot([p, p], [0, 2 * data_max], 'r:')
     for p, w in zip(peaks, arc_lines):

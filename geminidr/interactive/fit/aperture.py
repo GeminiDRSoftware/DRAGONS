@@ -167,7 +167,7 @@ class FindSourceAperturesModel:
         # the slit is vertical, the WCS has not been modified
         target_location = ext.wcs.invert(
             ext.central_wavelength(asNanometers=True), ext.target_ra(),
-            ext.target_dec())[2 - ext.dispersion_axis()]
+            ext.target_dec())[1]
         # gWCS will return NaN coords if sent Nones, so assume target is in center
         if np.isnan(target_location):
             target_location = (self.profile_shape - 1) / 2

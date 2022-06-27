@@ -47,7 +47,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         Multi-Object Spectroscopy, it is the position of the multiple slits.
         In longslit is it the position of the single slit.
 
-        If only one MDF is provided, that MDF will be add to all input AstroData
+        If only one MDF is provided, that MDF will be added to all input AstroData
         object(s). If more than one MDF is provided, the number of MDF AstroData
         objects must match the number of input AstroData objects.
 
@@ -63,43 +63,14 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+        # timestamp_key = self.timestamp_keys[self.myself()]
 
         mdf_list = mdf or self.caldb.get_calibrations(adinputs, caltype="mask").files
+        print(f'mdf_list is {mdf_list}')
 
         for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
-            if ad.phu.get(timestamp_key):
-                log.warning('No changes will be made to {}, since it has '
-                            'already been processed by addMDF'.
-                            format(ad.filename))
-                continue
-            if hasattr(ad, 'MDF'):
-                log.warning('An MDF extension already exists in {}, so no '
-                            'MDF will be added'.format(ad.filename))
-                continue
+            self._addMDF(ad, suffix, mdf)
 
-            if mdf is None:
-                log.stdinfo('No MDF could be retrieved for {}'.
-                            format(ad.filename))
-                continue
-
-            try:
-                # This will raise some sort of exception unless the MDF file
-                # has a single MDF Table extension
-                ad.MDF = mdf.MDF
-            except:
-                if len(mdf.tables) == 1:
-                    ad.MDF = getattr(mdf, mdf.tables.pop())
-                else:
-                    log.warning('Cannot find MDF in {}, so no MDF will be '
-                                'added'.format(mdf.filename))
-                continue
-
-            log.fullinfo('Attaching the MDF {} to {}'.format(mdf.filename,
-                                                             ad.filename))
-
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def standardizeObservatoryHeaders(self, adinputs=None, **params):
@@ -330,6 +301,60 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
+
+    def _addMDF(self, ad, suffix, mdf):
+        """
+        This function performs the actual work of adding an MDF. See the addMDF
+        doscring for additional details.
+
+        Parameters
+        ----------
+        ad : astrodata object
+            an astrodata object to have an MDF added
+        suffix : str
+            suffix to be added output files
+        mdf : str/None
+            name of MDF to add (None => use default)
+
+        Returns
+        -------
+        None.
+
+        """
+
+        if ad.phu.get(self.timestamp_keys[self.myself().lstrip('_')]):
+            self.log.warning('No changes will be made to {}, since it has '
+                             'already been processed by addMDF'.
+                             format(ad.filename))
+            return
+
+        if hasattr(ad, 'MDF'):
+            self.log.warning('An MDF extension already exists in {}, so no '
+                             'MDF will be added'.format(ad.filename))
+            return
+
+        if mdf is None:
+            self.log.stdinfo('No MDF could be retrieved for {}'.
+                             format(ad.filename))
+            return
+
+        try:
+            # This will raise some sort of exception unless the MDF file
+            # has a single MDF Table extension
+            ad.MDF = mdf.MDF
+        except:
+            if len(mdf.tables) == 1:
+                ad.MDF = getattr(mdf, mdf.tables.pop())
+            else:
+                self.log.warning('Cannot find MDF in {}, so no MDF will be '
+                            'added'.format(mdf.filename))
+
+        self.log.fullinfo('Attaching the MDF {} to {}'.format(mdf.filename,
+                                                              ad.filename))
+
+        gt.mark_history(ad, primname=self.myself(),
+                        keyword=self.timestamp_keys[self.myself().lstrip('_')])
+        ad.update_filename(suffix=suffix, strip=True)
 
 
 class Pointing:
