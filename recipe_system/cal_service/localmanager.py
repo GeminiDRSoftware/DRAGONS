@@ -11,6 +11,7 @@ import warnings
 from importlib import reload
 from collections import namedtuple
 
+from sqlalchemy import desc
 from sqlalchemy.exc import SAWarning, OperationalError
 
 from gemini_calmgr import orm
@@ -23,6 +24,8 @@ from gemini_calmgr.utils import dbtools
 
 from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
+from gemini_obs_db.orm.diskfile import DiskFile
+from gemini_obs_db.orm.header import Header
 
 from gempy.utils import logutils
 
@@ -211,6 +214,22 @@ class LocalManager:
 
         try:
             dbtools.ingest_file(self.session, filename, directory)
+            # check for engineering
+            try:
+                h, df = self.session.query(Header, DiskFile).filter(Header.diskfile_id == DiskFile.id) \
+                    .filter(DiskFile.canonical == True).filter(DiskFile.filename == filename) \
+                    .order_by(desc(DiskFile.entrytime)).first()
+                if h is None:
+                    log.warn(f"Unable to verify locally loaded calibration file {filename}")
+                else:
+                    if h.engineering:
+                        log.warn(f"Saw file flagged as engineering for {filename}, "
+                                 f"overriding for local calibration manager")
+                        h.engineering = False
+                        self.session.flush()
+            except:
+                log.warn(f"Error checking if {filename} is valid, may not have added successfully")
+                raise
         except Exception as err:
             self.session.rollback()
             self.remove_file(path)
