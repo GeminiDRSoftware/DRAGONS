@@ -12,6 +12,10 @@
 
 @Library('dragons_ci@master') _
 
+// Change these to automatically skip steps
+def runtests_gmosls = False
+def runtests_slow = False
+
 pipeline {
 
     agent any
@@ -157,6 +161,10 @@ pipeline {
         stage('Slower tests') {
             parallel {
                 stage('GMOS LS Tests') {
+                    when {
+                        expression { runtests_gmosls }
+                    }
+
                     agent { label "master" }
                     environment {
                         MPLBACKEND = "agg"
@@ -192,6 +200,9 @@ pipeline {
                 }  // end stage
 
                 stage('Slow Tests') {
+                    when {
+                        expression { runtests_slow }
+                    }
                     agent { label "master" }
                     environment {
                         MPLBACKEND = "agg"
