@@ -13,8 +13,8 @@
 @Library('dragons_ci@master') _
 
 // Change these to automatically skip steps
-def runtests_gmosls = False
-def runtests_slow = False
+def runtests_gmosls = 0  // 1 to enable
+def runtests_slow = 0
 
 pipeline {
 
