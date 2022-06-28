@@ -1051,6 +1051,8 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
 
         elif "bpm" in caltype:
             ad.phu.set("BPMASK", True, "Bad pixel mask")
+            ad.phu.set("OBSTYPE", "BPM", keyword_comments["OBSTYPE"])
+            ad.phu.set("OBJECT", "BPM", keyword_comments["OBJECT"])
         else:
             raise ValueError("Caltype {} not supported".format(caltype))
 
@@ -1631,7 +1633,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
         raise TypeError("argument 'keyword' required")
 
     # Get the current time to use for the time of last modification
-    tlm = datetime.now().isoformat()[0:-7]
+    tlm = datetime.utcnow().isoformat()
 
     # Construct the default comment
     if comment is None:

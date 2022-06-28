@@ -214,12 +214,14 @@ class AstroDataGemini(AstroData):
     # GCALFLAT is still needed
     @astro_data_tag
     def _type_gcalflat(self):
-        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
+        gcallamp = self.phu.get('GCALLAMP')
+        if gcallamp == 'IRhigh' or (gcallamp is not None and gcallamp.startswith('QH')):
             return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
     def _type_gcal_lamp(self):
-        if self.phu.get('GCALLAMP') in ('IRhigh', 'QH'):
+        gcallamp = self.phu.get('GCALLAMP')
+        if gcallamp == 'IRhigh' or (gcallamp is not None and gcallamp.startswith('QH')):
             shut = self.phu.get('GCALSHUT')
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
@@ -271,11 +273,12 @@ class AstroDataGemini(AstroData):
 
     @astro_data_tag
     def _type_bad_pixel_mask(self):
-        if 'BPMASK' in self.phu:
-            return TagSet(['BPM'], blocks=['IMAGE', 'SPECT', 'FLAT', 'PREPARED',
-                                          'GCALFLAT', 'CAL', 'LAMPON',
-                                          'GCAL_IR_ON', 'GCAL_IR_OFF', 'DARK',
-                                           'NON_SIDEREAL', 'AZEL_TARGET'])
+        if 'BPMASK' in self.phu or 'PROCBPM' in self.phu:
+            return TagSet(['BPM', 'CAL', 'PROCESSED'],
+                            blocks=['IMAGE', 'SPECT', 'NON_SIDEREAL',
+                                    'AZEL_TARGET',
+                                    'GCALFLAT', 'LAMPON', 'GCAL_IR_ON',
+                                    'GCAL_IR_OFF', 'DARK'])
 
     @astro_data_tag
     def _type_mos_mask(self):
@@ -611,6 +614,8 @@ class AstroDataGemini(AstroData):
         # We assume that the central_wavelength keyword is in microns
         keyword = self._keyword_for('central_wavelength')
         wave_in_microns = self.phu.get(keyword, -1)
+        # Convert to float if they saved it as a string
+        wave_in_microns = float(wave_in_microns) if isinstance(wave_in_microns, str) else wave_in_microns
         if wave_in_microns < 0:
             return None
         return gmu.convert_units('micrometers', wave_in_microns,

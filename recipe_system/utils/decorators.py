@@ -246,7 +246,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
     none
     """
     try:
-        timestamp = datetime.now()
+        timestamp = datetime.utcnow()
         for ad in ret_value:
             if ad.data_label() in provenance_inputs:
                 # output corresponds to an input, we only need to copy from there
@@ -262,7 +262,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
                     if clone_hist:
                         clone_provenance_history(provenance_input['provenance_history'], ad)
         for ad in ret_value:
-            add_provenance_history(ad, timestamp_start, timestamp, fn.__name__, args)
+            add_provenance_history(ad, timestamp_start.isoformat(), timestamp.isoformat(), fn.__name__, args)
     except Exception as e:
         # we don't want provenance failures to prevent data reduction
         log.warn("Unable to save provenance information, continuing on: %s" % e)
@@ -285,7 +285,7 @@ def capture_provenance(fn):
         # Determine if this is a top-level primitive, by checking if the
         # calling function contains a self that is also a primitive
         toplevel = _top_level_primitive()
-        timestamp_start = datetime.now()
+        timestamp_start = datetime.utcnow()
 
         if toplevel:
             provenance_inputs = _get_provenance_inputs(kwargs["adinputs"])

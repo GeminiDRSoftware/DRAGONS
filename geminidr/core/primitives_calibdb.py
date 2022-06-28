@@ -103,6 +103,12 @@ class CalibDB(PrimitivesBASE):
         self._assert_calibrations(adinputs, cals)
         return adinputs
 
+    def getBPM(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_bpm(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
+        return adinputs
+
     def getMDF(self, adinputs=None):
         cals = self.caldb.get_calibrations(adinputs, caltype="mask")
         self._assert_calibrations(adinputs, cals)
@@ -132,19 +138,22 @@ class CalibDB(PrimitivesBASE):
         prior to storing AD objects as calibrations
         """
         for ad in adinputs:
+            if 'PROCMODE' not in ad.phu:
+                ad.phu.set('PROCMODE', self.mode)
+            mode = ad.phu['PROCMODE']
+
             # if user mode: not uploading and sq, don't add mode.
-            if self.mode == 'sq' and (not self.upload or 'calibs' not in self.upload) :
+            if mode == 'sq' and (not self.upload or 'calibs' not in self.upload) :
                 proc_suffix = f""
             else:
-                proc_suffix = f"_{self.mode}"
+                proc_suffix = f"_{mode}"
 
             if suffix:
                 proc_suffix += suffix
             ad.update_filename(suffix=proc_suffix, strip=True)
             if update_datalab:
-                _update_datalab(ad, suffix, self.keyword_comments)
+                _update_datalab(ad, suffix, mode, self.keyword_comments)
             gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
-            ad.phu.set('PROCMODE', self.mode)
         return adinputs
 
     def storeProcessedArc(self, adinputs=None, suffix=None, force=False):
@@ -169,13 +178,14 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeBPM(self, adinputs=None, suffix=None):
-        caltype = 'bpm'
+    def storeBPM(self, adinputs=None, suffix=None, force=False):
+        caltype = 'processed_bpm'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
-                                            keyword_comments=self.keyword_comments)
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
+                                                keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                                           primname=self.myself(), update_datalab=False, keyword="BPM")
+                                           primname=self.myself(), update_datalab=False, keyword="PROCBPM")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
@@ -225,6 +235,7 @@ class CalibDB(PrimitivesBASE):
                 # Got to do a bit of gymnastic to figure what the current
                 # suffix is.  If orig.filename and filename are equal and have
                 # `_`, I have to assume that the last `_` is a suffix.  (KL)
+                # todo: chart the use cases and clean this up.
                 root, filetype = os.path.splitext(ad.orig_filename)
                 if ad.orig_filename == ad.filename:
                     pre, post = ad.orig_filename.rsplit('_', 1)
@@ -232,13 +243,25 @@ class CalibDB(PrimitivesBASE):
                     suffix = '_' + suffix
                 else:
                     m = re.match('(.*){}(.*)'.format(re.escape(root)), ad.filename)
-                    if m.groups()[1] and m.groups()[1] != filetype:
+                    if m is None:  # some primitive changed the orig name (should not happen). Keep filename's.
+                        fname, suffix = os.path.splitext(ad.filename)[0].rsplit('_',1)
+                        suffix = '_' + suffix
+                    elif m.groups()[1] and m.groups()[1] != filetype:
 
                         suffix, filetype = os.path.splitext(m.groups()[1])
                     else:
                         suffix = ''
 
-            ad.phu.set('PROCMODE', self.mode)
+            # if store has already been run and PROCMODE set, do not let
+            # a subsequent call to store change the PROCMODE.  Eg. a subsequent
+            # call to do the actual upload to archive should not change the
+            # procmode that was used when the data was reduced.
+            if 'PROCMODE' not in ad.phu:
+                ad.phu.set('PROCMODE', self.mode)
+            mode = ad.phu['PROCMODE']
+
+            _update_datalab(ad, suffix, mode, self.keyword_comments)
+
             ad.write(overwrite=True)
 
         if self.mode not in ['sq', 'ql', 'qa']:
@@ -248,10 +271,10 @@ class CalibDB(PrimitivesBASE):
 
         # This logic will be handled by the CalDB objects, but check here to
         # avoid changing and resetting filenames
-        if self.mode != 'qa' and self.upload and 'science' in self.upload:
+        if mode != 'qa' and self.upload and 'science' in self.upload:
             for ad in adinputs:
                 old_filename = ad.filename
-                ad.update_filename(suffix=f"_{self.mode}"+suffix, strip=True)
+                ad.update_filename(suffix=f"_{mode}"+suffix, strip=True)
                 self.caldb.store_calibration(ad, caltype="processed_science")
                 ad.filename = old_filename
 
@@ -305,18 +328,24 @@ class CalibDB(PrimitivesBASE):
 
 ##################
 
-def _update_datalab(ad, suffix, keyword_comments_lut):
+def _update_datalab(ad, suffix, mode, keyword_comments_lut):
     # Update the DATALAB. It should end with 'suffix'.  DATALAB will
     # likely already have '_stack' suffix that needs to be replaced.
 
     # replace the _ with a - to match fitsstore datalabel standard
     # or add the - if "suffix" doesn't have a leading _
-    if suffix[0] == '_':
+    if suffix == '':
+        extension = ''
+    elif suffix[0] == '_':
         extension = suffix.replace('_', '-', 1).upper()
     else:
         extension = '-'+suffix.upper()
 
+    extension = '-'+mode.upper()+extension
+
     datalab = ad.data_label()
-    new_datalab = re.sub(r'-[a-zA-Z]+$', '', datalab) + extension
+    obsid = ad.observation_id()
+    new_datalab = re.sub('(%s-[0-9]+)(-[0-9A-Za-z]+)+$' % obsid, r'\1',
+                         datalab) + extension
     ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return

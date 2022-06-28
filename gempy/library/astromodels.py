@@ -358,7 +358,7 @@ class UnivariateSplineWithOutlierRemoval:
                         for x1, x2 in zip(knots[:-1], knots[1:]))
                     wts[full_mask] = epsf if fully_masked_regions > min(k, order) else epsf
                 else:
-                    wts = w.copy()
+                    wts = None if w is None else w.copy()
 
             last_mask = full_mask
             avg_y = np.average(y, weights=wts)

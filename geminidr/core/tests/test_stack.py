@@ -77,9 +77,8 @@ def test_error_only_one_file(niri_adinputs, caplog):
         'objects are required for stackFrames')
 
 
-def test_error_extension_number(niri_adinputs, caplog):
+def test_error_extension_number(niri_adinputs):
     p = NIRIImage(niri_adinputs)
-    p.prepare()
     niri_adinputs[1].append(np.zeros((2, 2)))
     match = "Not all inputs have the same number of extensions"
     with pytest.raises(IOError, match=match):
@@ -89,7 +88,6 @@ def test_error_extension_number(niri_adinputs, caplog):
 def test_error_extension_shape(niri_adinputs, caplog):
     niri_adinputs[1][0].data = np.zeros((3, 3))
     p = NIRIImage(niri_adinputs)
-    p.prepare()
     match = "Not all inputs images have the same shape"
     with pytest.raises(IOError, match=match):
         p.stackFrames()
@@ -104,7 +102,6 @@ def test_stackframes_refcat_propagation(niri_adinputs):
         ad.REFCAT = refcat
 
     p = NIRIImage(niri_adinputs)
-    p.prepare()
     adout = p.stackFrames()[0]
 
     # The merged REFCAT should contain 3 sources as follows
@@ -118,7 +115,6 @@ def test_rejmap(niri_adinputs):
         niri_adinputs.append(niri_adinputs[0] + i)
 
     p = NIRIImage(niri_adinputs)
-    p.prepare()
     adout = p.stackFrames(reject_method='minmax', nlow=1, nhigh=1,
                           save_rejection_map=True)[0]
     assert_array_equal(adout[0].REJMAP, 2)  # rejected 2 values for each pixel
