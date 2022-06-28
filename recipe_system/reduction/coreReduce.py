@@ -473,7 +473,7 @@ def _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_fi
 
 
 def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, ucals={},
-                upload=None, config_file=None, suffix=None):
+                upload=None, config_file=None, suffix=None, logmode=None):
     """
     Map and run the requested or defaulted recipe.
 
@@ -498,11 +498,18 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
         Configuration file to use, None for default
     suffix : str
         Suffix to add to output file(s), None for default
+    logmode : str
+        Mode of logging such as 'debug', or None for default
 
     Returns
     -------
     <list> : List of files produced by the reduction
     """
+    if logmode is not None:
+        # User requesting an override of the logging mode
+        from gempy.utils import logutils
+        logutils.config(mode=logmode)
+
     _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_file, suffix)
     recipe = None
     if isinstance(files, str):
