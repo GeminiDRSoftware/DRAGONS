@@ -9,6 +9,7 @@ recipe_tags = {'GMOS', 'SPECT', 'LS', 'ARC'}
 def makeProcessedArc(p):
     p.prepare()
     p.addDQ()
+    p.maskFaultyAmp(instrument='GMOS-S', bad_amps=5, valid_from='20220128')
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.ADUToElectrons()

@@ -23,6 +23,7 @@ def reduce(p):
     """
     p.prepare()
     p.addDQ(static_bpm=None)
+    p.maskFaultyAmp(instrument='GMOS-S', bad_amps=5, valid_from='20220128')
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.biasCorrect()
