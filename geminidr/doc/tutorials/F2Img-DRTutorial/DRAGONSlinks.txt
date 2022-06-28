@@ -1,35 +1,35 @@
 .. |caldb| raw:: html
 
-    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/caldb.html" target="_blank">caldb</a>
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.2/caldb.html" target="_blank">caldb</a>
 
 .. |dataselect| raw:: html
 
-    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/supptools.html#dataselect" target="_blank">dataselect</a>
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.2/supptools.html#dataselect" target="_blank">dataselect</a>
 
 .. |descriptors| raw:: html
 
-    <a href="https://astrodata-user-manual.readthedocs.io/en/release-3.0.x/appendices/appendix_descriptors.html" target="_blank">descriptors</a>
+    <a href="https://astrodata-user-manual.readthedocs.io/en/v3.0.2/appendices/appendix_descriptors.html" target="_blank">descriptors</a>
 
 .. |reduce| raw:: html
 
-    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/reduce.html" target="_blank">reduce</a>
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.2/reduce.html" target="_blank">reduce</a>
 
 .. |showd| raw:: html
 
-    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/supptools.html#showd" target="_blank">showd</a>
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.2/supptools.html#showd" target="_blank">showd</a>
 
 .. |showrecipes| raw:: html
 
-    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/supptools.html#showrecipes" target="_blank">showrecipes</a>
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.2/supptools.html#showrecipes" target="_blank">showrecipes</a>
 
 .. |showpars| raw:: html
 
-    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/supptools.html#showpars" target="_blank">showpars</a>
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.2/supptools.html#showpars" target="_blank">showpars</a>
 
 .. |typewalk| raw:: html
 
-    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/supptools.html#typewalk" target="_blank">typewalk</a>
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.2/supptools.html#typewalk" target="_blank">typewalk</a>
 
 .. |atfile| raw:: html
 
-    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/release-3.0.x/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/v3.0.2/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>

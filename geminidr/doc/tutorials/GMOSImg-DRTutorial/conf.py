@@ -31,7 +31,7 @@ print((' Dragons path: {}\n'.format(dragons_path)))
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial<br> GMOS Imaging Data Reduction'
-copyright = '2021, Association of Universities for Research in Astronomy'
+copyright = '2022, Association of Universities for Research in Astronomy'
 author = 'Bruno C. Quint, Kathleen Labrie'
 
 # The short X.Y version
@@ -40,10 +40,10 @@ version = '3.0'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-release = '3.0.x'
-rtdurl = 'release-'+release
-#release = '3.0.1'
-#rtdurl = 'v'+release
+#release = '3.0.x'
+#rtdurl = 'release-'+release
+release = '3.0.2'
+rtdurl = 'v'+release
 
 
 # -- General configuration ---------------------------------------------------
@@ -86,7 +86,7 @@ language = None
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'December 2021'
+today = 'July 2022'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -214,10 +214,10 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/release-3.0.x/', None),
+    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/v3.0.2/', None),
     'astropy': ('http://docs.astropy.org/en/stable/', None),
-    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/release-3.0.x/', None),
-    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/release-3.0.x/', None),
+    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/v3.0.2/', None),
+    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/v3.0.2/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'python': ('https://docs.python.org/3', None),
