@@ -128,6 +128,14 @@ def test_wcs_slicing():
     assert nd[20, -10:].wcs(0) == (40, 20)
 
 
+def test_record():
+    nd = NDAstroData(np.zeros((4, 4)))
+    record_data = {"test": "foo"}
+    nd.record = record_data
+    # should read out the same
+    assert nd.record == record_data
+
+
 def test_access_to_other_planes(testnd):
     assert hasattr(testnd, 'OBJMASK')
     assert testnd.OBJMASK.shape == testnd.data.shape

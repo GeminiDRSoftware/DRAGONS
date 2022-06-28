@@ -444,6 +444,27 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if new is not None and wavestr(new) not in self.new_line_dropdown.options:
             self.add_new_line()
 
+    def record(self):
+        def listify(l):
+            if isinstance(l, list):
+                return l
+            retval = list()
+            retval.extend(l)
+            return retval
+        retval = super().record()
+        wavecal_data = dict()
+        for k, v in self.model.data.data.items():
+            wavecal_data[k] = listify(v)
+        retval['wavecal_data'] = wavecal_data
+        return retval
+
+    def load(self, record):
+        self.model.data.data = record['wavecal_data']
+        # use base class load, but do not reconstruct points - we did that already by loading wavecal_data
+        super().load(record, reconstruct_points=False)
+        # the superclass will redo the fit for us
+
+
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
     A Visualizer specific to determineWavelengthSolution
@@ -470,6 +491,23 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
             image.append(model.y[goodpix])
         return image
+
+    def record(self):
+        """
+        Record the state of the interactive UI.
+
+        This enhances the record from the base class with additional state
+        information specific to the Fit1D Visualizer.  This includes per-tab
+        fitting parameters and the current state of the data mask.
+
+        Returns
+        -------
+            dict : Dictionary representing the state of the inputs
+        """
+        return super().record()
+
+    def load(self, record):
+        super().load(record)
 
 
 def get_closest(arr, value):

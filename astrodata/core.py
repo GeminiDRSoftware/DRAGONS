@@ -444,6 +444,20 @@ class AstroData:
     def wcs(self, value):
         self.nddata.wcs = value
 
+    @property
+    def record(self):
+        """Returns the record of reduction that produced this file, or None."""
+        if self.is_single:
+            return self.nddata.record
+        else:
+            raise ValueError("Cannot return record for an AstroData object "
+                             "that is not a single slice")
+
+    @record.setter
+    @assign_only_single_slice
+    def record(self, value):
+        self.nddata.record = value
+
     def __iter__(self):
         if self.is_single:
             yield self

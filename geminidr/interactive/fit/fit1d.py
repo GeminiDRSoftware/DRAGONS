@@ -16,7 +16,10 @@ from geminidr.interactive.interactive import GIRegionModel, connect_region_model
 from geminidr.interactive.interactive_config import interactive_conf
 from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
+from gempy.utils import logutils
 
+
+_log = logutils.get_logger(__name__)
 
 # Names to use for masks.  You can change these to change the label that gets displayed in the legend
 SIGMA_MASK_NAME = 'rejected (sigma)'
@@ -901,15 +904,18 @@ class Fit1DPanel:
                 return mn, mx, 0.1 * (mx - mn)
             # if xdata or ydata are empty, we set some arbitrary values so the UI is ok
             x_min, x_max, x_pad = min_max_pad(xdata, 0, 4000)
-            if x_min != x_max:
-                self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
-            y_min, y_max, y_pad = min_max_pad(ydata, 0, 100)
-            if y_min != y_max:
-                self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
+            if self.p_main:
+                if x_min != x_max:
+                    self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
+                y_min, y_max, y_pad = min_max_pad(ydata, 0, 100)
+                if y_min != y_max:
+                    self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
         if x_range is not None:
-            self.p_main.x_range = x_range
+            if self.p_main:
+                self.p_main.x_range = x_range
         if y_range is not None:
-            self.p_main.y_range = y_range
+            if self.p_main:
+                self.p_main.y_range = y_range
 
     def reset_dialog_handler(self, result):
         """
@@ -1038,6 +1044,71 @@ class Fit1DPanel:
             else:
                 mask[sel] = USER_MASK_NAME
 
+        self.model.perform_fit()
+
+    def record(self):
+        """
+        Record the state of this tab into a dictionary.
+
+        This call returns a dictionary representation of the state of this tab interface.
+        This dictionary can be sent back in to the :meth:`load` method to restore the state
+        at a later time.
+
+        Returns
+        -------
+        dict : Dictionary describing the state of the user interface
+        """
+        def encode_mask(mask):
+            retval = ""
+            for mask_item in mask:
+                if mask_item == USER_MASK_NAME:
+                    retval = retval + "1"
+                else:
+                    retval = retval + "0"
+            return retval
+        return {
+            "mask": encode_mask(self.model.data.data['mask']),
+            "params": self.model.fit.extract_params()
+        }
+
+    def load(self, record):
+        """
+        Load the state of this tab from a dictionary.
+
+        This call loads the state of the interface tab from a previously saved dictionary
+        from :meth:`record`.
+
+        Parameters
+        ----------
+        record : dict
+            Dictionary of saved state from :meth:`record`
+        """
+        def decode_mask(mask):
+            if isinstance(mask, list):
+                return mask
+            else:
+                retval = list()
+                for char in mask:
+                    if char == '1':
+                        retval.append(USER_MASK_NAME)
+                    else:
+                        retval.append('good')
+                return retval
+        self.model.data.data['mask'] = decode_mask(record["mask"])
+        if "regions" in record["params"]:
+            region_tuples = cartesian_regions_to_slices(record["params"]["regions"])
+            self.model.band_model.load_from_tuples(region_tuples)
+        if "function" in record["params"]:
+            self.fitting_parameters_ui.function.select(record["params"]["function"])
+        self.fitting_parameters_ui.order_slider.children[1].value = record["params"]["order"]
+        self.fitting_parameters_ui.sigma_lower_slider.children[1].value = record["params"]["sigma_lower"]
+        self.fitting_parameters_ui.sigma_upper_slider.children[1].value = record["params"]["sigma_upper"]
+        niter = record["params"]["niter"]
+        if niter == 0:
+            self.fitting_parameters_ui.sigma_button.active = []
+        else:
+            self.fitting_parameters_ui.sigma_button.active = [0]
+            self.fitting_parameters_ui.niter_slider.children[1].value = record["params"]["niter"]
         self.model.perform_fit()
 
     # TODO refactored this down from tracing, but it breaks
@@ -1284,6 +1355,50 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.fits.append(tui.model)
             self.panels.append(tui)
 
+        self._reinit_params = {k: v for k, v in ui_params.values.items()}
+        self._record_params = {k: v for k, v in ui_params.values.items()}
+
+    # noinspection PyProtectedMember
+    def reset_reinit_panel(self, param=None):
+        """
+        Reset all the parameters in the Tracing Panel (leftmost column).
+        If a param is provided, it resets only this parameter in particular.
+
+        Parameters
+        ----------
+        param : str
+            Parameter name
+        """
+        for fname in self.ui_params.reinit_params:
+            if param is None or fname == param:
+                reset_value = self._reinit_params[fname]
+            else:
+                continue
+
+            # Handle CheckboxGroup widgets
+            if hasattr(self.widgets[fname], "value"):
+                attr = "value"
+            else:
+                attr = "active"
+                reset_value = [0] if reset_value else []
+            old = getattr(self.widgets[fname], attr)
+
+            # Update widget value
+            if reset_value is None:
+                kwargs = {attr: self.widgets[fname].start, "show_value": False}
+            else:
+                kwargs = {attr: reset_value}
+            self.widgets[fname].update(**kwargs)
+
+            # Update Text Field via callback function
+            if 'value' in self.widgets[fname]._callbacks:
+                for callback in self.widgets[fname]._callbacks['value']:
+                    callback('value', old=old, new=reset_value)
+            if 'value_throttled' in self.widgets[fname]._callbacks:
+                for callback in self.widgets[fname]._callbacks['value_throttled']:
+                    callback(attrib='value_throttled', old=old, new=reset_value)
+
+
     def visualize(self, doc):
         """
         Start the bokeh document using this visualizer.
@@ -1301,7 +1416,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col.sizing_mode = 'scale_width'
         col.width_policy = 'max'
 
-        for btn in (self.submit_button, self.abort_button):
+        for btn in (self.submit_button, self.abort_button, self.reset_all_button):
             btn.align = 'end'
             btn.height = 35
             btn.height_policy = "fixed"
@@ -1313,11 +1428,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if self.filename_info:
             self.submit_button.align = 'end'
             layout_ls.append(row(Spacer(width=250),
-                                 column(self.get_filename_div(), row(self.abort_button, self.submit_button)),
+                                 column(self.get_filename_div(),
+                                        row(self.reset_all_button, self.abort_button, self.submit_button)),
                                  Spacer(width=10),
                                  align="end", css_classes=['top-row']))
         else:
-            layout_ls.append(row(self.abort_button, self.submit_button),
+            layout_ls.append(row(self.reset_all_button, self.abort_button, self.submit_button),
                              align="end", css_classes=['top-row'])
 
         if self.reinit_panel is None:
@@ -1400,6 +1516,66 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         list of `~gempy.library.fitting.fit_1D`
         """
         return [fit.fit for fit in self.fits]
+
+    def record(self):
+        """
+        Record the state of the interactive UI.
+
+        This enhances the record from the base class with additional state
+        information specific to the Fit1D Visualizer.  This includes per-tab
+        fitting parameters and the current state of the data mask.
+
+        Returns
+        -------
+            dict : Dictionary representing the state of the inputs
+        """
+        retval = super().record()
+        retval["tabs"] = list()
+        reinit_params = dict()
+        if self.ui_params.reinit_params is not None:
+            for fname in self.ui_params.reinit_params:
+                reinit_params[fname] = self.ui_params.values[fname]
+        retval["reinit_params"] = reinit_params  # self._reinit_params.copy()
+        for tab in self.panels:
+            retval["tabs"].append(tab.record())
+        return retval
+
+    def load(self, record, reconstruct_points=True):
+        """
+        Load the visualizer state from a saved record.
+
+        This method will load this interactive visualizer from values saved
+        by an earlier call to :meth:`record`.
+
+        Parameters
+        ----------
+        record : dict
+            Dictionary capturing the state of this visualizer, as returned by :meth:`record`
+        reconstruct_points : bool
+            If True, call the reconstruct_points after changing the reinit_params.  Defaults to True
+        """
+        super().load(record)
+
+        # This won't work any more, we only capture the reinit parameters on entry, not on success
+        # should that change?
+        saw_change = False
+        if self.ui_params.reinit_params is not None:
+            for fname in self.ui_params.reinit_params:
+                oldval = self._reinit_params[fname]
+                newval = record["reinit_params"][fname]
+                if newval != oldval:
+                    saw_change = True
+                    self._reinit_params[fname] = newval
+        if saw_change:
+            # now apply the reinit params
+            self.reset_reinit_panel()
+            # take points from saved values, incorporates user edits
+            if reconstruct_points:
+                self.reconstruct_points()
+
+        # now restore the tabs
+        for tab, tab_record in zip(self.panels, record["tabs"]):
+            tab.load(tab_record)
 
 
 def prep_fit1d_params_for_fit1d(fit1d_params):

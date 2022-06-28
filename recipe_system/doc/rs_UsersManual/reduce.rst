@@ -131,6 +131,19 @@ always using the "best-match" returned by the local calibration manager.
     reduce S20161025S0111.fits --user_cal processed_bias:S20161025S0200_bias.fits
 
 
+Recording Parameters For Reduction
+----------------------------------
+When running reduce, you can ues the ``--record`` option to instruct it to record
+the parameters used in the reduction.  This allows you or someone to repeat an
+identical reduction later or to see what parameters were used.  To rerun the
+reduce, just run with the ``--replay`` option and specify the file you recorded to.
+
+::
+
+    reduce --record saved_reduction.json S20161025S0111.fits
+    reduce --replay saved_reduction.json
+
+
 Command Line Options and Switches
 =================================
 The ``reduce`` command help is provided by the ``--help`` option. This help is
@@ -270,6 +283,13 @@ Configuration Switches and Options
 
       -r display
 
+**--record <saved_arguments.json>**
+    Save the arguments used for reduce, plus any interactive tweaks made, to the
+    given json file for later replay.
+
+**--replay <saved_arguments.json>**
+    Replay a reduction using the arguments and interactive settings from the given
+    json file.
 
 **--suffix <SUFFIX>**
     Add "suffix" to output filenames at the end of the reduction.
