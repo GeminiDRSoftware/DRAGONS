@@ -20,6 +20,7 @@ def test_associate_sky_abba():
     data = [astrodata.open(download_from_archive(f)) for f in files]
 
     p = F2Longslit(data)
+    p.prepare()
     p.separateSky()
     p.associateSky()
 
@@ -44,6 +45,7 @@ def test_associate_sky_quasi_abcde(caplog):
     data = [astrodata.open(download_from_archive(f)) for f in files]
 
     p = F2Longslit(data)
+    p.prepare()
     p.separateSky()
     p.associateSky()
 
