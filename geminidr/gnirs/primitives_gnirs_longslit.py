@@ -30,6 +30,16 @@ class GNIRSLongslit(GNIRSSpect):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs_longslit)
 
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0,
+                        max_perpendicular_offset=None):
+        slit_length = ad1.MDF['slitlength_arcsec']
+        slit_width = float(ad1.slit()[:4])
+        return super()._fields_overlap(
+            ad1, ad2, frac_FOV=frac_FOV,
+            slit_length=slit_length,
+            slit_width=slit_width,
+            max_perpendicular_offset=max_perpendicular_offset)
+
     def addIllumMaskToDQ(self, adinputs=None, **params):
 
         pass
@@ -40,8 +50,8 @@ class GNIRSLongslit(GNIRSSpect):
         instances of the GNIRS MDFs not corresponding to reality. It calls
         primitives_gemini._addMDF() on each astrodata object to attach the MDFs,
         then performs corrections depending on the data. It also attaches two
-        columns, 'slitsize_arcsec' and 'slitsize_pixels' with the length of the
-        slit in arcseconds and pixels, respectively.
+        columns, 'slitlength_arcsec' and 'slitlength_pixels' with the length of
+        the slit in arcseconds and pixels, respectively.
 
         Any parameters given will be passed to primitives_gemini._addMDF().
 
