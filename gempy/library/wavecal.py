@@ -104,7 +104,7 @@ class LineList:
                 except ValueError:
                     pass
                 else:
-                    data_lines.append(line)
+                    data_lines.append(line.split('#')[0].strip())
 
         if is_air ^ is_vacuo:
             self._in_vacuo = is_vacuo
