@@ -8,6 +8,7 @@ filter_wavelengths = {
 
 array_properties = {
     # EDIT AS NEEDED
-    "gain"  :  3,   # electrons/ADU  (MADE UP VALUE for example)
+    # somehow the gain needs to be a list
+    "gain"  :  [3],   # electrons/ADU  (MADE UP VALUE for example)
 
 }

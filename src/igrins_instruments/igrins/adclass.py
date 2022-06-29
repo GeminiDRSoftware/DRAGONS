@@ -4,10 +4,12 @@ from gemini_instruments.common import Section
 from . import lookup
 from gemini_instruments import igrins
 
-    # igrins.AstroDataIgrins as _AstroDataIgrins)
+# Since gemini_instruments already defines AstroDataIgrins which is picked up
+# by the mapper, we create a new AstroDataIGRINS inheriting from the
+# gemini_instruments.
 
 class _AstroDataIGRINS(igrins.AstroDataIgrins):
-    """fix to bug in gemini_instrument module
+    """to improve gemini_instrument module
     """
     __keyword_dict = dict(
         airmass = 'AMSTART',
@@ -29,6 +31,14 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
     def _tag_sky(self):
         if self.phu.get('OBJTYPE') == 'SKY' or self[0].hdr.get('OBJTYPE') == 'SKY':
             return TagSet(['SKY', 'CAL'])
+
+    # @astro_data_tag
+    # def _tag_dark(self):
+    #     if self.phu.get('OBJTYPE') == 'DARK' or self[0].hdr.get('OBJTYPE') == 'DARK':
+    #         return TagSet(['DARK'], blocks=['IMAGE', 'SPECT'])
+    #     elif self.phu.get('OBJTYPE') == 'FLAT' or self[0].hdr.get('OBJTYPE') == 'FLAT':
+    #         if self.phu.get('FRMTYPE') == 'OFF' or self[0].hdr.get('FRMTYPE') == 'OFF':
+    #             return TagSet(['DARK'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_descriptor
     def observation_class(self):
@@ -68,7 +78,7 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
         """
         Returns 'type' the observation. For IGRINS, this will be one of,
 
-            'OBJECT', 'DARK', 'FLAT', 'ARC'
+            'OBJECT', 'DARK', 'FLAT_OFF', 'FLAT_ON', 'ARC'
 
         Returns
         -------
@@ -79,19 +89,29 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
         otype = self.phu.get(self._keyword_for('observation_type'))
         if not otype:
             otype = self[0].hdr.get(self._keyword_for('observation_type'))
+        ftype = self.phu.get("FRMTYPE")
+        if not otype:
+            ftype = self[0].hdr.get("FRMTYPE")
 
         if otype in ['STD', 'TAR']:
             otype = 'OBJECT'
         elif otype in ['FLAT']:
-            otype = 'FLAT'
-        elif otype in ['DARK']:
-            otype = 'DARK'
-        elif otype in ['ARC']:
-            otype = 'ARC'
-        elif otype in ['SKY']:
-            otype = 'SKY'
+            otype = f"FLAT_{ftype}"
 
         return otype
+
+    @astro_data_descriptor
+    def data_label(self):
+
+        # The IGRINS data does not have a DATALAB keyword inthe header. Thus,
+        # the `data_label` descriptor return None, which raises an error during
+        # storeProcessedDark. We try to define a ad-hoc data label out of its
+        # file name. But it should be revisited. FIXME
+
+        # The header has 'GEMPRID' etc, but no OBSID and such is defined.
+        _, obsdate, obsid = self.filename.split('.')[0].split('_')[:3]
+        datalab = f"igrins-{obsdate}-{obsid}"
+        return datalab
 
 class AstroDataIGRINS(_AstroDataIGRINS):
     # single keyword mapping.  add only the ones that are different
@@ -100,13 +120,6 @@ class AstroDataIGRINS(_AstroDataIGRINS):
     @astro_data_tag
     def _tag_instrument(self):
         return TagSet(['IGRINS', 'VERSION1'])
-
-
-    @astro_data_tag
-    def _tag_flat(self):
-        #if self.phu.get('SOMEKEYWORD') == 'Flat_or_something':
-        #    return TagSet(['FLAT', 'CAL']])
-        pass
 
     # ------------------
     # Common descriptors
