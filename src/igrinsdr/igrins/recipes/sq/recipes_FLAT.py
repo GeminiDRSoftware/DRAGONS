@@ -1,11 +1,25 @@
 """
-Recipes available to data with tags ['IGRINS', 'CAL', 'DARK'].
+Recipes available to data with tags ['IGRINS', 'CAL', 'FLAT'].
 Default is "makeProcessedDark"
 """
 
-recipe_tags = {'IGRINS', 'CAL', 'DARK'}
+recipe_tags = {'IGRINS', 'CAL', 'FLAT'}
 
-def makeProcessedDark(p):
+def estimateNoise(p):
+    """
+    """
+
+    p.selectFrame(frmtype="OFF"),
+    p.prepare()
+    p.streamPatternCorrected(rpc_mode="full")
+    p.estimateNoise()
+    p.selectStream(stream_name="LEVEL3_REMOVED")
+    p.stackDarks()
+    p.addNoiseTable()
+    p.setSuffix()
+    return
+
+def makeProcessedFlat(p):
     """
     This recipe performs the standardization and corrections needed to convert
     the raw input dark images into a single stacked dark image. This output
@@ -20,19 +34,11 @@ def makeProcessedDark(p):
     """
 
     p.prepare()
-    # p.addDQ(static_bpm=None)
-    p.streamPatternCorrected()
-    p.estimateNoise(),
-    p.selectLevel3Removed(),
-    p.stackDarks(),
-    p.addNoiseTable(),
     # p.makeIRAFCompatible()
-    p.storeProcessedDark()
-    # p.prepare()
-    # p.addDQ()
-    # p.addVAR(read_noise=True)
-    # #....
-    # p.storeProcessedDark()
+    p.storeProcessedFlat()
     return
 
-_default = makeProcessedDark
+# _default = makeProcessedFlat
+
+# This is for temporary for testing purpose.
+_default = estimateNoise
