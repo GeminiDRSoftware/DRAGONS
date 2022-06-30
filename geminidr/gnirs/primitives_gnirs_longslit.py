@@ -139,3 +139,5 @@ class GNIRSLongslit(GNIRSSpect):
 
             log.stdinfo('Converted slit sizes from arcseconds to millimeters '
                         f'in {ad.filename}.')
+
+        return adinputs

@@ -87,3 +87,5 @@ class F2Longslit(F2Spect):
                                   names=('x_ccd', 'slitlength_arcsec',
                                          'slitlength_pixels'))
                 ad.MDF = mdf_table
+
+        return adinputs
