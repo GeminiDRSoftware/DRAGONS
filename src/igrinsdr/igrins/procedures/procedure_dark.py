@@ -1,9 +1,12 @@
 import numpy as np
 import pandas as pd
 
-from igrins.procedures.readout_pattern_guard import remove_pattern_from_guard
-from igrins.procedures.readout_pattern_helper import (apply_rp_2nd_phase,
-                                                      apply_rp_3rd_phase)
+from ..igrins_pipeline.procedures.readout_pattern_guard import (
+    remove_pattern_from_guard)
+
+from ..igrins_pipeline.procedures.readout_pattern_helper import (
+    apply_rp_2nd_phase,
+    apply_rp_3rd_phase)
 
 
 def make_guard_n_bg_subtracted_images(dlist, rpc_mode="guard", bias_mask=None,
