@@ -10,7 +10,7 @@ def test_ad_igrins():
    ad = astrodata.open(fn)
    assert ad.instrument() == "IGRINS"
    assert ad.observation_class() == "partnerCal"
-   assert ad.observation_type() == "FLAT"
+   assert ad.observation_type() == "FLAT_OFF"
    tags = set(["IGRINS", "RAW", "UNPREPARED", "VERSION1", "GEMINI"])
    assert tags.issubset(ad.tags)
 
