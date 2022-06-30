@@ -88,6 +88,15 @@ class determineDistortionConfig(config.Config):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     debug = config.Field("Display line traces on image display?", bool, False)
 
+class determineSlitEdgesConfig(config.Config):
+    edges1 = config.ListField("List of left edges of illuminated region(s)",
+                              float, default=None, minLength=1,
+                              optional=True, single=True)
+    edges2 = config.ListField("List of right edges of illuminated region(s)",
+                              float, default=None, minLength=1,
+                              optional=True, single=True)
+    debug = config.Field("Plot fits of edges and print extra information?",
+                         bool, False)
 
 class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
@@ -101,14 +110,15 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                             "local": "weighted by strength relative to local peaks"},
                                    default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
-    min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
-                             check=list_of_ints_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=5000., optional=True)
     dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
                                    min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
+    absorption = config.Field("Is feature type absorption?", bool, False)
+    order = config.RangeField("Order of fitting function", int, None, min=0,
+                              optional=True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
@@ -397,10 +407,17 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
+class maskBeyondSlitConfig(config.Config):
+    debug = config.Field("Plot the mask created.",
+                         bool, False)
+
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    threshold = config.RangeField("Threshold for flagging unilluminated pixels",
+                                  float, 0.01, min=0, inclusiveMin=False)
+    interactive = config.Field("Interactive fitting?", bool, False)
 
     def setDefaults(self):
         self.order = 20

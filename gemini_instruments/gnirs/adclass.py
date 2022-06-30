@@ -7,7 +7,7 @@ from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from ..common import build_group_id
 
 from .lookup import detector_properties, nominal_zeropoints, read_modes
-from .lookup import pixel_scale_shrt, pixel_scale_long
+from .lookup import pixel_scale_shrt, pixel_scale_long, dispersion_by_config
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -15,7 +15,9 @@ from .. import gmu
 
 class AstroDataGnirs(AstroDataGemini):
 
-    __keyword_dict = dict(central_wavelength='GRATWAVE',)
+    __keyword_dict = dict(central_wavelength='GRATWAVE',
+                          array_name='ARRAYID',
+                          grating_order='GRATORD')
 
     @staticmethod
     def _matches_data(source):
@@ -68,6 +70,95 @@ class AstroDataGnirs(AstroDataGemini):
                 return TagSet(['PINHOLE', 'CAL'], remove=['GCALFLAT'])
 
             return TagSet(['FLAT', 'CAL'])
+
+    @returns_list
+    @astro_data_descriptor
+    def array_name(self):
+        """
+        Returns the name of each array
+
+        Returns
+        -------
+        list of str/str
+            the array names
+        """
+        return self.phu.get(self._keyword_for('array_name'))
+
+    @astro_data_descriptor
+    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+        """
+        Returns the dispersion in meters per pixel as a list (one value per
+        extension) or a float if used on a single-extension slice. It is
+        possible to control the units of wavelength using the input arguments.
+
+        Parameters
+        ----------
+        asMicrometers : bool
+            If True, return the wavelength in microns
+        asNanometers : bool
+            If True, return the wavelength in nanometers
+        asAngstroms : bool
+            If True, return the wavelength in Angstroms
+
+        Returns
+        -------
+        list/float
+            The dispersion(s)
+        """
+
+        telescope = self.telescope()
+        if telescope == "Gemini-South":
+            other_telescope = "Gemini-North"
+        else:
+            other_telescope = "Gemini-South"
+
+        grating = self._grating(pretty=True, stripID=True)
+
+        if self.pixel_scale() == pixel_scale_shrt:
+            camera = "Short"
+        elif self.pixel_scale() == pixel_scale_long:
+            camera = "Long"
+        else:
+            camera = None
+
+        filter = str(self.filter_name(pretty=True))[0]
+        config = f"{telescope}, {grating}, {camera}"
+        config_other_site = f"{other_telescope}, {grating}, {camera}"
+
+        def get_dispersion_by_config(_config, _filter):
+            return dispersion_by_config.get(_config, {}).get(_filter)
+
+        dispersion = get_dispersion_by_config(config, filter)
+        if dispersion is None:
+            dispersion = get_dispersion_by_config(config_other_site, filter)
+            if dispersion is None:
+                return None
+
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        output_units = "meters" # By default
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+
+        if dispersion is not None:
+            dispersion = gmu.convert_units('angstroms', dispersion, output_units)
+
+            if not self.is_single:
+                dispersion = [dispersion] * len(self)
+
+        return dispersion
+
+    @returns_list
+    @astro_data_descriptor
+    def dispersion_axis(self):
+        # TODO: Document and make sure the axis is the proper one
+        return 2
 
     @astro_data_descriptor
     def array_section(self, pretty=False):
@@ -560,7 +651,6 @@ class AstroDataGnirs(AstroDataGemini):
         else:
             return [int(well * coadds / g) if well and g else None
                     for g in gain]
-
 
     @astro_data_descriptor
     def slit(self, stripID=False, pretty=False):

@@ -5,6 +5,8 @@
 #
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
+from copy import copy, deepcopy
+from itertools import islice
 import os
 import re
 import warnings
@@ -22,12 +24,13 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, fitting, models
 from astropy.stats import sigma_clip
-from astropy.table import Table, vstack, MaskedColumn
+from astropy.table import Table, hstack, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from numpy.ma.extras import _ezclump
 from scipy import optimize
+from scipy.signal import find_peaks
 from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
@@ -50,12 +53,14 @@ from gempy.library import tracing, transform, wavecal
 from gempy.library.astrotools import array_from_list, transpose_if_needed
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
+from gempy.library.matching import KDTreeFitter, match_sources, fit_model
 from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
 from . import parameters_spect
-from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT
+from ..interactive.fit.help import CALCULATE_SENSITIVITY_HELP_TEXT, SKY_CORRECT_FROM_SLIT_HELP_TEXT, \
+    NORMALIZE_FLAT_HELP_TEXT
 from ..interactive.interactive import UIParameters
 
 matplotlib.rcParams.update({'figure.max_open_warning': 0})
@@ -536,10 +541,9 @@ class Spect(Resample):
               enumerate(zip(ad, wave_models, wave_frames, sky_models,
                             output_frames)):
 
-                if ext.dispersion_axis() == 1:
-                    t = wave_model & sky_model
-                else:
-                    t = sky_model & wave_model
+                t = wave_model & sky_model
+                if ext.dispersion_axis() == 2:
+                    t = models.Mapping((1, 0)) | t
                 # We need to create a new output frame with a copy of the
                 # ARC's SpectralFrame in case there's a change from air->vac
                 # or vice versa
@@ -976,6 +980,7 @@ class Spect(Resample):
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
+                #.data[:,0:1500]
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1 - dispaxis,
                                                             start=start, initial=initial_peaks,
                                                             rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
@@ -1017,7 +1022,7 @@ class Spect(Resample):
                     model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
                     model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
 
-                self.viewer.color = "blue"
+                self.viewer.color = "red"
                 spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
                                              ext.shape[1 - dispaxis] // (step * 10))
                 spectral_coords = np.unique(ref_coords[1 - dispaxis])
@@ -1050,6 +1055,418 @@ class Spect(Resample):
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+    def determineSlitEdges(self, adinputs=None, **params):
+        """
+        Finds the edges of the illuminated regions of the CCD and stores the
+        Chebyshev polynomials used to fit them in a SLITEDGE table.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images.
+        slit_length : int or float
+            The expected length of the slit, in a long slit observation, in
+            pixels.
+        slit_center : int or float
+            The expected position of the center of the slit on the detector, in
+            pixels.
+        debug : bool, Default: False
+            Whether to print out additional information while running.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images with a `SLITEDGE` table attached
+            to each extension.
+        """
+        # Set up log
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        # Parse parameters
+        debug = params['debug']
+        edges1 = params['edges1']
+        edges2 = params['edges2']
+        if edges1 is not None and not isinstance(edges1, list):
+            edges1 = [edges1]
+        if edges2 is not None and not isinstance(edges2, list):
+            edges2 = [edges2]
+
+        # How far from the edge of the detector an edge must be to be traced.
+        # I.e., peaks within this many pixels of the detector edge likely won't
+        # be able to be traced.
+        buffer = 8
+
+        # Third-order is generally a good balance.
+        fit1d_params = fit_1D.translate_params({"function": "chebyshev",
+                                                "order": 3})
+        for ad in adinputs:
+
+            try:
+                getattr(ad, "MDF")
+            except AttributeError:
+                log.warning(f"MDF not found for {ad.filename} - no "
+                            "SLITEDGE table will be created.")
+                continue
+
+            log.stdinfo(f'Finding edges of illuminated region for {ad.filename}')
+
+            # Get the expected slit center and length for long slit.
+            if (edges1 is not None) and (edges2 is not None):
+                log.fullinfo('Using user-supplied edges.')
+                exp_edges_l, exp_edges_r = edges1, edges2
+            elif (edges1 is None) and (edges2 is None):
+                exp_edges_l, exp_edges_r = self._get_slit_edge_estimates(ad)
+            else:
+                log.warning("Both `edges1` and `edges2` parameters need to be "
+                            "provided in order to use them. Using "
+                            "edges from mask definition files.")
+                exp_edges_l, exp_edges_r = self._get_slit_edge_estimates(ad)
+
+            slit_widths = [r - l for l, r in zip(exp_edges_l, exp_edges_r)]
+            mdf_edge_guesses = [(l, r) for l, r in zip(exp_edges_l,
+                                                       exp_edges_r)]
+            log.fullinfo('Expected edge positions:\n'
+                         f'Left/bottom edges: {exp_edges_l}\n'
+                         f'Right/top edges: {exp_edges_r}\n')
+
+            # This is the number of rows/columns to sum around the row with
+            # the maxium flux to create the profile for finding edges, to
+            # help eliminate cosmic rays. The row used for finding edges
+            # will also be at least this far from the ends of the detector.
+            offset = 20
+
+            # How far to search (in pixels) to match expected and detected
+            # peaks.
+            search_rad = 60
+
+            for ext in ad:
+
+                dispaxis = 2 - ext.dispersion_axis()
+                log.fullinfo(f'Dispersion axis is axis {dispaxis}.')
+
+                # Find the row with the highest median flux, at least `offset`
+                # pixels away from the edge of the detector.
+                collapsed = np.median(
+                    ext.data,
+                    axis=ext.dispersion_axis()-1)
+                cut = collapsed[offset:-offset].argmax()
+                cut += offset
+                row_or_col = 'row' if dispaxis == 0 else 'column'
+                log.fullinfo(f'Creating profile around {row_or_col} {cut}.')
+
+                # Take the first derivative of flux to find the slit edges.
+                # Left edges will be peaks, right edges troughs, so make a
+                # second negative copy to find right edges separately.
+                diffarr_l = np.diff(ext.data, axis=1-dispaxis)
+                diffarr_r = -diffarr_l
+
+                # Take median of a small slice to smooth over cosmic rays:
+                s = slice(cut-offset, cut+offset)
+                if dispaxis == 0:
+                    median_slice_l = np.median(diffarr_l[s, :],
+                                                axis=[dispaxis])
+                    median_slice_r = np.median(diffarr_r[s, :],
+                                                axis=[dispaxis])
+                elif dispaxis == 1:
+                    median_slice_l = np.median(diffarr_l[:, s],
+                                                axis=[dispaxis])
+                    median_slice_r = np.median(diffarr_r[:, s],
+                                                axis=[dispaxis])
+
+                # Search for position of peaks in the first derivative of flux
+                # perpendicular to the dispersion direction. Apply a 3.5-sigma
+                # limit to avoid picking up too many noise peaks, but
+                # match_sources later on should pick out the real ones.
+                std = np.std(median_slice_l)
+                if exp_edges_l[0] < 0:
+                    # If the expected edge position if off the end of the
+                    # detector, don't try to match as it might pick up
+                    # spurious peaks close to the edge of the detector.
+                    positions_l = []
+                else:
+                    positions_l, _ = find_peaks(median_slice_l,
+                                                height=3.5*std,
+                                                distance=5)
+                    # find_peaks returns integer values, so use pinpoint_peaks
+                    # to better describe the positions.
+                    positions_l, _ = tracing.pinpoint_peaks(median_slice_l,
+                                                            peaks=positions_l)
+                if exp_edges_r[0] > ext.shape[1-dispaxis]:
+                    positions_r = []
+                else:
+                    positions_r, _ = find_peaks(median_slice_r,
+                                                height=3.5*std,
+                                                distance=5)
+                    positions_r, _ = tracing.pinpoint_peaks(median_slice_r,
+                                                            peaks=positions_r)
+
+                log.fullinfo('Found edge candidates at:\n'
+                             f'Left/bottom: {positions_l}\n'
+                             f'Right/top: {positions_r}')
+                if debug:
+                    # Print a diagnostic plot of the profile being fitted.
+                    plt.plot(median_slice_l, label='1st-derivative of flux')
+                    plt.plot(median_slice_r, label='Inverse')
+                    plt.xlabel(f'{row_or_col.capitalize()} number')
+                    plt.legend()
+
+                # Check if both edges have been located; if the list returned
+                # by find_peaks is empty, fill in the position by assuming
+                # the other edge is at the length of the slit away. (This may
+                # be off the edge of the detector.)
+                if (len(positions_l) == 0) and (len(positions_r) == 0):
+                    log.warning("No edges could be found for "
+                                f"{ad.orig_filename} - no SLITEDGE table "
+                                "will be attached.")
+                    if debug:
+                        plt.show()
+                    continue
+
+                edges_l, edges_r = [], []
+
+                # Handlle cases where one edge of the illuminated region is off
+                # the side of the detector by constructing an "edge" based on
+                # the expected breadth of the region. If both edges are on,
+                # run match_sources on both to find the closest match to each.
+                if len(slit_widths) == 1:
+                    if (len(positions_l) == 0) and (len(positions_r) != 0):
+                        edge_ids_r = match_sources(positions_r,
+                                                   exp_edges_r,
+                                                   radius=search_rad)
+                        for i, j in enumerate(edge_ids_r):
+                            if j > -1:  # a matched position
+                                edges_r.append(positions_r[i])
+                                edges_l.append(
+                                    positions_r[i] - slit_widths[0])
+
+                    elif (len(positions_r) == 0) and (len(positions_l) != 0):
+                        edge_ids_l = match_sources(positions_l,
+                                                   exp_edges_l,
+                                                   radius=search_rad)
+                        for i, j in enumerate(edge_ids_l):
+                            if j > -1:  # a matched position
+                                edges_l.append(positions_l[i])
+                                edges_r.append(
+                                    positions_l[i] + slit_widths[0])
+
+                    elif (len(positions_r) != 0) and (len(positions_l) != 0):
+                        edge_ids_r = match_sources(positions_r,
+                                                    exp_edges_r,
+                                                    radius=search_rad)
+                        edge_ids_l = match_sources(positions_l,
+                                                    exp_edges_l,
+                                                    radius=search_rad)
+                        edges_l = [positions_l[i] for i, j in
+                                    enumerate(edge_ids_l) if j > -1]
+                        edges_r = [positions_r[i] for i, j in
+                                    enumerate(edge_ids_r) if j > -1]
+
+                        if len(edges_l) == 0 and len(edges_r) != 0:
+                            edges_l = [r - slit_widths[0] for r in edges_r]
+                        elif len(edges_r) == 0 and len(edges_l) != 0:
+                            edges_r = [l + slit_widths[0] for l in edges_l]
+
+                # Generate pairs of slit edges.
+                edge_pairs = [(l, r) for l, r in zip(edges_l, edges_r)]
+
+                if not edge_pairs:
+                    log.warning("No edges could be determined for "
+                                f"{ad.filename} - no SLITEDGE table wil be "
+                                "attached. Consider setting positions of "
+                                "edges manually using the `edges1` and "
+                                "`edges2` parameters.")
+                    if debug:
+                        plt.show()
+                    continue
+
+                if debug:
+                    for pair in edge_pairs:
+                        for pos in pair:
+                            plt.axvline(pos, color='Black', alpha=0.5,
+                                        linestyle='--')
+                    plt.legend()
+                    plt.show()
+
+                # Create the model to shift and scale the slit to the found
+                # edges.
+                if len(edge_pairs) == 1:
+                    pair_center = (edge_pairs[0][0] + edge_pairs[0][1]) / 2
+                    m_recenter = models.Shift(-pair_center,
+                                              fixed={'offset': True})
+                    m_shift = models.Shift(0, bounds={'offset': (-search_rad,
+                                                                 search_rad)})
+                    m_scale = models.Scale(1., bounds={'factor': (0.98, 1.02)})
+                    m_init = m_recenter | m_shift | m_scale | m_recenter.inverse
+
+                edge_num = 0
+                models_dict = {}
+                # Progressively increase the sigma parameter of the search,
+                # since it being too narrow sometimes causes the fitting to
+                # fail.
+                for pair, guess in zip(edge_pairs, mdf_edge_guesses):
+                    models_dict[edge_num] = {"left": None, "right": None}
+                    log.fullinfo(f'Fitting guess at {guess} to {pair}.')
+
+                    n_sigma = 1
+                    max_sigma = 10
+                    tolerance = 1.0
+                    while True:
+                        log.fullinfo(f'Trying fitting with sigma={n_sigma}')
+                        if n_sigma > max_sigma:
+                            raise RuntimeError("Unable to fit slit edges. "
+                                               "Slit length may need ajusting "
+                                               "using `edges1` and `edges2` "
+                                               "parameters.")
+                        with warnings.catch_warnings():
+                            warnings.simplefilter('ignore', AstropyUserWarning)
+                            m_final = fit_model(m_init, pair, guess,
+                                                sigma=n_sigma, verbose=debug)
+
+                        n_sigma += 1
+                        expected = m_final.inverse(guess)
+                        if abs(expected[0] - pair[0]) < tolerance and\
+                           abs(expected[1] - pair[1]) < tolerance:
+                            break
+
+                    log.fullinfo(f"Found a shift of {m_final.offset_1.value} "
+                                 "and a scale of "
+                                 f"{m_final.factor_2.value}.")
+                    log.fullinfo(f"Looking for edges at "
+                                 f"{expected}.")
+
+                    for loc, arr, edge in zip(m_final.inverse(guess),
+                                              [diffarr_l, diffarr_r],
+                                              ('left', 'right')):
+
+                        # The "- 1" here is because np.diff shrinks the array
+                        # by 1 in taking the first derivative.
+                        if (loc < buffer) or\
+                           (loc > ext.data.shape[1-dispaxis] - buffer - 1):
+                           log.debug(f"Not tracing at {loc} bacause "
+                                     "it is off (or too close to) the "
+                                     "detector edge.")
+                           continue
+
+                        # Trace the edge. max_shift is slightly larger than the
+                        # default value of 0.05 since there's (theoretically) no
+                        # chance of confusion with other lines, and some flats
+                        # have enough 'tilt' to exceed that value.
+                        try:
+                            ref_coords, in_coords = tracing.trace_lines(
+                                arr, dispaxis, start=cut,
+                                initial=[loc],
+                                variance=ext.variance,
+                                max_missed=8,
+                                step=20,
+                                max_shift=0.08,
+                                min_peak_value=5*ext.read_noise())
+                        except ValueError:
+                            # Unable to trace edge. If one edge can't be
+                            # traced but the other can, the same model (shifted
+                            # by the slit breadth) can be applied to the
+                            # untraced edge, so just continue for now.
+                            continue
+
+                        # This complicated bit of code parses out coordinates
+                        # for the traced edges.
+                        coords = np.array([list(c1) + list(c2)
+                                           for c1, c2 in
+                                           zip(ref_coords.T, in_coords.T)
+                                           if abs(c1[dispaxis] - loc) < 1.])
+                        values = np.array(sorted(coords,
+                                                 key=lambda c: c[1 - dispaxis])).T
+                        in_coords_new = values[2:]
+
+                        if len(in_coords_new) == 0:
+                            # Then no edge has been able to be fitted, probably
+                            # because it's off the end of the CCD or very
+                            # close. Just continue for now and copy the model
+                            # from the other edge of the pair at the end.
+                            continue
+
+                        else:
+                            # Log the trace.
+                            min_value = in_coords_new[1 - dispaxis].min()
+                            max_value = in_coords_new[1 - dispaxis].max()
+                            log.debug(f"Edge at {loc:.1f} traced from "
+                                      f"{min_value} to {max_value}.")
+
+                            # Perform the fit of the coordinates for the traced
+                            # edges.
+                            weights = collapsed[
+                                in_coords_new[1 - dispaxis].astype(int)]
+
+                            # Create a plot of weights for inspection.
+                            if debug:
+                                plt.plot(in_coords_new[1-dispaxis], weights,
+                                         label='Weights')
+                                plt.xlabel(f'{row_or_col.capitalize()} number')
+                                plt.legend()
+                                plt.show()
+
+                            # Perform the fit.
+                            _fit_1d = fit_1D(
+                                in_coords_new[dispaxis],
+                                weights=np.sqrt(weights),
+                                domain=[0, ext.shape[1 - dispaxis] - 1],
+                                points=in_coords_new[1 - dispaxis],
+                                plot=debug,
+                                **fit1d_params,)
+                            model_fit = am.model_to_table(_fit_1d.model)
+                            models_dict[edge_num][edge] = model_fit
+
+                    # Increment the number of edges processed.
+                    edge_num += 1
+
+                for key, pair in models_dict.items():
+
+                    if pair['left'] is None and pair['right'] is not None:
+                        pair['left'] = deepcopy(pair['right'])
+                        pair['left']['c0'] -= slit_widths[key]
+                        log.debug("Copying right/top edge to left/bottom.")
+
+                    if pair['right'] is None and pair['left'] is not None:
+                        pair['right'] = deepcopy(pair['left'])
+                        pair['right']['c0'] += slit_widths[key]
+                        log.debug("Copying left/bottom edge to right/top.")
+
+                # With all edges fitted (or not), create the SLITEDGE table.
+                edge_num = 0
+                slit_table = []
+                make_table = []
+                for key, pair in models_dict.items():
+                    if pair['left'] is None and pair['right'] is None:
+                        log.warning("Couldn't fit either edge for the pair "
+                                    "with edges at "
+                                    f"{m_final.inverse(mdf_edge_guesses[key])}\n"
+                                    "This may be because the slit length "
+                                    "estimate is incorrect. You may be able "
+                                    "to fix this by manually giving the edges "
+                                    "with the `edges1` and `edges2` parameters. "
+                                    "No SLITEDGE table will be created.")
+                        make_table.append(False)
+                        continue
+
+                    # If both edges have models, create a row for the table.
+                    for edge_model in pair.values():
+                        row = Table(np.array([1, edge_num]),
+                                names=('slit', 'edge'))
+                        row = hstack([row, edge_model], join_type='inner')
+                        slit_table.append(row)
+                        edge_num += 1
+                        make_table.append(True)
+
+                # Attach the table to the extension as a new plane if none of
+                # the edge pairs failed to be fit.
+                if all(make_table):
+                    ext.SLITEDGE = vstack(slit_table)
+                    if debug:
+                        log.debug('Appending table below as "SLITEDGE".')
+                        log.fullinfo(ext.SLITEDGE)
 
         return adinputs
 
@@ -1278,6 +1695,9 @@ class Spect(Resample):
         nbright : int (or may not exist in certain class methods)
             Number of brightest lines to cull before fitting
 
+        absorption : bool
+            If feature type is absorption (default: "False")
+
         interactive : bool
             Use the interactive tool?
 
@@ -1301,6 +1721,7 @@ class Spect(Resample):
         sfx = params["suffix"]
         arc_file = params["linelist"]
         interactive = params["interactive"]
+        absorption = params["absorption"]
 
         # TODO: This decision would prevent MOS data being reduced so need
         # to think a bit more about what we're going to do. Maybe make
@@ -1335,6 +1756,11 @@ class Spect(Resample):
             uiparams.fields["center"].max = min(
                 ext.shape[ext.dispersion_axis() - 1] for ext in ad)
 
+            if absorption:
+                ad = deepcopy(ad)
+                for i, data in enumerate(ad.data):
+                    ad[i].data = -data
+
             if interactive:
                 all_fp_init = [fit_1D.translate_params(
                     {**params, "function": "chebyshev"})] * len(ad)
@@ -1345,12 +1771,15 @@ class Spect(Resample):
                     domains.append([0, ext.shape[axis] - 1])
                 reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
+
+
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
                     tab_name_fmt="Slit {}",
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
+                    absorption=absorption,
                     title="Wavelength Solution",
                     primitive_name=self.myself(),
                     filename_info=ad.filename,
@@ -1690,7 +2119,10 @@ class Spect(Resample):
                 # data, mask, variance are all arrays in the GMOS orientation
                 # with spectra dispersed horizontally
                 if dispaxis == 0:
-                    ext = ext.transpose()
+                    ext_oriented = ext.__class__(
+                        nddata=ext.nddata.T, phu=ad.phu, is_single=True)
+                else:
+                    ext_oriented = ext
 
                 if interactive:
                     # build config for interactive
@@ -1713,10 +2145,11 @@ class Spect(Resample):
 
                     # pass "direction" purely for logging purposes
                     locations, all_limits = interactive_find_source_apertures(
-                        ext, ui_params=ui_params, **aper_params, direction="column" if dispaxis == 0 else "row")
+                        ext_oriented, ui_params=ui_params, **aper_params,
+                        direction="column" if dispaxis == 0 else "row")
                 else:
                     locations, all_limits, _, _ = tracing.find_apertures(
-                        ext, **aper_params)
+                        ext_oriented, **aper_params)
 
                 if locations is None or len(locations) == 0:
                     # Delete existing APERTURE table
@@ -2288,6 +2721,89 @@ class Spect(Resample):
 
         return adoutputs
 
+
+    def maskBeyondSlit(self, adinputs=None, **params):
+        """
+        This primitive masks unilluminated regions defined by a mask definition
+        file (MDF).
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Spectra with unilluminated regions.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Spectra with regions outside the illuminated region masked.
+
+        """
+        # Set up log
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        # Parse parameters
+        debug = params['debug']
+
+        for ad in adinputs:
+            log.fullinfo(f"Masking unilluminated regions in {ad.filename}")
+
+            for ext in ad:
+
+                # If there's no SLITEDGE table from determineSlitEdge, we can't
+                # create a mask, so just pass.
+                try:
+                    slittab = ext.SLITEDGE
+                except AttributeError:
+                    log.warning(f"No SLITEDGE table found for {ad.filename} - "
+                                "no masking was performed.")
+                    continue
+
+                dispaxis = 2 - ext.dispersion_axis()
+                # Create pairs of slit edge models by zipping consecutive pairs
+                # of entries from the table.
+                pairs = [(m, n) for m, n in zip(islice(slittab, 0, None, 2),
+                                                islice(slittab, 1, None, 2))]
+
+                if len(pairs) == 1:  # longslit data
+
+                    model1 = am.table_to_model(pairs[0][0])
+                    model2 = am.table_to_model(pairs[0][1])
+
+                    height = ext.data.shape[0 - dispaxis]
+                    width = ext.data.shape[1 - dispaxis]
+
+                    # Create a NumPy mesh grid to hold the mask.
+                    x, y = np.mgrid[0:width, 0:height]
+
+                    if dispaxis == 0:
+                        y1 = model1(y)
+                        y2 = model2(y)
+
+                        # Mask outside the two edges of the (single) longslit.
+                        mask = (x < y1) | (x > y2)
+
+                    elif dispaxis == 1:
+                        x1 = model1(x)
+                        x2 = model2(x)
+
+                        mask = (y < x1) | (y > x2)
+
+                    ext.mask |= mask.T * DQ.unilluminated
+
+                    if debug:
+                        # Show a plot of the DQ plane after applying the mask
+                        plt.subplot(111)
+                        plt.imshow(ext.mask, origin='lower', cmap='gray')
+                        plt.xlabel('X')
+                        plt.ylabel('Y')
+                        plt.show()
+
+                # TODO: Handle MOS data.
+
+        return adinputs
+
+
     def normalizeFlat(self, adinputs=None, **params):
         """
         This primitive normalizes a spectroscopic flatfield, by fitting
@@ -2325,13 +2841,16 @@ class Spect(Resample):
             maximum number of rejection iterations
         grow : float/False
             growth radius for rejected pixels
+        interactive : bool
+            set to activate an interactive preview to fine tune the input parameters
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        center = params["center"]
-        nsum = params["nsum"]
+        threshold = params["threshold"]
+        interactive_reduce = params["interactive"]
+
         fit1d_params = fit_1D.translate_params(params)
 
         for ad in adinputs:
@@ -2350,56 +2869,142 @@ class Spect(Resample):
                 mosaicked = False
 
             # This will loop over MOS slits or XD orders
-            for ext in admos:
-                dispaxis = 2 - ext.dispersion_axis()  # python sense
-                direction = "row" if dispaxis == 1 else "column"
+            def reconstruct_points(ui_params):
+                masked_data_arr = list()
+                x_arr = list()
+                weights_arr = list()
+                for ext in admos:
+                    dispaxis = 2 - ext.dispersion_axis()  # python sense
+                    direction = "row" if dispaxis == 1 else "column"
 
-                data, mask, variance, extract_slice = tracing.average_along_slit(
-                    ext, center=center, nsum=nsum)
-                log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                            format(direction, extract_slice.start + 1, extract_slice.stop))
-                mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
-                slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
+                    data, mask, variance, extract_slice = tracing.average_along_slit(
+                        ext, center=ui_params.center, nsum=ui_params.nsum)
+                    log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
+                                format(direction, extract_slice.start + 1, extract_slice.stop))
+                    mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
+                    slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
-                masked_data = np.ma.masked_array(data, mask=mask)
-                weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
-                center = (extract_slice.start + extract_slice.stop) // 2
-                waves = ext.wcs(range(len(masked_data)), center)[0]
+                    masked_data = np.ma.masked_array(data, mask=mask)
+                    weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
+                    center = (extract_slice.start + extract_slice.stop) // 2
+                    # uncomment this to use if we want to calculate the waves as our x inputs
+                    # and wire it up appropriately
+                    # waves = ext.wcs(range(len(masked_data)),
+                    #                 np.full_like(masked_data, center))[0]
 
-                # We're only going to do CCD-to-CCD normalization if we've
-                # done the mosaicking in this primitive; if not, we assume
-                # the user has already taken care of it (if it's required).
-                nslices = len(slices)
-                if nslices > 1 and mosaicked:
-                    coeffs = np.ones((nslices - 1,))
-                    boundaries = list(slice_.stop for slice_ in slices[:-1])
-                    result = optimize.minimize(QESpline, coeffs, args=(waves, masked_data,
-                                                                       weights, boundaries,
-                                                                       20),
-                                               tol=1e-7, method='Nelder-Mead')
-                    if not result.success:
-                        log.warning(f"Problem with spline fitting: {result.message}")
+                    # We're only going to do CCD-to-CCD normalization if we've
+                    # done the mosaicking in this primitive; if not, we assume
+                    # the user has already taken care of it (if it's required).
+                    nslices = len(slices)
+                    if nslices > 1 and mosaicked:
+                        coeffs = np.ones((nslices - 1,))
+                        boundaries = list(slice_.stop for slice_ in slices[:-1])
+                        result = optimize.minimize(QESpline, coeffs, args=(waves, masked_data,
+                                                                           weights, boundaries,
+                                                                           20),
+                                                   tol=1e-7, method='Nelder-Mead')
+                        if not result.success:
+                            log.warning(f"Problem with spline fitting: {result.message}")
 
-                    # Rescale coefficients so centre-left CCD is unscaled
-                    coeffs = np.insert(result.x, 0, [1])
-                    coeffs /= coeffs[len(coeffs) // 2]
-                    for coeff, slice_ in zip(coeffs, slices):
-                        masked_data[slice_] *= coeff
-                        weights[slice_] /= coeff
-                    log.stdinfo("QE scaling factors: " +
-                                " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
-                fit1d = fit_1D(masked_data, points=waves, weights=weights,
-                               **fit1d_params)
+                        # Rescale coefficients so centre-left CCD is unscaled
+                        coeffs = np.insert(result.x, 0, [1])
+                        coeffs /= coeffs[len(coeffs) // 2]
+                        for coeff, slice_ in zip(coeffs, slices):
+                            masked_data[slice_] *= coeff
+                            weights[slice_] /= coeff
+                        log.stdinfo("QE scaling factors: " +
+                                    " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
+                    x_arr.append(np.arange(len(masked_data)))
+                    masked_data_arr.append(masked_data)
+                    weights_arr.append(weights)
+                return { "y": masked_data_arr, "x": x_arr,
+                         "weights": weights_arr }
 
+            config = self.params[self.myself()]
+            config.update(**params)
+            uiparams = UIParameters(config, reinit_params=["center", "nsum"])
+
+            # let's updaet teh max center to something reasonable
+            dispaxis = 2 - ad[0].dispersion_axis()
+            npix = ad[0].shape[1 - dispaxis]
+            uiparams.fields['center'].max = npix
+            uiparams.fields['nsum'].max = npix
+
+            data = reconstruct_points(uiparams)
+            masked_data_arr = data["y"]
+            x_arr = data["x"]
+            weights_arr = data["weights"]
+
+            fit1d_arr = list()
+
+            if interactive_reduce:
+                all_domains = list()
+                all_fp_init = list()
+                for ext, x in zip(admos, x_arr):
+                    pixels = np.arange(ext.shape[1])
+                    all_domains.append([min(pixels), max(pixels)])
+                    dispaxis = 2 - ext.dispersion_axis()
+                    all_fp_init.append(fit_1D.translate_params(params))
+
+                config = self.params[self.myself()]
+                config.update(**params)
+
+                if ad.filename:
+                    filename_info = ad.filename
+                else:
+                    filename_info = ''
+
+                visualizer = fit1d.Fit1DVisualizer(reconstruct_points,
+                                                   all_fp_init,
+                                                   tab_name_fmt="CCD {}",
+                                                   xlabel='x (pixels)', ylabel='counts',
+                                                   domains=all_domains,
+                                                   title="Normalize Flat",
+                                                   primitive_name="normalizeFlat",
+                                                   filename_info=filename_info,
+                                                   enable_user_masking=False,
+                                                   enable_regions=True,
+                                                   help_text=NORMALIZE_FLAT_HELP_TEXT,
+                                                   recalc_inputs_above=False,
+                                                   # modal_message="Recalculating",
+                                                   ui_params=uiparams)
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                fit1d_arr = visualizer.results()
+            else:
+                for ext, masked_data, x, weights in zip(admos, masked_data_arr, x_arr, weights_arr):
+                    fitted_data = fit_1D(masked_data, points=x, weights=weights,
+                                         **fit1d_params)
+                    fit1d_arr.append(fitted_data)
+
+            for ext, fitted_data, x in zip(admos, fit1d_arr, x_arr):
                 if not mosaicked:
-                    flat_data = np.tile(fit1d.evaluate(), (ext.shape[1-dispaxis], 1))
+                    # In the case where this was run interactively, the resulting fit has pre-masked points (x).
+                    # This happens before the interactive code builds the fit_1D.  Using the default evaluate()
+                    # points on these fit_1Ds will send a trimmed list of points, resulting in trimmed output which
+                    # we don't want - and also is inconsistent with the non-interactive code where the array
+                    # was masked but the x values were not.
+                    #
+                    # Instead, we want to call to evaluate with an explicit set of points using our pre-masked copy
+                    # of the x values to get a consistent and correctly-sized output.
+                    fdeval = fitted_data.evaluate(points=x)
+                    flat_data = np.tile(fdeval, (ext.shape[1-dispaxis], 1))
+                    flat_mask = at.transpose_if_needed(
+                        np.tile(np.where(fdeval / fdeval.max() < threshold,
+                                         DQ.unilluminated, DQ.good),
+                                (ext.shape[1-dispaxis], 1)).astype(DQ.datatype),
+                        transpose=(dispaxis==0))[0]
                     ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
+                    if ext.mask is None:
+                        ext.mask = flat_mask
+                    else:
+                        ext.mask |= flat_mask
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
             # coordinate along the dispersion direction, and evaluate the
             # spline there.
             if mosaicked:
+                raise NotImplementedError("Mosaicked data handling not supported for core normalizeFlat")
                 #origin = admos.nddata[0].meta.pop('transform')['origin']
                 #origin_shift = reduce(Model.__and__, [models.Shift(-s) for s in origin[::-1]])
                 for ext, wcs in zip(ad, orig_wcs):
@@ -3353,7 +3958,7 @@ class Spect(Resample):
 
         return adinputs
 
-    def _get_arc_linelist(self, waves=None):
+    def _get_arc_linelist(self, waves=None, ad=None):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
@@ -3377,6 +3982,38 @@ class Spect(Resample):
                                                    self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir, 'linelist.dat')
         return wavecal.LineList(filename)
+
+
+    def _get_slit_edge_estimates(self, ad):
+        """Return a list of pairs of slit edges in the given observation.
+
+        Parameters
+        ----------
+        ad : AstroData instance
+            The object to find the slit edges in.
+
+        Returns
+        -------
+        tuple
+            A 2-length tuple of lists of expected pixel postions for the left and
+            right edges of slits.
+        """
+        # TODO: Currently this only handles longslit MDFs.
+        exp_edges_l, exp_edges_r = [], []
+
+        # Get values from the MDF attached to the ad object.
+        if ad.dispersion_axis()[0] == 2:
+            center = ad.MDF['x_ccd'][0]
+        elif ad.dispersion_axis()[0] == 1:
+            center = ad.MDF['y_ccd'][0]
+        half_slit_px = ad.MDF['slitlength_pixels'][0] / 2.
+
+        # Calculate slit edges based on center and slit length.
+        exp_edges_l.append(center - (half_slit_px))
+        exp_edges_r.append(center + (half_slit_px))
+
+        return exp_edges_l, exp_edges_r
+
 
     def _get_spectrophotometry(self, filename, in_vacuo=False):
         """
