@@ -70,11 +70,11 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py37-unit/reports/*_results.xml'
                             )
-                            echo "Deleting Unit tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
+//                             echo "Deleting Unit tests workspace ${env.WORKSPACE}"
+//                             cleanWs()
+//                             dir("${env.WORKSPACE}@tmp") {
+//                               deleteDir()
+//                             }
                         }
         //                failure {
         //                    echo "Archiving tests results for Unit Tests"
@@ -110,10 +110,10 @@ pipeline {
                                 testResults: '.tmp/py37-integ/reports/*_results.xml'
                             )
                             echo "Deleting Integration tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
+//                             cleanWs()
+//                             dir("${env.WORKSPACE}@tmp") {
+//                               deleteDir()
+//                             }
                         }
                     } // end post
                 } // end stage
@@ -144,10 +144,10 @@ pipeline {
                                 testResults: '.tmp/py37-reg/reports/*_results.xml'
                             )
                             echo "Deleting Regression Tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
+//                             cleanWs()
+//                             dir("${env.WORKSPACE}@tmp") {
+//                               deleteDir()
+//                             }
                         }
                     } // end post
                 }
@@ -183,10 +183,10 @@ pipeline {
                                 testResults: '.tmp/py37-gmosls/reports/*_results.xml'
                             )
                             echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
+//                             cleanWs()
+//                             dir("${env.WORKSPACE}@tmp") {
+//                               deleteDir()
+//                             }
                         }  // end always
                     }  // end post
                 }  // end stage
@@ -217,10 +217,10 @@ pipeline {
                                 testResults: '.tmp/py37-slow/reports/*_results.xml'
                             )
                             echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
+//                             cleanWs()
+//                             dir("${env.WORKSPACE}@tmp") {
+//                               deleteDir()
+//                             }
                         }
                     } // end post
                 } // end stage
@@ -238,8 +238,8 @@ pipeline {
 //            deleteDir() /* clean up our workspace */
         }
         always {
-            echo "Delete master workspace ${env.WORKSPACE}"
-            cleanWs()
+//             echo "Delete master workspace ${env.WORKSPACE}"
+//             cleanWs()
         }
     }
 }
