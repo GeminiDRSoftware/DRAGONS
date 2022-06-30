@@ -60,6 +60,109 @@ class GNIRSSpect(Spect, GNIRS):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
+    def determineWavelengthSolution(self, adinputs=None, **params):
+        """
+        Determines the wavelength solution for an ARC and updates the wcs
+        with this solution. In addition, the solution and pixel/wavelength
+        matches are stored as an attached `WAVECAL` :class:`~astropy.table.Table`.
+
+        2D input images are converted to 1D by collapsing a slice of the image
+        along the dispersion direction, and peaks are identified. These are then
+        matched to an arc line list, using piecewise-fitting of (usually)
+        linear functions to match peaks to arc lines, using the
+        :class:`~gempy.library.matching.KDTreeFitter`.
+
+        The `.WAVECAL` table contains four columns:
+            ["name", "coefficients", "peaks", "wavelengths"]
+
+        The `name` and the `coefficients` columns contain information to
+        re-create an Chebyshev1D object, plus additional information about
+        the way the spectrum was collapsed. The `peaks` column contains the
+        (1-indexed) position of the lines that were matched to the catalogue,
+        and the `wavelengths` column contains the matched wavelengths.
+
+        This GNIRS-specific primitive sets the default order in case it's None.
+        It then calls the generic version of the primitive.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+             Mosaicked Arc data as 2D spectral images or 1D spectra.
+
+        suffix : str/None
+            Suffix to be added to output files
+
+        order : int
+            Order of Chebyshev fitting function.
+
+        center : None or int
+            Central row/column for 1D extraction (None => use middle).
+
+        nsum : int, optional
+            Number of rows/columns to average.
+
+        min_snr : float
+            Minimum S/N ratio in line peak to be used in fitting.
+
+        weighting : {'natural', 'relative', 'none'}
+            How to weight the detected peaks.
+
+        fwidth : float/None
+            Expected width of arc lines in pixels. It tells how far the
+            KDTreeFitter should look for when matching detected peaks with
+            reference arcs lines. If None, `fwidth` is determined using
+            `tracing.estimate_peak_width`.
+
+        min_sep : float
+            Minimum separation (in pixels) for peaks to be considered distinct
+
+        central_wavelength : float/None
+            central wavelength in nm (if None, use the WCS or descriptor)
+
+        dispersion : float/None
+            dispersion in nm/pixel (if None, use the WCS or descriptor)
+
+        linelist : str/None
+            Name of file containing arc lines. If None, then a default look-up
+            table will be used.
+
+        alternative_centers : bool
+            Identify alternative central wavelengths and try to fit them?
+
+        nbright : int (or may not exist in certain class methods)
+            Number of brightest lines to cull before fitting
+
+        absorption : bool
+            If feature type is absorption (default: "False")
+
+        interactive : bool
+            Use the interactive tool?
+
+        debug : bool
+            Enable plots for debugging.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Updated objects with a `.WAVECAL` attribute and improved wcs for
+            each slice
+
+        See Also
+        --------
+        :class:`~geminidr.core.primitives_visualize.Visualize.mosaicDetectors`,
+        :class:`~gempy.library.matching.KDTreeFitter`,
+        """
+        for ad in adinputs:
+            if params["order"] is None:
+                if (ad.disperser(pretty=True).startswith('111') and
+                        ad.camera(pretty=True).startswith('Long')):
+                    params["order"] = 1
+                else:
+                    params["order"] = 3
+
+        adinputs = super().determineWavelengthSolution(adinputs, **params)
+        return adinputs
+
 
     def _get_arc_linelist(self, waves=None, ad=None):
         lookup_dir = os.path.dirname(import_module('.__init__',

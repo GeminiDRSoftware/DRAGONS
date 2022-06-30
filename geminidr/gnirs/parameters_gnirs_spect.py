@@ -18,4 +18,4 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
                                 #'15,20',
                                    check=list_of_ints_check)
     def setDefaults(self):
-        self.order = 1
+        self.order = None
