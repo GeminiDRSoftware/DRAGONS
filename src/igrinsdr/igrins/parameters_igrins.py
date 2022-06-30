@@ -21,7 +21,7 @@ class addNoiseTableConfig(config.Config):
     pass
 
 class setSuffixConfig(config.Config):
-    suffix = config.Field("output suffix", str, "_pattern_noise")
+    suffix = config.Field("output suffix", str)
 
 class somePrimitiveConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_suffix")

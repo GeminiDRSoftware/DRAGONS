@@ -40,7 +40,8 @@ class Igrins(Gemini, NearIR):
         self.timestamp_keys.update(igrins_stamps.timestamp_keys)
 
     def selectFrame(self, adinputs=None, **params):
-        # ad.hdr["FRMTYPE"] returns a list of values for all hdus.
+        """Filter the adinputs by its FRMTYPE value in the header.
+        """
         frmtype = params["frmtype"]
         adoutputs = [ad for ad in adinputs
                      if frmtype in ad.hdr['FRMTYPE']]
@@ -48,31 +49,29 @@ class Igrins(Gemini, NearIR):
 
     def streamPatternCorrected(self, adinputs=None, **params):
         """
-        make a stacked image with Readout pattern corrected.
-
-        Parameters
-        ----------
-        adinputs
-        params
-
-        Returns
-        -------
+        make images with Readout pattern corrected. And add them to streams.
 
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         rpc_mode = params.get("rpc_mode")
+        assert rpc_mode == "full"
+        # FIXME: only 'full' mode is supported for now, which will create
+        # images using the methods of ['guard', 'level2', 'level3']
 
         dlist = [ad[0].data for ad in adinputs]
         hdu_list = make_guard_n_bg_subtracted_images(dlist,
                                                      rpc_mode=rpc_mode,
                                                      bias_mask=None,
                                                      log=log)
-
         for (name, dlist) in hdu_list:
+            # name: the name of the correction method applied. One of ["GUARD",
+            # "LEVEL2", "LEVEL3"]
+            # dlist : list of numpy images
             adoutputs = []
             for ad0, d in zip(adinputs, dlist):
+                # we create new astrodata object based on the input's header.
                 hdu = fits.ImageHDU(data=d, header=ad0[0].hdr,
                                     name='SCI')
                 ad = astrodata.create(ad0.phu, [hdu])
@@ -83,11 +82,14 @@ class Igrins(Gemini, NearIR):
 
             self.streams[f"RPC_{name}"] = adoutputs
 
-        # ad = self.streams[f"RPC_GUARD-REMOVED"][0]
-        # ad.write("test.fits")
         return adinputs
 
     def estimateNoise(self, adinputs=None, **params):
+        """Estimate the noise characteriscs for images in each streams. The resulting
+        table is added to a 'ESTIMATED_NOISE' stream
+        """
+
+        # filenames that will be used in the table.
         filenames = [ad.filename for ad in adinputs]
 
         kdlist = [(k[4:], [ad[0].data for ad in adlist])
@@ -95,8 +97,10 @@ class Igrins(Gemini, NearIR):
                   if k.startswith("RPC_")]
 
         df = estimate_amp_wise_noise(kdlist, filenames=filenames)
-        tbl = Table.from_pandas(df)
+        # df : pandas datafrome object.
 
+        # Convert it to astropy.Table and then to an astrodata object.
+        tbl = Table.from_pandas(df)
         phu = fits.PrimaryHDU()
         ad = astrodata.create(phu)
 
@@ -113,6 +117,7 @@ class Igrins(Gemini, NearIR):
 
     def addNoiseTable(self, adinputs=None, **params):
         """
+        The table from the 'EST_NOISE' stream will be appended to the input.
         """
         # adinputs should contain a single ad of stacked dark. We attach table
         # to the stacked dark.

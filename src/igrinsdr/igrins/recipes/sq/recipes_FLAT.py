@@ -1,22 +1,41 @@
 """
 Recipes available to data with tags ['IGRINS', 'CAL', 'FLAT'].
-Default is "makeProcessedDark"
 """
 
 recipe_tags = {'IGRINS', 'CAL', 'FLAT'}
 
 def estimateNoise(p):
-    """
+    """This recipe performs the analysis of irs readout pattern noise in flat off
+    images. It creates a stacked image of pattern removed images and add a
+    table that descibes its noise characteristics. The result is stored on disk
+    and has a name equal to the name of the first input image with
+    "_pattern_noise.fits" appended.
+
+    Parameters
+    ----------
+    p : PrimitivesCORE object
+        A primitive set matching the recipe_tags.
+
     """
 
+    # Given the list of adinputs of both flat on and off images, we first
+    # select the only the off images.
     p.selectFrame(frmtype="OFF"),
     p.prepare()
+    # it creates pattern corrected images with several methods (guard, level2,
+    # level3). The images are then added to the streams.
     p.streamPatternCorrected(rpc_mode="full")
+    # Estimate some noise characteristics of images in each stream. A table is
+    # created and added to a 'ESTIMATED_NOISE' stream.
     p.estimateNoise()
+    # Select the "level3_removed" stream and make it the output (i.e., input of
+    # next primitive)
     p.selectStream(stream_name="LEVEL3_REMOVED")
     p.stackDarks()
+    # The table from 'ESTIMATED_NOISE' stream is appended to the stacked image.
     p.addNoiseTable()
-    p.setSuffix()
+    # Set the suffix.
+    p.setSuffix(suffix="_pattern_noise")
     return
 
 def makeProcessedFlat(p):
@@ -40,5 +59,6 @@ def makeProcessedFlat(p):
 
 # _default = makeProcessedFlat
 
-# This is for temporary for testing purpose.
+# We set 'estimateNoise' as a default recipe for temporary, just for testing
+# purpose.
 _default = estimateNoise
