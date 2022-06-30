@@ -163,7 +163,7 @@ pipeline {
         }
 
         stage('Other Instrument tests') {
-            steps {
+            parallel {
                 stage('F2 Tests') {
                     when {
                         expression { runtests_f2  == 1 }
