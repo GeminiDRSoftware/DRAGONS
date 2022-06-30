@@ -4,7 +4,6 @@ from ..utils.image_combine import image_median
 
 # basic routines
 
-
 def stack_subrows(d, dy, mask=None, alt_sign=False, op="median"):
     if mask is None:
         mask = ~np.isfinite(d)
