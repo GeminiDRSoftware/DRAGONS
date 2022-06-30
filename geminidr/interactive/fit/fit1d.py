@@ -482,7 +482,7 @@ class FittingParametersUI:
             if pkey not in ui_params.fields and key in alt_keys:
                 pkey = alt_keys[key]
             field = ui_params.fields[pkey]
-            if isinstance(field.default, int):
+            if isinstance(field.default, int) or field.dtype is int:
                 step = 1
             else:
                 step = 0.1
