@@ -5,6 +5,7 @@ Tests for the astrotools module.
 import numpy as np
 import pytest
 from gempy.library import astrotools as at
+from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 
@@ -149,3 +150,14 @@ def test_cartesian_regions_to_slices():
 
     with pytest.raises(TypeError):
         cart(12)
+
+
+def test_spherical_offsets_by_pa():
+    c1 = SkyCoord(ra=120, dec=0, unit='deg')
+    c2 = SkyCoord(ra=120.01, dec=0.05, unit='deg')
+    assert np.allclose(at.spherical_offsets_by_pa(c1, c2, position_angle=0),
+                       (180, 36), atol=1e-5)
+    assert np.allclose(at.spherical_offsets_by_pa(c1, c2, position_angle=90),
+                       (36, -180), atol=1e-5)
+    assert np.allclose(at.spherical_offsets_by_pa(c1, c2, position_angle=-90),
+                       (-36, 180), atol=1e-5)

@@ -503,6 +503,17 @@ class AstroDataGnirs(AstroDataGemini):
         else:
             raise ValueError("Unrecognized GNIRS camera, {}".format(camera))
 
+    @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return (self.phu[self._keyword_for('position_angle')] + 90) % 360
 
     @astro_data_descriptor
     def ra(self):
@@ -676,6 +687,21 @@ class AstroDataGnirs(AstroDataGemini):
         except KeyError:
             return None
         return gmu.removeComponentID(slit) if stripID or pretty else slit
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.slit(pretty=True)
+        if 'arcsec' in fpmask:
+            return float(fpmask.replace('arcsec', ''))
+        return None
 
     @astro_data_descriptor
     def well_depth_setting(self):

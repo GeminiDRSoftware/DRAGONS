@@ -12,7 +12,6 @@ from geminidr.f2.primitives_f2_longslit import F2Longslit
 
 
 # ---- Tests ------------------------------------------------------------------
-
 def test_associate_sky_abba():
 
     files = ['S20200301S0071.fits', 'S20200301S0072.fits',
@@ -21,19 +20,20 @@ def test_associate_sky_abba():
     data = [astrodata.open(download_from_archive(f)) for f in files]
 
     p = F2Longslit(data)
+    p.prepare()
     p.separateSky()
     p.associateSky()
 
-    A1, B1, B2, A2 = p.showList()
-    A_frames = {'S20200301S0071_skyAssociated.fits',
+    a1, b1, b2, a2 = p.showList()
+    a_frames = {'S20200301S0071_skyAssociated.fits',
                 'S20200301S0074_skyAssociated.fits'}
-    B_frames = {'S20200301S0072_skyAssociated.fits',
+    b_frames = {'S20200301S0072_skyAssociated.fits',
                 'S20200301S0073_skyAssociated.fits'}
 
-    for ad in (A1, A2):
-        assert set(ad.SKYTABLE['SKYNAME']) == B_frames
-    for ad in (B1, B2):
-        assert set(ad.SKYTABLE['SKYNAME']) == A_frames
+    for ad in (a1, a2):
+        assert set(ad.SKYTABLE['SKYNAME']) == b_frames
+    for ad in (b1, b2):
+        assert set(ad.SKYTABLE['SKYNAME']) == a_frames
 
 def test_associate_sky_quasi_abcde(caplog):
 
@@ -45,6 +45,7 @@ def test_associate_sky_quasi_abcde(caplog):
     data = [astrodata.open(download_from_archive(f)) for f in files]
 
     p = F2Longslit(data)
+    p.prepare()
     p.separateSky()
     p.associateSky()
 

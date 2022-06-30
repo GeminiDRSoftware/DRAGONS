@@ -203,25 +203,6 @@ class AstroDataF2(AstroDataGemini):
                                      output_units)
 
     @astro_data_descriptor
-    def cenwave_offset(self):
-        """
-        Returns the offset in pixels along the dispersion direction from the central row (1023)
-        to the row to which the central wavelength actually corresponds to.
-
-        Returns
-        -------
-        float
-            Offset from the central row in pixels
-
-        """
-        config = f"{self.disperser(pretty=True)}, {self.filter_name(pretty=True)}"
-
-        if config not in dispersion_and_offset:
-            return None
-        else:
-            return dispersion_and_offset.get(config)[1]
-
-    @astro_data_descriptor
     def data_section(self, pretty=False):
         """
         Returns the rectangular section that includes the pixels that would be
@@ -348,10 +329,7 @@ class AstroDataF2(AstroDataGemini):
         list/float
             The dispersion(s)
         """
-
-        grism = self.disperser(pretty=True)
-        filter = self.filter_name(pretty=True)
-        config = f"{grism}, {filter}"
+        config = (self.disperser(pretty=True), self.filter_name(pretty=True))
         if config not in dispersion_and_offset:
             return None
 
@@ -570,11 +548,6 @@ class AstroDataF2(AstroDataGemini):
                      else None) for g in gain]
 
     @returns_list
-    @astro_data_descriptor
-    def nonlinearity_coeffs(self):
-        return getattr(array_properties.get(self.read_mode()), 'coeffs', None)
-
-    @returns_list
     @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
@@ -632,6 +605,18 @@ class AstroDataF2(AstroDataGemini):
             return self.phu.get('PIXSCALE')
 
     @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return (self.phu[self._keyword_for('position_angle')] + 90) % 360
+
+    @astro_data_descriptor
     def read_mode(self):
         """
         Returns the read mode (i.e., the number of non-destructive read pairs)
@@ -683,6 +668,21 @@ class AstroDataF2(AstroDataGemini):
             saturation_adu = [int(well_depth / g) if well_depth and g else None
                               for g in gain]
         return saturation_adu
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.focal_plane_mask(pretty=True)
+        if 'pix-slit' in fpmask:
+            return int(fpmask.replace('pix-slit', '')) * self.pixel_scale()
+        return None
 
     # TODO: document why these are reversed
     # Ruben Diaz thinks it has to do with the fact that the F2 long slit,

@@ -96,6 +96,7 @@ class TestStandardize:
             p.prepare()
             prepared_ad = p.writeOutputs(
                 outfilename='N20070819S0104_prepared.fits').pop()
+            del prepared_ad.phu['SDZWCS']  # temporary fix
 
         ref_ad = astrodata.open(
             os.path.join(path_to_refs, 'N20070819S0104_prepared.fits'))

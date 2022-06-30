@@ -65,6 +65,7 @@ nominal_zeropoints = {
 
 }
 
+# Use a namedtuple if any more information is needed here
 dispersion_and_offset = {
     # Dictionary keys are in the following order:
     # "grism, filter".
@@ -73,15 +74,15 @@ dispersion_and_offset = {
     # All values were refined using the archive F2 ARC images.
 
     # The values for JH and HK filters work for both the old and the new filter.
-    "JH, JH":     (-6.510, -33),
-    "HK, HK":     (-7.580, 7),
-    "HK, JH":     (-7.800, 640),
-    "R3K, Y":     (-1.642, 630), # no data exists
-    "R3K, J-lo":  (-1.770, -160),
-    "R3K, J":     (-2.050, 410),
-    "R3K, H":     (-2.610, 20),
-    "R3K, Ks":    (-3.510, 130),
-    "R3K, K-long":(-3.462, -10)
+    ("JH", "JH"):     (-6.510, -33),
+    ("HK", "HK"):     (-7.580, 7),
+    ("HK", "JH"):     (-7.800, 640),
+    ("R3K", "Y"):     (-1.642, 630),  # no data exists
+    ("R3K", "J-lo"):  (-1.770, -160),
+    ("R3K", "J"):     (-2.050, 410),
+    ("R3K", "H"):     (-2.610, 20),
+    ("R3K", "Ks"):    (-3.510, 130),
+    ("R3K", "K-long"):(-3.462, -10)
     # Consider adding the following modes:
     #"HK, Ks": # SV data only
     #"HK, K-long": # CAL data only
