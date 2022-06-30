@@ -9,8 +9,9 @@ from gemini_instruments import igrins
 # gemini_instruments.
 
 class _AstroDataIGRINS(igrins.AstroDataIgrins):
-    """to improve gemini_instrument module
-    """
+    # This is a temporary placeholder class. The original gemini_instruments
+    # version of AstroDataIgrins could be updated with it contents eventually.
+
     __keyword_dict = dict(
         airmass = 'AMSTART',
         wavelength_band = 'BAND',
@@ -31,14 +32,6 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
     def _tag_sky(self):
         if self.phu.get('OBJTYPE') == 'SKY' or self[0].hdr.get('OBJTYPE') == 'SKY':
             return TagSet(['SKY', 'CAL'])
-
-    # @astro_data_tag
-    # def _tag_dark(self):
-    #     if self.phu.get('OBJTYPE') == 'DARK' or self[0].hdr.get('OBJTYPE') == 'DARK':
-    #         return TagSet(['DARK'], blocks=['IMAGE', 'SPECT'])
-    #     elif self.phu.get('OBJTYPE') == 'FLAT' or self[0].hdr.get('OBJTYPE') == 'FLAT':
-    #         if self.phu.get('FRMTYPE') == 'OFF' or self[0].hdr.get('FRMTYPE') == 'OFF':
-    #             return TagSet(['DARK'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_descriptor
     def observation_class(self):
