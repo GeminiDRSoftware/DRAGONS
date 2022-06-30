@@ -237,10 +237,10 @@ pipeline {
             sendNotifications 'FAILED'
 //            deleteDir() /* clean up our workspace */
         }
-        always {
+//         always {
 //             echo "Delete master workspace ${env.WORKSPACE}"
 //             cleanWs()
-        }
+//         }
     }
 }
  
