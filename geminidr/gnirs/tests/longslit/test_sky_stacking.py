@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 """
-Tests for sky stacking and subtraction for GNIRS.
+Tests for sky stacking and subtraction for GNIRS longslit spectroscopy.
 """
 
 import astrodata
