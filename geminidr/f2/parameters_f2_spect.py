@@ -2,6 +2,8 @@
 # in the primitives_f2_spect.py file, in alphabetical order.
 from gempy.library import config
 from geminidr.core import parameters_spect
+from geminidr.core import parameters_preprocess
+
 
 def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
@@ -17,3 +19,11 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
                                    check=list_of_ints_check)
     def setDefaults(self):
         self.order = 3
+
+
+class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
+    def setDefaults(self):
+        self.scale_sky = False #MS: IF for whatever reason the exposure times are different between frames being subtracted, one should have a check to turn this on.  
+        self.offset_sky = False
+        self.mask_objects = False
+        self.dilation = 0.
