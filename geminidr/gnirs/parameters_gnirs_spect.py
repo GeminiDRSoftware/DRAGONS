@@ -13,6 +13,7 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     nbright = config.RangeField("Number of bright lines to eliminate", int, 0, min=0)
+    in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int),
                                   100000,
                                 #'15,20',
