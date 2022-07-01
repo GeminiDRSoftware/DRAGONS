@@ -48,23 +48,28 @@ class NIRILongslit(NIRISpect):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_niri_longslit)
 
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0,
+                        max_perpendicular_offset=None):
+        slit_length = ad1.MDF['slitlength_arcsec']
+        slit_width = ad1.slit_width()
+        return super()._fields_overlap(
+            ad1, ad2, frac_FOV=frac_FOV,
+            slit_length=slit_length,
+            slit_width=slit_width,
+            max_perpendicular_offset=max_perpendicular_offset)
+
     def addMDF(self, adinputs=None, suffix=None, mdf=None):
         """
-
+        This NIRI-specific version adds an MDF table containing the expected
+        midpoint (in pixels) of the slit, and the length of the slit in arcsec
+        and pixels.
 
         Parameters
         ----------
-        adinputs : TYPE, optional
-            DESCRIPTION. The default is None.
-        suffix : TYPE, optional
-            DESCRIPTION. The default is None.
-        mdf : TYPE, optional
-            DESCRIPTION. The default is None.
-
-        Returns
-        -------
-        None.
-
+        suffix: str
+            suffix to be added to output files
+        mdf: str/None
+            name of MDF to add (None => use default)
         """
 
         log = self.log
@@ -86,11 +91,14 @@ class NIRILongslit(NIRISpect):
                 fratio = ad.phu.get('BEAMSPLT')
 
                 if fratio == 'f32' and maskname == 'f6-2pix':
-                    # This configuation actually uses the same slit as f6-2pix
-                    # but with the f/32 camera, so just modify the maskname.
+                    # The f/32-10 pixel configuation actually uses the same
+                    # slit as f6-2pix but with the f/32 camera, so just modify
+                    # the maskname here.
                     maskname = 'f32-10pix'
 
                 mdf_table = Table(np.array(niri_slit_info[maskname]),
                                   names=('y_ccd', 'slitlength_arcsec',
                                   'slitlength_pixels'))
                 ad.MDF = mdf_table
+
+        return adinputs
