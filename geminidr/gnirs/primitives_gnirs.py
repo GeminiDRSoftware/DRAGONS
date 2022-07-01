@@ -3,9 +3,9 @@
 #
 #                                                            primitives_gnirs.py
 # ------------------------------------------------------------------------------
-from os import path
 from gempy.gemini import gemini_tools as gt
 
+from gemini_instruments.gnirs import lookup as adlookup
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
 from . import parameters_gnirs
@@ -26,6 +26,7 @@ class GNIRS(Gemini, NearIR):
 
     def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gnirs.lookups'
+        self.inst_adlookup = adlookup
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs)
 

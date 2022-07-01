@@ -270,7 +270,6 @@ class KDTreeFitter(Fitter):
         self.maxsep = self.sigma * maxsig
         self.k = k
         self.proximity_function = partial(proximity_function, sigma=self.sigma)
-
         try:
             opt_method = getattr(optimize, method)
             self._method = None

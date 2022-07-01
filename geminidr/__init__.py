@@ -195,7 +195,7 @@ class PrimitivesBASE:
         self.params           = {}
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
-        self.user_params      = dict(uparms) if uparms else {}
+        self.user_params      = uparms if isinstance(uparms, dict) else dict(uparms) if uparms else {}
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict.copy()

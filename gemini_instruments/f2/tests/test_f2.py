@@ -18,7 +18,6 @@ test_files = [
 F2_DESCRIPTORS_TYPES = [
     ('detector_x_offset', float),
     ('detector_y_offset', float),
-    ('nonlinearity_coeffs', list),
     ('pixel_scale', float),
 ]
 

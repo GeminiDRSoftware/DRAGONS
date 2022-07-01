@@ -11,6 +11,7 @@ from geminidr.core import CCD
 # from gempy.scripts.gmoss_fix_headers import correct_headers
 # from gempy.gemini.eti import gmosaiceti
 from gempy.gemini import gemini_tools as gt
+from gemini_instruments.gmos import lookup as adlookup
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from ..gemini.primitives_gemini import Gemini
@@ -30,6 +31,7 @@ class GMOS(Gemini, CCD):
 
     def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gmos.lookups'
+        self.inst_adlookup = adlookup
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos)
 
