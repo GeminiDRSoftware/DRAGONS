@@ -17,7 +17,7 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     def setDefaults(self):
         self.order = 3
         self.in_vacuo = True
-        self.nbright = 0
+        self.min_snr = 10
         self.debug_min_lines = 100000
 
 
