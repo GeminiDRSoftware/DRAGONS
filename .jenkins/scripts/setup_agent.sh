@@ -5,6 +5,8 @@ set -eux
 
 # Cleanup
 git clean -fxd
+# where are we?
+echo currently in: `pwd`
 mkdir plots reports
 if [[ -n "${DRAGONS_TEST_OUTPUTS-}" ]]; then
     if [[ -d "${DRAGONS_TEST_OUTPUTS}" ]]; then
