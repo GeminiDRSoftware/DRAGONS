@@ -68,14 +68,16 @@ input_pars = [
     # (Input File, params)
     # If a grating+camera+site combination is not present here -> no data exists
     # 10 l/mm, LongCam, GN
+    # unilluminated regions, flats may be needed to eliminate fake lines
     ("N20210810S0833_varAdded.fits", dict()), # X, 1.100um, 0.1" slit
     ("N20210810S0835_varAdded.fits", dict()), # J, 1.250um, 0.1" slit
-    ("N20140713S0193_varAdded.fits", dict()), # H, 1.650um, 0.1" slit, AO
-    ("N20210803S0133_varAdded.fits", dict()), # K, 2.220um, 0.1" slit, AO
+    ("N20140713S0193_varAdded.fits", dict()), # H, 1.650um, 0.1" slit
+    ("N20210803S0133_varAdded.fits", dict()), # K, 2.220um, 0.1" slit
     # 32 l/mm, ShortCam, GN
+    # unilluminated regions, flats may be needed to eliminate fake lines
     ("N20140413S0124_varAdded.fits", dict()), # X, 1.100um, 1" slit
-    ("N20210810S0819_varAdded.fits", dict()), # J, 1.250um, 0.3" slit
-    ("N20181102S0037_varAdded.fits", dict()), # H, 1.650um, 0.68" slit
+    ("N20210810S0819_varAdded.fits", dict()), # J, 1.250um, 0.3" slit # slightly unstable
+    ("N20181102S0037_varAdded.fits", dict()), # H, 1.650um, 0.68" slit # slightly unstable
     ("N20130101S0207_varAdded.fits", dict()), # K, 2.220um, 0.3" slit
     ("N20170511S0305_varAdded.fits", dict()), # K, 2.110um, 0.68" slit
     # 32 l/mm, ShortCam, GS
