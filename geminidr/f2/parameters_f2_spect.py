@@ -10,15 +10,15 @@ def list_of_ints_check(value):
     return True
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
-    id_only = config.Field("Use only lines identified for wavelength calibration?", bool, True)
+    def setDefaults(self):
+        self.id_only = True
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
-    nbright = config.RangeField("Number of bright lines to eliminate", int, 0, min=0)
-    debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), 100000,
-                                   check=list_of_ints_check)
     def setDefaults(self):
         self.order = 3
         self.in_vacuo = True
+        self.nbright = 0
+        self.debug_min_lines = 100000
 
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
