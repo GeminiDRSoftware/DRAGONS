@@ -54,7 +54,8 @@ class GNIRSSpect(Spect, GNIRS):
         for ad in adinputs:
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
             cenwave = ad.central_wavelength(asNanometers=True)
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
+            transform.add_longslit_wcs(ad, central_wavelength=cenwave,
+                                       pointing=ad[0].wcs(512, 511))
 
             # Timestamp. Suffix was updated in the super() call
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -191,6 +192,7 @@ class GNIRSSpect(Spect, GNIRS):
             else:
                 linelist = 'nearIRsky.dat'
 
+        self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
 
         return wavecal.LineList(filename)
