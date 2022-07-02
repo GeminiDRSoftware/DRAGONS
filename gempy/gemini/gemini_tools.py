@@ -10,12 +10,12 @@ import numbers
 
 from copy import deepcopy
 from datetime import datetime
-from importlib import import_module
 from functools import wraps
 from collections import namedtuple
 
 import numpy as np
 
+from astropy.coordinates import SkyCoord
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
@@ -1877,6 +1877,52 @@ def obsmode_del(ad):
                 ad.phu.remove(keyword)
     return ad
 
+
+def offsets_relative_to_slit(ext1, ext2):
+    """
+    Determine the spatial offsets between the pointings of two AstroData
+    objects, expressed parallel and perpendicular to the slit axis.
+    The issue here is that the world_to_pixel transformation is insensitive
+    to coordinate movement perpendicular to the slit. The calculation is
+    performed by determining the pointing of one AD from its center of
+    projection and the pointing of the other from its WCS evaluated at the
+    same pixel location. The position angle of the slit is calculated from
+    the sky displacement when offsetting 500 pixels (arbitrary) along the
+    slit axis.
+
+    Parameters
+    ----------
+    ext1, ext2: single-slice AstroData instances
+        the two AD objects (assumed to be of the same subclass)
+
+    Returns
+    -------
+    dist_para: float
+        separation (in arcsec) parallel to the slit
+    dist_perp: float
+        separation (in arcsec) perpendicular to the slit
+    """
+    wcs1 = ext1.wcs
+    try:
+        ra1, dec1 = at.get_center_of_projection(wcs1)
+    except TypeError:
+        raise ValueError(f"Cannot get center of projection for {ext1.filename}")
+    dispaxis = 2 - ext1.dispersion_axis()  # python sense
+    cenwave, *_ = wcs1(*(0.5 * np.asarray(ext1.shape)[::-1]))
+    x, y = wcs1.invert(cenwave, ra1, dec1)
+
+    # Get PA of slit by finding coordinates along the slit
+    coord1 = SkyCoord(ra1, dec1, unit='deg')
+    ra2, dec2 = wcs1(x, y+500)[-2:] if dispaxis == 1 else wcs1(x+500, y)[-2:]
+    pa = coord1.position_angle(SkyCoord(ra2, dec2, unit='deg')).deg
+
+    # Calculate PA and angular distance between sky coords of the same pixel
+    # on the two input ADs
+    ra2, dec2 = ext2.wcs(x, y)[-2:]
+    coord2 = SkyCoord(ra2, dec2, unit='deg')
+    return at.spherical_offsets_by_pa(coord1, coord2, pa)
+
+
 def parse_sextractor_param(param_file):
     """
     Provides a list of columns being produced by SExtractor
@@ -2191,7 +2237,7 @@ class ExposureGroup:
     # pass around nddata instances rather than lists or dictionaries but
     # that's not even well defined within AstroPy yet.
 
-    def __init__(self, adinputs, pkg=None, frac_FOV=1.0):
+    def __init__(self, adinputs, fields_overlap=None, frac_FOV=1.0):
         """
         Parameters
         ----------
@@ -2212,20 +2258,17 @@ class ExposureGroup:
         # Make sure the field scaling is valid:
         if not isinstance(frac_FOV, numbers.Number) or frac_FOV < 0.:
             raise ValueError('frac_FOV must be >= 0.')
+        if not callable(fields_overlap):
+            raise ValueError('fields_overlap must be callable')
 
         # Initialize members:
-        self.members = {}
+        self.members = []
         self._frac_FOV = frac_FOV
-        self.group_center = (0., 0.)
+        self.group_center = None
         self.add_members(adinputs)
-        try:
-            FOV = import_module('{}.FOV'.format(pkg))
-            self._pointing_in_field = FOV.pointing_in_field
-        except (ImportError, AttributeError):
-            raise NameError("FOV.pointing_in_field() function not found in {}".
-                            format(pkg))
+        self._fields_overlap = fields_overlap
 
-    def pointing_in_field(self, ad, fast=True):
+    def fields_overlap(self, ad):
         """
         Determine whether or not a new pointing falls within this group.
         The check can be done against either the group center, or against
@@ -2244,14 +2287,9 @@ class ExposureGroup:
         bool: whether or not the input point is within the field of view
             (adjusted by the frac_FOV specified when creating the group).
         """
-        if fast:
-            return self._pointing_in_field(ad, self.group_center,
-                                           frac_FOV=self._frac_FOV)
-        else:
-            for offset in self.members.values():
-                if self._pointing_in_field(ad, offset,
-                                           frac_FOV=self._frac_FOV):
-                    return True
+        for ad_in_group in self.members:
+            if self._fields_overlap(ad, ad_in_group, frac_FOV=self._frac_FOV):
+                return True
         return False
 
     def __len__(self):
@@ -2270,14 +2308,11 @@ class ExposureGroup:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def list(self):
-        """
-        List the AstroData instances associated with this group.
+    def __contains__(self, item):
+        return item in self.members
 
-        :returns: Exposure list
-        :rtype: list of AstroData instances
-        """
-        return list(self.members.keys())
+    def list(self):
+        return self.members
 
     def add_members(self, adinputs):
         """
@@ -2290,28 +2325,21 @@ class ExposureGroup:
         if not isinstance(adinputs, list):
             adinputs = [adinputs]
         # How many points were there previously and will there be now?
-        ngroups = self.__len__()
-        ntot = ngroups + len(adinputs)
+        for ad in adinputs:
+            if ad not in self.members:
+                self.members.append(ad)
+                ad_coord = SkyCoord(ad.ra(), ad.dec(), unit='deg')
+                if self.group_center:
+                    separation = self.group_center.separation(ad_coord)
+                    pa = self.group_center.position_angle(ad_coord)
+                    # We move the group center fractionally towards the new
+                    # position
+                    self.group_center = self.group_center.directional_offset_by(
+                        pa, separation / len(self))
+                else:
+                    self.group_center = ad_coord
 
-        # Create dict for new members and complain if coords are invalid
-        new_dict = {ad: (ad.detector_x_offset(), ad.detector_y_offset())
-                    for ad in adinputs}
-        for ad, offsets in new_dict.items():
-            if not all(isinstance(offset, numbers.Number) for offset in offsets):
-                    raise ValueError("non-numeric coordinate {} from {}"
-                                     "".format(offsets, ad.filename))
-
-        # Add the new points to the group list:
-        self.members.update(new_dict)
-
-        # Update the group centroid to account for the new points
-        new_vals = list(new_dict.values())
-        newsum = [sum(axvals) for axvals in zip(*new_vals)]
-        self.group_center = [(cval * ngroups + nval) / ntot
-                             for cval, nval in zip(self.group_center, newsum)]
-
-
-def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
+def group_exposures(adinputs, fields_overlap=None, frac_FOV=1.0):
     """
     Sort a list of AstroData instances into dither groups around common
     nod positions, according to their pointing offsets.
@@ -2329,6 +2357,10 @@ def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
     IQ problems towards the edges of the field. OTOH intermediate offsets
     are generally difficult to achieve anyway due to guide probe limits
     when the instrumental FOV is comparable to that of the telescope.
+
+    The algorithm has been improved (but made slightly slower) to be
+    independent of the order in which files arrive. If a pointing overlaps
+    with two (or more) existing groups, it will unify these groups.
 
     Parameters
     ----------
@@ -2352,25 +2384,18 @@ def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
     groups = []
 
     for ad in adinputs:
-        # Should this pointing be associated with an existing group?
-        # Check against field centers first.
-        found = False
-        for group in groups:
-            if group.pointing_in_field(ad, fast=True):
-                group.add_members(ad)
-                found = True
-                break
-
-        # If we haven't found a match, do a more rigorous (slower) check
-        # against all members of each group
-        if not found:
-            for group in groups:
-                if group.pointing_in_field(ad, fast=False):
+        found = None
+        for i, group in reversed(list(enumerate(groups))):
+            if group.fields_overlap(ad):
+                if found is None:
                     group.add_members(ad)
-                    found = True
-                    break
-            if not found:
-                groups.append(ExposureGroup(ad, pkg, frac_FOV=frac_FOV))
+                else:
+                    group.add_members(groups[found].list())
+                    del groups[found]
+                found = i
+        if found is None:
+            groups.append(ExposureGroup(ad, fields_overlap=fields_overlap,
+                                        frac_FOV=frac_FOV))
 
     # Here this simple algorithm could be made more robust for borderline
     # spacing (a bit smaller than the field size) by merging clusters that

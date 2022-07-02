@@ -444,8 +444,7 @@ def get_axes(header):
     spec_inmap = []
     unknown = []
     skysystems = np.array(list(sky_pairs.values())).flatten()
-    for ax in ctype:
-        ind = ctype.index(ax)
+    for ind, ax in enumerate(ctype):
         if ax in specsystems:
             spec_inmap.append(ind)
         elif ax in skysystems:

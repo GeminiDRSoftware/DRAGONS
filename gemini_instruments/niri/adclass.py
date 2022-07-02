@@ -1,6 +1,7 @@
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
 import math
+import re
 
 from . import lookup
 from .. import gmu
@@ -385,26 +386,6 @@ class AstroDataNiri(AstroDataGemini):
             return [zpt - (2.5 * math.log10(g) if in_adu else 0) if zpt and g
                     else None for g in gain]
 
-    @astro_data_descriptor
-    def nonlinearity_coeffs(self):
-        """
-        Returns a namedtuple containing the necessary information to perform
-        a nonlinearity correction.
-
-        Returns
-        -------
-        namedtuple/list
-            nonlinearity info (max counts, exptime correction, gamma, eta)
-        """
-        read_mode = self.read_mode()
-        well_depth = self.well_depth_setting()
-        naxis2 = self.hdr.get('NAXIS2')
-        if self.is_single:
-            return lookup.nonlin_coeffs.get((read_mode, naxis2, well_depth))
-        else:
-            return [lookup.nonlin_coeffs.get((read_mode, size, well_depth))
-                    for size in naxis2]
-
     @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
@@ -514,6 +495,22 @@ class AstroDataNiri(AstroDataGemini):
                 return None
         else:
             return [int(well * coadds / g) if g and well else None for g in gain]
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.focal_plane_mask(pretty=True)
+        if 'pix' in fpmask:
+            m = re.match('f(.*)-(.*)pix', fpmask)
+            return int(m.group(2)) * 0.7 / int(m.group(1))
+        return None
 
     @astro_data_descriptor
     def well_depth_setting(self):

@@ -35,6 +35,8 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
+from matplotlib import pyplot as plt
+
 from . import astrotools as at
 from ..utils.decorators import insert_descriptor_values, unpack_nddata
 
@@ -784,6 +786,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     # either noise spikes or artifacts
     # Start by removing low-S/N apertures
     ok_apertures = {i: snr >= min_snr for i, snr in enumerate(snrs)}
+
     # Remove apertures too close to other apertures
     for i, (peak1, limit1, snr1) in enumerate(zip(peaks, all_limits, snrs)):
         for j, (peak2, limit2, snr2) in enumerate(list(zip(peaks, all_limits, snrs))[i+1:], start=i+1):
@@ -804,7 +807,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
         max_separation /= ext.pixel_scale()
         target_location = ext.wcs.invert(
             ext.central_wavelength(asNanometers=True), ext.target_ra(),
-            ext.target_dec())[2 - ext.dispersion_axis()]
+            ext.target_dec())[1]
         if not np.isnan(target_location):
             ok_apertures.update({i: False for i, x in enumerate(peaks)
                                  if abs(target_location - x) > max_separation})
@@ -819,7 +822,10 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
                 ok_apertures[i] = False
             # Eliminate things with square edges that are likely artifacts
             if (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
-                ok_apertures[i] = False
+                # But keep them if the square edge butts up against another aperture
+                if not ((i > 0 and limits[0] - all_limits[i-1][1] < 1) or
+                        (i < len(peaks) - 1 and all_limits[i+1][0] - limits[1] < 1)):
+                    ok_apertures[i] = False
         # Remove apertures that don't appear in a smoothed version of the
         # data (these are basically noise peaks)
         if spline(peak) - spline(limits).min() < stddev:
@@ -907,6 +913,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
                     where=variance > 0)
+
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
@@ -1275,7 +1282,8 @@ def cwt_ricker(data, widths, **kwargs):
 @unpack_nddata
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                 cwidth=5, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
-                max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None):
+                max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
+                min_peak_value=None):
     """
     This function traces features along one axis of a two-dimensional image.
     Initial peak locations are provided and then these are matched to peaks
@@ -1323,6 +1331,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         variance as arguments, and returns 1D versions of all three
     viewer: imexam viewer or None
         Viewer to draw lines on.
+    min_peak_value: int or float
+        Minimum amplitude of fit to be considered as a real detection. Peaks
+        smaller than this value will be counted as a miss.
 
     Returns
     -------
@@ -1436,8 +1447,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             # the data array 0 as well, and we can't find any peaks
             if any(mask[0] == 0) and not all(np.isinf(var[0])):
                 last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
-                peaks = pinpoint_peaks(data[0], peaks=last_peaks, mask=mask[0],
-                                       halfwidth=halfwidth)[0]
+                peaks, peak_values = pinpoint_peaks(data[0], peaks=last_peaks, mask=mask[0],
+                                       halfwidth=halfwidth)
 
                 for i, (last_row, old_peak) in enumerate(last_coords):
                     if np.isnan(old_peak):
@@ -1446,7 +1457,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     # the loop but nothing will match
                     if peaks:
                         j = np.argmin(abs(np.array(peaks) - old_peak))
-                        new_peak = peaks[j]
+                        new_peak, new_peak_value = peaks[j], peak_values[j]
                     else:
                         new_peak = np.inf
 
@@ -1454,7 +1465,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     steps_missed = len([c for c in step_centers if (last_row < c < ypos) or (last_row > c > ypos)])
                     for j in range(min(steps_missed, lookback) + 1):
                         tolerance = max_shift * (j + 1) * abs(step)
-                        if abs(new_peak - old_peak) <= tolerance:
+                        if abs(new_peak - old_peak) <= tolerance and\
+                              (min_peak_value is None or new_peak_value > min_peak_value):
                             new_coord = [ypos - 0.5 * j * step, new_peak]
                             break
                         elif j < lookback:
@@ -1462,9 +1474,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                             # new_peak calculated here may be added in the
                             # next iteration of the loop
                             try:
-                                new_peak = pinpoint_peaks(
+                                new_peak, new_peak_value = [x[0] for x in pinpoint_peaks(
                                     data[j+1], peaks=[old_peak], mask=mask[j+1],
-                                    halfwidth=halfwidth)[0][0]
+                                    halfwidth=halfwidth)]
                             except IndexError:  # No peak there
                                 new_peak = np.inf
                     else:
