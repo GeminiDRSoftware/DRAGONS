@@ -2,12 +2,16 @@
 Tests for sky stacking and subtraction for NIRI longslit spectroscopy.
 """
 
+import pytest
+
 import astrodata
 from astrodata.testing import download_from_archive
 import gemini_instruments
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
 
 # ---- Tests ------------------------------------------------------------------
+# TODO: unskip test when NIRI has a standardizeWCS for longslit
+@pytest.mark.skip(reason="NIRI needs standardizeWCS() written")
 def test_associate_sky_abba():
 
     files = ['N20070204S0097.fits', 'N20070204S0098.fits',
