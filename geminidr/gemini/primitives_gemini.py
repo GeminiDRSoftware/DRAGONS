@@ -66,7 +66,6 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         # timestamp_key = self.timestamp_keys[self.myself()]
 
         mdf_list = mdf or self.caldb.get_calibrations(adinputs, caltype="mask").files
-        print(f'mdf_list is {mdf_list}')
 
         for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
             self._addMDF(ad, suffix, mdf)
@@ -373,7 +372,7 @@ class Pointing:
         self.wcs = [ext.wcs for ext in ad]
         self.target_coords = SkyCoord(ad.target_ra(), ad.target_dec(),
                                       unit=u.deg)
-        self.coords = SkyCoord(ad.ra(), ad.dec(), unit=u.deg)
+        self.coords = SkyCoord(ad.wcs_ra(), ad.wcs_dec(), unit=u.deg)
         self.expected_coords = self.target_coords.spherical_offsets_by(
             self.phu['RAOFFSET']*u.arcsec, self.phu['DECOFFSE']*u.arcsec)
         self.pa = ad.position_angle()
