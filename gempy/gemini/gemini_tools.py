@@ -1711,7 +1711,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         else:
             bg_data = bg_data[flags.ravel() == 0][::sampling]
 
-        if len(bg_data) > 0:
+        if len(bg_data) > 1:
             if gaussfit:
                 lsigma, hsigma = 3, 1
                 bg, bg_std = sigma_clipped_stats(bg_data, sigma=5, maxiters=5)[1:]
