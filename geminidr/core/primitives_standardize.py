@@ -65,11 +65,17 @@ class Standardize(PrimitivesBASE):
         user_bpm_list = params['user_bpm']
 
         if static_bpm_list == "default":
-            static_bpm_list = self.caldb.get_processed_bpm(adinputs)
-            if static_bpm_list is not None:
+            try:
+                static_bpm_list = self.caldb.get_processed_bpm(adinputs)
+            except:
+                static_bpm_list = None
+            if static_bpm_list is not None and not all([f is None for f in static_bpm_list.files]):
                 static_bpm_list = static_bpm_list.files
             else:
-                static_bpm_list = [None] * len(adinputs)
+                # TODO once we fully migrate to caldb/server managed bpms, use 2nd line
+                # TODO also remove all() check in if above at that time
+                static_bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
+                #static_bpm_list = [None] * len(adinputs)
 
         for ad, static, user in zip(*gt.make_lists(adinputs, static_bpm_list,
                                                    user_bpm_list, force_ad=True)):
