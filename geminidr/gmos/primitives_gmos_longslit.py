@@ -185,8 +185,7 @@ class GMOSClassicLongslit(GMOSSpect):
                     model[yccd[0]+mshift:yccd[1]+mshift+1] = 1
                     slit_location_msg += ("Expected slit location from pixels "
                                           f"{yccd[0]+1} to {yccd[1]+1}\n")
-
-                print(slit_location_msg)
+                log.stdinfo(slit_location_msg)
 
                 # For N&S data, repeat the slit below where the MDF locates it
                 if 'NODANDSHUFFLE' in ad.tags:
