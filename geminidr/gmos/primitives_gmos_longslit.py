@@ -134,8 +134,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                                 slice(datasec.x1, datasec.x2))
                     all_data[out_slice] = ext.data[in_slice]
                     if ext.mask is not None:
-                        all_data[out_slice][ext.mask[in_slice]
-                                            & DQ.not_signal > 0] = np.nan
+                        all_data[out_slice][ext.mask[in_slice] > 0] = np.nan
                 row_medians = np.nanpercentile(all_data, 95, axis=1)
                 del all_data
                 row_medians -= at.boxcar(row_medians, size=50 // ybin)
