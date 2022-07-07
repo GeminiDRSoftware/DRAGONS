@@ -786,8 +786,8 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     ok_apertures = {i: snr >= min_snr for i, snr in enumerate(snrs)}
 
     # Remove apertures too close to other apertures
-    for i, (peak1, limit1, snr1) in enumerate(zip(peaks, all_limits, snrs)):
-        for j, (peak2, limit2, snr2) in enumerate(list(zip(peaks, all_limits, snrs))[i+1:], start=i+1):
+    for i, (peak1, limit1) in enumerate(zip(peaks, all_limits)):
+        for j, (peak2, limit2) in enumerate(list(zip(peaks, all_limits))[i+1:], start=i+1):
             if abs(peak1 - peak2) < min_sep or limit1[1] >= peak2 or limit2[0] <= peak1:
                 if extrema[i*2+1] > extrema[j*2+1]:
                     ok_apertures[j] = False
@@ -1199,9 +1199,12 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
         for target, _slice in zip(targets, (slice(i1, p+2), slice(p-1, i2+1))):
             npts = _slice.stop - _slice.start
             # reduce variance to ensure spline goes through points
-            spline = at.fit_spline_to_data(
-                data[_slice], mask=None if mask is None else mask[_slice],
-                variance=0.01 * stddev[_slice]**2, k=min(npts-1, 3))
+            with warnings.catch_warnings():
+                # can arise from poor spline fit
+                warnings.simplefilter("ignore", UserWarning)
+                spline = at.fit_spline_to_data(
+                    data[_slice], mask=None if mask is None else mask[_slice],
+                    variance=0.01 * stddev[_slice]**2, k=min(npts-1, 3))
             limit = peak_limit(spline, true_peak-_slice.start,
                                0 if _slice.start==i1 else npts-1, target) + _slice.start
             limits.append(limit)
