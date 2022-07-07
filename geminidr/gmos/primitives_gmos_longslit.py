@@ -164,6 +164,9 @@ class GMOSClassicLongslit(GMOSSpect):
                     if ext.mask is not None:
                         all_data[_slice][ext.mask[ext.data_section().asslice()]
                                          & DQ.not_signal > 0] = np.nan
+                # To supress a numpy RuntimeWarning if a row is all NaNs, we
+                # set such rows to zero. Hopefully these will get boxcar'd out
+                all_data[np.isnan(all_data).min(axis=1)] = 0
                 row_medians = np.nanpercentile(all_data, 95, axis=1)
                 del all_data
 
@@ -201,6 +204,7 @@ class GMOSClassicLongslit(GMOSSpect):
                     row_medians -= at.boxcar(row_medians, size=longest_gap // 2)
                 # Remove single bad rows
                 row_medians = at.boxcar(row_medians, size=2)
+                print(row_medians[260:280])
 
                 if debug_plot:
                     plt.ioff()
