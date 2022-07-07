@@ -204,7 +204,6 @@ class GMOSClassicLongslit(GMOSSpect):
                     row_medians -= at.boxcar(row_medians, size=longest_gap // 2)
                 # Remove single bad rows
                 row_medians = at.boxcar(row_medians, size=2)
-                print(row_medians[260:280])
 
                 if debug_plot:
                     plt.ioff()
@@ -236,7 +235,6 @@ class GMOSClassicLongslit(GMOSSpect):
 
                     yshift = mshift - maxima[0]
                     if len(maxima) > 1 or abs(yshift) > max_shift:
-                        print(yshift // ybin)
                         log.warning(f"{ad.filename}: cross-correlation peak is"
                                     " untrustworthy so not adding illumination "
                                     "mask. Please re-run with a specified shift.")
