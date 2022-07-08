@@ -63,7 +63,7 @@ version = '3.0'
 # The full version, including alpha/beta/rc tags.
 #release = '3.0.x'
 #rtdurl = 'release-'+release
-release = '3.0.2'
+release = '3.0.3'
 rtdurl = 'v'+release
 
 

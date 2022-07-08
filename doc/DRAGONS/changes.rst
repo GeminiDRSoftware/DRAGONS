@@ -6,8 +6,10 @@
 Change Logs
 ***********
 
-3.0.2
-=====
+3.0.2 and 3.0.3
+===============
+
+Note that 3.0.2 was found to have one broken recipe, 3.0.3 fixes it.
 
 Bug Fixes
 ---------

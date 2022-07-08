@@ -46,7 +46,7 @@ author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 version = '3.0'  # The short X.Y version.
 #release = '3.0.x'  # The full version, including alpha/beta/rc tags.
 #rtdurl = 'release-'+release
-release = '3.0.2'  # The full version, including alpha/beta/rc tags.
+release = '3.0.3'  # The full version, including alpha/beta/rc tags.
 rtdurl = 'v'+release
 
 
