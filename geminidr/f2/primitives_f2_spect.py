@@ -33,6 +33,54 @@ class F2Spect(Spect, F2):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2_spect)
 
+    def makeLampFlat(self, adinputs=None, **params):
+        """
+        This produces an appropriate stacked F2 spectroscopic flat, based on
+        the inputs. For F2 spectroscopy, lamp-on flats have the dark current
+        removed by subtracting darks.
+
+        Parameters
+        ----------
+        suffix: str
+            The suffix to be added to the output file.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        suffix = params["suffix"]
+
+        # Since this primitive needs a reference, it must no-op without any
+        if not adinputs:
+            return adinputs
+
+        # This is basically the generic makeLampFlat code, but altered to
+        # distinguish between FLATs and DARKs, not LAMPONs and LAMPOFFs
+        flat_list = self.selectFromInputs(adinputs, tags='FLAT')
+        dark_list = self.selectFromInputs(adinputs, tags='DARK')
+        stack_params = self._inherit_params(params, "stackFrames")
+        if dark_list:
+            self.showInputs(dark_list, purpose='darks')
+            dark_list = self.stackDarks(dark_list, **stack_params)
+        self.showInputs(flat_list, purpose='flats')
+        stack_params.update({'zero': False, 'scale': False})
+        flat_list = self.stackFrames(flat_list, **stack_params)
+
+        if flat_list and dark_list:
+            log.fullinfo("Subtracting stacked dark from stacked flat")
+            flat = flat_list[0]
+            flat.subtract(dark_list[0])
+            flat.update_filename(suffix=suffix, strip=True)
+            return [flat]
+        elif flat_list:
+            log.fullinfo("Only had flats to stack. Calling darkCorrect.")
+            flat_list = self.darkCorrect(flat_list, suffix=suffix,
+                                         dark=None, do_cal='procmode')
+            return flat_list
+        else:
+            return []
+
+        return adinputs
+
     def standardizeWCS(self, adinputs=None, **params):
         """
         This primitive updates the WCS attribute of each NDAstroData extension
@@ -56,6 +104,14 @@ class F2Spect(Spect, F2):
         super().standardizeWCS(adinputs, **params)
 
         for ad in adinputs:
+            # Need to exclude darks from having a spectroscopic WCS added as
+            # they don't have a SPECT tag and will gum up the works. This only
+            # needs to be done for F2's makeLampFlat as it uses flats minus
+            # darks to remove dark current.
+            if 'DARK' in ad.tags:
+                log.stdinfo(f"{ad.filename} is a DARK, continuing")
+                continue
+
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
             # Apply central wavelength offset
             if ad.dispersion() is None:
