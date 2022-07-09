@@ -10,7 +10,6 @@ def makeProcessedFlat(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
-    p.darkCorrect()
     p.stackFlats()
     p.determineSlitEdges()
     p.maskBeyondSlit()
