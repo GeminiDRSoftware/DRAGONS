@@ -6,8 +6,10 @@
 Change Logs
 ***********
 
-3.0.2
-=====
+3.0.2 and 3.0.3
+===============
+
+Note that 3.0.2 was found to have one broken recipe, 3.0.3 fixes it.
 
 Bug Fixes
 ---------
@@ -17,17 +19,32 @@ Bug Fixes
 * Continue without crashing when ``traceApertures`` cannot identify a
   starting location for a trace.
 
-* Fix bug where manually-assigned sky frames in ``separateSky`` were added
-  to the list of science frames by mistake.
+* Fix issues with assignment of on-source/sky frames when the user specifies
+  specific frames.
 
 * Fix bug where ``stackFrames`` crashed if using the ``statsec`` parameter
   when scaling or zero-offsetting.
 
 * In fringeCorrect, ``do_cal=force`` has been reactivated.
 
+* Better handling of infinites and NaN in the flat normalization.
+
+**geminidr.gmos**
+
+* Added new primitive to the recipes to mask amplifier 5 in GMOS-S data
+  obtained since January 28, 2022.  GMOS-S amplifier 5 suffered a major
+  failure and it is not usable.
+
+* Ensure that the masks are used when calculating the statistics in
+  scaleByIntensity.
+
 **geminidr.gnirs**
 
 * Added missing support for YPHOT filter.
+
+**geminidr.f2***
+
+* Support of the Flamingos 2 filters.
 
 New Features
 ------------
@@ -36,6 +53,9 @@ New Features
 
 * Add ``wave_units`` and ``data_units`` parameters to ``write1DSpectra`` to
   configure the output
+
+* Under-the-hood modification to distinguish data reduced in quicklook mode
+  versus science mode.
 
 Interface Modifications
 -----------------------
