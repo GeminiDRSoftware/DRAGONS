@@ -6,9 +6,11 @@ import astrodata
 from astrodata.testing import download_from_archive
 import gemini_instruments
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
+import pytest
 
 
 # ---- Tests ------------------------------------------------------------------
+@pytest.mark.gnirs
 def test_associate_sky_abba():
 
     files = ['N20141119S0331.fits', 'N20141119S0332.fits',
