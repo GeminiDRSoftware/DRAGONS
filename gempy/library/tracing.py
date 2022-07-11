@@ -35,6 +35,8 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
+from matplotlib import pyplot as plt
+
 from . import astrotools as at
 from ..utils.decorators import insert_descriptor_values, unpack_nddata
 
@@ -94,13 +96,15 @@ class Aperture:
 
     def check_domain(self, npix):
         """Simple function to warn user if aperture model appears inconsistent
-        with the array containing the data"""
-        try:
-            if self.model.domain != (0, npix - 1):
-                log.warning("Model's domain is inconsistent with image size. "
-                            "Results may be incorrect.")
-        except AttributeError:  # no "domain" attribute
-            pass
+        with the array containing the data. Since resampleToCommonFrame() now
+        modifies the domain, this will raise unnecessary warnings if left as-is"""
+        pass
+        #try:
+        #    if self.model.domain != (0, npix - 1):
+        #        log.warning("Model's domain is inconsistent with image size. "
+        #                    "Results may be incorrect.")
+        #except AttributeError:  # no "domain" attribute
+        #    pass
 
     def aperture_mask(self, ext=None, width=None, aper_lower=None,
                       aper_upper=None, grow=None):
@@ -550,7 +554,7 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
     return profile, prof_mask
 
 
-def get_extrema(profile, prof_mask, min_snr=3):
+def get_extrema(profile, prof_mask=None, min_snr=3):
     """
     Find all the significant maxima and minima in a 1D profile. Significance
     is calculated from the prominence of each peak divided by an estimate of
@@ -609,13 +613,20 @@ def get_extrema(profile, prof_mask, min_snr=3):
     if not extrema:
         return []
 
+    # Delete a maximum if there is no minimum between it and the edge,
+    # unless it's the ONLY maximum
     if extrema[0][2]:
         if len(extrema) == 1:
             extrema = [(1, profile[1], False)] + extrema + [(xpixels[-1], profile[-2], False)]
+        elif len(extrema) == 2:
+            extrema = [(1, profile[1], False)] + extrema
         else:
             del extrema[0]
     if extrema and extrema[-1][2]:
-        del extrema[-1]
+        if len(extrema) == 2:
+            extrema = extrema + [(xpixels[-1], profile[-2], False)]
+        else:
+            del extrema[-1]
 
     if not extrema:
         return []
@@ -652,6 +663,9 @@ def get_extrema(profile, prof_mask, min_snr=3):
 
     ### WE NEED TO GET RID OF THEM IN A SMARTER WAY. PERCOLATING?
     apertures = [0] * (len(extrema) // 2)
+    if not apertures:
+        return []
+
     apnext = 1
     niter = 0
     while True:
@@ -772,6 +786,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     # either noise spikes or artifacts
     # Start by removing low-S/N apertures
     ok_apertures = {i: snr >= min_snr for i, snr in enumerate(snrs)}
+
     # Remove apertures too close to other apertures
     for i, (peak1, limit1, snr1) in enumerate(zip(peaks, all_limits, snrs)):
         for j, (peak2, limit2, snr2) in enumerate(list(zip(peaks, all_limits, snrs))[i+1:], start=i+1):
@@ -792,7 +807,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
         max_separation /= ext.pixel_scale()
         target_location = ext.wcs.invert(
             ext.central_wavelength(asNanometers=True), ext.target_ra(),
-            ext.target_dec())[2 - ext.dispersion_axis()]
+            ext.target_dec())[1]
         if not np.isnan(target_location):
             ok_apertures.update({i: False for i, x in enumerate(peaks)
                                  if abs(target_location - x) > max_separation})
@@ -807,7 +822,10 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
                 ok_apertures[i] = False
             # Eliminate things with square edges that are likely artifacts
             if (flimits[side] - peak) / (limits[side] - peak + 1e-6) > 0.85:
-                ok_apertures[i] = False
+                # But keep them if the square edge butts up against another aperture
+                if not ((i > 0 and limits[0] - all_limits[i-1][1] < 1) or
+                        (i < len(peaks) - 1 and all_limits[i+1][0] - limits[1] < 1)):
+                    ok_apertures[i] = False
         # Remove apertures that don't appear in a smoothed version of the
         # data (these are basically noise peaks)
         if spline(peak) - spline(limits).min() < stddev:
@@ -895,6 +913,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
                     where=variance > 0)
+
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
@@ -1263,7 +1282,8 @@ def cwt_ricker(data, widths, **kwargs):
 @unpack_nddata
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                 cwidth=5, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
-                max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None):
+                max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
+                min_peak_value=None):
     """
     This function traces features along one axis of a two-dimensional image.
     Initial peak locations are provided and then these are matched to peaks
@@ -1311,6 +1331,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         variance as arguments, and returns 1D versions of all three
     viewer: imexam viewer or None
         Viewer to draw lines on.
+    min_peak_value: int or float
+        Minimum amplitude of fit to be considered as a real detection. Peaks
+        smaller than this value will be counted as a miss.
 
     Returns
     -------
@@ -1332,6 +1355,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     if start is None:
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
+    else:  # just to be sure
+        start = int(min(max(start, nsum // 2), ext_data.shape[0] - nsum / 2))
 
     # Get accurate starting positions for all peaks
     halfwidth = cwidth // 2
@@ -1363,8 +1388,25 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     mask = np.zeros_like(data, dtype=DQ.datatype)
     var = np.empty_like(data)
 
+    # Make a slice around a given row center
+    def _slice(center):
+        return slice(center - nsum // 2, center + nsum - nsum // 2)
 
-    coord_lists = [[] for peak in initial_peaks]
+    # We're going to make a list of valid step centers to help later. These
+    # will help us to calculate for how many steps a trace has been missed,
+    # since we don't count steps which cover masked regions.
+    step_centers = list(np.arange(start + 1, ext_data.shape[0] - nsum / 2, step, dtype=int))
+    step_centers.extend(list(np.arange(start - step, nsum / 2, -step, dtype=int)))
+    all_slices = [_slice(c) for c in step_centers]
+    # Eliminate blocks that are completely masked (e.g., chip gaps, bridges, amp5)
+    # Also need to eliminate regions with only one valid column because NDStacker
+    # can't compute the pixel-to-pixel variance and hence the S/N can't be calculated
+    if ext_mask is not None:
+        for i, s in reversed(list(enumerate(all_slices))):
+            if np.bincount((ext_mask[s] & DQ.not_signal).min(axis=1))[0] <= 1:
+                del step_centers[i]
+
+    coord_lists = [[(start, peak)] for peak in initial_peaks]
     for direction in (1, -1):
         ypos = start
         last_coords = [[ypos, peak] for peak in initial_peaks]
@@ -1374,7 +1416,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             missing_but_not_lost = missing_but_not_lost or ypos
             ypos += step
             # Reached the bottom or top?
-            if ypos < 0.5 * nsum or ypos > ext_data.shape[0] - 0.5 * nsum:
+            if not (min(step_centers) <= ypos <= max(step_centers)):
                 break
 
             # This indicates we should start making profiles binned across
@@ -1384,9 +1426,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             # There's always at least one such array
-            y2 = int(ypos + 0.5 * nsum + 0.5)
             for i in range(lookback + 1):
-                slices = [slice(y2 - j*step - nsum, y2 - j*step) for j in range(i + 1)]
+                slices = [_slice(ypos - j*step) for j in range(i+1)]
                 d, m, v = func(np.concatenate(list(ext_data[s] for s in slices)),
                                mask=None if ext_mask is None else np.concatenate(list(ext_mask[s] for s in slices)),
                                variance=None)
@@ -1406,8 +1447,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             # the data array 0 as well, and we can't find any peaks
             if any(mask[0] == 0) and not all(np.isinf(var[0])):
                 last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
-                peaks = pinpoint_peaks(data[0], peaks=last_peaks, mask=mask[0],
-                                       halfwidth=halfwidth)[0]
+                peaks, peak_values = pinpoint_peaks(data[0], peaks=last_peaks, mask=mask[0],
+                                       halfwidth=halfwidth)
 
                 for i, (last_row, old_peak) in enumerate(last_coords):
                     if np.isnan(old_peak):
@@ -1416,15 +1457,16 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     # the loop but nothing will match
                     if peaks:
                         j = np.argmin(abs(np.array(peaks) - old_peak))
-                        new_peak = peaks[j]
+                        new_peak, new_peak_value = peaks[j], peak_values[j]
                     else:
                         new_peak = np.inf
 
                     # Is this close enough to the existing peak?
-                    steps_missed = int(abs((ypos - last_row) / step)) - 1
+                    steps_missed = len([c for c in step_centers if (last_row < c < ypos) or (last_row > c > ypos)])
                     for j in range(min(steps_missed, lookback) + 1):
                         tolerance = max_shift * (j + 1) * abs(step)
-                        if abs(new_peak - old_peak) <= tolerance:
+                        if abs(new_peak - old_peak) <= tolerance and\
+                              (min_peak_value is None or new_peak_value > min_peak_value):
                             new_coord = [ypos - 0.5 * j * step, new_peak]
                             break
                         elif j < lookback:
@@ -1432,9 +1474,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                             # new_peak calculated here may be added in the
                             # next iteration of the loop
                             try:
-                                new_peak = pinpoint_peaks(
+                                new_peak, new_peak_value = [x[0] for x in pinpoint_peaks(
                                     data[j+1], peaks=[old_peak], mask=mask[j+1],
-                                    halfwidth=halfwidth)[0][0]
+                                    halfwidth=halfwidth)]
                             except IndexError:  # No peak there
                                 new_peak = np.inf
                     else:

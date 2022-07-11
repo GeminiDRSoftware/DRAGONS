@@ -120,7 +120,7 @@ def test_descriptor_matches_type(ad):
     for descriptor, expected_type in DESCRIPTORS_TYPES:
         value = getattr(ad, descriptor)()
         assert isinstance(value, expected_type) or value is None, \
-            "Assertion failed for file: {}".format(ad.filename)
+            f"Assertion failed for file: {ad.filename} descriptor {descriptor}"
 
 
 if __name__ == "__main__":

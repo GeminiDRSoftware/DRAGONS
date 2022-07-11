@@ -106,8 +106,9 @@ class InteractiveModel1D(InteractiveModel):
     Subclass for 1D models
     """
 
-    def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
-                 section=None, listeners=None, band_model=None, extra_masks=None):
+    def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None,
+                 mask=None, section=None, listeners=None, band_model=None,
+                 extra_masks=None, initial_fit=None):
         """
         Create base class with given parameters as initial model inputs.
 
@@ -127,6 +128,8 @@ class InteractiveModel1D(InteractiveModel):
             Model for band selections
         extra_masks : dict of boolean arrays
             points to display but not use in fit
+        initial_fit: fit_1D/None
+            an initial fit to use if there are no data points
         """
         super().__init__()
 
@@ -138,18 +141,23 @@ class InteractiveModel1D(InteractiveModel):
 
         self.fitting_parameters = fitting_parameters
         self.domain = domain
-        self.fit = None
+        if len(x) == 0:
+            self.fit = initial_fit
         self.listeners = listeners
 
         self.section = section
         self.data = bm.ColumnDataSource({'x': [], 'y': [], 'mask': []})
 
-        xlinspace = np.linspace(*self.domain, 500)
+        if self.domain:
+            xlinspace = np.linspace(*self.domain, 500)
+        else:
+            xlinspace = np.linspace(min(x), max(x), 500)
         self.populate_bokeh_objects(x, y, weights=weights, mask=mask,
                                     extra_masks=extra_masks)
 
         self.sigma_clip = "sigma" in fitting_parameters and fitting_parameters["sigma"]
-        self.perform_fit()
+        if len(x):
+            self.perform_fit()
         self.evaluation = bm.ColumnDataSource({'xlinspace': xlinspace,
                                                'model': self.evaluate(xlinspace)})
 
@@ -379,16 +387,20 @@ class InteractiveModel1D(InteractiveModel):
             # For splines, "rank" is the number of spline pieces; for Chebyshevs
             # it's effectively the number of fitted points (max order+1)
             rank = new_fit.fit_info["rank"]
-            if rank> 0:
+            if rank > 0:
                 if "params" in new_fit.fit_info:  # it's a polynomial
                     rank -= 1
                 if rank >= fitparms["order"]:
                     self.quality = FitQuality.GOOD
-                elif self.allow_poor_fits:
+                    self.fit = new_fit
+                else:
+                    # Modify the fit_1D object with a shift by ugly hacking
+                    offset = np.mean(self.y[goodpix] - self.evaluate(self.x[goodpix]))
+                    self.fit.offset_fit(offset)
+                    self.fit.points = new_fit.points
+                    self.fit.mask = new_fit.mask
                     self.quality = FitQuality.POOR  # else stay BAD
-
         if self.quality != FitQuality.BAD:  # don't update if it's BAD
-            self.fit = new_fit
             if 'residuals' in self.data.data:
                 self.data.data['residuals'] = self.y - self.evaluate(self.x)
             if 'ratio' in self.data.data:
@@ -473,7 +485,7 @@ class FittingParametersUI:
             if pkey not in ui_params.fields and key in alt_keys:
                 pkey = alt_keys[key]
             field = ui_params.fields[pkey]
-            if isinstance(field.default, int):
+            if isinstance(field.default, int) or field.dtype is int:
                 step = 1
             else:
                 step = 0.1
@@ -715,7 +727,8 @@ class Fit1DPanel:
     def __init__(self, visualizer, fitting_parameters, domain=None,
                  x=None, y=None, weights=None, idx=0, xlabel='x', ylabel='y',
                  plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
-                 enable_user_masking=True, enable_regions=True, central_plot=True, extra_masks=None):
+                 enable_user_masking=True, enable_regions=True, central_plot=True, extra_masks=None,
+                 initial_fit=None):
         """
         Panel for visualizing a 1-D fit, perhaps in a tab
 
@@ -773,7 +786,8 @@ class Fit1DPanel:
         # Avoids having to check whether this is None all the time
         band_model = GIRegionModel(domain=domain)
         self.model = InteractiveModel1D(fitting_parameters, domain, x, y, weights,
-                                        band_model=band_model, extra_masks=extra_masks)
+                                        band_model=band_model, extra_masks=extra_masks,
+                                        initial_fit=initial_fit)
         self.model.add_listener(self.model_change_handler)
 
         self.fitting_parameters_ui = FittingParametersUI(visualizer, self.model,
@@ -1231,6 +1245,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     reinit_widgets[0].children[1].on_change('value', kickoff_modal)
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
+            else:
+                reset_reinit_button = self.build_reset_button()
+                reinit_widgets.append(reset_reinit_button)
             if recalc_inputs_above:
                 self.reinit_panel = row(*reinit_widgets)
             else:
@@ -1288,6 +1305,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             for k in list(this_dict.keys()):
                 if k.endswith("_mask"):
                     extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
+            # making the fit panel
             tui = panel_class(self, fitting_params, domain=domain,
                               **this_dict, **kwargs, extra_masks=extra_masks)
             if turbo_tabs:

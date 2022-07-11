@@ -1516,6 +1516,7 @@ class GIRegionView(GIRegionListener):
                 region.annotation.right = 0
                 region.start = 0
                 region.stop = 0
+                self.whisker_data.patch({'base': [(region.whisker_id, None)], 'lower': [(region.whisker_id, None)], 'upper': [(region.whisker_id, None)]})
                 # TODO remove it (impossible?)
         # We have to defer this as the delete may come via the keypress URL
         # But we aren't in the PrimitiveVisualizaer so we reference the

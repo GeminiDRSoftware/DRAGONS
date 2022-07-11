@@ -26,10 +26,11 @@ class makeBPMConfig(config.Config):
             raise ValueError("dark_hi_thresh must be greater than dark_lo_thresh")
 
 class makeLampFlatConfig(parameters_stack.core_stacking_config):
-    pass
+    suffix = config.Field("Filename suffix", str, "_lampstack", optional=True)
 
 class removeFirstFrameConfig(config.Config):
     remove_first = config.Field("Remove first frame?", bool, True)
+    remove_files = config.ListField("List of files to remove", str, None, optional=True)
 
 class separateFlatsDarksConfig(config.Config):
     pass
