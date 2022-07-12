@@ -71,15 +71,18 @@ class F2Spect(Spect, F2):
             flat.subtract(dark_list[0])
             flat.update_filename(suffix=suffix, strip=True)
             return [flat]
-        elif flat_list:
+
+        elif flat_list:  # No darks were passed.
+            # Look for dark in calibration manager; if not found, crash.
             log.fullinfo("Only had flats to stack. Calling darkCorrect.")
             flat_list = self.darkCorrect(flat_list, suffix=suffix,
                                          dark=None, do_cal='procmode')
+            if flat_list[0].phu.get('DARKIM') is None:
+                # No dark was subtracted by darkCorrect:
+                raise RuntimeError("No processed dark found in calibration "
+                                   "database. Please either provide one, or "
+                                   "include a list of darks as input.")
             return flat_list
-        else:
-            return []
-
-        return adinputs
 
     def standardizeWCS(self, adinputs=None, **params):
         """
