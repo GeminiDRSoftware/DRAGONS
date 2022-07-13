@@ -13,12 +13,13 @@
 @Library('dragons_ci@master') _
 
 // Change these to automatically skip steps
-def runtests_gmosls = 1  // 1 to enable
-def runtests_slow =   1
-def runtests_f2 =     1
-def runtests_niri =   1
-def runtests_gsaoi =  1
-def runtests_gnirs =  1
+def runtests_gmosls  = 1  // 1 to enable
+def runtests_slow    = 1
+def runtests_f2      = 1
+def runtests_niri    = 1
+def runtests_gsaoi   = 1
+def runtests_gnirs   = 1
+def runtests_wavecal = 1
 
 pipeline {
 
@@ -307,6 +308,44 @@ pipeline {
                         testResults: '.tmp/py37-gnirs/reports/*_results.xml'
                     )
                     echo "Deleting GNIRS Tests workspace ${env.WORKSPACE}"
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                      deleteDir()
+                    }
+                }  // end always
+            }  // end post
+        }  // end stage
+        stage('WaveCal Tests') {
+            when {
+                expression { runtests_wavecal == 1 }
+            }
+
+            agent { label "master" }
+            environment {
+                MPLBACKEND = "agg"
+                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+                DRAGONS_TEST_OUT = "wavecal_tests_outputs"
+                TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                TMPDIR = "${env.WORKSPACE}/.tmp/wavecal/"
+            }
+            steps {
+                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Running tests"
+                sh 'tox -e py37-wavecal -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F wavecal'
+            }  // end steps
+            post {
+                always {
+                    echo "Running 'archivePlots' from inside WaveCal Tests"
+                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: '.tmp/py37-wavecal/reports/*_results.xml'
+                    )
+                    echo "Deleting WaveCal Tests workspace ${env.WORKSPACE}"
                     cleanWs()
                     dir("${env.WORKSPACE}@tmp") {
                       deleteDir()
