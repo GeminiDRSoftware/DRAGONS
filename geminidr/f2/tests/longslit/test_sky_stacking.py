@@ -12,6 +12,7 @@ from geminidr.f2.primitives_f2_longslit import F2Longslit
 
 
 # ---- Tests ------------------------------------------------------------------
+@pytest.mark.f2ls
 def test_associate_sky_abba():
 
     files = ['S20200301S0071.fits', 'S20200301S0072.fits',
@@ -35,6 +36,8 @@ def test_associate_sky_abba():
     for ad in (b1, b2):
         assert set(ad.SKYTABLE['SKYNAME']) == a_frames
 
+
+@pytest.mark.f2ls
 def test_associate_sky_quasi_abcde(caplog):
 
     files = ['S20210515S0196.fits', 'S20210515S0197.fits',

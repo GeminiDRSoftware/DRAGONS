@@ -153,6 +153,7 @@ input_pars = [
 
 # Tests Definitions ------------------------------------------------------------
 
+@pytest.mark.wavecal
 @pytest.mark.slow
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
