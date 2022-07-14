@@ -517,8 +517,7 @@ def test_associate_sky_pass_skies(niri_sequence):
 
     assert in_sky_names == out_sky_names
 
-@pytest.mark.parametrize('use_all',
-                         [False, True])
+@pytest.mark.parametrize('use_all', [False, True])
 def test_associate_sky_use_all(use_all, niri_sequence):
 
     objects = niri_sequence('object')
