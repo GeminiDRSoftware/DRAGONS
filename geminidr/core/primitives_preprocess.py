@@ -243,12 +243,12 @@ class Preprocess(PrimitivesBASE):
         time: float
             number of seconds
         use_all: bool
-            use everything in the "sky" stream?
+            use all input frames as skies (unless they are too close on the sky)?
         """
         def sky_coord(ad):
             """Return (RA, dec) at center of first extension"""
-            return SkyCoord(ad[0].wcs(*[x // 2 - 0.5
-                                        for x in ad[0].shape[::-1]])[-2:])
+            return SkyCoord(*ad[0].wcs(*[x // 2 - 0.5
+                                         for x in ad[0].shape[::-1]])[-2:], unit='deg')
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -286,7 +286,7 @@ class Preprocess(PrimitivesBASE):
             # the first extension, which should cope with different ROIs (but
             # there is a matching_inst_config() call later)
             sky_times = [ad.ut_datetime() for ad in ad_skies]
-            sky_coords = {ad: sky_coord(ad) for ad in adinputs}
+            sky_coords = {ad: sky_coord(ad) for ad in set(adinputs + ad_skies)}
 
             for i, ad in enumerate(adinputs):
                 coord = sky_coord(ad)
