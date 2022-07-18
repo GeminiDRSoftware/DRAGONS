@@ -296,7 +296,7 @@ class Preprocess(PrimitivesBASE):
                 if params["use_all"]:
                     log.stdinfo("Associating all displaced sky AstroData "
                                 f"objects with {ad.filename}")
-                    sky_list = [ad_other for ad_other in adinputs
+                    sky_list = [ad_other for ad_other in set(adinputs + ad_skies)
                                 if coord.separation(sky_coords[ad_other]).arcsec > min_dist]
                 else:
                     sci_time = ad.ut_datetime()
