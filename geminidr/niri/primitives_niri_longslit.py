@@ -20,6 +20,8 @@ from . import parameters_niri_longslit
 # archive only has options for "f32-6pix" and "f32-9pix". The component numbers
 # make it clear that these are the same as the 4 and 7 pixels configurations
 # listed.
+# Columns are the y-value of slit center on the sensor, then the slitlength in
+# arcsec and pixels.
 niri_slit_info = {'f6-2pix': (501, 51.4, 439.),
                   'f6-2pixBl': (499, 51.6, 442),
                   'f6-4pix': (498, 112.5, 962),
