@@ -51,27 +51,22 @@ def test_associate_sky_pass_skies(gnirs_objects, gnirs_skies):
 
     assert in_sky_names == out_sky_names
 
-def test_associate_sky_exclude_all(gnirs_objects, gnirs_skies):
+@pytest.mark.parametrize('use_all', [True, False])
+def test_associate_sky_use_all(use_all, gnirs_objects, gnirs_skies):
+
+    in_sky_names = set([ad.filename for ad in gnirs_skies])
 
     p = GNIRSLongslit(gnirs_objects + gnirs_skies)
     p.prepare()
     p.separateSky()
-    p.associateSky(distance=10)  # Offset is only 5"
+    # Offset is only 5" so this will exclude skies if 'use_all' is False.
+    p.associateSky(distance=10, use_all=use_all)
 
-    for ad in p.showList():
-        with pytest.raises(AttributeError):
-            ad.SKYTABLE
+    if use_all:
+        out_sky_names = set([ad.phu['ORIGNAME'] for ad in p.streams['sky']])
 
-def test_associate_sky_use_all(gnirs_objects, gnirs_skies):
-
-    # Grab a sky frame from an unrelated but relatively nearby observation.
-    extra_frame = [astrodata.open(download_from_archive('N20141107S0360.fits'))]
-
-    p = GNIRSLongslit(gnirs_objects + gnirs_skies + extra_frame)
-    p.prepare()
-    p.separateSky()
-    p.associateSky(distance=10, use_all=True)
-
-    # Check that all the "object" and "sky" frames have the extra frame as sky.
-    for ad in p.streams['main']:
-        assert (ad.SKYTABLE['SKYNAME'][0] == 'N20141107S0360_skyAssociated.fits')
+        assert in_sky_names == out_sky_names
+    else:
+        for ad in p.showList():
+            with pytest.raises(AttributeError):
+                ad.SKYTABLE
