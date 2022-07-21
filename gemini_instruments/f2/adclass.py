@@ -130,8 +130,6 @@ class AstroDataF2(AstroDataGemini):
             return super().array_section(pretty=pretty)
 
         value_filter = (str if pretty else Section.from_string)
-        # Hardcoded since this is what will always be returned by the
-        # descriptor as @returns_list can handle the self.is_single logic
         return value_filter('[1:2048,1:2048]')
 
     def camera(self, stripID=False, pretty=False):
