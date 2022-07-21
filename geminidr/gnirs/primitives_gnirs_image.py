@@ -182,7 +182,7 @@ def _position_illum_mask(adinput, illum, log, max_dy=20):
     # center_of_mass function has switched x and y axes compared to normal.
     comx_illummask = illum.phu['CENMASSX']
     comy_illummask = illum.phu['CENMASSY']
-    comy, comx = scipy.ndimage.measurements.center_of_mass(keyhole)
+    comy, comx = ndimage.measurements.center_of_mass(keyhole)
     if not np.isnan(comx) and not np.isnan(comy):
         dx = int(comx - comx_illummask)
         dy = int(comy - comy_illummask)
