@@ -125,8 +125,10 @@ class AstroDataF2(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
+        if 'PREPARED' in self.tags:
+            return super().array_section(pretty=pretty)
+
         value_filter = (str if pretty else section_to_tuple)
-        # TODO: discover reason why this is hardcoded, rather than from keyword
         return value_filter('[1:2048,1:2048]')
 
     def camera(self, stripID=False, pretty=False):
@@ -233,6 +235,8 @@ class AstroDataF2(AstroDataGemini):
             format (1-based).
 
         """
+        if 'PREPARED' in self.tags:
+            return super().data_section(pretty=pretty)
         return self.array_section(pretty=pretty)
 
     @astro_data_descriptor
@@ -262,6 +266,8 @@ class AstroDataF2(AstroDataGemini):
             Position of the detector using an IRAF section format (1-based).
 
         """
+        if 'PREPARED' in self.tags:
+            return super().detector_section(pretty=pretty)
         return self.array_section(pretty=pretty)
 
     @returns_list

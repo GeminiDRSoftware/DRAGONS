@@ -65,9 +65,11 @@ class F2(Gemini, NearIR):
                         ext.pixel_scale() / ext._get_wcs_pixel_scale()
 
             for desc in ('read_noise', 'gain', 'non_linear_level',
-                         'saturation_level'):
+                         'saturation_level', 'array_section',
+                         'data_section', 'detector_section'):
                 kw = ad._keyword_for(desc)
-                ad.hdr.set(kw, getattr(ad, desc)()[0], self.keyword_comments[kw])
+                desc_params = {"pretty": True} if 'section' in desc else {}
+                ad.hdr.set(kw, getattr(ad, desc)(**desc_params)[0], self.keyword_comments[kw])
                 try:
                     ad.phu.remove(kw)
                 except (KeyError, AttributeError):

@@ -3,6 +3,7 @@ keyword_comments = {
     # Dictionary values are standard comments for each keyword
     "ACQSLITS": "Locations of acquisition slits",
     "AMPNAME": "Amplifier name(s)",
+    "ARRAYSEC": "Array section(s)",
     "BIASIM": "Bias image used",
     "BPMNAME": "Name of BPM used to identify bad pixels",
     "BUNIT": "Physical units of the array values",
