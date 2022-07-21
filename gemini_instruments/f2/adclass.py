@@ -126,6 +126,9 @@ class AstroDataF2(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
+        if 'PREPARED' in self.tags:
+            return super().array_section(pretty=pretty)
+
         value_filter = (str if pretty else Section.from_string)
         # Hardcoded since this is what will always be returned by the
         # descriptor as @returns_list can handle the self.is_single logic
@@ -235,6 +238,8 @@ class AstroDataF2(AstroDataGemini):
             format (1-based).
 
         """
+        if 'PREPARED' in self.tags:
+            return super().data_section(pretty=pretty)
         return self.array_section(pretty=pretty)
 
     @astro_data_descriptor
@@ -264,6 +269,8 @@ class AstroDataF2(AstroDataGemini):
             Position of the detector using an IRAF section format (1-based).
 
         """
+        if 'PREPARED' in self.tags:
+            return super().detector_section(pretty=pretty)
         return self.array_section(pretty=pretty)
 
     @returns_list
