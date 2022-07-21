@@ -80,7 +80,7 @@ setup(name='dragons',
       ],
       install_requires=[
           'asdf',
-          'astropy>=4.2',
+          'astropy>=4.3',
           'astroquery',
           'astroscrappy',
           'bokeh>=2.3',
