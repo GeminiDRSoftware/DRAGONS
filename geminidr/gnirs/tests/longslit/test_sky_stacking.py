@@ -18,6 +18,7 @@ def gnirs_abba():
              'N20141119S0333.fits', 'N20141119S0334.fits')]
 
 # ---- Tests ------------------------------------------------------------------
+@pytest.mark.gnirsls
 def test_associate_sky_abba(gnirs_abba):
 
     p = GNIRSLongslit(gnirs_abba)
@@ -40,6 +41,7 @@ def test_associate_sky_abba(gnirs_abba):
     for ad in (b1, b2):
         assert set(ad.SKYTABLE['SKYNAME']) == a_frames
 
+@pytest.mark.gnirsls
 def test_associate_sky_pass_skies(gnirs_abba):
 
     in_sky_names = set([ad.filename for ad in gnirs_abba[1:3]])
@@ -52,6 +54,7 @@ def test_associate_sky_pass_skies(gnirs_abba):
 
     assert in_sky_names == out_sky_names
 
+@pytest.mark.gnirsls
 def test_associate_sky_use_all(gnirs_abba):
 
     in_sky_names = set([ad.filename for ad in gnirs_abba])
@@ -68,6 +71,7 @@ def test_associate_sky_use_all(gnirs_abba):
         # Check that each AD has all the other frames as skies, but not itself.
         assert skies == in_sky_names - set([ad.phu['ORIGNAME']])
 
+@pytest.mark.gnirsls
 def test_associate_sky_exclude_all(gnirs_abba):
     p = GNIRSLongslit(gnirs_abba)
     p.prepare()

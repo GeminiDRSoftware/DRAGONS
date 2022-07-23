@@ -30,6 +30,7 @@ def niri_abcde():
 
 
 # ---- Tests ------------------------------------------------------------------
+@pytest.mark.nirils
 def test_associate_sky_abba(niri_abba):
 
     p = NIRILongslit(niri_abba)
@@ -52,6 +53,7 @@ def test_associate_sky_abba(niri_abba):
     for ad in (b1, b2):
         assert set(ad.SKYTABLE['SKYNAME']) == a_frames
 
+@pytest.mark.nirils
 def test_associate_sky_pass_skies(niri_abba):
 
     in_sky_names = set([ad.filename for ad in niri_abba[1:3]])
@@ -64,6 +66,7 @@ def test_associate_sky_pass_skies(niri_abba):
 
     assert in_sky_names == out_sky_names
 
+@pytest.mark.nirils
 def test_associate_sky_use_all(niri_abba):
 
     in_sky_names = set([ad.filename for ad in niri_abba])
@@ -80,6 +83,7 @@ def test_associate_sky_use_all(niri_abba):
         # Check that each AD has all the other frames as skies, but not itself.
         assert skies == in_sky_names - set([ad.phu['ORIGNAME']])
 
+@pytest.mark.nirils
 def test_associate_sky_exclude_all(niri_abba):
     p = NIRILongslit(niri_abba)
     p.prepare()
@@ -91,8 +95,7 @@ def test_associate_sky_exclude_all(niri_abba):
         with pytest.raises(AttributeError):
             ad.SKYTABLE
 
-
-
+@pytest.mark.nirils
 def test_associate_sky_abcde(niri_abcde):
     results = {'N20070204S0098.fits': [1, 2, 3],
                'N20070204S0099.fits': [0, 2, 3, 4],
@@ -116,6 +119,7 @@ def test_associate_sky_abcde(niri_abcde):
         assert skies == set([niri_abcde[i].filename
                              for i in results[ad.phu['ORIGNAME']]])
 
+@pytest.mark.nirils
 def test_associate_sky_abcde_exclude_some(niri_abcde):
     # data = [astrodata.open(download_from_archive(f)) for f in niri_abcde]
 
