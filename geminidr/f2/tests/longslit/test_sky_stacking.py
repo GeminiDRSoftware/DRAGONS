@@ -25,7 +25,7 @@ def test_associate_sky_abba(f2_abba):
     p.separateSky()
     p.associateSky()
 
-    a1, b1, b2, a2 = p.showList()
+    a1, a2, b1, b2 = p.showList()
 
     a_frames = {'S20200301S0071_skyAssociated.fits',
                 'S20200301S0074_skyAssociated.fits'}

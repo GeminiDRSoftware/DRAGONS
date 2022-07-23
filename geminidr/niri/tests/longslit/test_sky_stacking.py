@@ -94,7 +94,6 @@ def test_associate_sky_exclude_all(niri_abba):
 
 
 def test_associate_sky_abcde(niri_abcde):
-
     results = {'N20070204S0098.fits': [1, 2, 3],
                'N20070204S0099.fits': [0, 2, 3, 4],
                'N20070204S0100.fits': [0, 1, 3, 4, 5],
