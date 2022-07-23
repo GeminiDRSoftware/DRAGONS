@@ -52,7 +52,7 @@ class NIRILongslit(NIRISpect):
 
     def _fields_overlap(self, ad1, ad2, frac_FOV=1.0,
                         max_perpendicular_offset=None):
-        slit_length = ad1.MDF['slitlength_arcsec']
+        slit_length = ad1.MDF['slitlength_arcsec'][0]
         slit_width = ad1.slit_width()
         return super()._fields_overlap(
             ad1, ad2, frac_FOV=frac_FOV,
