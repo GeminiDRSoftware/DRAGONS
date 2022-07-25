@@ -1496,12 +1496,12 @@ class Preprocess(PrimitivesBASE):
                 sky_list = sorted(list(ad.SKYTABLE["SKYNAME"]))
                 del ad.SKYTABLE  # Not needed any more
             except AttributeError:
-                log.warning("{} has no SKYTABLE so cannot subtract a sky "
-                            "frame".format(ad.filename))
+                log.warning(f"{ad.filename} has no SKYTABLE so cannot "
+                            "subtract a sky frame")
                 sky_list = None
             except KeyError:
-                log.warning("Cannot read SKYTABLE associated with {} so "
-                            "continuing".format(ad.filename))
+                log.warning("Cannot read SKYTABLE associated with "
+                            f"{ad.filename} so continuing")
                 sky_list = None
             skytables.append(sky_list)
             if sky_list:  # Not if None
@@ -1521,12 +1521,12 @@ class Preprocess(PrimitivesBASE):
                 try:
                     sky = astrodata.open(filename)
                 except astrodata.AstroDataError:
-                    log.warning("Cannot find a sky file named {}. "
-                            "Ignoring it.".format(filename))
+                    log.warning(f"Cannot find a sky file named {filename}. "
+                                "Ignoring it.")
                     skies.remove(filename)
                     continue
                 else:
-                    log.stdinfo("Found {} on disk".format(filename))
+                    log.stdinfo(f"Found {filename} on disk")
             ad_skies.append(sky)
 
         # We've got all the sky frames in sky_dict, so delete the sky stream
@@ -1551,10 +1551,10 @@ class Preprocess(PrimitivesBASE):
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if skytable is None:
-                log.stdinfo("Cannot subtract sky from {}".format(ad.filename))
+                log.stdinfo(f"Cannot subtract sky from {ad.filename}")
                 continue
             if stacked_skies[i] == 0:
-                log.stdinfo("Creating sky frame for {}".format(ad.filename))
+                log.stdinfo(f"Creating sky frame for {ad.filename}")
                 sky_inputs = [sky_dict[sky] for sky in skytable]
                 stacked_sky = self.stackSkyFrames(sky_inputs, **stack_params)
                 if len(stacked_sky) == 1:
@@ -1565,16 +1565,17 @@ class Preprocess(PrimitivesBASE):
                         stacked_sky.update_filename(suffix="_sky", strip=True)
                 else:
                     log.warning("Problem with stacking the following sky "
-                                "frames for {}".format(adinputs[i].filename))
+                                f"frames for {adinputs[i].filename}")
                     for filename in skytable:
-                        log.warning("  {}".format(filename))
+                        log.warning(f"  {filename}")
                     stacked_sky = None
                 # Assign this stacked sky frame to all adinputs that want it
                 for j in range(i, len(skytables)):
                     if skytables[j] == skytable:
                         stacked_skies[j] = stacked_sky
                         if j > i:
-                            log.stdinfo("This sky will also be used for {}".format(adinputs[j].filename))
+                            log.stdinfo("This sky will also be used for "
+                                        f"{adinputs[j].filename}")
                         skytables[j] = [None]
 
             # Go through all the science frames and sky-subtract any that
@@ -1588,7 +1589,7 @@ class Preprocess(PrimitivesBASE):
                 # with iterable empty lists
                 if ad2 not in [sky_dict.get(sky) for skytable in skytables
                                for sky in (skytable or [])]:
-                    # Sky-subtraction is in place, so we can discard the output
+                    # Sky-subtraction is in-place, so we can discard the output
                     self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
                                      offset_sky=offset_sky, reset_sky=reset_sky,
                                      save_sky=save_sky, suffix=suffix)
@@ -1637,9 +1638,8 @@ class Preprocess(PrimitivesBASE):
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
                                              force_ad=True)):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by subtractSky".
-                            format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, since "
+                            "it has already been processed by subtractSky")
                 continue
 
             if ad_sky is not None:
@@ -1659,8 +1659,13 @@ class Preprocess(PrimitivesBASE):
                 else:
                     ad.subtract(ad_sky)
                 if save_sky:
-                    # ad_sky.update_filename(suffix='_skyimage', strip=True)
-                    self.writeOutputs([ad_sky])
+                    # Ensure the file written to disk has a filename that
+                    # matches the frame from which it has been subtracted
+                    ad_filename = ad.filename
+                    ad.update_filename(suffix="_sky", strip=True)
+                    log.stdinfo(f"Writing sky frame {ad.filename} to disk")
+                    ad_sky.write(filename=ad.filename, overwrite=True)
+                    ad.filename = ad_filename
                 if reset_sky:
                     for ext, bg in zip(ad, orig_bg):
                         log.stdinfo(f"  Adding {bg} to {ad.filename} "
