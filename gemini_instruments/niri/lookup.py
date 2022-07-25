@@ -216,3 +216,18 @@ spec_wavelengths = {
     ('f32-6pix_G5229',  'Kgrism') : 21840.0,
     ('f32-9pix_G5230',  'Kgrism') : 21840.0,
 }
+
+dispersion_by_config = {
+    # Dictionary keys are in the following order:
+    # 'camera, disperser'
+    # Dispersion is in Å/pix.
+    # This is a concise version of gnirs$data/nsappwave.fits table.
+    ("f6", "Jgrism")  : -3.604,
+    ("f6", "Hgrism")  : -5.157,
+    ("f6", "Kgrism")  : -7.086,
+    ("f6", "Lgrism")  : -11.39,
+    ("f6", "Mgrism")  : -16.51,
+    ("f32", "Jgrism") : -3.041,
+    ("f32", "Hgrism") : -2.964,
+    ("f32", "Kgrism") : -4.396,
+}
