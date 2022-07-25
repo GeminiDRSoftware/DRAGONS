@@ -34,6 +34,7 @@ import os
 import tarfile
 import logging
 from copy import deepcopy
+from importlib import import_module
 
 import numpy as np
 import pytest
@@ -294,6 +295,9 @@ def do_plots(ad):
     """
     output_dir = ("./plots/geminidr/gmos/"
                   "test_gmos_spect_ls_determine_wavelength_solution")
+    p = GMOSClassicLongslit([])
+    lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   p.inst_lookups).__file__)
     os.makedirs(output_dir, exist_ok=True)
 
     name, _ = os.path.splitext(ad.filename)
@@ -303,7 +307,7 @@ def do_plots(ad):
     central_wavelength = ad.central_wavelength(asNanometers=True)
 
     p = GMOSLongslit([ad])
-    arc_table = os.path.join(p.inst_lookups, "CuAr_GMOS.dat")
+    arc_table = os.path.join(lookup_dir, "CuAr_GMOS.dat")
     arc_lines = np.loadtxt(arc_table, usecols=[0]) / 10.0
 
     for ext_num, ext in enumerate(ad):
@@ -448,7 +452,7 @@ def create_inputs_recipe():
     os.makedirs("inputs/", exist_ok=True)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
-    for filename, _, _, _ in input_pars:
+    for filename, _ in input_pars:
         print('Downloading files...')
         basename = filename.split("_")[0] + ".fits"
         sci_path = download_from_archive(basename)
