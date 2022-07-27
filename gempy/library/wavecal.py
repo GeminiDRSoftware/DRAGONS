@@ -617,7 +617,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             min_matches_required = max(config.order + min(nfittable_lines // 2, 3), 2)
 
             # Trial and error suggests this criterion works well
-            if fit1d.rms < 0.8 / order * fwidth * abs(dw) and nmatched >= min_matches_required:
+            if fit1d.rms < 0.8 / config.order * fwidth * abs(dw) and nmatched >= min_matches_required:
                 return fit1d, True
 
             # This seems to be a reasonably ranking for poor models

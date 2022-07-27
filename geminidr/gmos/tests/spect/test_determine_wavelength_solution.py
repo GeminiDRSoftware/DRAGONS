@@ -139,7 +139,7 @@ input_pars = [
     ("S20170129S0125_mosaic.fits", dict(nbright=1)),  # R400:0.685 HAM bad column
     ("S20170703S0199_mosaic.fits", dict()),  # R400:0.850 HAM
     ("S20170718S0420_mosaic.fits", dict()),  # R400:0.910 HAM
-    ("S20101218S0139_mosaic.fits", dict()),  # R600:0.675 EEV
+    #("S20101218S0139_mosaic.fits", dict()),  # R600:0.675 EEV 5-arcsec slit!
     #("S20110306S0294_mosaic.fits", dict()),  # R600:0.675 EEV 5-arcsec slit!
     ("S20110720S0236_mosaic.fits", dict()),  # R600:0.675 EEV
     ("S20101221S0090_mosaic.fits", dict()),  # R600:0.690 EEV
