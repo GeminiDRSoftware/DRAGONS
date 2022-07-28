@@ -875,8 +875,8 @@ class FitsProvider(DataProvider):
                     main = dict(
                         content = 'science',
                         type = type(obj).__name__,
-                        dim = '({})'.format(', '.join(str(s) for s in obj.data.shape)),
-                        data_type = obj.data.dtype.name
+                        dim = '({})'.format(', '.join(str(s) for s in obj.shape)),
+                        data_type = obj.data.dtype.name if obj.shape else ''
                     ),
                     other = other_objects
             )
