@@ -2841,6 +2841,8 @@ class Spect(Resample):
             maximum number of rejection iterations
         grow : float/False
             growth radius for rejected pixels
+        threshold : float
+            threshold (relative to peak) for flagging unilluminated pixels
         interactive : bool
             set to activate an interactive preview to fine tune the input parameters
         """
