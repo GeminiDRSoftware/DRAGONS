@@ -3393,6 +3393,8 @@ class Spect(Resample):
 
         def calc_sky_coords(ad: AstroData, apgrow=0, interactive_mode=False):
             """
+            TODO: Rename this function!
+
             Calculate the sky coordinates for the extensions in the given
             AstroData object.
 
@@ -3466,11 +3468,12 @@ class Spect(Resample):
                     else:
                         csc_sky_mask ^= no_data[:, None]
 
-                csc_ext.data, csc_sky_mask, csc_sky_weights = \
-                    transpose_if_needed(csc_ext.data, csc_sky_mask, csc_sky_weights, transpose=csc_axis != 0)
+                #csc_ext.data, csc_sky_mask, csc_sky_weights = \
+                #    transpose_if_needed(csc_ext.data, csc_sky_mask, csc_sky_weights,
+                #                        transpose=bool(csc_axis))
                 if interactive_mode:
-                    csc_aperture_mask = \
-                        transpose_if_needed(csc_aperture_mask, transpose=csc_axis != 0)[0]
+                    #csc_aperture_mask = transpose_if_needed(
+                    #    csc_aperture_mask, transpose=bool(csc_axis))[0]
                     yield csc_ext, csc_sky_mask, csc_sky_weights, csc_aperture_mask
                 else:
                     yield csc_ext, csc_sky_mask | csc_aperture_mask, csc_sky_weights
@@ -3532,22 +3535,22 @@ class Spect(Resample):
             config = self.params[self.myself()]
             config.update(**params)
 
-            # Create a 'col' parameter to add to the UI so the user can select the column they
-            # want to fit.
-            # We pass a default column at the 1/3 mark, since dead center is flat
+            # Create a 'col' parameter to add to the UI so the user can
+            # select the column/row they want to fit (this is called 'col'
+            # even if it's the row but it's under-the-hood so the user won't
+            # see it). Assume that all extensions have the same orientation.
             axis = adinputs[0].dispersion_axis()[0] - 1  # python sense
-            ncols = adinputs[0].shape[0][1 if axis == 0 else 0]
             reinit_params = ["col", "aperture_growth"]
-            reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 2),
-                                               min=1, max=ncols)}
 
-            # Build the set of input shapes and count the total extensions while we are at it
+            # Build the set of input shapes
             for ad in adinputs:
+                ncols = ad[0].shape[1 - axis]
+                reinit_extras = {"col": RangeField(
+                    doc=("Column" if axis == 0 else "Row") + " of data",
+                    dtype=int, default=ncols // 2, min=1, max=ncols)}
                 all_shapes = []
-                count = 0
                 for ext in ad:
-                    axis = ext.dispersion_axis() - 1  # python sense
-                    count = count+1
+                    #axis = ext.dispersion_axis() - 1  # python sense
                     all_shapes.append((0, ext.shape[axis]))  # extracting single line for interactive
 
                 # Get filename to display in visualizer
@@ -3557,9 +3560,9 @@ class Spect(Resample):
                 fit1d_params = fit_1D.translate_params(params)
                 ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
                 visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
-                                                   fitting_parameters=[fit1d_params]*count,
+                                                   fitting_parameters=[fit1d_params] * len(ad),
                                                    tab_name_fmt="Slit {}",
-                                                   xlabel='Row',
+                                                   xlabel='Row' if axis == 0 else 'Column',
                                                    ylabel='Signal',
                                                    domains=all_shapes,
                                                    title="Sky Correct From Slit",
@@ -3598,7 +3601,7 @@ class Spect(Resample):
                 # get value for aperture growth from config
                 apg = params["aperture_growth"]
             for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
-                axis = 0  # Note: transposed already
+                axis = ext.dispersion_axis() - 1
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
                 sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
                                    axis=axis, plot=debug_plot).evaluate()
