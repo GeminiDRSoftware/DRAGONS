@@ -7,7 +7,9 @@ from datetime import datetime
 
 import numpy as np
 from copy import deepcopy
+from itertools import product as cart_product
 from scipy.ndimage import binary_dilation
+from astropy.coordinates import SkyCoord
 
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
@@ -277,10 +279,16 @@ class Image(Preprocess, Register, Resample):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        min_dist = params.get("debug_distance", 0)
 
         if len(adinputs) < 3:
             log.stdinfo('Fewer than 3 frames provided as input. '
                         'Not making fringe frame.')
+            return []
+
+        coords = [SkyCoord(*ad[0].wcs(0,0), unit='deg') for ad in adinputs]
+        if all([c1.separation(c2).arcsec < min_dist for c1, c2 in cart_product(coords, coords)]):
+            log.warning("Insufficient dithering, cannot build fringe frame.")
             return []
 
         adinputs = self.correctBackgroundToReference([deepcopy(ad) for ad in adinputs],
