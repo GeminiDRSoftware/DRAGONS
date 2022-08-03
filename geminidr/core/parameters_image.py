@@ -16,7 +16,7 @@ class fringeCorrectConfig(parameters_generic.calRequirementConfig):
 class makeFringeFrameConfig(parameters_stack.core_stacking_config, parameters_photometry.detectSourcesConfig):
     subtract_median_image = config.Field("Subtract median image?", bool, True)
     dilation = config.RangeField("Object dilation radius (pixels)", float, 2., min=0)
-    debug_distance = config.RangeField("Minimum association distance (arcsec)", float, 2., min=0)
+    debug_distance = config.RangeField("Minimum association distance (arcsec)", float, 5., min=0)
     def setDefaults(self):
         self.suffix = "_fringe"
 
