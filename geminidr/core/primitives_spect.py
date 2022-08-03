@@ -1721,7 +1721,8 @@ class Spect(Resample):
         sfx = params["suffix"]
         arc_file = params["linelist"]
         interactive = params["interactive"]
-        absorption = params["absorption"]
+        # This parameter won't be available in some children classes
+        absorption = params.get("absorption", False)
 
         # TODO: This decision would prevent MOS data being reduced so need
         # to think a bit more about what we're going to do. Maybe make
