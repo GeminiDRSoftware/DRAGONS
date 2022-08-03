@@ -12,13 +12,13 @@ def makeProcessedArc(p):
     p.addVAR(read_noise=True)
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
-    p.darkCorrect()
-    p.flatCorrect()
+   # p.darkCorrect()
+   # p.flatCorrect()
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
-    p.determineDistortion()
-    p.storeProcessedArc()
-    p.writeOutputs()
+    # p.determineDistortion()
+    # p.storeProcessedArc()
+    # p.writeOutputs()
 
 
 _default = makeProcessedArc
