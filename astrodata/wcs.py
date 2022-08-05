@@ -608,11 +608,12 @@ def fitswcs_image(header):
     else:
         sky_cd = cd[np.ix_(sky_axes, pixel_axes)]
         rotation = models.AffineTransformation2D(matrix=sky_cd, name='cd_matrix')
-    transforms.append(rotation)
 
+    # Do it this way so the whole CD matrix + projection is separable
     projection = gwutils.fitswcs_nonlinear(wcs_info)
     if projection:
-        transforms.append(projection)
+        rotation |= projection
+    transforms.append(rotation)
 
     sky_model = functools.reduce(lambda x, y: x | y, transforms)
     sky_model.name = 'SKY'
@@ -848,3 +849,49 @@ def remove_unused_world_axis(ext):
                          " input axis")
 
     ext.wcs = gWCS(new_pipeline)
+
+
+def create_new_image_projection(transform, new_center):
+    """
+    Modifies a simple imaging transform
+    (Shift & Shift) | AffineTransformation2D | Pix2Sky | RotateNative2Celestial
+    so that the projection center is in a different sky location
+
+    This works by rotating the AffineTransformation2D.matrix by the change in
+    angle (in Euclidean geometry) to the pole when moving from the original
+    projection center to the new one. The sign of this angle depends on whether
+    East is to the left or right when North is up. This works even when the
+    pole is on the image.
+
+    This is accurate to <0.1 arcsec for shifts of up to 1 degree
+
+    Parameters
+    ----------
+    transform: Model
+        current forward imaging transform
+    new_center: tuple
+        (RA, DEC) coordinates of new projection center
+
+    Returns
+    -------
+    Model: a transform that is projected around the new center
+    """
+    assert isinstance(transform[-1], models.RotateNative2Celestial)
+    assert isinstance(transform[-3], models.AffineTransformation2D)
+    current_center = transform[-1].lon.value, transform[-1].lat.value
+    xc, yc = transform.inverse(*current_center)
+    xcnew, ycnew = transform.inverse(*new_center)
+    xpole, ypole = transform.inverse(0, 90)
+    angle1 = np.arctan2(xpole - xc, ypole - yc)
+    angle2 = np.arctan2(xpole - xcnew, ypole - ycnew)
+    rotation = (angle1 - angle2) * 180 / np.pi
+    matrix = transform[-3].matrix
+    # flipped means East is to the right when North is up
+    flipped = (matrix[0, 0] * matrix[1, 1] > 0 or
+               matrix[0, 1] * matrix[1, 0] < 0)
+    new_transform = deepcopy(transform[-3:])
+    new_transform[0].matrix = models.Rotation2D(-rotation if flipped else rotation)(*matrix)
+    new_transform[-1].lon, new_transform[-1].lat = new_center
+    shifts = models.Shift(-xcnew, name='crpix1') & models.Shift(-ycnew, name='crpix2')
+    new_transform = shifts | new_transform
+    return new_transform

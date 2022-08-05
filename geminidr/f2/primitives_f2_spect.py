@@ -123,7 +123,8 @@ class F2Spect(Spect, F2):
                 ad.disperser(pretty=True), ad.filter_name(pretty=True)][1]
             cenwave = (ad.central_wavelength(asNanometers=True) +
                        abs(ad.dispersion(asNanometers=True)[0]) * cenwave_offset)
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
+            transform.add_longslit_wcs(ad, central_wavelength=cenwave,
+                                       pointing=ad[0].wcs(1024, 1024))
 
             # Timestamp. Suffix was updated in the super() call
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

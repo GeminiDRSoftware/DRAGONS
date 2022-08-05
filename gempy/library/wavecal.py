@@ -325,11 +325,6 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
                                    c1=0.5 * dispersion * (npix - 1),
                                    domain=[0, npix-1])
     else:
-        # The next two lines are a quick fix of the central wavelength being
-        # shifted when calculated from the WCS model. Remove when it's fixed. -OS
-        if ext.instrument()=="GNIRS":
-            central_wavelength = ext.central_wavelength(asNanometers=True)
-
         ndim = len(ext.shape)
         axis_dict = {ndim-i-1: axes.get(i, 0.5 * (length-1))
                      for i, length in enumerate(ext.shape) if i != dispersion_axis}
@@ -492,7 +487,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     # (i.e., first time through the loop)
     if linelist is None:
         linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext)
-    log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} arc lines")
+    # This wants to be logged even in interactive mode
+    p.log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} arc lines")
 
     m_init = [m_init]
     kdsigma = fwidth * abs(dw0)
@@ -614,14 +610,21 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             log.stdinfo(f"{filename} {repr(fit1d.model)} "
                         f"{nmatched} {fit1d.rms}")
 
+            # Calculate how many lines *could* be fit. We require a constrained
+            # fit but also that it fits some reasonable number of lines
+            wmin, wmax = sorted(fit1d.evaluate(points=(0, len_data)))
+            nfittable_lines = np.sum(np.logical_and(arc_lines > wmin, arc_lines < wmax))
+            min_matches_required = max(config.order + min(nfittable_lines // 2, 3), 2)
+
             # Trial and error suggests this criterion works well
-            if fit1d.rms < 0.2 * fwidth * abs(dw) and nmatched > config.order + 2:
+            if fit1d.rms < 0.8 / config.order * fwidth * abs(dw) and nmatched >= min_matches_required:
                 return fit1d, True
 
             # This seems to be a reasonably ranking for poor models
             score = fit1d.rms / max(nmatched - config.order - 1, np.finfo(float).eps)
             if score < best_score:
                 best_fit = fit1d
+                best_score = score
 
             #is_within_wvl_toler = True
             # According to GNIRS page:
@@ -644,6 +647,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         #    print(f"NO LINE MATCHES, returning the initial model")
         #    return initial_model_fit, False, True
 
+    # Need to reconsider exit model (maybe return initial if interactive and best otherwise?)
     return initial_model_fit, False
     return best_fit, False
 
@@ -705,7 +709,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             p1 = 0
         npeaks = narc_lines = 0
         while (min(npeaks, narc_lines) < min_lines_per_fit and
-        # TODO: see if this needs to be changed, doesn't seem to work as intended -OS
                not (p0 - p1 < 0 and p0 + p1 >= len_data)):
             p1 += 1
             i1 = bisect(peaks, p0 - p1)
@@ -895,6 +898,12 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     max_dev = 3 * max_rms
     m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
                                             max_deviation=max_dev)
+
+    # with open("/Users/osmirnov/data_reduction/NIR_LS_wvl/GNIRS_wvl_cal_results.dat",'a') as datFile:
+    #     datFile.write(f"{ext.filename} {ext.central_wavelength(asNanometers=True):.1f} {ext.dispersion(asNanometers=True):.3f} {config.min_snr:.0f} "
+    #               f" {config.order} {nmatched} {rms:.3f} {m_final.degree} {m_final(511):.1f}"
+    #               f" {((m_final(511)-ext.central_wavelength(asNanometers=True))):.1f} {(dw-ext.dispersion(asNanometers=True)):.3f} \n")
+
     if len(incoords) > 1:
         inv_rms = np.std(m_inverse(m_final(incoords)) - incoords)
         log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
