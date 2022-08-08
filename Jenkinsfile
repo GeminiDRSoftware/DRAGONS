@@ -69,7 +69,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests with Python 3.7"
-                        sh 'tox -e py37-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
+                        sh 'time tox -e py37-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
                     }
@@ -108,7 +108,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Integration tests"
-                        sh 'tox -e py37-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
+                        sh 'time tox -e py37-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F integration'
                     } // end steps
@@ -142,7 +142,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Regression tests"
-                        sh 'tox -e py37-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
+                        sh 'time tox -e py37-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F regression'
                     } // end steps
@@ -181,7 +181,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Running tests"
-                sh 'tox -e py37-f2 -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml ${TOX_ARGS}'
+                sh 'time tox -e py37-f2 -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F f2'
             }  // end steps
@@ -219,7 +219,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Running tests"
-                sh 'tox -e py37-gsaoi -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml ${TOX_ARGS}'
+                sh 'time tox -e py37-gsaoi -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F gsaoi'
             }  // end steps
@@ -257,7 +257,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Running tests"
-                sh 'tox -e py37-niri -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml ${TOX_ARGS}'
+                sh 'time tox -e py37-niri -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F niri'
             }  // end steps
@@ -295,7 +295,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Running tests"
-                sh 'tox -e py37-gnirs -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml ${TOX_ARGS}'
+                sh 'time tox -e py37-gnirs -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F gnirs'
             }  // end steps
@@ -333,7 +333,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Running tests"
-                sh 'tox -e py37-wavecal -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
+                sh 'time tox -e py37-wavecal -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F wavecal'
             }  // end steps
@@ -374,7 +374,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running tests"
-                        sh 'tox -e py37-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
+                        sh 'time tox -e py37-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F gmosls'
                     }  // end steps
@@ -413,7 +413,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Slow tests"
-                        sh 'tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
+                        sh 'time tox -e py37-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F slow'
                     } // end steps
