@@ -11,6 +11,7 @@ from scipy import interpolate, optimize
 
 from astropy import units as u
 from astropy import stats
+from astropy.coordinates import Angle
 from astropy.modeling import models, fitting
 
 
@@ -362,6 +363,23 @@ def create_mask_from_regions(points, regions=None):
     return mask
 
 
+def get_center_of_projection(wcs):
+    """
+    Determines the location of the center of projection from a gWCS object
+
+    Parameters
+    ----------
+    wcs: gWCS object
+
+    Returns
+    -------
+    ra, dec: location of pole
+    """
+    for m in wcs.forward_transform:
+        if isinstance(m, models.RotateNative2Celestial):
+            return (m.lon.value, m.lat.value)
+
+
 def get_corners(shape):
     """
     This is a recursive function to calculate the corner indices
@@ -423,6 +441,34 @@ def get_spline3_extrema(spline):
                 else:
                     maxima.append(x)
     return np.array(minima), np.array(maxima)
+
+
+def spherical_offsets_by_pa(coord1, coord2, position_angle=0):
+    """
+    Calculates the spherical offsets between two sky coordinates relative to
+    a specific position angle.
+
+    Parameters
+    ----------
+    coord1: astropy.coordinates.SkyCoord object
+        initial position
+    coord2: astropy.coordinates.SkyCoord object
+        offset position
+    position_angle: float
+        position angle (in degrees) of slit
+
+    Returns
+    -------
+    dist_para, dist_perp: floats
+        the offsets (in arcseconds) parallel and perpendicular to the slit
+        between the two coordinates
+    """
+    frame = coord1.skyoffset_frame(rotation=Angle(position_angle, unit='deg'))
+    offset_coord = coord2.transform_to(frame)
+    # coord1 is (0, 0) in the new frame of course
+    dist_para = offset_coord.lat.deg * 3600
+    dist_perp = offset_coord.lon.deg * 3600
+    return dist_para, dist_perp
 
 
 def transpose_if_needed(*args, transpose=False, section=slice(None)):

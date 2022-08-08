@@ -515,7 +515,14 @@ def table_to_model(table):
                `~scipy.interpolate.BSpline` instance
     """
     meta = table.meta["header"]
-    model_class = meta.get("MODEL", "Chebyshev1D")
+    try:
+        model_class = meta['MODEL']
+    except KeyError:
+        if 'knots' in table.colnames:
+            order = meta.get("ORDER", 3)
+            model_class = f"SPLINE{order}"
+        else:
+            model_class = "Chebyshev1D"
     try:
         cls = getattr(models, model_class)
     except:  # it's a spline

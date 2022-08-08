@@ -24,8 +24,6 @@ from gemini_calmgr.utils import dbtools
 
 from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
-from gemini_obs_db.orm.diskfile import DiskFile
-from gemini_obs_db.orm.header import Header
 
 from gempy.utils import logutils
 
@@ -216,6 +214,9 @@ class LocalManager:
             dbtools.ingest_file(self.session, filename, directory)
             # check for engineering
             try:
+                from gemini_obs_db.orm.diskfile import DiskFile
+                from gemini_obs_db.orm.header import Header
+
                 h, df = self.session.query(Header, DiskFile).filter(Header.diskfile_id == DiskFile.id) \
                     .filter(DiskFile.canonical == True).filter(DiskFile.filename == filename) \
                     .order_by(desc(DiskFile.entrytime)).first()
@@ -229,7 +230,8 @@ class LocalManager:
                         self.session.flush()
             except:
                 log.warn(f"Error checking if {filename} is valid, may not have added successfully")
-                raise
+                pass
+
         except Exception as err:
             self.session.rollback()
             self.remove_file(path)
