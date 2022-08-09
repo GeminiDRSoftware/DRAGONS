@@ -2874,6 +2874,7 @@ class Spect(Resample):
                 masked_data_arr = list()
                 x_arr = list()
                 weights_arr = list()
+                threshold_mask_arr = list()
                 for ext in admos:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     direction = "row" if dispaxis == 1 else "column"
@@ -2918,12 +2919,14 @@ class Spect(Resample):
                     x_arr.append(np.arange(len(masked_data)))
                     masked_data_arr.append(masked_data)
                     weights_arr.append(weights)
+                    maxy = max(masked_data)
+                    threshold_mask_arr.append(np.where(masked_data/maxy < ui_params.threshold, 1, 0))
                 return { "y": masked_data_arr, "x": x_arr,
-                         "weights": weights_arr }
+                         "weights": weights_arr, "threshold_mask": threshold_mask_arr }
 
             config = self.params[self.myself()]
             config.update(**params)
-            uiparams = UIParameters(config, reinit_params=["center", "nsum"])
+            uiparams = UIParameters(config, reinit_params=["center", "nsum", "threshold"])
 
             # let's updaet teh max center to something reasonable
             dispaxis = 2 - ad[0].dispersion_axis()
@@ -2972,7 +2975,9 @@ class Spect(Resample):
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fit1d_arr = visualizer.results()
             else:
-                for ext, masked_data, x, weights in zip(admos, masked_data_arr, x_arr, weights_arr):
+                for ext, masked_data, x, weights, threshold_mask \
+                        in zip(admos, masked_data_arr, x_arr, weights_arr, data["threshold_mask"]):
+                    masked_data.mask |= (DQ.no_data * threshold_mask == 1)
                     fitted_data = fit_1D(masked_data, points=x, weights=weights,
                                          **fit1d_params)
                     fit1d_arr.append(fitted_data)
@@ -2989,16 +2994,16 @@ class Spect(Resample):
                     # of the x values to get a consistent and correctly-sized output.
                     fdeval = fitted_data.evaluate(points=x)
                     flat_data = np.tile(fdeval, (ext.shape[1-dispaxis], 1))
-                    flat_mask = at.transpose_if_needed(
-                        np.tile(np.where(fdeval / fdeval.max() < threshold,
-                                         DQ.unilluminated, DQ.good),
-                                (ext.shape[1-dispaxis], 1)).astype(DQ.datatype),
-                        transpose=(dispaxis==0))[0]
+                    # flat_mask = at.transpose_if_needed(
+                    #     np.tile(np.where(fdeval / fdeval.max() < threshold,
+                    #                      DQ.unilluminated, DQ.good),
+                    #             (ext.shape[1-dispaxis], 1)).astype(DQ.datatype),
+                    #     transpose=(dispaxis==0))[0]
                     ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
-                    if ext.mask is None:
-                        ext.mask = flat_mask
-                    else:
-                        ext.mask |= flat_mask
+                    # if ext.mask is None:
+                    #     ext.mask = flat_mask
+                    # else:
+                    #     ext.mask |= flat_mask
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
