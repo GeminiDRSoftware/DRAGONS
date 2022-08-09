@@ -264,15 +264,13 @@ class CalibDB(PrimitivesBASE):
 
             ad.write(overwrite=True)
 
-        if self.mode not in ['sq', 'ql', 'qa']:
-            self.log.warning(f'Mode {self.mode} not recognized in '
-                             'storeScience, not storing anything')
-            return adinputs
+            if mode not in ['sq', 'ql', 'qa']:
+                self.log.warning(f'Mode "{mode}" not recognized in '
+                             f'storeScience, not storing {ad.filename}')
+            elif mode != 'qa' and self.upload and 'science' in self.upload:
+                # This logic will be handled by the CalDB objects, but check here to
+                # avoid changing and resetting filenames
 
-        # This logic will be handled by the CalDB objects, but check here to
-        # avoid changing and resetting filenames
-        if mode != 'qa' and self.upload and 'science' in self.upload:
-            for ad in adinputs:
                 old_filename = ad.filename
                 ad.update_filename(suffix=f"_{mode}"+suffix, strip=True)
                 self.caldb.store_calibration(ad, caltype="processed_science")
