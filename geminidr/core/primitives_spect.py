@@ -2994,16 +2994,17 @@ class Spect(Resample):
                     # of the x values to get a consistent and correctly-sized output.
                     fdeval = fitted_data.evaluate(points=x)
                     flat_data = np.tile(fdeval, (ext.shape[1-dispaxis], 1))
-                    # flat_mask = at.transpose_if_needed(
-                    #     np.tile(np.where(fdeval / fdeval.max() < threshold,
-                    #                      DQ.unilluminated, DQ.good),
-                    #             (ext.shape[1-dispaxis], 1)).astype(DQ.datatype),
-                    #     transpose=(dispaxis==0))[0]
-                    ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis==0))[0])
-                    # if ext.mask is None:
-                    #     ext.mask = flat_mask
-                    # else:
-                    #     ext.mask |= flat_mask
+                    flat_mask = at.transpose_if_needed(
+                        np.tile(np.where(fdeval / fdeval.max() < threshold,
+                                         DQ.unilluminated, DQ.good),
+                                (ext.shape[1-dispaxis], 1)).astype(DQ.datatype),
+                        transpose=(dispaxis == 0))[0]
+                    ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis == 0))[0])
+                    ext.data[flat_mask>0] = threshold
+                    if ext.mask is None:
+                        ext.mask = flat_mask
+                    else:
+                        ext.mask |= flat_mask
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
