@@ -20,7 +20,6 @@ from gempy.library import astromodels as am
 from gempy.utils import logutils
 
 import os
-from astrodata.testing import download_from_archive
 from geminidr.f2.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
 
 # Test parameters --------------------------------------------------------------
@@ -30,8 +29,8 @@ determine_wavelength_solution_parameters = {
     'linelist': None,
     'weighting': 'global',
     'fwidth': None,
-    'order': 1,
-    'min_snr': 20,
+    'order': 3,
+    'min_snr': 10,
     'debug_min_lines': 100000,
     'in_vacuo': True
 }
@@ -41,253 +40,252 @@ input_pars = [
     # (Input File, params)
     # If a grism+filter combination is not present here => no science data exists
     # grism: JH, filter: JH (1.400um)
-   # ("S20130928S0143.fits_varAdded.fits", dict()), # 4-pix slit
-    ("S20160928S0077.fits_varAdded.fits", dict()), # 8-pix slit
-    ("S20211216S0177.fits_varAdded.fits", dict()), # 2-pix slit
-    ("S20220525S0036.fits_varAdded.fits", dict()), # 6-pix slit, new JH filter
-   # ("S20220409S0035.fits_varAdded.fits", dict()), # 3-pix slit, new JH filter
+   # ("S20130928S0143_flatCorrected.fits", dict()), # 4-pix slit
+    ("S20160928S0077_flatCorrected.fits", dict()), # 8-pix slit
+    ("S20211216S0177_flatCorrected.fits", dict()), # 2-pix slit
+    ("S20220525S0036_flatCorrected.fits", dict()), # 6-pix slit, new JH filter
+   # ("S20220409S0035_flatCorrected.fits", dict()), # 3-pix slit, new JH filter
     # grism: HK, filter: HK (1.870um)
-    ("S20220319S0060.fits_varAdded.fits", dict()), # 3-pix slit, new HK filter
-    ("S20220527S0035.fits_varAdded.fits", dict()), # 4-pix slit, new HK filter
-    #("S20180114S0108.fits_varAdded.fits", dict()), # 4-pix slit
-    ("S20130930S0119.fits_varAdded.fits", dict()), # 2-pix slit # no associated flat (the program one is not matching)
-    ("S20160215S0138.fits_varAdded.fits", dict()), # 6-pix slit
+    ("S20220319S0060_flatCorrected.fits", dict()), # 3-pix slit, new HK filter
+    ("S20220527S0035_flatCorrected.fits", dict()), # 4-pix slit, new HK filter, ND4-5
+    #("S20180114S0108_flatCorrected.fits", dict()), # 4-pix slit, ND4-5
+    ("S20130930S0119_flatCorrected.fits", dict()), # 2-pix slit # no associated flat (the program one is not matching, , probably because of diff read modes)
+    ("S20160215S0138_flatCorrected.fits", dict()), # 6-pix slit, ND4-5, all flats saturated
     # grism: HK, filter: JH (1.100um)
-    ("S20220101S0044.fits_varAdded.fits", dict()), # 3-pix slit
-    # grism: R3K, filter: J-long (1.100um)
-    ("S20131018S0230.fits_varAdded.fits", dict()), # 6-pix slit
+    ("S20220101S0044_flatCorrected.fits", dict()), # 3-pix slit
+    # grism: R3K, filter: J-low (1.100um)
+    ("S20131018S0230_flatCorrected.fits", dict()), # 6-pix slit
     # grism: R3K, filter: J (1.250um)
-    #("S20140216S0091.fits_varAdded.fits", dict()), # 2-pix slit
-    ("S20170715S0121.fits_varAdded.fits", dict()), # 1-pix slit
-    ("S20200219S0105.fits_varAdded.fits", dict()), # 4-pix slit
+    #("S20140216S0091_flatCorrected.fits", dict()), # 2-pix slit
+    ("S20170715S0121_flatCorrected.fits", dict()), # 1-pix slit, Clear
+    ("S20200219S0105_flatCorrected.fits", dict()), # 4-pix slit, ND1.0
     # grism: R3K, filter: H (1.650um)
-    ("S20210903S0053.fits_varAdded.fits", dict()), # 6-pix slit
-    ("S20131227S0114.fits_varAdded.fits", dict()), # 2-pix slit # no associated flat (the program one is not matching)
+    ("S20210903S0053_flatCorrected.fits", dict()), # 6-pix slit
+    ("S20131227S0114_flatCorrected.fits", dict()), # 2-pix slit # no associated flat (the program one is not matching, probably because of diff read modes)
     # grism: R3K, filter: Ks (2.200um)
-    ("S20140220S0425.fits_varAdded.fits", dict()), # 2-pix slit
-    ("S20220515S0026.fits_varAdded.fits", dict()), # 3-pix slit
+    ("S20140220S0425_flatCorrected.fits", dict()), # 2-pix slit - do I need to add lines to the linelist?
+    ("S20220515S0026_flatCorrected.fits", dict()), # 3-pix slit
     # grism: R3K, filter: K-long (2.200um)
-    ("S20150624S0023.fits_varAdded.fits", dict()), # 1-pix slit
-    ("S20211018S0011.fits_varAdded.fits", dict()), # 6-pix slit
+    ("S20150624S0023_flatCorrected.fits", dict()), # 1-pix slit
+    ("S20211018S0011_flatCorrected.fits", dict()), # 6-pix slit
 ]
 
-# Test parameters --------------------------------------------------------------
 associated_calibrations = {
     "S20160928S0077.fits": {
-        'arc_dark': ["S20161001S0378.fits",
+        'arc_darks': ["S20161001S0378.fits",
                  "S20161001S0379.fits",
                  "S20161001S0380.fits",
                  "S20161001S0381.fits",
                  "S20161001S0382.fits"],
-        'flat': ["S20160928S0078.fits"],
-        'flat_dark': ["S20161008S0141.fits",
+        'flat': ["S20160928S0078.fits"], # ND2.0
+        'flat_darks': ["S20161008S0141.fits",
                  "S20161008S0142.fits",
                  "S20161008S0143.fits",
                  "S20161008S0144.fits",
                  "S20161008S0145.fits"],
     },
     "S20211216S0177.fits": {
-        'arc_dark': ["S20211218S0462.fits",
+        'arc_darks': ["S20211218S0462.fits",
                  "S20211218S0463.fits",
                  "S20211218S0464.fits",
                  "S20211218S0465.fits",
                  "S20211218S0466.fits"],
-        'flat': ["S20211216S0176.fits"],
-        'flat_dark': ["S20211218S0434.fits",
+        'flat': ["S20211216S0176.fits"], # ND2.0
+        'flat_darks': ["S20211218S0434.fits",
                  "S20211218S0435.fits",
                  "S20211218S0436.fits",
                  "S20211218S0437.fits",
                  "S20211218S0438.fits"],
     },
     "S20220525S0036.fits": {
-        'arc_dark': ["S20220528S0154.fits",
+        'arc_darks': ["S20220528S0154.fits",
                  "S20220528S0156.fits",
                  "S20220528S0157.fits",
                  "S20220528S0158.fits",
                  "S20220528S0160.fits"],
-        'flat': ["S20220525S0037.fits"],
-        'flat_dark': ["S20220417S0097.fits",
+        'flat': ["S20220525S0037.fits"], # ND2.0
+        'flat_darks': ["S20220417S0097.fits",
                  "S20220417S0099.fits",
                  "S20220417S0100.fits",
                  "S20220417S0101.fits",
                  "S20220417S0103.fits"],
     },
     "S20130930S0119.fits": {
-        'arc_dark': ["S20130930S0156.fits",
+        'arc_darks': ["S20130930S0156.fits",
                  "S20130930S0157.fits",
                  "S20130930S0158.fits",
                  "S20130930S0159.fits",
                  "S20130930S0160.fits"],
-        'flat': ["S20130930S0120.fits"],
-        'flat_dark': ["S20130930S0170.fits",
+        'flat': ["S20130930S0120.fits"], # ND2.0
+        'flat_darks': ["S20130930S0170.fits",
                  "S20130930S0171.fits",
                  "S20130930S0172.fits",
                  "S20130930S0173.fits",
                  "S20130930S0174.fits"],
     },
     "S20220527S0035.fits": {
-        'arc_dark': ["S20220528S0188.fits",
+        'arc_darks': ["S20220528S0188.fits",
                  "S20220528S0192.fits",
                  "S20220528S0195.fits",
                  "S20220528S0197.fits",
                  "S20220528S0200.fits"],
-        'flat': ["S20220527S0072.fits"],
-        'flat_dark': ["S20220402S0329.fits",
+        'flat': ["S20220527S0072.fits"], #ND4-5 GCAL filter
+        'flat_darks': ["S20220402S0329.fits",
                  "S20220402S0334.fits",
                  "S20220402S0340.fits",
                  "S20220402S0346.fits",
                  "S20220402S0347.fits"],
     },
     "S20220319S0060.fits": {
-        'arc_dark': ["S20220322S0099.fits",
+        'arc_darks': ["S20220322S0099.fits",
                  "S20220322S0100.fits",
                  "S20220322S0101.fits",
                  "S20220322S0102.fits",
                  "S20220322S0103.fits"],
-        'flat': ["S20220319S0059.fits"],
-        'flat_dark': ["S20220203S0025.fits",
+        'flat': ["S20220319S0059.fits"], # ND2.0
+        'flat_darks': ["S20220203S0025.fits",
                  "S20220203S0037.fits",
                  "S20220203S0055.fits",
                  "S20220203S0058.fits"],
     },
     "S20220101S0044.fits": {
-        'arc_dark': ["S20220101S0108.fits",
+        'arc_darks': ["S20220101S0108.fits",
                  "S20220101S0109.fits",
                  "S20220101S0111.fits",
                  "S20220101S0112.fits",
                  "S20220101S0114.fits"],
-        'flat': ["S20220101S0043.fits"],
-        'flat_dark': ["S20220101S0086.fits",
+        'flat': ["S20220101S0043.fits"], # ND2.0
+        'flat_darks': ["S20220101S0086.fits",
                  "S20220101S0087.fits",
                  "S20220101S0088.fits",
                  "S20220101S0090.fits",
                  "S20220101S0091.fits"],
     },
     "S20160215S0138.fits": {
-        'arc_dark': ["S20160213S0413.fits",
+        'arc_darks': ["S20160213S0413.fits",
                  "S20160213S0412.fits",
                  "S20160213S0411.fits",
                  "S20160213S0410.fits",
                  "S20160213S0409.fits"],
-        'flat': ["S20160215S0139.fits"],
-        'flat_dark': ["S20160302S0214.fits",
+        'flat': ["S20160215S0139.fits"], # ND4-5, all available flats are saturated
+        'flat_darks': ["S20160302S0214.fits",
                  "S20160302S0213.fits",
                  "S20160302S0212.fits",
                  "S20160302S0211.fits",
                  "S20160302S0210.fits"],
     },
     "S20131018S0230.fits": {
-        'arc_dark': ["S20131023S0025.fits",
+        'arc_darks': ["S20131023S0025.fits",
                  "S20131023S0026.fits",
                  "S20131023S0027.fits",
                  "S20131023S0028.fits",
                  "S20131023S0029.fits"],
-        'flat': ["S20131018S0229.fits"],
-        'flat_dark': ["S20131019S0270.fits",
+        'flat': ["S20131018S0229.fits"], # Clear
+        'flat_darks': ["S20131019S0270.fits",
                  "S20131019S0271.fits",
                  "S20131019S0272.fits",
                  "S20131019S0273.fits",
                  "S20131019S0274.fits"],
     },
     "S20170715S0121.fits": {
-        'arc_dark': ["S20170715S0325.fits",
+        'arc_darks': ["S20170715S0325.fits",
                  "S20170715S0326.fits",
                  "S20170715S0327.fits",
                  "S20170715S0328.fits",
                  "S20170715S0329.fits"],
-        'flat': ["S20170715S0133.fits"],
-        'flat_dark': ["S20170722S0219.fits",
+        'flat': ["S20170715S0133.fits"], # Clear
+        'flat_darks': ["S20170722S0219.fits",
                  "S20170722S0220.fits",
                  "S20170722S0221.fits",
                  "S20170722S0222.fits",
                  "S20170722S0223.fits"],
     },
     "S20200219S0105.fits": {
-        'arc_dark': ["S20200223S0087.fits",
+        'arc_darks': ["S20200223S0087.fits",
                  "S20200223S0088.fits",
                  "S20200223S0089.fits",
                  "S20200223S0090.fits",
                  "S20200223S0091.fits"],
-        'flat': ["S20200219S0131.fits"],
-        'flat_dark': ["S20200301S0223.fits",
+        'flat': ["S20200219S0131.fits"], # ND1.0
+        'flat_darks': ["S20200301S0223.fits",
                  "S20200301S0224.fits",
                  "S20200301S0225.fits",
                  "S20200301S0226.fits",
                  "S20200301S0227.fits"],
     },
     "S20210903S0053.fits": {
-        'arc_dark': ["S20210905S0413.fits",
+        'arc_darks': ["S20210905S0413.fits",
                  "S20210905S0414.fits",
                  "S20210905S0415.fits",
                  "S20210905S0416.fits",
                  "S20210905S0417.fits"],
-        'flat': ["S20210903S0052.fits"],
-        'flat_dark': ["S20210905S0392.fits",
+        'flat': ["S20210903S0052.fits"], # ND2.0
+        'flat_darks': ["S20210905S0392.fits",
                  "S20210905S0393.fits",
                  "S20210905S0394.fits",
                  "S20210905S0395.fits",
                  "S20210905S0396.fits"],
     },
     "S20140220S0425.fits": {
-        'arc_dark': ["S20140220S0621.fits",
+        'arc_darks': ["S20140220S0621.fits",
                  "S20140220S0622.fits",
                  "S20140220S0623.fits",
                  "S20140220S0624.fits",
                  "S20140220S0625.fits"],
-        'flat': ["S20140220S0426.fits"],
-        'flat_dark': ["S20140220S0615.fits",
+        'flat': ["S20140220S0426.fits"], # ND2.0
+        'flat_darks': ["S20140220S0615.fits",
                  "S20140220S0616.fits",
                  "S20140220S0617.fits",
                  "S20140220S0618.fits",
                  "S20140220S0619.fits"],
     },
     "S20131227S0114.fits": {
-        'arc_dark': ["S20131227S0345.fits",
+        'arc_darks': ["S20131227S0345.fits",
                  "S20131227S0346.fits",
                  "S20131227S0347.fits",
                  "S20131227S0348.fits",
                  "S20131227S0349.fits"],
-        'flat': ["S20131227S0115.fits"],
-        'flat_dark': ["S20131227S0352.fits",
+        'flat': ["S20131227S0115.fits"], # ND2.0
+        'flat_darks': ["S20131227S0352.fits",
                  "S20131227S0353.fits",
                  "S20131227S0354.fits",
                  "S20131227S0355.fits",
                  "S20131227S0356.fits"],
     },
     "S20220515S0026.fits": {
-        'arc_dark': ["S20220521S0129.fits",
+        'arc_darks': ["S20220521S0129.fits",
                  "S20220521S0130.fits",
                  "S20220521S0131.fits",
                  "S20220521S0132.fits",
                  "S20220521S0133.fits"],
-        'flat': ["S20220515S0025.fits"],
-        'flat_dark': ["S20220514S0281.fits",
+        'flat': ["S20220515S0025.fits"], # ND2.0
+        'flat_darks': ["S20220514S0281.fits",
                  "S20220514S0279.fits",
                  "S20220514S0277.fits",
                  "S20220514S0275.fits",
                  "S20220514S0274.fits"],
     },
     "S20150624S0023.fits": {
-        'arc_dark': ["S20150523S0292.fits",
+        'arc_darks': ["S20150523S0292.fits",
                  "S20150523S0291.fits",
                  "S20150523S0290.fits",
                  "S20150523S0289.fits",
                  "S20150523S0288.fits"],
-        'flat': ["S20150624S0028.fits"],
-        'flat_dark': ["S20150627S0337.fits",
+        'flat': ["S20150624S0028.fits"], # ND2.0
+        'flat_darks': ["S20150627S0337.fits",
                  "S20150627S0338.fits",
                  "S20150627S0339.fits",
                  "S20150627S0340.fits",
                  "S20150627S0341.fits"],
     },
     "S20211018S0011.fits": {
-        'arc_dark': ["S20211023S0348.fits",
+        'arc_darks': ["S20211023S0348.fits",
                  "S20211023S0349.fits",
                  "S20211023S0350.fits",
                  "S20211023S0351.fits",
                  "S20211023S0352.fits"],
-        'flat': ["S20211018S0012.fits"],
-        'flat_dark': ["S20210905S0350.fits",
+        'flat': ["S20211018S0012.fits"], # ND2.0
+        'flat_darks': ["S20210905S0350.fits",
                  "S20210905S0351.fits",
                  "S20210905S0352.fits",
                  "S20210905S0353.fits",
@@ -296,7 +294,7 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.skip
+#@pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
@@ -332,8 +330,7 @@ def test_regression_determine_wavelength_solution(
     ref_wavelength = ref_model(x)
 
     pixel_scale = wcalibrated_ad[0].pixel_scale()  # arcsec / px
-    slit_size_in_arcsec = float(wcalibrated_ad[0].focal_plane_mask(pretty=True).replace('arcsec', ''))
-    slit_size_in_px = slit_size_in_arcsec / pixel_scale
+    slit_size_in_px = wcalibrated_ad[0].slit_width() / pixel_scale
     dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
 
     # We don't care about what the wavelength solution is doing at
@@ -610,6 +607,12 @@ def create_inputs_recipe():
     a new folder called "dragons_test_inputs". The sub-directory structure
     should reflect the one returned by the `path_to_inputs` fixture.
     """
+    import os
+    from astrodata.testing import download_from_archive
+    from geminidr.f2.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
+    from recipe_system.reduction.coreReduce import Reduce
+    from recipe_system.utils.reduce_utils import normalize_ucals, set_btypes
+
     module_name, _ = os.path.splitext(os.path.basename(__file__))
     path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)
     os.makedirs(path, exist_ok=True)
@@ -622,44 +625,47 @@ def create_inputs_recipe():
 
         arc_path = download_from_archive(filename)
         arc_darks_paths = [download_from_archive(f) for f in cals['arc_darks']]
-        flat_paths = [download_from_archive(f) for f in cals['flat']]
-        arc_paths = [download_from_archive(f) for f in cals['flat_darks']]
+        flat_darks_paths = [download_from_archive(f) for f in cals['flat_darks']]
+        flat_path = [download_from_archive(f) for f in cals['flat']]
 
         arc_ad = astrodata.open(arc_path)
-        flat_ad = astrodata.open(flat_paths[0])
         data_label = arc_ad.data_label()
 
+        logutils.config(file_name='log_arc_darks_{}.txt'.format(data_label))
         arc_darks_reduce = Reduce()
         arc_darks_reduce.files.extend(arc_darks_paths)
         arc_darks_reduce.runr()
         arc_darks_master = arc_darks_reduce.output_filenames.pop()
-        calibration_files = ['processed_arc_darks:{}'.format(arc_darks_master)]
-        del bias_reduce
+        del arc_darks_reduce
 
+        logutils.config(file_name='log_flat_darks_{}.txt'.format(data_label))
+        flat_darks_reduce = Reduce()
+        flat_darks_reduce.files.extend(flat_darks_paths)
+        flat_darks_reduce.runr()
+        flat_darks_master = flat_darks_reduce.output_filenames.pop()
+        calibration_files = ['processed_dark:{}'.format(flat_darks_master)]
+        del flat_darks_reduce
+
+        logutils.config(file_name='log_flat_{}.txt'.format(data_label))
         flat_reduce = Reduce()
-        flat_reduce.files.extend(flat_paths)
+        flat_reduce.files.extend(flat_path)
         flat_reduce.ucals = normalize_ucals(calibration_files)
+        flat_reduce.uparms = [('normalizeFlat:threshold','0.05')]
         flat_reduce.runr()
-        flat_master = flat_reduce.output_filenames.pop()
-        calibration_files.append('processed_flat:{}'.format(flat_master))
+        processed_flat = flat_reduce.output_filenames.pop()
         del flat_reduce
 
-
-        print('Downloading files...')
-        basename = filename.split("_")[0] + ".fits"
-        sci_path = download_from_archive(basename)
-        sci_ad = astrodata.open(sci_path)
-        data_label = sci_ad.data_label()
-
         print('Reducing pre-processed data:')
-        logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = F2Longslit([sci_ad])
+        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
+
+        p = F2Longslit([arc_ad])
         p.prepare()
         p.addDQ()
         p.addVAR(read_noise=True)
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
-        #  p.flatCorrect()
+        p.darkCorrect(dark=arc_darks_master)
+        p.flatCorrect(flat=processed_flat, suffix="_flatCorrected_0_05")
         p.makeIRAFCompatible()
 
         os.chdir("inputs/")
