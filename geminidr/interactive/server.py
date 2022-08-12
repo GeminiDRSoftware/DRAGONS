@@ -129,6 +129,7 @@ def _bkapp(doc):
     -------
     none
     """
+    print("in _bkapp")
     ic = interactive_conf()
     bokeh_theme = ic.bokeh_theme
     bokeh_template_css = ic.bokeh_template_css
@@ -153,8 +154,10 @@ def _bkapp(doc):
         if hasattr(_visualizer, "filename_info"):
             doc.template_variables['filename_info'] = _visualizer.filename_info
 
+    print("passing doc to visualizer")
     _visualizer.show(doc)
     doc.title = title
+    print("done _bkapp")
 
 
 def _helpapp(doc):
@@ -279,7 +282,7 @@ def start_server():
                     raise
         _bokeh_server.start()
 
-    if test_mode and False:
+    if test_mode:
         from sys import platform
         print(platform)
         if 'Darwin' in platform:
@@ -288,7 +291,7 @@ def start_server():
             kwargs = {"browser": "chrome"}
         else:
             kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
-        kwargs = {"browser": "chrome"}
+        kwargs = {}
 #    if test_mode:
 #        # kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
 #        # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu"]}
@@ -298,6 +301,7 @@ def start_server():
         kwargs = {"browser": ic.browser}
         # kwargs = {"browser": ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         #                       "--headless", "--disable-gpu"]}
+
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", **kwargs)
     _bokeh_server.io_loop.start()
 

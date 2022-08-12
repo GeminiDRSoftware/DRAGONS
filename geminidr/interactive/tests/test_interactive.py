@@ -1,3 +1,5 @@
+from time import sleep
+
 import numpy as np
 
 from geminidr.core import primitives_spect
@@ -20,6 +22,7 @@ def interactive_test(tst):
 @interactive_test
 def test_trace_apertures_interactive():
     print("starting test_trace_apertures_interactive")
+    sleep(10)
     # Input parameters ----------------
     width = 400
     height = 200

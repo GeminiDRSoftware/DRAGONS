@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from copy import copy
 from enum import Enum, auto
 from functools import cmp_to_key
+from time import sleep
 
 from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
@@ -385,11 +386,6 @@ class PrimitiveVisualizer(ABC):
 
         self.visualize(doc)
 
-        if server.test_mode:
-            # Simulate a click of the accept button
-            self.do_later(lambda: self.session_ended(None, True))
-            # self.do_later(self.submit_button_handler)
-
         # Add a widget we can use for triggering a message
         # This is a workaround, since CustomJS calls can only
         # respond to DOM events.  We'll be able to trigger
@@ -453,12 +449,16 @@ class PrimitiveVisualizer(ABC):
         # this widget will be added at the end.
         self.do_later(lambda: doc.add_root(row(self._ok_cancel_holder, )))
 
+        # if server.test_mode:
+        #     print("Test mode detected, setup to submit later")
+        #     # Simulate a click of the accept button
+        #     self.do_later(lambda: self.submit_button_handler(None))
+        # else:
+        #     print("Not Test mode, no submit queued")
         if server.test_mode:
-            print("Test mode detected, setup to submit later")
             # Simulate a click of the accept button
-            self.do_later(lambda: self.submit_button_handler(None))
-        else:
-            print("Not Test mode, no submit queued")
+            # self.doc.add_timeout_callback(lambda: self.session_ended(None, True), 5000)
+            self.doc.add_timeout_callback(lambda: self.submit_button_handler(), 5000)
 
     def show_ok_cancel(self, message, callback):
         """
