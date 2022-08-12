@@ -541,7 +541,7 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
 
     if center_of_rotation is None:
         if 'GNIRS' in adref.tags:
-            center_of_rotation = (629.0, 519.0)  # (x, y; 0-indexed)
+            center_of_rotation = (519.0, 629.0)  # (y, x; 0-indexed)
         else:
             try:
                 for m in adref[0].wcs.forward_transform:

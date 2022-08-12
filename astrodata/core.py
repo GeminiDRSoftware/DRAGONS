@@ -75,8 +75,8 @@ class AstroData:
                  is_single=False):
         if nddata is None:
             nddata = []
-        if not isinstance(nddata, (list, tuple)):
-            nddata = list(nddata)
+        elif not isinstance(nddata, (list, tuple)):
+            nddata = [nddata]
 
         # _all_nddatas contains all the extensions from the original file or
         # object.  And _indices is used to map extensions for sliced objects.

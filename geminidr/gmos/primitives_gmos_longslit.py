@@ -123,7 +123,7 @@ class GMOSClassicLongslit(GMOSSpect):
                             format(ad.filename))
                 continue
 
-            ybin = ad.detector_y_bin()
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             mshift = max_shift // ybin
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
@@ -152,10 +152,24 @@ class GMOSClassicLongslit(GMOSSpect):
 
                 # Default operation for GMOS full-frame LS
                 # Sadly, we cannot do this reliably without concatenating the
-                # arrays and using a big chunk of memory.
+                # arrays and using a big chunk of memory. Try at least to
+                # control memory usage
                 #####row_medians = np.zeros((ad[0].shape[0] + 2 * mshift,))
-                row_medians = np.percentile(np.concatenate(
-                    [ext.data for ext in ad], axis=1), 95, axis=1)
+                max_xsize = max([ext.detector_section().x2 for ext in ad]) // xbin
+                all_data = np.zeros((ad[0].shape[0], max_xsize))
+                for ext in ad:
+                    _slice = (slice(None), slice(ext.detector_section().x1 // xbin,
+                                                 ext.detector_section().x2 // xbin))
+                    all_data[_slice] = ext.data[ext.data_section().asslice()]
+                    if ext.mask is not None:
+                        all_data[_slice][ext.mask[ext.data_section().asslice()]
+                                         & DQ.not_signal > 0] = np.nan
+                # To supress a numpy RuntimeWarning if a row is all NaNs, we
+                # set such rows to zero. Hopefully these will get boxcar'd out
+                all_data[np.isnan(all_data).min(axis=1)] = 0
+                row_medians = np.nanpercentile(all_data, 95, axis=1)
+                del all_data
+
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
                 # Pad model to ensure cross-correlation doesn't go off the edge
@@ -174,8 +188,7 @@ class GMOSClassicLongslit(GMOSSpect):
                     model[yccd[0]+mshift:yccd[1]+mshift+1] = 1
                     slit_location_msg += ("Expected slit location from pixels "
                                           f"{yccd[0]+1} to {yccd[1]+1}\n")
-
-                print(slit_location_msg)
+                log.stdinfo(slit_location_msg)
 
                 # For N&S data, repeat the slit below where the MDF locates it
                 if 'NODANDSHUFFLE' in ad.tags:
@@ -222,7 +235,6 @@ class GMOSClassicLongslit(GMOSSpect):
 
                     yshift = mshift - maxima[0]
                     if len(maxima) > 1 or abs(yshift) > max_shift:
-                        print(yshift // ybin)
                         log.warning(f"{ad.filename}: cross-correlation peak is"
                                     " untrustworthy so not adding illumination "
                                     "mask. Please re-run with a specified shift.")
@@ -845,7 +857,7 @@ class GMOSClassicLongslit(GMOSSpect):
                     with np.errstate(invalid='ignore', divide='ignore'):
                         ext.divide(ext_fitted.nddata[slice_])
                     np.nan_to_num(ext.data, copy=False, posinf=0, neginf=0)
-                    np.nan_to_num(ext.variance, copy=False)
+                    np.nan_to_num(ext.variance, copy=False, posinf=0, neginf=0)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

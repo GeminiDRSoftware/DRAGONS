@@ -3,19 +3,20 @@
 #
 #                                                      primitives_gnirs_image.py
 # ------------------------------------------------------------------------------
+import os
+
 import numpy as np
-import scipy.ndimage
+from scipy import ndimage
 from skimage.morphology import binary_dilation
 
-import astrodata
-import gemini_instruments
+import astrodata, gemini_instruments
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
-
-from .lookups import FOV as fov
 
 from .primitives_gnirs import GNIRS
 from ..core import Image, Photometry
 from . import parameters_gnirs_image
+from .lookups import maskdb
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -98,6 +99,39 @@ class GNIRSImage(GNIRS, Image, Photometry):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
+        """
+        Checks whether the fields of view of two F2 images overlap
+        sufficiently to be considered part of a single ExposureGroup.
+        GNIRSImage requires its own code since it has a weird FOV.
+
+        Parameters
+        ----------
+        ad1: AstroData
+            one of the input AD objects
+        ad2: AstroData
+            the other input AD object
+        frac_FOV: float (0 < frac_FOV <= 1)
+            fraction of the field of view for an overlap to be considered. If
+            frac_FOV=1, *any* overlap is considered to be OK
+
+        Returns
+        -------
+        bool: do the fields overlap sufficiently?
+        """
+        center = np.array([512, 512])
+        # We inverse-scale by frac_FOV
+        shift = -(ad2[0].wcs.invert(*ad1[0].wcs(*center)) - center) / frac_FOV
+        illum = self._get_illum_mask_filename(ad1)
+        if illum:
+            illum_data = astrodata.open(illum)[0].data
+        else:
+            raise OSError(f"Cannot find illumination mask for {ad1.filename}")
+        shifted_data = ndimage.shift(illum_data, shift, order=0,
+                                     cval=DQ.unilluminated)
+        return (illum_data | shifted_data == 0).any()
+
+
     def _get_illum_mask_filename(self, ad):
         """
         Gets the illumMask filename for an input science frame, using
@@ -109,8 +143,27 @@ class GNIRSImage(GNIRS, Image, Photometry):
         -------
         str/None: Filename of the appropriate illumination mask
         """
-        # TODO: Look at the whole pointing_in_field situation
-        return fov.get_illum_mask_filename(ad)
+        log = self.log
+        key1 = ad.camera()
+        filter = ad.filter_name(pretty=True)
+        if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
+            key2 = 'Wings'
+        elif filter in ['YPHOT', 'JPHOT', 'HPHOT', 'KPHOT']:
+            key2 = 'NoWings'
+        else:
+            log.warning("Unrecognised filter, no illumination mask can "
+                        "be found for {}".format(ad.filename))
+            return None
+
+        try:
+            illum = os.path.join(maskdb.illumMask_dict[key1, key2])
+        except KeyError:
+            log.warning("No illumination mask found for {}".format(ad.filename))
+            return None
+
+        return illum if illum.startswith(os.path.sep) else \
+            os.path.join(os.path.dirname(maskdb.__file__), 'BPM', illum)
+
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
@@ -182,7 +235,7 @@ def _position_illum_mask(adinput, illum, log, max_dy=20):
     # center_of_mass function has switched x and y axes compared to normal.
     comx_illummask = illum.phu['CENMASSX']
     comy_illummask = illum.phu['CENMASSY']
-    comy, comx = scipy.ndimage.measurements.center_of_mass(keyhole)
+    comy, comx = ndimage.measurements.center_of_mass(keyhole)
     if not np.isnan(comx) and not np.isnan(comy):
         dx = int(comx - comx_illummask)
         dy = int(comy - comy_illummask)

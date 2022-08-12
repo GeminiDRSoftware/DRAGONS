@@ -8,14 +8,16 @@ import os
 import numpy as np
 from importlib import import_module
 from datetime import datetime
-from functools import reduce
-from copy import deepcopy
+from copy import copy, deepcopy
+from functools import partial
 
 from astropy.modeling import models, Model
 from astropy import units as u
 from scipy.interpolate import UnivariateSpline
 
+import geminidr
 from geminidr.core import Spect
+from gempy.library.fitting import fit_1D
 from .primitives_gmos import GMOS
 from . import parameters_gmos_spect
 
@@ -27,7 +29,8 @@ from gempy.library import astromodels as am
 from gempy.library import transform, wavecal
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
-
+from ..interactive.fit.wavecal import WavelengthSolutionVisualizer
+from ..interactive.interactive import UIParameters
 
 # Put this here for now!
 def qeModel(ext, use_iraf=False):
@@ -384,7 +387,7 @@ class GMOSSpect(Spect, GMOS):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def standardizeWCS(self, adinputs=None, suffix=None):
+    def standardizeWCS(self, adinputs=None, **params):
         """
         This primitive updates the WCS attribute of each NDAstroData extension
         in the input AstroData objects. For spectroscopic data, it means
@@ -402,6 +405,7 @@ class GMOSSpect(Spect, GMOS):
         log = self.log
         timestamp_key = self.timestamp_keys[self.myself()]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        super().standardizeWCS(adinputs, **params)
 
         for ad in adinputs:
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
@@ -412,12 +416,11 @@ class GMOSSpect(Spect, GMOS):
                 cenwave = cenwave
             transform.add_longslit_wcs(ad, central_wavelength=cenwave)
 
-            # Timestamp and update filename
+            # Timestamp. Suffix was updated in the super() call
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None):
+    def _get_arc_linelist(self, waves=None, ad=None):
         use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
 
         use_second_order = False
