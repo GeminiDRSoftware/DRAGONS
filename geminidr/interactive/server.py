@@ -289,6 +289,10 @@ def start_server():
         else:
             kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
         kwargs = {"browser": "chrome"}
+#    if test_mode:
+#        # kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
+#        # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu"]}
+#        kwargs = {}  # can't get headless to work, just use the default browser
     else:
         ic = interactive_conf()
         kwargs = {"browser": ic.browser}
