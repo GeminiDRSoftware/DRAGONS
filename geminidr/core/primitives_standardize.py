@@ -65,7 +65,17 @@ class Standardize(PrimitivesBASE):
         user_bpm_list = params['user_bpm']
 
         if static_bpm_list == "default":
-            static_bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
+            try:
+                static_bpm_list = self.caldb.get_processed_bpm(adinputs)
+            except:
+                static_bpm_list = None
+            if static_bpm_list is not None and not all([f is None for f in static_bpm_list.files]):
+                static_bpm_list = static_bpm_list.files
+            else:
+                # TODO once we fully migrate to caldb/server managed bpms, use 2nd line
+                # TODO also remove all() check in if above at that time
+                static_bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
+                #static_bpm_list = [None] * len(adinputs)
 
         for ad, static, user in zip(*gt.make_lists(adinputs, static_bpm_list,
                                                    user_bpm_list, force_ad=True)):
@@ -78,7 +88,7 @@ class Standardize(PrimitivesBASE):
                 # So it can be zipped with the AD
                 final_static = [None] * len(ad)
             else:
-                log.fullinfo("Using {} as static BPM".format(static.filename))
+                log.stdinfo("Using {} as static BPM\n".format(static.filename))
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
                                                       aux_type='bpm',
                                                       return_dtype=DQ.datatype)
@@ -86,10 +96,13 @@ class Standardize(PrimitivesBASE):
             if user is None:
                 final_user = [None] * len(ad)
             else:
-                log.fullinfo("Using {} as user BPM".format(user.filename))
+                log.stdinfo("Using {} as user BPM".format(user.filename))
                 final_user = gt.clip_auxiliary_data(ad, aux=user,
                                                     aux_type='bpm',
                                                     return_dtype=DQ.datatype)
+
+            if static is None and user is None:
+                log.stdinfo(f"No BPMs found for {ad.filename} and none supplied by the user.\n")
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
                 if ext.mask is not None:
@@ -164,7 +177,10 @@ class Standardize(PrimitivesBASE):
                                              non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0).astype(DQ.datatype)
-
+            if static and static.filename:
+                add_provenance(ad, static.filename, md5sum(static.path) or "", self.myself())
+            if user and user.filename:
+                add_provenance(ad, user.filename, md5sum(user.path) or "", self.myself())
 
         # Handle latency if reqested
         if params.get("latency", False):
@@ -323,12 +339,8 @@ class Standardize(PrimitivesBASE):
         sfx = params["suffix"]
         for primitive in ('validateData', 'standardizeStructure',
                           'standardizeHeaders', 'standardizeWCS'):
-            # No need to call standardizeWCS if all adinputs are single-extension
-            # images (tags should be the same for all adinputs)
-            if ('WCS' not in primitive or 'SPECT' in adinputs[0].tags or
-                    any(len(ad) > 1 for ad in adinputs)):
-                passed_params = self._inherit_params(params, primitive)
-                adinputs = getattr(self, primitive)(adinputs, **passed_params)
+            passed_params = self._inherit_params(params, primitive)
+            adinputs = getattr(self, primitive)(adinputs, **passed_params)
 
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
@@ -390,9 +402,8 @@ class Standardize(PrimitivesBASE):
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by validateData".
-                            format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, since"
+                            " it has already been processed by validateData")
                 continue
 
             # Check that the input is appropriate for this primitivesClass
@@ -400,24 +411,24 @@ class Standardize(PrimitivesBASE):
             inst_name = ad.instrument(generic=True)
             if not inst_name in self.tagset:
                 prim_class_name = self.__class__.__name__
-                raise OSError("Input file {} is {} data and not suitable for "
-                    "{} class".format(ad.filename, inst_name, prim_class_name))
+                raise OSError(f"Input file {ad.filename} is {inst_name} data "
+                              f"and not suitable for {prim_class_name} class")
 
             # Report if this is an image without square binned pixels
             if 'IMAGE' in ad.tags:
                 xbin = ad.detector_x_bin()
                 ybin = ad.detector_y_bin()
                 if xbin != ybin:
-                    log.warning("Image {} is {} x {} binned data".
-                                format(ad.filename, xbin, ybin))
+                    log.warning(f"Image {ad.filename} is {xbin} x {ybin} "
+                                "binned data")
 
             if self._has_valid_extensions(ad):
-                log.fullinfo("The input file has been validated: {} contains "
-                             "{} extension(s)".format(ad.filename, len(ad)))
+                log.fullinfo(f"The input file has been validated: {ad.filename}"
+                             f" contains {len(ad)} extension(s)")
             else:
-                raise OSError("The {} extension(s) in {} does not match the "
-                              "number of extensions expected in raw {} "
-                              "data.".format(len(ad), ad.filename, inst_name))
+                raise OSError(f"The {len(ad)} extension(s) in {ad.filename} "
+                              "does not match the number of extensions "
+                              f"expected in raw {inst_name} data.")
 
             # Check for WCS
             missing_wcs_list.extend([f"{ad.filename}:{ext.id}"
@@ -524,6 +535,7 @@ class Standardize(PrimitivesBASE):
             else:
                 ext.hdr['VARNOISE'] += ', read'
 
+    # TODO remove this if we truly migrate off of LUT based BPM lookups and rely on the calibration matching
     def _get_bpm_filename(self, ad):
         """
         Gets the BPM filename for an input science frame. Takes bpm_dict from

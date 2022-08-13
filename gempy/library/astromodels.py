@@ -358,7 +358,7 @@ class UnivariateSplineWithOutlierRemoval:
                         for x1, x2 in zip(knots[:-1], knots[1:]))
                     wts[full_mask] = epsf if fully_masked_regions > min(k, order) else epsf
                 else:
-                    wts = w.copy()
+                    wts = None if w is None else w.copy()
 
             last_mask = full_mask
             avg_y = np.average(y, weights=wts)
@@ -515,7 +515,14 @@ def table_to_model(table):
                `~scipy.interpolate.BSpline` instance
     """
     meta = table.meta["header"]
-    model_class = meta.get("MODEL", "Chebyshev1D")
+    try:
+        model_class = meta['MODEL']
+    except KeyError:
+        if 'knots' in table.colnames:
+            order = meta.get("ORDER", 3)
+            model_class = f"SPLINE{order}"
+        else:
+            model_class = "Chebyshev1D"
     try:
         cls = getattr(models, model_class)
     except:  # it's a spline

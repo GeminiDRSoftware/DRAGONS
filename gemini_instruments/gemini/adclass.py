@@ -81,10 +81,12 @@ gemini_keyword_names = dict(
     nominal_photometric_zeropoint = 'NOMPHOTZ',
     non_linear_level = 'NONLINEA',
     observation_epoch = 'OBSEPOCH',
+    observation_id = 'OBSID',
     observation_mode = 'OBSMODE',
     oiwfs = 'OIWFS_ST',
     overscan_section = 'OVERSEC',
     pixel_scale = 'PIXSCALE',
+    position_angle = 'PA',
     prism = 'PRISM',
     pupil_mask = 'PUPILMSK',
     pwfs1 = 'PWFS1_ST',
@@ -273,7 +275,7 @@ class AstroDataGemini(AstroData):
 
     @astro_data_tag
     def _type_bad_pixel_mask(self):
-        if 'BPMASK' in self.phu:
+        if 'BPMASK' in self.phu or 'PROCBPM' in self.phu:
             return TagSet(['BPM', 'CAL', 'PROCESSED'],
                             blocks=['IMAGE', 'SPECT', 'NON_SIDEREAL',
                                     'AZEL_TARGET',
@@ -614,6 +616,8 @@ class AstroDataGemini(AstroData):
         # We assume that the central_wavelength keyword is in microns
         keyword = self._keyword_for('central_wavelength')
         wave_in_microns = self.phu.get(keyword, -1)
+        # Convert to float if they saved it as a string
+        wave_in_microns = float(wave_in_microns) if isinstance(wave_in_microns, str) else wave_in_microns
         if wave_in_microns < 0:
             return None
         return gmu.convert_units('micrometers', wave_in_microns,
@@ -1385,6 +1389,18 @@ class AstroDataGemini(AstroData):
         return self._get_wcs_pixel_scale(mean=True)
 
     @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return self.phu[self._keyword_for('position_angle')]
+
+    @astro_data_descriptor
     def program_id(self):
         """
         Returns the ID of the program the observation was taken for
@@ -1629,6 +1645,20 @@ class AstroDataGemini(AstroData):
             the slit name
         """
         return self.phu.get(self._keyword_for('slit'))
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float
+            the slit width in arcseconds
+        """
+        if 'SPECT' in self.tags:
+            raise NotImplementedError("A slit width is not defined for this instrument")
+        return None
 
     @astro_data_descriptor
     def target_ra(self, offset=False, pm=True, icrs=False):

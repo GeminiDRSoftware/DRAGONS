@@ -230,7 +230,7 @@ def provenance_summary(ad, provenance=True, provenance_history=True):
             primitive_col_idx, args_col_idx, timestamp_start_col_idx, timestamp_stop_col_idx = \
                 find_provenance_history_column_indices(ad)
 
-            primitive_col_size = 8
+            primitive_col_size = 9
             timestamp_start_col_size = 28
             timestamp_stop_col_size = 28
             args_col_size = 16
