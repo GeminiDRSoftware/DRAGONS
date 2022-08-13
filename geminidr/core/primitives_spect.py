@@ -2647,6 +2647,8 @@ class Spect(Resample):
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+            if std.path:
+                add_provenance(ad, std.filename, md5sum(std.path) or "", self.myself())
 
         return adinputs
 
