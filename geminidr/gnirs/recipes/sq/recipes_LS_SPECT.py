@@ -7,7 +7,7 @@ recipe_tags = {'GNIRS', 'SPECT', 'LS'}
 def reduceScience(p):
     """
     To be updated as development continues: This recipe processes GNIRS longslit 
-    spectroscopic data, currently up to wavelength calibration.
+    spectroscopic data, currently up to basic spectral extraction without telluric correction.
 
     Parameters
     ----------
@@ -19,21 +19,16 @@ def reduceScience(p):
     # p.nonlinearityCorrect() # non-linearity correction tbd 
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
-    p.darkCorrect()
-    # p.writeOutputs() # delete me after dark correction verification
+    # p.darkCorrect() # no dark correction for GNIRS LS data 
     p.flatCorrect()
-    # p.writeOutputs() # delete me after flat correction verification
     p.attachWavelengthSolution()
-    # p.writeOutputs() # delete me after wavecal verification
-    # TBD below 
-    p.distortionCorrect()
-    # p.writeOutputs()
-    # p.separateSky()
-    # p.associateSky()
-    # p.skyCorrect()
+    p.separateSky()
+    p.associateSky()
+    p.skyCorrect()
+    p.distortionCorrect()    
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
-    p.scaleCountsToReference()
+    # p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
     p.traceApertures()

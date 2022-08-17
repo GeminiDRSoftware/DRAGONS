@@ -229,9 +229,9 @@ class LocalManager:
                         h.engineering = False
                         self.session.flush()
             except:
-                # log.warn(f"Error checking if {filename} is valid, may not have added successfully")
-                # raise
+                log.warn(f"Error checking if {filename} is valid, may not have added successfully")
                 pass
+
         except Exception as err:
             self.session.rollback()
             self.remove_file(path)

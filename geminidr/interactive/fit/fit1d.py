@@ -25,13 +25,13 @@ from gempy.library.fitting import fit_1D
 SIGMA_MASK_NAME = 'rejected (sigma)'
 USER_MASK_NAME = 'rejected (user)'
 BAND_MASK_NAME = 'excluded'
-INPUT_MASK_NAMES = ['aperture']
+INPUT_MASK_NAMES = ['aperture', 'threshold']
 
 
 class InteractiveModel(ABC):
     MASK_TYPE = [BAND_MASK_NAME, USER_MASK_NAME, 'good', SIGMA_MASK_NAME] + INPUT_MASK_NAMES
-    MARKERS = ['triangle', 'inverted_triangle', 'circle', 'square', 'inverted_triangle']
-    PALETTE = ['lightsteelblue', 'lightskyblue', 'black', 'darksalmon', 'lightgray']  # Category10[4]
+    MARKERS = ['triangle', 'inverted_triangle', 'circle', 'square', 'inverted_triangle', 'square']
+    PALETTE = ['lightsteelblue', 'lightskyblue', 'black', 'darksalmon', 'lightgray', 'orange']  # Category10[4]
     """
     Base class for all interactive models, containing:
         (a) the parameters of the model

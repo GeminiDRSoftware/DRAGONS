@@ -164,6 +164,9 @@ class GMOSClassicLongslit(GMOSSpect):
                     if ext.mask is not None:
                         all_data[_slice][ext.mask[ext.data_section().asslice()]
                                          & DQ.not_signal > 0] = np.nan
+                # To supress a numpy RuntimeWarning if a row is all NaNs, we
+                # set such rows to zero. Hopefully these will get boxcar'd out
+                all_data[np.isnan(all_data).min(axis=1)] = 0
                 row_medians = np.nanpercentile(all_data, 95, axis=1)
                 del all_data
 
@@ -185,8 +188,7 @@ class GMOSClassicLongslit(GMOSSpect):
                     model[yccd[0]+mshift:yccd[1]+mshift+1] = 1
                     slit_location_msg += ("Expected slit location from pixels "
                                           f"{yccd[0]+1} to {yccd[1]+1}\n")
-
-                print(slit_location_msg)
+                log.stdinfo(slit_location_msg)
 
                 # For N&S data, repeat the slit below where the MDF locates it
                 if 'NODANDSHUFFLE' in ad.tags:
@@ -233,7 +235,6 @@ class GMOSClassicLongslit(GMOSSpect):
 
                     yshift = mshift - maxima[0]
                     if len(maxima) > 1 or abs(yshift) > max_shift:
-                        print(yshift // ybin)
                         log.warning(f"{ad.filename}: cross-correlation peak is"
                                     " untrustworthy so not adding illumination "
                                     "mask. Please re-run with a specified shift.")

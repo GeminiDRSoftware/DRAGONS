@@ -20,6 +20,8 @@ from . import parameters_niri_longslit
 # archive only has options for "f32-6pix" and "f32-9pix". The component numbers
 # make it clear that these are the same as the 4 and 7 pixels configurations
 # listed.
+# Columns are the y-value of slit center on the sensor, then the slitlength in
+# arcsec and pixels.
 niri_slit_info = {'f6-2pix': (501, 51.4, 439.),
                   'f6-2pixBl': (499, 51.6, 442),
                   'f6-4pix': (498, 112.5, 962),
@@ -48,23 +50,28 @@ class NIRILongslit(NIRISpect):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_niri_longslit)
 
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0,
+                        max_perpendicular_offset=None):
+        slit_length = ad1.MDF['slitlength_arcsec'][0]
+        slit_width = ad1.slit_width()
+        return super()._fields_overlap(
+            ad1, ad2, frac_FOV=frac_FOV,
+            slit_length=slit_length,
+            slit_width=slit_width,
+            max_perpendicular_offset=max_perpendicular_offset)
+
     def addMDF(self, adinputs=None, suffix=None, mdf=None):
         """
-
+        This NIRI-specific version adds an MDF table containing the expected
+        midpoint (in pixels) of the slit, and the length of the slit in arcsec
+        and pixels.
 
         Parameters
         ----------
-        adinputs : TYPE, optional
-            DESCRIPTION. The default is None.
-        suffix : TYPE, optional
-            DESCRIPTION. The default is None.
-        mdf : TYPE, optional
-            DESCRIPTION. The default is None.
-
-        Returns
-        -------
-        None.
-
+        suffix: str
+            suffix to be added to output files
+        mdf: str/None
+            name of MDF to add (None => use default)
         """
 
         log = self.log
@@ -86,11 +93,14 @@ class NIRILongslit(NIRISpect):
                 fratio = ad.phu.get('BEAMSPLT')
 
                 if fratio == 'f32' and maskname == 'f6-2pix':
-                    # This configuation actually uses the same slit as f6-2pix
-                    # but with the f/32 camera, so just modify the maskname.
+                    # The f/32-10 pixel configuation actually uses the same
+                    # slit as f6-2pix but with the f/32 camera, so just modify
+                    # the maskname here.
                     maskname = 'f32-10pix'
 
                 mdf_table = Table(np.array(niri_slit_info[maskname]),
                                   names=('y_ccd', 'slitlength_arcsec',
                                   'slitlength_pixels'))
                 ad.MDF = mdf_table
+
+        return adinputs

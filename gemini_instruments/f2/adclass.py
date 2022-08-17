@@ -125,9 +125,10 @@ class AstroDataF2(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
+        if 'PREPARED' in self.tags:
+            return super().array_section(pretty=pretty)
+
         value_filter = (str if pretty else Section.from_string)
-        # Hardcoded since this is what will always be returned by the
-        # descriptor as @returns_list can handle the self.is_single logic
         return value_filter('[1:2048,1:2048]')
 
     def camera(self, stripID=False, pretty=False):
@@ -149,6 +150,12 @@ class AstroDataF2(AstroDataGemini):
             camera = "f/16_G5830"
         else:
             camera = self.lyot_stop()
+
+        if camera:
+            if stripID or pretty:
+                return gmu.removeComponentID(camera)
+            else:
+                return camera
 
         return self._may_remove_component(camera, stripID, pretty)
 
@@ -230,6 +237,8 @@ class AstroDataF2(AstroDataGemini):
             format (1-based).
 
         """
+        if 'PREPARED' in self.tags:
+            return super().data_section(pretty=pretty)
         return self.array_section(pretty=pretty)
 
     @astro_data_descriptor
@@ -259,6 +268,8 @@ class AstroDataF2(AstroDataGemini):
             Position of the detector using an IRAF section format (1-based).
 
         """
+        if 'PREPARED' in self.tags:
+            return super().detector_section(pretty=pretty)
         return self.array_section(pretty=pretty)
 
     @returns_list
@@ -397,7 +408,7 @@ class AstroDataF2(AstroDataGemini):
         # 2022-02-22:  The lyot wheel now contains filters and stops
         #  Gymnastic is required to figure out which is which.
 
-        if lyot[0:1] != "f" and lyot[0:4] != "GEMS" and lyot[0:4] != "Hart":
+        if lyot is not None and lyot[0:1] != "f" and lyot[0:4] != "GEMS" and lyot[0:4] != "Hart":
             filter3 = lyot
         else:
             filter3 = None
@@ -517,6 +528,23 @@ class AstroDataF2(AstroDataGemini):
     #         The name of the instrument, namely 'F2'
     #     """
     #     return 'F2'
+
+    @astro_data_descriptor
+    def lyot_stop(self):
+        """
+        Returns the LYOT filter used for the observation.  This works around
+        inconsistencies in the header keywords.
+
+        Returns
+        -------
+        str
+            LYOT filter name, or None
+
+        """
+        lyot = self.phu.get('LYOT', None)
+        if lyot:
+            return lyot
+        return self.phu.get('LYOTPOS', None)
 
     @returns_list
     @astro_data_descriptor

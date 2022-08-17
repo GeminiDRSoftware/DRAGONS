@@ -243,15 +243,20 @@ class Preprocess(PrimitivesBASE):
         time: float
             number of seconds
         use_all: bool
-            use everything in the "sky" stream?
+            use all input frames as skies (unless they are too close on the sky)?
         """
+        def sky_coord(ad):
+            """Return (RA, dec) at center of first extension"""
+            return SkyCoord(*ad[0].wcs(*[x // 2 - 0.5
+                                         for x in ad[0].shape[::-1]])[-2:], unit='deg')
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         min_skies = params["min_skies"]
         max_skies = params["max_skies"]
-        min_distsq = params.get("distance", 0) ** 2
+        min_dist = params.get("distance", 0)
 
         # Create a timedelta object using the value of the "time" parameter
         seconds = datetime.timedelta(seconds=params["time"])
@@ -276,40 +281,40 @@ class Preprocess(PrimitivesBASE):
                         "science AstroData object and one sky AstroData "
                         "object are required for associateSky")
         else:
-            # Create a dict with the observation times to aid in association
-            # Allows us to select suitable skies and propagate their datetimes
-            sky_times = dict(zip(ad_skies,
-                                 [ad.ut_datetime() for ad in ad_skies]))
+            # Get the observation times and coordinates of all skies to aid
+            # with association. We calculate the coordinates at the center of
+            # the first extension, which should cope with different ROIs (but
+            # there is a matching_inst_config() call later)
+            sky_times = [ad.ut_datetime() for ad in ad_skies]
+            sky_coords = {ad: sky_coord(ad) for ad in set(adinputs + ad_skies)}
 
             for i, ad in enumerate(adinputs):
-                # If use_all is True, use all of the sky AstroData objects for
-                # each science AstroData object
+                coord = sky_coord(ad)
+                # If use_all is True, use all of the AstroData objects (sky
+                # or object) for each science AstroData object (as long as
+                # the separation is sufficient)
                 if params["use_all"]:
-                    log.stdinfo("Associating all available sky AstroData "
-                                 "objects with {}" .format(ad.filename))
-                    sky_list = ad_skies
+                    log.stdinfo("Associating all displaced sky AstroData "
+                                f"objects with {ad.filename}")
+                    sky_list = [ad_other for ad_other in set(adinputs + ad_skies)
+                                if coord.separation(sky_coords[ad_other]).arcsec > min_dist]
                 else:
                     sci_time = ad.ut_datetime()
-                    xoffset = ad.telescope_x_offset()
-                    yoffset = ad.telescope_y_offset()
 
                     # First, select only skies with matching configurations
                     # and within the specified time and with sufficiently
                     # large separation. Keep dict format
-                    sky_dict = {k: v for k, v in sky_times.items() if
-                                gt.matching_inst_config(ad1=ad, ad2=k,
+                    sky_dict = {ad_sky: t for (ad_sky, t) in zip(ad_skies, sky_times) if
+                                gt.matching_inst_config(ad1=ad, ad2=ad_sky,
                                                         check_exposure=True)
-                                and ((k.telescope_x_offset() - xoffset)**2 +
-                                     (k.telescope_y_offset() - yoffset)**2
-                                     > min_distsq)}
+                                and coord.separation(sky_coords[ad_sky]).arcsec > min_dist}
 
                     # Sort sky list by time difference and determine how many
                     # skies will be matched by the default conditions
                     sky_list = sorted(sky_dict, key=lambda x:
-                                      abs(sky_dict[x]-sci_time))[:max_skies]
+                                      abs(sky_dict[x] - sci_time))[:max_skies]
                     num_matching_skies = len([k for k in sky_dict
-                                              if abs(sky_dict[k]-sci_time)
-                                                 <= seconds])
+                                              if abs(sky_dict[k] - sci_time) <= seconds])
 
                     # Now create a sky list of the appropriate length
                     num_skies = min(max_skies or len(sky_list),
@@ -322,15 +327,14 @@ class Preprocess(PrimitivesBASE):
 
                 if sky_list:
                     sky_table = Table(names=('SKYNAME',),
-                                    data=[[sky.filename for sky in sky_list]])
-                    log.stdinfo("The sky frames associated with {} are:".
-                                 format(ad.filename))
+                                      data=[[sky.filename for sky in sky_list]])
+                    log.stdinfo(f"The sky frames associated with {ad.filename} are:")
                     for sky in sky_list:
-                        log.stdinfo("  {}".format(sky.filename))
+                        log.stdinfo(f"  {sky.filename}")
                     ad.SKYTABLE = sky_table
                     has_skytable[i] = True
                 else:
-                    log.warning("No sky frames available for {}".format(ad.filename))
+                    log.warning(f"No sky frames available for {ad.filename}")
 
         # Need to update sky stream in case it came from the "sky" parameter
         self.streams['sky'] = ad_skies
@@ -339,7 +343,7 @@ class Preprocess(PrimitivesBASE):
         # if only some frames did not have sky corrected, move them out of main and
         # to the "no_skytable" stream.
         if not any(has_skytable):  # "all false", none have been sky corrected
-            log.warning('Sky frames could not be associated to any input frames.'
+            log.warning('Sky frames could not be associated to any input frames. '
                         'Sky subtraction will not be possible.')
         elif not all(has_skytable):  # "some false", some frames were NOT sky corrected
             log.stdinfo('')  # for readablity
@@ -1496,12 +1500,12 @@ class Preprocess(PrimitivesBASE):
                 sky_list = sorted(list(ad.SKYTABLE["SKYNAME"]))
                 del ad.SKYTABLE  # Not needed any more
             except AttributeError:
-                log.warning("{} has no SKYTABLE so cannot subtract a sky "
-                            "frame".format(ad.filename))
+                log.warning(f"{ad.filename} has no SKYTABLE so cannot "
+                            "subtract a sky frame")
                 sky_list = None
             except KeyError:
-                log.warning("Cannot read SKYTABLE associated with {} so "
-                            "continuing".format(ad.filename))
+                log.warning("Cannot read SKYTABLE associated with "
+                            f"{ad.filename} so continuing")
                 sky_list = None
             skytables.append(sky_list)
             if sky_list:  # Not if None
@@ -1521,12 +1525,12 @@ class Preprocess(PrimitivesBASE):
                 try:
                     sky = astrodata.open(filename)
                 except astrodata.AstroDataError:
-                    log.warning("Cannot find a sky file named {}. "
-                            "Ignoring it.".format(filename))
+                    log.warning(f"Cannot find a sky file named {filename}. "
+                                "Ignoring it.")
                     skies.remove(filename)
                     continue
                 else:
-                    log.stdinfo("Found {} on disk".format(filename))
+                    log.stdinfo(f"Found {filename} on disk")
             ad_skies.append(sky)
 
         # We've got all the sky frames in sky_dict, so delete the sky stream
@@ -1551,10 +1555,10 @@ class Preprocess(PrimitivesBASE):
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if skytable is None:
-                log.stdinfo("Cannot subtract sky from {}".format(ad.filename))
+                log.stdinfo(f"Cannot subtract sky from {ad.filename}")
                 continue
             if stacked_skies[i] == 0:
-                log.stdinfo("Creating sky frame for {}".format(ad.filename))
+                log.stdinfo(f"Creating sky frame for {ad.filename}")
                 sky_inputs = [sky_dict[sky] for sky in skytable]
                 stacked_sky = self.stackSkyFrames(sky_inputs, **stack_params)
                 if len(stacked_sky) == 1:
@@ -1565,16 +1569,17 @@ class Preprocess(PrimitivesBASE):
                         stacked_sky.update_filename(suffix="_sky", strip=True)
                 else:
                     log.warning("Problem with stacking the following sky "
-                                "frames for {}".format(adinputs[i].filename))
+                                f"frames for {adinputs[i].filename}")
                     for filename in skytable:
-                        log.warning("  {}".format(filename))
+                        log.warning(f"  {filename}")
                     stacked_sky = None
                 # Assign this stacked sky frame to all adinputs that want it
                 for j in range(i, len(skytables)):
                     if skytables[j] == skytable:
                         stacked_skies[j] = stacked_sky
                         if j > i:
-                            log.stdinfo("This sky will also be used for {}".format(adinputs[j].filename))
+                            log.stdinfo("This sky will also be used for "
+                                        f"{adinputs[j].filename}")
                         skytables[j] = [None]
 
             # Go through all the science frames and sky-subtract any that
@@ -1588,7 +1593,7 @@ class Preprocess(PrimitivesBASE):
                 # with iterable empty lists
                 if ad2 not in [sky_dict.get(sky) for skytable in skytables
                                for sky in (skytable or [])]:
-                    # Sky-subtraction is in place, so we can discard the output
+                    # Sky-subtraction is in-place, so we can discard the output
                     self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
                                      offset_sky=offset_sky, reset_sky=reset_sky,
                                      save_sky=save_sky, suffix=suffix)
@@ -1637,9 +1642,8 @@ class Preprocess(PrimitivesBASE):
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
                                              force_ad=True)):
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by subtractSky".
-                            format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, since "
+                            "it has already been processed by subtractSky")
                 continue
 
             if ad_sky is not None:
@@ -1659,8 +1663,13 @@ class Preprocess(PrimitivesBASE):
                 else:
                     ad.subtract(ad_sky)
                 if save_sky:
-                    # ad_sky.update_filename(suffix='_skyimage', strip=True)
-                    self.writeOutputs([ad_sky])
+                    # Ensure the file written to disk has a filename that
+                    # matches the frame from which it has been subtracted
+                    ad_filename = ad.filename
+                    ad.update_filename(suffix="_sky", strip=True)
+                    log.stdinfo(f"Writing sky frame {ad.filename} to disk")
+                    ad_sky.write(filename=ad.filename, overwrite=True)
+                    ad.filename = ad_filename
                 if reset_sky:
                     for ext, bg in zip(ad, orig_bg):
                         log.stdinfo(f"  Adding {bg} to {ad.filename} "

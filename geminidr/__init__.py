@@ -179,6 +179,7 @@ class PrimitivesBASE:
         # Most logic is separated into initialize() so subclasses can do custom initialization
         # while leaving any final logic to this base class.  This avoids having to repeat
         # this validate call across all subclass definitions
+        self._initialize_params()
         self._validate_user_parms()
 
         self._in_init = False
@@ -300,8 +301,8 @@ class PrimitivesBASE:
         return
 
     def _param_update(self, module):
-        """Create/update an entry in the primitivesClass's params dict
-        using Config classes in the module provided"""
+        """Create/update an entry in the primitivesClass's params dict;
+        this will be initialized later"""
         for attr in dir(module):
             obj = getattr(module, attr)
             if isclass(obj) and issubclass(obj, config.Config):
@@ -311,9 +312,15 @@ class PrimitivesBASE:
                     primname = attr.replace("Config", "")
                     self.params[primname] = obj()
 
-        # Play a bit fast and loose with python's inheritance. We need to check
-        # if we're redefining a Config that has already been inherited by
-        # another Config and, if so, update the child Config
+    def _initialize_params(self):
+        """
+        Instantiate all the Config instances that store the parameters for
+        each of the primitives. We do this once after all the modules have
+        been loaded.
+        """
+        # Play a bit fast and loose with python's inheritance. A Config that
+        # inherits from a parent might not want that parent, but the
+        # identically-named parent associated with this primitivesClass.
         # Do this in the correct inheritance order
         for k, v in sorted(self.params.items(),
                            key=lambda x: len(x[1].__class__.__bases__)):
@@ -322,9 +329,6 @@ class PrimitivesBASE:
             for cls in reversed((v.__class__,) + v.__class__.__bases__):
                 cls_name = cls.__name__
                 if cls_name.find('Config') > 0:
-                    # We may not have yet imported a Config from which we inherit.
-                    # In fact, we may never do so, in which case what's already
-                    # there from standard inheritance is fine and we move on.
                     cls_name = cls_name.replace("Config", "")
                     try:
                         new_cls = self.params[cls_name].__class__
@@ -337,12 +341,10 @@ class PrimitivesBASE:
                             if field in self.params[k]:
                                 self.params[k]._history[field] = []
                             self.params[k]._fields[field] = deepcopy(new_cls._fields[field])
-                        # Call inherited setDefaults from configs with the same name
-                        # but simply copy parameter values from others
-                        #if cls.__name__ == k+'Config':
-                        #    cls.setDefaults.__func__(self.params[k])
-                        #else:
-                        #    new_cls.setDefaults.__func__(self.params[k])
+                        # Call inherited setDefaults from configs with the
+                        # same name but simply copy parameter values from
+                        # others, since inherited Configs with other names
+                        # will have already have had setDefaults() run
                         if cls_name == k:
                             cls.setDefaults(self.params[k])
                         else:

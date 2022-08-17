@@ -6,6 +6,17 @@
 Release Notes
 *************
 
+V3.0.2 and V3.0.3
+=================
+Note that 3.0.2 was found to have one broken recipe, 3.0.3 fixes it.
+
+This patch release improves the reduction of GMOS-S data obtained since the
+event on January 28, 2022 that led to the failure of amplifier 5.  This patch
+also adds support of the new Flamingos 2 filters and the filter wheel
+reshuffling that occurred earlier this year.  Various other fixes and features
+are also contained in this patch.  See the :ref:`change logs <changes>` for
+details.
+
 V3.0.1
 ======
 
