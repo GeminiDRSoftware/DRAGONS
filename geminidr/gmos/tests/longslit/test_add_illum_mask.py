@@ -22,7 +22,7 @@ def test_add_illum_mask_position(filename, start_row):
     ad = astrodata.open(file_on_disk)
 
     p = GMOSLongslit([ad])
-    p.prepare(bad_wcs="ignore")
+    p.prepare()
     ad = p.addIllumMaskToDQ().pop()
 
     start_row -= 2 ## because we are growing the mask by 2 rows

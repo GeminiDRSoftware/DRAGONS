@@ -1,21 +1,33 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gnirs_image.py file, in alphabetical order.
 from geminidr.core import parameters_photometry, parameters_register, parameters_nearIR, parameters_standardize
+from gempy.library import config
 
-class addDQConfig(parameters_standardize.addDQConfig):
+
+class addIllumMaskToDQConfig(parameters_standardize.addIllumMaskToDQConfig):
+    xshift = config.RangeField("User-defined shift in x for illumination mask", int, 0,
+                               min=-100, max=100, inclusiveMax=True)
+    yshift = config.RangeField("User-defined shift in y for illumination mask", int, 0,
+                               min=-100, max=100, inclusiveMax=True)
+
+
+class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True
+
 
 class addReferenceCatalogConfig(parameters_photometry.addReferenceCatalogConfig):
     def setDefaults(self):
         self.radius = 0.033
         self.source = "2mass"
 
+
 class adjustWCSToReferenceConfig(parameters_register.adjustWCSToReferenceConfig):
     def setDefaults(self):
         self.first_pass = 2.
         self.min_sources = 1
         self.rotate = True
+
 
 class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
     def setDefaults(self):
@@ -24,9 +36,11 @@ class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
         self.deblend_mincont = 0.001
         self.back_filtersize = 3
 
+
 class determineAstrometricSolutionConfig(parameters_register.determineAstrometricSolutionConfig):
     def setDefaults(self):
         self.initial = 15.
+
 
 class makeBPMConfig(parameters_nearIR.makeBPMConfig):
     def setDefaults(self):

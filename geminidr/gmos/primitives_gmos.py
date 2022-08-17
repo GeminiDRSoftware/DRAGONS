@@ -168,6 +168,11 @@ class GMOS(Gemini, CCD):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
+    def standardizeWCS(self, adinputs=None, **params):
+        """Override Gemini-level standardizeWCS as GMOS does not require
+        a bad_wcs check"""
+        return adinputs
+
     def subtractOverscan(self, adinputs=None, **params):
         """
         This primitive subtracts the overscan level from the image. The

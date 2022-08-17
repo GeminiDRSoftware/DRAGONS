@@ -492,6 +492,27 @@ Create a MEF with basic header and data array set to zeros
 Then it is just a matter of calling ``ad.write('somename.fits')`` on that
 new ``Astrodata`` object.
 
+Associate a pixel array with a science pixel array
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Only main science ("SCI") pixel arrays are added as slices to an astrodata
+object.  It not uncommon to have pixels information associated with those
+main science pixels, for example an object mask where marked pixels in the mask
+are directly associated with sources in the science array.
+
+Such pixel arrays are added to specific slice of the astrodata object they are
+associated with.
+
+Building on the astrodata object we created in the previous subsection, one
+would add a pixel array to the first slice of the astrodata object as
+follows:
+
+    >>> extra_data = np.ones((100, 100))
+    >>> ad[0].EXTRADATA = extra_data
+
+When the file is written to disk as a MEF, an extension will be created with
+``EXTNAME = EXTRADATA`` and an ``EXTVER`` that matches the slice's ``EXTVER``,
+in this case is would be ``1``.
+
 Represent a table as a FITS binary table in an ``AstroData`` object
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 One first needs to create a table, either an :class:`astropy.table.Table`
