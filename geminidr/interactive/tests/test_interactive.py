@@ -20,7 +20,6 @@ def interactive_test(tst):
     return set_test_mode
 
 
-@pytest.mark.skip
 @interactive_test
 def test_trace_apertures_interactive():
     print("starting test_trace_apertures_interactive")
