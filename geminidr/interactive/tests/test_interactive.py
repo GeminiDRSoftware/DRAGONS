@@ -1,6 +1,7 @@
 from time import sleep
 
 import numpy as np
+import pytest
 
 from geminidr.core import primitives_spect
 from astrodata.testing import ad_compare
@@ -19,6 +20,7 @@ def interactive_test(tst):
     return set_test_mode
 
 
+@pytest.mark.skip
 @interactive_test
 def test_trace_apertures_interactive():
     print("starting test_trace_apertures_interactive")
@@ -45,6 +47,7 @@ def test_trace_apertures_interactive():
     assert(ad_compare(ad_out, iad_out))
 
 
+@pytest.mark.skip
 @interactive_test
 def test_sky_correct_from_slit_interactive():
     # Input Parameters ----------------
@@ -82,6 +85,7 @@ def test_sky_correct_from_slit_interactive():
     assert(ad_compare(ad_out, iad_out))
 
 
+@pytest.mark.skip
 @interactive_test
 def test_sky_correct_from_slit_with_aperture_table_interactive():
     # Input Parameters ----------------
@@ -120,6 +124,7 @@ def test_sky_correct_from_slit_with_aperture_table_interactive():
     assert(ad_compare(ad_out, iad_out))
 
 
+@pytest.mark.skip
 @interactive_test
 def test_sky_correct_from_slit_with_multiple_sources_interactive():
     width = 200
