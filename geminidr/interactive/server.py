@@ -291,7 +291,8 @@ def start_server():
             kwargs = {"browser": "chrome"}
         else:
             kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
-        kwargs = {"browser": "chrome"}
+        # kwargs = {"browser": "chrome"}
+        kwargs = {"browser": ["google-chrome-stable", "--disable-gpu"]}
 #    if test_mode:
 #        # kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
 #        # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu"]}
