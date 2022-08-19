@@ -204,7 +204,7 @@ class GMOSClassicLongslit(GMOSSpect):
                     row_medians -= at.boxcar(row_medians, size=longest_gap // 2)
                 # Remove single bad rows
                 row_medians = at.boxcar(row_medians, size=2)
-                print(row_medians.min(), row_medians.max())
+                #print(row_medians.min(), row_medians.max())
 
                 if debug_plot:
                     plt.ioff()
