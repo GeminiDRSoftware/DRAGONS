@@ -94,7 +94,7 @@ illumMask_dict = {
     #   bad pixels.
     "GMOS-S_Ham_11_12amp_v1": "gmos-s_illum_HAM_11_12amp_v1.fits",
     "GMOS-S_Ham_22_12amp_v1": "gmos-s_illum_HAM_22_12amp_v1.fits",
-    "GMOS-S_Ham_44_12amp_v1": "gmos-s_illum_HAM_44_12amp_v1.fits",
+    "GMOS-S_Ham_44_12amp_v1": "gmos-s_illum_HAM_44_12amp_v2.fits",
 
 }
 
