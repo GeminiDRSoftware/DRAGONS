@@ -23,7 +23,7 @@ def test_longslit_wcs(change_working_dir, filename):
         ad = astrodata.open(file_path)
         p = GNIRSLongslit([ad])
         coords1 = ad[0].wcs(X, Y)
-        p.prepare()
+        p.prepare(bad_wcs='fix')
         coords2 = ad[0].wcs(X, Y)
         assert len(coords2) == 3
         np.testing.assert_allclose(coords1, coords2[1:], atol=1e-6)
