@@ -6,7 +6,7 @@ recipe_tags = {'F2', 'SPECT', 'LS'}
 
 def reduceScience(p):
     """
-    To be updated as development continues: This recipe processes F2 longslit 
+    To be updated as development continues: This recipe processes F2 longslit
     spectroscopic data, currently up to basic extraction (no telluric correction).
 
     Parameters
@@ -26,6 +26,8 @@ def reduceScience(p):
     p.associateSky()
     p.skyCorrect()
     p.distortionCorrect()
+    # p.findApertures()
+    p.skyCorrectFromSlit()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
     # p.scaleCountsToReference()
@@ -35,6 +37,6 @@ def reduceScience(p):
     p.storeProcessedScience(suffix="_2D")
     p.extractSpectra()
     p.storeProcessedScience(suffix="_1D")
-    
-    
+
+
 _default = reduceScience

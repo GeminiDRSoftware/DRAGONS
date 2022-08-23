@@ -29,7 +29,7 @@ def reduceScience(p):
     p.QECorrect()
     p.flagCosmicRays()
     p.distortionCorrect()
-    p.findApertures()
+    # p.findApertures() Leave in QL, remove from SQ
     p.skyCorrectFromSlit()
     p.adjustWCSToReference()
     p.resampleToCommonFrame(conserve=True)  # default force_linear=True, ie. linearized.
