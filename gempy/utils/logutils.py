@@ -73,7 +73,7 @@ def customize_log(log=None):
     setattr(log, 'fullinfo', cfullinfo)
     setattr(log, 'debug', cdebug)
     # print(f" *** Adding DuplicateFilter to {log} ***")
-    log.addFilter(DuplicateFilter(log))
+    # log.addFilter(DuplicateFilter(log))
     # print(log.filters)
     return
 
@@ -99,6 +99,8 @@ def get_logger(name=None):
     except AssertionError:
         config(mode='standard')
         customize_log(log)
+        # This was a new logger, so add the duplicate filter
+        log.addFilter(DuplicateFilter(log))
     return log
 
 def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
