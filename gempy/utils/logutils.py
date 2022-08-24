@@ -73,7 +73,14 @@ def customize_log(log=None):
     setattr(log, 'fullinfo', cfullinfo)
     setattr(log, 'debug', cdebug)
     # print(f" *** Adding DuplicateFilter to {log} ***")
-    # log.addFilter(DuplicateFilter(log))
+
+    def replace_filter(log, filter):
+        for idx, f in enumerate(log.filters):
+            if isinstance(f, filter.__class__):
+                log.filters[idx] = filter
+                return
+        log.addFilter(filter)
+    replace_filter(log, DuplicateFilter(log))
     # print(log.filters)
     return
 
@@ -100,7 +107,7 @@ def get_logger(name=None):
         config(mode='standard')
         customize_log(log)
         # This was a new logger, so add the duplicate filter
-        log.addFilter(DuplicateFilter(log))
+        # log.addFilter(DuplicateFilter(log))
     return log
 
 def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
@@ -242,8 +249,8 @@ class DuplicateFilter(logging.Filter):
     of the same message. When a different message comes along,
     """
     def __init__(self, logger):
-        self.counter = 1
         self.logger = logger
+        self.counter = 1
 
     def filter(self, record):
         current_log = (record.module, record.levelno, record.msg)
@@ -257,3 +264,10 @@ class DuplicateFilter(logging.Filter):
             return True
         self.counter += 1
         return False
+
+
+if __name__ == "__main__":
+    log = get_logger("testing_logutils")
+    for i in range(3):
+        log.warn("This is a test")
+    log.warn("Some other message to generate the repeated message")
