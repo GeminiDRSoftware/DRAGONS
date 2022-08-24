@@ -30,7 +30,7 @@ def test_add_illum_mask(filename, result, change_working_dir, path_to_inputs):
         ad = astrodata.open(download_from_archive(filename))
     with change_working_dir():
         p = GNIRSImage([ad])
-        p.prepare(bad_wcs="ignore")
+        p.prepare()  # bad_wcs="ignore")
         adout = p.addIllumMaskToDQ().pop()
         y, x = np.unravel_index(adout[0].mask.argmin(), adout[0].shape)
         # Get the middle unmasked pixel on the bottom row
