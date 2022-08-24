@@ -20,18 +20,17 @@ DATASETS = (("N20110627S0031.fits", (625, 445)),  # ShortBlue, Wings, off-centre
             )
 
 
-@pytest.mark.skip("MUST WORK")
 @pytest.mark.gnirs
 @pytest.mark.remote_data
 @pytest.mark.parametrize("filename,result", DATASETS)
 def test_add_illum_mask(filename, result, change_working_dir, path_to_inputs):
+    if filename.startswith("N2022"):
+        ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    else:
+        ad = astrodata.open(download_from_archive(filename))
     with change_working_dir():
-        if filename.startswith("N2022"):
-            ad = astrodata.open(os.path.join(path_to_inputs, filename))
-        else:
-            ad = astrodata.open(download_from_archive(filename))
         p = GNIRSImage([ad])
-        p.prepare(bad_wcs="ignore")
+        p.prepare()  # bad_wcs="ignore")
         adout = p.addIllumMaskToDQ().pop()
         y, x = np.unravel_index(adout[0].mask.argmin(), adout[0].shape)
         # Get the middle unmasked pixel on the bottom row
