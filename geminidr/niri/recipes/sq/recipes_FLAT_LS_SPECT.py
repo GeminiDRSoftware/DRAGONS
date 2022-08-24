@@ -16,7 +16,7 @@ def makeProcessedFlat(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
-    p.nonLinearityCorrect()
+    p.nonlinearityCorrect()
     p.stackFlats()
     p.determineSlitEdges()
     p.maskBeyondSlit()
