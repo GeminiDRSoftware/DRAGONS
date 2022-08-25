@@ -11,15 +11,15 @@ import logging
 from datetime import time
 from logging import handlers
 
-STDFMT = '%(asctime)s %(levelname)-8s - %(message)s' 
+STDFMT = '%(asctime)s %(levelname)-8s - %(message)s'
 DBGFMT = '%(asctime)s %(name)-40s - %(levelname)-8s - %(message)s'
 SW = 3
 
-# Turn off logging exception messages 
+# Turn off logging exception messages
 logging.raiseExceptions = 0
 
 # Logging levels
-ll = {'CRITICAL':50, 'ERROR':40, 'WARNING' :30, 'STATUS':25, 
+ll = {'CRITICAL':50, 'ERROR':40, 'WARNING' :30, 'STATUS':25,
       'STDINFO' :21, 'INFO' :20, 'FULLINFO':15, 'DEBUG' :10}
 
 def customize_log(log=None):
@@ -63,15 +63,18 @@ def customize_log(log=None):
         arghandler(args, ll['FULLINFO'])
     def cdebug(*args):
         arghandler(args, ll['DEBUG'], 'DEBUG - ')
-    
-    setattr(log, 'critical', ccritical) 
-    setattr(log, 'error', cerror) 
-    setattr(log, 'warning', cwarning) 
-    setattr(log, 'status', cstatus) 
-    setattr(log, 'stdinfo', cstdinfo) 
-    setattr(log, 'info', cinfo) 
-    setattr(log, 'fullinfo', cfullinfo) 
-    setattr(log, 'debug', cdebug) 
+
+    setattr(log, 'critical', ccritical)
+    setattr(log, 'error', cerror)
+    setattr(log, 'warning', cwarning)
+    setattr(log, 'status', cstatus)
+    setattr(log, 'stdinfo', cstdinfo)
+    setattr(log, 'info', cinfo)
+    setattr(log, 'fullinfo', cfullinfo)
+    setattr(log, 'debug', cdebug)
+
+    if sum([isinstance(filt, DuplicateWarningFilter) for filt in log.filters]) < 1:
+        log.addFilter(DuplicateWarningFilter(log))
     return
 
 def get_logger(name=None):
@@ -80,7 +83,7 @@ def get_logger(name=None):
 
     Parameters
     ----------
-    name: <str> 
+    name: <str>
           Name of logger (usually __name__)
 
     Returns
@@ -97,25 +100,25 @@ def get_logger(name=None):
         config(mode='standard')
         customize_log(log)
     return log
-        
+
 def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
     """
     Controls Dragons logging configuration.
 
     Parameters
     ----------
-    mode : <str> 
+    mode : <str>
           logging mode: 'debug', 'standard', 'quiet'
 
     file_lvl : <int>
           file logging level
 
-    file_name : <atr> 
+    file_name : <atr>
           filename of the logger
 
     stomp: <bool>
           Controls append to logfiles found with same name
-    
+
     Returns
     -------
     <void>
@@ -141,14 +144,14 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
     if mode == 'quiet':
         logfmt = STDFMT
         logging.basicConfig(level=file_lvl, format=logfmt,
-                            datefmt='%Y-%m-%d %H:%M:%S', 
+                            datefmt='%Y-%m-%d %H:%M:%S',
                             filename=file_name, filemode=fm)
 
     elif mode == 'standard':
         logfmt = STDFMT
         console_lvl = 21
         logging.basicConfig(level=file_lvl, format=logfmt,
-                            datefmt='%Y-%m-%d %H:%M:%S', 
+                            datefmt='%Y-%m-%d %H:%M:%S',
                             filename=file_name, filemode=fm)
 
         # add console handler for rootlog through addHandler()
@@ -163,7 +166,7 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
         console_lvl = 10
         file_lvl = 10
         logging.basicConfig(level=file_lvl, format=logfmt,
-                            datefmt='%Y-%m-%d %H:%M:%S', 
+                            datefmt='%Y-%m-%d %H:%M:%S',
                             filename=file_name, filemode=fm)
 
         # add console handler for rootlog through addHandler()
@@ -188,8 +191,8 @@ def update_indent(li=0, mode=''):
 
     Parameters
     ----------
-    li : <int> 
-         log indentation 
+    li : <int>
+         log indentation
 
     mode: <str>
           logging mode
@@ -200,7 +203,7 @@ def update_indent(li=0, mode=''):
 
     """
     log = logging.getLogger('')
-    
+
     # Handle the case if logger has not been configured
     if len(log.handlers) == 0:
         return
@@ -230,3 +233,43 @@ def change_level(new_level=''):
             if new_level:
                 hndl.setLevel(ll[new_level.upper()])
     return
+
+class DuplicateWarningFilter(logging.Filter):
+    """
+    This class contains a filter for log messages to suppress repeated instances
+    of the same message. When a different message comes along, it prints a
+    message summarizing how many duplicate messages were suppressed.
+
+    Parameters
+    ----------
+    logger: a `logging.Logger` object
+        The logger to which the filtering should be applied.
+
+    """
+    def __init__(self, logger):
+        self.logger = logger
+        self.counter = 1
+
+    def filter(self, record):
+        # Only operate on warnings, pass everything else through.
+        if record.levelno != 30:  # Not a warning
+            return True
+
+        current_log = (record.module, record.levelno, record.msg)
+        if current_log != getattr(self, "last_log", None):
+            self.last_log = current_log
+            if self.counter > 1:
+                temp_log = current_log
+                self.logger.warning(f"Last message repeated {self.counter} times")
+                self.last_log = temp_log
+                self.counter = 1
+            return True
+        self.counter += 1
+        return False
+
+
+if __name__ == "__main__":
+    log = get_logger("testing_logutils")
+    for i in range(3):
+        log.warning("This is a test")
+    log.warning("Some other message to generate the repeated message")
