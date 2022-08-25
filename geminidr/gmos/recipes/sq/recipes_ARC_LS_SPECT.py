@@ -5,7 +5,7 @@ Default is "reduce".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'ARC'}
 
-from geminidr.gmos.recipes.ql.recipes_common import makeIRAFCompatible
+from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
 
 def makeProcessedArc(p):
     p.prepare()

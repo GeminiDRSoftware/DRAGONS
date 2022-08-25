@@ -5,10 +5,38 @@ Default is "reduce".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'FLAT'}
 
-from ..ql.recipes_FLAT_LS_SPECT import (makeProcessedFlatStack,
-                                        makeProcessedFlatNoStack)
+from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
+
+def makeProcessedFlatNoStack(p):
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.normalizeFlat()
+    p.thresholdFlatfield()
+    p.makeIRAFCompatible()
+    p.storeProcessedFlat()
+
 
 _default = makeProcessedFlatNoStack
+
+
+def makeProcessedFlatStack(p):
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.stackFrames()
+    p.normalizeFlat()
+    p.thresholdFlatfield()
+    p.makeIRAFCompatible()
+    p.storeProcessedFlat()
 
 
 def makeProcessedSlitIllum(p):

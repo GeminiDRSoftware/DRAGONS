@@ -138,6 +138,8 @@ class CalibDB(PrimitivesBASE):
         prior to storing AD objects as calibrations
         """
         for ad in adinputs:
+            mark_history = True
+
             if 'PROCMODE' not in ad.phu:
                 ad.phu.set('PROCMODE', self.mode)
             mode = ad.phu['PROCMODE']
@@ -145,15 +147,23 @@ class CalibDB(PrimitivesBASE):
             # if user mode: not uploading and sq, don't add mode.
             if mode == 'sq' and (not self.upload or 'calibs' not in self.upload) :
                 proc_suffix = f""
+            elif 'BPM' in ad.tags:
+                proc_suffix = f""
+                if 'PROCBPM' in ad.phu:
+                    mark_history = False
             else:
                 proc_suffix = f"_{mode}"
 
             if suffix:
                 proc_suffix += suffix
-            ad.update_filename(suffix=proc_suffix, strip=True)
+                strip = True
+            else:
+                strip = False
+            ad.update_filename(suffix=proc_suffix, strip=strip)
             if update_datalab:
                 _update_datalab(ad, suffix, mode, self.keyword_comments)
-            gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
+            if mark_history:
+                gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
         return adinputs
 
     def storeProcessedArc(self, adinputs=None, suffix=None, force=False):

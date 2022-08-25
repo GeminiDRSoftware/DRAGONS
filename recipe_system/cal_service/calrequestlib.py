@@ -108,6 +108,15 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
                     dv = dv[0] if all(v == dv[0] for v in dv) else "+".join(
                         [str(v) for v in dv])
                 desc_dict[desc_name] = dv
+
+        # Add composite detector_binning to request so we can query Header field of same name in cals
+        dvx = desc_dict["detector_x_bin"] if "detector_x_bin" in desc_dict else None
+        dvy = desc_dict["detector_y_bin"] if "detector_y_bin" in desc_dict else None
+        if (dvx is not None) and (dvy is not None):
+            desc_dict["detector_binning"] = "%dx%d" % (dvx, dvy)
+        else:
+            desc_dict["detector_binning"] = None
+
         rq.descriptors = desc_dict
         rq_events.append(rq)
     return rq_events
