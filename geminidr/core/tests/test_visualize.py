@@ -55,7 +55,7 @@ def test_mosaic_detectors_gmos_binning(astrofaker, hemi, ccd):
             diffs = np.diff(unbinned_positions) - binning * np.diff(x)
             assert np.max(abs(diffs)) < 0.01
 
-
+@pytest.mark.skip(reason='Relies on reading duplicate warning messages')
 def test_mosaic_detectors_raises_warning_with_different_gains(astrofaker, caplog):
     ad = astrofaker.create('GMOS-N', ['IMAGE'])
     ad.init_default_extensions(overscan=False)
@@ -63,7 +63,7 @@ def test_mosaic_detectors_raises_warning_with_different_gains(astrofaker, caplog
     p.mosaicDetectors()
     assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 1
 
-
+@pytest.mark.skip(reason='Relies on reading duplicate warning messages')
 def test_tile_arrays_raises_warning_with_different_gains(astrofaker, caplog):
     ad = astrofaker.create('GMOS-N', ['IMAGE'])
     ad.init_default_extensions(overscan=False)
