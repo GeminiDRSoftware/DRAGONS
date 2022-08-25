@@ -73,14 +73,8 @@ def customize_log(log=None):
     setattr(log, 'fullinfo', cfullinfo)
     setattr(log, 'debug', cdebug)
 
-    def replace_filter(log, filter):
-        for idx, f in enumerate(log.filters):
-            if isinstance(f, filter.__class__):
-                log.filters[idx] = filter
-                return
-        log.addFilter(filter)
-    replace_filter(log, DuplicateWarningFilter(log))
-
+    if sum([isinstance(filt, DuplicateWarningFilter) for filt in log.filters]) < 1:
+        log.addFilter(DuplicateWarningFilter(log))
     return
 
 def get_logger(name=None):
@@ -277,5 +271,5 @@ class DuplicateWarningFilter(logging.Filter):
 if __name__ == "__main__":
     log = get_logger("testing_logutils")
     for i in range(3):
-        log.warn("This is a test")
-    log.warn("Some other message to generate the repeated message")
+        log.warning("This is a test")
+    log.warning("Some other message to generate the repeated message")
