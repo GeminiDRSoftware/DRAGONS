@@ -72,7 +72,6 @@ def customize_log(log=None):
     setattr(log, 'info', cinfo)
     setattr(log, 'fullinfo', cfullinfo)
     setattr(log, 'debug', cdebug)
-    # print(f" *** Adding DuplicateFilter to {log} ***")
 
     def replace_filter(log, filter):
         for idx, f in enumerate(log.filters):
@@ -80,8 +79,8 @@ def customize_log(log=None):
                 log.filters[idx] = filter
                 return
         log.addFilter(filter)
-    replace_filter(log, DuplicateFilter(log))
-    # print(log.filters)
+    replace_filter(log, DuplicateWarningFilter(log))
+
     return
 
 def get_logger(name=None):
@@ -106,8 +105,6 @@ def get_logger(name=None):
     except AssertionError:
         config(mode='standard')
         customize_log(log)
-        # This was a new logger, so add the duplicate filter
-        # log.addFilter(DuplicateFilter(log))
     return log
 
 def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
@@ -243,16 +240,27 @@ def change_level(new_level=''):
                 hndl.setLevel(ll[new_level.upper()])
     return
 
-class DuplicateFilter(logging.Filter):
+class DuplicateWarningFilter(logging.Filter):
     """
     This class contains a filter for log messages to suppress repeated instances
-    of the same message. When a different message comes along,
+    of the same message. When a different message comes along, it prints a
+    message summarizing how many duplicate messages were suppressed.
+
+    Parameters
+    ----------
+    logger: a `logging.Logger` object
+        The logger to which the filtering should be applied.
+
     """
     def __init__(self, logger):
         self.logger = logger
         self.counter = 1
 
     def filter(self, record):
+        # Only operate on warnings, pass everything else through.
+        if record.levelno != 30:  # Not a warning
+            return True
+
         current_log = (record.module, record.levelno, record.msg)
         if current_log != getattr(self, "last_log", None):
             self.last_log = current_log
