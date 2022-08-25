@@ -21,6 +21,7 @@ __all__ = ["test_mode", "interactive_fitter", "stop_server"]
 # Set to True to tell the interactive code to automatically submit in
 # order to test the interactive paths automatically
 from geminidr.interactive.pidfile import PidFile
+from gempy.utils import logutils
 
 test_mode = False
 
@@ -36,6 +37,9 @@ _visualizer = None
 __version__ = version()
 
 TEMPLATE_PATH = '%s/templates' % pathlib.Path(__file__).parent.absolute()
+
+
+log = logutils.get_logger(__name__)
 
 
 class VersionHandler(tornado.web.RequestHandler):
@@ -297,7 +301,7 @@ def start_server():
 
         # Check Xvfb is running, it seems to not be working right and I don't want to have to keep
         # filing ITOps tickets just to keep our Jenkins passing once this is merged
-        with PidFile(None, "dragons_interactive_testing"):
+        with PidFile(log, "dragons_interactive_testing"):
             checkx = run(['xset', '-q'], capture_output=True)
             if checkx.returncode != 0:
                 # Start Xvfb in the background
