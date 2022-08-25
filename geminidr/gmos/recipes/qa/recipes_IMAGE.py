@@ -3,6 +3,7 @@ Recipes available to data with tags ['GMOS', 'IMAGE'].
 Default is "reduce_nostack".
 """
 recipe_tags = {'GMOS', 'IMAGE'}
+blocked_tags = {'THRUSLIT'}
 
 def reduce(p):
     """
