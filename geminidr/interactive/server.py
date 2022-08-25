@@ -1,6 +1,7 @@
 import os
 import uuid
 from logging import ERROR
+from subprocess import run, Popen
 
 from astrodata import version
 
@@ -19,6 +20,8 @@ __all__ = ["test_mode", "interactive_fitter", "stop_server"]
 
 # Set to True to tell the interactive code to automatically submit in
 # order to test the interactive paths automatically
+from geminidr.interactive.pidfile import PidFile
+
 test_mode = False
 
 from bokeh.themes import built_in_themes
@@ -291,12 +294,15 @@ def start_server():
             kwargs = {"browser": "chrome"}
         else:
             kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
-        # kwargs = {"browser": "chrome"}
-        kwargs = {"browser": "chrome"}
-#    if test_mode:
-#        # kwargs = {"browser": ["google-chrome-stable", "--headless", "--disable-gpu"]}
-#        # kwargs = {"browser": ["chrome", "--headless", "--disable-gpu"]}
-#        kwargs = {}  # can't get headless to work, just use the default browser
+
+        # Check Xvfb is running, it seems to not be working right and I don't want to have to keep
+        # filing ITOps tickets just to keep our Jenkins passing once this is merged
+        with PidFile(None, "dragons_interactive_testing"):
+            checkx = run(['xset', '-q'], capture_output=True)
+            if checkx.returncode != 0:
+                # Start Xvfb in the background
+                Popen(['/usr/bin/Xvfb', ':0'], close_fds=True)
+
     else:
         ic = interactive_conf()
         kwargs = {"browser": ic.browser}
