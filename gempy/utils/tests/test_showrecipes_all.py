@@ -5,7 +5,7 @@ from gempy.utils.showrecipes import showrecipes
 
 GNIRS = "N20180101S0028.fits"
 GNIRS_SPECT = "N20190206S0279.fits"
-GMOS = 'S20180223S0229.fits'
+GMOS = 'S20180223S0227.fits'
 GMOS_NS = 'S20171116S0078.fits'
 GMOS_SPECT = "N20110826S0336.fits"
 NIRI = "N20190120S0287.fits"
