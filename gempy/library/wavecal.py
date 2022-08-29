@@ -400,7 +400,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     fit1d, acceptable_fit = find_solution(
         init_models, ui_params, peaks=peaks, peak_weights=weights[ui_params.values["weighting"]],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
-        filename=ext.filename, ext=ext)
+        filename=ext.filename)
 
     input_data["fit"] = fit1d
     return input_data, fit1d, acceptable_fit
@@ -511,7 +511,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,
-                  kdsigma=1, k=1, filename=None, ext=None):
+                  kdsigma=1, k=1, filename=None):
     """
     Find the best wavelength solution from the set of initial models.
 
@@ -528,7 +528,6 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     best_score = np.inf
     arc_lines = linelist.wavelengths(in_vacuo=config.in_vacuo, units="nm")
     arc_weights = linelist.weights
-    best_fit = None
 
     # Create an initial fit_1D object using the initial wavelength model
     # (always the first model in the init_models list) as a fallback in case
@@ -560,7 +559,6 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
-
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
                                         kdsigma, order=config.order,
                                         min_lines_per_fit=min_lines_per_fit,
@@ -623,33 +621,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             # This seems to be a reasonably ranking for poor models
             score = fit1d.rms / max(nmatched - config.order - 1, np.finfo(float).eps)
             if score < best_score:
-                best_fit = fit1d
                 best_score = score
-
-            #is_within_wvl_toler = True
-            # According to GNIRS page:
-            # 1) Wavelength coverages are accurate to +/-2 percent.
-            # 2) Actual wavelength settings are accurate to better than 5 percent of the wavelength coverage.
-            #if ext.instrument()=="GNIRS":
-            #    wvl_toler = abs((len_data+1) * ext.dispersion(asNanometers=True) * 1.02 * 0.05)
-            #    waves_init = np.array([model(0),model(len_data)])
-            #    waves_final = m_final(np.array([0, len_data]))
-            #    if (abs(waves_init - waves_final) > wvl_toler).any():
-            #        is_within_wvl_toler = False
-            #if (score < best_score) and is_within_wvl_toler == True:
-            #    best_fit = fit1d
-            #    best_score = score
-            #elif ext.instrument()=="GNIRS" and best_fit == None:
-            #    print(f"NO MODELS WITHIN WVL TOLERANCE, returning the initial model")
-            #    return initial_model_fit, False, True
-            #TODO: catch the case where there is no best_fit and not interactive
-        #elif config.interactive and ext.instrument()=="GNIRS" and best_fit == None:
-        #    print(f"NO LINE MATCHES, returning the initial model")
-        #    return initial_model_fit, False, True
-
-    # Need to reconsider exit model (maybe return initial if interactive and best otherwise?)
     return initial_model_fit, False
-    return best_fit, False
 
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
@@ -699,7 +672,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
     dc0 = 10
-    #print(f"pixel_start={pixel_start}, wave_start={wave_start}, dw_start={dw_start}, let_data={len_data}")
     fits_to_do = [(pixel_start, wave_start, dw_start)]
     while fits_to_do:
         p0, c0, dw = fits_to_do.pop()

@@ -1773,7 +1773,6 @@ class Spect(Resample):
                 reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
 
-
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",

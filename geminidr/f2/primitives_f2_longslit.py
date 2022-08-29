@@ -95,7 +95,8 @@ class F2Longslit(F2Spect):
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
         """
         Adds an illumination mask to each AD object. The default illumination mask
-        masks off extra orders and unilluminated areas when required.
+        masks off extra orders and/or unilluminated areas outside order blocking filter
+        range (whenever required).
 
         Parameters
         ----------
