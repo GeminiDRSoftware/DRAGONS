@@ -41,14 +41,12 @@ input_pars = [
     # (Input File, params)
     # If a grating+camera+site combination is not present here -> no data exists
     # 10 l/mm, LongCam, GN
-    # unilluminated regions, flats may be needed to eliminate fake lines
     ("N20210810S0833_varAdded.fits", dict()), # X, 1.100um, 0.1" slit
     ("N20210810S0835_varAdded.fits", dict()), # J, 1.250um, 0.1" slit
     ("N20140713S0193_varAdded.fits", dict()), # H, 1.650um, 0.1" slit
     ("N20210803S0133_varAdded.fits", dict()), # K, 2.220um, 0.1" slit
     # 32 l/mm, ShortCam, GN
-    # unilluminated regions, flats may be needed to eliminate fake lines
-    ("N20140413S0124_varAdded.fits", dict(order=2)), # X, 1.100um, 1" slit, fake lines, unstable with order=3
+    ("N20140413S0124_varAdded.fits", dict()), # X, 1.100um, 1" slit
     ("N20210810S0819_varAdded.fits", dict()), # J, 1.250um, 0.3" slit
     ("N20181102S0037_varAdded.fits", dict()), # H, 1.650um, 0.68" slit
     ("N20130101S0207_varAdded.fits", dict()), # K, 2.220um, 0.3" slit
@@ -57,16 +55,16 @@ input_pars = [
     ("S20060719S0224_varAdded.fits", dict()), # H, 1.650um, 1" slit
     ("S20060314S0319_varAdded.fits", dict()), # K, 2.220um, 0.675" slit
     # 32 l/mm, LongCam, GN
-    ("N20210810S0841_varAdded.fits", dict(order=1)), # X, 1.100um, 0.1" slit, unstable
+    ("N20210810S0841_varAdded.fits", dict()), # X, 1.100um, 0.1" slit, ?unstable?
     ("N20210810S0843_varAdded.fits", dict()), # J, 1.250um, 0.1" slit
     ("N20210810S0845_varAdded.fits", dict()), # H, 1.650um, 0.1" slit
-    ("N20191221S0157_varAdded.fits", dict(order=1)), # K, 2.350um, 0.1" slit, only 4 lines
+    ("N20191221S0157_varAdded.fits", dict()), # K, 2.350um, 0.1" slit
     ("N20210810S0847_varAdded.fits", dict()), # K, 2.200um, 0.1" slit
     # 111 l/mm, ShortCam, GN
     ("N20210722S0332_varAdded.fits", dict()), # X, 1.083um, 0.3" slit
     ("N20220222S0151_varAdded.fits", dict()), # X, 1.120um, 1" slit
     ("N20220222S0199_varAdded.fits", dict()), # X, 1.160um, 1" slit
-    ("N20130808S0131_varAdded.fits", dict(order=1)), # J, 1.180um, 0.3" slit
+    ("N20130808S0131_varAdded.fits", dict(order=1)), # J, 1.180um, 0.3" slit, half unilluminated
     ("N20220222S0170_varAdded.fits", dict()), # J, 1.210um, 1" slit
     ("N20101203S0888_varAdded.fits", dict()), # J, 1.250um, 0.45" slit
     ("N20110923S0478_varAdded.fits", dict()), # J, 1.340um, 1" slit
@@ -75,28 +73,28 @@ input_pars = [
     ("N20170429S0265_varAdded.fits", dict()), # K, 2.020um, 0.45" slit
     ("N20220303S0271_varAdded.fits", dict()), # K, 2.100um, 0.3" slit
     ("N20160618S0255_varAdded.fits", dict()), # K, 2.200um, 0.45" slit, 6 lines
-    ("N20210615S0171_varAdded.fits", dict(order=1)), # K, 2.330um, 0.3" slit, 5 lines
+    ("N20210615S0171_varAdded.fits", dict()), # K, 2.330um, 0.3" slit, 5 lines
     # 111 l/mm, ShortCam, GS
     ("S20060214S0406_varAdded.fits", dict()), # X, 1.083um, 0.3" slit
     ("S20051109S0095_varAdded.fits", dict()), # J, 1.207um, 0.675" slit
     ("S20040614S0367_varAdded.fits", dict()), # H, 1.475um, 0.3" slit
-    ("S20050927S0054_varAdded.fits", dict(min_snr=50, order=1)), # K, 2.360um, 0.3" slit, 4 lines, works with best_fit
-    ("S20040904S0321_varAdded.fits", dict(order=1)), # K, 2.400um, 0.675" slit, very bright bkg, works with best_fit with order=1
+    ("S20050927S0054_varAdded.fits", dict(min_snr=50)), # K, 2.360um, 0.3" slit, 4 lines, pattern noise
+    ("S20040904S0321_varAdded.fits", dict()), # K, 2.400um, 0.675" slit, very bright bkg
     # 111 l/mm, LongCam, GN
     ("N20111018S1547_varAdded.fits", dict()), # X, 1.050um, 0.2" slit
     ("N20121221S0204_varAdded.fits", dict()), # X, 1.083um, 0.1" slit
     ("N20210810S0865_varAdded.fits", dict()), # X, 1.100um, 0.1" slit
     ("N20111018S1549_varAdded.fits", dict()), # X, 1.110um, 0.2" slit
-    ("N20111019S1026_varAdded.fits", dict(min_snr=50)), # X, 1.140um, 0.68" slit, min_snr is to eliminate faint lines that are not in the line list
+    ("N20111019S1026_varAdded.fits", dict()), # X, 1.140um, 0.68" slit, ?unstable, min_snr=50?
     ("N20150602S0501_varAdded.fits", dict()), # J, 1.180um, 0.1" slit
-    ("N20100823S1864_varAdded.fits", dict(min_snr=50)), # J, 1.230um, 0.3" slit
-    ("N20100815S0237_varAdded.fits", dict()), # J, 1.270um, 0.1" slit, SV data with large cenwave shift. Works with best_fit
+    ("N20100823S1864_varAdded.fits", dict()), # J, 1.230um, 0.3" slit, ?unstable, min_snr=50?
+    ("N20100815S0237_varAdded.fits", dict()), # J, 1.270um, 0.1" slit, SV data with large cenwave shift.
     ("N20200914S0035_varAdded.fits", dict()), # J, 1.300um, 0.15" slit
     ("N20111020S0664_varAdded.fits", dict()), # J, 1.340um, 0.45" slit
     ("N20110727S0332_varAdded.fits", dict()), # H, 1.520um, 0.1" slit
     ("N20110601S0753_varAdded.fits", dict()), # H, 1.565um, 0.1" slit
     ("N20180605S0147_varAdded.fits", dict()), # H, 1.600um, 0.1" slit
-  ##  ("N20101206S0770_varAdded.fits", dict()), # H, 1.644um, 0.1" slit, shifted SV data, wrong solution, unstable
+    ("N20101206S0770_varAdded.fits", dict(debug_alternative_centers=True)), # H, 1.644um, 0.1" slit, shifted SV data, wrong solution, unstable
     ("N20140801S0183_varAdded.fits", dict()), # H, 1.690um, 0.1" slit
     ("N20141218S0289_varAdded.fits", dict()), # H, 1.710um, 0.1" slit, 2 lines
     ("N20111019S1056_varAdded.fits", dict()), # H, 1.750um, 0.45" slit
@@ -104,12 +102,12 @@ input_pars = [
     ("N20110531S0510_varAdded.fits", dict()), # K, 2.030um, 0.1" slit
     ("N20110715S0523_varAdded.fits", dict()), # K, 2.090um, 0.1" slit
     ("N20160109S0118_varAdded.fits", dict()), # K, 2.115um, 0.15" slit
-    ("N20150613S0087_varAdded.fits", dict()), # K, 2.166um, 0.1" slit, works with best_fit
-    ("N20110618S0031_varAdded.fits", dict()), # K, 2.208um, 0.3" slit, works with best_fit
-    ("N20110923S0569_varAdded.fits", dict()), # K, 2.260um, 0.1" slit, works with best_fit
+    ("N20150613S0087_varAdded.fits", dict()), # K, 2.166um, 0.1" slit
+    ("N20110618S0031_varAdded.fits", dict()), # K, 2.208um, 0.3" slit
+    ("N20110923S0569_varAdded.fits", dict()), # K, 2.260um, 0.1" slit
     ("N20201022S0051_varAdded.fits", dict()), # K, 2.310um, 0.1" slit
-    ("N20160804S0155_varAdded.fits", dict()), # K, 2.350um, 0.1" slit, works with best_fit
-    ##("N20100823S1874_varAdded.fits", dict()), # K, 2.400um, 0.3" slit, SV data, shifted, wrong solution
+    ("N20160804S0155_varAdded.fits", dict()), # K, 2.350um, 0.1" slit
+   ## ("N20100823S1874_varAdded.fits", dict(debug_alternative_centers=True)), # K, 2.400um, 0.3" slit, SV data, shifted, wrong solution, high noise
     ("N20121218S0198_varAdded.fits", dict()), # K, 2.420um, 0.1" slit
     ("N20161217S0001_varAdded.fits", dict()), # K, 2.500um, 0.1" slit, one line, no solution
     # 111 l/mm, LongCam, GS
@@ -118,8 +116,8 @@ input_pars = [
     ("S20040907S0122_varAdded.fits", dict()), # K, 1.975um, 0.1" slit
     ##("S20061227S0095_varAdded.fits", dict()), # K, 2.120um, 0.1" slit, non-standard (Xe only), doesn't work with Ar_Xe list
     ("S20050119S0117_varAdded.fits", dict()), # K, 2.170um, 0.1" slit, one line, no solution
-    ##("S20060716S0045_varAdded.fits", dict()), # K, 2.190um, 0.1" slit, large shift, no solution
-    ("S20050119S0122_varAdded.fits", dict()), # K, 2.300um, 0.1" slit, one line, no solution, bad solution with best_fit
+    ##("S20060716S0045_varAdded.fits", dict(debug_alternative_centers=True)), # K, 2.190um, 0.1" slit, large shift, no solution
+    ("S20050119S0122_varAdded.fits", dict()), # K, 2.300um, 0.1" slit, one line, no solution
 ]
 
 # Tests Definitions ------------------------------------------------------------

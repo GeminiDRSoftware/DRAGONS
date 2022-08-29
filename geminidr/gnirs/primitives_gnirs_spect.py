@@ -33,7 +33,6 @@ class GNIRSSpect(Spect, GNIRS):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs_spect)
 
-    # TODO: for data prior 2015 update WCS? otherwise go to primitives_spect?
     def standardizeWCS(self, adinputs=None, **params):
         """
         This primitive updates the WCS attribute of each NDAstroData extension
@@ -155,12 +154,25 @@ class GNIRSSpect(Spect, GNIRS):
         """
         for ad in adinputs:
             if params["order"] is None:
-                if (ad.disperser(pretty=True).startswith('111') and
-                        ad.camera(pretty=True).startswith('Long')):
-                    params["order"] = 1
-                else:
-                    params["order"] = 3
+                disp = ad.disperser(pretty=True)
+                print(f"disp ={disp}")
+                filt = ad.filter_name(pretty=True)
+                print(f"filt ={filt}")
+                cam = ad.camera(pretty=True)
+                print(f"cam ={cam}")
+                cenwave = ad.central_wavelength(asMicrometers=True)
+                print(f"cenwave ={cenwave}")
 
+                if ((filt == "H" and cenwave >= 1.75) or (filt == "K" and cenwave >= 2.2)) \
+                        and ((cam.startswith('Long') and disp.startswith('32')) or
+                             (cam.startswith('Short') and disp.startswith('111'))):
+                        params["order"] = 1
+                elif disp.startswith('111') and cam.startswith('Long'):
+                        params["order"] = 1
+                else:
+                    print(f"got to else")
+                    params["order"] = 3
+                print(f"oreder={params['order']}")
         adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
 
