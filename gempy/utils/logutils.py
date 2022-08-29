@@ -22,6 +22,26 @@ logging.raiseExceptions = 0
 ll = {'CRITICAL':50, 'ERROR':40, 'WARNING' :30, 'STATUS':25,
       'STDINFO' :21, 'INFO' :20, 'FULLINFO':15, 'DEBUG' :10}
 
+def add_filter(filt, log):
+    """
+    Add given filter to given logger, checking for duplicates first.
+
+    Parameters
+    ----------
+    filt : class inheriting from `logging.Filter`
+        The filter to be added.
+    log : `logging.logger` object.
+        The logger to which the filter is to be added.
+
+    Returns
+    -------
+    None.
+
+    """
+    if sum([isinstance(f, filt) for f in log.filters]) < 1:
+        log.addFilter(filt(log))
+
+
 def customize_log(log=None):
     """
     Sets up custom attributes for logger
@@ -73,8 +93,8 @@ def customize_log(log=None):
     setattr(log, 'fullinfo', cfullinfo)
     setattr(log, 'debug', cdebug)
 
-    if sum([isinstance(filt, DuplicateWarningFilter) for filt in log.filters]) < 1:
-        log.addFilter(DuplicateWarningFilter(log))
+    add_filter(DuplicateWarningFilter, log)
+
     return
 
 def get_logger(name=None):
