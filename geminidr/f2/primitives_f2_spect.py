@@ -11,6 +11,7 @@ from importlib import import_module
 from geminidr.core import Spect
 from .primitives_f2 import F2
 from . import parameters_f2_spect
+from gemini_instruments.f2.lookup import dispersion_offset_mask
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform, wavecal
@@ -119,11 +120,10 @@ class F2Spect(Spect, F2):
             # Apply central wavelength offset
             if ad.dispersion() is None:
                 raise ValueError(f"Unknown dispersion for {ad.filename}")
-            cenwave_offset = self.inst_adlookup.dispersion_and_offset[
-                ad.disperser(pretty=True), ad.filter_name(pretty=True)][1]
             cenwave = (ad.central_wavelength(asNanometers=True) +
-                       abs(ad.dispersion(asNanometers=True)[0]) * cenwave_offset)
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
+                       abs(ad.dispersion(asNanometers=True)[0]) * self._get_cenwave_offset(ad))
+            transform.add_longslit_wcs(ad, central_wavelength=cenwave,
+                                       pointing=ad[0].wcs(1024, 1024))
 
             # Timestamp. Suffix was updated in the super() call
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -134,9 +134,28 @@ class F2Spect(Spect, F2):
                                                    self.inst_lookups).__file__)
 
         if 'ARC' in ad.tags:
-            linelist = 'lowresargon.dat'
+            linelist = 'argon.dat'
+            if ad.disperser(pretty=True) == "HK" and \
+                    ad.filter_name(pretty=True) == "JH":
+                linelist = 'lowresargon_with_2nd_ord.dat'
         else:
             linelist = 'sky.dat'
 
         filename = os.path.join(lookup_dir, linelist)
         return wavecal.LineList(filename)
+
+    def _get_cenwave_offset(self, ad=None):
+        filter = ad.filter_name(pretty=True)
+        if filter in {"HK", "JK"}:
+            filter = ad.filter_name(keepID=True)
+        # The following is needed since after the new HK and JH filters were installed, their WAVELENG
+        # keywords wasn't updated until after the specified date, so the cenwave_offset for the
+        # old filters has to be used.
+        if ad.phu['DATE'] < '9999-99-99':
+            if filter == "JH_G0816":
+                filter = "JH_G0809"
+            if filter == "HK_G0817":
+                filter = "HK_G0806"
+        index = (ad.disperser(pretty=True), filter)
+        mask = dispersion_offset_mask.get(index, None)
+        return mask.cenwaveoffset if mask else None

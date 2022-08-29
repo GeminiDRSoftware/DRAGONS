@@ -4,7 +4,7 @@ import math
 from astrodata import (astro_data_tag, TagSet, astro_data_descriptor,
                        returns_list, Section)
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
-from .lookup import array_properties, nominal_zeropoints, dispersion_and_offset
+from .lookup import array_properties, nominal_zeropoints, dispersion_offset_mask
 
 from ..common import build_group_id
 from .. import gmu
@@ -340,11 +340,14 @@ class AstroDataF2(AstroDataGemini):
         list/float
             The dispersion(s)
         """
-        config = (self.disperser(pretty=True), self.filter_name(pretty=True))
-        if config not in dispersion_and_offset:
+        filter = self.filter_name(pretty=True)
+        if filter in {"HK", "JK"}:
+            filter = self.filter_name(keepID=True)
+        config = (self.disperser(pretty=True), filter)
+        if config not in dispersion_offset_mask:
             return None
-
-        dispersion = float(dispersion_and_offset[config][0])
+        mask = dispersion_offset_mask.get(config, None)
+        dispersion = float(mask.dispersion if mask else None)
 
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters" # By default
@@ -359,7 +362,7 @@ class AstroDataF2(AstroDataGemini):
                 output_units = "angstroms"
 
         if dispersion is not None:
-            dispersion = gmu.convert_units('angstroms', dispersion, output_units)
+            dispersion = gmu.convert_units('nanometers', dispersion, output_units)
 
             if not self.is_single:
                 dispersion = [dispersion] * len(self)
@@ -367,7 +370,7 @@ class AstroDataF2(AstroDataGemini):
         return dispersion
 
     @astro_data_descriptor
-    def filter_name(self, stripID=False, pretty=False):
+    def filter_name(self, stripID=False, pretty=False, keepID=False):
         """
         Returns the name of the filter(s) used.  The component ID can be
         removed with either 'stripID' or 'pretty'.  If a combination of filters
@@ -384,6 +387,8 @@ class AstroDataF2(AstroDataGemini):
         pretty : bool
             Parses the combination of filters to return a single string value
             wi the "effective" filter.
+        keepID: bool
+            Same as pretty but with the component ID
 
         Returns
         -------
@@ -414,15 +419,26 @@ class AstroDataF2(AstroDataGemini):
             filter3 = None
 
         if stripID or pretty:
-            filter1 = gmu.removeComponentID(filter1)
-            filter2 = gmu.removeComponentID(filter2)
+                filter1 = gmu.removeComponentID(filter1)
+                filter2 = gmu.removeComponentID(filter2)
+                if filter3:
+                    filter3 = gmu.removeComponentID(filter3)
+        if keepID:
+            def filter_with_id(fltname, fltid):
+                return fltname if fltid is None else (fltname + "_" + fltid)
+
+            filter1 = filter_with_id(gmu.removeComponentID(filter1),
+                                          gmu.getComponentID(filter1))
+            filter2 = filter_with_id(gmu.removeComponentID(filter2),
+                                          gmu.getComponentID(filter2))
             if filter3:
-                filter3 = gmu.removeComponentID(filter3)
+                filter3 = filter_with_id(gmu.removeComponentID(filter3),
+                                          gmu.getComponentID(filter3))
 
         filter = [filter1, filter2]
         if filter3:
             filter.append(filter3)
-        if pretty:
+        if pretty or keepID:
             # Remove filters with the name 'open'
             if 'open' in filter2 or 'Open' in filter2:
                 del filter[1]
