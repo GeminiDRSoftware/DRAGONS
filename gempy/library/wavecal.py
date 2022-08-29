@@ -899,11 +899,6 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
                                             max_deviation=max_dev)
 
-    # with open("/Users/osmirnov/data_reduction/NIR_LS_wvl/GNIRS_wvl_cal_results.dat",'a') as datFile:
-    #     datFile.write(f"{ext.filename} {ext.central_wavelength(asNanometers=True):.1f} {ext.dispersion(asNanometers=True):.3f} {config.min_snr:.0f} "
-    #               f" {config.order} {nmatched} {rms:.3f} {m_final.degree} {m_final(511):.1f}"
-    #               f" {((m_final(511)-ext.central_wavelength(asNanometers=True))):.1f} {(dw-ext.dispersion(asNanometers=True)):.3f} \n")
-
     if len(incoords) > 1:
         inv_rms = np.std(m_inverse(m_final(incoords)) - incoords)
         log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")

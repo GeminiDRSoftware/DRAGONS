@@ -1007,7 +1007,7 @@ class AstroDataGemini(AstroData):
             return exposure_time
 
     @astro_data_descriptor
-    def filter_name(self, stripID=False, pretty=False):
+    def filter_name(self, stripID=False, pretty=False, keepID=False):
         """
         Returns the name of the filter(s) used.  The component ID can be
         removed with either 'stripID' or 'pretty'.  If a combination of filters

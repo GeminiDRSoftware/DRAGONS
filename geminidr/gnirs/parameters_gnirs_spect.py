@@ -8,10 +8,6 @@ def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
     return True
 
-class determineDistortionConfig(parameters_spect.determineDistortionConfig):
-    def setDefaults(self):
-        self.id_only = True
-
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     def setDefaults(self):
         self.order = None
