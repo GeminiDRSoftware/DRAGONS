@@ -1,6 +1,5 @@
 import os
 from glob import glob
-import logging
 import pytest
 
 import numpy as np
@@ -47,8 +46,6 @@ def test_write_spectrum_formats(ad, output_format, extension, input_format,
 def test_write_spectrum_various_units(ad, xunits, yunits, change_working_dir, caplog):
     """Test writing with changes of units"""
     with change_working_dir():
-        log = logging.getLogger('geminidr')
-        log.warning('Emit a fake warning to reset DuplicateWarningFilter')
         p = GMOSLongslit([ad])
         w0 = ad[0].wcs(0)
         mismatched_units = (yunits is not None and
@@ -59,7 +56,7 @@ def test_write_spectrum_various_units(ad, xunits, yunits, change_working_dir, ca
         unit_conversion_failure = any("Cannot convert spectrum" in r.message
                                       for r in caplog.records)
         assert mismatched_units == unit_conversion_failure
-        t = Table.read(ad.filename.replace(".fits", "_001.dat"),
+        t = Table.read(ad.filename.replace(".fits", f"_001.dat"),
                        format="ascii.basic")
         assert len(t) == ad[0].data.size
         assert len(t.colnames) == 3
