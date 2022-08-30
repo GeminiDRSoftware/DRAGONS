@@ -28,6 +28,7 @@ import warnings
 import numpy as np
 from astropy.modeling import fitting, models
 from astropy.stats import sigma_clip, sigma_clipped_stats
+from matplotlib import pyplot as plt
 from scipy import interpolate, optimize, signal
 
 from astrodata import NDAstroData
@@ -404,6 +405,7 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
 
     extract_slice = slice(max(0, int(center + 1 - 0.5 * nsum)),
                           min(npix, int(center + 1 + 0.5 * nsum)))
+    print(f"extract_slice = {extract_slice}")
     data, mask, variance = at.transpose_if_needed(
         ext.data, ext.mask, ext.variance,
         transpose=(dispersion_axis == 0), section=extract_slice)
@@ -913,6 +915,25 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
                     where=variance > 0)
+
+     # debug, remove -OS
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.plot(wavelet_transformed_data[0])
+    fname = "/Users/osmirnov/data_reduction/NIR_LS_wvl/output/signal.png"
+    plt.savefig(fname)
+
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.plot(np.sqrt(variance))
+    fname = "/Users/osmirnov/data_reduction/NIR_LS_wvl/output/noise.png"
+    plt.savefig(fname)
+
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.plot(snr)
+    fname = "/Users/osmirnov/data_reduction/NIR_LS_wvl/output/snr.png"
+    plt.savefig(fname)
 
     peaks = [x for x in peaks if snr[x] > min_snr]
 

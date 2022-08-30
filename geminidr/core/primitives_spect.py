@@ -959,13 +959,14 @@ class Spect(Resample):
                             pass
                         else:
                             fwidth = float(wavecal['coefficients'][index])
+                            print(f"fwidth from wavecal={fwidth}")
 
                 # This is identical to the code in determineWavelengthSolution()
                 if fwidth is None:
                     data, _, _, _ = tracing.average_along_slit(ext, center=None, nsum=nsum)
                     fwidth = tracing.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
-
+                print(f"fwidth final={fwidth}")
                 if initial_peaks is None:
                     data, mask, variance, extract_slice = tracing.average_along_slit(ext, center=None, nsum=nsum)
                     log.stdinfo("Finding peaks by extracting {}s {} to {}".
@@ -973,14 +974,17 @@ class Spect(Resample):
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
+                    print(f"widths (used for finding peaks) = {widths}")
                     initial_peaks, _ = tracing.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr)
                     log.stdinfo(f"Found {len(initial_peaks)} peaks")
+                    print(f"initial peaks: {initial_peaks}")
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
                 #.data[:,0:1500]
+                print(f"cwidth (used for tracing) = {max(int(fwidth),5)}")
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1 - dispaxis,
                                                             start=start, initial=initial_peaks,
                                                             rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
