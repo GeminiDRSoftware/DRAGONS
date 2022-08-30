@@ -2921,7 +2921,7 @@ class Spect(Resample):
                     x_arr.append(np.arange(len(masked_data)))
                     masked_data_arr.append(masked_data)
                     weights_arr.append(weights)
-                    maxy = max(masked_data)
+                    maxy = masked_data.max()
                     threshold_mask_arr.append(np.where(masked_data/maxy < ui_params.threshold, 1, 0))
                 return { "y": masked_data_arr, "x": x_arr,
                          "weights": weights_arr, "threshold_mask": threshold_mask_arr }
