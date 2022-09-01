@@ -2871,12 +2871,17 @@ class Spect(Resample):
                 admos = ad
                 mosaicked = False
 
+            saved_thresholds = list()  # for clipping values in the final eval, save the calculated thresholds when
+                                       # we reconstruct points
+
             # This will loop over MOS slits or XD orders
             def reconstruct_points(ui_params):
                 masked_data_arr = list()
                 x_arr = list()
                 weights_arr = list()
                 threshold_mask_arr = list()
+                saved_thresholds.clear()
+
                 for ext in admos:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     direction = "row" if dispaxis == 1 else "column"
@@ -2890,9 +2895,9 @@ class Spect(Resample):
 
                     masked_data = np.ma.masked_array(data, mask=mask)
                     weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
-                    center = (extract_slice.start + extract_slice.stop) // 2
                     # uncomment this to use if we want to calculate the waves as our x inputs
                     # and wire it up appropriately
+                    # center = (extract_slice.start + extract_slice.stop) // 2
                     # waves = ext.wcs(range(len(masked_data)),
                     #                 np.full_like(masked_data, center))[0]
 
@@ -2923,6 +2928,7 @@ class Spect(Resample):
                     weights_arr.append(weights)
                     maxy = masked_data.max()
                     threshold_mask_arr.append(np.where(masked_data/maxy < ui_params.threshold, 1, 0))
+                    saved_thresholds.append(maxy * ui_params.threshold)
                 return { "y": masked_data_arr, "x": x_arr,
                          "weights": weights_arr, "threshold_mask": threshold_mask_arr }
 
@@ -2940,6 +2946,7 @@ class Spect(Resample):
             masked_data_arr = data["y"]
             x_arr = data["x"]
             weights_arr = data["weights"]
+            threshold_masks_arr = data["threshold_mask"]
 
             fit1d_arr = list()
 
@@ -2978,13 +2985,14 @@ class Spect(Resample):
                 fit1d_arr = visualizer.results()
             else:
                 for ext, masked_data, x, weights, threshold_mask \
-                        in zip(admos, masked_data_arr, x_arr, weights_arr, data["threshold_mask"]):
+                        in zip(admos, masked_data_arr, x_arr, weights_arr, threshold_masks_arr):
                     masked_data.mask |= (DQ.no_data * threshold_mask == 1)
                     fitted_data = fit_1D(masked_data, points=x, weights=weights,
                                          **fit1d_params)
                     fit1d_arr.append(fitted_data)
 
-            for ext, fitted_data, x in zip(admos, fit1d_arr, x_arr):
+            for ext, fitted_data, x, threshold_mask, masked_data, threshold_value \
+                    in zip(admos, fit1d_arr, x_arr, threshold_masks_arr, masked_data_arr, saved_thresholds):
                 if not mosaicked:
                     # In the case where this was run interactively, the resulting fit has pre-masked points (x).
                     # This happens before the interactive code builds the fit_1D.  Using the default evaluate()
@@ -2996,17 +3004,26 @@ class Spect(Resample):
                     # of the x values to get a consistent and correctly-sized output.
                     fdeval = fitted_data.evaluate(points=x)
                     flat_data = np.tile(fdeval, (ext.shape[1-dispaxis], 1))
+                    # flat_mask = at.transpose_if_needed(
+                    #     np.tile(np.where(fdeval / fdeval.max() < threshold,
+                    #                      DQ.unilluminated, DQ.good),
+                    #             (ext.shape[1-dispaxis], 1)).astype(DQ.datatype),
+                    #     transpose=(dispaxis == 0))[0]
                     flat_mask = at.transpose_if_needed(
-                        np.tile(np.where(fdeval / fdeval.max() < threshold,
+                        np.tile(np.where(threshold_mask > 0,
                                          DQ.unilluminated, DQ.good),
                                 (ext.shape[1-dispaxis], 1)).astype(DQ.datatype),
                         transpose=(dispaxis == 0))[0]
                     ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis == 0))[0])
-                    ext.data[flat_mask>0] = threshold
+
+                    ext.data[flat_mask>0] = threshold_value
+
                     if ext.mask is None:
                         ext.mask = flat_mask
                     else:
                         ext.mask |= flat_mask
+
+                    pass
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
