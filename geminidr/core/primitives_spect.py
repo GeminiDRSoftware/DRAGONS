@@ -2871,15 +2871,19 @@ class Spect(Resample):
                 admos = ad
                 mosaicked = False
 
+            masked_data_arr = list()
+            x_arr = list()
+            weights_arr = list()
+            threshold_mask_arr = list()
             saved_thresholds = list()  # for clipping values in the final eval, save the calculated thresholds when
                                        # we reconstruct points
 
             # This will loop over MOS slits or XD orders
             def reconstruct_points(ui_params):
-                masked_data_arr = list()
-                x_arr = list()
-                weights_arr = list()
-                threshold_mask_arr = list()
+                masked_data_arr.clear()
+                x_arr.clear()
+                weights_arr.clear()
+                threshold_mask_arr.clear()
                 saved_thresholds.clear()
 
                 for ext in admos:
@@ -2943,10 +2947,6 @@ class Spect(Resample):
             uiparams.fields['nsum'].max = npix
 
             data = reconstruct_points(uiparams)
-            masked_data_arr = data["y"]
-            x_arr = data["x"]
-            weights_arr = data["weights"]
-            threshold_masks_arr = data["threshold_mask"]
 
             fit1d_arr = list()
 
@@ -2997,7 +2997,7 @@ class Spect(Resample):
                     fit1d_arr.append(fitted_data)
 
             for ext, fitted_data, x, threshold_mask, masked_data, threshold_value \
-                    in zip(admos, fit1d_arr, x_arr, threshold_masks_arr, masked_data_arr, saved_thresholds):
+                    in zip(admos, fit1d_arr, x_arr, threshold_mask_arr, masked_data_arr, saved_thresholds):
                 if not mosaicked:
                     # In the case where this was run interactively, the resulting fit has pre-masked points (x).
                     # This happens before the interactive code builds the fit_1D.  Using the default evaluate()
