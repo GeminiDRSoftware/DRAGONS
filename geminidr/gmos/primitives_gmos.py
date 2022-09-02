@@ -72,6 +72,12 @@ class GMOS(Gemini, CCD):
             if instrument == ad.instrument() and \
                     validfrom.date() <= ad.ut_date() <= validto.date():
 
+                if ad.detector_roi_setting() == 'Central Stamp':
+                    badamplist = [x-5 for x in badamplist]
+                    badamplist = [x for x in badamplist if x>=1 and x<=2]
+                    if len(badamplist) == 0:
+                        continue
+
                 ampsstr = ', '.join([str(i) for i in badamplist])
                 plural = 's' if len(ampsstr) > 1 else ''
                 log.status(f'Masking amp{plural} {ampsstr}')
