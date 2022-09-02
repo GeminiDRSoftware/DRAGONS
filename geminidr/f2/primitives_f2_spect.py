@@ -146,7 +146,7 @@ class F2Spect(Spect, F2):
 
     def _get_cenwave_offset(self, ad=None):
         filter = ad.filter_name(pretty=True)
-        if filter in {"HK", "JK"}:
+        if filter in {"HK", "JH"}:
             filter = ad.filter_name(keepID=True)
         # The following is needed since after the new HK and JH filters were installed, their WAVELENG
         # keywords wasn't updated until after the specified date, so the cenwave_offset for the

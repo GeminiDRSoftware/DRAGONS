@@ -341,7 +341,7 @@ class AstroDataF2(AstroDataGemini):
             The dispersion(s)
         """
         filter = self.filter_name(pretty=True)
-        if filter in {"HK", "JK"}:
+        if filter in {"HK", "JH"}:
             filter = self.filter_name(keepID=True)
         config = (self.disperser(pretty=True), filter)
         if config not in dispersion_offset_mask:
