@@ -2936,7 +2936,7 @@ class Spect(Resample):
             config.update(**params)
             uiparams = UIParameters(config, reinit_params=["center", "nsum", "threshold"])
 
-            # let's updaet teh max center to something reasonable
+            # let's update the max center to something reasonable
             dispaxis = 2 - ad[0].dispersion_axis()
             npix = ad[0].shape[1 - dispaxis]
             uiparams.fields['center'].max = npix
@@ -2984,10 +2984,16 @@ class Spect(Resample):
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fit1d_arr = visualizer.results()
             else:
-                for ext, masked_data, x, weights, threshold_mask \
-                        in zip(admos, masked_data_arr, x_arr, weights_arr, threshold_masks_arr):
-                    masked_data.mask |= (DQ.no_data * threshold_mask == 1)
-                    fitted_data = fit_1D(masked_data, points=x, weights=weights,
+                for ext, masked_data, x, weights, threshold_mask, threshold_value \
+                        in zip(admos, masked_data_arr, x_arr, weights_arr, threshold_masks_arr,
+                               saved_thresholds):
+                    # TODO pending a decision on my fix for interactive vs non-interactive.  This used to
+                    # pass masked outputs to fit_1D with full x/weight arrays.  Now I am indexing out goodpix
+                    # as is done in interactive and it appears to make a big difference to the final results.
+                    # masked_data.mask |= (DQ.no_data * threshold_mask == 1)
+                    masked_data.mask |= np.where(masked_data.data < threshold_value, True, False)
+                    goodpix = masked_data.mask == False
+                    fitted_data = fit_1D(masked_data[goodpix], points=x[goodpix], weights=weights[goodpix],
                                          **fit1d_params)
                     fit1d_arr.append(fitted_data)
 
@@ -3004,6 +3010,7 @@ class Spect(Resample):
                     # of the x values to get a consistent and correctly-sized output.
                     fdeval = fitted_data.evaluate(points=x)
                     flat_data = np.tile(fdeval, (ext.shape[1-dispaxis], 1))
+                    # TODO pending a decision on my fix for interactive vs non-interactive
                     # flat_mask = at.transpose_if_needed(
                     #     np.tile(np.where(fdeval / fdeval.max() < threshold,
                     #                      DQ.unilluminated, DQ.good),
