@@ -197,10 +197,11 @@ class GNIRSLongslit(GNIRSSpect):
             mdf['slitsize_mx'][0] *= slit_correction_factor / arcsec_to_mm
             mdf['slitsize_my'][0] /= arcsec_to_mm
 
-            extra_cols = Table(np.array([arcsec, pixels]),
-                               names=('slitlength_arcsec',
-                                      'slitlength_pixels'))
-            ad.MDF = hstack([mdf, extra_cols], join_type='inner')
+            if 'slitlength_arcsec' not in mdf.columns:
+                extra_cols = Table(np.array([arcsec, pixels]),
+                                   names=('slitlength_arcsec',
+                                          'slitlength_pixels'))
+                ad.MDF = hstack([mdf, extra_cols], join_type='inner')
 
             log.stdinfo('Converted slit sizes from arcseconds to millimeters '
                         f'in {ad.filename}.')
