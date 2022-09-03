@@ -21,7 +21,6 @@ from astrodata.testing import ad_compare
 
 from geminidr.niri.primitives_niri_image import NIRIImage
 
-TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 logfilename = 'test_standardize.log'
 
 
@@ -53,37 +52,52 @@ class TestStandardize:
         """Run once after every test."""
         pass
 
-    @pytest.mark.xfail(reason="Test needs revision", run=False)
-    def test_addDQ(self):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                         'N20070819S0104_prepared.fits'))
-        p = NIRIImage([ad])
-        ad = p.addDQ()[0]
-        assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                           'N20070819S0104_dqAdded.fits'))
+    @pytest.mark.niri
+    @pytest.mark.regression
+    @pytest.mark.preprocessed_data
+    def test_addDQ(self, change_working_dir, path_to_refs):
 
-    @pytest.mark.xfail(reason="Test needs revision", run=False)
-    def test_addIllumMaskToDQ(self):
-        pass
+        with change_working_dir():
+            ad = astrodata.open(os.path.join(path_to_refs,
+                                             'N20070819S0104_prepared.fits'))
+            p = NIRIImage([ad])
+            adout = p.addDQ()[0]
+        assert ad_compare(adout,
+                          astrodata.open(os.path.join(path_to_refs,
+                                           'N20070819S0104_dqAdded.fits')))
 
-    @pytest.mark.xfail(reason="Test needs revision", run=False)
-    def test_addMDF(self):
-        pass
+    @pytest.mark.niri
+    @pytest.mark.regression
+    @pytest.mark.preprocessed_data
+    def test_addIllumMaskToDQ(self, change_working_dir, path_to_inputs,
+                              path_to_refs):
 
-    @pytest.mark.xfail(reason="Test needs revision", run=False)
-    def test_validateData(self):
-        # This is taken care of by prepare
-        pass
+        with change_working_dir():
+            ad = astrodata.open(os.path.join(path_to_refs,
+                                             'N20070819S0104_dqAdded.fits'))
 
-    @pytest.mark.xfail(reason="Test needs revision", run=False)
-    def test_addVAR(self):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                         'N20070819S0104_ADUToElectrons.fits'))
-        p = NIRIImage([ad])
-        ad = p.addVAR(read_noise=True, poisson_noise=True)[0]
-        assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                           'N20070819S0104_varAdded.fits'))
+            p = NIRIImage([ad])
+            adout = p.addIllumMaskToDQ()[0]
 
+        assert ad_compare(adout,
+                          astrodata.open(os.path.join(
+                              path_to_refs,
+                              'N20070819S0104_illumMaskAdded.fits')))
+
+    @pytest.mark.niri
+    @pytest.mark.regression
+    @pytest.mark.preprocessed_data
+    def test_addVAR(self, change_working_dir, path_to_inputs, path_to_refs):
+
+        with change_working_dir():
+            ad = astrodata.open(os.path.join(path_to_inputs,
+                                'N20070819S0104_ADUToElectrons.fits'))
+            p = NIRIImage([ad])
+            adout = p.addVAR(read_noise=True, poisson_noise=True)[0]
+        assert ad_compare(adout, astrodata.open(os.path.join(path_to_refs,
+                                             'N20070819S0104_varAdded.fits')))
+
+    @pytest.mark.niri
     @pytest.mark.regression
     def test_prepare(self, change_working_dir, path_to_inputs,
                      path_to_refs):
