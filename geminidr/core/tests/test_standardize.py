@@ -17,8 +17,10 @@ import pytest
 
 import astrodata
 from gempy.utils import logutils
-from astrodata.testing import ad_compare
+from astrodata.testing import ad_compare, download_from_archive
 
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
+from geminidr.f2.primitives_f2_longslit import F2Longslit
 from geminidr.niri.primitives_niri_image import NIRIImage
 
 logfilename = 'test_standardize.log'
@@ -96,6 +98,32 @@ class TestStandardize:
             adout = p.addVAR(read_noise=True, poisson_noise=True)[0]
         assert ad_compare(adout, astrodata.open(os.path.join(path_to_refs,
                                              'N20070819S0104_varAdded.fits')))
+
+    @pytest.mark.dragons_remote_data
+    @pytest.mark.parametrize('filename,instrument,inst_class',
+                             [('S20131002S0090.fits', 'F2', F2Longslit),
+                              ('N20190501S0054.fits', 'GMOS', GMOSLongslit)])
+    def test_makeIRAFCompatible(self, filename, instrument, inst_class):
+
+        # Keywords from gempy/gemini/irafcompat.py.
+        GMOS_keywords = ('GPREPARE', 'GGAIN', 'GAINMULT',
+                         'CCDSUM')
+
+        p = inst_class([astrodata.open(download_from_archive(filename))])
+        p.prepare()
+        p.ADUToElectrons()
+        ad = p.makeIRAFCompatible()[0]
+
+        if instrument == 'F2':
+            assert ad.phu['NSCIEXT'] == 1
+        elif instrument == 'GMOS':
+            assert ad.phu['NSCIEXT'] == 12
+
+            # Check that GMOS has had keywords added correctly.
+            # TODO (DB): do a full GMOS reduction to check keywords related
+            # to flat|sky|bias correction, mosaicing, etc..
+            for kw in GMOS_keywords:
+                assert ad.phu[kw]
 
     @pytest.mark.niri
     @pytest.mark.regression
