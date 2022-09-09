@@ -1073,6 +1073,8 @@ class Spect(Resample):
         slit_center : int or float
             The expected position of the center of the slit on the detector, in
             pixels.
+        suffix : str
+            Suffix to be added to output files.
         debug : bool, Default: False
             Whether to print out additional information while running.
 
@@ -1085,6 +1087,7 @@ class Spect(Resample):
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        sfx = params["suffix"]
 
         # Parse parameters
         debug = params['debug']
@@ -1467,6 +1470,8 @@ class Spect(Resample):
                     if debug:
                         log.debug('Appending table below as "SLITEDGE".')
                         log.fullinfo(ext.SLITEDGE)
+
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -2734,6 +2739,8 @@ class Spect(Resample):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             Spectra with unilluminated regions.
+        suffix : str
+            Suffix to append to the filename.
 
         Returns
         -------
@@ -2744,6 +2751,7 @@ class Spect(Resample):
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        sfx = params["suffix"]
 
         # Parse parameters
         debug = params['debug']
@@ -2803,6 +2811,9 @@ class Spect(Resample):
                         plt.show()
 
                 # TODO: Handle MOS data.
+
+            # Update the filename.
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
