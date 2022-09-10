@@ -10,7 +10,7 @@ from .. import gmu
 
 
 class AstroDataF2(AstroDataGemini):
-    __keyword_dict = dict(central_wavelength='GRWLEN',
+    __keyword_dict = dict(central_wavelength='WAVELENG',
                           disperser='GRISM',
                           dispersion='DISPERSI',
                           focal_plane_mask='MOSPOS',
