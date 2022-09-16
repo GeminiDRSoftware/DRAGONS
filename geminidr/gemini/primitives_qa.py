@@ -405,6 +405,8 @@ class QA(PrimitivesBASE):
                 # If displaying, make a mask to display along with image
                 # that marks which stars were used
                 for ext, measurement in zip(ad, report.measurements):
+                    if len(measurement.colnames) == 0:  # likely an unilluminated amp
+                        continue
                     circles = [(x, y, 16) for x, y in zip(measurement["x"], measurement["y"])]
                     iq_overlays.append(circles)
 
