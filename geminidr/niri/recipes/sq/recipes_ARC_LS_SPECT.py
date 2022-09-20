@@ -10,6 +10,14 @@ Default is "makeProcessedArc".
 recipe_tags = {'NIRI', 'SPECT', 'LS', 'ARC'}
 
 def makeProcessedArc(p):
+    """
+    Process NIRI longslist arc and calculate wavelength and distortion
+    solutions.  No stacking, arcs are processed individually if more than
+    one is given.
+
+    Inputs are:
+      * raw arc - no other calibrations required.
+    """
     p.prepare()
     p.addDQ()
     p.ADUToElectrons()
