@@ -32,5 +32,14 @@ class removeFirstFrameConfig(config.Config):
     remove_first = config.Field("Remove first frame?", bool, True)
     remove_files = config.ListField("List of files to remove", str, None, optional=True)
 
+class removePatternNoiseConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_patternNoiseRemoved", optional=True)
+    force = config.Field("Force cleaning even if noise increases?", bool, False)
+    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
+    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
+    pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)
+    pattern_y_size = config.RangeField("Pattern y size (pixels)", int, 4, min=4)
+    subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
+
 class separateFlatsDarksConfig(config.Config):
     pass
