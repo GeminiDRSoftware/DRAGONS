@@ -474,13 +474,12 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if dark is None:
-                if 'sq' not in self.mode and do_cal != 'force':
-                    log.warning("No changes will be made to {}, since no "
-                                "dark was specified".format(ad.filename))
-                    continue
+                if 'sq' in self.mode or do_cal == 'force':
+                    raise OSError("No processed dark listed for "
+                                  f"{ad.filename}")
                 else:
-                    log.warning(f"{ad.filename}: no dark was specified. "
-                                "Continuing.")
+                    log.warning(f"No changes will be made to {ad.filename}, "
+                                "since no dark was specified")
                     continue
 
             # Check the inputs have matching binning, shapes & units
