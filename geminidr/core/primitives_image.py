@@ -135,14 +135,12 @@ class Image(Preprocess, Register, Resample):
             # At this point, we definitely want to do a fringe correction
             # so we'd better have a fringe frame!
             if fringe is None:
-                if 'sq' not in self.mode and do_cal != 'force':
-                    log.warning("No changes will be made to {}, since no "
-                                "fringe frame has been specified".
-                                format(ad.filename))
-                    continue
+                if 'sq' in self.mode or do_cal == 'force':
+                    raise OSError("No processed fringe listed for "
+                                  f"{ad.filename}")
                 else:
-                    log.warning(f"{ad.filename}: no fringe was specified. "
-                                "Continuing.")
+                    log.warning(f"No changes will be made to {ad.filename}, "
+                                "since no fringe was specified")
                     continue
 
             # Check the inputs have matching filters, binning, and shapes

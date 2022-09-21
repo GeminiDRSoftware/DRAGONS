@@ -2508,12 +2508,12 @@ class Spect(Resample):
                 continue
 
             if std is None:
-                if 'sq' in self.mode and do_cal != 'force':
-                    raise OSError('No processed standard listed for {}'.
-                                  format(ad.filename))
+                if 'sq' in self.mode or do_cal == 'force':
+                    raise OSError("No processed stndard listed for "
+                                  f"{ad.filename}")
                 else:
-                    log.warning(f"{ad.filename}: no standard was specified. "
-                                "Continuing.")
+                    log.warning(f"No changes will be made to {ad.filename}, "
+                                "since no standard was specified")
                     continue
 
             origin_str = f" (obtained from {origin})" if origin else ""
