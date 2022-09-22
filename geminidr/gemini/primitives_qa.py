@@ -351,8 +351,9 @@ class QA(PrimitivesBASE):
                         if separate_ext:
                             self.log.warning(f"No good sources found in {extid}")
                         continue
+                    else:
+                        has_sources = True
 
-                    has_sources = True
                     if separate_ext:
                         report.report(results, header=extid)
                         if not is_ao:
@@ -373,14 +374,14 @@ class QA(PrimitivesBASE):
                         report.report(results)
 
                     qad = {"band": report.band, "requested": report.reqband,
-                           "delivered": results["fwhm"],
-                           "delivered_error": results["fwhm_std"],
-                           "ellipticity": results["elip"],
-                           "ellip_error": results["elip_std"],
-                           "zenith": results["zfwhm"],
-                           "zenith_error": results["zfwhm_std"],
-                           "is_ao": is_ao, "ao_seeing": results["ao_seeing"],
-                           "strehl": results["strehl"],
+                           "delivered": results.get("fwhm"),
+                           "delivered_error": results.get("fwhm_std"),
+                           "ellipticity": results.get("elip"),
+                           "ellip_error": results.get("elip_std"),
+                           "zenith": results.get("zfwhm"),
+                           "zenith_error": results.get("zfwhm_std"),
+                           "is_ao": is_ao, "ao_seeing": results.get("ao_seeing"),
+                           "strehl": results.get("strehl"),
                            "comment": report.comments}
                     qap.adcc_report(ad, "iq", qad)
 
@@ -538,6 +539,7 @@ class QAReport:
         self.results = []
         self.comments = []
         self.fitsdict_items = ["percentile_band", "comment"]
+        self.warning = ''
 
     @staticmethod
     def bandstr(band):
@@ -570,10 +572,9 @@ class QAReport:
         cmp = lambda x, y: (x > y) - (x < y)
 
         log = self.log
-        self.warning = ''
         if self.limit_dict is None or value is None:
             return
-        simple &= unc is not None
+        simple |= unc is None
 
         if simple:
             # Straightfoward determination of which band the measured value
@@ -1103,6 +1104,8 @@ class IQReport(QAReport):
                                 "pa": float(pa.mean()), "pa_std": float(pa.std())})
             else:
                 results.update({"elip": None, "elip_std": None})
+
+        if t or self.is_ao:
             results["adaptive_optics"] = self.is_ao
 
             results["ao_seeing"] = self.ao_seeing
@@ -1190,7 +1193,7 @@ class IQReport(QAReport):
                 body.append(('Ellipticity:', '{:.3f} +/- {:.3f}'.
                              format(results["elip"], results["elip_std"])))
             if self.is_ao:
-                if results["strehl"]:
+                if results.get("strehl"):
                     body.append(('Strehl ratio:', '{:.3f} +/- {:.3f}'.
                                  format(results["strehl"], results["strehl_std"])))
                 else:
@@ -1218,7 +1221,7 @@ class IQReport(QAReport):
         else:
             body.append(('(Requested IQ could not be determined)', ''))
 
-        if results.get("elip", 0) is not None and results.get("elip") > 0.1:
+        if results.get("elip", 0) > 0.1:
             body.append(('', 'WARNING: high ellipticity'))
             self.comments.append('High ellipticity')
             if 'NON_SIDEREAL' in self.ad_tags:
