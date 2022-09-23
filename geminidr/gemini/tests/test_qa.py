@@ -76,7 +76,6 @@ def test_measureCC(caplog, ad):
     caplog.set_level(logging.DEBUG)
     p = GMOSImage([ad])
     ad = p.measureCC()[0]
-    ad.phu['REQCC'] = '70-percentile'
     correct = [27.25, None, 27.21, 27.26, 27.24, None]
     for ext, cv in zip(ad, correct):
         rv = ext.hdr.get('MEANZP')

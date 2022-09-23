@@ -112,6 +112,7 @@ class QA(PrimitivesBASE):
 
             # Collapse extension-by-extension numbers if multiple extensions
             if len(ad) > 1:
+                report.reset_text()  # clear comments for final report
                 results = report.calculate_metric('all')
 
             if not separate_ext:
@@ -249,6 +250,7 @@ class QA(PrimitivesBASE):
 
             # Collapse extension-by-extension numbers if multiple extensions
             if len(ad) > 1:
+                report.reset_text()  # clear comments for final report
                 results = report.calculate_metric('all')
 
             if results:
@@ -367,6 +369,7 @@ class QA(PrimitivesBASE):
                 # Need one of these in order to make a report
                 if has_sources or report.ao_seeing:
                     if len(ad) > 1:
+                        report.reset_text()  # clear comments for final report
                         results = report.calculate_metric('all', ao_seeing_fn=ao_seeing_fn)
 
                     if not separate_ext:
@@ -536,8 +539,12 @@ class QAReport:
         self.band = None
         self.measurements = []
         self.results = []
-        self.comments = []
         self.fitsdict_items = ["percentile_band", "comment"]
+        self.reset_text()
+
+    def reset_text(self):
+        """Clear comments and warning"""
+        self.comments = []
         self.warning = ''
 
     @staticmethod
