@@ -16,7 +16,10 @@ import astrodata, gemini_instruments
 import pytest
 import logging
 
+from astrodata.testing import download_from_archive
 from geminidr.gmos.primitives_gmos_image import GMOSImage
+from geminidr.niri.primitives_niri_image import NIRIImage
+
 
 # --- Fixtures ---
 @pytest.fixture
@@ -140,3 +143,30 @@ def test_measureIQ(caplog, ad):
         iqwarn |= 'WARNING: IQ requirement not met' in rec.message
     assert found, 'Did not find "IQ range" line in log'
     assert iqwarn, 'NO IQ warning after edit'
+
+
+@pytest.mark.dragons_remote_data
+def test_measureIQ_no_objcat_AO(caplog):
+    """Confirm we get a report with AO seeing if no OBJCAT"""
+    caplog.set_level(logging.DEBUG)
+    ad = astrodata.open(download_from_archive("N20131215S0156.fits"))
+    p = NIRIImage([ad])
+    p.measureIQ()[0]
+
+    found1 = found2 = False
+    for rec in caplog.records:
+        if "No OBJCAT" in rec.message:
+            found1 = True
+        elif "Zenith-corrected" in rec.message:
+            found2 = True
+            assert float(rec.message.split()[5]) == 0.796
+    assert found1, "No warning about missing OBJCAT"
+    assert found2, "Did not find IQ value"
+
+
+@pytest.mark.dragons_remote_data
+def test_measureIQ_no_objcat(caplog):
+    """Confirm the primitive doesn't crash with no OBJCAT"""
+    ad = astrodata.open(download_from_archive("N20180105S0064.fits"))
+    p = GMOSImage([ad])
+    p.measureIQ()[0]
