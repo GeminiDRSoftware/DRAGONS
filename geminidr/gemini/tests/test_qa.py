@@ -164,8 +164,16 @@ def test_measureIQ_no_objcat_AO(caplog):
 
 
 @pytest.mark.dragons_remote_data
-def test_measureIQ_no_objcat(caplog):
+def test_measureIQ_no_objcat():
     """Confirm the primitive doesn't crash with no OBJCAT"""
     ad = astrodata.open(download_from_archive("N20180105S0064.fits"))
     p = GMOSImage([ad])
     p.measureIQ()[0]
+
+
+@pytest.mark.dragons_remote_data
+def test_measureBG_no_zeropoint(caplog):
+    """Confirm the primitive doesn't crash with no nominal_photometric_zeropoint"""
+    ad = astrodata.open(download_from_archive("N20131215S0152.fits"))
+    p = NIRIImage([ad])
+    p.measureBG()[0]
