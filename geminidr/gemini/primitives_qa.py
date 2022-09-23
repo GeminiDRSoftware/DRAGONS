@@ -810,7 +810,7 @@ class BGReport(QAReport):
 
         body = [('Sky level measurement:', '{:.0f} +/- {:.0f} {}'.
                  format(results['bg'], results['bgerr'], self.bunit))]
-        if results['mag'] is not None:
+        if results.get('mag') is not None:
             body.append(('Mag / sq arcsec in {}:'.format(self.filter_name),
                          '{:.2f} +/- {:.2f}'.format(results['mag'], results['mag_std'])))
         if self.band:
