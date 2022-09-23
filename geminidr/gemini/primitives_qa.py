@@ -408,8 +408,12 @@ class QA(PrimitivesBASE):
                 # If displaying, make a mask to display along with image
                 # that marks which stars were used
                 for ext, measurement in zip(ad, report.measurements):
-                    circles = [(x, y, 16) for x, y in zip(measurement["x"], measurement["y"])]
-                    iq_overlays.append(circles)
+                    try:  # columns won't exist if no objects
+                        circles = [(x, y, 16) for x, y in zip(measurement["x"], measurement["y"])]
+                    except KeyError:
+                        iq_overlays.append(None)
+                    else:
+                        iq_overlays.append(circles)
 
                 self.display([ad], debug_overlay=tuple(iq_overlays) if iq_overlays else None,
                              frame=frame, **display_params)
