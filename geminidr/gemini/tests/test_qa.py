@@ -12,123 +12,131 @@ To run:
 """
 import os
 
-import astrodata
+import astrodata, gemini_instruments
 import pytest
+import logging
 
 from geminidr.gmos.primitives_gmos_image import GMOSImage
-from gempy.utils import logutils
-
-# TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
-logfilename = 'test_qa.log'
 
 # --- Fixtures ---
 @pytest.fixture
 def ad(path_to_inputs):
-    # File used before: GMOS/N20150624S0106_refcatAdded.fits
-    path = os.path.join(path_to_inputs, "GMOS/N20150624S0106.fits")
-    return astrodata.open(path)
+    """Has been run through prepare, addDQ, overscanCorrect, detectSources,
+       addReferenceCatalog, determineAstrometricSolution"""
+    ad = astrodata.open(os.path.join(path_to_inputs, "N20150624S0106_astrometryCorrected.fits"))
+    return ad
 
 
 # --- Tests ----
-class TestQA:
+@pytest.mark.preprocessed_data
+def test_measureBG(caplog, ad):
     """
-    Suite of tests for the functions in the gemini_tools module.
+    Check measurements of BG in GMOS image and confirm that the QA report
+    properly identifies whether it is/isn't consistent with REQBG.
+
+    We use a generous matching tolerance here because we're working with
+    a roughly-processed image.
     """
+    tol = 10  # matching tolerance
+    caplog.set_level(logging.DEBUG)
+    p = GMOSImage([ad])
+    ad_out = p.measureBG()[0]
 
-    @classmethod
-    def setup_class(cls):
-        """Run once at the beginning."""
-        if os.path.exists(logfilename):
-            os.remove(logfilename)
-        log = logutils.get_logger(__name__)
-        log.root.handlers = []
-        logutils.config(mode='standard', file_name=logfilename)
+    correct = [303, 283, 318, 328, 322, 299]
 
-    @classmethod
-    def teardown_class(cls):
-        """Run once at the end."""
-        os.remove(logfilename)
+    for rv, cv in zip(ad_out.hdr['SKYLEVEL'], correct):
+        assert abs(rv - cv) < tol, 'Wrong background level'
 
-    # noinspection PyPep8Naming
-    @pytest.mark.xfail(reason="Correct values hardcoded")
-    def test_measureBG(self, ad):
+    assert (ad_out.phu['SKYLEVEL'] - 310) < tol
 
-        p = GMOSImage([ad])
-        ad = p.measureBG()[0]
+    assert len(caplog.records) > 0
+    for rec in caplog.records:
+        if 'BG band' in rec.message:
+            assert rec.message.split()[2] == 'BG80', 'Wrong BG band'
 
-        correct = [726.18213, 724.36047, 727.34491,
-                   728.49664, 728.08966, 719.83728]
+    # Now set REQBG to 50 and confirm it fails (it's BG80)
+    caplog.clear()
+    ad.phu['REQBG'] = '50-percentile'
+    p.measureBG()[0]
 
-        for rv, cv in zip(ad.hdr['SKYLEVEL'], correct):
-            assert abs(rv - cv) < 0.1, 'Wrong background level'
+    assert any('WARNING: BG requirement not met' in rec.message
+               for rec in caplog.records), 'No BG warning'
 
-        assert (ad.phu['SKYLEVEL'] - 727.174) < 0.1
 
-        f = open(logfilename)
-
-        for line in f.readlines():
-            if 'BG band' in line:
-                assert line.split()[6] == 'BG80', 'Wrong BG band'
-
-        ad.phu['REQBG'] = '50-percentile'
-        ad = p.measureBG()[0]
-
-        assert any('WARNING: BG requirement not met' in line
-                   for line in f.readlines()), 'No BG warning'
-
-    # noinspection PyPep8Naming
-    @pytest.mark.xfail(reason="Correct values hardcoded")
-    def test_measureCC(self, ad):
-
-        p = GMOSImage([ad])
-        ad = p.measureCC()[0]
-        correct = [28.18, 28.16, 28.14, 28.11, 28.17, 28.12]
-        for rv, cv in zip(ad.hdr['MEANZP'], correct):
+@pytest.mark.preprocessed_data
+def test_measureCC(caplog, ad):
+    """
+    Check measurements of CC in a GMOS image and confirm that the QA report
+    properly identifies the bands
+    This image returns CC = 0.11 +/- 0.04 by default
+    """
+    caplog.set_level(logging.DEBUG)
+    p = GMOSImage([ad])
+    ad = p.measureCC()[0]
+    ad.phu['REQCC'] = '70-percentile'
+    correct = [27.25, None, 27.21, 27.26, 27.24, None]
+    for ext, cv in zip(ad, correct):
+        rv = ext.hdr.get('MEANZP')
+        if cv:
             assert abs(rv - cv) < 0.02, 'Wrong zeropoint'
+        else:
+            assert rv is None, 'Unexpected zeropoint'
 
-        f = open(logfilename)
-        for line in f.readlines():
-            if 'CC bands' in line:
-                assert 'CC50, CC70' in line, 'Wrong CC bands'
-        for ext in ad:
-            ext.OBJCAT['MAG_AUTO'] += 0.3
-        ad = p.measureCC()[0]
-        correct = [c - 0.3 for c in correct]
-        for rv, cv in zip(ad.hdr['MEANZP'], correct):
-            assert abs(rv - cv) < 0.02, 'Wrong zeropoint after edit'
-        ccwarn = False
-        for line in f.readlines():
-            if 'CC bands' in line:
-                assert 'CC70, CC80' in line, 'Wrong CC bands after edit'
-            ccwarn |= 'WARNING: CC requirement not met' in line
-        assert ccwarn, 'No CC warning'
+    found = ccwarn = False
+    for rec in caplog.records:
+        if 'CC bands' in rec.message:
+            found = True
+            assert 'CC50, CC70' in rec.message, 'Wrong CC bands'
+    ccwarn |= 'WARNING: CC requirement not met' in rec.message
+    assert found, 'Did not find "CC bands" line in log'
+    assert not ccwarn, 'CC warning raised in original data'
 
-    # noinspection PyPep8Naming
-    @pytest.mark.xfail(reason="Correct values hardcoded")
-    def test_measureIQ(self, ad):
+    caplog.clear()
+    for ext in ad:
+        ext.OBJCAT['MAG_AUTO'] += 0.25
+    ad = p.measureCC()[0]
+    ccwarn = found = False
+    for rec in caplog.records:
+        if 'CC bands' in rec.message:
+            found = True
+            assert 'CC70, CC80' in rec.message, 'Wrong CC bands after edit'
+        ccwarn |= 'WARNING: CC requirement not met' in rec.message
+    assert found, 'Did not find "CC bands" line in log'
+    assert ccwarn, 'No CC warning in modified data'
 
-        p = GMOSImage([ad])
-        ad = p.measureIQ()[0]
-        # Try to give a reasonable-sized goal
-        assert abs(ad.phu['MEANFWHM'] - 0.42) < 0.02, 'Wrong FWHM'
-        assert abs(ad.phu['MEANELLP'] - 0.09) < 0.02, 'Wrong ellipticity'
 
-        f = open(logfilename)
-        for line in f.readlines():
-            if 'IQ range' in line:
-                assert line.split()[8] == 'IQ20', 'Wrong IQ band'
+@pytest.mark.preprocessed_data
+def test_measureIQ(caplog, ad):
+    """
+    Check IQ measurements on GMOS image and that a warning is raised if it
+    doesn't satisfy the requirement.
+    """
+    caplog.set_level(logging.DEBUG)
+    p = GMOSImage([ad])
+    ad = p.measureIQ()[0]
+    # Try to give a reasonable-sized goal
+    assert abs(ad.phu['MEANFWHM'] - 0.42) < 0.02, 'Wrong FWHM'
+    assert abs(ad.phu['MEANELLP'] - 0.09) < 0.02, 'Wrong ellipticity'
 
-        ad.phu['REQIQ'] = '70-percentile'
-        for ext in ad:
-            ext.OBJCAT['PROFILE_FWHM'] *= 2.5
-            ext.OBJCAT['PROFILE_EE50'] *= 2.5
+    found = False
+    for rec in caplog.records:
+        if 'IQ range' in rec.message:
+            found = True
+            assert rec.message.split()[4] == 'IQ20', 'Wrong IQ band'
+    assert found, 'Did not find "IQ range" line in log'
 
-        ad = p.measureIQ()[0]
-        iqwarn = False
+    caplog.clear()
+    ad.phu['REQIQ'] = '70-percentile'
+    for ext in ad:
+        ext.OBJCAT['PROFILE_FWHM'] *= 2.5
+        ext.OBJCAT['PROFILE_EE50'] *= 2.5
 
-        for line in f.readlines():
-            if 'IQ range' in line:
-                assert line.split()[8] == 'IQ85', 'Wrong IQ band after edit'
-            iqwarn |= 'WARNING: IQ requirement not met' in line
-
-        assert iqwarn, 'NO IQ warning'
+    ad = p.measureIQ()[0]
+    found = iqwarn = False
+    for rec in caplog.records:
+        if 'IQ range' in rec.message:
+            found = True
+            assert rec.message.split()[4] == 'IQ85', 'Wrong IQ band after edit'
+        iqwarn |= 'WARNING: IQ requirement not met' in rec.message
+    assert found, 'Did not find "IQ range" line in log'
+    assert iqwarn, 'NO IQ warning after edit'
