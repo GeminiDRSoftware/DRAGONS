@@ -71,18 +71,17 @@ class QA(PrimitivesBASE):
             # First check if the bias level has already been subtracted
             if remove_bias:
                 if not {'BIASIM', 'DARKIM',
-                   self.timestamp_keys['subtractOverscan']}.intersection(ad.phu):
+                        self.timestamp_keys['subtractOverscan']}.intersection(ad.phu):
                     try:
                         bias_level = get_bias_level(adinput=ad, estimate=False)
                     except NotImplementedError:
                         bias_level = None
-
+                    if bias_level is None:
+                        log.warning("Bias level not found for {}; "
+                                    "approximate bias will not be removed "
+                                    "from the sky level".format(ad.filename))
             if bias_level is None:
                 bias_level = [None] * len(ad)
-                if remove_bias:
-                    log.warning("Bias level not found for {}; "
-                                "approximate bias will not be removed "
-                                "from the sky level".format(ad.filename))
 
             # Get the filter name and the corresponding BG band definition
             # and the requested band
@@ -394,11 +393,11 @@ class QA(PrimitivesBASE):
                     if (len(ad) == 1 or not separate_ext) and not is_ao:
                         fwhm, ellip = results["fwhm"], results["elip"]
                         if fwhm:
-                            ext.hdr.set("MEANFWHM", fwhm,
-                                        comment=self.keyword_comments["MEANFWHM"])
+                           ad.phu.set("MEANFWHM", fwhm,
+                                      comment=self.keyword_comments["MEANFWHM"])
                         if ellip:
-                            ext.hdr.set("MEANELLP", ellip,
-                                        comment=self.keyword_comments["MEANELLP"])
+                            ad.phu.set("MEANELLP", ellip,
+                                       comment=self.keyword_comments["MEANELLP"])
                 else:
                     self.log.warning(f"No good sources found in {ad.filename}")
 
