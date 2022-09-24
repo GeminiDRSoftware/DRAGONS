@@ -21,7 +21,8 @@ DATASETS = (("N20110627S0031.fits", (625, 445)),  # ShortBlue, Wings, off-centre
 
 
 @pytest.mark.gnirs
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("filename,result", DATASETS)
 def test_add_illum_mask(filename, result, change_working_dir, path_to_inputs):
     if filename.startswith("N2022"):
