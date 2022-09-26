@@ -201,8 +201,6 @@ def _create_illum_mask(ad, log, align=True, xshift=0, yshift=0):
                         f"{ad.filename}, when {ngood} are expected. Using the "
                         "default illumination mask position.")
 
-    print(ad.camera(), wings, comx, comy)
-
     r1 = 14.7 / pixscale  # keyhole circle has radius of 14.7 arcsec
     width = 9.6 / pixscale  # "bar" is 9.3 arcsec wide
     length = 97.8 / pixscale  # "bar" is 97.8 arcsec long
