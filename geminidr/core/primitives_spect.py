@@ -2998,12 +2998,8 @@ class Spect(Resample):
                 for ext, masked_data, x, weights, threshold_value \
                         in zip(admos, masked_data_arr, x_arr, weights_arr,
                                saved_thresholds):
-                    # TODO pending a decision on my fix for interactive vs non-interactive.  This used to
-                    # pass masked outputs to fit_1D with full x/weight arrays.  Now I am indexing out goodpix
-                    # as is done in interactive and it appears to make a big difference to the final results.
                     masked_data.mask |= np.where(masked_data.data < threshold_value, True, False)
-                    goodpix = masked_data.mask == False
-                    fitted_data = fit_1D(masked_data[goodpix], points=x[goodpix], weights=weights[goodpix],
+                    fitted_data = fit_1D(masked_data, points=x, weights=weights,
                                          **fit1d_params)
                     fit1d_arr.append(fitted_data)
 
