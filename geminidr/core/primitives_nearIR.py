@@ -188,6 +188,8 @@ class NearIR(Bookkeeping):
         ad_off = self.stackFrames(lamp_off_list, **stack_params)
 
         if ad_on and ad_off:
+            if ad_on[0].exposure_time() != ad_off[0].exposure_time():
+                log.warning("Lamp-on and lamp-off flats do not have the same exposure time.")
             log.fullinfo("Subtracting lampOff stack from lampOn stack")
             flat = ad_on[0]
             flat.subtract(ad_off[0])

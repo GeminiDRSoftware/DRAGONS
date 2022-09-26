@@ -33,7 +33,6 @@ class GNIRSSpect(Spect, GNIRS):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs_spect)
 
-    # TODO: for data prior 2015 update WCS? otherwise go to primitives_spect?
     def standardizeWCS(self, adinputs=None, **params):
         """
         This primitive updates the WCS attribute of each NDAstroData extension
@@ -54,7 +53,8 @@ class GNIRSSpect(Spect, GNIRS):
         for ad in adinputs:
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
             cenwave = ad.central_wavelength(asNanometers=True)
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
+            transform.add_longslit_wcs(ad, central_wavelength=cenwave,
+                                       pointing=ad[0].wcs(512, 511))
 
             # Timestamp. Suffix was updated in the super() call
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -154,9 +154,17 @@ class GNIRSSpect(Spect, GNIRS):
         """
         for ad in adinputs:
             if params["order"] is None:
-                if (ad.disperser(pretty=True).startswith('111') and
-                        ad.camera(pretty=True).startswith('Long')):
-                    params["order"] = 1
+                disp = ad.disperser(pretty=True)
+                filt = ad.filter_name(pretty=True)
+                cam = ad.camera(pretty=True)
+                cenwave = ad.central_wavelength(asMicrometers=True)
+
+                if ((filt == "H" and cenwave >= 1.75) or (filt == "K" and cenwave >= 2.2)) \
+                        and ((cam.startswith('Long') and disp.startswith('32')) or
+                             (cam.startswith('Short') and disp.startswith('111'))):
+                        params["order"] = 1
+                elif disp.startswith('111') and cam.startswith('Long'):
+                        params["order"] = 1
                 else:
                     params["order"] = 3
 
@@ -191,6 +199,7 @@ class GNIRSSpect(Spect, GNIRS):
             else:
                 linelist = 'nearIRsky.dat'
 
+        self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
 
         return wavecal.LineList(filename)

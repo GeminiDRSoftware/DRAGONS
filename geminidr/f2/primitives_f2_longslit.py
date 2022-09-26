@@ -10,6 +10,8 @@ import numpy as np
 from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
+from geminidr.gemini.lookups import DQ_definitions as DQ
+from gemini_instruments.f2.lookup import dispersion_offset_mask
 
 from . import parameters_f2_longslit
 from .primitives_f2_spect import F2Spect
@@ -89,4 +91,71 @@ class F2Longslit(F2Spect):
                                          'slitlength_pixels'))
                 ad.MDF = mdf_table
 
+        return adinputs
+
+    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
+        """
+        Adds an illumination mask to each AD object. The default illumination mask
+        masks off extra orders and/or unilluminated areas outside order blocking filter
+        range (whenever required).
+
+        Parameters
+        ----------
+        suffix : str
+            suffix to be added to output files
+        illum_mask : str/None
+            name of illumination mask mask (None -> use default)
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        for ad, illum in zip(*gt.make_lists(adinputs, illum_mask, force_ad=True)):
+            if ad.phu.get(timestamp_key):
+                log.warning('No changes will be made to {}, since it has '
+                    'already been processed by addIllumMaskToDQ'.
+                            format(ad.filename))
+                continue
+            if illum:
+                log.fullinfo("Using {} as illumination mask".format(illum.filename))
+                final_illum = gt.clip_auxiliary_data(ad, aux=illum, aux_type='bpm',
+                                          return_dtype=DQ.datatype)
+
+                for ext, illum_ext in zip(ad, final_illum):
+                    if illum_ext is not None:
+                        # Ensure we're only adding the unilluminated bit
+                        iext = np.where(illum_ext.data > 0, DQ.unilluminated,
+                                        0).astype(DQ.datatype)
+                        ext.mask |= iext
+
+            else:
+                dispaxis = 2 - ad[0].dispersion_axis()
+                dispaxis_center = ad[0].shape[dispaxis] // 2
+                cenwave = ad.central_wavelength(asNanometers=True)
+                dispersion = ad.dispersion(asNanometers=True)[0]
+                filter = ad.filter_name(pretty=True)
+                if filter in {"HK", "JK"}:
+                        filter = ad.filter_name(keepID=True)
+                cenwave_offset = self._get_cenwave_offset(ad)
+                index = (ad.disperser(pretty=True), filter)
+                mask = dispersion_offset_mask.get(index, None)
+
+                filter_cuton_wvl = mask.cutonwvl if mask else None
+                filter_cutoff_wvl = mask.cutoffwvl if mask else None
+                cenwave_pix = dispaxis_center + cenwave_offset
+                filter_cuton_pix = min(int(cenwave_pix - (cenwave - filter_cuton_wvl) / dispersion), ad[0].shape[dispaxis] - 1)
+                filter_cutoff_pix = max(int(cenwave_pix + (filter_cutoff_wvl - cenwave) / dispersion), 0)
+
+                for ext in ad:
+                    ext.mask[:filter_cutoff_pix] |= DQ.unilluminated
+                    ext.mask[filter_cuton_pix:] |= DQ.unilluminated
+                if filter_cutoff_pix > 0:
+                    log.stdinfo(f"Masking columns 1 to {filter_cutoff_pix+1}")
+                if filter_cuton_pix < (ad[0].shape[dispaxis] - 1):
+                    log.stdinfo(f"Masking columns {filter_cuton_pix+1} to {(ad[0].shape[dispaxis])}")
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs

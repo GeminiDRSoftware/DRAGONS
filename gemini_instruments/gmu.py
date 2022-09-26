@@ -36,6 +36,25 @@ def removeComponentID(instr):
         ret_str = str(m.group("filt"))
     return ret_str
 
+def getComponentID(instr):
+    """
+    Return the ID in a component name
+    :param instr: the filter name
+    :type instr: string
+    :rtype: string
+    :return: the filter ID with the rest removed, or `None` if the input is not a valid filter name with an ID
+    """
+    try:
+        m = re.match(r".*_(?P<id>G\d{4})", instr)
+    except TypeError:
+        return None
+
+    if not m:
+        ret_str = None
+    else:
+        ret_str = str(m.group("id"))
+
+    return ret_str
 
 def parse_percentile(string):
     # Given the type of string that ought to be present in the site condition

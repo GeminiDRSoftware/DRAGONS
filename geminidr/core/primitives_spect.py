@@ -1073,6 +1073,8 @@ class Spect(Resample):
         slit_center : int or float
             The expected position of the center of the slit on the detector, in
             pixels.
+        suffix : str
+            Suffix to be added to output files.
         debug : bool, Default: False
             Whether to print out additional information while running.
 
@@ -1085,6 +1087,7 @@ class Spect(Resample):
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        sfx = params["suffix"]
 
         # Parse parameters
         debug = params['debug']
@@ -1467,6 +1470,8 @@ class Spect(Resample):
                     if debug:
                         log.debug('Appending table below as "SLITEDGE".')
                         log.fullinfo(ext.SLITEDGE)
+
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -2503,12 +2508,12 @@ class Spect(Resample):
                 continue
 
             if std is None:
-                if 'sq' in self.mode and do_cal != 'force':
-                    raise OSError('No processed standard listed for {}'.
-                                  format(ad.filename))
+                if 'sq' in self.mode or do_cal == 'force':
+                    raise OSError("No processed stndard listed for "
+                                  f"{ad.filename}")
                 else:
-                    log.warning(f"{ad.filename}: no standard was specified. "
-                                "Continuing.")
+                    log.warning(f"No changes will be made to {ad.filename}, "
+                                "since no standard was specified")
                     continue
 
             origin_str = f" (obtained from {origin})" if origin else ""
@@ -2734,6 +2739,8 @@ class Spect(Resample):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             Spectra with unilluminated regions.
+        suffix : str
+            Suffix to append to the filename.
 
         Returns
         -------
@@ -2744,6 +2751,7 @@ class Spect(Resample):
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        sfx = params["suffix"]
 
         # Parse parameters
         debug = params['debug']
@@ -2803,6 +2811,9 @@ class Spect(Resample):
                         plt.show()
 
                 # TODO: Handle MOS data.
+
+            # Update the filename.
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -2871,12 +2882,21 @@ class Spect(Resample):
                 admos = ad
                 mosaicked = False
 
+            masked_data_arr = list()
+            x_arr = list()
+            weights_arr = list()
+            threshold_mask_arr = list()
+            saved_thresholds = list()  # for clipping values in the final eval, save the calculated thresholds when
+                                       # we reconstruct points
+
             # This will loop over MOS slits or XD orders
             def reconstruct_points(ui_params):
-                masked_data_arr = list()
-                x_arr = list()
-                weights_arr = list()
-                threshold_mask_arr = list()
+                masked_data_arr.clear()
+                x_arr.clear()
+                weights_arr.clear()
+                threshold_mask_arr.clear()
+                saved_thresholds.clear()
+
                 for ext in admos:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     direction = "row" if dispaxis == 1 else "column"
@@ -2890,9 +2910,9 @@ class Spect(Resample):
 
                     masked_data = np.ma.masked_array(data, mask=mask)
                     weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
-                    center = (extract_slice.start + extract_slice.stop) // 2
                     # uncomment this to use if we want to calculate the waves as our x inputs
                     # and wire it up appropriately
+                    # center = (extract_slice.start + extract_slice.stop) // 2
                     # waves = ext.wcs(range(len(masked_data)),
                     #                 np.full_like(masked_data, center))[0]
 
@@ -2921,8 +2941,9 @@ class Spect(Resample):
                     x_arr.append(np.arange(len(masked_data)))
                     masked_data_arr.append(masked_data)
                     weights_arr.append(weights)
-                    maxy = max(masked_data)
+                    maxy = masked_data.max()
                     threshold_mask_arr.append(np.where(masked_data/maxy < ui_params.threshold, 1, 0))
+                    saved_thresholds.append(maxy * ui_params.threshold)
                 return { "y": masked_data_arr, "x": x_arr,
                          "weights": weights_arr, "threshold_mask": threshold_mask_arr }
 
@@ -2930,16 +2951,13 @@ class Spect(Resample):
             config.update(**params)
             uiparams = UIParameters(config, reinit_params=["center", "nsum", "threshold"])
 
-            # let's updaet teh max center to something reasonable
+            # let's update the max center to something reasonable
             dispaxis = 2 - ad[0].dispersion_axis()
             npix = ad[0].shape[1 - dispaxis]
             uiparams.fields['center'].max = npix
             uiparams.fields['nsum'].max = npix
 
             data = reconstruct_points(uiparams)
-            masked_data_arr = data["y"]
-            x_arr = data["x"]
-            weights_arr = data["weights"]
 
             fit1d_arr = list()
 
@@ -2977,14 +2995,20 @@ class Spect(Resample):
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fit1d_arr = visualizer.results()
             else:
-                for ext, masked_data, x, weights, threshold_mask \
-                        in zip(admos, masked_data_arr, x_arr, weights_arr, data["threshold_mask"]):
-                    masked_data.mask |= (DQ.no_data * threshold_mask == 1)
-                    fitted_data = fit_1D(masked_data, points=x, weights=weights,
+                for ext, masked_data, x, weights, threshold_value \
+                        in zip(admos, masked_data_arr, x_arr, weights_arr,
+                               saved_thresholds):
+                    # TODO pending a decision on my fix for interactive vs non-interactive.  This used to
+                    # pass masked outputs to fit_1D with full x/weight arrays.  Now I am indexing out goodpix
+                    # as is done in interactive and it appears to make a big difference to the final results.
+                    masked_data.mask |= np.where(masked_data.data < threshold_value, True, False)
+                    goodpix = masked_data.mask == False
+                    fitted_data = fit_1D(masked_data[goodpix], points=x[goodpix], weights=weights[goodpix],
                                          **fit1d_params)
                     fit1d_arr.append(fitted_data)
 
-            for ext, fitted_data, x in zip(admos, fit1d_arr, x_arr):
+            for ext, fitted_data, x, threshold_mask, masked_data, threshold_value \
+                    in zip(admos, fit1d_arr, x_arr, threshold_mask_arr, masked_data_arr, saved_thresholds):
                 if not mosaicked:
                     # In the case where this was run interactively, the resulting fit has pre-masked points (x).
                     # This happens before the interactive code builds the fit_1D.  Using the default evaluate()
@@ -2997,16 +3021,20 @@ class Spect(Resample):
                     fdeval = fitted_data.evaluate(points=x)
                     flat_data = np.tile(fdeval, (ext.shape[1-dispaxis], 1))
                     flat_mask = at.transpose_if_needed(
-                        np.tile(np.where(fdeval / fdeval.max() < threshold,
+                        np.tile(np.where(threshold_mask > 0,
                                          DQ.unilluminated, DQ.good),
                                 (ext.shape[1-dispaxis], 1)).astype(DQ.datatype),
                         transpose=(dispaxis == 0))[0]
                     ext.divide(at.transpose_if_needed(flat_data, transpose=(dispaxis == 0))[0])
-                    ext.data[flat_mask>0] = threshold
+
+                    ext.data[flat_mask>0] = threshold_value
+
                     if ext.mask is None:
                         ext.mask = flat_mask
                     else:
                         ext.mask |= flat_mask
+
+                    pass
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
