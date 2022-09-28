@@ -448,9 +448,13 @@ def _gsaoi_iq_estimate(ad, results):
     -------
     Measurement: estimate of the seeing
     """
+    try:
+        strehl, fwhm = results["strehl"], results["fwhm"]
+    except KeyError:  # no sources
+        return
+
     log = logutils.get_logger(__name__)
     wavelength = ad.central_wavelength(asMicrometers=True)
-    strehl, fwhm = results["strehl"], results["fwhm"]
     magic_number = np.log10(strehl * fwhm ** 1.5 / wavelength ** 2.285)
     # Final constant is ln(10)
     magic_number_std = np.sqrt((results["strehl_std"] / strehl) ** 2 +
