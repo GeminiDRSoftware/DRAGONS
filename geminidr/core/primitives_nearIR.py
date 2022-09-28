@@ -3,6 +3,7 @@
 #
 #                                                           primitives_nearIR.py
 # ------------------------------------------------------------------------------
+from copy import deepcopy
 import datetime
 from functools import partial
 from itertools import product as cart_product
@@ -10,6 +11,7 @@ import warnings
 
 from astropy.stats import sigma_clip
 import numpy as np
+import matplotlib.pyplot as plt
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.nddops import NDStacker
@@ -272,6 +274,14 @@ class NearIR(Bookkeeping):
             size of pattern "box" in y direction
         subtract_background: bool
             remove median of each "box" before calculating pattern noise?
+        region: str
+            a user-specified region (or regions) to perform the cleaning in.
+            Pattern noise will either cover the entire array, or will appear in
+            one or more horizontal stripes, so these regions should be given as
+            a string of y1:y2 values (ints), with multiple regions optionally
+            separated by commas, e.g. '1:184,840:1024'. The default is to use
+            the entire image. GNIRS data will be padded with 2 rows to make
+            1024 in order to be divisible by 4.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -281,6 +291,7 @@ class NearIR(Bookkeeping):
         pxsize, pysize = params["pattern_x_size"], params["pattern_y_size"]
         bgsub = params["subtract_background"]
         force = params["force"]
+        region = params["region"]
         stack_function = NDStacker(combine='median', reject='sigclip',
                                    hsigma=hsigma, lsigma=lsigma)
         sigclip = partial(sigma_clip, sigma_lower=lsigma, sigma_upper=hsigma)
@@ -299,12 +310,8 @@ class NearIR(Bookkeeping):
 
                 if ad.instrument() == 'GNIRS':
                     # Number of rows must be 4-divisible, or it crashes.
-                    log.debug("Padding GNIRS SCI, VAR, DQ y-axis by 2 rows to "
-                              "be divisible by 4.")
-                    log.debug("Original image shape:\n"
-                              f"  SCI: {ext.data.shape}\n"
-                              f"  VAR: {ext.variance.shape}\n"
-                              f"   DQ: {ext.mask.shape}")
+                    log.stdinfo("Padding GNIRS SCI, VAR, DQ y-axis by 2 rows to "
+                                "be divisible by 4.")
                     ext.data = np.append(
                         ext.data,
                         np.zeros((2, ext.shape[1])),
@@ -317,10 +324,20 @@ class NearIR(Bookkeeping):
                         ext.mask,
                         np.full((2, ext.shape[1]), DQ.no_data),  # Mask rows
                         axis=0)
-                    log.debug("New image shape:\n"
-                              f"  SCI: {ext.data.shape}\n"
-                              f"  VAR: {ext.variance.shape}\n"
-                              f"   DQ: {ext.mask.shape}")
+
+                # Generate mask for applying cleaning, whole frame by default.
+                region_mask = np.zeros_like(ext.data)
+
+                for roi in region.strip('[]').split(','):
+                    r = roi.split(':')
+                    if len(r) != 2:
+                        raise ValueError('Regions must be in the form '
+                                         f'y1:y2, passed: "{r}"')
+                    y1 = int(r[0])
+                    y2 = int(r[1])
+                    log.stdinfo(f'Removing pattern noise from y={y1} to y={y2}')
+
+                    region_mask[y1:y2, :] = 1
 
                 qysize, qxsize = [size // 2 for size in ext.data.shape]
                 yticks = [(y, y + pysize) for y in range(0, qysize, pysize)]
@@ -329,6 +346,8 @@ class NearIR(Bookkeeping):
                     for xstart in (0, qxsize):
                         quad = ext.nddata[ystart:ystart + qysize,
                                           xstart:xstart + qxsize]
+                        quad_mask = region_mask[ystart:ystart + qysize,
+                                                xstart:xstart + qxsize]
                         sigma_in = sigclip(np.ma.masked_array(quad.data,
                                                               quad.mask)).std()
                         blocks = [quad[tuple(slice(start, end)
@@ -345,8 +364,9 @@ class NearIR(Bookkeeping):
                                                             block.mask).mean()
                                                        for block in blocks])
                         out = stack_function(blocks, zero=zeros).data
+                        pattern = np.tile(out, (len(yticks), len(xticks)))
                         out_quad = (quad.data + np.mean(out) -
-                                    np.tile(out, (len(yticks), len(xticks))))
+                                    pattern * quad_mask)
                         sigma_out = sigclip(np.ma.masked_array(out_quad,
                                                                quad.mask)).std()
                         if sigma_out > sigma_in:
@@ -367,9 +387,6 @@ class NearIR(Bookkeeping):
                     ext.data = np.delete(ext.data, [-2, -1], axis=0)
                     ext.variance = np.delete(ext.variance, [-2, -1], axis=0)
                     ext.mask = np.delete(ext.mask, [-2, -1], axis=0)
-                    log.debug(f"  SCI: {ext.data.shape}")
-                    log.debug(f"  VAR: {ext.variance.shape}")
-                    log.debug(f"   DQ: {ext.mask.shape}")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

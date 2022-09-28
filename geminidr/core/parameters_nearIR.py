@@ -1,6 +1,6 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_nearIR.py file, in alphabetical order.
-from gempy.library import config
+from gempy.library import config, astrotools as at
 from . import parameters_stack, parameters_standardize
 
 class addLatencyToDQConfig(config.Config):
@@ -33,6 +33,11 @@ class removeFirstFrameConfig(config.Config):
     remove_files = config.ListField("List of files to remove", str, None, optional=True)
 
 class removePatternNoiseConfig(config.Config):
+
+    def validate_regions(value, multiple=True):
+        ranges = at.parse_user_regions(value, dtype=int, allow_step=False)
+        return multiple or len(ranges) == 1
+
     suffix = config.Field("Filename suffix", str, "_patternNoiseRemoved", optional=True)
     force = config.Field("Force cleaning even if noise increases?", bool, False)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
@@ -40,6 +45,8 @@ class removePatternNoiseConfig(config.Config):
     pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)
     pattern_y_size = config.RangeField("Pattern y size (pixels)", int, 4, min=4)
     subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
+    region = config.Field("Rows to remove pattern in, e.g. 'y1:y2,y3:y4' etc.",
+                          str, '0:1024', optional=True, check=validate_regions)
 
 class separateFlatsDarksConfig(config.Config):
     pass
