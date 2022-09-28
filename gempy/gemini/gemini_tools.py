@@ -892,7 +892,7 @@ def clip_sources(ad):
 
     # Produce warning but return what is expected
     if not any([hasattr(ext, 'OBJCAT') for ext in ad_iterable]):
-        input = f"{ad.filename} EXTVER {ad.hdr['EXTVER']}" if single else ad.filename
+        input = f"{ad.filename}:{ad.hdr['EXTVER']}" if single else ad.filename
         log.warning(f"No OBJCAT(s) found on {input}. Has detectSources() been run?")
         return Table() if single else [Table()] * len(ad)
 
