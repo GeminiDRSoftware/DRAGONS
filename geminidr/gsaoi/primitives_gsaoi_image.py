@@ -121,6 +121,11 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
         for ad in adinputs[1:]:
             objcat = merge_gsaoi_objcats(ad, cull_sources=cull_sources)
+            if objcat is None:
+                log.warning(f"No sources to correlate in {ad.filename}. "
+                            "Cannot adjust WCS.")
+                continue
+
             incoords = (objcat['X_STATIC'], objcat['Y_STATIC'])
             transform = ad[0].wcs.get_transform(
                 "static", ad[0].wcs.output_frame) | ref_transform.inverse
@@ -155,8 +160,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
             num_matched = np.sum(matched >= 0)
             if num_matched < min_sources:
-                log.warning(f"Too few correlated sources ({num_matched}). "
-                            "Cannot adjust WCS.")
+                log.warning(f"Too few correlated sources in {ad.filename} "
+                            f"({num_matched}). Cannot adjust WCS.")
                 continue
 
             if num_matched > 0:
@@ -559,7 +564,9 @@ def merge_gsaoi_objcats(ad, cull_sources=False):
         objcat['X_STATIC'], objcat['Y_STATIC'] = static(objcat['X_IMAGE'] - 1,
                                                         objcat['Y_IMAGE'] - 1)
         objcats.append(objcat)
-    return table.vstack(objcats, metadata_conflicts='silent')
+    if objcats:
+        return table.vstack(objcats, metadata_conflicts='silent')
+    return
 
 
 def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
