@@ -39,7 +39,7 @@ class removePatternNoiseConfig(config.Config):
         return multiple or len(ranges) == 1
 
     suffix = config.Field("Filename suffix", str, "_patternNoiseRemoved", optional=True)
-    force = config.Field("Force cleaning even if noise increases?", bool, False)
+    must_reduce_rms = config.Field("Require reduction in RMS to apply pattern removal?", bool, True)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)

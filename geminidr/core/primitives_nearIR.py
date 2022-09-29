@@ -262,20 +262,21 @@ class NearIR(Bookkeeping):
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-        force: bool
-            perform operation even if standard deviation in quadrant increases?
-        hsigma/lsigma: float
-            sigma-clipping limits
-        pattern_x_size: int
-            size of pattern "box" in x direction
-        pattern_y_size: int
-            size of pattern "box" in y direction
-        subtract_background: bool
-            remove median of each "box" before calculating pattern noise?
+        suffix: str, Default: "_patternNoiseRemoved"
+            Suffix to be added to output files.
+        must_reduce_rms: bool, Default: True
+            If True, will not apply pattern subtraction to each quadrant of the
+            image if doing so would increase the RMS.
+        hsigma/lsigma: float, Defaults: 3 for both
+            High and low sigma-clipping limits.
+        pattern_x_size: int, Default: 16
+            Size of pattern "box" in x direction. Must be a multiple of 4.
+        pattern_y_size: int, Default: 4
+            size of pattern "box" in y direction. Must be a multiple of 4.
+        subtract_background: bool, Default: True
+            Remove median of each "box" before calculating pattern noise?
         region: str
-            a user-specified region (or regions) to perform the cleaning in.
+            A user-specified region (or regions) to perform the cleaning in.
             Pattern noise will either cover the entire array, or will appear in
             one or more horizontal stripes, so these regions should be given as
             a string of y1:y2 values (ints), with multiple regions optionally
@@ -290,7 +291,7 @@ class NearIR(Bookkeeping):
         hsigma, lsigma = params["hsigma"], params["lsigma"]
         pxsize, pysize = params["pattern_x_size"], params["pattern_y_size"]
         bgsub = params["subtract_background"]
-        force = params["force"]
+        must_reduce_rms = params["must_reduce_rms"]
         region = params["region"]
         stack_function = NDStacker(combine='median', reject='sigclip',
                                    hsigma=hsigma, lsigma=lsigma)
@@ -372,10 +373,11 @@ class NearIR(Bookkeeping):
                         if sigma_out > sigma_in:
                             qstr = (f"{ad.filename} extension {ext.id} "
                                     f"quadrant ({xstart},{ystart})")
-                            if force:
+                            if not must_reduce_rms:
                                 log.stdinfo("Forcing cleaning on " + qstr)
                             else:
-                                log.stdinfo("No improvement for "+qstr)
+                                log.stdinfo("No improvement for " + qstr +
+                                            ", not applying pattern removal.")
                                 continue
                         ext.data[ystart:ystart + qysize,
                                  xstart:xstart + qxsize] = out_quad
