@@ -55,6 +55,7 @@ timestamp_keys = {
     "prepare": "PREPARE",
     "rejectCosmicRays": "REJECTCR",
     "removePatternNoise": "RMPTNNSE",
+    "removePatternNoise_2": "RMPTNNSE2",    
     "resampleToCommonFrame": "ALIGN",
     "resampleToLinearCoords": "LINCOORD",
     "scaleByExposureTime": "EXPSCALE",

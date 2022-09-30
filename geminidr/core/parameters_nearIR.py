@@ -48,5 +48,16 @@ class removePatternNoiseConfig(config.Config):
     region = config.Field("Rows to remove pattern in, e.g. 'y1:y2,y3:y4' etc.",
                           str, '0:1024', optional=True, check=validate_regions)
 
+class removePatternNoise_2Config(config.Config):
+    suffix = config.Field("Filename suffix", str, "_patternNoiseRemoved", optional=True)
+    must_reduce_rms = config.Field("Require reduction in RMS to apply pattern removal?", bool, True)
+    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
+    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
+    pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)
+    pattern_y_size = config.RangeField("Pattern y size (pixels)", int, 4, min=4)
+    subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
+    edge_threshold = config.RangeField("Pattern edge detection threshold (sigma)", float, 10., min=10.0) 
+
+    
 class separateFlatsDarksConfig(config.Config):
     pass
