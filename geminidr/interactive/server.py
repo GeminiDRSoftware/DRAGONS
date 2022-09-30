@@ -301,11 +301,11 @@ def start_server():
 
         # Check Xvfb is running, it seems to not be working right and I don't want to have to keep
         # filing ITOps tickets just to keep our Jenkins passing once this is merged
-        with PidFile(log, "dragons_interactive_testing"):
-            checkx = run(['xset', '-q'], capture_output=True)
-            if checkx.returncode != 0:
-                # Start Xvfb in the background
-                Popen(['/usr/bin/Xvfb', ':0'], close_fds=True)
+        # with PidFile(log, "dragons_interactive_testing"):
+        #     checkx = run(['xset', '-q'], capture_output=True)
+        #     if checkx.returncode != 0:
+        #         # Start Xvfb in the background
+        #         Popen(['/usr/bin/Xvfb', ':0'], close_fds=True)
 
     else:
         ic = interactive_conf()
