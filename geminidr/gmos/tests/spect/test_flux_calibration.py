@@ -143,9 +143,6 @@ def test_regression_on_flux_calibration(ad, ref_ad_factory, change_working_dir):
         p.fluxCalibrate(standard=ad)
         flux_calibrated_ad = p.writeOutputs().pop()
 
-        # check the standard was saved in the provenance
-        assert(ad.filename in provenance_summary(flux_calibrated_ad))
-
     ref_ad = ref_ad_factory(flux_calibrated_ad.filename)
 
     for flux_cal_ext, ref_ext in zip(flux_calibrated_ad, ref_ad):
