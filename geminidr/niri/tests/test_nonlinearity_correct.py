@@ -19,6 +19,7 @@ datasets = ["N20070819S0104_varAdded.fits"]
 @pytest.mark.niri
 @pytest.mark.parametrize("ad", datasets, indirect=True)
 @pytest.mark.preprocessed_data
+@pytest.mark.regression
 def test_regression_nonlinearity_correct(ad, ref_ad_factory):
     p = NIRIImage([ad])
     ad_out = p.nonlinearityCorrect().pop()

@@ -11,6 +11,7 @@ import numpy as np
 from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
+from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .primitives_gnirs_spect import GNIRSSpect
 from . import parameters_gnirs_longslit
@@ -40,9 +41,73 @@ class GNIRSLongslit(GNIRSSpect):
             slit_width=slit_width,
             max_perpendicular_offset=max_perpendicular_offset)
 
-    def addIllumMaskToDQ(self, adinputs=None, **params):
+    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
+        """
+        Adds an illumination mask to each AD object. The default illumination mask
+        masks off extra orders and/or unilluminated areas outside order blocking filter range.
 
-        pass
+        Parameters
+        ----------
+        suffix : str
+            suffix to be added to output files
+        illum_mask : str/None
+            name of illumination mask mask (None -> use default)
+
+        """
+        # GNIRS order blocking filter wvl range (um), based on conservative transmissivity,
+        # or inter-order minima
+        bl_filter_range_dict = {'X': (1.01, 1.19),
+                                'J': (1.15, 1.385),
+                                'H': (1.46, 1.84),
+                                'K': (1.89, 2.54),
+                                'L': (2.77, 4.44),
+                                'M': (4.2, 6.0)}
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        for ad, illum in zip(*gt.make_lists(adinputs, illum_mask, force_ad=True)):
+            if ad.phu.get(timestamp_key):
+                log.warning('No changes will be made to {}, since it has '
+                    'already been processed by addIllumMaskToDQ'.
+                            format(ad.filename))
+                continue
+            if illum:
+                log.fullinfo("Using {} as illumination mask".format(illum.filename))
+                final_illum = gt.clip_auxiliary_data(ad, aux=illum, aux_type='bpm',
+                                          return_dtype=DQ.datatype)
+
+                for ext, illum_ext in zip(ad, final_illum):
+                    if illum_ext is not None:
+                        # Ensure we're only adding the unilluminated bit
+                        iext = np.where(illum_ext.data > 0, DQ.unilluminated,
+                                        0).astype(DQ.datatype)
+                        ext.mask |= iext
+
+            else:
+                dispaxis = 2 - ad[0].dispersion_axis()
+                dispaxis_center = ad[0].shape[dispaxis] // 2
+                cenwave = ad.central_wavelength(asMicrometers=True)
+                dispersion = ad.dispersion(asMicrometers=True)[0]
+                filter = ad.filter_name(pretty=True)
+                filter_cuton_wvl = bl_filter_range_dict[filter][0]
+                filter_cutoff_wvl = bl_filter_range_dict[filter][1]
+                filter_cuton_pix = min(int(dispaxis_center - (cenwave - filter_cuton_wvl) / dispersion), ad[0].shape[dispaxis] - 1)
+                filter_cutoff_pix = max(int(dispaxis_center + (filter_cutoff_wvl - cenwave) / dispersion), 0)
+
+                for ext in ad:
+                    ext.mask[:filter_cutoff_pix] |= DQ.unilluminated
+                    ext.mask[filter_cuton_pix:] |= DQ.unilluminated
+                if filter_cutoff_pix > 0:
+                    log.stdinfo(f"Masking columns 1 to {filter_cutoff_pix+1}")
+                if filter_cuton_pix < (ad[0].shape[dispaxis] - 1):
+                    log.stdinfo(f"Masking columns {filter_cuton_pix+1} to {(ad[0].shape[dispaxis])}")
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
 
     def addMDF(self, adinputs=None, suffix=None, mdf=None):
         """
@@ -132,10 +197,11 @@ class GNIRSLongslit(GNIRSSpect):
             mdf['slitsize_mx'][0] *= slit_correction_factor / arcsec_to_mm
             mdf['slitsize_my'][0] /= arcsec_to_mm
 
-            extra_cols = Table(np.array([arcsec, pixels]),
-                               names=('slitlength_arcsec',
-                                      'slitlength_pixels'))
-            ad.MDF = hstack([mdf, extra_cols], join_type='inner')
+            if 'slitlength_arcsec' not in mdf.columns:
+                extra_cols = Table(np.array([arcsec, pixels]),
+                                   names=('slitlength_arcsec',
+                                          'slitlength_pixels'))
+                ad.MDF = hstack([mdf, extra_cols], join_type='inner')
 
             log.stdinfo('Converted slit sizes from arcseconds to millimeters '
                         f'in {ad.filename}.')

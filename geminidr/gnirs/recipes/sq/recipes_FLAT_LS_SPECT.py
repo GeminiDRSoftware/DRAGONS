@@ -6,6 +6,14 @@ Default is "makeProcessedFlat".
 recipe_tags = {'GNIRS', 'SPECT', 'LS', 'FLAT'}
 
 def makeProcessedFlat(p):
+    """
+    Create a processed flat for GNIRS longslit data.
+    Inputs are:
+      * raw LAMPON flats - no other calibrations required.
+      (Questions remaining, see google doc)
+    No darks are needed due to the short exposures.  It was found that using
+    darks was just adding to the noise.
+    """
     p.prepare()
     p.addDQ()
     p.ADUToElectrons()

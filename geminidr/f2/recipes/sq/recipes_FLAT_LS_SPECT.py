@@ -6,6 +6,12 @@ Default is "makeProcessedFlat".
 recipe_tags = {'F2', 'SPECT', 'LS', 'FLAT'}
 
 def makeProcessedFlat(p):
+    """
+    Create F2 longslit flat field.
+    Inputs are:
+       * raw lamp-on flats + raw darks.
+       * raw lamp-on flats -> then will look in caldb for matching procdark.
+    """
     p.prepare()
     p.addDQ()
     p.nonlinearityCorrect()

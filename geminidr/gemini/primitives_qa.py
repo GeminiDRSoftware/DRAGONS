@@ -71,18 +71,17 @@ class QA(PrimitivesBASE):
             # First check if the bias level has already been subtracted
             if remove_bias:
                 if not {'BIASIM', 'DARKIM',
-                   self.timestamp_keys['subtractOverscan']}.intersection(ad.phu):
+                        self.timestamp_keys['subtractOverscan']}.intersection(ad.phu):
                     try:
                         bias_level = get_bias_level(adinput=ad, estimate=False)
                     except NotImplementedError:
                         bias_level = None
-
+                    if bias_level is None:
+                        log.warning("Bias level not found for {}; "
+                                    "approximate bias will not be removed "
+                                    "from the sky level".format(ad.filename))
             if bias_level is None:
                 bias_level = [None] * len(ad)
-                if remove_bias:
-                    log.warning("Bias level not found for {}; "
-                                "approximate bias will not be removed "
-                                "from the sky level".format(ad.filename))
 
             # Get the filter name and the corresponding BG band definition
             # and the requested band
@@ -113,6 +112,7 @@ class QA(PrimitivesBASE):
 
             # Collapse extension-by-extension numbers if multiple extensions
             if len(ad) > 1:
+                report.reset_text()  # clear comments for final report
                 results = report.calculate_metric('all')
 
             if not separate_ext:
@@ -250,6 +250,7 @@ class QA(PrimitivesBASE):
 
             # Collapse extension-by-extension numbers if multiple extensions
             if len(ad) > 1:
+                report.reset_text()  # clear comments for final report
                 results = report.calculate_metric('all')
 
             if results:
@@ -351,8 +352,9 @@ class QA(PrimitivesBASE):
                         if separate_ext:
                             self.log.warning(f"No good sources found in {extid}")
                         continue
+                    else:
+                        has_sources = True
 
-                    has_sources = True
                     if separate_ext:
                         report.report(results, header=extid)
                         if not is_ao:
@@ -367,20 +369,21 @@ class QA(PrimitivesBASE):
                 # Need one of these in order to make a report
                 if has_sources or report.ao_seeing:
                     if len(ad) > 1:
+                        report.reset_text()  # clear comments for final report
                         results = report.calculate_metric('all', ao_seeing_fn=ao_seeing_fn)
 
                     if not separate_ext:
                         report.report(results)
 
                     qad = {"band": report.band, "requested": report.reqband,
-                           "delivered": results["fwhm"],
-                           "delivered_error": results["fwhm_std"],
-                           "ellipticity": results["elip"],
-                           "ellip_error": results["elip_std"],
-                           "zenith": results["zfwhm"],
-                           "zenith_error": results["zfwhm_std"],
-                           "is_ao": is_ao, "ao_seeing": results["ao_seeing"],
-                           "strehl": results["strehl"],
+                           "delivered": results.get("fwhm"),
+                           "delivered_error": results.get("fwhm_std"),
+                           "ellipticity": results.get("elip"),
+                           "ellip_error": results.get("elip_std"),
+                           "zenith": results.get("zfwhm"),
+                           "zenith_error": results.get("zfwhm_std"),
+                           "is_ao": is_ao, "ao_seeing": results.get("ao_seeing"),
+                           "strehl": results.get("strehl"),
                            "comment": report.comments}
                     qap.adcc_report(ad, "iq", qad)
 
@@ -393,11 +396,11 @@ class QA(PrimitivesBASE):
                     if (len(ad) == 1 or not separate_ext) and not is_ao:
                         fwhm, ellip = results["fwhm"], results["elip"]
                         if fwhm:
-                            ext.hdr.set("MEANFWHM", fwhm,
-                                        comment=self.keyword_comments["MEANFWHM"])
+                           ad.phu.set("MEANFWHM", fwhm,
+                                      comment=self.keyword_comments["MEANFWHM"])
                         if ellip:
-                            ext.hdr.set("MEANELLP", ellip,
-                                        comment=self.keyword_comments["MEANELLP"])
+                            ad.phu.set("MEANELLP", ellip,
+                                       comment=self.keyword_comments["MEANELLP"])
                 else:
                     self.log.warning(f"No good sources found in {ad.filename}")
 
@@ -405,8 +408,12 @@ class QA(PrimitivesBASE):
                 # If displaying, make a mask to display along with image
                 # that marks which stars were used
                 for ext, measurement in zip(ad, report.measurements):
-                    circles = [(x, y, 16) for x, y in zip(measurement["x"], measurement["y"])]
-                    iq_overlays.append(circles)
+                    try:  # columns won't exist if no objects
+                        circles = [(x, y, 16) for x, y in zip(measurement["x"], measurement["y"])]
+                    except KeyError:
+                        iq_overlays.append(None)
+                    else:
+                        iq_overlays.append(circles)
 
                 self.display([ad], debug_overlay=tuple(iq_overlays) if iq_overlays else None,
                              frame=frame, **display_params)
@@ -441,9 +448,13 @@ def _gsaoi_iq_estimate(ad, results):
     -------
     Measurement: estimate of the seeing
     """
+    try:
+        strehl, fwhm = results["strehl"], results["fwhm"]
+    except KeyError:  # no sources
+        return
+
     log = logutils.get_logger(__name__)
     wavelength = ad.central_wavelength(asMicrometers=True)
-    strehl, fwhm = results["strehl"], results["fwhm"]
     magic_number = np.log10(strehl * fwhm ** 1.5 / wavelength ** 2.285)
     # Final constant is ln(10)
     magic_number_std = np.sqrt((results["strehl_std"] / strehl) ** 2 +
@@ -536,8 +547,13 @@ class QAReport:
         self.band = None
         self.measurements = []
         self.results = []
-        self.comments = []
         self.fitsdict_items = ["percentile_band", "comment"]
+        self.reset_text()
+
+    def reset_text(self):
+        """Clear comments and warning"""
+        self.comments = []
+        self.warning = ''
 
     @staticmethod
     def bandstr(band):
@@ -570,10 +586,9 @@ class QAReport:
         cmp = lambda x, y: (x > y) - (x < y)
 
         log = self.log
-        self.warning = ''
         if self.limit_dict is None or value is None:
             return
-        simple &= unc is not None
+        simple |= unc is None
 
         if simple:
             # Straightfoward determination of which band the measured value
@@ -801,7 +816,7 @@ class BGReport(QAReport):
 
         body = [('Sky level measurement:', '{:.0f} +/- {:.0f} {}'.
                  format(results['bg'], results['bgerr'], self.bunit))]
-        if results['mag'] is not None:
+        if results.get('mag') is not None:
             body.append(('Mag / sq arcsec in {}:'.format(self.filter_name),
                          '{:.2f} +/- {:.2f}'.format(results['mag'], results['mag_std'])))
         if self.band:
@@ -1103,6 +1118,8 @@ class IQReport(QAReport):
                                 "pa": float(pa.mean()), "pa_std": float(pa.std())})
             else:
                 results.update({"elip": None, "elip_std": None})
+
+        if t or self.is_ao:
             results["adaptive_optics"] = self.is_ao
 
             results["ao_seeing"] = self.ao_seeing
@@ -1190,7 +1207,7 @@ class IQReport(QAReport):
                 body.append(('Ellipticity:', '{:.3f} +/- {:.3f}'.
                              format(results["elip"], results["elip_std"])))
             if self.is_ao:
-                if results["strehl"]:
+                if results.get("strehl"):
                     body.append(('Strehl ratio:', '{:.3f} +/- {:.3f}'.
                                  format(results["strehl"], results["strehl_std"])))
                 else:
@@ -1218,7 +1235,7 @@ class IQReport(QAReport):
         else:
             body.append(('(Requested IQ could not be determined)', ''))
 
-        if results.get("elip", 0) is not None and results.get("elip") > 0.1:
+        if results.get("elip", 0) > 0.1:
             body.append(('', 'WARNING: high ellipticity'))
             self.comments.append('High ellipticity')
             if 'NON_SIDEREAL' in self.ad_tags:

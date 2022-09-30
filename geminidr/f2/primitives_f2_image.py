@@ -52,6 +52,10 @@ class F2Image(F2, Image, Photometry):
             stack_params = self._inherit_params(params, "stackFrames")
             if dark_list:
                 self.showInputs(dark_list, purpose='darks')
+                # stackDarks will check that all darks match each other,
+                # here just check that the exptime of first one matches flats.
+                if dark_list[0].exposure_time() != flat_list[0].exposure_time():
+                    raise ValueError("Darks exposure time not equal to flats exposure time")
                 dark_list = self.stackDarks(dark_list, **stack_params)
             self.showInputs(flat_list, purpose='flats')
             stack_params.update({'zero': False, 'scale': False})

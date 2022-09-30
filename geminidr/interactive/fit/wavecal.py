@@ -48,8 +48,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if absorption:
             self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
                                             'spectrum': -meta["spectrum"]})
-                                            # 'spectrum': [1 /sig for sig in meta["spectrum"]]})
- #                                            'spectrum': [at.divide0(1, sig) for sig in meta["spectrum"]]})
         else:
             self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
                                              'spectrum': meta["spectrum"]})

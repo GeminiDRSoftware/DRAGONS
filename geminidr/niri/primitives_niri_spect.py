@@ -4,6 +4,7 @@
 #                                                      primitives_niri_spect.py
 # -----------------------------------------------------------------------------
 
+import os
 
 from importlib import import_module
 
@@ -55,3 +56,39 @@ class NIRISpect(Spect, NIRI):
             # Timestamp. Suffix was updated in the super() call
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
+
+    
+    # MS: following two functions are largely a copy from primitives_gnirs_spect.py
+    # for doing a basic wavecal. 
+    # Expect Olesja will improve it when she gets to NIRI.
+    def determineWavelengthSolution(self, adinputs=None, **params):
+        for ad in adinputs:
+            if params["central_wavelength"] is None:
+                    params["central_wavelength"] = ad.central_wavelength(asNanometers=True) 
+
+        adinputs = super().determineWavelengthSolution(adinputs, **params)
+        return adinputs
+
+    
+    def _get_arc_linelist(self, waves=None, ad=None):
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   self.inst_lookups).__file__)
+
+        if 'ARC' in ad.tags:
+            if 'Xe' in ad.object():
+                linelist ='Ar_Xe.dat'
+            elif "Ar" in ad.object():
+                linelist = 'argon.dat'
+            else:
+                raise ValueError(f"No default line list found for {ad.object()}-type arc. Please provide a line list.")
+        else:
+            if ad.filter_name(pretty=True).startswith('L'):
+                linelist = 'skyLband.dat'
+            elif ad.filter_name(pretty=True).startswith('L'):
+                linelist = 'skyMband.dat'
+            else:
+                linelist = 'nearIRsky.dat'
+
+        filename = os.path.join(lookup_dir, linelist)
+
+        return wavecal.LineList(filename)    

@@ -382,7 +382,17 @@ class ADCompare:
         return errorlist
 
     def _header(self, hdr1, hdr2, ignore=None):
-        """General method for comparing headers, ignoring some keywords"""
+        """General method for comparing headers, ignoring some keywords
+
+        Parameters
+        ----------
+        hdr1, hdr2: dict
+            The headers to compare.
+        ignore : `list` of `str`
+            A list of strings corresponding to header keywords which should be
+            excluded from matching between both headers.
+
+        """
         errorlist = []
         s1 = set(hdr1.keys()) - {'HISTORY', 'COMMENT'}
         s2 = set(hdr2.keys()) - {'HISTORY', 'COMMENT'}
@@ -395,10 +405,14 @@ class ADCompare:
             if s2 - s1:
                 errorlist.append(f'Header 2 contains keywords {s2 - s1}')
 
+        ignore_list = ['GEM-TLM', 'HISTORY', 'COMMENT', '']
+        # Include keywords from `ignore` parameter.
+        if ignore:
+            ignore_list.extend(ignore)
+
         for kw in hdr1:
             # GEM-TLM is "time last modified"
-            if kw not in timestamp_keys.values() and kw not in ['GEM-TLM',
-                                                    'HISTORY', 'COMMENT', '']:
+            if kw not in timestamp_keys.values() and kw not in ignore_list:
                 try:
                     v1, v2 = hdr1[kw], hdr2[kw]
                 except KeyError:  # Missing keyword in AD2

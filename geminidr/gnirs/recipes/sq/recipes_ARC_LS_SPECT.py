@@ -7,12 +7,19 @@ Default is "makeProcessedArc".
 recipe_tags = {'GNIRS', 'SPECT', 'LS', 'ARC'}
 
 def makeProcessedArc(p):
+    """
+    Process GNIRS longslist arc and calculate wavelength and distortion
+    solutions.  No stacking, arcs are processed individually if more than
+    one is given.
+
+    Inputs are:
+      * raw arc - no other calibrations required.
+    """
     p.prepare()
     p.addDQ()
     p.addVAR(read_noise=True)
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
-  #  p.flatCorrect()
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
     p.determineDistortion(debug=True)

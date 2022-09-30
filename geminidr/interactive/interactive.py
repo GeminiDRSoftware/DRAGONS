@@ -648,6 +648,20 @@ class PrimitiveVisualizer(ABC):
                                        width_policy="fit",
                                        placeholder=params.placeholders[key]
                                        if key in params.placeholders else None)
+
+                    class TextHandler:
+                        def __init__(self, key, extras, fn):
+                            self.key = key
+                            self.extras = extras
+                            self.fn = fn
+
+                        def handler(self, name, old, new):
+                            self.extras[self.key] = new
+                            if reinit_live and self.fn is not None:
+                                self.fn()
+
+                    widget.on_change("value", TextHandler(key, self.extras, lambda: self.reconstruct_points()).handler)
+
                     self.widgets[key] = widget
                     widgets.append(widget)
         return widgets

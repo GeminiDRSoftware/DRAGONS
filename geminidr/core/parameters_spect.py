@@ -91,6 +91,7 @@ class determineDistortionConfig(config.Config):
     debug = config.Field("Display line traces on image display?", bool, False)
 
 class determineSlitEdgesConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
     edges1 = config.ListField("List of left edges of illuminated region(s)",
                               float, default=None, minLength=1,
                               optional=True, single=True)
@@ -410,6 +411,7 @@ class linearizeSpectraConfig(config.Config):
 
 
 class maskBeyondSlitConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit", optional=True)
     debug = config.Field("Plot the mask created.",
                          bool, False)
 
@@ -418,7 +420,7 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
-                                  float, 0.01, min=0, inclusiveMin=False)
+                                  float, 0.1, min=0.01, max=1.0)
     interactive = config.Field("Interactive fitting?", bool, False)
 
     def setDefaults(self):
