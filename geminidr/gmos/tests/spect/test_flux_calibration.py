@@ -15,6 +15,8 @@ import gemini_instruments
 from astropy.io import fits
 from astropy import units as u
 from astropy.modeling import models
+
+from astrodata.provenance import provenance_summary
 from gempy.library import astromodels
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.utils import logutils
@@ -135,7 +137,6 @@ def test_regression_on_flux_calibration(ad, ref_ad_factory, change_working_dir):
         Fixture that contains a function used to load the reference AstroData
         object (see :mod:`recipe_system.testing`).
     """
-
     with change_working_dir():
         logutils.config(file_name='log_regression_{:s}.txt'.format(ad.data_label()))
         p = primitives_gmos_spect.GMOSSpect([ad])
