@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 import math
+from copy import deepcopy
 from functools import partial
 
 from scipy.special import j1
@@ -299,12 +300,12 @@ class QA(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         suffix = params["suffix"]
-        separate_ext = params["separate_ext"]
         display = params["display"]
 
         # If separate_ext is True, we want the tile parameter
         # for the display primitive to be False
-        display_params = {"tile": not separate_ext}
+        #display_params = {"tile": not separate_ext}
+        display_params = {}
         # remove_bias doesn't always exist in display() (only for GMOS)
         if "remove_bias" in params:
             display_params["remove_bias"] = params["remove_bias"]
@@ -314,6 +315,7 @@ class QA(PrimitivesBASE):
             measure_iq = True
             iq_overlays = []
             is_ao = ad.is_ao()
+            separate_ext = params["separate_ext"] & (len(ad) > 1)
 
             if not {'IMAGE', 'SPECT'} & ad.tags:
                 log.warning(f"{ad.filename} is not IMAGE or SPECT; "
@@ -336,7 +338,15 @@ class QA(PrimitivesBASE):
                     iq_band_limits = qa.iqBands[wvband]
                 except KeyError:
                     iq_band_limits = None
-                report = IQReport(ad, log=self.log, limit_dict=iq_band_limits)
+
+                if separate_ext:
+                    adiq = ad
+                else:
+                    log.fullinfo(f"Tiling {ad.filename} to compile IQ data "
+                                 "from all extensions")
+                    adiq = self.tileArrays([ad]).pop()
+
+                report = IQReport(adiq, log=self.log, limit_dict=iq_band_limits)
 
                 if {'GSAOI', 'IMAGE'}.issubset(ad.tags):
                     ao_seeing_fn = partial(_gsaoi_iq_estimate, ad)
@@ -344,8 +354,8 @@ class QA(PrimitivesBASE):
                     ao_seeing_fn = None
 
                 has_sources = False
-                for ext in ad:
-                    extid = f"{ad.filename} extension {ext.id}"
+                for ext in adiq:
+                    extid = f"{ad.filename} extension {ext.id}" if separate_ext else ad.filename
                     nsources = report.add_measurement(ext, strehl_fn=partial(_strehl, ext))
                     results = report.calculate_metric(ao_seeing_fn=ao_seeing_fn)
                     if nsources == 0:
@@ -415,9 +425,9 @@ class QA(PrimitivesBASE):
                     else:
                         iq_overlays.append(circles)
 
-                self.display([ad], debug_overlay=tuple(iq_overlays) if iq_overlays else None,
+                self.display([adiq], debug_overlay=tuple(iq_overlays) if iq_overlays else None,
                              frame=frame, **display_params)
-                frame += 1 if display_params["tile"] else len(ad)
+                frame += len(ad) if separate_ext else 1
                 if any(ov is not None for ov in iq_overlays):
                     log.stdinfo("Sources used to measure IQ are marked "
                                 "with blue circles.")

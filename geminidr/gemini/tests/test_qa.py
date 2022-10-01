@@ -150,7 +150,7 @@ def test_measureIQ_no_objcat_AO(caplog):
     caplog.set_level(logging.DEBUG)
     ad = astrodata.open(download_from_archive("N20131215S0156.fits"))
     p = NIRIImage([ad])
-    p.measureIQ()[0]
+    p.measureIQ()
 
     found1 = found2 = False
     for rec in caplog.records:
@@ -161,6 +161,25 @@ def test_measureIQ_no_objcat_AO(caplog):
             assert float(rec.message.split()[5]) == 0.796
     assert found1, "No warning about missing OBJCAT"
     assert found2, "Did not find IQ value"
+
+
+@pytest.mark.dragons_remote_data
+def test_measure_IQ_GMOS_thru_slit(caplog):
+    """Measure on a GMOS thru-slit LS observation"""
+    caplog.set_level(logging.DEBUG)
+    ad = astrodata.open(download_from_archive("N20180521S0099.fits"))
+    p = GMOSImage([ad])
+    p.prepare(attach_mdf=True)
+    p.addDQ()
+    p.overscanCorrect()
+    p.ADUToElectrons()
+    p.measureIQ(display=False)
+    found = False
+    for rec in caplog.records:
+        if 'FWHM measurement' in rec.message:
+            found = True
+            assert abs(float(rec.message.split()[2]) - 0.892) < 0.05
+    assert found, "FWHM measurement not found in log"
 
 
 @pytest.mark.dragons_remote_data
