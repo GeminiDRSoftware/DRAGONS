@@ -299,7 +299,8 @@ def start_server():
             #                       "--headless", "--disable-gpu"]}
             kwargs = {"browser": "chrome"}
         else:
-            kwargs = {"browser": ["google-chrome", "--disable-gpu"]}
+            log.stdinfo("Setting browser for non-Darwin test_mode")
+            kwargs = {"browser": ["google-chrome-stable", "--disable-gpu"]}
 
         # Check Xvfb is running, it seems to not be working right and I don't want to have to keep
         # filing ITOps tickets just to keep our Jenkins passing once this is merged
