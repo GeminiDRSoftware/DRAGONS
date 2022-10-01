@@ -458,6 +458,7 @@ class PrimitiveVisualizer(ABC):
         if server.test_mode:
             _log.stdinfo(f"queueing button handler call for bokeh testing")
             # Simulate a click of the accept button
+
             self.do_later(lambda: self.submit_button_handler(None))
         # if server.test_mode:
         #     # Simulate a click of the accept button
