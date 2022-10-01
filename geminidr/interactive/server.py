@@ -287,7 +287,9 @@ def start_server():
                 port = port+1
                 if port >= 5701:
                     raise
+        log.stdinfo("starting bokeh server")
         _bokeh_server.start()
+        log.stdinfo("done starting bokeh server")
 
     if test_mode:
         from sys import platform
@@ -297,7 +299,7 @@ def start_server():
             #                       "--headless", "--disable-gpu"]}
             kwargs = {"browser": "chrome"}
         else:
-            kwargs = {"browser": "chrome"}
+            kwargs = {"browser": ["google-chrome", "--disable-gpu"]}
 
         # Check Xvfb is running, it seems to not be working right and I don't want to have to keep
         # filing ITOps tickets just to keep our Jenkins passing once this is merged
@@ -313,8 +315,11 @@ def start_server():
         # kwargs = {"browser": ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         #                       "--headless", "--disable-gpu"]}
 
+    log.stdinfo("adding / callback to bokeh")
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", **kwargs)
+    log.stdinfo("starting ioloop")
     _bokeh_server.io_loop.start()
+    log.stdinfo("done starting ioloop")
 
     # The server normally stops when the user hits the Submit button in the
     # visualizer, or when they close the tab.
