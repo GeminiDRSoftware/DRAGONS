@@ -300,7 +300,7 @@ def start_server():
             kwargs = {"browser": "chrome"}
         else:
             log.stdinfo("Setting browser for non-Darwin test_mode")
-            kwargs = {"browser": ["google-chrome-stable", "--disable-gpu"]}
+            kwargs = {"browser": "google-chrome"}
             log.stdinfo("Setting DISPLAY to :0")
             os.environ["DISPLAY"] = ":0"
 
