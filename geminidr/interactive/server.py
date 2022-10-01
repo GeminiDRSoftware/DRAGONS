@@ -136,7 +136,7 @@ def _bkapp(doc):
     -------
     none
     """
-    print("in _bkapp")
+    log.stdinfo("in _bkapp")
     ic = interactive_conf()
     bokeh_theme = ic.bokeh_theme
     bokeh_template_css = ic.bokeh_template_css
@@ -161,10 +161,10 @@ def _bkapp(doc):
         if hasattr(_visualizer, "filename_info"):
             doc.template_variables['filename_info'] = _visualizer.filename_info
 
-    print("passing doc to visualizer")
+    log.stdinfo("passing doc to visualizer")
     _visualizer.show(doc)
     doc.title = title
-    print("done _bkapp")
+    log.stdinfo("done _bkapp")
 
 
 def _helpapp(doc):
@@ -301,6 +301,8 @@ def start_server():
         else:
             log.stdinfo("Setting browser for non-Darwin test_mode")
             kwargs = {"browser": ["google-chrome-stable", "--disable-gpu"]}
+            log.stdinfo("Setting DISPLAY to :0")
+            os.environ["DISPLAY"] = ":0"
 
         # Check Xvfb is running, it seems to not be working right and I don't want to have to keep
         # filing ITOps tickets just to keep our Jenkins passing once this is merged
