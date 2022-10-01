@@ -274,12 +274,14 @@ class PrimitiveVisualizer(ABC):
         2) The fit is bad, we pop up a message dialog for the user and they hit 'OK' to return to the UI
         3) The fit is poor, we pop up an ok/cancel dialog for the user and continue or return to the UI as directed.
         """
+        _log.stdinfo("in submit_button_handler")
         bad_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
                              if fit.quality == FitQuality.BAD)
         poor_fits = ", ".join(tab.title for fit, tab in zip(self.fits, self.tabs.tabs)
                               if fit.quality == FitQuality.POOR)
         if bad_fits:
             # popup message
+            _log.stdinfo("triggered bad fit logic in submit_button_handler")
             self.show_user_message(f"Failed fit(s) on {bad_fits}. Please "
                                    "modify the parameters and try again.")
         elif poor_fits:
@@ -287,12 +289,14 @@ class PrimitiveVisualizer(ABC):
                 if accepted:
                     # Trigger the exit/fit, otherwise we do nothing
                     self.submit_button.disabled = True
+            _log.stdinfo("triggered poor fit logic in submit_button_handler")
             self.show_ok_cancel(f"Poor quality fit(s)s on {poor_fits}. Click "
                                 "OK to proceed anyway, or Cancel to return to "
                                 "the fitter.", cb)
         else:
             # Fit is good, we can exit
             # Trigger the submit callback via disabling the submit button
+            _log.stdinfo("disabling submit button to trigger exit")
             self.submit_button.disabled = True
 
     def abort_button_handler(self):
@@ -325,9 +329,11 @@ class PrimitiveVisualizer(ABC):
         -------
         none
         """
+        _log.stdinfo(f"in session_ended, user_satisfied is {user_satisfied}")
         self.user_satisfied = user_satisfied
         if not self.exited:
             self.exited = True
+            _log.stdinfo("calling stop_server()")
             server.stop_server()
 
     def get_filename_div(self):
@@ -449,16 +455,14 @@ class PrimitiveVisualizer(ABC):
         # this widget will be added at the end.
         self.do_later(lambda: doc.add_root(row(self._ok_cancel_holder, )))
 
-        # if server.test_mode:
-        #     print("Test mode detected, setup to submit later")
-        #     # Simulate a click of the accept button
-        #     self.do_later(lambda: self.submit_button_handler(None))
-        # else:
-        #     print("Not Test mode, no submit queued")
         if server.test_mode:
+            _log.stdinfo(f"queueing button handler call for bokeh testing")
             # Simulate a click of the accept button
-            # self.doc.add_timeout_callback(lambda: self.session_ended(None, True), 5000)
-            self.doc.add_timeout_callback(lambda: self.submit_button_handler(), 5000)
+            self.do_later(lambda: self.submit_button_handler(None))
+        # if server.test_mode:
+        #     # Simulate a click of the accept button
+        #     # self.doc.add_timeout_callback(lambda: self.session_ended(None, True), 5000)
+        #     self.doc.add_timeout_callback(lambda: self.submit_button_handler(), 5000)
 
     def show_ok_cancel(self, message, callback):
         """
