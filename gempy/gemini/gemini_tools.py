@@ -1248,10 +1248,13 @@ def fit_continuum(ad):
             coord = 0.5 * (spectral_slice.start + spectral_slice.stop)
 
             if find_sources_while_iterating:
+                _slice = ((spectral_slice, slice(None)) if dispaxis == 0
+                          else (slice(None), spectral_slice))
+                ndd = ext.nddata[_slice]
                 if ext.mask is None:
-                    profile = np.percentile(ext.data, 95, axis=dispaxis)
+                    profile = np.percentile(ndd.data, 95, axis=dispaxis)
                 else:
-                    profile = np.percentile(np.where(ext.mask == 0, ext.data, -np.inf),
+                    profile = np.percentile(np.where(ndd.mask == 0, ndd.data, -np.inf),
                                             95, axis=dispaxis)
                 center = np.argmax(profile[spatial_slice]) + spatial_slice.start
                 spatial_slices = [slice(max(center - spatial_box, 0),
