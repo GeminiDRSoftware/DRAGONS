@@ -1566,7 +1566,10 @@ class Preprocess(PrimitivesBASE):
                         skytables[j] = [None]
 
             # Go through all the science frames and sky-subtract any that
-            # aren't needed for future sky-frame creation
+            # aren't needed for future sky-frame creation. We can get into
+            # an issue here if we have two frames and are doing A-B and B-A
+            # (plus other more complex examples) so we should sky-subtract
+            # a frame even if it's a sky later on by making a copy.
             for j, ad2 in enumerate(adinputs):
                 # If already been sky-subtracted or not yet processed
                 if not skytables[j] or stacked_skies[j] == 0:
@@ -1574,12 +1577,16 @@ class Preprocess(PrimitivesBASE):
 
                 # We're iterating over *all* skytables so replace "None"s
                 # with iterable empty lists
+                frame_is_sky_for_future_skysub = ad2 in stacked_skies
                 frame_needed_to_make_future_stacked_sky = (
                         ad2 in [sky_dict.get(sky) for skytable in skytables
                                 for sky in (skytable or [])])
-                frame_is_sky_for_future_skysub = ad2 in stacked_skies
-                if not (frame_needed_to_make_future_stacked_sky or
-                        frame_is_sky_for_future_skysub):
+                if frame_is_sky_for_future_skysub:
+                    adinputs[j] = self.subtractSky(
+                        [deepcopy(ad2)], sky=stacked_skies[j], scale_sky=scale_sky,
+                        offset_sky=offset_sky, reset_sky=reset_sky,
+                        save_sky=save_sky, suffix=suffix).pop()
+                elif not frame_needed_to_make_future_stacked_sky:
                     # Sky-subtraction is in-place, so we can discard the output
                     self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
                                      offset_sky=offset_sky, reset_sky=reset_sky,
