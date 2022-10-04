@@ -64,6 +64,7 @@ pipeline {
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                         TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
                         DISPLAY = ":0"
+                        DBUS_SESSION_BUS_ADDRESS = "unix:path=/var/lib/jenkins/dbus_bus_for_jenkins"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
@@ -75,6 +76,7 @@ pipeline {
                         sh 'ls -al /var/lib/jenkins'
                         sh 'ls -al /var/lib/jenkins/.config'
                         sh 'df -h'
+                        sh 'dbus-daemon --session --nofork --address=$DBUS_SESSION_BUS_ADDRESS'
                         sh 'mkdir -p /tmp/jenkins-google-chrome'
                         sh 'nohup google-chrome --user-data-dir /tmp/jenkins-google-chrome --disable-gpu chrome://version &'
                         echo "Running tests with Python 3.7"
