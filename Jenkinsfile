@@ -70,7 +70,11 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
                         echo "Running chrome browser for interactive tests"
+                        sh 'ls -al /var/lib/jenkins/.config/google-chrome'
                         sh 'rm -rf /var/lib/jenkins/.config/google-chrome'
+                        sh 'ls -al /var/lib/jenkins'
+                        sh 'ls -al /var/lib/jenkins/.config'
+                        sh 'df -h'
                         sh 'nohup google-chrome --disable-gpu &'
                         echo "Running tests with Python 3.7"
                         sh 'tox -e py37-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
