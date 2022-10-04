@@ -1,4 +1,5 @@
 import os
+import subprocess
 import uuid
 from logging import ERROR
 from subprocess import run, Popen
@@ -40,6 +41,61 @@ TEMPLATE_PATH = '%s/templates' % pathlib.Path(__file__).parent.absolute()
 
 
 log = logutils.get_logger(__name__)
+
+from webbrowser import Chrome, register
+
+
+class ChromeFix(Chrome):
+    """
+    Launcher class for Google Chrome browser.
+
+    This override lets me customize the chrome run to workaround filesystem issues
+    with the google profile.
+    """
+
+    remote_args = ['--headless', '--user-data-dir', '/tmp/jenkins-google-chrome', '%action', '%s']
+    # remote_args = ['%action', '%s']
+    # remote_action = ""
+    # remote_action_newwin = "--new-window"
+    # remote_action_newtab = ""
+    # background = True
+    process = None
+
+    def _invoke(self, args, remote, autoraise):
+        raise_opt = []
+        if remote and self.raise_opts:
+            # use autoraise argument only for remote invocation
+            autoraise = int(autoraise)
+            opt = self.raise_opts[autoraise]
+            if opt: raise_opt = [opt]
+
+        cmdline = [self.name] + raise_opt + args
+
+        if remote or self.background:
+            inout = subprocess.DEVNULL
+        else:
+            # for TTY browsers, we need stdin/out
+            inout = None
+        p = subprocess.Popen(cmdline, close_fds=True, stdin=inout,
+                             stdout=(self.redirect_stdout and inout or None),
+                             stderr=inout, start_new_session=True)
+        ChromeFix.process = p
+        if remote:
+            # wait at most five seconds. If the subprocess is not finished, the
+            # remote invocation has (hopefully) started a new instance.
+            try:
+                rc = p.wait(5)
+                # if remote call failed, open() will try direct invocation
+                return not rc
+            except subprocess.TimeoutExpired:
+                return True
+        elif self.background:
+            if p.poll() is None:
+                return True
+            else:
+                return False
+        else:
+            return not p.wait()
 
 
 class VersionHandler(tornado.web.RequestHandler):
@@ -304,30 +360,8 @@ def start_server():
             log.stdinfo("Setting DISPLAY to :0")
             os.environ["DISPLAY"] = ":0"
 
-            from webbrowser import Chrome, register
-            class ChromeFix(Chrome):
-                """
-                Launcher class for Google Chrome browser.
 
-                This override lets me customize the chrome run to workaround filesystem issues
-                with the google profile.
-                """
-
-                remote_args = ['--headless', '--user-data-dir', '/tmp/jenkins-google-chrome', '%action', '%s']
-                # remote_args = ['%action', '%s']
-                # remote_action = ""
-                # remote_action_newwin = "--new-window"
-                # remote_action_newtab = ""
-                # background = True
             register("google-chrome", ChromeFix)
-
-        # Check Xvfb is running, it seems to not be working right and I don't want to have to keep
-        # filing ITOps tickets just to keep our Jenkins passing once this is merged
-        # with PidFile(log, "dragons_interactive_testing"):
-        #     checkx = run(['xset', '-q'], capture_output=True)
-        #     if checkx.returncode != 0:
-        #         # Start Xvfb in the background
-        #         Popen(['/usr/bin/Xvfb', ':0'], close_fds=True)
 
     else:
         ic = interactive_conf()
@@ -340,6 +374,9 @@ def start_server():
     log.stdinfo("starting ioloop")
     _bokeh_server.io_loop.start()
     log.stdinfo("done starting ioloop")
+
+    if ChromeFix.process:
+        ChromeFix.process.kill()
 
     # The server normally stops when the user hits the Submit button in the
     # visualizer, or when they close the tab.

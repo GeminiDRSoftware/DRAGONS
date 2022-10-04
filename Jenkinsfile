@@ -64,20 +64,11 @@ pipeline {
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                         TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
                         DISPLAY = ":0"
-                        DBUS_SESSION_BUS_ADDRESS = "unix:path=/var/lib/jenkins/dbus_bus_for_jenkins"
                     }
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
-                        echo "Running chrome browser for interactive tests"
-                        sh 'ls -al /var/lib/jenkins/.config/google-chrome'
-                        sh 'rm -rf /var/lib/jenkins/.config/google-chrome'
-                        sh 'ls -al /var/lib/jenkins'
-                        sh 'ls -al /var/lib/jenkins/.config'
-                        sh 'df -h'
-                        sh 'mkdir -p /tmp/jenkins-google-chrome'
-                        sh 'nohup google-chrome --headless --user-data-dir /tmp/jenkins-google-chrome --disable-gpu chrome://version &'
                         echo "Running tests with Python 3.7"
                         sh 'tox -e py37-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
