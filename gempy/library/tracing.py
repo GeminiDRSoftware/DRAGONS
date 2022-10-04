@@ -552,7 +552,7 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
     return profile, prof_mask
 
 
-def get_extrema(profile, prof_mask=None, min_snr=3):
+def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
     """
     Find all the significant maxima and minima in a 1D profile. Significance
     is calculated from the prominence of each peak divided by an estimate of
@@ -576,6 +576,8 @@ def get_extrema(profile, prof_mask=None, min_snr=3):
         mask to apply to this profile
     min_snr: float
         minimum S/N ratio for a maximum to be considered significant
+    remove_edge_maxima: bool
+        remove maxima that do not have a minimum between them and the edge?
 
     Returns
     -------
@@ -616,12 +618,12 @@ def get_extrema(profile, prof_mask=None, min_snr=3):
     if extrema[0][2]:
         if len(extrema) == 1:
             extrema = [(1, profile[1], False)] + extrema + [(xpixels[-1], profile[-2], False)]
-        elif len(extrema) == 2:
+        elif len(extrema) == 2 or not remove_edge_maxima:
             extrema = [(1, profile[1], False)] + extrema
         else:
             del extrema[0]
     if extrema and extrema[-1][2]:
-        if len(extrema) == 2:
+        if len(extrema) == 2 or not remove_edge_maxima:
             extrema = extrema + [(xpixels[-1], profile[-2], False)]
         else:
             del extrema[-1]
