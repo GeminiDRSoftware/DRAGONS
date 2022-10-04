@@ -313,7 +313,7 @@ def start_server():
                 with the google profile.
                 """
 
-                remote_args = ['--user-data-dir', '/tmp/jenkins-google-chrome', '%action', '%s']
+                remote_args = ['--headless', '--user-data-dir', '/tmp/jenkins-google-chrome', '%action', '%s']
                 # remote_args = ['%action', '%s']
                 # remote_action = ""
                 # remote_action_newwin = "--new-window"
