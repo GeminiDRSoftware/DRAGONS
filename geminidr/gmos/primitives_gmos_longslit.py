@@ -102,7 +102,7 @@ class GMOSClassicLongslit(GMOSSpect):
                        ("GMOS-N", "EEV"): 0.7,
                        ("GMOS-S", "Hamamatsu-S"): 5.5,
                        ("GMOS-S", "EEV"): 3.8}
-        edges = 50  # try to eliminate issues at the very edges
+        edges = 60  # try to eliminate issues at the very edges
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -118,18 +118,22 @@ class GMOSClassicLongslit(GMOSSpect):
 
         for ad, illum in zip(*gt.make_lists(adinputs, illum_mask, force_ad=True)):
             if ad.phu.get(timestamp_key):
-                log.warning('No changes will be made to {}, since it has '
-                    'already been processed by addIllumMaskToDQ'.
-                            format(ad.filename))
+                log.warning(f'No changes will be made to {ad.filename}, since'
+                    ' it has already been processed by addIllumMaskToDQ')
                 continue
 
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-            mshift = max_shift // ybin
+            mshift = max_shift // ybin + 10
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
                              for detsec in ad_detsec)
             has_48rows = (all(detsec.y2 == 4224 for detsec in ad_detsec) and
                           'Hamamatsu' in ad.detector_name(pretty=True))
+
+            if has_48rows:
+                actual_rows = 48 // ybin
+                for ext in ad:
+                    ext.mask[:actual_rows] |= DQ.unilluminated
 
             if illum:
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
@@ -211,6 +215,7 @@ class GMOSClassicLongslit(GMOSSpect):
                     fig, ax = plt.subplots()
                     ax.plot(row_medians / row_medians.max(), 'b-')
                     ax.plot(model[mshift:-mshift], 'k-')
+                    print(f"Row medians scaled by {row_medians.max()}")
 
                 if shift is None:
                     xcorr = correlate(model, row_medians[edges:-edges], mode='valid')
@@ -221,7 +226,7 @@ class GMOSClassicLongslit(GMOSSpect):
 
                     # Only keep maxima if the fitted peak value is close to
                     # the actual peak (should remove single-pixel peaks)
-                    extrema = tracing.get_extrema(xcorr)
+                    extrema = tracing.get_extrema(xcorr, remove_edge_maxima=False)
                     if debug_plot:
                         print(extrema)
                     maxima = [int(x[0] + 0.5) for x in extrema if x[2]]
@@ -235,8 +240,7 @@ class GMOSClassicLongslit(GMOSSpect):
                         plt.ion()
 
                     yshift = mshift - maxima[0]
-                    if len(maxima) > 1 or abs(yshift) > max_shift:
-                        print(yshift // ybin)
+                    if len(maxima) > 1 or abs(yshift) > mshift:
                         log.warning(f"{ad.filename}: cross-correlation peak is"
                                     " untrustworthy so not adding illumination "
                                     "mask. Please re-run with a specified shift.")
@@ -265,11 +269,6 @@ class GMOSClassicLongslit(GMOSSpect):
                         np.ma.masked_array(np.zeros_like(row_mask), row_mask))
                     for _slice in slices:
                         log.debug(f"Masking rows {_slice.start+1} to {_slice.stop}")
-
-            if has_48rows:
-                actual_rows = 48 // ybin
-                for ext in ad:
-                    ext.mask[:actual_rows] |= DQ.unilluminated
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
