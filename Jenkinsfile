@@ -75,7 +75,7 @@ pipeline {
                         sh 'ls -al /var/lib/jenkins'
                         sh 'ls -al /var/lib/jenkins/.config'
                         sh 'df -h'
-                        sh 'nohup google-chrome --disable-gpu chrome://version &'
+                        sh 'nohup google-chrome --user-data-dir /tmp/jenkins-google-chrome --disable-gpu chrome://version &'
                         echo "Running tests with Python 3.7"
                         sh 'tox -e py37-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"

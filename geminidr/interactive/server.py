@@ -304,6 +304,23 @@ def start_server():
             log.stdinfo("Setting DISPLAY to :0")
             os.environ["DISPLAY"] = ":0"
 
+            from webbrowser import Chrome, register
+            class ChromeFix(Chrome):
+                """
+                Launcher class for Google Chrome browser.
+
+                This override lets me customize the chrome run to workaround filesystem issues
+                with the google profile.
+                """
+
+                remote_args = ['--user-data-dir', '/tmp/jenkins-google-chrome', '%action', '%s']
+                # remote_args = ['%action', '%s']
+                # remote_action = ""
+                # remote_action_newwin = "--new-window"
+                # remote_action_newtab = ""
+                # background = True
+            register("google-chrome", ChromeFix)
+
         # Check Xvfb is running, it seems to not be working right and I don't want to have to keep
         # filing ITOps tickets just to keep our Jenkins passing once this is merged
         # with PidFile(log, "dragons_interactive_testing"):
