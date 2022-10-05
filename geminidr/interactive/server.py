@@ -53,8 +53,8 @@ class ChromeFix(Chrome):
     with the google profile.
     """
 
-    remote_args = ['--headless', '%action', '%s']
-    # remote_args = ['%action', '%s']
+    # remote_args = ['--headless', '%action', '%s']
+    remote_args = ['%action', '%s']
     # remote_action = ""
     # remote_action_newwin = "--new-window"
     # remote_action_newtab = ""
@@ -97,6 +97,7 @@ class ChromeFix(Chrome):
             except subprocess.TimeoutExpired:
                 return True
         elif self.background:
+            log.stdinfo("CHROME at call to p.poll()")
             if p.poll() is None:
                 log.stdinfo("CHROME backgrounded, returning True")
                 return True
@@ -104,6 +105,7 @@ class ChromeFix(Chrome):
                 log.stdinfo("CHROME backgrounded, returning False")
                 return False
         else:
+            log.stdinfo("CHROME at call to p.wait()")
             return not p.wait()
 
 
