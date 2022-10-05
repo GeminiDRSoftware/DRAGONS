@@ -331,6 +331,12 @@ class NearIR(Bookkeeping):
                 # Generate mask for applying cleaning, whole frame by default.
                 region_mask = np.zeros_like(ext.data)
 
+                # Slightly hacky way to store references to the four qudrants
+                # for later leveling of their backgrounds.
+                quads = {}
+                quad_means = []
+                quad_num = 0
+
                 for roi in region.strip('[]').split(','):
                     r = roi.split(':')
                     if len(r) != 2:
@@ -349,6 +355,8 @@ class NearIR(Bookkeeping):
                     for xstart in (0, qxsize):
                         quad = ext.nddata[ystart:ystart + qysize,
                                           xstart:xstart + qxsize]
+                        quads[quad_num] = quad
+                        quad_num += 1
                         quad_mask = region_mask[ystart:ystart + qysize,
                                                 xstart:xstart + qxsize]
                         sigma_in = sigclip(np.ma.masked_array(quad.data,
@@ -370,8 +378,10 @@ class NearIR(Bookkeeping):
                         pattern = np.tile(out, (len(yticks), len(xticks)))
                         out_quad = (quad.data + np.mean(out) -
                                     pattern * quad_mask)
-                        sigma_out = sigclip(np.ma.masked_array(out_quad,
-                                                               quad.mask)).std()
+                        sigma_clipped_out = sigclip(np.ma.masked_array(out_quad,
+                                                                       quad.mask))
+                        sigma_out = sigma_clipped_out.std()
+                        quad_means.append(sigma_clipped_out.mean())
                         if sigma_out > sigma_in:
                             qstr = (f"{ad.filename} extension {ext.id} "
                                     f"quadrant ({xstart},{ystart})")
@@ -392,12 +402,18 @@ class NearIR(Bookkeeping):
                     ext.variance = np.delete(ext.variance, [-2, -1], axis=0)
                     ext.mask = np.delete(ext.mask, [-2, -1], axis=0)
 
+            log.debug(f"The background level of the found quadrants is {quad_means}")
+            arrays_median = np.median(quad_means)
+
+            # Offset each quad by the difference between it and the overall
+            # background.
+            for quad_num, quad in quads.items():
+                quad.data += arrays_median - quad_means[quad_num]
+
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
-
-
 
     def removePatternNoise_2(self, adinputs=None, **params):
         """
@@ -426,7 +442,7 @@ class NearIR(Bookkeeping):
         subtract_background: bool, Default: True
             Remove median of each "box" before calculating pattern noise?
         edge_threshold: float, Default: 10
-            sigma threshold for automatically identifying edges of pattern coverage 
+            sigma threshold for automatically identifying edges of pattern coverage
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -444,9 +460,9 @@ class NearIR(Bookkeeping):
 
         def pattern_func(x, block, pattern):
             squared_err = 0
-            squared_err += np.sum(((np.ma.masked_array(block.data, block.mask)) - x[0] * np.ma.masked_array(pattern, block.mask))**2.0) 
+            squared_err += np.sum(((np.ma.masked_array(block.data, block.mask)) - x[0] * np.ma.masked_array(pattern, block.mask))**2.0)
             return squared_err
-        
+
 
         ## MS: to get a progress bar
         with tqdm(total=np.sum([4.0*len(ad) for ad in adinputs])) as pbar:
@@ -478,12 +494,12 @@ class NearIR(Bookkeeping):
                             axis=0)
                         ext.mask = np.append(
                             ext.mask,
-                            np.ones((2, ext.shape[1]), dtype=ext.mask.dtype), 
+                            np.ones((2, ext.shape[1]), dtype=ext.mask.dtype),
                             axis=0)
                         log.debug("New image shape:\n"
                                   f"  SCI: {ext.data.shape}\n"
                                   f"  VAR: {ext.variance.shape}\n"
-                                  f"   DQ: {ext.mask.shape}")        
+                                  f"   DQ: {ext.mask.shape}")
 
                     qysize, qxsize = [size // 2 for size in ext.data.shape]
                     yticks = [(y, y + pysize) for y in range(0, qysize, pysize)]
@@ -517,7 +533,7 @@ class NearIR(Bookkeeping):
                                 else:
                                     log.stdinfo("No improvement for " + qstr +
                                                 ", not applying pattern removal.")
-                                    continue                            
+                                    continue
 
                             ## MS: now finding the applicable roi for pattern subtraction. Note slopes={'0':end,'1':+slope,'-1':-slope}
                             scaling_factors = np.array([])
@@ -531,8 +547,8 @@ class NearIR(Bookkeeping):
                             _, YY, __ = sigma_clipped_stats(scaling_factors_quad, axis=1, sigma=2.0)
                             D_YY = np.diff(YY)
                             idxs = np.array([0])
-                            slopes = np.array([0]) 
-                            for ff, kk in zip([edge_threshold, -1.0*edge_threshold], [1, -1]): 
+                            slopes = np.array([0])
+                            for ff, kk in zip([edge_threshold, -1.0*edge_threshold], [1, -1]):
                                 t_idxs = np.argwhere(D_YY>(D_YY.mean()+ff*D_YY.std())).flatten()
                                 if kk == -1:
                                     t_idxs = np.argwhere(D_YY<(D_YY.mean()+ff*D_YY.std())).flatten()
@@ -545,7 +561,7 @@ class NearIR(Bookkeeping):
                             slopes = (slopes[args_sorted]).astype(int)
                             new_out_quad = out_quad.copy()
 
-                            ## MS: final cleaned quad 
+                            ## MS: final cleaned quad
                             for i in range(1, len(idxs)):
                                 if i == len(idxs)-1:
                                     if slopes[i-1] == -1:
@@ -563,15 +579,15 @@ class NearIR(Bookkeeping):
                         ext.data = np.delete(ext.data, [-2, -1], axis=0)
                         ext.variance = np.delete(ext.variance, [-2, -1], axis=0)
                         ext.mask = np.delete(ext.mask, [-2, -1], axis=0)
-                        
+
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
-            
-        return adinputs
-    
 
-    
+        return adinputs
+
+
+
 
     def separateFlatsDarks(self, adinputs=None, **params):
         """
