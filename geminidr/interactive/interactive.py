@@ -329,6 +329,7 @@ class PrimitiveVisualizer(ABC):
         -------
         none
         """
+        _log.stinfo("CHROME in session_ended")
         _log.stdinfo(f"in session_ended, user_satisfied is {user_satisfied}")
         self.user_satisfied = user_satisfied
         if not self.exited:

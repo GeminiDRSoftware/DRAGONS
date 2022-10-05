@@ -62,6 +62,7 @@ class ChromeFix(Chrome):
     process = None
 
     def _invoke(self, args, remote, autoraise):
+        log.stdinfo("CHROME in Chrome Fix._invoke()")
         raise_opt = []
         if remote and self.raise_opts:
             # use autoraise argument only for remote invocation
@@ -76,9 +77,11 @@ class ChromeFix(Chrome):
         else:
             # for TTY browsers, we need stdin/out
             inout = None
+        log.stdinfo(f"CHROME calling {cmdline}")
         p = subprocess.Popen(cmdline, close_fds=True, stdin=inout,
                              stdout=(self.redirect_stdout and inout or None),
                              stderr=inout, start_new_session=True)
+        log.stdinfo("CHROME process running")
         ChromeFix.process = p
         if remote:
             # wait at most five seconds. If the subprocess is not finished, the
@@ -91,8 +94,10 @@ class ChromeFix(Chrome):
                 return True
         elif self.background:
             if p.poll() is None:
+                log.stdinfo("CHROME backgrounded, returning True")
                 return True
             else:
+                log.stdinfo("CHROME backgrounded, returning False")
                 return False
         else:
             return not p.wait()
@@ -192,6 +197,7 @@ def _bkapp(doc):
     -------
     none
     """
+    log.stdinfo("CHROME in _bkapp")
     log.stdinfo("in _bkapp")
     ic = interactive_conf()
     bokeh_theme = ic.bokeh_theme
@@ -221,6 +227,7 @@ def _bkapp(doc):
     _visualizer.show(doc)
     doc.title = title
     log.stdinfo("done _bkapp")
+    log.stdinfo("CHROME done _bkapp")
 
 
 def _helpapp(doc):
@@ -256,12 +263,14 @@ def _shutdown(doc):
     doc : :class:`~bokeh.document.Document`
         Document for the webpage the request is coming from (there's only one)
     """
+    log.stdinfo("CHROME in _shutdown")
     user_satisfied = True
     if 'user_satisfied' in doc.session_context.request.arguments:
         user_satisfied = doc.session_context.request.arguments['user_satisfied'][0].decode('utf-8')
         if user_satisfied is not None and user_satisfied.lower() in ('0', 'n', 'f', 'no', 'false'):
             user_satisfied = False
     _visualizer.session_ended(None, user_satisfied)
+    log.stdinfo("CHROME done _shutdown")
 
 
 def set_visualizer(visualizer):
@@ -371,9 +380,9 @@ def start_server():
 
     log.stdinfo("adding / callback to bokeh")
     _bokeh_server.io_loop.add_callback(_bokeh_server.show, "/", **kwargs)
-    log.stdinfo("starting ioloop")
+    log.stdinfo("CHROME starting ioloop")
     _bokeh_server.io_loop.start()
-    log.stdinfo("done starting ioloop")
+    log.stdinfo("CHROME done starting ioloop")
 
     if ChromeFix.process:
         ChromeFix.process.kill()
@@ -390,6 +399,7 @@ def stop_server():
     This normally gets called when the user hits the submit button
     or closes the UI browser tab.
     """
+    log.stdinfo("CHROME in stop_server()")
     global _bokeh_server
     _bokeh_server.io_loop.stop()
 
