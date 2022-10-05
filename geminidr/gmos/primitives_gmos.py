@@ -19,6 +19,7 @@ from gempy.gemini import gemini_tools as gt
 # from gempy.gemini import hdr_fixing as hdrfix
 
 from geminidr.core import CCD
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from ..gemini.primitives_gemini import Gemini
 from . import parameters_gmos
 from .lookups import maskdb
@@ -89,7 +90,7 @@ class GMOS(Gemini, CCD):
 
                 for amp in badamplist:
                     ext = amp - 1
-                    mask = np.ones(ad[ext].mask.shape, dtype=ad[ext].mask.dtype)
+                    mask = np.ones(ad[ext].shape, dtype=DQ.datatype)
                     ad[ext].mask = mask
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
