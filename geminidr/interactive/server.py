@@ -71,7 +71,7 @@ class ChromeFix(Chrome):
             if opt: raise_opt = [opt]
 
         # cmdline = [self.name] + raise_opt + args
-        cmdline = ['google-chrome'] + raise_opt + args
+        cmdline = ['google-chrome'] + raise_opt + ["--headless"] + args
 
         if remote or self.background:
             inout = subprocess.DEVNULL
@@ -92,10 +92,13 @@ class ChromeFix(Chrome):
             # wait at most five seconds. If the subprocess is not finished, the
             # remote invocation has (hopefully) started a new instance.
             try:
+                log.stdinfo("CHROME calling wait(5)")
                 rc = p.wait(5)
+                log.stdinfo(f"CHROME wait got {rc}")
                 # if remote call failed, open() will try direct invocation
                 return not rc
             except subprocess.TimeoutExpired:
+                log.stdinfo("CHROME wait timeout expired, returning True")
                 return True
         elif self.background:
             log.stdinfo("CHROME at call to p.poll()")
