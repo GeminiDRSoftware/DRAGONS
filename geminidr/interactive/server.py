@@ -70,7 +70,8 @@ class ChromeFix(Chrome):
             opt = self.raise_opts[autoraise]
             if opt: raise_opt = [opt]
 
-        cmdline = [self.name] + raise_opt + args
+        # cmdline = [self.name] + raise_opt + args
+        cmdline = ['google-chrome'] + raise_opt + args
 
         if remote or self.background:
             inout = subprocess.DEVNULL
