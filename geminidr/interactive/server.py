@@ -78,13 +78,13 @@ class ChromeFix(Chrome):
             # for TTY browsers, we need stdin/out
             inout = None
         log.stdinfo(f"CHROME calling {cmdline}")
-        p = subprocess.Popen(cmdline,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             )
-        # p = subprocess.Popen(cmdline, close_fds=True, stdin=inout,
-        #                      stdout=(self.redirect_stdout and inout or None),
-        #                      stderr=inout, start_new_session=True)
+        # p = subprocess.Popen(cmdline,
+        #                      stdout=subprocess.PIPE,
+        #                      stderr=subprocess.PIPE,
+        #                      )
+        p = subprocess.Popen(cmdline, close_fds=True, stdin=inout,
+                             stdout=(self.redirect_stdout and inout or None),
+                             stderr=inout, start_new_session=True)
         log.stdinfo("CHROME process running")
         ChromeFix.process = p
         if remote:
