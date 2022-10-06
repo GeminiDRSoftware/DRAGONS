@@ -66,6 +66,8 @@ pipeline {
                         DISPLAY = ":0"
                     }
                     steps {
+                        echo "Starting DBUS if needed"
+                        sh 'dbus-launch'
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_agent.sh'
