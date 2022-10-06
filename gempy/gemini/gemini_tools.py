@@ -2036,7 +2036,13 @@ def sky_factor(nd1, nd2, skyfunc, multiplicative=False, threshold=0.001):
     factor = 0
     if multiplicative:
         current_sky = 1
-        ndcopy = deepcopy(nd1)
+        # A subtlety here: deepcopy-ing an AD slice will create a full AD
+        # object, and so skyfunc() will return a list instead of the single
+        # float value we want. So make sure the copy is a single slice too
+        if isinstance(nd1, astrodata.AstroData) and nd1.is_single:
+            ndcopy = deepcopy(nd1)[0]
+        else:
+            ndcopy = deepcopy(nd1)
         while abs(current_sky) > threshold:
             f = skyfunc(ndcopy) / skyfunc(nd2)
             ndcopy.subtract(nd2.multiply(f))
