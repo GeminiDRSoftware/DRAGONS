@@ -83,9 +83,10 @@ class ChromeFix(Chrome):
         #                      stdout=subprocess.PIPE,
         #                      stderr=subprocess.PIPE,
         #                      )
-        p = subprocess.Popen(cmdline, close_fds=True, stdin=inout,
-                             stdout=(self.redirect_stdout and inout or None),
-                             stderr=inout, start_new_session=True)
+        # p = subprocess.Popen(cmdline, close_fds=True, stdin=inout,
+        #                      stdout=(self.redirect_stdout and inout or None),
+        #                      stderr=inout, start_new_session=True)
+        p = subprocess.Popen(cmdline, start_new_session=True)
         log.stdinfo("CHROME process running")
         ChromeFix.process = p
         if remote:
@@ -383,7 +384,6 @@ def start_server():
             kwargs = {"browser": "google-chrome"}
             log.stdinfo("Setting DISPLAY to :0")
             os.environ["DISPLAY"] = ":0"
-
 
             register("google-chrome", ChromeFix)
 
