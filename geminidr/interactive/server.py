@@ -361,7 +361,7 @@ def start_server():
                     keep_alive_milliseconds=0,
                     num_procs=1,
                     extra_patterns=[('/version', VersionHandler)],
-                    log_function=dummy_logger,
+                    # log_function=dummy_logger,
                     port=port)
             except OSError:
                 port = port+1
