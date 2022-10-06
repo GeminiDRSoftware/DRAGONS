@@ -239,6 +239,11 @@ def _bkapp(doc):
     log.stdinfo("done _bkapp")
     log.stdinfo("CHROME done _bkapp")
 
+    # not having luck, try ending here in test mode
+    if test_mode:
+        log.stdinfo("CHROME explicit shutdown within _bkapp")
+        _shutdown(doc)
+
 
 def _helpapp(doc):
     """
