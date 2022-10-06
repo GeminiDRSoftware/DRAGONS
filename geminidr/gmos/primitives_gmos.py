@@ -88,10 +88,11 @@ class GMOS(Gemini, CCD):
                 plural = 's' if len(ampsstr) > 1 else ''
                 log.status(f'Masking amp{plural} {ampsstr}')
 
-                for amp in badamplist:
-                    ext = amp - 1
-                    mask = np.ones(ad[ext].shape, dtype=DQ.datatype)
-                    ad[ext].mask = mask
+                for i, ext in enumerate(ad):
+                    if i+1 in badamplist:
+                        ext.mask = np.ones(ext.shape, dtype=DQ.datatype)
+                    elif ext.mask is None:
+                        ext.mask = np.zeros(ext.shape, dtype=DQ.datatype)
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
