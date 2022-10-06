@@ -93,7 +93,7 @@ class ChromeFix(Chrome):
             # remote invocation has (hopefully) started a new instance.
             try:
                 log.stdinfo("CHROME calling wait(5)")
-                rc = p.wait(5)
+                rc = p.wait(60)
                 log.stdinfo(f"CHROME wait got {rc}")
                 # if remote call failed, open() will try direct invocation
                 return not rc
