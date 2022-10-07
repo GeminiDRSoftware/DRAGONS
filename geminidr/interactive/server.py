@@ -3,6 +3,7 @@ import subprocess
 import uuid
 from logging import ERROR
 from subprocess import run, Popen
+from tempfile import mkdtemp
 
 from astrodata import version
 
@@ -60,6 +61,7 @@ class ChromeFix(Chrome):
     # remote_action_newtab = ""
     # background = True
     process = None
+    chrmdir = None
 
     def _invoke(self, args, remote, autoraise):
         log.stdinfo("CHROME in Chrome Fix._invoke()")
@@ -72,7 +74,8 @@ class ChromeFix(Chrome):
 
         # cmdline = ['google-chrome'] + raise_opt + ["--headless"] + args
         # cmdline = ['google-chrome'] + raise_opt + args
-        cmdline = ['dbus-run-session', '--', 'google-chrome'] + raise_opt + args
+        chrmdir = mkdtemp()
+        cmdline = ['dbus-run-session', '--', 'google-chrome', '--user-data-dir', chrmdir] + raise_opt + args
 
         if remote or self.background:
             inout = subprocess.DEVNULL
@@ -402,6 +405,8 @@ def start_server():
 
     if ChromeFix.process:
         ChromeFix.process.kill()
+    if ChromeFix.chrmdir:
+        os.rmdir(ChromeFix.chrmdir)
 
     # The server normally stops when the user hits the Submit button in the
     # visualizer, or when they close the tab.
