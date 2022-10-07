@@ -71,7 +71,8 @@ class ChromeFix(Chrome):
             if opt: raise_opt = [opt]
 
         # cmdline = ['google-chrome'] + raise_opt + ["--headless"] + args
-        cmdline = ['google-chrome'] + raise_opt + args
+        # cmdline = ['google-chrome'] + raise_opt + args
+        cmdline = ['dbus-run-session', '--', 'google-chrome'] + raise_opt + args
 
         if remote or self.background:
             inout = subprocess.DEVNULL
