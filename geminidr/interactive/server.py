@@ -75,6 +75,7 @@ class ChromeFix(Chrome):
         # cmdline = ['google-chrome'] + raise_opt + ["--headless"] + args
         # cmdline = ['google-chrome'] + raise_opt + args
         chrmdir = mkdtemp()
+        ChromeFix.chrmdir = chrmdir
         cmdline = ['dbus-run-session', '--', 'google-chrome', '--user-data-dir', chrmdir] + raise_opt + args
 
         if remote or self.background:
