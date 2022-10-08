@@ -387,6 +387,7 @@ def start_server():
         else:
             log.stdinfo("Setting browser for non-Darwin test_mode")
             kwargs = {"browser": "google-chrome"}
+            kwargs = {"browser": "firefox"}  # try another browser
             log.stdinfo("Setting DISPLAY to :0")
             os.environ["DISPLAY"] = ":0"
 
