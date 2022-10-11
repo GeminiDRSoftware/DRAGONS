@@ -339,12 +339,12 @@ class QA(PrimitivesBASE):
                 except KeyError:
                     iq_band_limits = None
 
-                if separate_ext:
+                if separate_ext or len(ad) == 1:
                     adiq = ad
                 else:
                     log.fullinfo(f"Tiling {ad.filename} to compile IQ data "
                                  "from all extensions")
-                    adiq = self.tileArrays([ad]).pop()
+                    adiq = self.tileArrays([deepcopy(ad)]).pop()
 
                 report = IQReport(adiq, log=self.log, limit_dict=iq_band_limits)
 
