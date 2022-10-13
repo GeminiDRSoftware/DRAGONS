@@ -997,6 +997,7 @@ def fit_continuum(ad):
 
     pixel_scale = ad.pixel_scale()
     spatial_box = int(5.0 / pixel_scale)
+    MIN_APERTURE_WIDTH = 10  # pixels
 
     # Initialize the Gaussian width to FWHM = 1.2 arcsec
     init_width = 1.2 / (pixel_scale * (2 * np.sqrt(2 * np.log(2))))
@@ -1094,7 +1095,7 @@ def fit_continuum(ad):
                 length = spatial_slice.stop - spatial_slice.start
 
                 # General sanity requirement (will reject bad Apertures)
-                if length < 10:
+                if length < MIN_APERTURE_WIDTH:
                     continue
 
                 # These are all in terms of the full unsliced extension
@@ -1111,6 +1112,8 @@ def fit_continuum(ad):
                 data, mask, var = NDStacker.mean(ndd)
                 if mask is not None:
                     mask = (mask == 0)
+                    if mask.sum() < MIN_APERTURE_WIDTH:
+                        continue
                 try:
                     maxflux = np.max(abs(data[mask]))
                 except ValueError:
@@ -1152,7 +1155,10 @@ def fit_continuum(ad):
                 fit_it = fitting.LevMarLSQFitter()
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    m_final = fit_it(m_init, pixels[mask], data[mask])
+                    try:
+                        m_final = fit_it(m_init, pixels[mask], data[mask])
+                    except:  # anything that goes wrong
+                        continue
 
                 if fit_it.fit_info['ierr'] < 5:
                     # This is kind of ugly and empirical; philosophy is that peak should
