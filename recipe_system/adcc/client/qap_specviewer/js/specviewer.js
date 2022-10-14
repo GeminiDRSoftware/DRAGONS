@@ -819,35 +819,39 @@ class SpecViewer {
                 label: 'Standard Deviation',
               }});
 
-          this[`${type}Plots`][i] = $.jqplot(
-            plotId, sliced_intensities.concat(sliced_stddev),
-            $.extend(plotOptions, {
-              title: plotTitle,
-              axes: {
-                xaxis: {
-                  label: getWavelengthUnits(wavelengthUnits),
-                  labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-                },
-                yaxis: {
-                  label: `Intensity [${intensityUnits}]`,
-                  labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-                  tickOptions:{formatString:'%.2e'},
-                },
-              },
-              series: options_for_intensity.concat(options_for_stddev),
-            })
-          );
+          if (options_for_stddev.length > 0 || options_for_intensity.length > 0) {
+              this[`${type}Plots`][i] = $.jqplot(
+                plotId, sliced_intensities.concat(sliced_stddev),
+                $.extend(plotOptions, {
+                  title: plotTitle,
+                  axes: {
+                    xaxis: {
+                      label: getWavelengthUnits(wavelengthUnits),
+                      labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                    },
+                    yaxis: {
+                      label: `Intensity [${intensityUnits}]`,
+                      labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                      tickOptions:{formatString:'%.2e'},
+                    },
+                  },
+                  series: options_for_intensity.concat(options_for_stddev),
+                })
+              );
 
-          // Clean up the legend
-          remove_extra_items_from_legend(plotId);
+              // Clean up the legend
+              remove_extra_items_from_legend(plotId);
 
-          // Customize doZoom to clean up the legend after zooming.
-          let sViewer = this;
-          let originalDoZoom = this[`${type}Plots`][i].plugins.cursor.doZoom;
+              // Customize doZoom to clean up the legend after zooming.
+              let sViewer = this;
+              let originalDoZoom = this[`${type}Plots`][i].plugins.cursor.doZoom;
 
-          this[`${type}Plots`][i].plugins.cursor.doZoom = function (gridpos, datapos, plot, cursor) {
-            originalDoZoom(gridpos, datapos, plot, cursor);
-            remove_extra_items_from_legend(plotId);
+              this[`${type}Plots`][i].plugins.cursor.doZoom = function (gridpos, datapos, plot, cursor) {
+                originalDoZoom(gridpos, datapos, plot, cursor);
+                remove_extra_items_from_legend(plotId);
+              }
+          } else {
+            console.log("In updatePlotArea: no data for aperture " + apertureId)
           }
 
         } else {
