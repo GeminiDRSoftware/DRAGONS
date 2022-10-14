@@ -1503,6 +1503,18 @@ class Spect(Resample):
                     apmask = np.logical_or.reduce(
                         [ap.aperture_mask(ext, width=width, grow=grow)
                          for ap in apertures])
+                    # Add a mask of non-pixels (unilluminated/no-data). But
+                    # we only want to add rows that are completely data-free
+                    # or else the GMOS chip gaps (for example) will cause
+                    # sky apertures to be rejected
+                    if ext.mask is not None:
+                        if dispaxis == 1:
+                            apmask = (apmask.T | np.all(
+                                ext.mask & (DQ.unilluminated | DQ.no_data),
+                                axis=1)).T
+                        else:
+                            apmask |= np.all(ext.mask & (DQ.unilluminated |
+                                                         DQ.no_data), axis=0)
 
                 # Calculate world coords at middle of each dispersed spectrum
                 pix_coords = [[0.5 * (length-1)] * len(apertures)
