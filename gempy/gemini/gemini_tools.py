@@ -1360,18 +1360,18 @@ def fit_continuum(ad):
                             weight_list.append(max(m_final.mean_1 - pixels.min(),
                                                    pixels.max() - m_final.mean_0))
 
-
         # Now do something with the list of measurements
         fwhm_pix = np.array(fwhm_list)
         fwhm_arcsec = pixel_scale * fwhm_pix
-
         table = Table([x_list, y_list, fwhm_pix, fwhm_arcsec, weight_list],
                     names=("x", "y", "fwhm", "fwhm_arcsec", "weight"))
 
         # Clip outliers in FWHM
         if len(table) >= 3:
-            table = table[~sigma_clip(table['fwhm_arcsec'], sigma=2,
-                                      maxiters=2).mask]
+            ret_value = at.weighted_sigma_clip(
+                table['fwhm_arcsec'].data, weights=table['weight'].data,
+                sigma_lower=2, sigma_upper=1.5, maxiters=3)
+            table = table[~ret_value.mask]
         good_sources.append(table)
 
     return good_sources[0] if single else good_sources

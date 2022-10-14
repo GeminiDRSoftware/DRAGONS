@@ -161,3 +161,11 @@ def test_spherical_offsets_by_pa():
                        (36, -180), atol=1e-5)
     assert np.allclose(at.spherical_offsets_by_pa(c1, c2, position_angle=-90),
                        (-36, 180), atol=1e-5)
+
+
+def test_weighted_sigma_clip():
+    from astropy.stats import sigma_clipped_stats
+    x = np.arange(20) ** 2
+    mean_astropy = sigma_clipped_stats(x, sigma=2, cenfunc='mean')[0]
+    mean_astrotools = at.weighted_sigma_clip(x, sigma=2).mean()
+    assert mean_astropy == pytest.approx(mean_astrotools)
