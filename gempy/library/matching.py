@@ -357,7 +357,7 @@ class KDTreeFitter(Fitter):
         tree = spatial.cKDTree(ref_coords)
         # avoid _convert_input since tree can't be coerced to a float
         farg = (model_copy, in_coords, tree)
-        p0, _ = _model_to_fit_params(model_copy)
+        p0, *_ = _model_to_fit_params(model_copy)
 
         arg_names = inspect.getfullargspec(self._opt_method).args
         args = [self.objective_function]
