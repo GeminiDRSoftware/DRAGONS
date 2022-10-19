@@ -34,6 +34,7 @@ def reduce(p):
     p.clearStream(stream='skysub')
     p.associateSky()
     p.skyCorrect(mask_objects=True)
+    p.removePatternNoise_2(skip=True)
     p.detectSources()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()

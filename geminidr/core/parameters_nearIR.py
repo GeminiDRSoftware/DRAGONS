@@ -56,7 +56,10 @@ class removePatternNoise_2Config(config.Config):
     pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)
     pattern_y_size = config.RangeField("Pattern y size (pixels)", int, 4, min=4)
     subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
-    edge_threshold = config.RangeField("Pattern edge detection threshold (sigma)", float, 10., min=10.0) 
+    edge_threshold = config.RangeField("Pattern edge detection threshold (sigma)", float, 10., min=10.0)
+    level_bias_offset = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
+    smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=5)
+    skip = config.Field("Skip removePatternNoise in the recipe?", bool, True)
 
     
 class separateFlatsDarksConfig(config.Config):
