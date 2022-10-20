@@ -50,7 +50,6 @@ class removePatternNoiseConfig(config.Config):
 
 class removePatternNoise_2Config(config.Config):
     suffix = config.Field("Filename suffix", str, "_patternNoiseRemoved", optional=True)
-    must_reduce_rms = config.Field("Require reduction in RMS to apply pattern removal?", bool, True)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)
@@ -59,7 +58,7 @@ class removePatternNoise_2Config(config.Config):
     edge_threshold = config.RangeField("Pattern edge detection threshold (sigma)", float, 10., min=10.0)
     level_bias_offset = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
     smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=5)
-    skip = config.Field("Skip removePatternNoise in the recipe?", bool, True)
+    clean = config.Field("Behavior of the routine? Must be one of default, skip, or force", str, "skip")
 
     
 class separateFlatsDarksConfig(config.Config):

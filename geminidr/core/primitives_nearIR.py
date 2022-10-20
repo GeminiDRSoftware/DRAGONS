@@ -561,29 +561,30 @@ class NearIR(Bookkeeping):
         ----------
         suffix: str, Default: "_patternNoiseRemoved"
             Suffix to be added to output files.
-        must_reduce_rms: bool, Default: True
-            If True, will not apply pattern subtraction to each quadrant of the
-            image if doing so would increase the RMS.
         hsigma/lsigma: float, Defaults: 3 for both
             High and low sigma-clipping limits.
         pattern_x_size: int, Default: 16
             Size of pattern "box" in x direction. Must be a multiple of 4.
         pattern_y_size: int, Default: 4
-            size of pattern "box" in y direction. Must be a multiple of 4.
+            Size of pattern "box" in y direction. Must be a multiple of 4.
         subtract_background: bool, Default: True
             Remove median of each "box" before calculating pattern noise?
         edge_threshold: float, Default: 10
-            Sigma threshold for automatically identifying edges of pattern coverage
+            Sigma threshold for automatically identifying edges of pattern coverage.
         level_bias_offset: bool, Default: True
             Level the offset in bias level across (sub-)quads that typically accompany
-            pattern noise
+            pattern noise.
         smoothing_extent: int, Default: 5
             Used only when `level_bias_offset` is set to True. 
             Width (in pixels) of the region at a given quad interface to be smoothed over 
             on each side of the interface. 
             Note that for intra-quad leveling, this width is broadened by a factor 10.
-        skip: bool, Default: True
-            Skip this routine entirely when called from a recipe. 
+        clean: str, Default: "skip"
+            Must be one of "skip", "default", or "force".
+            skip: Skip this routine entirely when called from a recipe.
+            default: Apply the pattern subtraction to each quadrant of the image if doing 
+                     so decreases the RMS.
+            force: Force the pattern subtraction in each quadrant. 
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -592,13 +593,12 @@ class NearIR(Bookkeeping):
         hsigma, lsigma = params["hsigma"], params["lsigma"]
         pxsize, pysize = params["pattern_x_size"], params["pattern_y_size"]
         bgsub = params["subtract_background"]
-        must_reduce_rms = params["must_reduce_rms"]
+        clean = params["clean"]
         level_bias_offset = params["level_bias_offset"]
         smoothing_extent = params["smoothing_extent"]
-        to_skip = params["skip"]
 
-        if to_skip:
-            log.stdinfo("Skipping removePatternNoise since to_skip is set to True")
+        if clean=="skip":
+            log.stdinfo("Skipping removePatternNoise since 'clean' is set to 'skip'")
             return adinputs
         
         stack_function = NDStacker(combine='median', reject='sigclip',
@@ -658,6 +658,7 @@ class NearIR(Bookkeeping):
                     yticks = [(y, y + pysize) for y in range(0, qysize, pysize)]
                     xticks = [(x, x + pxsize) for x in range(0, qxsize, pxsize)]
                     quads_info = {}
+                    cleaned_quads = 0
                     
                     for ystart in (0, qysize):
                         quads_info[ystart] = {}
@@ -717,7 +718,6 @@ class NearIR(Bookkeeping):
                                                           'slopes':slopes,
                                                           'new_out_quad':new_out_quad,
                             }
-
                             pbar.update(1)
 
                     def del_spurious_peaks(arr1, arr2):
@@ -764,17 +764,17 @@ class NearIR(Bookkeeping):
                             if sigma_out > sigma_in:
                                 qstr = (f"{ad.filename} extension {ext.id} "
                                         f"quadrant ({Q['xstart']},{Q['ystart']})")
-                                if not must_reduce_rms:
+                                if clean=="force":
                                     log.stdinfo("Forcing cleaning on " + qstr)
-                                else:
+                                else: # clean is default
                                     log.stdinfo("No improvement for " + qstr +
                                                 ", not applying pattern removal.")
                                     continue
-
+                            cleaned_quads += 1
                             ext.data[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']] = new_out_quad
                             
 
-                    if level_bias_offset:
+                    if level_bias_offset and cleaned_quads>0:
                         if len(subquad['border']) > 0:
                             NearIR.levelQuad(ext, smoothing_extent=smoothing_extent, subquad=subquad)
                         else:
