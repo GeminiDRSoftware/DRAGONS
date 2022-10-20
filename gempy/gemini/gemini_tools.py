@@ -1663,7 +1663,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
 
 
 def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
-                          separate_ext=True, ignore_mask=False):
+                          separate_ext=True, ignore_mask=False, section=None):
     """
     Return background value, and its std deviation, as measured directly
     from pixels in the SCI image. DQ plane are used (if they exist)
@@ -1683,6 +1683,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         return information for each extension, rather than the whole AD?
     ignore_mask : bool
         if True, ignore the mask and OBJMASK
+    section: slice/None
+        region to use for statistics
 
     Returns
     -------
@@ -1704,17 +1706,18 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         flags = None
         # Use DQ and OBJMASK to flag pixels
         if not single and not separate_ext:
-            bg_data = np.array([ext.data for ext in ad]).ravel()
+            bg_data = np.array([ext.data[section] for ext in ad]).ravel()
             if not ignore_mask:
                 flags = np.array([ext.mask | getattr(ext, 'OBJMASK', 0)
                                   if ext.mask is not None
-                    else getattr(ext, 'OBJMASK', np.empty_like(ext.data, dtype=bool))
-                                  for ext in ad]).ravel()
+                    else getattr(ext, 'OBJMASK', np.zeros_like(ext.data, dtype=bool))
+                                  for ext in ad])[section].ravel()
         else:
             if not ignore_mask:
-                flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
-                    else getattr(ext, 'OBJMASK', None)
-            bg_data = ext.data.ravel()
+                flags = ((ext.mask | getattr(ext, 'OBJMASK', 0))[section]
+                    if ext.mask is not None else
+                         ext.OBJMASK[section] if hasattr(ext, 'OBJMASK') else None)
+            bg_data = ext.data[section].ravel()
 
         if flags is None:
             bg_data = bg_data[::sampling]
