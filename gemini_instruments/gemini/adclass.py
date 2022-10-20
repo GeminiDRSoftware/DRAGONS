@@ -223,7 +223,7 @@ class AstroDataGemini(AstroData):
     @astro_data_tag
     def _type_gcal_lamp(self):
         gcallamp = self.phu.get('GCALLAMP')
-        if gcallamp == 'IRhigh' or (gcallamp is not None and gcallamp.startswith('QH')):
+        if gcallamp in ('IRhigh', 'IRlow') or (gcallamp is not None and gcallamp.startswith('QH')):
             shut = self.phu.get('GCALSHUT')
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])

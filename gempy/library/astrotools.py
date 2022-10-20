@@ -494,6 +494,60 @@ def transpose_if_needed(*args, transpose=False, section=slice(None)):
                 else arg.T[section] if transpose else arg[section] for arg in args)
 
 
+def weighted_sigma_clip(data, weights=None, sigma=3, sigma_lower=None,
+                        sigma_upper=None, maxiters=5):
+    """
+    Perform sigma-clipping on a dataset, accounting for different relative
+    weights of the data.
+
+    Parameters
+    ----------
+    data: array/masked_array
+        the data
+    weights: array/None
+        relative weights of the data
+    sigma: float/None
+        number of standard deviations to clip if clipping symmetrically
+    sigma_lower: float/None
+        number of standard deviations for lower clip (non-symmetric)
+    sigma_upper: float/None
+        number of standard deviations for upper clip (non-symmetric)
+    maxiters: int
+        maximum number of iterations to perform
+
+    Returns
+    -------
+    np.ma.masked_array: data with mask indicating clipped points
+    """
+    if sigma_lower is None or sigma_upper is None:
+        sigma_lower = sigma_upper = sigma
+    if weights is None:
+        weights = np.ones_like(data)
+
+    if isinstance(data, np.ma.masked_array):
+        good = ~data.mask
+        data = data.data
+    else:
+        good = np.ones_like(data, dtype=bool)
+
+    niter = 0
+    while True:
+        avg = (np.average(data[good], weights=weights[good]) if niter > 0
+               else np.median(data[good]))
+        ngood = good.sum()
+        if ngood <= 1 or niter == maxiters:
+            break
+        std = np.sqrt(np.sum(weights[good] * (data[good] - avg) ** 2) /
+                      np.sum(weights[good]))
+        good[np.logical_or(data < avg - sigma_lower * std,
+                           data > avg + sigma_upper * std)] = False
+        if good.sum() == ngood:
+            break
+        niter += 1
+
+    return np.ma.masked_array(data, mask=~good)
+
+
 def clipped_mean(data):
     num_total = len(data)
     mean = data.mean()

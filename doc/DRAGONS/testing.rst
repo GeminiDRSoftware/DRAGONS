@@ -393,7 +393,8 @@ that are used in DRAGONS' tests. The most commonly used fixtures are:
 
 PyTest fixtures are modular since they can be used by fixtures. This allowed the
 creation of custom fixtures for the DRAGONS Testing Suite. All our custom
-fixtures now live inside the ``pytest_dragons/plugin.py`` module.
+fixtures now live inside the ``pytest_dragons/plugin.py`` module, where they are
+imported from ``pytest_dragons/fixtures.py``.
 
 Here is a very brief description of the fixtures defined in this plugin module:
 
@@ -404,6 +405,8 @@ Here is a very brief description of the fixtures defined in this plugin module:
      - Context manager that allows easily changing working directories.
    * - path_to_inputs
      - Absolute directory path to local static input data.
+   * - path_to_common_inputs
+     - Absolute directory path to local static input data that is required by multiple tests.
    * - path_to_refs
      - Absolute directory path to local static reference data.
    * - path_to_outputs

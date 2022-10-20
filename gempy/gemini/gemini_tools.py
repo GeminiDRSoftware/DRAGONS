@@ -1168,6 +1168,7 @@ def fit_continuum(ad):
 
     pixel_scale = ad.pixel_scale()
     spatial_box = int(5.0 / pixel_scale)
+    MIN_APERTURE_WIDTH = 10  # pixels
 
     # Initialize the Gaussian width to FWHM = 1.2 arcsec
     init_width = 1.2 / (pixel_scale * (2 * np.sqrt(2 * np.log(2))))
@@ -1270,7 +1271,7 @@ def fit_continuum(ad):
                 length = spatial_slice.stop - spatial_slice.start
 
                 # General sanity requirement (will reject bad Apertures)
-                if length < 10:
+                if length < MIN_APERTURE_WIDTH:
                     continue
 
                 # These are all in terms of the full unsliced extension
@@ -1287,6 +1288,8 @@ def fit_continuum(ad):
                 data, mask, var = NDStacker.mean(ndd)
                 if mask is not None:
                     mask = (mask == 0)
+                    if mask.sum() < MIN_APERTURE_WIDTH:
+                        continue
                 try:
                     maxflux = np.max(abs(data[mask]))
                 except ValueError:
@@ -1328,7 +1331,10 @@ def fit_continuum(ad):
                 fit_it = fitting.LevMarLSQFitter()
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    m_final = fit_it(m_init, pixels[mask], data[mask])
+                    try:
+                        m_final = fit_it(m_init, pixels[mask], data[mask])
+                    except:  # anything that goes wrong
+                        continue
 
                 if fit_it.fit_info['ierr'] < 5:
                     # This is kind of ugly and empirical; philosophy is that peak should
@@ -1354,18 +1360,18 @@ def fit_continuum(ad):
                             weight_list.append(max(m_final.mean_1 - pixels.min(),
                                                    pixels.max() - m_final.mean_0))
 
-
         # Now do something with the list of measurements
         fwhm_pix = np.array(fwhm_list)
         fwhm_arcsec = pixel_scale * fwhm_pix
-
         table = Table([x_list, y_list, fwhm_pix, fwhm_arcsec, weight_list],
                     names=("x", "y", "fwhm", "fwhm_arcsec", "weight"))
 
         # Clip outliers in FWHM
         if len(table) >= 3:
-            table = table[~sigma_clip(table['fwhm_arcsec'], sigma=2,
-                                      maxiters=2).mask]
+            ret_value = at.weighted_sigma_clip(
+                table['fwhm_arcsec'].data, weights=table['weight'].data,
+                sigma_lower=2, sigma_upper=1.5, maxiters=3)
+            table = table[~ret_value.mask]
         good_sources.append(table)
 
     return good_sources[0] if single else good_sources
@@ -1657,7 +1663,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
 
 
 def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
-                          separate_ext=True, ignore_mask=False):
+                          separate_ext=True, ignore_mask=False, section=None):
     """
     Return background value, and its std deviation, as measured directly
     from pixels in the SCI image. DQ plane are used (if they exist)
@@ -1677,6 +1683,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         return information for each extension, rather than the whole AD?
     ignore_mask : bool
         if True, ignore the mask and OBJMASK
+    section: slice/None
+        region to use for statistics
 
     Returns
     -------
@@ -1698,17 +1706,18 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         flags = None
         # Use DQ and OBJMASK to flag pixels
         if not single and not separate_ext:
-            bg_data = np.array([ext.data for ext in ad]).ravel()
+            bg_data = np.array([ext.data[section] for ext in ad]).ravel()
             if not ignore_mask:
                 flags = np.array([ext.mask | getattr(ext, 'OBJMASK', 0)
                                   if ext.mask is not None
-                    else getattr(ext, 'OBJMASK', np.empty_like(ext.data, dtype=bool))
-                                  for ext in ad]).ravel()
+                    else getattr(ext, 'OBJMASK', np.zeros_like(ext.data, dtype=bool))
+                                  for ext in ad])[section].ravel()
         else:
             if not ignore_mask:
-                flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
-                    else getattr(ext, 'OBJMASK', None)
-            bg_data = ext.data.ravel()
+                flags = ((ext.mask | getattr(ext, 'OBJMASK', 0))[section]
+                    if ext.mask is not None else
+                         ext.OBJMASK[section] if hasattr(ext, 'OBJMASK') else None)
+            bg_data = ext.data[section].ravel()
 
         if flags is None:
             bg_data = bg_data[::sampling]
