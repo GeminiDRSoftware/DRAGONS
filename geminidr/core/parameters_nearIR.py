@@ -1,6 +1,6 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_nearIR.py file, in alphabetical order.
-from gempy.library import config, astrotools as at
+from gempy.library import config
 from . import parameters_stack, parameters_standardize
 
 class addLatencyToDQConfig(config.Config):
@@ -32,23 +32,7 @@ class removeFirstFrameConfig(config.Config):
     remove_first = config.Field("Remove first frame?", bool, True)
     remove_files = config.ListField("List of files to remove", str, None, optional=True)
 
-class removePatternNoiseConfig(config.Config):
-
-    def validate_regions(value, multiple=True):
-        ranges = at.parse_user_regions(value, dtype=int, allow_step=False)
-        return multiple or len(ranges) == 1
-
-    suffix = config.Field("Filename suffix", str, "_patternNoiseRemoved", optional=True)
-    must_reduce_rms = config.Field("Require reduction in RMS to apply pattern removal?", bool, True)
-    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
-    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
-    pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)
-    pattern_y_size = config.RangeField("Pattern y size (pixels)", int, 4, min=4)
-    subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
-    region = config.Field("Rows to remove pattern in, e.g. 'y1:y2,y3:y4' etc.",
-                          str, '0:1024', optional=True, check=validate_regions)
-
-class removePatternNoise_2Config(config.Config):
+class cleanReadoutConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_patternNoiseRemoved", optional=True)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
@@ -60,6 +44,6 @@ class removePatternNoise_2Config(config.Config):
     smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=5)
     clean = config.Field("Behavior of the routine? Must be one of default, skip, or force", str, "skip")
 
-    
+
 class separateFlatsDarksConfig(config.Config):
     pass

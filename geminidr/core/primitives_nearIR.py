@@ -3,7 +3,6 @@
 #
 #                                                           primitives_nearIR.py
 # ------------------------------------------------------------------------------
-from copy import deepcopy
 import datetime
 from functools import partial
 from itertools import product as cart_product
@@ -11,19 +10,16 @@ import warnings
 
 from astropy.stats import sigma_clip, sigma_clipped_stats
 import numpy as np
-import matplotlib.pyplot as plt
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.nddops import NDStacker
 
-from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from . import parameters_nearIR, Bookkeeping
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from scipy.optimize import minimize
-from tqdm import tqdm
 
 # ------------------------------------------------------------------------------
 
@@ -250,170 +246,6 @@ class NearIR(Bookkeeping):
         if not (remove_first or remove_files):
             log.warning("No frames are being removed: data quality may suffer")
         return adinputs
-    
-
-    def removePatternNoise(self, adinputs=None, **params):
-        """
-        This attempts to remove the pattern noise in NIRI/GNIRS data. In each
-        quadrant, boxes of a specified size are extracted and, for each pixel
-        location in the box, the median across all the boxes is determined.
-        The resultant median is then tiled to the size of the quadrant and
-        subtracted. Optionally, the median of each box can be subtracted
-        before performing the operation.
-        Based on Andy Stephens's "cleanir"
-        Parameters
-        ----------
-        suffix: str, Default: "_patternNoiseRemoved"
-            Suffix to be added to output files.
-        must_reduce_rms: bool, Default: True
-            If True, will not apply pattern subtraction to each quadrant of the
-            image if doing so would increase the RMS.
-        hsigma/lsigma: float, Defaults: 3 for both
-            High and low sigma-clipping limits.
-        pattern_x_size: int, Default: 16
-            Size of pattern "box" in x direction. Must be a multiple of 4.
-        pattern_y_size: int, Default: 4
-            size of pattern "box" in y direction. Must be a multiple of 4.
-        subtract_background: bool, Default: True
-            Remove median of each "box" before calculating pattern noise?
-        region: str
-            A user-specified region (or regions) to perform the cleaning in.
-            Pattern noise will either cover the entire array, or will appear in
-            one or more horizontal stripes, so these regions should be given as
-            a string of y1:y2 values (ints), with multiple regions optionally
-            separated by commas, e.g. '1:184,840:1024'. The default is to use
-            the entire image. GNIRS data will be padded with 2 rows to make
-            1024 in order to be divisible by 4.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        hsigma, lsigma = params["hsigma"], params["lsigma"]
-        pxsize, pysize = params["pattern_x_size"], params["pattern_y_size"]
-        bgsub = params["subtract_background"]
-        must_reduce_rms = params["must_reduce_rms"]
-        region = params["region"]
-        stack_function = NDStacker(combine='median', reject='sigclip',
-                                   hsigma=hsigma, lsigma=lsigma)
-        sigclip = partial(sigma_clip, sigma_lower=lsigma, sigma_upper=hsigma)
-        zeros = None  # will remain unchanged if not subtract_background
-
-        for ad in adinputs:
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by removePatternNoise".
-                            format(ad.filename))
-                continue
-
-            log.stdinfo(f"Applying pattern noise removal to {ad.filename}.")
-
-            for ext in ad:
-
-                if ad.instrument() == 'GNIRS':
-                    # Number of rows must be 4-divisible, or it crashes.
-                    log.stdinfo("Padding GNIRS SCI, VAR, DQ y-axis by 2 rows to "
-                                "be divisible by 4.")
-                    ext.data = np.append(
-                        ext.data,
-                        np.zeros((2, ext.shape[1])),
-                        axis=0)
-                    ext.variance = np.append(
-                        ext.variance,
-                        np.zeros((2, ext.shape[1])),
-                        axis=0)
-                    ext.mask = np.append(
-                        ext.mask,
-                        np.full((2, ext.shape[1]), DQ.no_data),  # Mask rows
-                        axis=0)
-
-                # Generate mask for applying cleaning, whole frame by default.
-                region_mask = np.zeros_like(ext.data)
-
-                # Slightly hacky way to store references to the four qudrants
-                # for later leveling of their backgrounds.
-                quads = {}
-                quad_means = []
-                quad_num = 0
-
-                for roi in region.strip('[]').split(','):
-                    r = roi.split(':')
-                    if len(r) != 2:
-                        raise ValueError('Regions must be in the form '
-                                         f'y1:y2, passed: "{r}"')
-                    y1 = int(r[0])
-                    y2 = int(r[1])
-                    log.stdinfo(f'Removing pattern noise from y={y1} to y={y2}')
-
-                    region_mask[y1:y2, :] = 1
-
-                qysize, qxsize = [size // 2 for size in ext.data.shape]
-                yticks = [(y, y + pysize) for y in range(0, qysize, pysize)]
-                xticks = [(x, x + pxsize) for x in range(0, qxsize, pxsize)]
-                for ystart in (0, qysize):
-                    for xstart in (0, qxsize):
-                        quad = ext.nddata[ystart:ystart + qysize,
-                                          xstart:xstart + qxsize]
-                        quads[quad_num] = quad
-                        quad_num += 1
-                        quad_mask = region_mask[ystart:ystart + qysize,
-                                                xstart:xstart + qxsize]
-                        sigma_in = sigclip(np.ma.masked_array(quad.data,
-                                                              quad.mask)).std()
-                        blocks = [quad[tuple(slice(start, end)
-                                             for (start, end) in coords)]
-                                  for coords in cart_product(yticks, xticks)]
-                        if bgsub:
-                            # If all pixels are masked in a box, we'll get no
-                            # result from the mean. Suppress warning.
-                            with warnings.catch_warnings():
-                                warnings.simplefilter("ignore",
-                                                      category=UserWarning)
-                                zeros = np.nan_to_num([-np.ma.masked_array(
-                                                            block.data,
-                                                            block.mask).mean()
-                                                       for block in blocks])
-                        out = stack_function(blocks, zero=zeros).data
-                        pattern = np.tile(out, (len(yticks), len(xticks)))
-                        out_quad = (quad.data + np.mean(out) -
-                                    pattern * quad_mask)
-                        sigma_clipped_out = sigclip(np.ma.masked_array(out_quad,
-                                                                       quad.mask))
-                        sigma_out = sigma_clipped_out.std()
-                        quad_means.append(sigma_clipped_out.mean())
-                        if sigma_out > sigma_in:
-                            qstr = (f"{ad.filename} extension {ext.id} "
-                                    f"quadrant ({xstart},{ystart})")
-                            if not must_reduce_rms:
-                                log.stdinfo("Forcing cleaning on " + qstr)
-                            else:
-                                log.stdinfo("No improvement for " + qstr +
-                                            ", not applying pattern removal.")
-                                continue
-                        ext.data[ystart:ystart + qysize,
-                                 xstart:xstart + qxsize] = out_quad
-
-                if ad.instrument() == 'GNIRS':
-                    # Remove padding before returning
-                    log.debug('Removing padding from GNIRS SCI, VAR, DQ y-axis.')
-                    # Delete last 2 rows
-                    ext.data = np.delete(ext.data, [-2, -1], axis=0)
-                    ext.variance = np.delete(ext.variance, [-2, -1], axis=0)
-                    ext.mask = np.delete(ext.mask, [-2, -1], axis=0)
-
-            log.debug(f"The background level of the found quadrants is {quad_means}")
-            arrays_median = np.median(quad_means)
-
-            # Offset each quad by the difference between it and the overall
-            # background.
-            for quad_num, quad in quads.items():
-                quad.data += arrays_median - quad_means[quad_num]
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
-        return adinputs
-
 
     @staticmethod
     def levelQuad(ext, sig=2.0, smoothing_extent=5, subquad=None):
@@ -421,20 +253,20 @@ class NearIR(Bookkeeping):
         Parameters
         ----------
         ext: AstroData
-            This is the pattern-corrected AstroData. 
+            This is the pattern-corrected AstroData.
         sig: float, Default: 2.0
             Sigma-clipping threshold used for both lower and upper limits.
         smoothing_extent: int
-            Width (in pixels) of the region at a given quad interface to be smoothed over 
-            on each side of the interface. 
+            Width (in pixels) of the region at a given quad interface to be smoothed over
+            on each side of the interface.
             Note that for intra-quad leveling, this width is broadened by a factor 10.
         subquad: dict or None, Default: None
             If ext also has a bias offset at the sub-quad level, this dictionary contains
-            the following information. 
+            the following information.
             subquad = {'border':y, 'stitch_direction':x}, where
             y: list of int
                 Indices of rows across which bias offsets are to be determined.
-                If ext was padded, make sure the indices passed were determined from it and not the 
+                If ext was padded, make sure the indices passed were determined from it and not the
                 original ext.
             x: list of int
                 Indices of the starting column of the corresponding quad.
@@ -442,7 +274,7 @@ class NearIR(Bookkeeping):
         qysize, qxsize = [size // 2 for size in ext.data.shape]
 
         clippedstats_lr = partial(sigma_clipped_stats, axis=0, sigma=sig)
-        clippedstats_tb = partial(sigma_clipped_stats, axis=1, sigma=sig)    
+        clippedstats_tb = partial(sigma_clipped_stats, axis=1, sigma=sig)
 
         def find_offset(ext, arr1_slicers, arr2_slicers, clipper):
             quad_1 = ext.nddata[arr1_slicers[0], arr1_slicers[1]]
@@ -477,7 +309,7 @@ class NearIR(Bookkeeping):
             idx = np.argsort(Y)
             X, Y = X[idx], Y[idx]
             Y = np.insert(Y, 0, 0)
-            X = np.insert(X, 0, -99) 
+            X = np.insert(X, 0, -99)
             Y = np.append(Y, ext.data.shape[0])
             X = np.append(X, -99)
 
@@ -487,12 +319,12 @@ class NearIR(Bookkeeping):
             X_bottom = np.append(X_bottom, -99)
 
             X_top = X[Y>=qysize]
-            Y_top = Y[Y>=qysize]        
+            Y_top = Y[Y>=qysize]
             Y_top = np.insert(Y_top, 0, qysize)
             X_top = np.insert(X_top, 0, -99)
 
             for i in range(len(X_bottom)):
-                ylow = 0            
+                ylow = 0
                 if X_bottom[i] == -99:
                     continue
 
@@ -523,7 +355,7 @@ class NearIR(Bookkeeping):
 
                 sq_smoothe = min(smoothing_extent*10, yup-Y_top[i], Y_top[i]-ylow)
                 arr1_slicers = [slice(Y_top[i] - sq_smoothe,Y_top[i]), slice(X_top[i],X_top[i] + qxsize)]
-                arr2_slicers = [slice(Y_top[i],Y_top[i] + sq_smoothe), slice(X_top[i],X_top[i] + qxsize)]                
+                arr2_slicers = [slice(Y_top[i],Y_top[i] + sq_smoothe), slice(X_top[i],X_top[i] + qxsize)]
                 offset = find_offset(ext, arr1_slicers, arr2_slicers, clippedstats_lr)
                 ext.data[Y_top[i]:yup, X_top[i]:X_top[i] + qxsize] += offset
 
@@ -533,29 +365,28 @@ class NearIR(Bookkeeping):
         for xstart in [0, qxsize]:
             arr1_slicers = [slice(qysize,qysize + smoothing_extent), slice(xstart,xstart + qxsize)]
             arr2_slicers = [slice(qysize - smoothing_extent,qysize), slice(xstart,xstart + qxsize)]
-            offset = find_offset(ext, arr1_slicers, arr2_slicers, 
+            offset = find_offset(ext, arr1_slicers, arr2_slicers,
                                  clippedstats_lr
                                 )
             ext.data[0:qysize, xstart:xstart + qxsize] += offset
 
 
-        ## stitch in full along 2 x qxsize 
+        ## stitch in full along 2 x qxsize
         arr1_slicers = [slice(0,ext.data.shape[0]), slice(qxsize - smoothing_extent,qxsize)]
         arr2_slicers = [slice(0,ext.data.shape[0]), slice(qxsize,qxsize + smoothing_extent)]
         offset = find_offset(ext, arr1_slicers, arr2_slicers,
                              clippedstats_tb
                             )
-        ext.data[:, qxsize:2 * qxsize] += offset    
+        ext.data[:, qxsize:2 * qxsize] += offset
 
-    
-    def removePatternNoise_2(self, adinputs=None, **params):
+    def cleanReadout(self, adinputs=None, **params):
         """
-        This attempts to remove the pattern noise in NIRI/GNIRS data 
+        This attempts to remove the pattern noise in NIRI/GNIRS data
         after automatically determining the coverage of the pattern in
-        a given quadrant. 
+        a given quadrant.
         In the case of incomplete intra-quad pattern coverage, we are leveraging
         the symmetry about the center of the image to remove spurious edges
-        detected by the automated routine in difficult frames. 
+        detected by the automated routine in difficult frames.
 
         Parameters
         ----------
@@ -575,16 +406,16 @@ class NearIR(Bookkeeping):
             Level the offset in bias level across (sub-)quads that typically accompany
             pattern noise.
         smoothing_extent: int, Default: 5
-            Used only when `level_bias_offset` is set to True. 
-            Width (in pixels) of the region at a given quad interface to be smoothed over 
-            on each side of the interface. 
+            Used only when `level_bias_offset` is set to True.
+            Width (in pixels) of the region at a given quad interface to be smoothed over
+            on each side of the interface.
             Note that for intra-quad leveling, this width is broadened by a factor 10.
         clean: str, Default: "skip"
             Must be one of "skip", "default", or "force".
             skip: Skip this routine entirely when called from a recipe.
-            default: Apply the pattern subtraction to each quadrant of the image if doing 
+            default: Apply the pattern subtraction to each quadrant of the image if doing
                      so decreases the RMS.
-            force: Force the pattern subtraction in each quadrant. 
+            force: Force the pattern subtraction in each quadrant.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -598,9 +429,9 @@ class NearIR(Bookkeeping):
         smoothing_extent = params["smoothing_extent"]
 
         if clean=="skip":
-            log.stdinfo("Skipping removePatternNoise since 'clean' is set to 'skip'")
+            log.stdinfo("Skipping cleanReadout since 'clean' is set to 'skip'")
             return adinputs
-        
+
         stack_function = NDStacker(combine='median', reject='sigclip',
                                    hsigma=hsigma, lsigma=lsigma)
         sigclip = partial(sigma_clip, sigma_lower=lsigma, sigma_upper=hsigma)
@@ -613,189 +444,180 @@ class NearIR(Bookkeeping):
                                    x[0] * np.ma.masked_array(pattern, block.mask))**2.0)
             return squared_err
 
+        for ad in adinputs:
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by cleanReadout".
+                            format(ad.filename))
+                continue
 
+            for ext in ad:
+                subquad = {'border':[], 'stitch_direction':[]} # preparing for bias leveling
 
-        ## MS: to get a progress bar
-        with tqdm(total=np.sum([4*len(ad) for ad in adinputs])) as pbar:
-            for ad in adinputs:
-                if ad.phu.get(timestamp_key):
-                    log.warning("No changes will be made to {}, since it has "
-                                "already been processed by removePatternNoise".
-                                format(ad.filename))
-                    pbar.update(4)
-                    continue
+                # padding for GNIRS
+                if ad.instrument() == 'GNIRS':
+                    # Number of rows must be 4-divisible, or it crashes.
+                    log.stdinfo("Padding GNIRS SCI, VAR, DQ y-axis by 2 rows to "
+                                "be divisible by 4.")
+                    log.debug("Original image shape:\n"
+                              f"  SCI: {ext.data.shape}\n"
+                              f"  VAR: {ext.variance.shape}\n"
+                              f"   DQ: {ext.mask.shape}")
+                    ext.data = np.append(
+                        ext.data,
+                        np.zeros((2, ext.shape[1])),
+                        axis=0)
+                    ext.variance = np.append(
+                        ext.variance,
+                        np.zeros((2, ext.shape[1])),
+                        axis=0)
+                    ext.mask = np.append(
+                        ext.mask,
+                        np.ones((2, ext.shape[1]), dtype=ext.mask.dtype)*16,
+                        axis=0) # 16 is DQ.no_data
+                    log.debug("New image shape:\n"
+                              f"  SCI: {ext.data.shape}\n"
+                              f"  VAR: {ext.variance.shape}\n"
+                              f"   DQ: {ext.mask.shape}")
 
-                for ext in ad:
-                    subquad = {'border':[], 'stitch_direction':[]} # preparing for bias leveling
-                    
-                    # padding for GNIRS
-                    if ad.instrument() == 'GNIRS':
-                        # Number of rows must be 4-divisible, or it crashes.
-                        log.stdinfo("Padding GNIRS SCI, VAR, DQ y-axis by 2 rows to "
-                                    "be divisible by 4.")
-                        log.debug("Original image shape:\n"
-                                  f"  SCI: {ext.data.shape}\n"
-                                  f"  VAR: {ext.variance.shape}\n"
-                                  f"   DQ: {ext.mask.shape}")
-                        ext.data = np.append(
-                            ext.data,
-                            np.zeros((2, ext.shape[1])),
-                            axis=0)
-                        ext.variance = np.append(
-                            ext.variance,
-                            np.zeros((2, ext.shape[1])),
-                            axis=0)
-                        ext.mask = np.append(
-                            ext.mask,
-                            np.ones((2, ext.shape[1]), dtype=ext.mask.dtype)*16,
-                            axis=0) # 16 is DQ.no_data
-                        log.debug("New image shape:\n"
-                                  f"  SCI: {ext.data.shape}\n"
-                                  f"  VAR: {ext.variance.shape}\n"
-                                  f"   DQ: {ext.mask.shape}")
+                qysize, qxsize = [size // 2 for size in ext.data.shape]
+                yticks = [(y, y + pysize) for y in range(0, qysize, pysize)]
+                xticks = [(x, x + pxsize) for x in range(0, qxsize, pxsize)]
+                quads_info = {}
+                cleaned_quads = 0
 
-                    qysize, qxsize = [size // 2 for size in ext.data.shape]
-                    yticks = [(y, y + pysize) for y in range(0, qysize, pysize)]
-                    xticks = [(x, x + pxsize) for x in range(0, qxsize, pxsize)]
-                    quads_info = {}
-                    cleaned_quads = 0
-                    
-                    for ystart in (0, qysize):
-                        quads_info[ystart] = {}
-                        for xstart in (0, qxsize):
-                            quads_info[ystart][xstart] = {}
-                            
-                            quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]
-                            blocks = [quad[tuple(slice(start, end)
-                                                 for (start, end) in coords)]
-                                      for coords in cart_product(yticks, xticks)]
-                            slice_hist = [tuple(slice(start, end) for (start, end) in coords)
-                                      for coords in cart_product(yticks, xticks)]
+                for ystart in (0, qysize):
+                    quads_info[ystart] = {}
+                    for xstart in (0, qxsize):
+                        quads_info[ystart][xstart] = {}
 
-                            if bgsub:
-                                # If all pixels are masked in a box, we'll get no
-                                # result from the mean. Suppress warning.
-                                with warnings.catch_warnings():
-                                    warnings.simplefilter("ignore", category=UserWarning)
-                                    zeros = np.nan_to_num([-np.ma.masked_array(block.data, block.mask).mean()
-                                                           for block in blocks])
-                            out = stack_function(blocks, zero=zeros).data
-                            out_quad = (quad.data + np.mean(out) -
-                                        np.tile(out, (len(yticks), len(xticks))))
+                        quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]
+                        blocks = [quad[tuple(slice(start, end)
+                                             for (start, end) in coords)]
+                                  for coords in cart_product(yticks, xticks)]
+                        slice_hist = [tuple(slice(start, end) for (start, end) in coords)
+                                  for coords in cart_product(yticks, xticks)]
 
-                            ## MS: now finding the applicable roi for pattern subtraction.
-                            ## Note slopes={'0':end,'1':+slope,'-1':-slope}
-                            scaling_factors = np.array([])
-                            for block in blocks:
-                                res = minimize(pattern_func, [0.1], args=(block, out), method='BFGS')
-                                scaling_factors = np.append(scaling_factors, res.x[0])
+                        if bgsub:
+                            # If all pixels are masked in a box, we'll get no
+                            # result from the mean. Suppress warning.
+                            with warnings.catch_warnings():
+                                warnings.simplefilter("ignore", category=UserWarning)
+                                zeros = np.nan_to_num([-np.ma.masked_array(block.data, block.mask).mean()
+                                                       for block in blocks])
+                        out = stack_function(blocks, zero=zeros).data
+                        out_quad = (quad.data + np.mean(out) -
+                                    np.tile(out, (len(yticks), len(xticks))))
 
-                            scaling_factors_quad = np.ones(quad.data.shape)
-                            for i in range(len(blocks)):
-                                scaling_factors_quad[slice_hist[i]] = scaling_factors[i]
-                            YY = sigma_clipped_stats(scaling_factors_quad, axis=1, sigma=2.0)[1]
-                            D_YY = np.diff(YY)
-                            idxs = np.array([0])
-                            slopes = np.array([0])
-                            for ff, kk in zip([edge_threshold, -1.0*edge_threshold], [1, -1]):
-                                t_idxs = np.argwhere(D_YY>(D_YY.mean()+ff*D_YY.std())).flatten()
-                                if kk == -1:
-                                    t_idxs = np.argwhere(D_YY<(D_YY.mean()+ff*D_YY.std())).flatten()
-                                idxs = np.concatenate((idxs, t_idxs))
-                                slopes = np.concatenate((slopes, np.array([kk]*len(t_idxs))))
-                            idxs = np.append(idxs, quad.shape[0])
-                            slopes = np.append(slopes, 0)
-                            args_sorted = np.argsort(idxs)
-                            idxs = idxs[args_sorted]
-                            slopes = (slopes[args_sorted]).astype(int)
-                            new_out_quad = out_quad.copy()
+                        ## MS: now finding the applicable roi for pattern subtraction.
+                        ## Note slopes={'0':end,'1':+slope,'-1':-slope}
+                        scaling_factors = np.array([])
+                        for block in blocks:
+                            res = minimize(pattern_func, [0.1], args=(block, out), method='BFGS')
+                            scaling_factors = np.append(scaling_factors, res.x[0])
 
-                            quads_info[ystart][xstart] = {'ystart':int(ystart),
-                                                          'ystop':int(ystart + qysize),
-                                                          'xstart':int(xstart),
-                                                          'xstop':int(xstart + qxsize),
-                                                          'idxs':idxs,
-                                                          'slopes':slopes,
-                                                          'new_out_quad':new_out_quad,
-                            }
-                            pbar.update(1)
+                        scaling_factors_quad = np.ones(quad.data.shape)
+                        for i in range(len(blocks)):
+                            scaling_factors_quad[slice_hist[i]] = scaling_factors[i]
+                        YY = sigma_clipped_stats(scaling_factors_quad, axis=1, sigma=2.0)[1]
+                        D_YY = np.diff(YY)
+                        idxs = np.array([0])
+                        slopes = np.array([0])
+                        for ff, kk in zip([edge_threshold, -1.0*edge_threshold], [1, -1]):
+                            t_idxs = np.argwhere(D_YY>(D_YY.mean()+ff*D_YY.std())).flatten()
+                            if kk == -1:
+                                t_idxs = np.argwhere(D_YY<(D_YY.mean()+ff*D_YY.std())).flatten()
+                            idxs = np.concatenate((idxs, t_idxs))
+                            slopes = np.concatenate((slopes, np.array([kk]*len(t_idxs))))
+                        idxs = np.append(idxs, quad.shape[0])
+                        slopes = np.append(slopes, 0)
+                        args_sorted = np.argsort(idxs)
+                        idxs = idxs[args_sorted]
+                        slopes = (slopes[args_sorted]).astype(int)
+                        new_out_quad = out_quad.copy()
 
-                    def del_spurious_peaks(arr1, arr2):
-                        todel = np.array([])
-                        for i in range(1, len(arr1)-1):
-                            dist = arr2 - arr1[i]
-                            if np.sum(np.abs(dist)<10)==0: #10 pix symmetry tolerance
-                                todel = np.append(todel, i)
-                        return todel
+                        quads_info[ystart][xstart] = {'ystart':int(ystart),
+                                                      'ystop':int(ystart + qysize),
+                                                      'xstart':int(xstart),
+                                                      'xstop':int(xstart + qxsize),
+                                                      'idxs':idxs,
+                                                      'slopes':slopes,
+                                                      'new_out_quad':new_out_quad,
+                        }
 
-                    for ys in [0, qysize]:
-                        for xs, Q in quads_info[ys].items():
-                            idxs = Q['idxs']
-                            quad = ext.nddata[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']]
-                            new_out_quad = Q['new_out_quad']
-                            slopes = Q['slopes']
-                            sigma_in = sigclip(np.ma.masked_array(quad.data, quad.mask)).std()
+                def del_spurious_peaks(arr1, arr2):
+                    todel = np.array([])
+                    for i in range(1, len(arr1)-1):
+                        dist = arr2 - arr1[i]
+                        if np.sum(np.abs(dist)<10)==0: #10 pix symmetry tolerance
+                            todel = np.append(todel, i)
+                    return todel
 
-                            for xs_2 in [0, qxsize]:
-                                if xs_2 == xs:
-                                    continue
-                                arr2 = quads_info[ys][xs_2]['idxs']
-                                break
+                for ys in [0, qysize]:
+                    for xs, Q in quads_info[ys].items():
+                        idxs = Q['idxs']
+                        quad = ext.nddata[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']]
+                        new_out_quad = Q['new_out_quad']
+                        slopes = Q['slopes']
+                        sigma_in = sigclip(np.ma.masked_array(quad.data, quad.mask)).std()
 
-                            todel = del_spurious_peaks(idxs, arr2)
-                            if len(todel)>0:
-                                todel = todel.astype(int)
-                                idxs = np.delete(idxs, todel)
-                                slopes = np.delete(slopes, todel)
+                        for xs_2 in [0, qxsize]:
+                            if xs_2 == xs:
+                                continue
+                            arr2 = quads_info[ys][xs_2]['idxs']
+                            break
 
-                            ## MS: final cleaned quad
-                            for i in range(1, len(idxs)):
-                                if i == len(idxs)-1:
-                                    if slopes[i-1] == -1:
-                                        new_out_quad[idxs[i-1]:idxs[i],:] = quad.data[idxs[i-1]:idxs[i],:]
-                                        subquad['border'] += [idxs[i-1]+Q['ystart'], idxs[i]+Q['ystart']]
-                                        subquad['stitch_direction'] += [Q['xstart'], Q['xstart']]
-                                elif slopes[i] == 1:
+                        todel = del_spurious_peaks(idxs, arr2)
+                        if len(todel)>0:
+                            todel = todel.astype(int)
+                            idxs = np.delete(idxs, todel)
+                            slopes = np.delete(slopes, todel)
+
+                        ## MS: final cleaned quad
+                        for i in range(1, len(idxs)):
+                            if i == len(idxs)-1:
+                                if slopes[i-1] == -1:
                                     new_out_quad[idxs[i-1]:idxs[i],:] = quad.data[idxs[i-1]:idxs[i],:]
-                                    subquad['border'] += [idxs[i-1]+Q['ystart'], idxs[i]+Q['ystart']] 
+                                    subquad['border'] += [idxs[i-1]+Q['ystart'], idxs[i]+Q['ystart']]
                                     subquad['stitch_direction'] += [Q['xstart'], Q['xstart']]
+                            elif slopes[i] == 1:
+                                new_out_quad[idxs[i-1]:idxs[i],:] = quad.data[idxs[i-1]:idxs[i],:]
+                                subquad['border'] += [idxs[i-1]+Q['ystart'], idxs[i]+Q['ystart']]
+                                subquad['stitch_direction'] += [Q['xstart'], Q['xstart']]
 
-                            sigma_out = sigclip(np.ma.masked_array(new_out_quad, quad.mask)).std()
-                            if sigma_out > sigma_in:
-                                qstr = (f"{ad.filename} extension {ext.id} "
-                                        f"quadrant ({Q['xstart']},{Q['ystart']})")
-                                if clean=="force":
-                                    log.stdinfo("Forcing cleaning on " + qstr)
-                                else: # clean is default
-                                    log.stdinfo("No improvement for " + qstr +
-                                                ", not applying pattern removal.")
-                                    continue
-                            cleaned_quads += 1
-                            ext.data[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']] = new_out_quad
-                            
+                        sigma_out = sigclip(np.ma.masked_array(new_out_quad, quad.mask)).std()
+                        if sigma_out > sigma_in:
+                            qstr = (f"{ad.filename} extension {ext.id} "
+                                    f"quadrant ({Q['xstart']},{Q['ystart']})")
+                            if clean=="force":
+                                log.stdinfo("Forcing cleaning on " + qstr)
+                            else: # clean is default
+                                log.stdinfo("No improvement for " + qstr +
+                                            ", not applying pattern removal.")
+                                continue
+                        cleaned_quads += 1
+                        ext.data[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']] = new_out_quad
 
-                    if level_bias_offset and cleaned_quads>0:
-                        if len(subquad['border']) > 0:
-                            NearIR.levelQuad(ext, smoothing_extent=smoothing_extent, subquad=subquad)
-                        else:
-                            NearIR.levelQuad(ext, smoothing_extent=smoothing_extent)
 
-                    if ad.instrument() == 'GNIRS':
-                        # Remove padding before returning
-                        log.debug('Removing padding from GNIRS SCI, VAR, DQ y-axis.')
-                        # Delete last 2 rows
-                        ext.data = np.delete(ext.data, [-2, -1], axis=0)
-                        ext.variance = np.delete(ext.variance, [-2, -1], axis=0)
-                        ext.mask = np.delete(ext.mask, [-2, -1], axis=0)
+                if level_bias_offset and cleaned_quads>0:
+                    if len(subquad['border']) > 0:
+                        NearIR.levelQuad(ext, smoothing_extent=smoothing_extent, subquad=subquad)
+                    else:
+                        NearIR.levelQuad(ext, smoothing_extent=smoothing_extent)
 
-                # Timestamp and update filename
-                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-                ad.update_filename(suffix=params["suffix"], strip=True)
+                if ad.instrument() == 'GNIRS':
+                    # Remove padding before returning
+                    log.debug('Removing padding from GNIRS SCI, VAR, DQ y-axis.')
+                    # Delete last 2 rows
+                    ext.data = np.delete(ext.data, [-2, -1], axis=0)
+                    ext.variance = np.delete(ext.variance, [-2, -1], axis=0)
+                    ext.mask = np.delete(ext.mask, [-2, -1], axis=0)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
-
-
-
 
     def separateFlatsDarks(self, adinputs=None, **params):
         """
