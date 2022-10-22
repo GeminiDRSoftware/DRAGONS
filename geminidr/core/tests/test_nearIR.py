@@ -3,9 +3,13 @@ Tests applied to primitives_nearIR.py
 """
 
 from datetime import datetime
+import os
 
+import astrodata
+from astrodata.testing import ad_compare
 from geminidr.core.tests.test_spect import create_zero_filled_fake_astrodata
 from geminidr.core import primitives_nearIR
+import pytest
 
 
 # ad input list maker functions
@@ -88,3 +92,40 @@ def test_remove_first_frame_by_filename():
     assert len(ad_out) == 1
     assert ad_out[0] == ad_in[2]
 
+
+@pytest.mark.slow
+@pytest.mark.regression
+def test_clean_readout_gnirs_spec(path_to_inputs, path_to_refs):
+    ad = astrodata.open(os.path.join(path_to_inputs,
+                                     "S20060826S0305_skyAssociated.fits"))
+    p = primitives_nearIR.NearIR([ad])
+    ad_out = p.cleanReadout(clean="default")[0]
+
+    ref = astrodata.open(os.path.join(path_to_refs,
+                                      "S20060826S0305_readoutCleaned.fits"))
+    assert ad_compare(ad_out, ref)
+
+
+@pytest.mark.slow
+@pytest.mark.regression
+def test_clean_readout_niri_spec(path_to_inputs, path_to_refs):
+    ad = astrodata.open(os.path.join(path_to_inputs,
+                                     "N20050614S0190_skyAssociated.fits"))
+    p = primitives_nearIR.NearIR([ad])
+    ad_out = p.cleanReadout(clean="default")[0]
+
+    ref = astrodata.open(os.path.join(path_to_refs,
+                                      "N20050614S0190_readoutCleaned.fits"))
+    assert ad_compare(ad_out, ref)
+
+@pytest.mark.slow
+@pytest.mark.regression
+def test_clean_readout_niri_image(path_to_inputs, path_to_refs):
+    ad = astrodata.open(os.path.join(path_to_inputs,
+                                     "N20170505S0146_skyAssociated.fits"))
+    p = primitives_nearIR.NearIR([ad])
+    ad_out = p.cleanReadout(clean="default")[0]
+
+    ref = astrodata.open(os.path.join(path_to_refs,
+                                      "N20170505S0146_readoutCleaned.fits"))
+    assert ad_compare(ad_out, ref)
