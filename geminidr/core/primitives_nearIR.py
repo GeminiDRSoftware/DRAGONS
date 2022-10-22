@@ -465,11 +465,13 @@ class NearIR(Bookkeeping):
                               f"   DQ: {ext.mask.shape}")
                     ext.data = np.append(
                         ext.data,
-                        np.zeros((2, ext.shape[1])),
+                        np.zeros((2, ext.shape[1]),
+                                 dtype=ext.data.dtype),
                         axis=0)
                     ext.variance = np.append(
                         ext.variance,
-                        np.zeros((2, ext.shape[1])),
+                        np.zeros((2, ext.shape[1]),
+                                 dtype=ext.data.dtype),
                         axis=0)
                     ext.mask = np.append(
                         ext.mask,
@@ -503,7 +505,8 @@ class NearIR(Bookkeeping):
                             # result from the mean. Suppress warning.
                             with warnings.catch_warnings():
                                 warnings.simplefilter("ignore", category=UserWarning)
-                                zeros = np.nan_to_num([-np.ma.masked_array(block.data, block.mask).mean()
+                                zeros = np.nan_to_num([-np.ma.masked_array(block.data, block.mask,
+                                                                           dtype=ext.data.dtype).mean()
                                                        for block in blocks])
                         out = stack_function(blocks, zero=zeros).data
                         out_quad = (quad.data + np.mean(out) -
@@ -511,12 +514,12 @@ class NearIR(Bookkeeping):
 
                         ## MS: now finding the applicable roi for pattern subtraction.
                         ## Note slopes={'0':end,'1':+slope,'-1':-slope}
-                        scaling_factors = np.array([])
+                        scaling_factors = np.array([], dtype=ext.data.dtype)
                         for block in blocks:
                             res = minimize(pattern_func, [0.1], args=(block, out), method='BFGS')
                             scaling_factors = np.append(scaling_factors, res.x[0])
 
-                        scaling_factors_quad = np.ones(quad.data.shape)
+                        scaling_factors_quad = np.ones_like(quad.data)
                         for i in range(len(blocks)):
                             scaling_factors_quad[slice_hist[i]] = scaling_factors[i]
                         YY = sigma_clipped_stats(scaling_factors_quad, axis=1, sigma=2.0)[1]
@@ -546,7 +549,7 @@ class NearIR(Bookkeeping):
                         }
 
                 def del_spurious_peaks(arr1, arr2):
-                    todel = np.array([])
+                    todel = np.array([], dtype=ext.data.dtype)
                     for i in range(1, len(arr1)-1):
                         dist = arr2 - arr1[i]
                         if np.sum(np.abs(dist)<10)==0: #10 pix symmetry tolerance
@@ -559,7 +562,8 @@ class NearIR(Bookkeeping):
                         quad = ext.nddata[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']]
                         new_out_quad = Q['new_out_quad']
                         slopes = Q['slopes']
-                        sigma_in = sigclip(np.ma.masked_array(quad.data, quad.mask)).std()
+                        sigma_in = sigclip(np.ma.masked_array(quad.data, quad.mask,
+                                                              dtype=ext.data.dtype)).std()
 
                         for xs_2 in [0, qxsize]:
                             if xs_2 == xs:
@@ -585,7 +589,8 @@ class NearIR(Bookkeeping):
                                 subquad['border'] += [idxs[i-1]+Q['ystart'], idxs[i]+Q['ystart']]
                                 subquad['stitch_direction'] += [Q['xstart'], Q['xstart']]
 
-                        sigma_out = sigclip(np.ma.masked_array(new_out_quad, quad.mask)).std()
+                        sigma_out = sigclip(np.ma.masked_array(new_out_quad, quad.mask,
+                                                               dtype=ext.data.dtype)).std()
                         if sigma_out > sigma_in:
                             qstr = (f"{ad.filename} extension {ext.id} "
                                     f"quadrant ({Q['xstart']},{Q['ystart']})")
@@ -597,7 +602,6 @@ class NearIR(Bookkeeping):
                                 continue
                         cleaned_quads += 1
                         ext.data[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']] = new_out_quad
-
 
                 if level_bias_offset and cleaned_quads>0:
                     if len(subquad['border']) > 0:

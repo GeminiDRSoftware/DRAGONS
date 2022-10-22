@@ -33,7 +33,7 @@ class removeFirstFrameConfig(config.Config):
     remove_files = config.ListField("List of files to remove", str, None, optional=True)
 
 class cleanReadoutConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_patternNoiseRemoved", optional=True)
+    suffix = config.Field("Filename suffix", str, "_readoutCleaned", optional=True)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)
