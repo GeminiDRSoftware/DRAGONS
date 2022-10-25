@@ -167,8 +167,95 @@ class GNIRSSpect(Spect, GNIRS):
                         params["order"] = 1
                 else:
                     params["order"] = 3
-
         adinputs = super().determineWavelengthSolution(adinputs, **params)
+        return adinputs
+
+    def determineDistortion(self, adinputs=None, **params):
+        """
+        Maps the distortion on a detector by tracing lines perpendicular to the
+        dispersion direction. Then it fits a 2D Chebyshev polynomial to the
+        fitted coordinates in the dispersion direction. The distortion map does
+        not change the coordinates in the spatial direction.
+
+        The Chebyshev2D model is stored as part of a gWCS object in each
+        `nddata.wcs` attribute, which gets mapped to a FITS table extension
+        named `WCS` on disk.
+
+        This GNIRS-specific primitive sets default spectral order in case it's None
+        (since there are only few lines available in H and K-bands in high-res mode, which
+        requires setting order to 1), and minimum length of traced feature to be considered
+        as a useful line for each pixel scale.
+        It then calls the generic version of the primitive.
+
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Arc data as 2D spectral images with the distortion and wavelength
+            solutions encoded in the WCS.
+
+        suffix :  str
+            Suffix to be added to output files.
+
+        spatial_order : int
+            Order of fit in spatial direction.
+
+        spectral_order : int
+            Order of fit in spectral direction.
+
+        id_only : bool
+            Trace using only those lines identified for wavelength calibration?
+
+        min_snr : float
+            Minimum signal-to-noise ratio for identifying lines (if
+            id_only=False).
+
+        nsum : int
+            Number of rows/columns to sum at each step.
+
+        step : int
+            Size of step in pixels when tracing.
+
+        max_shift : float
+            Maximum orthogonal shift (per pixel) for line-tracing (unbinned).
+
+        max_missed : int
+            Maximum number of steps to miss before a line is lost.
+
+        min_line_length: float
+            Minimum length of traced feature (as a fraction of the tracing dimension
+            length) to be considered as a useful line.
+
+        debug_reject_bad: bool
+            Reject lines with suspiciously high SNR (e.g. bad columns)? (Default: True)
+
+        debug: bool
+            plot arc line traces on image display window?
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The same input list is used as output but each object now has the
+            appropriate `nddata.wcs` defined for each of its extensions. This
+            provides details of the 2D Chebyshev fit which maps the distortion.
+        """
+        for ad in adinputs:
+            disp = ad.disperser(pretty=True)
+            cam = ad.camera(pretty=True)
+            cenwave = ad.central_wavelength(asMicrometers=True)
+            if params["spectral_order"] is None:
+                if disp.startswith('111') and cam.startswith('Long') and \
+                        cenwave >= 1.65:
+                        params["spectral_order"] = 1
+                else:
+                    params["spectral_order"] = 2
+
+            if params["min_line_length"] is None:
+                if cam.startswith('Long'):
+                    params["min_line_length"] = 0.8
+                else:
+                    params["min_line_length"] = 0.6
+        adinputs = super().determineDistortion(adinputs, **params)
         return adinputs
 
 

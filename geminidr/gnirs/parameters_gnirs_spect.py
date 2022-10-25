@@ -12,10 +12,11 @@ def list_of_ints_check(value):
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     def setDefaults(self):
-        self.spectral_order = 1
-        # self.min_snr = 5
-        # self.max_missed = 5
-        self.id_only = True
+        self.spectral_order = None # default value depends on the observing mode
+        self.min_snr = 10
+        self.max_missed = 2 # helps to filter out tracing on horizontal DC noise pattern
+        self.min_line_length = None # default value depends on the pixel scale
+        self.debug_reject_bad = False
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     def setDefaults(self):

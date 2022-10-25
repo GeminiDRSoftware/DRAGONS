@@ -886,6 +886,13 @@ class Spect(Resample):
         max_missed : int
             Maximum number of steps to miss before a line is lost.
 
+        min_line_length: float
+            Minimum length of traced feature (as a fraction of the tracing dimension
+            length) to be considered as a useful line.
+
+        debug_reject_bad: bool
+            Reject lines with suspiciously high SNR (e.g. bad columns)? (Default: True)
+
         debug: bool
             plot arc line traces on image display window?
 
@@ -909,6 +916,8 @@ class Spect(Resample):
         step = params["step"]
         max_shift = params["max_shift"]
         max_missed = params["max_missed"]
+        min_line_length = params["min_line_length"]
+        debug_reject_bad = params["debug_reject_bad"]
         debug = params["debug"]
 
         orders = (spectral_order, spatial_order)
@@ -959,14 +968,12 @@ class Spect(Resample):
                             pass
                         else:
                             fwidth = float(wavecal['coefficients'][index])
-                            print(f"fwidth from wavecal={fwidth}")
 
                 # This is identical to the code in determineWavelengthSolution()
                 if fwidth is None:
                     data, _, _, _ = tracing.average_along_slit(ext, center=None, nsum=nsum)
                     fwidth = tracing.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
-                print(f"fwidth final={fwidth}")
                 if initial_peaks is None:
                     data, mask, variance, extract_slice = tracing.average_along_slit(ext, center=None, nsum=nsum)
                     log.stdinfo("Finding peaks by extracting {}s {} to {}".
@@ -974,24 +981,21 @@ class Spect(Resample):
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                    print(f"widths (used for finding peaks) = {widths}")
                     initial_peaks, _ = tracing.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
-                        variance=variance, min_snr=min_snr)
+                        variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
                     log.stdinfo(f"Found {len(initial_peaks)} peaks")
-                    print(f"initial peaks: {initial_peaks}")
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
                 #.data[:,0:1500]
-                print(f"cwidth (used for tracing) = {max(int(fwidth),5)}")
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1 - dispaxis,
                                                             start=start, initial=initial_peaks,
                                                             rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
                                                             nsum=nsum, max_missed=max_missed,
                                                             max_shift=max_shift * ybin / xbin,
-                                                            viewer=self.viewer if debug else None)
-
+                                                            viewer=self.viewer if debug else None,
+                                                            min_line_length=min_line_length)
                 ## These coordinates need to be in the reference frame of a
                 ## full-frame unbinned image, so modify the coordinates by
                 ## the detector section
@@ -1040,7 +1044,6 @@ class Spect(Resample):
                     mapped_coords = np.array(model.inverse(xref, yref)).T
                     if debug:
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
-
                 # This is all we need for the new FITCOORD table
                 ext.FITCOORD = vstack([am.model_to_table(m_final),
                                        am.model_to_table(m_inverse)],

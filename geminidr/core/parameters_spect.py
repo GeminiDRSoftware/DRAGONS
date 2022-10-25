@@ -78,16 +78,19 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, None, min=1, optional=True)
     id_only = config.Field("Use only lines identified for wavelength calibration?", bool, False)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
     fwidth = config.RangeField("Feature width in pixels if reidentifying",
-                               float, None, min=2., optional=True)
+                               float, None, min=1., optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
+    min_line_length = config.RangeField("Exclude line traces shorter than this fraction of spatial dimension",
+                                        float, None, min=0., max=1., optional=True)
+    debug_reject_bad = config.Field("Reject lines with suspiciously high SNR (e.g. bad columns)?", bool, True)
     debug = config.Field("Display line traces on image display?", bool, False)
 
 class determineSlitEdgesConfig(config.Config):
