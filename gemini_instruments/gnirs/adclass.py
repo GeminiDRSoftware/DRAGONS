@@ -54,7 +54,7 @@ class AstroDataGnirs(AstroDataGemini):
             slit = self.phu.get('SLIT', '').lower()
             grat = self.phu.get('GRATING', '')
             prism = self.phu.get('PRISM', '')
-            if 'ifu' in slit:
+            if slit == 'ifu':
                 tags.add('IFU')
             elif ('arcsec' in slit or 'pin' in slit) and 'mm' in grat:
                 if 'MIR' in prism:

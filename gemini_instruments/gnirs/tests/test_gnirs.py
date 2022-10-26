@@ -166,11 +166,5 @@ def test_ra_dec_from_text():
     assert ad.target_dec() == pytest.approx(24.345277777777778)
 
 
-@pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("ad", ["N20220918S0040.fits"], indirect=True)
-def test_ifu_tag(ad):
-    assert("IFU" in ad.tags)
-
-
 if __name__ == "__main__":
     pytest.main()
