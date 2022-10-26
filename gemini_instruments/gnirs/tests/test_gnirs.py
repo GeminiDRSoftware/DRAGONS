@@ -166,10 +166,20 @@ def test_ra_dec_from_text():
     assert ad.target_dec() == pytest.approx(24.345277777777778)
 
 
+# TODO: HR-IFU data doesn't exist yet, add one when available
+EXPECTED_FPMS = [
+    ('N20220918S0040.fits', "LR-IFU"),
+    ("S20061213S0131.fits", "IFU")
+]
+
+
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("ad", ["N20220918S0040.fits"], indirect=True)
-def test_ifu_tag(ad):
+@pytest.mark.parametrize("filename,expected_fpm", EXPECTED_FPMS)
+def test_ifu_fpm(filename, expected_fpm):
+    path = astrodata.testing.download_from_archive(filename)
+    ad = astrodata.open(path)
     assert("IFU" in ad.tags)
+    assert(ad.focal_plane_mask(pretty=True) == expected_fpm)
 
 
 if __name__ == "__main__":
