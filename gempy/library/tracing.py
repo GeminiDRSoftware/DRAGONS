@@ -915,25 +915,6 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
                     out=np.zeros_like(data, dtype=np.float32),
                     where=variance > 0)
 
-     # debug, remove -OS
-    fig = plt.figure()
-    ax = fig.add_subplot()
-    ax.plot(wavelet_transformed_data[0])
-    fname = "/Users/osmirnov/data_reduction/NIR_LS_wvl/output/signal.png"
-    plt.savefig(fname)
-
-    fig = plt.figure()
-    ax = fig.add_subplot()
-    ax.plot(np.sqrt(variance))
-    fname = "/Users/osmirnov/data_reduction/NIR_LS_wvl/output/noise.png"
-    plt.savefig(fname)
-
-    fig = plt.figure()
-    ax = fig.add_subplot()
-    ax.plot(snr)
-    fname = "/Users/osmirnov/data_reduction/NIR_LS_wvl/output/snr.png"
-    plt.savefig(fname)
-
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points

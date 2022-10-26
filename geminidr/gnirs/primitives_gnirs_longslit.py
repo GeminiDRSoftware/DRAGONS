@@ -54,7 +54,7 @@ class GNIRSLongslit(GNIRSSpect):
             name of illumination mask mask (None -> use default)
 
         """
-        # GNIRS order blocking filter wvl range (um), based on conservative transmissivity,
+        # GNIRS order blocking filter wvl range (um), based on conservative transmissivity (1%),
         # or inter-order minima
         bl_filter_range_dict = {'X': (1.01, 1.19),
                                 'J': (1.15, 1.385),
