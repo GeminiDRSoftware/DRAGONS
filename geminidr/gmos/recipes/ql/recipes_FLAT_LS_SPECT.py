@@ -9,8 +9,8 @@ from geminidr.gmos.recipes.ql.recipes_common import makeIRAFCompatible
 
 def makeProcessedFlatNoStack(p):
     p.prepare()
-    p.addDQ()
     p.maskFaultyAmp(instrument='GMOS-S', bad_amps=5, valid_from='20220128')
+    p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.getProcessedBias()
@@ -28,8 +28,8 @@ _default = makeProcessedFlatNoStack
 
 def makeProcessedFlatStack(p):
     p.prepare()
-    p.addDQ()
     p.maskFaultyAmp(instrument='GMOS-S', bad_amps=5, valid_from='20220128')
+    p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.getProcessedBias()

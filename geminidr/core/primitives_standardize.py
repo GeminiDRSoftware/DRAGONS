@@ -91,16 +91,17 @@ class Standardize(PrimitivesBASE):
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
                 extver = ext.hdr['EXTVER']
-                if ext.mask is not None:
-                    log.warning('A mask already exists in extver {}'.
-                                format(extver))
-                    continue
+                if ext.mask is None:
+                    # Need to create the array first for 3D raw F2 data, with 2D BPM
+                    ext.mask = np.zeros_like(ext.data, dtype=DQ.datatype)
+                elif ext.mask.shape != ext.shape or ext.mask.dtype != DQ.datatype:
+                    raise ValueError(
+                        f'A mask already exists in extver {extver} and is '
+                        'either not the correct shape or dtype.')
 
                 non_linear_level = ext.non_linear_level()
                 saturation_level = ext.saturation_level()
 
-                # Need to create the array first for 3D raw F2 data, with 2D BPM
-                ext.mask = np.zeros_like(ext.data, dtype=DQ.datatype)
                 if static_ext is not None:
                     ext.mask |= static_ext.data
                 if user_ext is not None:

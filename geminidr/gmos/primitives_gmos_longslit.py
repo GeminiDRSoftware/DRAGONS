@@ -6,6 +6,7 @@
 
 from copy import copy, deepcopy
 from importlib import import_module
+from itertools import groupby
 
 import astrodata
 import numpy as np
@@ -75,7 +76,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                        ("GMOS-N", "EEV"): 0.7,
                        ("GMOS-S", "Hamamatsu-S"): 5.5,
                        ("GMOS-S", "EEV"): 3.8}
-        edges = 50  # try to eliminate issues at the very edges
+        edges = 60  # try to eliminate issues at the very edges
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -97,11 +98,17 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 continue
 
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            mshift = max_shift // ybin + 10
             ad_detsec = ad.detector_section()
             no_bridges = all(detsec.y1 > 1600 and detsec.y2 < 2900
                              for detsec in ad_detsec)
             has_48rows = (all(detsec.y2 == 4224 for detsec in ad_detsec) and
                           'Hamamatsu' in ad.detector_name(pretty=True))
+
+            if has_48rows:
+                actual_rows = 48 // ybin
+                for ext in ad:
+                    ext.mask[:actual_rows] |= DQ.unilluminated
 
             if illum:
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
@@ -125,7 +132,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                 # Default operation for GMOS full-frame LS
                 # Sadly, we cannot do this reliably without concatenating the
                 # arrays and using a big chunk of memory.
-                all_data = np.zeros((ad[0].shape[0], ad[-1].detector_section().x2 // xbin))
+                max_xsize = max([ext.detector_section().x2 for ext in ad]) // xbin
+                all_data = np.zeros((ad[0].shape[0], max_xsize))
                 data_sections = ad.data_section()
                 for ext, datasec in zip(ad, data_sections):
                     out_slice = (slice(None), slice(ext.detector_section().x1 // xbin,
@@ -135,13 +143,16 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     all_data[out_slice] = ext.data[in_slice]
                     if ext.mask is not None:
                         all_data[out_slice][ext.mask[in_slice] > 0] = np.nan
+                # To supress a numpy RuntimeWarning if a row is all NaNs, we
+                # set such rows to zero. Hopefully these will get boxcar'd out
+                all_data[np.isnan(all_data).min(axis=1)] = 0
                 row_medians = np.nanpercentile(all_data, 95, axis=1)
                 del all_data
-                row_medians -= at.boxcar(row_medians, size=50 // ybin)
+                #row_medians -= at.boxcar(row_medians, size=50 // ybin)
 
                 # Construct a model of the slit illumination from the MDF
                 # coefficients are from G-IRAF except c0, approx. from data
-                model = np.zeros_like(row_medians, dtype=int)
+                model = np.zeros((row_medians.size + 2 * mshift,), dtype=int)
                 for ypos, ysize in mdf['slitpos_my', 'slitsize_my']:
                     y = ypos + np.array([-0.5, 0.5]) * ysize
                     c0 = offset_dict[ad.instrument(), ad.detector_name(pretty=True)]
@@ -151,30 +162,49 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         c1, c2, c3 = (0.99591859227, 5.3042211333437e-8,
                                       1.7447902551997e-7)
                     yccd = ((c0 + y * (c1 + y * (c2 + y * c3))) *
-                            1.611444 / ad.pixel_scale() + 0.5 * model.size).astype(int)
-                    model[yccd[0]:yccd[1]+1] = 1
+                            1.611444 / ad.pixel_scale() + 0.5 * row_medians.size).astype(int)
+                    model[yccd[0]+mshift:yccd[1]+mshift+1] = 1
                     log.stdinfo("Expected slit location from pixels "
                                  f"{yccd[0]+1} to {yccd[1]+1}")
 
+                # For N&S data, repeat the slit below where the MDF locates it
+                if 'NODANDSHUFFLE' in ad.tags:
+                    shuffle_pixels = ad.shuffle_pixels() // ybin
+                    model[:-shuffle_pixels] += model[shuffle_pixels:]
+
+                # Find largest number of pixels between slits, which will
+                # define a smoothing box scale. This is necessary to take out
+                # the slit function, if most of the detector is illuminated
+                if model.mean() > 0.75:
+                    longest_gap = max([len(list(group)) for item, group in
+                                       groupby(model) if item == 0])
+                    row_medians -= at.boxcar(row_medians, size=longest_gap // 2)
+                # Remove single bad rows
+                row_medians = at.boxcar(row_medians, size=2)
+
                 if shift is None:
-                    mshift = max_shift // ybin + 2
-                    mshift2 = mshift + edges
-                    # model[] indexing avoids reduction in signal as slit
-                    # is shifted off the top of the image
-                    cntr = model.size - edges - mshift2 - 1
-                    xcorr = correlate(row_medians[edges:-edges], model[mshift2:-mshift2],
-                                      mode='full')[cntr - mshift:cntr + mshift]
-                    # This line avoids numerical errors in the spline fit
+                    xcorr = correlate(model, row_medians[edges:-edges], mode='valid')
+                    cntr = xcorr.size // 2
+                    xcorr = xcorr[cntr-mshift:cntr+mshift+1]
+                    # This line avoids numerical errors
                     xcorr -= np.median(xcorr)
                     pixels = np.arange(xcorr.size)
+
                     # This calculates the offsets of each point from the
                     # straight line between its neighbours
+                    if 'NODANDSHUFFLE' in ad.tags:
+                        # N&S causes problems with this peak-finding algorithm
+                        # because xcorr drops off a cliff in the top-third (no
+                        # illumination) so ignore that
+                        x2 = int(0.67 * xcorr.size)
+                        xcorr = xcorr[:x2]
+                        pixels = pixels[:x2]
                     std = (xcorr[1:-1] - 0.5 *
                            (xcorr + np.roll(xcorr, 2))[2:]).std()
                     xspline = astromodels.UnivariateSplineWithOutlierRemoval(
                         pixels, xcorr, order=None,
                         w=np.full(len(xcorr), 1. / std))(pixels)
-                    yshift = xspline.argmax() - mshift
+                    yshift = mshift - xspline.argmax()
                     maxima = xspline[1:-1][np.logical_and(np.diff(xspline[:-1]) > 0,
                                                           np.diff(xspline[1:]) < 0)]
                     significant_maxima = (maxima > xspline.max() - 3 * std).sum()
@@ -188,6 +218,8 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
                 if yshift is not None:
                     log.stdinfo(f"{ad.filename}: Shifting mask by {yshift} pixels")
+                    # Trim excess to return model to same size as slit profile
+                    model = model[mshift:-mshift]
                     row_mask = np.ones_like(model, dtype=int)
                     if yshift < 0:
                         row_mask[:yshift] = 1 - model[-yshift:]
@@ -195,14 +227,10 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         row_mask[yshift:] = 1 - model[:-yshift]
                     else:
                         row_mask[:] = 1 - model
+                    row_mask = at.boxcar(row_mask, operation=np.bitwise_or, size=2)
                     for ext in ad:
                         ext.mask |= (row_mask * DQ.unilluminated).astype(
                             DQ.datatype)[:, np.newaxis]
-
-            if has_48rows:
-                actual_rows = 48 // ybin
-                for ext in ad:
-                    ext.mask[:actual_rows] |= DQ.unilluminated
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
