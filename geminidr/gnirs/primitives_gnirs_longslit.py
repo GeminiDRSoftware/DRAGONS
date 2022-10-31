@@ -99,9 +99,9 @@ class GNIRSLongslit(GNIRSSpect):
                     ext.mask[:filter_cutoff_pix] |= DQ.unilluminated
                     ext.mask[filter_cuton_pix:] |= DQ.unilluminated
                 if filter_cutoff_pix > 0:
-                    log.stdinfo(f"Masking columns 1 to {filter_cutoff_pix+1}")
+                    log.stdinfo(f"Masking rows 1 to {filter_cutoff_pix+1}")
                 if filter_cuton_pix < (ad[0].shape[dispaxis] - 1):
-                    log.stdinfo(f"Masking columns {filter_cuton_pix+1} to {(ad[0].shape[dispaxis])}")
+                    log.stdinfo(f"Masking rows {filter_cuton_pix+1} to {(ad[0].shape[dispaxis])}")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
