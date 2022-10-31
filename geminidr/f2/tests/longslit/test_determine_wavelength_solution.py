@@ -63,7 +63,7 @@ input_pars = [
     ("S20210903S0053_flatCorrected.fits", dict()), # 6-pix slit
     ("S20131227S0114_flatCorrected.fits", dict()), # 2-pix slit # no associated flat (the program one is not matching, probably because of diff read modes)
     # grism: R3K, filter: Ks (2.200um)
-    ("S20140220S0425_flatCorrected.fits", dict()), # 2-pix slit - do I need to add lines to the linelist?
+    ("S20140220S0425_flatCorrected.fits", dict()), # 2-pix slit
     ("S20220515S0026_flatCorrected.fits", dict()), # 3-pix slit
     # grism: R3K, filter: K-long (2.200um)
     ("S20150624S0023_flatCorrected.fits", dict()), # 1-pix slit
@@ -457,6 +457,7 @@ def do_plots(ad):
     ----------
     ad : astrodata
     """
+
     output_dir = ("./plots/geminidr/f2/"
                   "test_f2_spect_ls_determine_wavelength_solution")
     os.makedirs(output_dir, exist_ok=True)
@@ -650,7 +651,7 @@ def create_inputs_recipe():
         flat_reduce = Reduce()
         flat_reduce.files.extend(flat_path)
         flat_reduce.ucals = normalize_ucals(calibration_files)
-        flat_reduce.uparms = [('normalizeFlat:threshold','0.05')]
+        flat_reduce.uparms = [('normalizeFlat:threshold','0.01')]
         flat_reduce.runr()
         processed_flat = flat_reduce.output_filenames.pop()
         del flat_reduce
@@ -665,7 +666,7 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
         p.darkCorrect(dark=arc_darks_master)
-        p.flatCorrect(flat=processed_flat, suffix="_flatCorrected_0_05")
+        p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
         p.makeIRAFCompatible()
 
         os.chdir("inputs/")
