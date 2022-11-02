@@ -840,6 +840,112 @@ class Spect(Resample):
 
         return adinputs
 
+    def createNewAperture(self, adinputs=None, **params):
+        """
+        Create a new aperture, as an offset from another (given) aperture.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            A list of spectra with an APERTURE table.
+        aperture : int
+            Aperture number upon which to base new aperture.
+        shift : float
+            Shift (in pixels) to new aperture.
+        aper_lower : float
+            Distance in pixels from center to lower edge of new aperture.
+        aper_upper : float
+            Distance in pixels from center to upper edge of new aperture.
+        suffix : str
+            Suffix to be added to output files.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The same input list is used as output but each object now has a new
+            aperture in its APERTURE table, created as an offset from an
+            existing aperture.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        aperture = params["aperture"]
+        shift = params["shift"]
+        aper_lower = params["aper_lower"]
+        aper_upper = params["aper_upper"]
+        sfx = params['suffix']
+
+        def find_next_open_num(seq):
+            """Find the next available slot in an iterable sequence of integers
+
+            This function assumes as input a (possibly non-sorted, possibly
+            non-contiguous) sequence of integers representing apertures in an
+            AstroData APERTURE table, and tries to find the next available one.
+            """
+            for i, j in enumerate(sorted(seq)):
+                if i + 1 != j:
+                    return i + 1
+            return i + 2
+
+        # First check that the given reference aperture is available in each
+        # extension of all AstroData objects, no-op if not.
+        for ad in adinputs:
+            for i, ext in enumerate(ad):
+                try:
+                    list(ext.APERTURE['number']).index(aperture)
+                except ValueError:
+                    log.warning(f"Aperture number {aperture} not found in "
+                                f"extenstion number {i}, no new aperture will "
+                                "be created.")
+                    return adinputs
+
+        for ad in adinputs:
+            for ext in ad:
+                spataxis = 1 - ext.dispersion_axis()  # Python sense
+
+                # We know this exists from the check above.
+                apnum = list(ext.APERTURE['number']).index(aperture)
+
+                # Copy the appropriate row.
+                new_row = deepcopy(ext.APERTURE[apnum])
+                new_row['c0'] += shift
+
+                loc = new_row['c0']
+                # Print warning if the shift would put the new aperture off the
+                # array.
+                if loc < 0:
+                    log.warning("New aperture location is off left of image.")
+                if loc > ext.data.shape[spataxis]:
+                    log.warning("New aperture location is off right of image.")
+
+                # Set user-given values for upper and lower aperture edges.
+                # Validation should ensure they either both exist or are None.
+                if aper_lower and aper_upper:
+                    new_row['aper_lower'] =  aper_lower
+                    new_row['aper_upper'] =  aper_upper
+
+                # Check that the edges of the apertures aren't off the array.
+                ap_low = new_row['aper_lower']
+                ap_up = new_row['aper_upper']
+                if loc + ap_low < 0:
+                    log.warning("New aperture lower edge is off left of image.")
+                if loc + ap_up > ext.data.shape[spataxis]:
+                    log.warning("New aperture upper edge is off right of image.")
+
+                new_apnum = find_next_open_num(ext.APERTURE['number'])
+                log.stdinfo(f"Added new aperture {apnum} to {ad.filename}.")
+                new_row['number'] = new_apnum
+                ext.APERTURE.add_row(new_row)
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+
     def determineDistortion(self, adinputs=None, **params):
         """
         Maps the distortion on a detector by tracing lines perpendicular to the
