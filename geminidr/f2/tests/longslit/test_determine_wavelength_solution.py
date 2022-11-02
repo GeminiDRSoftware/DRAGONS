@@ -40,15 +40,12 @@ input_pars = [
     # (Input File, params)
     # If a grism+filter combination is not present here => no science data exists
     # grism: JH, filter: JH (1.400um)
-   # ("S20130928S0143_flatCorrected.fits", dict()), # 4-pix slit
     ("S20160928S0077_flatCorrected.fits", dict()), # 8-pix slit
     ("S20211216S0177_flatCorrected.fits", dict()), # 2-pix slit
     ("S20220525S0036_flatCorrected.fits", dict()), # 6-pix slit, new JH filter
-   # ("S20220409S0035_flatCorrected.fits", dict()), # 3-pix slit, new JH filter
     # grism: HK, filter: HK (1.870um)
     ("S20220319S0060_flatCorrected.fits", dict()), # 3-pix slit, new HK filter
     ("S20220527S0035_flatCorrected.fits", dict()), # 4-pix slit, new HK filter, ND4-5
-    #("S20180114S0108_flatCorrected.fits", dict()), # 4-pix slit, ND4-5
     ("S20130930S0119_flatCorrected.fits", dict()), # 2-pix slit # no associated flat (the program one is not matching, , probably because of diff read modes)
     ("S20160215S0138_flatCorrected.fits", dict()), # 6-pix slit, ND4-5, all flats saturated
     # grism: HK, filter: JH (1.100um)
@@ -56,7 +53,6 @@ input_pars = [
     # grism: R3K, filter: J-low (1.100um)
     ("S20131018S0230_flatCorrected.fits", dict()), # 6-pix slit
     # grism: R3K, filter: J (1.250um)
-    #("S20140216S0091_flatCorrected.fits", dict()), # 2-pix slit
     ("S20170715S0121_flatCorrected.fits", dict()), # 1-pix slit, Clear
     ("S20200219S0105_flatCorrected.fits", dict()), # 4-pix slit, ND1.0
     # grism: R3K, filter: H (1.650um)
@@ -294,7 +290,6 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
