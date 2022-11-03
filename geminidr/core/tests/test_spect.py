@@ -113,20 +113,20 @@ def test_create_new_aperture(path_to_inputs):
 
     # Test creating a new aperture
     p.createNewAperture(aperture=1, shift=100)
-    assert pytest.approx(ad[0].APERTURE[1]['c0'], 471.745)
-    assert pytest.approx(ad[0].APERTURE[1]['aper_lower'], -21.134)
-    assert pytest.approx(ad[0].APERTURE[1]['aper_upper'], 23.076)
+    assert ad[0].APERTURE[1]['c0'] == pytest.approx(471.745)
+    assert ad[0].APERTURE[1]['aper_lower'] == pytest.approx(-21.13415)
+    assert ad[0].APERTURE[1]['aper_upper'] == pytest.approx(23.07667)
 
     # Create another aperature and test aper_lower & aper_upper parameters
     p.createNewAperture(aperture=1, shift=-100, aper_lower=-10, aper_upper=10)
-    assert pytest.approx(ad[0].APERTURE[2]['c0'], 271.745)
-    assert pytest.approx(ad[0].APERTURE[2]['aper_lower'], -10)
-    assert pytest.approx(ad[0].APERTURE[2]['aper_upper'], 10)
+    assert ad[0].APERTURE[2]['c0'] == pytest.approx(271.745)
+    assert ad[0].APERTURE[2]['aper_lower'] == pytest.approx(-10)
+    assert ad[0].APERTURE[2]['aper_upper'] == pytest.approx(10)
 
     # Delete aperture in the midde, test that aperture number increments
     del ad[0].APERTURE[1]
-    p.createNewAperture(aperture=1, shift=50)
-    assert pytest.approx(ad[0].APERTURE[1]['c0'], 421.745)
+    p.createNewAperture(aperture=1, shift=100)
+    assert ad[0].APERTURE[2]['c0'] == pytest.approx(471.745)
 
 
 def test_create_new_aperture_warnings_and_errors(path_to_inputs, caplog):
