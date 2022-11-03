@@ -22,6 +22,7 @@ from astropy.modeling import models
 from geminidr.f2.primitives_f2_longslit import F2Longslit
 from gempy.library import transform, astromodels as am
 from gempy.utils import logutils
+from recipe_system.testing import ref_ad_factory
 
 from geminidr.f2.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
 

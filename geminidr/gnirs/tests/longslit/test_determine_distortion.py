@@ -23,6 +23,7 @@ from astropy.modeling import models
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from gempy.library import transform, astromodels as am
 from gempy.utils import logutils
+from recipe_system.testing import ref_ad_factory
 
 from geminidr.gnirs.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
 
