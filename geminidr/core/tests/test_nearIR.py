@@ -98,6 +98,7 @@ def test_remove_first_frame_by_filename():
 # of 2022-10-25) have an example of it in GNIRS imaging. DB
 @pytest.mark.slow
 @pytest.mark.regression
+@pytest.mark.preprocessed_data
 def test_clean_readout_gnirs_spec(path_to_inputs, path_to_refs):
     ad = astrodata.open(os.path.join(path_to_inputs,
                                      "S20060826S0305_skyAssociated.fits"))
@@ -111,6 +112,7 @@ def test_clean_readout_gnirs_spec(path_to_inputs, path_to_refs):
 
 @pytest.mark.slow
 @pytest.mark.regression
+@pytest.mark.preprocessed_data
 def test_clean_readout_niri_spec(path_to_inputs, path_to_refs):
     ad = astrodata.open(os.path.join(path_to_inputs,
                                      "N20050614S0190_skyAssociated.fits"))
@@ -123,6 +125,7 @@ def test_clean_readout_niri_spec(path_to_inputs, path_to_refs):
 
 @pytest.mark.slow
 @pytest.mark.regression
+@pytest.mark.preprocessed_data
 def test_clean_readout_niri_image(path_to_inputs, path_to_refs):
     ad = astrodata.open(os.path.join(path_to_inputs,
                                      "N20170505S0146_skyAssociated.fits"))
