@@ -37,6 +37,7 @@ from astropy.modeling import models
 from scipy import optimize
 
 from specutils.utils.wcs_utils import air_to_vac
+import matplotlib.pyplot as plt
 
 import astrodata, gemini_instruments
 from gempy.library import astromodels as am
@@ -100,10 +101,32 @@ def test_extract_1d_spectra_with_sky_lines():
     np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)
 
 
-@pytest.mark.xfail(reason="The fake data needs a DQ plane")
+# @pytest.mark.xfail(reason="The fake data needs a DQ plane")
 def test_find_apertures():
-    _p = primitives_spect.Spect([])
-    _p.findApertures()
+    width = 400
+    height = 400
+    trace_model_parameters_1 = {'c0': height // 2, 'c1': 5.0,
+                                'c2': -0.5, 'c3': 0.1}
+    trace_model_parameters_2 = {'c0': height // 4, 'c1': 5.0,
+                                'c2': -0.1, 'c3': 0.5}
+    trace_model_parameters_3 = {'c0': height // 4 * 3, 'c1': 5.0,
+                                'c2': -0.5, 'c3': 0.5}
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+    ad[0].data += fake_point_source_spatial_profile(height, width,
+                                                    trace_model_parameters_1)
+    ad[0].data += fake_point_source_spatial_profile(height, width,
+                                                    trace_model_parameters_2)
+    ad[0].data += fake_point_source_spatial_profile(height, width,
+                                                    trace_model_parameters_3)
+    plt.imshow(ad[0].data)
+    plt.show()
+    # ad[0].APERTURE = get_aperture_table(height, width)
+
+    _p = NIRILongslit([ad])
+    ad_out = _p.findApertures()[0]
+    # print(ad_out[0].APERTURE)
+    assert len(ad_out[0].APERTURE) == 3
 
 
 @pytest.mark.parametrize('in_vacuo', (False, True, None))
