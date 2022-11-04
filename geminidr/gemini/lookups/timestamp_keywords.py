@@ -23,6 +23,7 @@ timestamp_keys = {
     "calculateSensitivity": "SENSFUNC",
     "combineNodAndShuffleBeams": "NSCOMB",
     "correctBackgroundToReference": "CORRBG",
+    "createNewAperture": "CRTNWAPT",
     "makeSlitIllum": "MAKESILL",
     "cutFootprints": "CUTSFP",
     "darkCorrect": "DARKCORR",

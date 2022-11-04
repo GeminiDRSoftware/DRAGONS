@@ -40,6 +40,7 @@ from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata, gemini_instruments
 from gempy.library import astromodels as am
+from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
@@ -104,6 +105,67 @@ def test_extract_1d_spectra_with_sky_lines():
 def test_find_apertures():
     _p = primitives_spect.Spect([])
     _p.findApertures()
+
+
+@pytest.mark.preprocessed_data
+def test_create_new_aperture(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
+    p = GNIRSLongslit([ad])
+
+    # Test creating a new aperture
+    p.createNewAperture(aperture=1, shift=100)
+    assert ad[0].APERTURE[1]['c0'] == pytest.approx(471.745)
+    assert ad[0].APERTURE[1]['aper_lower'] == pytest.approx(-21.13415)
+    assert ad[0].APERTURE[1]['aper_upper'] == pytest.approx(23.07667)
+
+    # Create another aperature and test aper_lower & aper_upper parameters
+    p.createNewAperture(aperture=1, shift=-100, aper_lower=-10, aper_upper=10)
+    assert ad[0].APERTURE[2]['c0'] == pytest.approx(271.745)
+    assert ad[0].APERTURE[2]['aper_lower'] == pytest.approx(-10)
+    assert ad[0].APERTURE[2]['aper_upper'] == pytest.approx(10)
+
+    # Delete aperture in the midde, test that aperture number increments
+    del ad[0].APERTURE[1]
+    p.createNewAperture(aperture=1, shift=100)
+    assert ad[0].APERTURE[2]['c0'] == pytest.approx(471.745)
+
+
+@pytest.mark.preprocessed_data
+def test_create_new_aperture_warnings_and_errors(path_to_inputs, caplog):
+    ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
+    p = GNIRSLongslit([ad])
+
+    # Check that only passing one 'aper' parameter raises a ValueError
+    with pytest.raises(ValueError):
+        p.createNewAperture(aperture=1, shift=100, aper_lower=10, aper_upper=None)
+        p.createNewAperture(aperture=1, shift=100, aper_lower=None, aper_upper=10)
+
+    # Check that aper_upper & aper_lower limits are respected
+    with pytest.raises(FieldValidationError):
+        p.createNewAperture(aperture=1, shift=10, aper_lower=-2, aper_upper=-1)
+    with pytest.raises(FieldValidationError):
+        p.createNewAperture(aperture=1, shift=10, aper_lower=1, aper_upper=2)
+    with pytest.raises(FieldValidationError):
+        p.createNewAperture(aperture=1, shift=100, aper_lower=5, aper_upper=10)
+    with pytest.raises(FieldValidationError):
+        p.createNewAperture(aperture=1, shift=100, aper_lower=-10, aper_upper=-5)
+
+    # Check that appropriate warnings are generated when creating apertures
+    # with either the 'center' or an edge off the end of the array. Do them in
+    # this order since the third and fourth also generate the warnings of the
+    # first two.
+    p.createNewAperture(aperture=1, shift=600, aper_lower=-5, aper_upper=400)
+    assert any('New aperture is partially off right of image.' in record.message
+                for record in caplog.records)
+    p.createNewAperture(aperture=1, shift=-300, aper_lower=-500, aper_upper=5)
+    assert any('New aperture is partially off left of image.' in record.message
+                for record in caplog.records)
+    p.createNewAperture(aperture=1, shift=1000)
+    assert any('New aperture is entirely off right of image.' in record.message
+                for record in caplog.records)
+    p.createNewAperture(aperture=1, shift=-1000)
+    assert any('New aperture is entirely off left of image.' in record.message
+                for record in caplog.records)
 
 
 @pytest.mark.parametrize('in_vacuo', (False, True, None))

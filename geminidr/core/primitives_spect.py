@@ -840,6 +840,110 @@ class Spect(Resample):
 
         return adinputs
 
+    def createNewAperture(self, adinputs=None, **params):
+        """
+        Create a new aperture, as an offset from another (given) aperture.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            A list of spectra with an APERTURE table.
+        aperture : int
+            Aperture number upon which to base new aperture.
+        shift : float
+            Shift (in pixels) to new aperture.
+        aper_lower : float
+            Distance in pixels from center to lower edge of new aperture.
+        aper_upper : float
+            Distance in pixels from center to upper edge of new aperture.
+        suffix : str
+            Suffix to be added to output files.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The same input list is used as output but each object now has a new
+            aperture in its APERTURE table, created as an offset from an
+            existing aperture.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        aperture = params["aperture"]
+        shift = params["shift"]
+        aper_lower = params["aper_lower"]
+        aper_upper = params["aper_upper"]
+        sfx = params['suffix']
+
+        # First check that the given reference aperture is available in each
+        # extension of all AstroData objects, no-op if not. Report all cases
+        # where the reference aperture is missing.
+        ok = True
+        for ad in adinputs:
+            for ext in ad:
+                if aperture not in list(ext.APERTURE['number']):
+                    log.warning(f"Aperture number {aperture} not found in "
+                                f"extension {ext.id}.")
+                    ok = False
+        if not ok:
+            log.warning(f"No new apertures will be created by {self.myself()}")
+            return adinputs
+
+        for ad in adinputs:
+            for ext in ad:
+                spataxis = ext.dispersion_axis() - 1  # Python sense
+                too_low, too_high = (("left", "right") if spataxis == 1
+                                     else ("bottom", "top"))
+
+                # We know this exists from the check above.
+                existing_apnums = list(ext.APERTURE['number'])
+                apnum = existing_apnums.index(aperture)
+
+                # Copy the appropriate row.
+                new_row = deepcopy(ext.APERTURE[apnum])
+                new_row['c0'] += shift
+
+                apmodel = am.table_to_model(new_row)
+                # Expect domain to be equal to the number of spectral pixels
+                try:
+                    center_pixels = apmodel(np.arange(*apmodel.domain))
+                except TypeError:  # something wrong (e.g., domain is "None")
+                    center_pixels = apmodel(np.arange(ext.shape[1-spataxis]))
+                _min, _max = min(center_pixels), max(center_pixels)
+
+                # Set user-given values for upper and lower aperture edges.
+                # Validation should ensure they either both exist or are None.
+                if aper_lower is not None and aper_upper is not None:
+                    new_row['aper_lower'] = aper_lower
+                    new_row['aper_upper'] = aper_upper
+                aplo, aphi = new_row['aper_lower', 'aper_upper']
+
+                new_apnum = min(set(range(1, max(existing_apnums) + 2)) -
+                                set(existing_apnums))
+                log.stdinfo(f"Adding new aperture {apnum} to {ad.filename} "
+                            f"extension {ext.id}.")
+                new_row['number'] = new_apnum
+                ext.APERTURE.add_row(new_row)
+
+                # Print warning if new aperture is off the array
+                if _max + aphi < 0:
+                    log.warning(f"New aperture is entirely off {too_low} of image.")
+                elif _min + aplo < 0:
+                    log.warning(f"New aperture is partially off {too_low} of image.")
+                if _min + aplo > ext.data.shape[spataxis]:
+                    log.warning(f"New aperture is entirely off {too_high} of image.")
+                elif _max + aphi > ext.data.shape[spataxis]:
+                    log.warning(f"New aperture is partially off {too_high} of image.")
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+
     def determineDistortion(self, adinputs=None, **params):
         """
         Maps the distortion on a detector by tracing lines perpendicular to the
