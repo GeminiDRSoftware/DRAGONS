@@ -107,6 +107,7 @@ def test_find_apertures():
     _p.findApertures()
 
 
+@pytest.mark.preprocessed_data
 def test_create_new_aperture(path_to_inputs):
     ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
     p = GNIRSLongslit([ad])
@@ -129,6 +130,7 @@ def test_create_new_aperture(path_to_inputs):
     assert ad[0].APERTURE[2]['c0'] == pytest.approx(471.745)
 
 
+@pytest.mark.preprocessed_data
 def test_create_new_aperture_warnings_and_errors(path_to_inputs, caplog):
     ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
     p = GNIRSLongslit([ad])
