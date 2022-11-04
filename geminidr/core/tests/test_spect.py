@@ -108,7 +108,7 @@ def test_find_apertures():
 
 
 def test_create_new_aperture(path_to_inputs):
-    ad = astrodata.open(path_to_inputs + '/S20060826S0305_2D.fits')
+    ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
     p = GNIRSLongslit([ad])
 
     # Test creating a new aperture
@@ -130,7 +130,7 @@ def test_create_new_aperture(path_to_inputs):
 
 
 def test_create_new_aperture_warnings_and_errors(path_to_inputs, caplog):
-    ad = astrodata.open(path_to_inputs + '/S20060826S0305_2D.fits')
+    ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
     p = GNIRSLongslit([ad])
 
     # Check that only passing one 'aper' parameter raises a ValueError
@@ -153,16 +153,16 @@ def test_create_new_aperture_warnings_and_errors(path_to_inputs, caplog):
     # this order since the third and fourth also generate the warnings of the
     # first two.
     p.createNewAperture(aperture=1, shift=600, aper_lower=-5, aper_upper=400)
-    assert any('New aperture upper edge is off right of image.' in record.message
+    assert any('New aperture is partially off right of image.' in record.message
                 for record in caplog.records)
     p.createNewAperture(aperture=1, shift=-300, aper_lower=-500, aper_upper=5)
-    assert any('New aperture lower edge is off left of image.' in record.message
+    assert any('New aperture is partially off left of image.' in record.message
                 for record in caplog.records)
     p.createNewAperture(aperture=1, shift=1000)
-    assert any('New aperture location is off right of image.' in record.message
+    assert any('New aperture is entirely off right of image.' in record.message
                 for record in caplog.records)
     p.createNewAperture(aperture=1, shift=-1000)
-    assert any('New aperture location is off left of image.' in record.message
+    assert any('New aperture is entirely off left of image.' in record.message
                 for record in caplog.records)
 
 

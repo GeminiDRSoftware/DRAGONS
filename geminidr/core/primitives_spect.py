@@ -877,67 +877,65 @@ class Spect(Resample):
         aper_upper = params["aper_upper"]
         sfx = params['suffix']
 
-        def find_next_open_num(seq):
-            """Find the next available slot in an iterable sequence of integers
-
-            This function assumes as input a (possibly non-sorted, possibly
-            non-contiguous) sequence of integers representing apertures in an
-            AstroData APERTURE table, and tries to find the next available one.
-            """
-            for i, j in enumerate(sorted(seq)):
-                if i + 1 != j:
-                    return i + 1
-            return i + 2
-
         # First check that the given reference aperture is available in each
-        # extension of all AstroData objects, no-op if not.
+        # extension of all AstroData objects, no-op if not. Report all cases
+        # where the reference aperture is missing.
+        ok = True
         for ad in adinputs:
-            for i, ext in enumerate(ad):
-                try:
-                    list(ext.APERTURE['number']).index(aperture)
-                except ValueError:
+            for ext in ad:
+                if aperture not in list(ext.APERTURE['number']):
                     log.warning(f"Aperture number {aperture} not found in "
-                                f"extenstion number {i}, no new aperture will "
-                                "be created.")
-                    return adinputs
+                                f"extension {ext.id}.")
+                    ok = False
+        if not ok:
+            log.warning(f"No new apertures will be created by {self.myself()}")
+            return adinputs
 
         for ad in adinputs:
             for ext in ad:
-                spataxis = 1 - ext.dispersion_axis()  # Python sense
+                spataxis = ext.dispersion_axis() - 1  # Python sense
+                too_low, too_high = (("left", "right") if spataxis == 1
+                                     else ("bottom", "top"))
 
                 # We know this exists from the check above.
-                apnum = list(ext.APERTURE['number']).index(aperture)
+                existing_apnums = list(ext.APERTURE['number'])
+                apnum = existing_apnums.index(aperture)
 
                 # Copy the appropriate row.
                 new_row = deepcopy(ext.APERTURE[apnum])
                 new_row['c0'] += shift
 
-                loc = new_row['c0']
-                # Print warning if the shift would put the new aperture off the
-                # array.
-                if loc < 0:
-                    log.warning("New aperture location is off left of image.")
-                if loc > ext.data.shape[spataxis]:
-                    log.warning("New aperture location is off right of image.")
+                apmodel = am.table_to_model(new_row)
+                # Expect domain to be equal to the number of spectral pixels
+                try:
+                    center_pixels = apmodel(np.arange(*apmodel.domain))
+                except TypeError:  # something wrong (e.g., domain is "None")
+                    center_pixels = apmodel(np.arange(ext.shape[1-spataxis]))
+                _min, _max = min(center_pixels), max(center_pixels)
 
                 # Set user-given values for upper and lower aperture edges.
                 # Validation should ensure they either both exist or are None.
-                if aper_lower and aper_upper:
-                    new_row['aper_lower'] =  aper_lower
-                    new_row['aper_upper'] =  aper_upper
+                if aper_lower is not None and aper_upper is not None:
+                    new_row['aper_lower'] = aper_lower
+                    new_row['aper_upper'] = aper_upper
+                aplo, aphi = new_row['aper_lower', 'aper_upper']
 
-                # Check that the edges of the apertures aren't off the array.
-                ap_low = new_row['aper_lower']
-                ap_up = new_row['aper_upper']
-                if loc + ap_low < 0:
-                    log.warning("New aperture lower edge is off left of image.")
-                if loc + ap_up > ext.data.shape[spataxis]:
-                    log.warning("New aperture upper edge is off right of image.")
-
-                new_apnum = find_next_open_num(ext.APERTURE['number'])
-                log.stdinfo(f"Added new aperture {apnum} to {ad.filename}.")
+                new_apnum = min(set(range(1, max(existing_apnums) + 2)) -
+                                set(existing_apnums))
+                log.stdinfo(f"Adding new aperture {apnum} to {ad.filename} "
+                            f"extension {ext.id}.")
                 new_row['number'] = new_apnum
                 ext.APERTURE.add_row(new_row)
+
+                # Print warning if new aperture is off the array
+                if _max + aphi < 0:
+                    log.warning(f"New aperture is entirely off {too_low} of image.")
+                elif _min + aplo < 0:
+                    log.warning(f"New aperture is partially off {too_low} of image.")
+                if _min + aplo > ext.data.shape[spataxis]:
+                    log.warning(f"New aperture is entirely off {too_high} of image.")
+                elif _max + aphi > ext.data.shape[spataxis]:
+                    log.warning(f"New aperture is partially off {too_high} of image.")
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
