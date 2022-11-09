@@ -25,10 +25,10 @@ author = 'Kathleen Labrie'
 version = '3.0'
 #release = '3.0.x'
 #rtdurl = 'release-'+release
-release = '3.0.3'
+release = '3.0.4'
 rtdurl = 'v'+release
 
-today = 'July 2022'
+today = 'November 2022'
 
 # -- General configuration ---------------------------------------------------
 

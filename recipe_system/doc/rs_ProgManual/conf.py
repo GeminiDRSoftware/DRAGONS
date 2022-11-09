@@ -46,7 +46,7 @@ author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 version = '3.0'  # The short X.Y version.
 #release = '3.0.x'  # The full version, including alpha/beta/rc tags.
 #rtdurl = 'release-'+release
-release = '3.0.3'  # The full version, including alpha/beta/rc tags.
+release = '3.0.4'  # The full version, including alpha/beta/rc tags.
 rtdurl = 'v'+release
 
 
@@ -101,7 +101,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'July 2022'
+today = 'November 2022'
 
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'

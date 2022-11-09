@@ -41,7 +41,7 @@ version = '3.0'
 #release = astrodata.version()
 #release = '3.0.x'
 #rtdurl = 'release-'+release
-release = '3.0.3'
+release = '3.0.4'
 rtdurl = 'v'+release
 
 
@@ -86,7 +86,7 @@ language = None
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'July 2022'
+today = 'November 2022'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -214,10 +214,10 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/v3.0./', None),
+    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/v3.0.4/', None),
     'astropy': ('http://docs.astropy.org/en/stable/', None),
-    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/v3.0./', None),
-    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/v3.0.3/', None),
+    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/v3.0.4/', None),
+    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/v3.0.4/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'python': ('https://docs.python.org/3', None),

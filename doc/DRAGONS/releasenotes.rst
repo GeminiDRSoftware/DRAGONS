@@ -6,6 +6,13 @@
 Release Notes
 *************
 
+V3.0.4
+======
+This patch release includes several small fixes and improvements, many
+related to the Quality Assessment Pipeline run internally at Gemini.
+Provenance for flux calibration is now included.  The patch is recommended
+to all but not critical for most.
+
 V3.0.2 and V3.0.3
 =================
 Note that 3.0.2 was found to have one broken recipe, 3.0.3 fixes it.

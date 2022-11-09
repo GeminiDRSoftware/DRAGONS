@@ -6,6 +6,64 @@
 Change Logs
 ***********
 
+3.0.4
+=====
+
+Bug Fixes
+---------
+
+**geminidr.gmos**
+
+* Allow ``maskFaultyAmp`` to work on astrodata objects with no mask.
+
+* Fix ``maskFaultyAmp`` to work on central stamp ROI.
+
+**geminidr.core**
+
+* Adjust minimal dither separation for fringe frame creation.
+
+**astrodata**
+
+* Fix AstroData ``info()`` method to handle extensions with no pixels.  Required
+  for upcoming GHOST data.
+
+Improvements
+------------
+
+**geminidr.gmos**
+
+* Update to the GMOS-S Hamamatsu 4x4 imaging illumination mask.
+
+**geminidr.core**
+
+* Improve behavior of ``addIllumMaskToDQ`` to cope with larger shifts due to
+  recent GMOS misalignment.
+
+* Add provenance for the flux calibration step.
+
+**gemini_instruments.f2**
+
+* Switched to using WAVELENG for central_wavelength for F2 to be better aligned
+  with the instrument and observatory software.
+
+**gempy**
+
+* In ``dataselect``, make the disperser selection default to the "pretty"
+  mode rather than requiring the full component ID.
+
+Quality Assessment Pipeline
+---------------------------
+
+* Increase robustness of measureIQ for 2D spectra.
+
+* Interface improvements to the QAP Specviewer.
+
+* Fix missing ``maskFaultyAmp`` in some QAP recipes.
+
+* Limit the number of aperture/spectra selected in GMOS LS QA recipes for
+  performance reasons.
+
+
 3.0.2 and 3.0.3
 ===============
 
@@ -62,7 +120,7 @@ Interface Modifications
 * Internal Gemini catalog server URL updated.
 
 Documentation
-------------
+-------------
 
 * Various fixes to the documentation affecting formatting, not the content.
 
