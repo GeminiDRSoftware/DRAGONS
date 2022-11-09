@@ -97,7 +97,7 @@ class createNewApertureConfig(config.Config):
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=0)
     id_only = config.Field("Use only lines identified for wavelength calibration?", bool, False)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
     fwidth = config.RangeField("Feature width in pixels if reidentifying",

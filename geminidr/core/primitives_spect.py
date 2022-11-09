@@ -1015,7 +1015,7 @@ class Spect(Resample):
         max_missed = params["max_missed"]
         debug = params["debug"]
 
-        orders = (spectral_order, spatial_order)
+        orders = (max(spectral_order, 1), spatial_order)
 
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
@@ -1092,14 +1092,6 @@ class Spect(Resample):
                                                             max_shift=max_shift * ybin / xbin,
                                                             viewer=self.viewer if debug else None)
 
-                ## These coordinates need to be in the reference frame of a
-                ## full-frame unbinned image, so modify the coordinates by
-                ## the detector section
-                # x1, x2, y1, y2 = ext.detector_section()
-                # ref_coords = np.array([ref_coords[0] * xbin + x1,
-                #                       ref_coords[1] * ybin + y1])
-                # in_coords = np.array([in_coords[0] * xbin + x1,
-                #                      in_coords[1] * ybin + y1])
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
@@ -1107,14 +1099,31 @@ class Spect(Resample):
                                             y_degree=orders[dispaxis],
                                             x_domain=[0, ext.shape[1]],
                                             y_domain=[0, ext.shape[0]])
-                # x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
-                # y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
+                # Rather than fit to the reference coords, let's fit to the
+                # *shift* we want in the spectral direction and then add a
+                # linear term which will produce the desired model. This
+                # allows us to use spectral_order=0 if there's only a single
+                # traceable line.
+                if dispaxis == 1:
+                    domain_start, domain_end = m_init.x_domain
+                    param = 'c1_0'
+                else:
+                    domain_start, domain_end = m_init.y_domain
+                    param = 'c0_1'
+                domain_centre = 0.5 * (domain_start + domain_end)
+                if spectral_order == 0:
+                    getattr(m_init, param).fixed = True
+                shifts = ref_coords[1-dispaxis] - in_coords[1-dispaxis]
+
                 # Find model to transform actual (x,y) locations to the
                 # value of the reference pixel along the dispersion axis
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                            sigma_clip, sigma=3)
-                m_final, _ = fit_it(m_init, *in_coords, ref_coords[1 - dispaxis])
-                m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1 - dispaxis])
+                m_final, _ = fit_it(m_init, *in_coords, shifts)
+                m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
+                for m in (m_final, m_inverse):
+                    m.c0_0 += domain_centre
+                    getattr(m, param).value += domain_centre
 
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
