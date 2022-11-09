@@ -5,6 +5,8 @@ Default is "reduceScience".
 from time import sleep
 
 recipe_tags = {'F2', 'SPECT', 'LS'}
+SECTION = ":900"
+
 
 def reduceScience(p):
     """
@@ -31,7 +33,7 @@ def reduceScience(p):
     p.associateSky()
     p.skyCorrect()
     p.distortionCorrect()
-    p.findApertures()
+    p.findApertures(section=SECTION)
     p.measureIQ(display=True)
 
     # side stream to generate 1D spectra from individual frame, pre-stack
@@ -47,7 +49,7 @@ def reduceScience(p):
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
     p.stackFrames()
-    p.findApertures()
+    p.findApertures(section=SECTION)
     p.measureIQ(display=True)
     p.traceApertures()
     p.extractSpectra()

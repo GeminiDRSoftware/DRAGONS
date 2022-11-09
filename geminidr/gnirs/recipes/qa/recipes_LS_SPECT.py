@@ -3,6 +3,8 @@ Recipes available to data with tags ['GNIRS', 'SPECT', LS'].
 Default is "reduceScience".
 """
 recipe_tags = {'GNIRS', 'SPECT', 'LS'}
+SECTION = ":400"
+
 
 def reduceScience(p):
     """
@@ -28,7 +30,7 @@ def reduceScience(p):
     p.associateSky()
     p.skyCorrect()
     p.distortionCorrect()
-    p.findApertures()
+    p.findApertures(section=SECTION)
     p.measureIQ(display=True)
 
     # side stream to generate 1D spectra from individual frame, pre-stack
@@ -45,7 +47,7 @@ def reduceScience(p):
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
     p.stackFrames()
-    p.findApertures()
+    p.findApertures(section=SECTION)
     p.measureIQ(display=True)
     p.traceApertures()
     p.extractSpectra()
