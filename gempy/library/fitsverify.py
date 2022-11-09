@@ -37,12 +37,11 @@ def fitsverify(filename):
         return
 
     # Fire off the subprocess and capture the output
-    # subproc = subprocess.Popen([FITSVERIFY_BIN, filename], stdout=subprocess.PIPE,
-    #                       stderr=subprocess.PIPE)
-    # (stdoutstring, stderrstring) = subproc.communicate()
-    #
-    # stdoutstring += stderrstring
-    stdoutstring = "**** Verification found 0 warning(s) and 0 error(s). ****".encode('utf-8')
+    subproc = subprocess.Popen([FITSVERIFY_BIN, filename], stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE)
+    (stdoutstring, stderrstring) = subproc.communicate()
+   
+    stdoutstring += stderrstring
 
     # Check to see if we got a not a fits file situation
     nfmatch = NFRE.search(stdoutstring.decode('utf-8'))
