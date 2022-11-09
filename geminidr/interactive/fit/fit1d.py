@@ -138,6 +138,7 @@ class InteractiveModel1D(InteractiveModel):
 
         self.fitting_parameters = fitting_parameters
         self.domain = domain
+        self.fit = initial_fit
         if len(x) == 0:
             self.fit = initial_fit
         self.listeners = listeners
@@ -389,6 +390,9 @@ class InteractiveModel1D(InteractiveModel):
                     rank -= 1
                 if rank >= fitparms["order"]:
                     self.quality = FitQuality.GOOD
+                    self.fit = new_fit
+                elif self.fit is None:
+                    self.quality = FitQuality.BAD
                     self.fit = new_fit
                 else:
                     # Modify the fit_1D object with a shift by ugly hacking

@@ -14,6 +14,8 @@ import numpy as np
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
+from astropy.modeling.polynomial import Chebyshev1D
+from astropy.modeling.projections import AffineTransformation2D
 
 from astrodata import AstroData
 from astrodata import astro_data_tag
@@ -388,11 +390,20 @@ class AstroDataGemini(AstroData):
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':
+                def _encode_shape(shape):
+                    if shape is None or len(shape) == 0:
+                        self._logger.warning("No shape during _parse_section")
+                        return "[]"
+                    elif len(shape) == 1:
+                        return f"[1:{self.shape[0]}]"
+                    else:
+                        if len(shape) > 2:
+                            self._logger.warning("Shape has more than 2 dimensions, collapsing to 2 in _parse_section")
+                        return '[1:{1},1:{0}]'.format(*shape)
                 if self.is_single:
-                    sections = '[1:{1},1:{0}]'.format(*self.shape)
+                    sections = _encode_shape(self.shape)
                 else:
-                    sections = ['[1:{1},1:{0}]'.format(*ext.shape)
-                                for ext in self]
+                    sections = [_encode_shape(ext.shape) for ext in self]
             else:
                 sections = self.hdr.get(keyword)
             if self.is_single:
@@ -2152,11 +2163,21 @@ class AstroDataGemini(AstroData):
         pixel_scale_list = []
         for ext in self:
             try:
-                pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
+                try:
+                    if isinstance(ext.wcs.forward_transform, Chebyshev1D):
+                        self._logger.warning("Cheybshev1D unsupported in _get_wcs_pixel_scale, returning None")
+                        return None
+                    pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
+                except TypeError:
+                    self._logger.warning("Error determining pixel scale, continuing.")
             except (IndexError, AttributeError):
-                scale = empirical_pixel_scale(ext)
-                if scale is not None:
-                    pixel_scale_list.append(scale)
+                try:
+                    scale = empirical_pixel_scale(ext)
+                    if scale is not None:
+                        pixel_scale_list.append(scale)
+                except ValueError:
+                    self._logger.warning("unable to unpack values in empirical_pixel_scale, returning None")
+                    return None
         if mean:
             if pixel_scale_list:
                 return np.mean(pixel_scale_list)

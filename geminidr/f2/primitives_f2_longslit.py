@@ -135,7 +135,7 @@ class F2Longslit(F2Spect):
                 cenwave = ad.central_wavelength(asNanometers=True)
                 dispersion = ad.dispersion(asNanometers=True)[0]
                 filter = ad.filter_name(pretty=True)
-                if filter in {"HK", "JK"}:
+                if filter in {"HK", "JH"}:
                         filter = ad.filter_name(keepID=True)
                 cenwave_offset = self._get_cenwave_offset(ad)
                 index = (ad.disperser(pretty=True), filter)
