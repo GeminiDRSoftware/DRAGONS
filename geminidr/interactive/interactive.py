@@ -634,12 +634,14 @@ class PrimitiveVisualizer(ABC):
                         title = params.titles[key]
                     else:
                         title = _title_from_field(field)
+                    val = self.ui_params.values.get(key, "")
                     widget = TextInput(title=title,
                                        min_width=100,
                                        max_width=256,
                                        width_policy="fit",
                                        placeholder=params.placeholders[key]
-                                       if key in params.placeholders else None)
+                                       if key in params.placeholders else None,
+                                       value=val)
 
                     class TextHandler:
                         def __init__(self, key, extras, fn):
