@@ -78,7 +78,7 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, None, min=1, optional=True)
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
     id_only = config.Field("Use only lines identified for wavelength calibration?", bool, False)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
     fwidth = config.RangeField("Feature width in pixels if reidentifying",
@@ -89,7 +89,7 @@ class determineDistortionConfig(config.Config):
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     min_line_length = config.RangeField("Exclude line traces shorter than this fraction of spatial dimension",
-                                        float, None, min=0., max=1., optional=True)
+                                        float, 0., min=0., max=1.)
     debug_reject_bad = config.Field("Reject lines with suspiciously high SNR (e.g. bad columns)?", bool, True)
     debug = config.Field("Display line traces on image display?", bool, False)
 
@@ -123,8 +123,6 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
     absorption = config.Field("Is feature type absorption?", bool, False)
-    order = config.RangeField("Order of fitting function", int, None, min=0,
-                              optional=True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)

@@ -14,11 +14,6 @@ class QECorrectConfig(parameters_generic.calRequirementConfig):
 class findAcquisitionSlitsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_acqSlitsAdded", optional=True)
 
-class determineDistortionConfig(parameters_spect.determineDistortionConfig):
-    def setDefaults(self):
-        self.spectral_order = 4
-        self.min_line_length = 0.
-
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     nbright = config.RangeField("Number of bright lines to eliminate", int, 0, min=0)
 

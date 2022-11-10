@@ -11,16 +11,18 @@ def list_of_ints_check(value):
     return True
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, None, min=1, optional=True)
+    min_line_length = config.RangeField("Exclude line traces shorter than this fraction of spatial dimension",
+                                        float, None, min=0., max=1., optional=True)
     def setDefaults(self):
-        self.spectral_order = None # default value depends on the observing mode
         self.min_snr = 10
         self.max_missed = 2 # helps to filter out tracing on horizontal DC noise pattern
-        self.min_line_length = None # default value depends on the pixel scale
         self.debug_reject_bad = False
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
+    order = config.RangeField("Order of fitting function", int, None, min=0,
+                              optional=True)
     def setDefaults(self):
-        self.order = None
         self.in_vacuo = True
         self.debug_min_lines = 100000
         self.min_snr = 20
