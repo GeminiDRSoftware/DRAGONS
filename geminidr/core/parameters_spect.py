@@ -75,10 +75,29 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
         del self.grow
 
 
+class createNewApertureConfig(config.Config):
+    aperture = config.Field("Base aperture to offset from", int, None, optional=False)
+    shift = config.Field("Shift (in pixels) to new aperture", float, None, optional=False)
+    aper_upper = config.RangeField("Offset to new upper edge", float, None,
+                                   optional=True, min=0., inclusiveMin=False)
+    aper_lower = config.RangeField("Offset to new lower edge", float, None,
+                                   optional=True, max=0., inclusiveMax=False)
+    suffix = config.Field("Filename suffix", str, "_newApertureCreated", optional=True)
+
+    def validate(self):
+        config.Config.validate(self)
+        if (self.aper_lower and self.aper_upper) or\
+           (not self.aper_lower and not self.aper_upper):
+            pass
+        else:
+            raise ValueError("Both aper_lower and aper_upper must either be "
+                             "specified, or left as None.")
+
+
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=0)
     id_only = config.Field("Use only lines identified for wavelength calibration?", bool, False)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
     fwidth = config.RangeField("Feature width in pixels if reidentifying",
@@ -93,6 +112,7 @@ class determineDistortionConfig(config.Config):
     debug_reject_bad = config.Field("Reject lines with suspiciously high SNR (e.g. bad columns)?", bool, True)
     debug = config.Field("Display line traces on image display?", bool, False)
 
+
 class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
     edges1 = config.ListField("List of left edges of illuminated region(s)",
@@ -103,6 +123,7 @@ class determineSlitEdgesConfig(config.Config):
                               optional=True, single=True)
     debug = config.Field("Plot fits of edges and print extra information?",
                          bool, False)
+
 
 class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
@@ -132,6 +153,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
         del self.function
         del self.grow
         self.niter = 3
+
 
 class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)

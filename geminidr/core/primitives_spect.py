@@ -840,6 +840,110 @@ class Spect(Resample):
 
         return adinputs
 
+    def createNewAperture(self, adinputs=None, **params):
+        """
+        Create a new aperture, as an offset from another (given) aperture.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            A list of spectra with an APERTURE table.
+        aperture : int
+            Aperture number upon which to base new aperture.
+        shift : float
+            Shift (in pixels) to new aperture.
+        aper_lower : float
+            Distance in pixels from center to lower edge of new aperture.
+        aper_upper : float
+            Distance in pixels from center to upper edge of new aperture.
+        suffix : str
+            Suffix to be added to output files.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The same input list is used as output but each object now has a new
+            aperture in its APERTURE table, created as an offset from an
+            existing aperture.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        aperture = params["aperture"]
+        shift = params["shift"]
+        aper_lower = params["aper_lower"]
+        aper_upper = params["aper_upper"]
+        sfx = params['suffix']
+
+        # First check that the given reference aperture is available in each
+        # extension of all AstroData objects, no-op if not. Report all cases
+        # where the reference aperture is missing.
+        ok = True
+        for ad in adinputs:
+            for ext in ad:
+                if aperture not in list(ext.APERTURE['number']):
+                    log.warning(f"Aperture number {aperture} not found in "
+                                f"extension {ext.id}.")
+                    ok = False
+        if not ok:
+            log.warning(f"No new apertures will be created by {self.myself()}")
+            return adinputs
+
+        for ad in adinputs:
+            for ext in ad:
+                spataxis = ext.dispersion_axis() - 1  # Python sense
+                too_low, too_high = (("left", "right") if spataxis == 1
+                                     else ("bottom", "top"))
+
+                # We know this exists from the check above.
+                existing_apnums = list(ext.APERTURE['number'])
+                apnum = existing_apnums.index(aperture)
+
+                # Copy the appropriate row.
+                new_row = deepcopy(ext.APERTURE[apnum])
+                new_row['c0'] += shift
+
+                apmodel = am.table_to_model(new_row)
+                # Expect domain to be equal to the number of spectral pixels
+                try:
+                    center_pixels = apmodel(np.arange(*apmodel.domain))
+                except TypeError:  # something wrong (e.g., domain is "None")
+                    center_pixels = apmodel(np.arange(ext.shape[1-spataxis]))
+                _min, _max = min(center_pixels), max(center_pixels)
+
+                # Set user-given values for upper and lower aperture edges.
+                # Validation should ensure they either both exist or are None.
+                if aper_lower is not None and aper_upper is not None:
+                    new_row['aper_lower'] = aper_lower
+                    new_row['aper_upper'] = aper_upper
+                aplo, aphi = new_row['aper_lower', 'aper_upper']
+
+                new_apnum = min(set(range(1, max(existing_apnums) + 2)) -
+                                set(existing_apnums))
+                log.stdinfo(f"Adding new aperture {apnum} to {ad.filename} "
+                            f"extension {ext.id}.")
+                new_row['number'] = new_apnum
+                ext.APERTURE.add_row(new_row)
+
+                # Print warning if new aperture is off the array
+                if _max + aphi < 0:
+                    log.warning(f"New aperture is entirely off {too_low} of image.")
+                elif _min + aplo < 0:
+                    log.warning(f"New aperture is partially off {too_low} of image.")
+                if _min + aplo > ext.data.shape[spataxis]:
+                    log.warning(f"New aperture is entirely off {too_high} of image.")
+                elif _max + aphi > ext.data.shape[spataxis]:
+                    log.warning(f"New aperture is partially off {too_high} of image.")
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+
     def determineDistortion(self, adinputs=None, **params):
         """
         Maps the distortion on a detector by tracing lines perpendicular to the
@@ -920,7 +1024,7 @@ class Spect(Resample):
         debug_reject_bad = params["debug_reject_bad"]
         debug = params["debug"]
 
-        orders = (spectral_order, spatial_order)
+        orders = (max(spectral_order, 1), spatial_order)
 
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
@@ -974,6 +1078,7 @@ class Spect(Resample):
                     data, _, _, _ = tracing.average_along_slit(ext, center=None, nsum=nsum)
                     fwidth = tracing.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
+
                 if initial_peaks is None:
                     data, mask, variance, extract_slice = tracing.average_along_slit(ext, center=None, nsum=nsum)
                     log.stdinfo("Finding peaks by extracting {}s {} to {}".
@@ -996,29 +1101,38 @@ class Spect(Resample):
                                                             max_shift=max_shift * ybin / xbin,
                                                             viewer=self.viewer if debug else None,
                                                             min_line_length=min_line_length)
-                ## These coordinates need to be in the reference frame of a
-                ## full-frame unbinned image, so modify the coordinates by
-                ## the detector section
-                # x1, x2, y1, y2 = ext.detector_section()
-                # ref_coords = np.array([ref_coords[0] * xbin + x1,
-                #                       ref_coords[1] * ybin + y1])
-                # in_coords = np.array([in_coords[0] * xbin + x1,
-                #                      in_coords[1] * ybin + y1])
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
                                             y_degree=orders[dispaxis],
-                                            x_domain=[0, ext.shape[1]],
-                                            y_domain=[0, ext.shape[0]])
-                # x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
-                # y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
+                                            x_domain=[0, ext.shape[1]-1],
+                                            y_domain=[0, ext.shape[0]-1])
+                # Rather than fit to the reference coords, let's fit to the
+                # *shift* we want in the spectral direction and then add a
+                # linear term which will produce the desired model. This
+                # allows us to use spectral_order=0 if there's only a single
+                # traceable line.
+                if dispaxis == 1:
+                    domain_start, domain_end = m_init.x_domain
+                    param = 'c1_0'
+                else:
+                    domain_start, domain_end = m_init.y_domain
+                    param = 'c0_1'
+                domain_centre = 0.5 * (domain_start + domain_end)
+                if spectral_order == 0:
+                    getattr(m_init, param).fixed = True
+                shifts = ref_coords[1-dispaxis] - in_coords[1-dispaxis]
+
                 # Find model to transform actual (x,y) locations to the
                 # value of the reference pixel along the dispersion axis
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                            sigma_clip, sigma=3)
-                m_final, _ = fit_it(m_init, *in_coords, ref_coords[1 - dispaxis])
-                m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1 - dispaxis])
+                m_final, _ = fit_it(m_init, *in_coords, shifts)
+                m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
+                for m in (m_final, m_inverse):
+                    m.c0_0 += domain_centre
+                    getattr(m, param).value += domain_centre
 
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
@@ -1044,6 +1158,7 @@ class Spect(Resample):
                     mapped_coords = np.array(model.inverse(xref, yref)).T
                     if debug:
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
+
                 # This is all we need for the new FITCOORD table
                 ext.FITCOORD = vstack([am.model_to_table(m_final),
                                        am.model_to_table(m_inverse)],
