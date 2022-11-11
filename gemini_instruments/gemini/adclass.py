@@ -9,6 +9,7 @@ import re
 import math
 import datetime
 import dateutil.parser
+from itertools import chain
 
 import numpy as np
 
@@ -386,26 +387,23 @@ class AstroDataGemini(AstroData):
 
     def _parse_section(self, keyword, pretty):
         try:
-            value_filter = (str if pretty else Section.from_string)
+            value_filter = lambda x: (x.asIRAFsection() if pretty else x)
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':
                 def _encode_shape(shape):
-                    if shape is None or len(shape) == 0:
-                        self._logger.warning("No shape during _parse_section")
-                        return "[]"
-                    elif len(shape) == 1:
-                        return f"[1:{shape[0]}]"
-                    else:
-                        if len(shape) > 2:
-                            self._logger.warning("Shape has more than 2 dimensions, collapsing to 2 in _parse_section")
-                        return '[1:{1},1:{0}]'.format(*shape)
+                    if not shape:
+                        return None
+                    return Section(*chain.from_iterable(reversed([(0, y) for y in shape])))
                 if self.is_single:
                     sections = _encode_shape(self.shape)
                 else:
                     sections = [_encode_shape(ext.shape) for ext in self]
             else:
-                sections = self.hdr.get(keyword)
+                if self.is_single:
+                    sections = Section.from_string(self.hdr.get(keyword))
+                else:
+                    sections = [Section.from_string(sec) if sec is not None else None for sec in self.hdr.get(keyword)]
             if self.is_single:
                 return process_fn(sections)
             else:
