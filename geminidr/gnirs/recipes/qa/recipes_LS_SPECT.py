@@ -3,7 +3,7 @@ Recipes available to data with tags ['GNIRS', 'SPECT', LS'].
 Default is "reduceScience".
 """
 recipe_tags = {'GNIRS', 'SPECT', 'LS'}
-SECTION = ":400"
+SECTION = None # ":400"
 
 
 def reduceScience(p):

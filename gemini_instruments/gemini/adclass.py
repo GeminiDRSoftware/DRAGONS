@@ -395,7 +395,7 @@ class AstroDataGemini(AstroData):
                         self._logger.warning("No shape during _parse_section")
                         return "[]"
                     elif len(shape) == 1:
-                        return f"[1:{self.shape[0]}]"
+                        return f"[1:{shape[0]}]"
                     else:
                         if len(shape) > 2:
                             self._logger.warning("Shape has more than 2 dimensions, collapsing to 2 in _parse_section")
@@ -2162,22 +2162,14 @@ class AstroDataGemini(AstroData):
 
         pixel_scale_list = []
         for ext in self:
+            if len(ext.shape) < 2:
+                return None
             try:
-                try:
-                    if isinstance(ext.wcs.forward_transform, Chebyshev1D):
-                        self._logger.warning("Cheybshev1D unsupported in _get_wcs_pixel_scale, returning None")
-                        return None
-                    pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
-                except TypeError:
-                    self._logger.warning("Error determining pixel scale, continuing.")
-            except (IndexError, AttributeError):
-                try:
-                    scale = empirical_pixel_scale(ext)
-                    if scale is not None:
-                        pixel_scale_list.append(scale)
-                except ValueError:
-                    self._logger.warning("unable to unpack values in empirical_pixel_scale, returning None")
-                    return None
+                pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
+            except (IndexError, AttributeError) as iae:
+                scale = empirical_pixel_scale(ext)
+                if scale is not None:
+                    pixel_scale_list.append(scale)
         if mean:
             if pixel_scale_list:
                 return np.mean(pixel_scale_list)

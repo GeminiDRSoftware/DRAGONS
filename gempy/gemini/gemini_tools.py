@@ -1204,12 +1204,8 @@ def fit_continuum(ad):
             # are a multiple of 512 pixels. We do this because the data are
             # unlikely to have gone through traceApertures() so we can't
             # account for curvature in the spectral trace.
-            hwidth = 512 // spectral_bin
+            hwidth = min(512 // spectral_bin, dispersed_length // 2)
             centers = [i*hwidth for i in range(1, dispersed_length // hwidth, 1)]
-            # Some sort of minimum number of bins?
-            if not centers:
-                hwidth = dispersed_length // 2
-                centers = [hwidth]
         spectral_slices = [slice(center-hwidth, center+hwidth) for center in centers]
 
         # Try to get an idea of where peaks might be from header information
