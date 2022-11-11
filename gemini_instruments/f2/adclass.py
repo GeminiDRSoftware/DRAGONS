@@ -145,11 +145,16 @@ class AstroDataF2(AstroDataGemini):
         # [2022-02-22] The LYOT keyword is now being used to store filters as
         # well as LYOT mask.  Therefore, that keyword cannot be reliably used
         # to return the camera string.
-
-        if self.pixel_scale() > 0.10 and self.pixel_scale() < 0.20:
-            camera = "f/16_G5830"
-        else:
-            camera = self.lyot_stop()
+        camera = self.lyot_stop()
+        if camera is None or not camera.startswith("f/"):
+            focus = self.phu.get("FOCUS", "")
+            if not re.match('^f/\d+$', focus):
+                # Use original pixel scale
+                pixscale = (self.phu["PIXSCALE"] if 'PREPARED' in self.tags
+                            else self.pixel_scale())
+                focus = "f/16" if pixscale > 0.1 else "f/32"
+            # Make up component number (for now) should f/32 happen
+            camera = focus + ("_G5830" if focus == "f/16" else "_G9999")
 
         if camera:
             if stripID or pretty:
