@@ -394,7 +394,7 @@ class AstroDataGemini(AstroData):
                 def _encode_shape(shape):
                     if not shape:
                         return None
-                    return Section(*chain.from_iterable(reversed([(0, y) for y in shape])))
+                    return Section(*chain.from_iterable([(0, npix) for npix in shape[::-1]]))
                 if self.is_single:
                     sections = _encode_shape(self.shape)
                 else:
