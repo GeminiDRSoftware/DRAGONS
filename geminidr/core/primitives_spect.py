@@ -1427,13 +1427,15 @@ class Spect(Resample):
                     m_scale = models.Scale(1., bounds={'factor': (0.98, 1.02)})
                     m_init = m_recenter | m_shift | m_scale | m_recenter.inverse
 
-                edge_num = 0
+                # Count the number of pairs of edges found.
+                pair_num = 0
                 models_dict = {}
+
                 # Progressively increase the sigma parameter of the search,
                 # since it being too narrow sometimes causes the fitting to
                 # fail.
                 for pair, guess in zip(edge_pairs, mdf_edge_guesses):
-                    models_dict[edge_num] = {"left": None, "right": None}
+                    models_dict[pair_num] = {"left": None, "right": None}
                     log.fullinfo(f'Fitting guess at {guess} to {pair}.')
 
                     n_sigma = 1
@@ -1542,10 +1544,10 @@ class Spect(Resample):
                                 plot=debug,
                                 **fit1d_params,)
                             model_fit = am.model_to_table(_fit_1d.model)
-                            models_dict[edge_num][edge] = model_fit
+                            models_dict[pair_num][edge] = model_fit
 
-                    # Increment the number of edges processed.
-                    edge_num += 1
+                    # Increment the number of pairs processed.
+                    pair_num += 1
 
                 for key, pair in models_dict.items():
 
