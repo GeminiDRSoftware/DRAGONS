@@ -21,6 +21,7 @@ Welcome to Tutorial Series - GMOS Longslit Data Reduction with DRAGONS
    04_dithered_api
    05_tips_and_tricks
    06_issues_and_limitations
+   07_interactive
 
 
 Indices and tables

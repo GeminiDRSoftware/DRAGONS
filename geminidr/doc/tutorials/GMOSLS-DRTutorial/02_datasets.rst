@@ -58,6 +58,11 @@ observation.
 
 The calibrations we use for this example are:
 
+* BPM.  The bad pixel masks are now found in the Gemini Science Archive
+  instead of being packaged with the software. They are associated like the
+  the other calibrations.  Here we need the 2x2 binning GMOS-S Hamamatsu
+  BPM valid for data taken in 2017.  (The date in the name is the "valid from"
+  date.)
 * Biases.  The science and the standard observations are often taken with
   different Region-of-Interest (ROI) as the standard uses only the central area.
   Therefore we need two sets of biases, one for the science's "Full Frame" ROI,
@@ -69,28 +74,30 @@ The calibrations we use for this example are:
 Here is the files breakdown.  All the files are included in the tutorial data
 package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 
-+---------------------+---------------------------------+
-| Science             || S20171022S0087,89 (515 nm)     |
-|                     || S20171022S0095,97 (530 nm)     |
-+---------------------+---------------------------------+
-| Science biases      || S20171021S0265-269             |
-|                     || S20171023S0032-036             |
-+---------------------+---------------------------------+
-| Science flats       || S20171022S0088 (515 nm)        |
-|                     || S20171022S0096 (530 nm)        |
-+---------------------+---------------------------------+
-| Science arcs        || S20171022S0092 (515 nm)        |
-|                     || S20171022S0099 (530 nm)        |
-+---------------------+---------------------------------+
-| Standard (LTT2415)  || S20170826S0160 (515 nm)        |
-+---------------------+---------------------------------+
-| Standard biases     || S20170825S0347-351             |
-|                     || S20170826S0224-228             |
-+---------------------+---------------------------------+
-| Standard flats      || S20170826S0161 (515 nm)        |
-+---------------------+---------------------------------+
-| Standard arc        || S20170826S0162 (515 nm)        |
-+---------------------+---------------------------------+
++---------------------+---------------------------------------------+
+| Science             || S20171022S0087,89 (515 nm)                 |
+|                     || S20171022S0095,97 (530 nm)                 |
++---------------------+---------------------------------------------+
+| Science biases      || S20171021S0265-269                         |
+|                     || S20171023S0032-036                         |
++---------------------+---------------------------------------------+
+| Science flats       || S20171022S0088 (515 nm)                    |
+|                     || S20171022S0096 (530 nm)                    |
++---------------------+---------------------------------------------+
+| Science arcs        || S20171022S0092 (515 nm)                    |
+|                     || S20171022S0099 (530 nm)                    |
++---------------------+---------------------------------------------+
+| Standard (LTT2415)  || S20170826S0160 (515 nm)                    |
++---------------------+---------------------------------------------+
+| Standard biases     || S20170825S0347-351                         |
+|                     || S20170826S0224-228                         |
++---------------------+---------------------------------------------+
+| Standard flats      || S20170826S0161 (515 nm)                    |
++---------------------+---------------------------------------------+
+| Standard arc        || S20170826S0162 (515 nm)                    |
++---------------------+---------------------------------------------+
+| BPM                 || bpm_20140601_gmos-s_Ham_22_full_12amp.fits |
++---------------------+---------------------------------------------+
 
 
 

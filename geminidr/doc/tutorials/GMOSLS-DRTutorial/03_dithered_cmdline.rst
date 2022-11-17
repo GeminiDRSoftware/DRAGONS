@@ -7,9 +7,9 @@ Example 1-A: Dithered Point Source Longslit - Using the "reduce" command line
 *****************************************************************************
 
 In this example we will reduce a GMOS longslit observation of a DB white
-dwarf candidate
-using the "|reduce|" command that is operated directly from the unix shell.
-Just open a terminal and load the DRAGONS conda environment to get started.
+dwarf candidate using the "|reduce|" command that is operated directly from
+the unix shell. Just open a terminal and load the DRAGONS conda environment
+to get started.
 
 This observation dithers along the slit and along the dispersion axis.
 
@@ -24,49 +24,59 @@ The dataset specific to this example is described in:
 
 Here is a copy of the table for quick reference.
 
-+---------------------+---------------------------------+
-| Science             || S20171022S0087,89 (515 nm)     |
-|                     || S20171022S0095,97 (530 nm)     |
-+---------------------+---------------------------------+
-| Science biases      || S20171021S0265-269             |
-|                     || S20171023S0032-036             |
-+---------------------+---------------------------------+
-| Science flats       || S20171022S0088 (515 nm)        |
-|                     || S20171022S0096 (530 nm)        |
-+---------------------+---------------------------------+
-| Science arcs        || S20171022S0092 (515 nm)        |
-|                     || S20171022S0099 (530 nm)        |
-+---------------------+---------------------------------+
-| Standard (LTT2415)  || S20170826S0160 (515 nm)        |
-+---------------------+---------------------------------+
-| Standard biases     || S20170825S0347-351             |
-|                     || S20170826S0224-228             |
-+---------------------+---------------------------------+
-| Standard flats      || S20170826S0161 (515 nm)        |
-+---------------------+---------------------------------+
-| Standard arc        || S20170826S0162 (515 nm)        |
-+---------------------+---------------------------------+
-
++---------------------+---------------------------------------------+
+| Science             || S20171022S0087,89 (515 nm)                 |
+|                     || S20171022S0095,97 (530 nm)                 |
++---------------------+---------------------------------------------+
+| Science biases      || S20171021S0265-269                         |
+|                     || S20171023S0032-036                         |
++---------------------+---------------------------------------------+
+| Science flats       || S20171022S0088 (515 nm)                    |
+|                     || S20171022S0096 (530 nm)                    |
++---------------------+---------------------------------------------+
+| Science arcs        || S20171022S0092 (515 nm)                    |
+|                     || S20171022S0099 (530 nm)                    |
++---------------------+---------------------------------------------+
+| Standard (LTT2415)  || S20170826S0160 (515 nm)                    |
++---------------------+---------------------------------------------+
+| Standard biases     || S20170825S0347-351                         |
+|                     || S20170826S0224-228                         |
++---------------------+---------------------------------------------+
+| Standard flats      || S20170826S0161 (515 nm)                    |
++---------------------+---------------------------------------------+
+| Standard arc        || S20170826S0162 (515 nm)                    |
++---------------------+---------------------------------------------+
+| BPM                 || bpm_20140601_gmos-s_Ham_22_full_12amp.fits |
++---------------------+---------------------------------------------+
 
 Set up the Local Calibration Manager
 ====================================
-DRAGONS comes with a local calibration manager
-that uses the same calibration association rules as the Gemini Observatory
-Archive.  This allows "|reduce|" to make requests to a local light-weight
-database for matching **processed**
-calibrations when needed to reduce a dataset.
+DRAGONS comes with a local calibration manager that uses the same calibration
+association rules as the Gemini Observatory Archive.  This allows "|reduce|"
+to make requests to a local light-weight database for matching **processed**
+calibrations and BPMs when they are needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
 In ``~/.dragons/``, create or edit the configuration file ``dragonsrc`` as
 follow::
+    [interactive]
+    browser = your_prefered_browser
 
     [calibs]
-    databases = <where_the_data_package_is>/gmosls_tutorial/playground/cal_manager.db get
+    databases = where_the_data_package_is/gmosls_tutorial/playground/cal_manager.db get store
 
 This simply tells the system where to put the calibration database, the
 database that will keep track of the processed calibrations we are going to
-send to it.
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically get matching calibrations and to automatically
+store master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
+
+The ``[interactive]`` section defines your prefered browser.  DRAGONS will open
+the interactive tools using that browser.  The allowed strings are "safari",
+"chrome", and "firefox".
 
 .. note:: ``~`` in the path above refers to your home directory.  Also, mind
    the dot in ``.dragons``.
@@ -78,10 +88,11 @@ Then initialize the calibration database::
 That's it.  It is ready to use.  You can check the configuration and confirm the
 setting with ``caldb config``.
 
-You can add processed calibrations with ``caldb add <filename>`` (we will
-later), list the database content with ``caldb list``, and
-``caldb remove <filename>`` to remove a file from the database (it will **not**
-remove the file on disk.)  (See the "|caldb|" documentation for more details.)
+You can manually add processed calibrations with ``caldb add <filename>``
+(we will later for the BPM), list the database content with ``caldb list``,
+and ``caldb remove <filename>`` to remove a file from the database (it will
+**not** remove the file on disk.)  (See the "|caldb|" documentation for more
+details.)
 
 
 Create file lists
@@ -108,20 +119,19 @@ First, navigate to the ``playground`` directory in the unpacked data package::
 Two lists for the biases
 ------------------------
 The science observations and the spectrophotometric standard observations were
-obtained using different
-regions-of-interest (ROI).  So we will need two master biases, one "Full Frame"
-for the science and one "Central Spectrum" for the standard.
+obtained using different regions-of-interest (ROI).  So we will need two master
+biases, one "Full Frame" for the science and one "Central Spectrum" for the
+standard.
 
 We can use |dataselect| to select biases for each ROIs.
 
 Given the data that we have in the ``playdata`` directory, we can create
-our GMOS-S bias list using the tags and expression using
-the ROI settings. Remember, this will always depend on what you have in your
-raw data directory.  For easier selection criteria, you might want to
-keep raw data from different programs in different directories.
+our GMOS-S bias list using the tags and an expression that uses the ROI
+settings. Remember, this will always depend on what you have in your raw data
+directory.  For easier selection criteria, you might want to keep raw data
+from different programs in different directories.
 
-First, let's see which biases we have for in our raw data
-directory.
+First, let's see which biases we have for in our raw data directory.
 
 ::
 
@@ -231,17 +241,30 @@ here how one would specify the object name for a more surgical selection.
 
     dataselect ../playdata/*.fits --xtags CAL --expr='object=="J2145+0031"' -o sci.lis
 
+Bad Pixel Mask
+==============
+Starting with DRAGONS v3.1, the BPMs are now handled as calibrations.  They
+are downloadable from the archive instead of being packaged with the software.
+They are automatically associated like any other calibrations.  This means that
+the user now must download the BPMs along with the other calibrations and add
+the BPMs to the local calibration manager.  To add the BPM included in the
+data package to the local calibration database:
+
+::
+
+    caldb add ../playdata/*.bpm
+
 
 Master Bias
 ===========
-We create the master biases with the "|reduce|" command, then add them
-to the local calibration manager with the |caldb| command.
+We create the master biases with the "|reduce|" command.  Because the database
+was given the "store" option, the processed biases will be automatically added
+to the database at the end of the recipe.
 
 ::
 
     reduce @biasesstd.lis
     reduce @biasessci.lis
-    caldb add *_bias.fits
 
 The master biases are ``S20170825S0347_bias.fits`` and ``S20171021S0265_bias.fits``;
 this information is in both the terminal log and the log file.  The ``@`` character
@@ -251,6 +274,11 @@ the |atfile| documentation.
 .. note:: The file name of the output processed bias is the file name of the
     first file in the list with ``_bias`` appended as a suffix.  This the
     general naming scheme used by "|reduce|".
+
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the configuration file.  To add the biases manually following
+    inspection do ``caldb add *_bias.fits``.
 
 
 Master Flat Field
@@ -271,15 +299,16 @@ calibration manager.
 
 ::
 
-    reduce @flats.lis --ql
-    caldb add *_flat.fits
+    reduce @flats.lis
 
-We can bulk-add the master flats to the local calibration manager as shown
-above.
+The primitive ``normalizeFlat``, used in the recipe, has an interactive mode.
+To activate the interactive mode:
 
-.. note:: GMOS longslit reduction is currently available only for quicklook
-   reduction.  The science quality recipes do not exist, hence the use of the
-   ``--ql`` flag to activate the "quicklook" recipes.
+::
+
+    reduce @flats.lis -p interactive=True
+
+The interactive tools are introduced in section :ref:`interactive`.
 
 
 Processed Arc - Wavelength Solution
@@ -297,14 +326,16 @@ logs to confirm a good solution.
 
 ::
 
-    reduce @arcs.lis --ql
-    caldb add *_arc.fits
+    reduce @arcs.lis
 
-.. note:: Failures of the wavelength solution calculation are not easy to fix
-   in quicklook mode.  It might be better to simply not use the arc at all and
-   rely on the approximate solution instead.  When the science quality package
-   is released, there will be interactive tools to fix a bad solution.
-   Remember, this version only offers quicklook reduction for GMOS longslit.
+The primitive ``determineWavelengthSolution``, used in the recipe, has an
+interactive mode. To activate the interactive mode:
+
+::
+
+    reduce @arcs.lis -p interactive=True
+
+The interactive tools are introduced in section :ref:`interactive`.
 
 
 Processed Standard - Sensitivity Function
@@ -319,24 +350,49 @@ to calculate the sensitivity function.  It has been shown that a difference of
 10 or so nanometers in central wavelength setting does not significantly impact
 the spectrophotometric calibration.
 
-The reduction of the standard will be using a master bias, a master flat,
+The reduction of the standard will be using a BPM, a master bias, a master flat,
 and a processed arc.  If those have been added to the local calibration
-manager, they will be picked up automatically.
+manager, they will be picked up automatically.  The output of the reduction
+includes the sensitivity function and will be added to the calibration
+database automatically if the "store" option is set in the configuration
+file.
 
 ::
 
-    reduce @std.lis --ql
-    caldb add *_standard.fits
+    reduce @std.lis
 
-To inspect the spectrum::
+Four primitives in the default recipe for spectrophotometric standard have
+an interactive interface: ``skyCorrectFromSlit``, ``findApertures``,
+``traceApertures``, and ``calculateSensitivity``.  To activate the interactive
+mode for all four:
 
-    dgsplot S20170826S0160_ql_standard.fits 1
+::
 
-To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
-script, see Tips and Tricks :ref:`plot_1d`.
+    reduce @std.lis -p interactive=True
 
-The sensitivity function is stored within the processed standard spectrum.  To
-learn how to plot it, see Tips and Tricks :ref:`plot_sensfunc`.
+Since the standard star spectrum is bright and strong, and the exposure short,
+it is somewhat unlikely that interactivity will be needed for the sky
+subtraction, or finding and tracing the spectrum.  The fitting of the
+sensitivity function however can sometimes benefit from little adjustment.
+
+To activate the interactive mode **only** for the measurement of the
+sensitivity function:
+
+::
+
+    reduce @std.lis -p calculateSensitivity:interactive=True
+
+The interactive tools are introduced in section :ref:`interactive`.
+
+.. note:: If you wish to inspect the spectrum::
+
+    dgsplot S20170826S0160_standard.fits 1
+
+   To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
+   script, see Tips and Tricks :ref:`plot_1d`.
+
+   The sensitivity function is stored within the processed standard spectrum.  To
+   learn how to plot it, see Tips and Tricks :ref:`plot_sensfunc`.
 
 
 Science Observations

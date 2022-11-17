@@ -9,15 +9,6 @@ Overview
 This is a tutorial for the reduction of GMOS longslit
 spectroscopic data with DRAGONS.
 
-.. warning::
-
-   DRAGONS v3.0.0 is **NOT** approved for science quality reduction of
-   GMOS Longslit data.  This version of DRAGONS should be used on GMOS
-   Longslit data only for quicklook reduction and inspection.  Please continue
-   to use the Gemini IRAF package to produce your science quality products for
-   GMOS Longslit while we work on providing that service on DRAGONS in a future
-   release.
-
 GMOS is an imager and spectrograph offering longslit spectroscopy,
 multi-object spectroscopy (MOS), and integral field spectroscopy.  This
 tutorial focuses on the longslit spectroscopy.   For a tutorial on the
