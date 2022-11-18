@@ -1876,6 +1876,13 @@ class Spect(Resample):
             sigma_upper=params.pop('bkgfit_hsigma'),
         )
 
+        log.fullinfo("Input parameters:\n")
+        log.fullinfo(f"  spectral_order: {x_order_in}")
+        log.fullinfo(f"  spatial_order: {y_order_in}")
+        log.fullinfo(f"  bkgmodel: {bkgmodel}")
+        log.fullinfo(f"  sigclip: {params['sigclip']}")
+        log.fullinfo(f"  sigfrac: {params['sigfrac']}\m")
+
         for ad in adinputs:
             is_in_adu = ad[0].is_in_adu()
             if not is_in_adu:
@@ -1900,10 +1907,12 @@ class Spect(Resample):
                 dispaxis = 2 - ext.dispersion_axis()
 
                 # Use default orders from gemcrspec (from Bryan):
-                ny, nx = ext.shape
-                spectral_order = 9 if x_order_in is None else x_order_in
-                spatial_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
-                                if y_order_in is None else y_order_in)
+                # ny, nx = ext.shape
+                # spectral_order = 9 if x_order_in is None else x_order_in
+                # spatial_order = ((2 if ny < 50 else 3 if ny < 80 else 5)
+                #                 if y_order_in is None else y_order_in)
+                spectral_order = x_order_in
+                spatial_order = y_order_in
 
                 if ext.mask is not None:
                     data = np.ma.array(ext.data, mask=ext.mask != 0)
