@@ -39,9 +39,10 @@ class cleanReadoutConfig(config.Config):
     pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)
     pattern_y_size = config.RangeField("Pattern y size (pixels)", int, 4, min=4)
     subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
-    edge_threshold = config.RangeField("Pattern edge detection threshold (sigma)", float, 10., min=10.0)
     level_bias_offset = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
     smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=5)
+    sg_win_size = config.RangeField("Smoothing window size (pixels) for Savitzky-Golay filter", int, 25, min=3)
+    simple_thres = config.RangeField("Pattern edge detection threshold", float, 0.6, min=0.1)
     clean = config.Field("Behavior of the routine? Must be one of default, skip, or force", str, "skip")
 
 

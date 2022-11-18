@@ -19,7 +19,7 @@ from . import parameters_nearIR, Bookkeeping
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
-from scipy.optimize import minimize
+from scipy.signal import savgol_filter
 
 # ------------------------------------------------------------------------------
 
@@ -383,16 +383,15 @@ class NearIR(Bookkeeping):
         """
         This attempts to remove the pattern noise in NIRI/GNIRS data
         after automatically determining the coverage of the pattern in
-        a given quadrant.
-        In the case of incomplete intra-quad pattern coverage, we are leveraging
-        the symmetry about the center of the image to remove spurious edges
-        detected by the automated routine in difficult frames.
+        a given quadrant. The latter is done by fitting for scaling factors 
+        of the pattern in each quadrant. Note, however, that the scaling factors 
+        are not used in subtracting off the pattern. 
 
         Parameters
         ----------
-        suffix: str, Default: "_patternNoiseRemoved"
+        suffix: str, Default: "_readoutCleaned"
             Suffix to be added to output files.
-        hsigma/lsigma: float, Defaults: 3 for both
+        hsigma/lsigma: float, Defaults: 3.0 for both
             High and low sigma-clipping limits.
         pattern_x_size: int, Default: 16
             Size of pattern "box" in x direction. Must be a multiple of 4.
@@ -400,8 +399,6 @@ class NearIR(Bookkeeping):
             Size of pattern "box" in y direction. Must be a multiple of 4.
         subtract_background: bool, Default: True
             Remove median of each "box" before calculating pattern noise?
-        edge_threshold: float, Default: 10
-            Sigma threshold for automatically identifying edges of pattern coverage.
         level_bias_offset: bool, Default: True
             Level the offset in bias level across (sub-)quads that typically accompany
             pattern noise.
@@ -410,6 +407,13 @@ class NearIR(Bookkeeping):
             Width (in pixels) of the region at a given quad interface to be smoothed over
             on each side of the interface.
             Note that for intra-quad leveling, this width is broadened by a factor 10.
+        sg_win_size: int, Default: 25
+            Smoothing window size for the Savitzky-Golay filter applied during automated 
+            detection of pattern coverage. 
+        simple_thres: float, Default: 0.6
+            Threshold used in automated detection of pattern coverage. 
+            Favorable range [0.3, 0.8]. If the result (at the intra-quad level) is not satisfactory, 
+            play with this parameter. 
         clean: str, Default: "skip"
             Must be one of "skip", "default", or "force".
             skip: Skip this routine entirely when called from a recipe.
@@ -428,6 +432,11 @@ class NearIR(Bookkeeping):
         level_bias_offset = params["level_bias_offset"]
         smoothing_extent = params["smoothing_extent"]
 
+        sg_win_size = params["sg_win_size"]
+        # MS: increased from 0.4 to minimize over-subtraction of pattern at edges in intra-quad cases,
+        # which can be sometimes deleterious
+        simple_thres = params["simple_thres"]
+
         if clean=="skip":
             log.stdinfo("Skipping cleanReadout since 'clean' is set to 'skip'")
             return adinputs
@@ -436,13 +445,17 @@ class NearIR(Bookkeeping):
                                    hsigma=hsigma, lsigma=lsigma)
         sigclip = partial(sigma_clip, sigma_lower=lsigma, sigma_upper=hsigma)
         zeros = None  # will remain unchanged if not subtract_background
-        edge_threshold = params["edge_threshold"]
 
-        def pattern_func(x, block, pattern):
-            squared_err = 0
-            squared_err += np.sum(((np.ma.masked_array(block.data, block.mask)) -
-                                   x[0] * np.ma.masked_array(pattern, block.mask))**2.0)
-            return squared_err
+        def exact_sol(block, pattern):
+            mn = np.ma.masked_array(block.data, block.mask).mean()
+            pp = np.ma.masked_array(pattern, block.mask).mean()
+            sum1 = np.sum(np.ma.masked_array(block.data - mn, block.mask) * np.ma.masked_array(pattern - pp, block.mask))
+            sum2 = np.sum(np.ma.masked_array(pattern - pp, block.mask)**2.0)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                res = sum1/sum2 
+            return res
+            
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -471,7 +484,7 @@ class NearIR(Bookkeeping):
                     ext.variance = np.append(
                         ext.variance,
                         np.zeros((2, ext.shape[1]),
-                                 dtype=ext.data.dtype),
+                                 dtype=ext.variance.dtype),
                         axis=0)
                     ext.mask = np.append(
                         ext.mask,
@@ -505,8 +518,7 @@ class NearIR(Bookkeeping):
                             # result from the mean. Suppress warning.
                             with warnings.catch_warnings():
                                 warnings.simplefilter("ignore", category=UserWarning)
-                                zeros = np.nan_to_num([-np.ma.masked_array(block.data, block.mask,
-                                                                           dtype=ext.data.dtype).mean()
+                                zeros = np.nan_to_num([-np.ma.masked_array(block.data, block.mask).mean()
                                                        for block in blocks])
                         out = stack_function(blocks, zero=zeros).data
                         out_quad = (quad.data + np.mean(out) -
@@ -514,29 +526,30 @@ class NearIR(Bookkeeping):
 
                         ## MS: now finding the applicable roi for pattern subtraction.
                         ## Note slopes={'0':end,'1':+slope,'-1':-slope}
-                        scaling_factors = np.array([], dtype=ext.data.dtype)
+                        scaling_factors = np.array([])
                         for block in blocks:
-                            res = minimize(pattern_func, [0.1], args=(block, out), method='BFGS')
-                            scaling_factors = np.append(scaling_factors, res.x[0])
+                            res = exact_sol(block, out)
+                            scaling_factors = np.append(scaling_factors, res)
 
-                        scaling_factors_quad = np.ones_like(quad.data)
+                        scaling_factors_quad = np.ones(quad.data.shape)
                         for i in range(len(blocks)):
                             scaling_factors_quad[slice_hist[i]] = scaling_factors[i]
-                        YY = sigma_clipped_stats(scaling_factors_quad, axis=1, sigma=2.0)[1]
-                        D_YY = np.diff(YY)
-                        idxs = np.array([0])
-                        slopes = np.array([0])
-                        for ff, kk in zip([edge_threshold, -1.0*edge_threshold], [1, -1]):
-                            t_idxs = np.argwhere(D_YY>(D_YY.mean()+ff*D_YY.std())).flatten()
-                            if kk == -1:
-                                t_idxs = np.argwhere(D_YY<(D_YY.mean()+ff*D_YY.std())).flatten()
-                            idxs = np.concatenate((idxs, t_idxs))
-                            slopes = np.concatenate((slopes, np.array([kk]*len(t_idxs))))
-                        idxs = np.append(idxs, quad.shape[0])
-                        slopes = np.append(slopes, 0)
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore")
+                            YY = sigma_clipped_stats(scaling_factors_quad, axis=1, sigma=2.0)[1]
+                        ## MS: Important to smoothe out YY with a Savitzky Golay filter to remove noise while using simple thresholding
+                        YY = savgol_filter(YY, sg_win_size, 1, deriv=0) # May consider putting the window as a primitive's parameter
+
+                        ## Using a simple threshold of 0.4 and finding the crossings
+                        idxs = np.argwhere(np.diff(YY < simple_thres))
+                        slopes = np.ones_like(idxs, dtype=int)
+                        mm = YY[idxs] < simple_thres
+                        slopes[~mm] = -1
+                        idxs = np.append(idxs, [0, quad.shape[0]])
+                        slopes = np.append(slopes, [0, 0])
                         args_sorted = np.argsort(idxs)
                         idxs = idxs[args_sorted]
-                        slopes = (slopes[args_sorted]).astype(int)
+                        slopes = slopes[args_sorted]
                         new_out_quad = out_quad.copy()
 
                         quads_info[ystart][xstart] = {'ystart':int(ystart),
@@ -548,13 +561,6 @@ class NearIR(Bookkeeping):
                                                       'new_out_quad':new_out_quad,
                         }
 
-                def del_spurious_peaks(arr1, arr2):
-                    todel = np.array([], dtype=ext.data.dtype)
-                    for i in range(1, len(arr1)-1):
-                        dist = arr2 - arr1[i]
-                        if np.sum(np.abs(dist)<10)==0: #10 pix symmetry tolerance
-                            todel = np.append(todel, i)
-                    return todel
 
                 for ys in [0, qysize]:
                     for xs, Q in quads_info[ys].items():
@@ -562,20 +568,7 @@ class NearIR(Bookkeeping):
                         quad = ext.nddata[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']]
                         new_out_quad = Q['new_out_quad']
                         slopes = Q['slopes']
-                        sigma_in = sigclip(np.ma.masked_array(quad.data, quad.mask,
-                                                              dtype=ext.data.dtype)).std()
-
-                        for xs_2 in [0, qxsize]:
-                            if xs_2 == xs:
-                                continue
-                            arr2 = quads_info[ys][xs_2]['idxs']
-                            break
-
-                        todel = del_spurious_peaks(idxs, arr2)
-                        if len(todel)>0:
-                            todel = todel.astype(int)
-                            idxs = np.delete(idxs, todel)
-                            slopes = np.delete(slopes, todel)
+                        sigma_in = sigclip(np.ma.masked_array(quad.data, quad.mask)).std()
 
                         ## MS: final cleaned quad
                         for i in range(1, len(idxs)):
@@ -589,8 +582,7 @@ class NearIR(Bookkeeping):
                                 subquad['border'] += [idxs[i-1]+Q['ystart'], idxs[i]+Q['ystart']]
                                 subquad['stitch_direction'] += [Q['xstart'], Q['xstart']]
 
-                        sigma_out = sigclip(np.ma.masked_array(new_out_quad, quad.mask,
-                                                               dtype=ext.data.dtype)).std()
+                        sigma_out = sigclip(np.ma.masked_array(new_out_quad, quad.mask)).std()
                         if sigma_out > sigma_in:
                             qstr = (f"{ad.filename} extension {ext.id} "
                                     f"quadrant ({Q['xstart']},{Q['ystart']})")
@@ -604,6 +596,7 @@ class NearIR(Bookkeeping):
                         ext.data[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']] = new_out_quad
 
                 if level_bias_offset and cleaned_quads>0:
+                    log.stdinfo("Leveling quads now.....")
                     if len(subquad['border']) > 0:
                         NearIR.levelQuad(ext, smoothing_extent=smoothing_extent, subquad=subquad)
                     else:
