@@ -538,9 +538,9 @@ class NearIR(Bookkeeping):
                             warnings.simplefilter("ignore")
                             YY = sigma_clipped_stats(scaling_factors_quad, axis=1, sigma=2.0)[1]
                         ## MS: Important to smoothe out YY with a Savitzky Golay filter to remove noise while using simple thresholding
-                        YY = savgol_filter(YY, sg_win_size, 1, deriv=0) # May consider putting the window as a primitive's parameter
+                        YY = savgol_filter(YY, sg_win_size, 1, deriv=0)
 
-                        ## Using a simple threshold of 0.4 and finding the crossings
+                        ## Using a simple threshold and finding its crossings
                         idxs = np.argwhere(np.diff(YY < simple_thres))
                         slopes = np.ones_like(idxs, dtype=int)
                         mm = YY[idxs] < simple_thres
