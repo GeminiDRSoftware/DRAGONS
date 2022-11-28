@@ -113,7 +113,15 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
         dvx = desc_dict["detector_x_bin"] if "detector_x_bin" in desc_dict else None
         dvy = desc_dict["detector_y_bin"] if "detector_y_bin" in desc_dict else None
         if (dvx is not None) and (dvy is not None):
-            desc_dict["detector_binning"] = "%dx%d" % (dvx, dvy)
+            if isinstance(dvx, dict) or isinstance(dvy, dict):
+                arm = None
+                if hasattr(ad, "arm"):
+                    arm = ad.arm()
+                if isinstance(dvx, dict):
+                    dvx = dvx.get(arm, None) if arm is not None else None
+                if isinstance(dvy, dict):
+                    dvy = dvy.get(arm, None) if arm is not None else None
+            desc_dict["detector_binning"] = "%dx%d" % (dvx, dvy) if dvx is not None and dvy is not None else None
         else:
             desc_dict["detector_binning"] = None
 
@@ -128,8 +136,10 @@ def _handle_returns(dv):
     # needing that class to be defined at the other end of the transportation
     # TODO: 4/22/2021: Coercing to lists to ensure functionality with
     #  existing FitsStorage code
+    if dv is None:
+        return dv
     if isinstance(dv, list) and isinstance(dv[0], tuple):
-        return [list(el) for el in dv]
+        return [list(el) if el is not None else list() for el in dv]
     elif isinstance(dv, tuple):
         return list(dv)
     return dv
