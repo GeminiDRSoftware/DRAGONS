@@ -414,6 +414,9 @@ class NearIR(Bookkeeping):
             Threshold used in automated detection of pattern coverage. 
             Favorable range [0.3, 0.8]. If the result (at the intra-quad level) is not satisfactory, 
             play with this parameter. 
+        pat_strength_thres: float, Default: 15.0
+            Threshold used to characterise the strength of the pattern noise. If greater than 
+            this value, run the whole machinery otherwise leave the frame untouched.  
         clean: str, Default: "skip"
             Must be one of "skip", "default", or "force".
             skip: Skip this routine entirely when called from a recipe.
@@ -436,6 +439,7 @@ class NearIR(Bookkeeping):
         # MS: increased from 0.4 to minimize over-subtraction of pattern at edges in intra-quad cases,
         # which can be sometimes deleterious
         simple_thres = params["simple_thres"]
+        pat_strength_thres = params["pat_strength_thres"]
 
         if clean=="skip":
             log.stdinfo("Skipping cleanReadout since 'clean' is set to 'skip'")
@@ -523,7 +527,21 @@ class NearIR(Bookkeeping):
                         out = stack_function(blocks, zero=zeros).data
                         out_quad = (quad.data + np.mean(out) -
                                     np.tile(out, (len(yticks), len(xticks))))
-
+                        new_out_quad = out_quad.copy()
+                        quads_info[ystart][xstart] = {'ystart':int(ystart),
+                                                      'ystop':int(ystart + qysize),
+                                                      'xstart':int(xstart),
+                                                      'xstop':int(xstart + qxsize),
+                                                      'new_out_quad':new_out_quad,
+                                                     }
+                        
+                        ## MS: do not touch the quad if pattern strength is weak
+                        if out.std() < pat_strength_thres:
+                            quads_info[ystart][xstart].update({'pattern':0})
+                            continue
+                        else:
+                            quads_info[ystart][xstart].update({'pattern':1})
+                        
                         ## MS: now finding the applicable roi for pattern subtraction.
                         ## Note slopes={'0':end,'1':+slope,'-1':-slope}
                         scaling_factors = np.array([])
@@ -550,46 +568,41 @@ class NearIR(Bookkeeping):
                         args_sorted = np.argsort(idxs)
                         idxs = idxs[args_sorted]
                         slopes = slopes[args_sorted]
-                        new_out_quad = out_quad.copy()
 
-                        quads_info[ystart][xstart] = {'ystart':int(ystart),
-                                                      'ystop':int(ystart + qysize),
-                                                      'xstart':int(xstart),
-                                                      'xstop':int(xstart + qxsize),
+                        quads_info[ystart][xstart].update({
                                                       'idxs':idxs,
                                                       'slopes':slopes,
-                                                      'new_out_quad':new_out_quad,
-                        }
+                        })
 
 
                 for ys in [0, qysize]:
                     for xs, Q in quads_info[ys].items():
-                        idxs = Q['idxs']
-                        quad = ext.nddata[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']]
                         new_out_quad = Q['new_out_quad']
-                        slopes = Q['slopes']
-                        sigma_in = sigclip(np.ma.masked_array(quad.data, quad.mask)).std()
+                            
+                        if Q['pattern'] == 1:
+                            idxs = Q['idxs']
+                            slopes = Q['slopes']
+                            quad = ext.nddata[Q['ystart']:Q['ystop'], Q['xstart']:Q['xstop']]
 
-                        ## MS: final cleaned quad
-                        for i in range(1, len(idxs)):
-                            if i == len(idxs)-1:
-                                if slopes[i-1] == -1:
+                            ## MS: final cleaned quad
+                            for i in range(1, len(idxs)):
+                                if i == len(idxs)-1:
+                                    if slopes[i-1] == -1:
+                                        new_out_quad[idxs[i-1]:idxs[i],:] = quad.data[idxs[i-1]:idxs[i],:]
+                                        subquad['border'] += [idxs[i-1]+Q['ystart'], idxs[i]+Q['ystart']]
+                                        subquad['stitch_direction'] += [Q['xstart'], Q['xstart']]
+                                elif slopes[i] == 1:
                                     new_out_quad[idxs[i-1]:idxs[i],:] = quad.data[idxs[i-1]:idxs[i],:]
                                     subquad['border'] += [idxs[i-1]+Q['ystart'], idxs[i]+Q['ystart']]
                                     subquad['stitch_direction'] += [Q['xstart'], Q['xstart']]
-                            elif slopes[i] == 1:
-                                new_out_quad[idxs[i-1]:idxs[i],:] = quad.data[idxs[i-1]:idxs[i],:]
-                                subquad['border'] += [idxs[i-1]+Q['ystart'], idxs[i]+Q['ystart']]
-                                subquad['stitch_direction'] += [Q['xstart'], Q['xstart']]
 
-                        sigma_out = sigclip(np.ma.masked_array(new_out_quad, quad.mask)).std()
-                        if sigma_out > sigma_in:
+                        else:
                             qstr = (f"{ad.filename} extension {ext.id} "
                                     f"quadrant ({Q['xstart']},{Q['ystart']})")
                             if clean=="force":
                                 log.stdinfo("Forcing cleaning on " + qstr)
-                            else: # clean is default
-                                log.stdinfo("No improvement for " + qstr +
+                            else:
+                                log.stdinfo("Weak pattern for " + qstr +
                                             ", not applying pattern removal.")
                                 continue
                         cleaned_quads += 1
