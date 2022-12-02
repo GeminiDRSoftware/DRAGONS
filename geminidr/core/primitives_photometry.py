@@ -91,15 +91,26 @@ class Photometry(PrimitivesBASE):
             try:
                 user_refcat = Table.read(source, format=format)
                 log.stdinfo(f"Successfully read reference catalog {source}")
-                # Allow raw SExtractor catalog to be used
-                if not {'RAJ2000', 'DEJ2000'}.issubset(user_refcat.colnames):
-                    if {'X_WORLD', 'Y_WORLD'}.issubset(user_refcat.colnames):
-                        log.stdinfo("Renaming X_WORLD, Y_WORLD to RAJ2000, DEJ2000")
-                        user_refcat.rename_column('X_WORLD', 'RAJ2000')
-                        user_refcat.rename_column('Y_WORLD', 'DEJ2000')
             except:
                 log.warning(f"File {source} exists but cannot be read - continuing")
                 return adinputs
+            else:
+                colnames = user_refcat.colnames
+                # Allow raw SExtractor catalog to be used
+                if not {'RAJ2000', 'DEJ2000'}.issubset(colnames):
+                    if {'X_WORLD', 'Y_WORLD'}.issubset(colnames):
+                        log.stdinfo("Renaming X_WORLD, Y_WORLD to RAJ2000, DEJ2000")
+                        user_refcat.rename_column('X_WORLD', 'RAJ2000')
+                        user_refcat.rename_column('Y_WORLD', 'DEJ2000')
+                    elif {'RA', 'DEC'}.issubset(colnames):
+                        log.stdinfo("Renaming RA, DEC to RAJ2000, DEJ2000")
+                        user_refcat.rename_column('RA', 'RAJ2000')
+                        user_refcat.rename_column('DEC', 'DEJ2000')
+                if 'Id' in colnames and 'Cat_Id' not in colnames:
+                    log.fullinfo("Renaming Id to Cat_Id")
+                    user_refcat.rename_column('Id', 'Cat_Id')
+                user_refcat.add_column(np.arange(len(user_refcat), dtype=np.int32) + 1,
+                                       name='Id', index=0)
         else:
             user_refcat = None
 
