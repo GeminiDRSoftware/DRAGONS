@@ -94,44 +94,24 @@ def test_remove_first_frame_by_filename():
 
 
 # These tests check the observing modes for GNIRS and NIRI for which we've
-# confirmed cleanReadout() is able to remove fixed pattern noise. We don't (as
-# of 2022-10-25) have an example of it in GNIRS imaging. DB
+# confirmed cleanReadout() is (more-or-less) able to remove fixed pattern noise.
+# We don't (as of 2022-10-25) have an example of it in GNIRS imaging. DB
 @pytest.mark.slow
 @pytest.mark.regression
 @pytest.mark.preprocessed_data
-def test_clean_readout_gnirs_spec(path_to_inputs, path_to_refs):
+@pytest.mark.parametrize("in_file",
+                         ["S20060826S0305",  # GNIRS LS (parameters need tweaks)
+                          "N20050614S0190",  # NIRI LS (parameters need tweaks)
+                          "N20170505S0146",  # NIRI image, single star
+                          "N20220902S0145",  # NIRI image, extended source
+                          ])
+def test_clean_readout(in_file,path_to_inputs, path_to_refs):
     ad = astrodata.open(os.path.join(path_to_inputs,
-                                     "S20060826S0305_skyAssociated.fits"))
+                                     in_file + '_skyCorrected.fits'))
+
     p = primitives_nearIR.NearIR([ad])
     ad_out = p.cleanReadout(clean="default")[0]
 
     ref = astrodata.open(os.path.join(path_to_refs,
-                                      "S20060826S0305_readoutCleaned.fits"))
-    assert ad_compare(ad_out, ref)
-
-
-@pytest.mark.slow
-@pytest.mark.regression
-@pytest.mark.preprocessed_data
-def test_clean_readout_niri_spec(path_to_inputs, path_to_refs):
-    ad = astrodata.open(os.path.join(path_to_inputs,
-                                     "N20050614S0190_skyAssociated.fits"))
-    p = primitives_nearIR.NearIR([ad])
-    ad_out = p.cleanReadout(clean="default")[0]
-
-    ref = astrodata.open(os.path.join(path_to_refs,
-                                      "N20050614S0190_readoutCleaned.fits"))
-    assert ad_compare(ad_out, ref)
-
-@pytest.mark.slow
-@pytest.mark.regression
-@pytest.mark.preprocessed_data
-def test_clean_readout_niri_image(path_to_inputs, path_to_refs):
-    ad = astrodata.open(os.path.join(path_to_inputs,
-                                     "N20170505S0146_skyAssociated.fits"))
-    p = primitives_nearIR.NearIR([ad])
-    ad_out = p.cleanReadout(clean="default")[0]
-
-    ref = astrodata.open(os.path.join(path_to_refs,
-                                      "N20170505S0146_readoutCleaned.fits"))
+                                      in_file + '_readoutCleaned.fits'))
     assert ad_compare(ad_out, ref)
