@@ -107,6 +107,9 @@ def test_remove_first_frame_by_filename():
                           "N20051120S0378",  # NIRI image, single star
                           "N20060103S0010",  # NIRI image, star field
                           "N20060218S0138",  # NIRI image, single star
+                          "S20060501S0081",  # GNIRS XD spectrum
+                          "S20060806S0080",  # GNIRS XD spectrum
+                          "S20070131S0105",  # GNIRS XD spectrum
                           ])
 def test_clean_readout(in_file,path_to_inputs, path_to_refs):
     ad = astrodata.open(os.path.join(path_to_inputs,
