@@ -18,4 +18,4 @@ fi
 source .jenkins/scripts/download_and_install_anaconda.sh
 
 conda install --yes pip wheel
-pip install "tox==4.0.10" tox-conda
+pip install "tox==4.0.10" "tox-conda==0.10.1"
