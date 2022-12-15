@@ -33,7 +33,7 @@ def return_dict_for_bundle(desc_fn):
     """
     def wrapper(self, *args, **kwargs):
         def confirm_single_valued(_list):
-            return _list[0] if _list == _list[::-1] else None
+            return _list[0] if _list and _list == _list[::-1] else None
 
         if not self.is_single and 'BUNDLE' in self.tags:
             ret_dict = {k: confirm_single_valued(
