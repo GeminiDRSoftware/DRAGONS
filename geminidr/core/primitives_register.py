@@ -252,7 +252,7 @@ class Register(PrimitivesBASE):
 
             # Update X_WORLD and Y_WORLD (RA and DEC) in OBJCAT
             try:
-                x, y = ad[0].OBJCAT['X_IMAGE']-1, ad[0].OBJCAT['Y_IMAGE']-1
+                x, y = ad[0].OBJCAT['X_IMAGE'].data-1, ad[0].OBJCAT['Y_IMAGE'].data-1
             except (AttributeError, KeyError):
                 pass
             else:
