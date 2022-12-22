@@ -3,13 +3,20 @@
 from gempy.library import config
 from . import parameters_stack, parameters_standardize
 
+def powerof2(value):
+    """pattern boxes must be a power of 2"""
+    return value > 0 and (value & (value - 1) == 0)
+
+
 class addLatencyToDQConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_latencyAdded", optional=True)
     non_linear = config.Field("Flag non-linear pixels?", bool, False)
     time = config.RangeField("Persistence time (seconds)", float, 120., min=0.)
 
+
 class addDQConfig(parameters_standardize.addDQConfig, addLatencyToDQConfig):
     latency = config.Field("Apply latency for saturated pixels?", bool, False)
+
 
 class makeBPMConfig(config.Config):
     override_thresh = config.ChoiceField("Apply user-specified thresholds, overriding any default calculation?", bool, { True : 'Must be True where no default algorithm is implemented' }, default=True, optional=False)
@@ -25,19 +32,22 @@ class makeBPMConfig(config.Config):
            self.dark_lo_thresh >= self.dark_hi_thresh:
             raise ValueError("dark_hi_thresh must be greater than dark_lo_thresh")
 
+
 class makeLampFlatConfig(parameters_stack.core_stacking_config):
     suffix = config.Field("Filename suffix", str, "_lampstack", optional=True)
+
 
 class removeFirstFrameConfig(config.Config):
     remove_first = config.Field("Remove first frame?", bool, True)
     remove_files = config.ListField("List of files to remove", str, None, optional=True)
 
+
 class cleanReadoutConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_readoutCleaned", optional=True)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
-    pattern_x_size = config.RangeField("Pattern x size (pixels)", int, 16, min=4)
-    pattern_y_size = config.RangeField("Pattern y size (pixels)", int, 4, min=4)
+    pattern_x_size = config.Field("Pattern x size (pixels)", int, 16, check=powerof2)
+    pattern_y_size = config.Field("Pattern y size (pixels)", int, 4, check=powerof2)
     subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
     level_bias_offset = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
     smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=5)

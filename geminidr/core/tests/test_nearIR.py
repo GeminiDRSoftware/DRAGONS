@@ -96,7 +96,6 @@ def test_remove_first_frame_by_filename():
 # These tests check the observing modes for GNIRS and NIRI for which we've
 # confirmed cleanReadout() is (more-or-less) able to remove fixed pattern noise.
 # We don't (as of 2022-10-25) have an example of it in GNIRS imaging. DB
-@pytest.mark.slow
 @pytest.mark.regression
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("in_file",
