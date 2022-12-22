@@ -391,6 +391,11 @@ class Spect(Resample):
                 ] * len_ad
                 output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
 
+                # For GMOS with one arc and lots of inputs. The output of either
+                # branch of this code should be a gWCS that ends in
+                # ("distortion_corrected", None) so that the final bit of code can
+                # insert a "world" frame using a munged-together sky model and
+                # wavelength model.
                 if len_ad > 1:
                     # We need to apply the mosaicking geometry, and add the
                     # same distortion correction to each input extension.
@@ -480,8 +485,8 @@ class Spect(Resample):
                                 wave_model.name = 'WAVE'
                                 wave_models = [wave_model] * len_ad
 
+                # Single-extension AD, with single Transform (non-GMOS code)
                 else:
-                    # Single-extension AD, with single Transform
                     ad_detsec = ad.detector_section()[0]
                     if ad_detsec != arc_detsec:
                         if self.timestamp_keys['mosaicDetectors'] in ad.phu:
@@ -497,9 +502,14 @@ class Spect(Resample):
                         m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
                                    models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
                         m_distcorr = m_shift | m_distcorr
-                    # TODO: use insert_frame method
-                    new_pipeline = [(ad[0].wcs.input_frame, m_distcorr),
-                                    (cf.Frame2D(name='distortion_corrected'), None)]
+                    # Create a new pipeline for the gWCS here. We can't use
+                    # insert_frame() because we need to chop off the "world"
+                    # frame at the end (and split a frame from its transform).
+                    # This should work whether or not one or more frames
+                    # (e.g., "rectified") have been added after the input_frame.
+                    new_pipeline = ad[0].wcs.pipeline[:-2] +\
+                                   [(ad[0].wcs.pipeline[-2].frame, m_distcorr),
+                                   (cf.Frame2D(name='distortion_corrected'), None)]
                     ad[0].wcs = gWCS(new_pipeline)
 
                 if wave_model is None:
@@ -526,9 +536,11 @@ class Spect(Resample):
                                                         ext_arc.detector_section())]
                     dist_model = (models.Shift(shifts[0] / xbin) &
                                   models.Shift(shifts[1] / ybin)) | dist_model
-                    # TODO: use insert_frame method
-                    new_pipeline = [(ext.wcs.input_frame, dist_model),
-                                    (cf.Frame2D(name='distortion_corrected'), None)]
+                    # This hasn't been tested, but should work in analogy with
+                    # the code above. We can't use insert_frame() here either.
+                    new_pipeline = ad[0].wcs.pipeline[:-2] +\
+                                   [(ad[0].wcs.pipeline[-2].frame, m_distcorr),
+                                   (cf.Frame2D(name='distortion_corrected'), None)]
                     ext.wcs = gWCS(new_pipeline)
 
                     if wave_model is None:
@@ -540,7 +552,6 @@ class Spect(Resample):
             for i, (ext, wave_model, wave_frame, sky_model, output_frame) in \
               enumerate(zip(ad, wave_models, wave_frames, sky_models,
                             output_frames)):
-
                 t = wave_model & sky_model
                 if ext.dispersion_axis() == 2:
                     t = models.Mapping((1, 0)) | t
@@ -1108,41 +1119,12 @@ class Spect(Resample):
                                             y_degree=orders[dispaxis],
                                             x_domain=[0, ext.shape[1]-1],
                                             y_domain=[0, ext.shape[0]-1])
-                # Rather than fit to the reference coords, let's fit to the
-                # *shift* we want in the spectral direction and then add a
-                # linear term which will produce the desired model. This
-                # allows us to use spectral_order=0 if there's only a single
-                # traceable line.
-                if dispaxis == 1:
-                    domain_start, domain_end = m_init.x_domain
-                    param = 'c1_0'
-                else:
-                    domain_start, domain_end = m_init.y_domain
-                    param = 'c0_1'
-                domain_centre = 0.5 * (domain_start + domain_end)
-                if spectral_order == 0:
-                    getattr(m_init, param).fixed = True
-                shifts = ref_coords[1-dispaxis] - in_coords[1-dispaxis]
 
-                # Find model to transform actual (x,y) locations to the
-                # value of the reference pixel along the dispersion axis
-                fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                           sigma_clip, sigma=3)
-                m_final, _ = fit_it(m_init, *in_coords, shifts)
-                m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
-                for m in (m_final, m_inverse):
-                    m.c0_0 += domain_centre
-                    getattr(m, param).value += domain_centre
+                model, m_final, m_inverse = create_distortion_model(
+                    m_init, 1-dispaxis, in_coords, ref_coords, spectral_order)
 
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
-
-                if dispaxis == 1:
-                    model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
-                    model.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
-                else:
-                    model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
-                    model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
 
                 self.viewer.color = "red"
                 spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
@@ -1171,7 +1153,8 @@ class Spect(Resample):
                 else:
                     # TODO: use insert_frame here
                     ext.wcs = gWCS([(ext.wcs.input_frame, model),
-                                    (cf.Frame2D(name="distortion_corrected"), ext.wcs.pipeline[0][1])]
+                                    (cf.Frame2D(name="distortion_corrected"),
+                                     ext.wcs.pipeline[0][1])]
                                    + ext.wcs.pipeline[1:])
 
             # Timestamp and update the filename
@@ -1225,9 +1208,10 @@ class Spect(Resample):
         # be able to be traced.
         buffer = 8
 
-        # Third-order is generally a good balance.
+        # The order of the polynomial to use. Third-order is a good balance.
+        spectral_order = 3
         fit1d_params = fit_1D.translate_params({"function": "chebyshev",
-                                                "order": 3})
+                                                "order": spectral_order})
         for ad in adinputs:
 
             try:
@@ -1445,7 +1429,7 @@ class Spect(Resample):
                         log.fullinfo(f'Trying fitting with sigma={n_sigma}')
                         if n_sigma > max_sigma:
                             raise RuntimeError("Unable to fit slit edges. "
-                                               "Slit length may need ajusting "
+                                               "Slit length may need adjusting "
                                                "using `edges1` and `edges2` "
                                                "parameters.")
                         with warnings.catch_warnings():
@@ -1465,7 +1449,7 @@ class Spect(Resample):
                     log.fullinfo(f"Looking for edges at "
                                  f"{expected}.")
 
-                    for loc, arr, edge in zip(m_final.inverse(guess),
+                    for loc, arr, edge in zip(expected,
                                               [diffarr_l, diffarr_r],
                                               ('left', 'right')):
 
@@ -1504,11 +1488,8 @@ class Spect(Resample):
                                            for c1, c2 in
                                            zip(ref_coords.T, in_coords.T)
                                            if abs(c1[dispaxis] - loc) < 1.])
-                        values = np.array(sorted(coords,
-                                                 key=lambda c: c[1 - dispaxis])).T
-                        in_coords_new = values[2:]
 
-                        if len(in_coords_new) == 0:
+                        if len(coords) == 0:
                             # Then no edge has been able to be fitted, probably
                             # because it's off the end of the CCD or very
                             # close. Just continue for now and copy the model
@@ -1516,6 +1497,13 @@ class Spect(Resample):
                             continue
 
                         else:
+                            values = np.array(
+                                sorted(coords,
+                                       key=lambda c: c[1 - dispaxis])).T
+                            # Sorting this way returns a len-4 list, where the
+                            # first two entries are the (sorted) ref_coords.
+
+                            in_coords_new = values[2:]
                             # Log the trace.
                             min_value = in_coords_new[1 - dispaxis].min()
                             max_value = in_coords_new[1 - dispaxis].max()
@@ -1545,6 +1533,7 @@ class Spect(Resample):
                                 **fit1d_params,)
                             model_fit = am.model_to_table(_fit_1d.model)
                             models_dict[pair_num][edge] = model_fit
+                            models_dict[pair_num][f"coords_{edge}"] = values
 
                     # Increment the number of pairs processed.
                     pair_num += 1
@@ -1579,13 +1568,57 @@ class Spect(Resample):
                         continue
 
                     # If both edges have models, create a row for the table.
-                    for edge_model in pair.values():
+                    for edge in ('left', 'right'):
                         row = Table(np.array([1, edge_num]),
                                 names=('slit', 'edge'))
-                        row = hstack([row, edge_model], join_type='inner')
+                        row = hstack([row, pair[edge]], join_type='inner')
                         slit_table.append(row)
+
                         edge_num += 1
                         make_table.append(True)
+
+                    # Even though both models exist, it's possible only one edge
+                    # was actually traced (with the other model being a copy of
+                    # it), so get the actual coords traced with a default of
+                    # None in case nothing was traced.
+                    coords_left = pair.get('coords_left', None)
+                    coords_right = pair.get('coords_right', None)
+
+                    # Assume only one edge traced for now, so spatial order 0
+                    # for the model to rectify the slit.
+                    spatial_order = 0
+
+                    if (coords_left is not None and coords_right is not None):
+                        log.fullinfo("Getting coordinates from both traced edges.")
+                        in_coords = [np.concatenate([a, b]) for a, b in zip(
+                            coords_left[2:], coords_right[2:])]
+                        ref_coords = [np.concatenate([a, b]) for a, b in zip(
+                            coords_left[:2], coords_right[:2])]
+
+                        # If both edges have been traced, use order 1 for the
+                        # spatial order of the distortion model.
+                        spatial_order = 1
+                    else:
+                        # If only one edge has been traced, get the values from it.
+                        log.fullinfo("Only one was edge was traced, get "
+                                     "coordinates from it.")
+                        coords = coords_left if coords_right is None else coords_right
+                        in_coords = coords[2:]
+                        ref_coords = coords[:2]
+
+                    if dispaxis == 0:
+                        x_ord, y_ord = spatial_order, spectral_order
+                    else:
+                        x_ord, y_ord = spectral_order, spatial_order
+
+                    m_init_2d = models.Chebyshev2D(
+                        x_degree=x_ord, y_degree=y_ord,
+                        x_domain=[0, ext.shape[1]-1],
+                        y_domain=[0, ext.shape[0]-1])
+                    # Create the distortion model from the available coords:
+                    model, m_final_2d, m_inverse_2d = create_distortion_model(
+                        m_init_2d, dispaxis, in_coords, ref_coords,
+                        spectral_order)
 
                 # Attach the table to the extension as a new plane if none of
                 # the edge pairs failed to be fit.
@@ -1594,6 +1627,16 @@ class Spect(Resample):
                     if debug:
                         log.debug('Appending table below as "SLITEDGE".')
                         log.fullinfo(ext.SLITEDGE)
+
+                # Put this model as the first step if there's an existing WCS
+                if ext.wcs is None:
+                    ext.wcs = gWCS([(ext.wcs.input_frame, model),
+                                    (cf.Frame2D(name="rectified"), None)])
+                else:
+                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                         cf.Frame2D(name="rectified"))
+                log.debug("The WCS for this extension is:")
+                log.debug(ext.wcs)
 
             ad.update_filename(suffix=sfx, strip=True)
 
@@ -4425,6 +4468,77 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
                         f"units of {ext_str} are {ext_unit}")
         this_conserve = user_conserve  # but do what we're told
     return this_conserve
+
+
+def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
+                            spectral_order):
+    """
+    This helper function creates a distortion model given an input model,
+    input and reference coordinates,
+
+    Parameters
+    ----------
+    m_init : astropy.modeling.models.Chebyshev2D
+        A blank initial model covering the region of interest.
+    transform_axis : int (0 or 1)
+        The axis to transform the image along; alternatively, the axis along
+        which tracing.trace_lines() performed the trace which produced the
+        `in_coords` and `ref_coords` used. (This is in the Python sense, 0 or 1,
+        not the value returned by the dispaxis() descriptor).
+    in_coords, ref_coords : iterable
+        Lists of coordinates for the model fitting.
+    spectral_order : int
+        Order of fit in spectral direction.
+
+    Returns
+    -------
+    model : astropy.modeling.models.Mapping
+        The output model mapping.
+    m_final, m_inverse : astropy.modeling.fitting.FittingWithOutlierRemoval
+        Models describing the forward and inverse transformations used in
+        `model`.
+    """
+    # Rather than fit to the reference coords, fit to the
+    # *shift* we want in the spectral direction and then add a
+    # linear term which will produce the desired model. This
+    # allows us to use spectral_order=0 if there's only a single
+    # traceable line.
+    print(f"transform_axis is {transform_axis}")
+    print(f"id of m_init = {id(m_init)}")
+    # print(dir(m_init))
+    if transform_axis == 0:
+        domain_start, domain_end = m_init.x_domain
+        param = 'c1_0'
+    else:
+        domain_start, domain_end = m_init.y_domain
+        param = 'c0_1'
+    domain_centre = 0.5 * (domain_start + domain_end)
+    if spectral_order == 0:
+        getattr(m_init, param).fixed = True
+    shifts = ref_coords[transform_axis] - in_coords[transform_axis]
+
+    # Find model to transform actual (x,y) locations to the
+    # value of the reference pixel along the dispersion axis
+    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                               sigma_clip, sigma=3)
+    m_final, _ = fit_it(m_init, *in_coords, shifts)
+    m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
+    for m in (m_final, m_inverse):
+        m.c0_0 += domain_centre
+        # print(m)
+        # print(f"param = {param}")
+        # print(getattr(m, param).value)
+        if hasattr(m, param):
+            getattr(m, param).value += domain_centre
+
+    if transform_axis == 0:
+        model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
+        model.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
+    else:
+        model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
+        model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
+
+    return model, m_final, m_inverse
 
 
 def make_aperture_table(apmodels, existing_table=None, limits=None):

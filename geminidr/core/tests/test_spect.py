@@ -183,7 +183,7 @@ def test_get_spectrophotometry(path_to_outputs, in_vacuo):
             names=['WAVELENGTH', 'FLUX', 'FWHM'])
 
         _table.name = os.path.join(path_to_outputs, 'specphot.dat')
-        _table.write(_table.name, format='ascii')
+        _table.write(_table.name, format='ascii', overwrite=True)
 
         return _table.name
 
