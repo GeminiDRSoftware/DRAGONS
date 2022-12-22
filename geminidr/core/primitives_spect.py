@@ -1607,9 +1607,9 @@ class Spect(Resample):
                         ref_coords = coords[:2]
 
                     if dispaxis == 0:
-                        x_ord, y_ord = spatial_order, spectral_order
+                        x_ord, y_ord = 1, spectral_order
                     else:
-                        x_ord, y_ord = spectral_order, spatial_order
+                        x_ord, y_ord = spectral_order, 1
 
                     m_init_2d = models.Chebyshev2D(
                         x_degree=x_ord, y_degree=y_ord,
@@ -4503,9 +4503,6 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
     # linear term which will produce the desired model. This
     # allows us to use spectral_order=0 if there's only a single
     # traceable line.
-    print(f"transform_axis is {transform_axis}")
-    print(f"id of m_init = {id(m_init)}")
-    # print(dir(m_init))
     if transform_axis == 0:
         domain_start, domain_end = m_init.x_domain
         param = 'c1_0'
@@ -4525,11 +4522,7 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
     m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
     for m in (m_final, m_inverse):
         m.c0_0 += domain_centre
-        # print(m)
-        # print(f"param = {param}")
-        # print(getattr(m, param).value)
-        if hasattr(m, param):
-            getattr(m, param).value += domain_centre
+        getattr(m, param).value += domain_end - domain_centre
 
     if transform_axis == 0:
         model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
