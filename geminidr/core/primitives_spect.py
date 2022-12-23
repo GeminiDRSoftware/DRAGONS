@@ -1120,8 +1120,9 @@ class Spect(Resample):
                                             x_domain=[0, ext.shape[1]-1],
                                             y_domain=[0, ext.shape[0]-1])
 
+                fixed_linear = (spectral_order == 0)
                 model, m_final, m_inverse = create_distortion_model(
-                    m_init, 1-dispaxis, in_coords, ref_coords, spectral_order)
+                    m_init, 1-dispaxis, in_coords, ref_coords, fixed_linear)
 
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
@@ -1221,7 +1222,8 @@ class Spect(Resample):
                             "SLITEDGE table will be created.")
                 continue
 
-            log.stdinfo(f'Finding edges of illuminated region for {ad.filename}')
+            log.stdinfo('Finding edges of illuminated region in flat for '
+                        f'{ad.filename}')
 
             # Get the expected slit center and length for long slit.
             if (edges1 is not None) and (edges2 is not None):
@@ -1616,17 +1618,17 @@ class Spect(Resample):
                         x_domain=[0, ext.shape[1]-1],
                         y_domain=[0, ext.shape[0]-1])
                     # Create the distortion model from the available coords:
+                    log.stdinfo("Creating distortion model for slit rectification")
+                    fixed = (spatial_order == 0)
                     model, m_final_2d, m_inverse_2d = create_distortion_model(
-                        m_init_2d, dispaxis, in_coords, ref_coords,
-                        spectral_order)
+                        m_init_2d, dispaxis, in_coords, ref_coords, fixed)
 
                 # Attach the table to the extension as a new plane if none of
                 # the edge pairs failed to be fit.
                 if all(make_table):
                     ext.SLITEDGE = vstack(slit_table)
-                    if debug:
-                        log.debug('Appending table below as "SLITEDGE".')
-                        log.fullinfo(ext.SLITEDGE)
+                    log.debug('Appending the table below as "SLITEDGE".')
+                    log.debug(ext.SLITEDGE)
 
                 # Put this model as the first step if there's an existing WCS
                 if ext.wcs is None:
@@ -1709,35 +1711,47 @@ class Spect(Resample):
                 # be preserved; get rid of this at a later iteration by
                 # including ROI shifts in their own frame(s).
 
-                new_pipeline = ext.wcs.pipeline[:idx-1]
-                prev_frame, m_distcorr = ext.wcs.pipeline[idx-1]
+                new_pipeline = []
+                # Step through the steps in the pipeline, and replace the
+                # forward transform with Identity(2) for the frame names given
+                # in order to keep the output image size the same (the actual
+                # transform of importance is the inverse transform, which
+                # isn't touched).
+                for index, step in enumerate(ext.wcs.pipeline[:idx-1]):
+                    if ext.wcs.pipeline[index+1].frame.name in (
+                            'distortion_corrected', 'rectified'):
+                        prev_frame, m_distcorr = step
 
-                # The model must have a Mapping prior to the Chebyshev2D
-                # model(s) since coordinates have to be duplicated. Find this
-                for i in range(m_distcorr.n_submodels):
-                    if isinstance(m_distcorr[i], models.Mapping):
-                        break
-                else:
-                    raise ValueError("Cannot find Mapping")
+                        # The model must have a Mapping prior to the Chebyshev2D
+                        # model(s) since coordinates have to be duplicated. Find this
+                        for i in range(m_distcorr.n_submodels):
+                            if isinstance(m_distcorr[i], models.Mapping):
+                                break
+                        else:
+                            raise ValueError("Cannot find Mapping")
 
-                # Now determine the extent of the submodel that encompasses the
-                # overall 2D distortion, which will be a 2D->2D model
-                for j in range(i + 1, m_distcorr.n_submodels + 1):
-                    try:
-                        msub = m_distcorr[i:j]
-                    except IndexError:
-                        continue
-                    if msub.n_inputs == msub.n_outputs == 2:
-                        break
-                else:
-                    raise ValueError("Cannot find distortion model")
+                        # Now determine the extent of the submodel that
+                        # encompasses the overall 2D distortion, which will be
+                        # a 2D->2D model
+                        for j in range(i + 1, m_distcorr.n_submodels + 1):
+                            try:
+                                msub = m_distcorr[i:j]
+                            except IndexError:
+                                continue
+                            if msub.n_inputs == msub.n_outputs == 2:
+                                break
+                        else:
+                            raise ValueError("Cannot find distortion model")
 
-                # Name it so we can replace it
-                m_distcorr[i:j].name = "DISTCORR"
-                m_dummy = models.Identity(2)
-                m_dummy.inverse = msub.inverse
-                new_m_distcorr = m_distcorr.replace_submodel("DISTCORR", m_dummy)
-                new_pipeline.append((prev_frame, new_m_distcorr))
+                        # Name it so we can replace it
+                        m_distcorr[i:j].name = "DISTCORR"
+                        m_dummy = models.Identity(2)
+                        m_dummy.inverse = msub.inverse
+                        new_m_distcorr = m_distcorr.replace_submodel("DISTCORR",
+                                                                     m_dummy)
+                        new_pipeline.append((prev_frame, new_m_distcorr))
+
+                # Now recreate the WCS using the new pipeline.
                 new_pipeline.extend(ext.wcs.pipeline[idx:])
                 ext.wcs = gWCS(new_pipeline)
 
@@ -2936,7 +2950,7 @@ class Spect(Resample):
         debug = params['debug']
 
         for ad in adinputs:
-            log.fullinfo(f"Masking unilluminated regions in {ad.filename}")
+            log.stdinfo(f"Masking unilluminated regions in {ad.filename}")
 
             for ext in ad:
 
@@ -4471,7 +4485,7 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
 
 
 def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
-                            spectral_order):
+                            fixed_linear):
     """
     This helper function creates a distortion model given an input model,
     input and reference coordinates,
@@ -4487,8 +4501,9 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
         not the value returned by the dispaxis() descriptor).
     in_coords, ref_coords : iterable
         Lists of coordinates for the model fitting.
-    spectral_order : int
-        Order of fit in spectral direction.
+    fixed_linear : bool
+        Fix the linear term? (For instance, if creating a distortion model for
+        rectifying a slit when only one edge of a flat is traceable.)
 
     Returns
     -------
@@ -4510,7 +4525,7 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
         domain_start, domain_end = m_init.y_domain
         param = 'c0_1'
     domain_centre = 0.5 * (domain_start + domain_end)
-    if spectral_order == 0:
+    if fixed_linear:
         getattr(m_init, param).fixed = True
     shifts = ref_coords[transform_axis] - in_coords[transform_axis]
 
