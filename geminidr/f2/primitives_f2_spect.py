@@ -159,3 +159,7 @@ class F2Spect(Spect, F2):
         index = (ad.disperser(pretty=True), filter)
         mask = dispersion_offset_mask.get(index, None)
         return mask.cenwaveoffset if mask else None
+
+    def _get_cenwave_accuracy(self, ad=None):
+        # Accuracy of central wavelength (nm) for a given setup.
+        return 10

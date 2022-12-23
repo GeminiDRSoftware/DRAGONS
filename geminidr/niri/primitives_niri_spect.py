@@ -91,4 +91,8 @@ class NIRISpect(Spect, NIRI):
 
         filename = os.path.join(lookup_dir, linelist)
 
-        return wavecal.LineList(filename)    
+        return wavecal.LineList(filename)
+
+    def _get_cenwave_accuracy(self, ad=None):
+        # Accuracy of central wavelength (nm) for a given setup.
+        return 10
