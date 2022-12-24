@@ -161,6 +161,7 @@ class GNIRSSpect(Spect, GNIRS):
             if 'ARC' in ad.tags:
                 if params["min_snr"] is None:
                     params["min_snr"] = 20
+                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
                 if params["debug_min_lines"] is None:
                     params["debug_min_lines"] = 100000
 
@@ -173,6 +174,7 @@ class GNIRSSpect(Spect, GNIRS):
                             params["order"] = 1
                     else:
                         params["order"] = 3
+                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
             else:
                 params["lsigma"] = 2
                 params["hsigma"] = 2
@@ -187,10 +189,10 @@ class GNIRSSpect(Spect, GNIRS):
                             params["order"] = 1
                     else:
                      params["order"] = 3
-
+                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
                 if params["min_snr"] is None:
                     params["min_snr"] = 10
-
+                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
         adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
 
@@ -273,12 +275,16 @@ class GNIRSSpect(Spect, GNIRS):
                         params["spectral_order"] = 1
                 else:
                     params["spectral_order"] = 2
+                self.log.stdinfo(f'Parameter "spectral_order" is set to None. '
+                                 f'Using spectral_order={params["spectral_order"]}')
 
             if params["min_line_length"] is None:
                 if cam.startswith('Long'):
                     params["min_line_length"] = 0.8
                 else:
                     params["min_line_length"] = 0.6
+                self.log.stdinfo(f'Parameter "min_line_length" is set to None. '
+                 f'Using min_line_length={params["min_line_length"]}')
         adinputs = super().determineDistortion(adinputs, **params)
         return adinputs
 
@@ -353,17 +359,12 @@ class GNIRSSpect(Spect, GNIRS):
         config = f"{filter}, {grating}, {pix_scale}"
 
         resolution_2pix = resolution_2pix_slit.get(config)
-        print(f"ad.slit_width()={ad.slit_width()}")
-
         slit_width_pix = ad.slit_width()/pix_scale
-        print(f"resolution_2pix={resolution_2pix}")
-        print(f"resolution_2pix={slit_width_pix}")
-        print(f"resolution_2pix * 2 / slit_width_pix={resolution_2pix * 2 / slit_width_pix}")
 
         return resolution_2pix * 2 / slit_width_pix
 
     def _get_cenwave_accuracy(self, ad=None):
-        # Accuracy of central wavelength (nm) for a given setup.
+        # Accuracy of central wavelength (nm) for a given instrument/setup.
         # According to GNIRS instrument pages "wavelength settings are accurate
         # to better than 5 percent of the wavelength coverage".
         # However using 7% covers more cases. For the arcs dc0=10 works just fine for all modes.

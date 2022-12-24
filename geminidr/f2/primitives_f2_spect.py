@@ -141,6 +141,7 @@ class F2Spect(Spect, F2):
         else:
             linelist = 'sky.dat'
 
+        self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
         return wavecal.LineList(filename)
 
@@ -161,5 +162,5 @@ class F2Spect(Spect, F2):
         return mask.cenwaveoffset if mask else None
 
     def _get_cenwave_accuracy(self, ad=None):
-        # Accuracy of central wavelength (nm) for a given setup.
+        # Accuracy of central wavelength (nm) for a given instrument/setup.
         return 10

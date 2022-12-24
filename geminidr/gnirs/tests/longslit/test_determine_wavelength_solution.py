@@ -32,6 +32,7 @@ determine_wavelength_solution_parameters = {
     'fwidth': None,
     'order': None,
     'min_snr': None,
+    'debug_min_lines': None,
     'in_vacuo': True
 }
 

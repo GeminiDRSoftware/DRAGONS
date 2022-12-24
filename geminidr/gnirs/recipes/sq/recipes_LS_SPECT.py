@@ -37,10 +37,10 @@ def reduceScience(p):
     p.storeProcessedScience(suffix="_1D")
 
 
-def wavecalFromSkyLines(p):
+def  makeWavelengthSolution(p):
     """
     Process GNIRS longslist science in order to create wavelength and distortion
-    solutions.
+    solutions using sky emission lines.
 
     Inputs are:
       * raw science - no other calibrations required.
