@@ -1717,7 +1717,7 @@ class Spect(Resample):
                 # in order to keep the output image size the same (the actual
                 # transform of importance is the inverse transform, which
                 # isn't touched).
-                for index, step in enumerate(ext.wcs.pipeline[:idx-1]):
+                for index, step in enumerate(ext.wcs.pipeline[:idx]):
                     if ext.wcs.pipeline[index+1].frame.name in (
                             'distortion_corrected', 'rectified'):
                         prev_frame, m_distcorr = step
@@ -1750,6 +1750,8 @@ class Spect(Resample):
                         new_m_distcorr = m_distcorr.replace_submodel("DISTCORR",
                                                                      m_dummy)
                         new_pipeline.append((prev_frame, new_m_distcorr))
+                    else:  # Keep the step unchanged.
+                        new_pipeline.append(step)
 
                 # Now recreate the WCS using the new pipeline.
                 new_pipeline.extend(ext.wcs.pipeline[idx:])
