@@ -1228,21 +1228,23 @@ class Spect(Resample):
             # Get the expected slit center and length for long slit.
             if (edges1 is not None) and (edges2 is not None):
                 log.fullinfo('Using user-supplied edges.')
-                exp_edges_l, exp_edges_r = edges1, edges2
+                exp_edges_1, exp_edges_2 = edges1, edges2
             elif (edges1 is None) and (edges2 is None):
-                exp_edges_l, exp_edges_r = self._get_slit_edge_estimates(ad)
+                exp_edges_1, exp_edges_2 = self._get_slit_edge_estimates(ad)
             else:
                 log.warning("Both `edges1` and `edges2` parameters need to be "
                             "provided in order to use them. Using "
                             "edges from mask definition files.")
-                exp_edges_l, exp_edges_r = self._get_slit_edge_estimates(ad)
+                exp_edges_1, exp_edges_2 = self._get_slit_edge_estimates(ad)
 
-            slit_widths = [r - l for l, r in zip(exp_edges_l, exp_edges_r)]
-            mdf_edge_guesses = [(l, r) for l, r in zip(exp_edges_l,
-                                                       exp_edges_r)]
+            slit_widths = [b - a for a, b in zip(exp_edges_1, exp_edges_2)]
+            mdf_edge_guesses = [(a, b) for a, b in zip(exp_edges_1,
+                                                       exp_edges_2)]
+            edge1, edge2 = ("left", "right") if ad.instrument in ("GNIRS", "F2")\
+                            else ("bottom", "top")
             log.fullinfo('Expected edge positions:\n'
-                         f'Left/bottom edges: {exp_edges_l}\n'
-                         f'Right/top edges: {exp_edges_r}\n')
+                         f'{edge1.capitalize()} edges: {exp_edges_1}\n'
+                         f'{edge2.capitalize()} edges: {exp_edges_2}\n')
 
             # This is the number of rows/columns to sum around the row with
             # the maxium flux to create the profile for finding edges, to
@@ -1259,11 +1261,11 @@ class Spect(Resample):
                 dispaxis = 2 - ext.dispersion_axis()
                 log.fullinfo(f'Dispersion axis is axis {dispaxis}.')
 
-                # Find the row with the highest median flux, at least `offset`
-                # pixels away from the edge of the detector.
+                # Find the row/column with the highest median flux, at least
+                # `offset` pixels away from the edge of the detector.
                 collapsed = np.median(
                     ext.data,
-                    axis=ext.dispersion_axis()-1)
+                    axis=1-dispaxis)
                 cut = collapsed[offset:-offset].argmax()
                 cut += offset
                 row_or_col = 'row' if dispaxis == 0 else 'column'
@@ -1272,56 +1274,56 @@ class Spect(Resample):
                 # Take the first derivative of flux to find the slit edges.
                 # Left edges will be peaks, right edges troughs, so make a
                 # second negative copy to find right edges separately.
-                diffarr_l = np.diff(ext.data, axis=1-dispaxis)
-                diffarr_r = -diffarr_l
+                diffarr_1 = np.diff(ext.data, axis=1-dispaxis)
+                diffarr_2 = -diffarr_1
 
                 # Take median of a small slice to smooth over cosmic rays:
                 s = slice(cut-offset, cut+offset)
                 if dispaxis == 0:
-                    median_slice_l = np.median(diffarr_l[s, :],
+                    median_slice_1 = np.median(diffarr_1[s, :],
                                                 axis=[dispaxis])
-                    median_slice_r = np.median(diffarr_r[s, :],
+                    median_slice_2 = np.median(diffarr_2[s, :],
                                                 axis=[dispaxis])
                 elif dispaxis == 1:
-                    median_slice_l = np.median(diffarr_l[:, s],
+                    median_slice_1 = np.median(diffarr_1[:, s],
                                                 axis=[dispaxis])
-                    median_slice_r = np.median(diffarr_r[:, s],
+                    median_slice_2 = np.median(diffarr_2[:, s],
                                                 axis=[dispaxis])
 
                 # Search for position of peaks in the first derivative of flux
                 # perpendicular to the dispersion direction. Apply a 3.5-sigma
                 # limit to avoid picking up too many noise peaks, but
                 # match_sources later on should pick out the real ones.
-                std = np.std(median_slice_l)
-                if exp_edges_l[0] < 0:
+                std = np.std(median_slice_1)
+                if exp_edges_1[0] < 0:
                     # If the expected edge position if off the end of the
                     # detector, don't try to match as it might pick up
                     # spurious peaks close to the edge of the detector.
-                    positions_l = []
+                    positions_1 = []
                 else:
-                    positions_l, _ = find_peaks(median_slice_l,
+                    positions_1, _ = find_peaks(median_slice_1,
                                                 height=3.5*std,
                                                 distance=5)
                     # find_peaks returns integer values, so use pinpoint_peaks
                     # to better describe the positions.
-                    positions_l, _ = tracing.pinpoint_peaks(median_slice_l,
-                                                            peaks=positions_l)
-                if exp_edges_r[0] > ext.shape[1-dispaxis]:
-                    positions_r = []
+                    positions_1, _ = tracing.pinpoint_peaks(median_slice_1,
+                                                            peaks=positions_1)
+                if exp_edges_2[0] > ext.shape[1-dispaxis]:
+                    positions_2 = []
                 else:
-                    positions_r, _ = find_peaks(median_slice_r,
+                    positions_2, _ = find_peaks(median_slice_2,
                                                 height=3.5*std,
                                                 distance=5)
-                    positions_r, _ = tracing.pinpoint_peaks(median_slice_r,
-                                                            peaks=positions_r)
+                    positions_2, _ = tracing.pinpoint_peaks(median_slice_2,
+                                                            peaks=positions_2)
 
                 log.fullinfo('Found edge candidates at:\n'
-                             f'Left/bottom: {positions_l}\n'
-                             f'Right/top: {positions_r}')
+                             f'{edge1.capitalize()}: {positions_1}\n'
+                             f'{edge2.capitalize()}: {positions_2}')
                 if debug:
                     # Print a diagnostic plot of the profile being fitted.
-                    plt.plot(median_slice_l, label='1st-derivative of flux')
-                    plt.plot(median_slice_r, label='Inverse')
+                    plt.plot(median_slice_1, label='1st-derivative of flux')
+                    plt.plot(median_slice_2, label='Inverse')
                     plt.xlabel(f'{row_or_col.capitalize()} number')
                     plt.legend()
 
@@ -1329,7 +1331,7 @@ class Spect(Resample):
                 # by find_peaks is empty, fill in the position by assuming
                 # the other edge is at the length of the slit away. (This may
                 # be off the edge of the detector.)
-                if (len(positions_l) == 0) and (len(positions_r) == 0):
+                if (len(positions_1) == 0) and (len(positions_2) == 0):
                     log.warning("No edges could be found for "
                                 f"{ad.orig_filename} - no SLITEDGE table "
                                 "will be attached.")
@@ -1337,52 +1339,53 @@ class Spect(Resample):
                         plt.show()
                     continue
 
-                edges_l, edges_r = [], []
+                # Lists to hold positions of edges found.
+                edges_1, edges_2 = [], []
 
                 # Handlle cases where one edge of the illuminated region is off
                 # the side of the detector by constructing an "edge" based on
                 # the expected breadth of the region. If both edges are on,
                 # run match_sources on both to find the closest match to each.
                 if len(slit_widths) == 1:
-                    if (len(positions_l) == 0) and (len(positions_r) != 0):
-                        edge_ids_r = match_sources(positions_r,
-                                                   exp_edges_r,
+                    if (len(positions_1) == 0) and (len(positions_2) != 0):
+                        edge_ids_2 = match_sources(positions_2,
+                                                   exp_edges_2,
                                                    radius=search_rad)
-                        for i, j in enumerate(edge_ids_r):
+                        for i, j in enumerate(edge_ids_2):
                             if j > -1:  # a matched position
-                                edges_r.append(positions_r[i])
-                                edges_l.append(
-                                    positions_r[i] - slit_widths[0])
+                                edges_2.append(positions_2[i])
+                                edges_1.append(
+                                    positions_2[i] - slit_widths[0])
 
-                    elif (len(positions_r) == 0) and (len(positions_l) != 0):
-                        edge_ids_l = match_sources(positions_l,
-                                                   exp_edges_l,
+                    elif (len(positions_2) == 0) and (len(positions_1) != 0):
+                        edge_ids_1 = match_sources(positions_1,
+                                                   exp_edges_1,
                                                    radius=search_rad)
-                        for i, j in enumerate(edge_ids_l):
+                        for i, j in enumerate(edge_ids_1):
                             if j > -1:  # a matched position
-                                edges_l.append(positions_l[i])
-                                edges_r.append(
-                                    positions_l[i] + slit_widths[0])
+                                edges_1.append(positions_1[i])
+                                edges_2.append(
+                                    positions_1[i] + slit_widths[0])
 
-                    elif (len(positions_r) != 0) and (len(positions_l) != 0):
-                        edge_ids_r = match_sources(positions_r,
-                                                    exp_edges_r,
+                    elif (len(positions_2) != 0) and (len(positions_1) != 0):
+                        edge_ids_2 = match_sources(positions_2,
+                                                    exp_edges_2,
                                                     radius=search_rad)
-                        edge_ids_l = match_sources(positions_l,
-                                                    exp_edges_l,
+                        edge_ids_1 = match_sources(positions_1,
+                                                    exp_edges_1,
                                                     radius=search_rad)
-                        edges_l = [positions_l[i] for i, j in
-                                    enumerate(edge_ids_l) if j > -1]
-                        edges_r = [positions_r[i] for i, j in
-                                    enumerate(edge_ids_r) if j > -1]
+                        edges_1 = [positions_1[i] for i, j in
+                                    enumerate(edge_ids_1) if j > -1]
+                        edges_2 = [positions_2[i] for i, j in
+                                    enumerate(edge_ids_2) if j > -1]
 
-                        if len(edges_l) == 0 and len(edges_r) != 0:
-                            edges_l = [r - slit_widths[0] for r in edges_r]
-                        elif len(edges_r) == 0 and len(edges_l) != 0:
-                            edges_r = [l + slit_widths[0] for l in edges_l]
+                        if len(edges_1) == 0 and len(edges_2) != 0:
+                            edges_1 = [r - slit_widths[0] for r in edges_2]
+                        elif len(edges_2) == 0 and len(edges_1) != 0:
+                            edges_2 = [l + slit_widths[0] for l in edges_1]
 
                 # Generate pairs of slit edges.
-                edge_pairs = [(l, r) for l, r in zip(edges_l, edges_r)]
+                edge_pairs = [(a, b) for a, b in zip(edges_1, edges_2)]
 
                 if not edge_pairs:
                     log.warning("No edges could be determined for "
@@ -1421,7 +1424,7 @@ class Spect(Resample):
                 # since it being too narrow sometimes causes the fitting to
                 # fail.
                 for pair, guess in zip(edge_pairs, mdf_edge_guesses):
-                    models_dict[pair_num] = {"left": None, "right": None}
+                    models_dict[pair_num] = {edge1: None, edge2: None}
                     log.fullinfo(f'Fitting guess at {guess} to {pair}.')
 
                     n_sigma = 1
@@ -1448,18 +1451,18 @@ class Spect(Resample):
                     log.fullinfo(f"Found a shift of {m_final.offset_1.value} "
                                  "and a scale of "
                                  f"{m_final.factor_2.value}.")
-                    log.fullinfo(f"Looking for edges at "
-                                 f"{expected}.")
+                    log.fullinfo("Looking for edges at "
+                                 f"({expected[0]:.2f}, {expected[1]:.2f}).")
 
                     for loc, arr, edge in zip(expected,
-                                              [diffarr_l, diffarr_r],
-                                              ('left', 'right')):
+                                              [diffarr_1, diffarr_2],
+                                              (edge1, edge2)):
 
                         # The "- 1" here is because np.diff shrinks the array
                         # by 1 in taking the first derivative.
                         if (loc < buffer) or\
                            (loc > ext.data.shape[1-dispaxis] - buffer - 1):
-                           log.debug(f"Not tracing at {loc} bacause "
+                           log.debug(f"Not tracing at {loc:.2f} because "
                                      "it is off (or too close to) the "
                                      "detector edge.")
                            continue
@@ -1482,6 +1485,7 @@ class Spect(Resample):
                             # traced but the other can, the same model (shifted
                             # by the slit breadth) can be applied to the
                             # untraced edge, so just continue for now.
+                            log.warning(f"Unable to trace edge at {loc:.2f}.")
                             continue
 
                         # This complicated bit of code parses out coordinates
@@ -1496,6 +1500,7 @@ class Spect(Resample):
                             # because it's off the end of the CCD or very
                             # close. Just continue for now and copy the model
                             # from the other edge of the pair at the end.
+                            log.warning(f"No edge was found at {loc:.2f}.")
                             continue
 
                         else:
@@ -1509,7 +1514,7 @@ class Spect(Resample):
                             # Log the trace.
                             min_value = in_coords_new[1 - dispaxis].min()
                             max_value = in_coords_new[1 - dispaxis].max()
-                            log.debug(f"Edge at {loc:.1f} traced from "
+                            log.debug(f"Edge at {loc:.2f} traced from "
                                       f"{min_value} to {max_value}.")
 
                             # Perform the fit of the coordinates for the traced
@@ -1542,25 +1547,26 @@ class Spect(Resample):
 
                 for key, pair in models_dict.items():
 
-                    if pair['left'] is None and pair['right'] is not None:
-                        pair['left'] = deepcopy(pair['right'])
-                        pair['left']['c0'] -= slit_widths[key]
-                        log.debug("Copying right/top edge to left/bottom.")
+                    if pair[edge1] is None and pair[edge2] is not None:
+                        pair[edge1] = deepcopy(pair[edge2])
+                        pair[edge1]['c0'] -= slit_widths[key]
+                        log.debug(f"Copying {edge2} edge to {edge1}.")
 
-                    if pair['right'] is None and pair['left'] is not None:
-                        pair['right'] = deepcopy(pair['left'])
-                        pair['right']['c0'] += slit_widths[key]
-                        log.debug("Copying left/bottom edge to right/top.")
+                    if pair[edge2] is None and pair[edge1] is not None:
+                        pair[edge2] = deepcopy(pair[edge1])
+                        pair[edge2]['c0'] += slit_widths[key]
+                        log.debug(f"Copying {edge1} edge to {edge2}.")
 
                 # With all edges fitted (or not), create the SLITEDGE table.
                 edge_num = 0
                 slit_table = []
                 make_table = []
                 for key, pair in models_dict.items():
-                    if pair['left'] is None and pair['right'] is None:
+                    if pair[edge1] is None and pair[edge2] is None:
+                        e_1, e_2 = m_final.inverse(mdf_edge_guesses[key])
                         log.warning("Couldn't fit either edge for the pair "
                                     "with edges at "
-                                    f"{m_final.inverse(mdf_edge_guesses[key])}\n"
+                                    f"{edge1}={e_1:.2f} and {edge2}={e_2:.2f}.\n"
                                     "This may be because the slit length "
                                     "estimate is incorrect. You may be able "
                                     "to fix this by manually giving the edges "
@@ -1570,7 +1576,7 @@ class Spect(Resample):
                         continue
 
                     # If both edges have models, create a row for the table.
-                    for edge in ('left', 'right'):
+                    for edge in (edge1, edge2):
                         row = Table(np.array([1, edge_num]),
                                 names=('slit', 'edge'))
                         row = hstack([row, pair[edge]], join_type='inner')
@@ -1583,19 +1589,19 @@ class Spect(Resample):
                     # was actually traced (with the other model being a copy of
                     # it), so get the actual coords traced with a default of
                     # None in case nothing was traced.
-                    coords_left = pair.get('coords_left', None)
-                    coords_right = pair.get('coords_right', None)
+                    coords_one = pair.get(f'coords_{edge1}', None)
+                    coords_two = pair.get(f'coords_{edge2}', None)
 
                     # Assume only one edge traced for now, so spatial order 0
                     # for the model to rectify the slit.
                     spatial_order = 0
 
-                    if (coords_left is not None and coords_right is not None):
+                    if (coords_one is not None and coords_two is not None):
                         log.fullinfo("Getting coordinates from both traced edges.")
                         in_coords = [np.concatenate([a, b]) for a, b in zip(
-                            coords_left[2:], coords_right[2:])]
+                            coords_one[2:], coords_two[2:])]
                         ref_coords = [np.concatenate([a, b]) for a, b in zip(
-                            coords_left[:2], coords_right[:2])]
+                            coords_one[:2], coords_two[:2])]
 
                         # If both edges have been traced, use order 1 for the
                         # spatial order of the distortion model.
@@ -1604,7 +1610,7 @@ class Spect(Resample):
                         # If only one edge has been traced, get the values from it.
                         log.fullinfo("Only one was edge was traced, get "
                                      "coordinates from it.")
-                        coords = coords_left if coords_right is None else coords_right
+                        coords = coords_one if coords_two is None else coords_two
                         in_coords = coords[2:]
                         ref_coords = coords[:2]
 
@@ -1617,7 +1623,9 @@ class Spect(Resample):
                         x_degree=x_ord, y_degree=y_ord,
                         x_domain=[0, ext.shape[1]-1],
                         y_domain=[0, ext.shape[0]-1])
-                    # Create the distortion model from the available coords:
+                    # Create the distortion model from the available coords.
+                    # Currently this is set up for a single slit (i.e. longslit)
+                    # and will need some thinking/refactoring for XD, MOS.
                     log.stdinfo("Creating distortion model for slit rectification")
                     fixed = (spatial_order == 0)
                     model, m_final_2d, m_inverse_2d = create_distortion_model(
@@ -1630,15 +1638,15 @@ class Spect(Resample):
                     log.debug('Appending the table below as "SLITEDGE".')
                     log.debug(ext.SLITEDGE)
 
-                # Put this model as the first step if there's an existing WCS
-                if ext.wcs is None:
-                    ext.wcs = gWCS([(ext.wcs.input_frame, model),
-                                    (cf.Frame2D(name="rectified"), None)])
-                else:
-                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
-                                         cf.Frame2D(name="rectified"))
-                log.debug("The WCS for this extension is:")
-                log.debug(ext.wcs)
+                    # Put this model as the first step if there's an existing WCS
+                    if ext.wcs is None:
+                        ext.wcs = gWCS([(ext.wcs.input_frame, model),
+                                        (cf.Frame2D(name="rectified"), None)])
+                    else:
+                        ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                             cf.Frame2D(name="rectified"))
+                    log.debug("The WCS for this extension is:")
+                    log.debug(ext.wcs)
 
             ad.update_filename(suffix=sfx, strip=True)
 
@@ -4227,7 +4235,7 @@ class Spect(Resample):
             right edges of slits.
         """
         # TODO: Currently this only handles longslit MDFs.
-        exp_edges_l, exp_edges_r = [], []
+        exp_edges_1, exp_edges_2 = [], []
 
         # Get values from the MDF attached to the ad object.
         if ad.dispersion_axis()[0] == 2:
@@ -4237,10 +4245,10 @@ class Spect(Resample):
         half_slit_px = ad.MDF['slitlength_pixels'][0] / 2.
 
         # Calculate slit edges based on center and slit length.
-        exp_edges_l.append(center - (half_slit_px))
-        exp_edges_r.append(center + (half_slit_px))
+        exp_edges_1.append(center - (half_slit_px))
+        exp_edges_2.append(center + (half_slit_px))
 
-        return exp_edges_l, exp_edges_r
+        return exp_edges_1, exp_edges_2
 
 
     def _get_spectrophotometry(self, filename, in_vacuo=False):
