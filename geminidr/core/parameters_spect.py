@@ -204,22 +204,18 @@ class flagCosmicRaysConfig(config.Config):
     spectral_order = config.Field(
         doc="Order for fitting and subtracting object continuum and sky line "
         "models, prior to running the main cosmic ray detection algorithm. "
-        "When None, defaults are used, according to the image size (as in "
-        "the IRAF task gemcrspec). To control which fits are performed, use "
-        "the bkgmodel parameter.",
+        "To control which fits are performed, use the bkgmodel parameter.",
         dtype=int,
         optional=True,
-        default=None,
+        default=9,
     )
     spatial_order = config.Field(
         doc="Order for fitting and subtracting object continuum and sky line "
         "models, prior to running the main cosmic ray detection algorithm. "
-        "When None, defaults are used, according to the image size (as in "
-        "the IRAF task gemcrspec). To control which fits are performed, use "
-        "the bkgmodel parameter.",
+        "To control which fits are performed, use the bkgmodel parameter.",
         dtype=int,
         optional=True,
-        default=None,
+        default=5,
     )
     bkgmodel = config.ChoiceField(
         doc="Set which background model(s) to use, between 'object', "
