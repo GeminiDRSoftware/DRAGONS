@@ -527,7 +527,7 @@ class GMOSSpect(Spect, GMOS):
         return adoutputs
 
     def standardizeWCS(self, adinputs=None, **params):
-    """
+        """
         This primitive updates the WCS attribute of each NDAstroData extension
         in the input AstroData objects. For spectroscopic data, it means
         replacing an imaging WCS with an approximate spectroscopic WCS.
