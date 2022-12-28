@@ -173,6 +173,29 @@ class Rotate2D(FittableModel):
         return x, y
 
 
+def make_serializable(transform):
+    """
+    Convert any of the models above into standard astropy models so
+    the result is serializable by ASDF
+    """
+    replacements = []
+    for i, m in enumerate(transform):
+        replacement = None
+        if m.__class__ == Rotate2D:
+            replacement = models.Rotation2D(m.angle)
+        elif m.__class__ == Shift2D:
+            replacement = models.Shift(m.x_offset) & models.Shift(m.y_offset)
+        elif m.__class__ == Scale2D:
+            replacement = models.Scale(m.factor) & models.Scale(m.factor)
+        if replacement:
+            m.name = f"model{i}"
+            replacements.append((m.name, replacement))
+
+    for name, replacement in replacements:
+        transform = transform.replace_submodel(name, replacement)
+    return transform
+
+
 class UnivariateSplineWithOutlierRemoval:
     """
     Instantiating this class creates a spline object that fits to the

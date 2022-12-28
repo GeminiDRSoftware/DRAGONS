@@ -40,15 +40,12 @@ input_pars = [
     # (Input File, params)
     # If a grism+filter combination is not present here => no science data exists
     # grism: JH, filter: JH (1.400um)
-   # ("S20130928S0143_flatCorrected.fits", dict()), # 4-pix slit
     ("S20160928S0077_flatCorrected.fits", dict()), # 8-pix slit
     ("S20211216S0177_flatCorrected.fits", dict()), # 2-pix slit
     ("S20220525S0036_flatCorrected.fits", dict()), # 6-pix slit, new JH filter
-   # ("S20220409S0035_flatCorrected.fits", dict()), # 3-pix slit, new JH filter
     # grism: HK, filter: HK (1.870um)
     ("S20220319S0060_flatCorrected.fits", dict()), # 3-pix slit, new HK filter
     ("S20220527S0035_flatCorrected.fits", dict()), # 4-pix slit, new HK filter, ND4-5
-    #("S20180114S0108_flatCorrected.fits", dict()), # 4-pix slit, ND4-5
     ("S20130930S0119_flatCorrected.fits", dict()), # 2-pix slit # no associated flat (the program one is not matching, , probably because of diff read modes)
     ("S20160215S0138_flatCorrected.fits", dict()), # 6-pix slit, ND4-5, all flats saturated
     # grism: HK, filter: JH (1.100um)
@@ -56,14 +53,13 @@ input_pars = [
     # grism: R3K, filter: J-low (1.100um)
     ("S20131018S0230_flatCorrected.fits", dict()), # 6-pix slit
     # grism: R3K, filter: J (1.250um)
-    #("S20140216S0091_flatCorrected.fits", dict()), # 2-pix slit
     ("S20170715S0121_flatCorrected.fits", dict()), # 1-pix slit, Clear
     ("S20200219S0105_flatCorrected.fits", dict()), # 4-pix slit, ND1.0
     # grism: R3K, filter: H (1.650um)
     ("S20210903S0053_flatCorrected.fits", dict()), # 6-pix slit
     ("S20131227S0114_flatCorrected.fits", dict()), # 2-pix slit # no associated flat (the program one is not matching, probably because of diff read modes)
     # grism: R3K, filter: Ks (2.200um)
-    ("S20140220S0425_flatCorrected.fits", dict()), # 2-pix slit - do I need to add lines to the linelist?
+    ("S20140220S0425_flatCorrected.fits", dict()), # 2-pix slit
     ("S20220515S0026_flatCorrected.fits", dict()), # 3-pix slit
     # grism: R3K, filter: K-long (2.200um)
     ("S20150624S0023_flatCorrected.fits", dict()), # 1-pix slit
@@ -294,7 +290,6 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
@@ -457,6 +452,7 @@ def do_plots(ad):
     ----------
     ad : astrodata
     """
+
     output_dir = ("./plots/geminidr/f2/"
                   "test_f2_spect_ls_determine_wavelength_solution")
     os.makedirs(output_dir, exist_ok=True)
@@ -650,7 +646,7 @@ def create_inputs_recipe():
         flat_reduce = Reduce()
         flat_reduce.files.extend(flat_path)
         flat_reduce.ucals = normalize_ucals(calibration_files)
-        flat_reduce.uparms = [('normalizeFlat:threshold','0.05')]
+        flat_reduce.uparms = [('normalizeFlat:threshold','0.01')]
         flat_reduce.runr()
         processed_flat = flat_reduce.output_filenames.pop()
         del flat_reduce
@@ -665,7 +661,7 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
         p.darkCorrect(dark=arc_darks_master)
-        p.flatCorrect(flat=processed_flat, suffix="_flatCorrected_0_05")
+        p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
         p.makeIRAFCompatible()
 
         os.chdir("inputs/")

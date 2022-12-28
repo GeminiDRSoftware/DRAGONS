@@ -1,0 +1,28 @@
+# units Angstrom
+# wavelengths in IN VACUUM
+# line list created from the ATRAN model with params WV=2mm, AM=1.5, R=500
+# to use for GNIRS M-band observations, resolution < 500
+45157.9
+46239.1
+46794.0
+47112.2
+47469.2
+47838.5
+48130.2
+48424.0
+48964.6
+49558.2
+49790.8
+50204.9
+50839.3
+51137.2
+51449.3
+51730.8
+52030.7
+52122.5
+52377.5
+52920.1
+53521.9
+54205.3
+54678.6
+55237.6

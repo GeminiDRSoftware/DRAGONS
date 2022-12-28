@@ -26,7 +26,7 @@ def makeProcessedArc(p):
     p.flatCorrect()
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
-    p.determineDistortion()
+    p.determineDistortion(debug=True)
     p.storeProcessedArc()
     p.writeOutputs()
 

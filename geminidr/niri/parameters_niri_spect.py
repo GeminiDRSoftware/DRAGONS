@@ -12,15 +12,18 @@ def list_of_ints_check(value):
     return True
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
-    id_only = config.Field("Use only lines identified for wavelength calibration?", bool, True)
+    def setDefaults(self):
+        # params not checked:
+        self.id_only = True
+        self.spectral_order = 3
+        self.min_snr = 10
+        self.debug_reject_bad = False
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
-    nbright = config.RangeField("Number of bright lines to eliminate", int, 0, min=0)
-    in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, True)
-    debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int),
-                                  100000, check=list_of_ints_check)
     def setDefaults(self):
         self.order = 3
+        self.in_vacuo = True
+        self.debug_min_lines = 100000
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):

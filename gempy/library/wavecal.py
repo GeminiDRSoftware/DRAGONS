@@ -400,7 +400,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     fit1d, acceptable_fit = find_solution(
         init_models, ui_params, peaks=peaks, peak_weights=weights[ui_params.values["weighting"]],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
-        filename=ext.filename)
+        dcenwave = input_data["cenwave_accuracy"], filename=ext.filename)
 
     input_data["fit"] = fit1d
     return input_data, fit1d, acceptable_fit
@@ -434,6 +434,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     "linelist" : LineList object
     "fwidth" : feature width (pixels)
     "location" : extraction location (if 2D spectrum)
+    "cenwave_accuracy" : accuracy of the central wavelength
     """
     cenwave = config.central_wavelength
 
@@ -470,7 +471,15 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config.min_snr, min_sep=config.min_sep,
         reject_bad=False, nbright=config.values.get("nbright", 0))
-
+    # Do second iteration of fwidth estimation and peak finding in order to get more accurate
+    # line widths (this step is mostly necessary when calibrating from sky lines, as for those
+    # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends to be too high).
+    if config.fwidth is None:
+        fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
+        peaks, weights = find_line_peaks(
+            data, mask=mask, variance=variance,
+            fwidth=fwidth, min_snr=config.min_snr, min_sep=config.min_sep,
+            reject_bad=False, nbright=config.values.get("nbright", 0))
     # Get the initial wavelength solution
     m_init = initial_wavelength_model(
         ext, central_wavelength=cenwave,
@@ -504,14 +513,18 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
                     log.warning(f"{i}. Offset {m.right.offset_0.value} "
                                 f"scale {m.right.factor_1.value}")
 
+    # Get the accuracy of the central wavelength
+    dcenwave = p._get_cenwave_accuracy(ad=ext)
+
     return {"spectrum": np.ma.masked_array(data, mask=mask),
             "init_models": m_init, "peaks": peaks, "weights": weights,
-            "linelist": linelist, "fwidth": fwidth, "location": location}
+            "linelist": linelist, "fwidth": fwidth, "location": location,
+            "cenwave_accuracy" : dcenwave}
 
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,
-                  kdsigma=1, k=1, filename=None):
+                  kdsigma=1, k=1, filename=None, dcenwave=10):
     """
     Find the best wavelength solution from the set of initial models.
 
@@ -563,7 +576,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
                                         kdsigma, order=config.order,
                                         min_lines_per_fit=min_lines_per_fit,
-                                        k=k, debug=False)
+                                        k=k, dcenwave=dcenwave, debug=False)
 
         # We perform a regular least-squares fit to all the matches
         # we've made. This allows a high polynomial order to be
@@ -628,7 +641,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                           order=3, min_lines_per_fit=15, k=1,
-                          arc_weights=None, debug=False):
+                          arc_weights=None, dcenwave=10, debug=False):
     """
     This function performs fits in multiple regions of the 1D arc spectrum.
     Given a starting location, a suitable fitting region is "grown" outwards
@@ -672,7 +685,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     wave_start = model(pixel_start)
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
-    dc0 = 10
+    dc0 = dcenwave
     fits_to_do = [(pixel_start, wave_start, dw_start)]
     while fits_to_do:
         p0, c0, dw = fits_to_do.pop()
