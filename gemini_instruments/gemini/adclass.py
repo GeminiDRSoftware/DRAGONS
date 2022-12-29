@@ -15,8 +15,6 @@ import numpy as np
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
-from astropy.modeling.polynomial import Chebyshev1D
-from astropy.modeling.projections import AffineTransformation2D
 
 from astrodata import AstroData
 from astrodata import astro_data_tag
