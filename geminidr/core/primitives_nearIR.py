@@ -247,12 +247,12 @@ class NearIR(Bookkeeping):
             log.warning("No frames are being removed: data quality may suffer")
         return adinputs
 
-    def _levelQuad(self, ext, sig=2.0, smoothing_extent=5, edges=None):
+    def _levelQuad(self, masked_data, sig=2.0, smoothing_extent=5, edges=None):
         """
         Parameters
         ----------
-        ext: AstroData
-            This is the pattern-corrected AstroData.
+        masked_data: np.ma.masked_array
+            pattern-corrected image
         sig: float, Default: 2.0
             Sigma-clipping threshold used for both lower and upper limits.
         smoothing_extent: int
@@ -266,8 +266,7 @@ class NearIR(Bookkeeping):
             the pattern switches from "off" to "on" or vice versa
         """
         log = self.log
-        log.debug(f"Leveling quads for {ext.filename}:{ext.id}")
-        qysize, qxsize = [size // 2 for size in ext.data.shape]
+        qysize, qxsize = [size // 2 for size in masked_data.shape]
 
         clippedstats_lr = partial(sigma_clipped_stats, axis=1, sigma=sig)
         clippedstats_tb = partial(sigma_clipped_stats, axis=0, sigma=sig)
@@ -285,18 +284,13 @@ class NearIR(Bookkeeping):
             offsets = meds_1 - meds_2
             return np.median(offsets[np.isfinite(offsets)])  # to be added to arr2
 
-        # Create a masked_array object now for speed
-        masked_data = np.ma.masked_array(ext.data, mask=ext.mask)
-        if hasattr(ext, 'OBJMASK'):
-            masked_data.mask |= ext.OBJMASK.astype(bool)
-
         # Go through the quads aligning the image levels at all the intra-quad
-        # edges. Work from the top/bottom towards the centre
+        # edges. Work from the top/bottom towards the centre. Be careful to
+        # directly modify the 'data' attribute or else the masked pixels will
+        # be unaffected
         intraquad_smooth = smoothing_extent * 10
         for (ystart, xstart), quad_edges in edges.items():
             xslice = slice(xstart, xstart+qxsize)
-            if ystart:
-                quad_edges = quad_edges[::-1]
             for edge in quad_edges:
                 # "edge" is the row number in the quad (0-indexed) *above* the edge
                 this_smooth = min(intraquad_smooth, edge, qysize-edge)
@@ -306,12 +300,12 @@ class NearIR(Bookkeeping):
                 offset = find_offset(masked_data, arr1_slicers, arr2_slicers, clippedstats_tb)
                 if ystart:
                     log.debug(f"Adding {-offset} to row {edge} and above "
-                              f"in {xslice.start} quad")
-                    ext.data[slice(edge, None), xslice] -= offset
+                              f"in (X{xstart}, Y{ystart}) quad")
+                    masked_data.data[slice(edge, None), xslice] -= offset
                 else:
                     log.debug(f"Adding {offset} below row {edge} "
-                              f"in {xslice.start} quad")
-                    ext.data[slice(0, edge), xslice] += offset
+                              f"in (X{xstart}, Y{ystart}) quad")
+                    masked_data.data[slice(0, edge), xslice] += offset
 
         # match top and bottom halves of left and right separately
         for xslice in (slice(0, qxsize), slice(qxsize, None)):
@@ -319,8 +313,8 @@ class NearIR(Bookkeeping):
             arr2_slicers = (slice(qysize - smoothing_extent,qysize), xslice)
             offset = find_offset(masked_data, arr1_slicers, arr2_slicers,
                                  clippedstats_tb)
-            log.debug(f"Adding {offset} to bottom of {xslice.start} quad")
-            ext.data[slice(0, qysize), xslice] += offset
+            log.debug(f"Adding {offset} to bottom of X{xslice.start} quad")
+            masked_data.data[slice(0, qysize), xslice] += offset
 
         # match left and right halves
         arr1_slicers = (slice(None), slice(qxsize - smoothing_extent,qxsize))
@@ -329,7 +323,7 @@ class NearIR(Bookkeeping):
                              clippedstats_lr)
         # xslice still set to right half from previous loop
         log.debug(f"Adding {offset} to right half")
-        ext.data[slice(None), xslice] += offset
+        masked_data.data[slice(None), xslice] += offset
 
     def cleanReadout(self, adinputs=None, **params):
         """
@@ -382,16 +376,14 @@ class NearIR(Bookkeeping):
 
         hsigma, lsigma = params["hsigma"], params["lsigma"]
         pxsize, pysize = params["pattern_x_size"], params["pattern_y_size"]
-        bgsub = params["subtract_background"]
+        bgsub = params["debug_subtract_background"]
         clean = params["clean"]
         level_bias_offset = params["level_bias_offset"]
         smoothing_extent = params["smoothing_extent"]
 
-        sg_win_size = params["sg_win_size"]
-        # MS: increased from 0.4 to minimize over-subtraction of pattern at edges in intra-quad cases,
-        # which can be sometimes deleterious
         simple_thres = params["simple_thres"]
         pat_strength_thres = params["pat_strength_thres"]
+        canny_sigma = params["debug_canny_sigma"]
 
         if clean == "skip":
             log.stdinfo("Skipping cleanReadout since 'clean' is set to 'skip'")
@@ -399,6 +391,30 @@ class NearIR(Bookkeeping):
 
         stack_function = NDStacker(combine='median', reject='sigclip',
                                    hsigma=hsigma, lsigma=lsigma)
+
+        def pad(arr, padding, fill_value=0):
+            if arr is None:
+                return arr
+            elif padding:
+                pad_data = np.full((padding, arr.shape[1]), fill_value, dtype=arr.dtype)
+                return np.append(arr, pad_data, axis=0)
+            return arr.copy()
+
+        def flip(arr, padding=0, flipit=True):
+            """
+            GNIRS is weird, the top quad is really only 510 rows but
+            these are read out synchronously with the bottom 510 rows
+            therefore the "reflection" needs a bit of tweaking, you
+            flip the bottom 510 rows and then add 2 dummy rows at the top.
+            This function does that if needed. If there's no padding, then
+            it just reverses the array. It can be called with flipit=False,
+            it which case it does nothing.
+            """
+            if flipit and padding:
+                return np.r_[arr[-(padding + 1)::-1], np.zeros((padding,), dtype=arr.dtype)]
+            elif flipit:
+                return arr[::-1]
+            return arr
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -409,56 +425,48 @@ class NearIR(Bookkeeping):
             for ext in ad:
                 edges = {}
 
-                # padding (for GNIRS), data must be a multiple number of
-                # pattern boxes
+                # data must be a multiple number of pattern boxes
                 ny, nx = ext.shape
-                padding = ny % pysize
-                if padding:
-                    padding = pysize - padding
-                    log.stdinfo(f"Padding data by {padding} rows to be "
-                                f"divisible by {pysize}.")
-                    ext.data = np.append(
-                        ext.data, np.zeros((padding, nx),
-                                           dtype=ext.data.dtype), axis=0)
-                    ext.variance = np.append(
-                        ext.variance, np.zeros((padding, nx),
-                                               dtype=ext.variance.dtype), axis=0)
-                    ext.mask = np.append(
-                        ext.mask, np.full((padding, nx), DQ.no_data), axis=0)
-
-                qysize, qxsize = [size // 2 for size in ext.data.shape]
+                padding = (pysize - ny % pysize) % pysize
+                data = pad(ext.data, padding)
+                mask = pad(ext.mask, padding, DQ.no_data)
+                padded_array = np.ma.masked_array(data, mask=mask)
+                qysize, qxsize = [size // 2 for size in data.shape]
                 nypat, nxpat = qysize // pysize, qxsize // pxsize
                 nblocks = nxpat * nypat
                 pattern_size = pxsize * pysize
-                cleaned_quads = 0
+                if hasattr(ext, 'OBJMASK'):
+                    padded_array.mask |= pad(ext.OBJMASK.astype(bool), padding)
 
+                cleaned_quads = 0
                 def reblock(data):
                     """Reshape data into a stack of pattern-box-sized arrays"""
                     return data.reshape(qysize // pysize, pysize, -1, pxsize).swapaxes(
                         1, 2).reshape(-1, pysize, pxsize)
 
+                pattern_strengths = []
                 for ystart, ydesc in zip((0, qysize), ('bottom', 'top')):
                     for xstart, xdesc in zip((0, qxsize), ('left', 'right')):
+                        quad_slice = (slice(ystart, ystart+qysize), slice(xstart, xstart+qxsize))
 
                         # Reshape each quad into a stack of pattern-box-sized arrays
-                        quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]
-                        data_block = reblock(quad.data)
-                        var_block = reblock(quad.variance) if quad.variance is not None else None
-                        mask_block = reblock(quad.mask) if quad.mask is not None else None
-                        blocks = ext.nddata.__class__(data=data_block, mask=mask_block, variance=var_block)
+                        data_block = reblock(data[quad_slice])
+                        mask_block = reblock(mask[quad_slice]) if mask is not None else None
+                        blocks = np.ma.masked_array(data=data_block, mask=mask_block)
 
                         # If all pixels are masked in a box, we'll get no
                         # result from the mean. Suppress warning.
                         with warnings.catch_warnings():
                             warnings.simplefilter("ignore", category=UserWarning)
-                            zeros = np.nan_to_num(np.ma.masked_array(
-                                blocks.data.reshape(nblocks, pattern_size),
-                                blocks.mask.reshape(nblocks, pattern_size)).mean(axis=1))
+                            zeros = np.nan_to_num(
+                                blocks.reshape(nblocks, pattern_size).mean(axis=1))
 
                         # compute average pattern from all the pattern boxes
-                        pattern = stack_function(blocks, zero=-zeros if bgsub else None).data
+                        pattern = stack_function(ext.nddata.__class__(data=blocks.data, mask=blocks.mask),
+                                                 zero=-zeros if bgsub else None).data
                         pattern -= pattern.mean()
-                        out_quad = quad.data - np.tile(pattern, (nypat, nxpat))
+                        edges[ystart, xstart] = {"pattern": pattern,
+                                                 "clean": False}
 
                         # MS: do not touch the quad if pattern strength is weak
                         if pattern.std() >= pat_strength_thres:
@@ -474,36 +482,12 @@ class NearIR(Bookkeeping):
                                 warnings.simplefilter("ignore")
                                 scaling_factors = sum1 / sum2
 
-                            # Compute the mean of each row of pattern boxes and
-                            # then replicate to height of the quad
-                            with warnings.catch_warnings():
-                                warnings.simplefilter("ignore")
+                                # Compute the mean of each row of pattern boxes and
+                                # then replicate to height of the quad
                                 pattern_strength = sigma_clipped_stats(
                                     scaling_factors.reshape(nypat, nxpat),
                                     axis=1, sigma=2.0)[1].repeat(pysize)
-
-                            # MS: Important to smooth with a Savitzky-Golay
-                            # filter to remove noise while using simple thresholding
-                            pattern_strength = savgol_filter(
-                                pattern_strength, sg_win_size, 1, deriv=0)
-
-                            # Using a simple threshold and finding its crossings
-                            # slopes: +1 means pattern turning on, -1 means
-                            # turning off (as we move up the quad)
-                            unaffected_rows = pattern_strength < simple_thres
-                            switch_locations = np.where(np.diff(unaffected_rows))[0]
-
-                            # If it looks like pattern noise only affected part
-                            # of the quad, reinstate the unaffected part
-                            out_quad[unaffected_rows] = quad.data[unaffected_rows]
-
-                            # store locations of intra-quad edges for _levelQuad()
-                            # if a switch_location is 100, for example, it means
-                            # the pattern switches between rows 100 and 101
-                            # (0-indexed), so store 101 in order to be able to
-                            # create slices more easily
-                            edges[(ystart, xstart)] = switch_locations + 1
-
+                            pattern_strengths.append(flip(pattern_strength, padding, ystart > 0))
                         else:
                             qstr = (f"{ad.filename} extension {ext.id} "
                                     f"{ydesc}-{xdesc} quadrant")
@@ -513,19 +497,42 @@ class NearIR(Bookkeeping):
                                 log.stdinfo(f"Weak pattern for {qstr}, "
                                             "not applying pattern removal.")
                                 continue
+                        edges[ystart, xstart]["clean"] = True
                         cleaned_quads += 1
-                        ext.data[ystart:ystart+qysize, xstart:xstart+qxsize] = out_quad
 
+                combined_pattern_strength = np.mean(pattern_strengths, axis=0)
+                new_edges, affected_rows = find_edges(
+                    combined_pattern_strength, sigma=canny_sigma,
+                    min_range=simple_thres, pysize=pysize)
+                top_affected_rows = flip(affected_rows, padding)
+                for (ystart, xstart), _dict in edges.items():
+                    if _dict["clean"]:
+                        quad_slice = (slice(ystart, ystart + qysize),
+                                      slice(xstart, xstart + qxsize))
+                        out_quad = data[quad_slice] - np.tile(_dict["pattern"], (nypat, nxpat))
+                        if ystart:
+                            padded_array.data[quad_slice][top_affected_rows] = out_quad[top_affected_rows]
+                        else:
+                            padded_array.data[quad_slice][affected_rows] = out_quad[affected_rows]
+                        # store locations of intra-quad edges for _levelQuad()
+                        # if a switch_location is 100, for example, it means
+                        # the pattern switches between rows 100 and 101
+                        # (0-indexed), so store 101 in order to be able to
+                        # create slices more easily
+                        if ystart:  # again, cope with GNIRS
+                            edges[ystart, xstart] = qysize - padding - new_edges + 1
+                        else:
+                            edges[ystart, xstart] = new_edges + 1
+                    else:
+                        edges[ystart, xstart] = []  # no levelling here
                 if level_bias_offset and cleaned_quads > 0:
-                    log.stdinfo("Leveling quads now.....")
-                    self._levelQuad(ext, smoothing_extent=smoothing_extent, edges=edges)
+                    log.stdinfo(f"Leveling quads for {ext.filename}:{ext.id}...")
+                    self._levelQuad(padded_array, smoothing_extent=smoothing_extent, edges=edges)
 
-                if padding:
-                    # Remove padding before returning
-                    log.debug('Removing padding from data')
-                    ext.data = ext.data[:-padding]
-                    ext.variance = ext.variance[:-padding]
-                    ext.mask = ext.mask[:-padding]
+                if padding:  # Remove padding before returning
+                    ext.data = padded_array.data[:-padding]
+                else:
+                    ext.data = padded_array.data
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -565,3 +572,57 @@ class NearIR(Bookkeeping):
         self.streams.update({"flats" : flat_list})
         self.streams.update({"darks" : dark_list})
         return adoutputs
+
+
+def find_edges(data, sigma=3, min_range=1, pysize=4):
+    """
+    Find edges in a 1D array of noisy data, using the a 1D implementation
+    of the Canny edge detector
+
+    Parameters
+    ----------
+    data: sequence
+        1D data array
+    sigma: float
+        standard deviation of Gaussian for convolution
+    min_range: float
+        minimum assumed range of pattern on/off strengths
+    pysize: int
+        pattern size in y-direction (any edges within this distance of
+        the top or bottom are ignored)
+
+    Returns
+    -------
+    array: locations of edges
+    """
+    twosigsq = 2 * sigma * sigma
+    halfsize = int(sigma * 2 + 0.8)
+    x = np.arange(-halfsize, halfsize+1)
+    norm = 1 / np.sqrt(np.pi * twosigsq)
+    gauss_kernel = norm * np.exp(-x*x / twosigsq)
+    # mitigate edge effects
+    new_data = np.r_[[data[0]] * halfsize, data, [data[-1]] * halfsize]
+    conv_data = np.convolve(new_data, gauss_kernel, mode='same')
+    grad = np.convolve(conv_data, [1, 0, -1], mode='same')[halfsize:-halfsize]
+    range = max(0.5 * np.diff(np.nanpercentile(data, [10, 90]))[0], min_range)
+    threshold = 0.8 * range / (1.2 * sigma + 0.28)  # empirical
+    ypixels = np.arange(data.size)[pysize:-pysize]
+    diffs = np.array([np.diff(grad[pysize-1:-pysize]),
+                      -np.diff(grad[pysize:-pysize+1])])
+    extrema = np.logical_and(np.multiply.reduce(diffs, axis=0) >= 0,
+                             abs(grad[pysize:-pysize]) > threshold)
+    extrema_locations = ypixels[extrema]
+    extrema_types = grad[extrema_locations]
+    # We know there's a pattern here or this code wouldn't be run, so
+    # ensure all rows are flagged if there are no edges
+    affected_rows = np.ones(data.shape, dtype=bool)
+    last = 0
+    for loc, minmax in zip(extrema_locations, extrema_types):
+        if minmax > 0:  # pattern switching on
+            affected_rows[last:loc] = False
+            affected_rows[loc:] = True
+        else:  # pattern switching off
+            affected_rows[last:loc] = True
+            affected_rows[loc:] = False
+        last = loc
+    return extrema_locations, affected_rows

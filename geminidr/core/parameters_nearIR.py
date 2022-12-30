@@ -48,13 +48,14 @@ class cleanReadoutConfig(config.Config):
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     pattern_x_size = config.Field("Pattern x size (pixels)", int, 16, check=powerof2)
     pattern_y_size = config.Field("Pattern y size (pixels)", int, 4, check=powerof2)
-    subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
+    debug_subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
     level_bias_offset = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
     smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=5)
     sg_win_size = config.RangeField("Smoothing window size (pixels) for Savitzky-Golay filter", int, 25, min=3)
     simple_thres = config.RangeField("Pattern edge detection threshold", float, 0.6, min=0.0)
     pat_strength_thres = config.RangeField("Pattern strength threshold", float, 15.0, min=0.0)
     clean = config.Field("Behavior of the routine? Must be one of default, skip, or force", str, "skip")
+    debug_canny_sigma = config.RangeField("Standard deviation for smoothing of Canny edge-finding", float, 3, min=1)
 
 
 class separateFlatsDarksConfig(config.Config):
