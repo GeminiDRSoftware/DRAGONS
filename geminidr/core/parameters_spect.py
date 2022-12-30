@@ -115,6 +115,8 @@ class determineDistortionConfig(config.Config):
 
 class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
+    spectral_order = config.RangeField("Fitting order in spectral direction",
+                                       int, 3, min=1)
     edges1 = config.ListField("List of left edges of illuminated region(s)",
                               float, default=None, minLength=1,
                               optional=True, single=True)

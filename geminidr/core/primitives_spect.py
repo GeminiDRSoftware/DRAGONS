@@ -1173,16 +1173,12 @@ class Spect(Resample):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             Science data as 2D spectral images.
-        slit_length : int or float
-            The expected length of the slit, in a long slit observation, in
-            pixels.
-        slit_center : int or float
-            The expected position of the center of the slit on the detector, in
-            pixels.
         suffix : str
             Suffix to be added to output files.
+        spectral_order : int, Default : 3
+            Fitting order in the spectral direction (minimum of 1).
         debug : bool, Default: False
-            Whether to print out additional information while running.
+            Generate plots of several aspects of the fitting process.
 
         Returns
         -------
@@ -1197,6 +1193,7 @@ class Spect(Resample):
 
         # Parse parameters
         debug = params['debug']
+        spectral_order = params['spectral_order']
         edges1 = params['edges1']
         edges2 = params['edges2']
         if edges1 is not None and not isinstance(edges1, list):
@@ -1209,8 +1206,6 @@ class Spect(Resample):
         # be able to be traced.
         buffer = 8
 
-        # The order of the polynomial to use. Third-order is a good balance.
-        spectral_order = 3
         fit1d_params = fit_1D.translate_params({"function": "chebyshev",
                                                 "order": spectral_order})
         for ad in adinputs:
@@ -1240,7 +1235,8 @@ class Spect(Resample):
             slit_widths = [b - a for a, b in zip(exp_edges_1, exp_edges_2)]
             mdf_edge_guesses = [(a, b) for a, b in zip(exp_edges_1,
                                                        exp_edges_2)]
-            edge1, edge2 = ("left", "right") if ad.instrument in ("GNIRS", "F2")\
+
+            edge1, edge2 = ("left", "right") if ad.dispersion_axis().pop() == 2\
                             else ("bottom", "top")
             log.fullinfo('Expected edge positions:\n'
                          f'{edge1.capitalize()} edges: {exp_edges_1}\n'
@@ -1518,9 +1514,10 @@ class Spect(Resample):
                                       f"{min_value} to {max_value}.")
 
                             # Perform the fit of the coordinates for the traced
-                            # edges.
-                            weights = collapsed[
-                                in_coords_new[1 - dispaxis].astype(int)]
+                            # edges. Use log-weighting to help ensure valid
+                            # points are all considered in the trace.
+                            weights = np.log(collapsed[
+                                in_coords_new[1 - dispaxis].astype(int)])
 
                             # Create a plot of weights for inspection.
                             if debug:
@@ -1533,12 +1530,23 @@ class Spect(Resample):
                             # Perform the fit.
                             _fit_1d = fit_1D(
                                 in_coords_new[dispaxis],
-                                weights=np.sqrt(weights),
+                                weights=weights,
                                 domain=[0, ext.shape[1 - dispaxis] - 1],
                                 points=in_coords_new[1 - dispaxis],
                                 plot=debug,
                                 **fit1d_params,)
                             model_fit = am.model_to_table(_fit_1d.model)
+
+                            if _fit_1d.rms > 0.5:
+                                log.warning(f"RMS of fit to {edge} edge is "
+                                            f"{_fit_1d.rms:.2f} pixels. "
+                                            "Consider increasing the order of "
+                                            "the fit with the 'spectral_order' "
+                                            "parameter")
+                            else:
+                                log.fullinfo(f"RMS of fit to {edge} edge is "
+                                            f"{_fit_1d.rms:.2f} pixels")
+
                             models_dict[pair_num][edge] = model_fit
                             models_dict[pair_num][f"coords_{edge}"] = values
 
