@@ -329,38 +329,51 @@ class NearIR(Bookkeeping):
         """
         This attempts to remove the pattern noise in NIRI/GNIRS data
         after automatically determining the coverage of the pattern in
-        a given quadrant. The latter is done by fitting for scaling factors 
-        of the pattern in each quadrant. Note, however, that the scaling factors 
-        are not used in subtracting off the pattern. 
+        a given quadrant. It operates in several steps.
+
+        1. For each quadrant, determine the structure of the pattern noise by
+           making an average of all the pattern-box-sized regions. The strength
+           of the pattern is determined from its standard deviation.
+        2. If the strength of the average pattern exceeds a critical value
+           (pattern_strength_thres), determine its amplitude as a function of
+           row by scaling it to fit the data in each pattern box.
+        3. After investigating all 4 quads, combine the amplitude functions to
+           improve S/N when looking for the pattern-affected regions (taking
+           advantage of the four-fold symmetry) and look for edges where the
+           pattern amplitude changes using a 1D version of the Canny method.
+        4. Subtract the average pattern in affected regions of affected quads
+        5. Normalize signal levels across the edges within each quad
+        6. Normalize signal levels across the top and bottom halves of each side
+        7. Normalize signal levels across the left and right halves
 
         Parameters
         ----------
         suffix: str, Default: "_readoutCleaned"
             Suffix to be added to output files.
-        hsigma/lsigma: float, Defaults: 3.0 for both
+        hsigma/lsigma: float
             High and low sigma-clipping limits.
-        pattern_x_size: int, Default: 16
+        pattern_x_size: int
             Size of pattern "box" in x direction. Must be a multiple of 4.
-        pattern_y_size: int, Default: 4
+        pattern_y_size: int
             Size of pattern "box" in y direction. Must be a multiple of 4.
-        subtract_background: bool, Default: True
+        subtract_background: bool (debug-level)
             Remove median of each "box" before calculating pattern noise?
-        level_bias_offset: bool, Default: True
+        level_bias_offset: bool
             Level the offset in bias level across (sub-)quads that typically accompany
             pattern noise.
-        smoothing_extent: int, Default: 5
+        smoothing_extent: int
             Used only when `level_bias_offset` is set to True.
             Width (in pixels) of the region at a given quad interface to be smoothed over
             on each side of the interface.
             Note that for intra-quad leveling, this width is broadened by a factor 10.
-        sg_win_size: int, Default: 25
+        sg_win_size: int
             Smoothing window size for the Savitzky-Golay filter applied during automated 
             detection of pattern coverage. 
-        simple_thres: float, Default: 0.6
+        simple_thres: float
             Threshold used in automated detection of pattern coverage. 
             Favorable range [0.3, 0.8]. If the result (at the intra-quad level) is not satisfactory, 
             play with this parameter. 
-        pat_strength_thres: float, Default: 15.0
+        pat_strength_thres: float
             Threshold used to characterise the strength of the pattern noise. If greater than 
             this value, run the whole machinery otherwise leave the frame untouched.  
         clean: str, Default: "skip"
@@ -369,6 +382,8 @@ class NearIR(Bookkeeping):
             default: Apply the pattern subtraction to each quadrant of the image if doing
                      so decreases the RMS.
             force: Force the pattern subtraction in each quadrant.
+        canny_sigma: float (debug-level)
+            standard deviation of Gaussian smoothing kernel used in Canny edge detection
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
