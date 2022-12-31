@@ -447,6 +447,38 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
         x = np.arange(*m.domain)
         np.testing.assert_allclose(m(x), m_ref(x), atol=1.)
 
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize('filename,instrument',
+                         [# GNIRS, 111/mm LongBlue
+                          ('N20121118S0375_distortionCorrected.fits', 'GNIRS'),
+                          # GNIRS 32/mm ShortRed
+                          ('N20100915S0162_distortionCorrected.fits', 'GNIRS'),
+                          # F2 6 pix slit, JH
+                          ('S20131019S0050_distortionCorrected.fits', 'F2'),
+                          # F2 2 pix slit, HK
+                          ('S20131127S0229_distortionCorrected.fits', 'F2'),
+                          # NIRI 6 pix slit, f/6
+                          ('N20100614S0569_distortionCorrected.fits', 'NIRI'),
+                          # NIRI 2 pix slit, f/6 (stay light streaks)
+                          ('N20100619S0602_distortionCorrected.fits', 'NIRI'),
+                          ])
+def test_slit_rectification(filename, instrument, change_working_dir,
+                              path_to_inputs):
+
+    classes_dict = {'GNIRS': GNIRSLongslit,
+                    'F2': F2Longslit,
+                    'NIRI': NIRILongslit}
+
+    with change_working_dir(path_to_inputs):
+        ad = astrodata.open(filename)
+
+    p = classes_dict[instrument]([ad])
+
+    ad_out = p.determineSlitEdges().pop()
+
+    for coeff in ('c1', 'c2', 'c3'):
+        np.testing.assert_allclose(ad_out[0].SLITEDGE[coeff], 0, atol=0.25)
+
 
 def test_trace_apertures():
     # Input parameters ----------------
