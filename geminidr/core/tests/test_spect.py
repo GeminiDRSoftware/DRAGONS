@@ -183,7 +183,7 @@ def test_get_spectrophotometry(path_to_outputs, in_vacuo):
             names=['WAVELENGTH', 'FLUX', 'FWHM'])
 
         _table.name = os.path.join(path_to_outputs, 'specphot.dat')
-        _table.write(_table.name, format='ascii')
+        _table.write(_table.name, format='ascii', overwrite=True)
 
         return _table.name
 
@@ -386,10 +386,11 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
             },
         'S20131015S0043_stack.fits': {
             # F2 2pix-slit, JH.
-            'c0': (46.13487049752547, 1504.0830405386002),
-            'c1': (13.56201949988875, 1.2270791863104045),
-            'c2': (14.259955974765626, -3.0923342892990133),
-            'c3': (4.576909131898466, -0.35197477402917726)
+            'c0': (34.536800027052735, 1504.7962402622616),
+            'c1': (-2.152961200179425, 2.3511131672766807),
+            'c2': (-1.601418225294633, -2.1174852354416442),
+            'c3': (-1.5700522625671025, 0.09513029975888616),
+            'c4': (-4.24411360006377, 0.2518257633168614)
             },
         'S20140111S0155_stack.fits': {
             # F2 2pix-slit, R3K. Efficiency drops to zero in middle.
@@ -422,23 +423,61 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
 
         ad = astrodata.open(filename)
 
-        p = classes_dict[instrument]([ad])
+    p = classes_dict[instrument]([ad])
 
-        if filename == 'N20110718S0129_stack.fits':
-            # Give edges explicitly.
-            e1, e2 = [10], [906]
-        else:
-            e1, e2 = None, None
+    if filename == 'N20110718S0129_stack.fits':
+        # Give edges explicitly since the slit is shorter than nominal.
+        e1, e2 = [10], [906]
+    else:
+        e1, e2 = None, None
+    if filename == 'S20131015S0043_stack.fits':
+        # This file benefits from a 4th-order fit.
+        order = 4
+    else:
+        order = 3
 
-        ad_out = p.determineSlitEdges(edges1=e1, edges2=e2).pop()
+    ad_out = p.determineSlitEdges(edges1=e1, edges2=e2,
+                                  spectral_order=order).pop()
 
-        for i, row in enumerate(ad_out[0].SLITEDGE):
-            m = am.table_to_model(row)
-            m_ref = m.copy()
-            for param in m.param_names:
-                setattr(m_ref, param, results_dict[filename][param][i])
-            x = np.arange(*m.domain)
-            np.testing.assert_allclose(m(x), m_ref(x), atol=1.)
+    for i, row in enumerate(ad_out[0].SLITEDGE):
+        m = am.table_to_model(row)
+        m_ref = m.copy()
+        for param in m.param_names:
+            setattr(m_ref, param, results_dict[filename][param][i])
+        x = np.arange(*m.domain)
+        np.testing.assert_allclose(m(x), m_ref(x), atol=1.)
+
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize('filename,instrument',
+                         [# GNIRS, 111/mm LongBlue
+                          ('N20121118S0375_distortionCorrected.fits', 'GNIRS'),
+                          # GNIRS 32/mm ShortRed
+                          ('N20100915S0162_distortionCorrected.fits', 'GNIRS'),
+                          # F2 6 pix slit, JH
+                          ('S20131019S0050_distortionCorrected.fits', 'F2'),
+                          # F2 2 pix slit, HK
+                          ('S20131127S0229_distortionCorrected.fits', 'F2'),
+                          # NIRI 6 pix slit, f/6
+                          ('N20100614S0569_distortionCorrected.fits', 'NIRI'),
+                          # NIRI 2 pix slit, f/6 (stay light streaks)
+                          ('N20100619S0602_distortionCorrected.fits', 'NIRI'),
+                          ])
+def test_slit_rectification(filename, instrument, change_working_dir,
+                              path_to_inputs):
+
+    classes_dict = {'GNIRS': GNIRSLongslit,
+                    'F2': F2Longslit,
+                    'NIRI': NIRILongslit}
+
+    with change_working_dir(path_to_inputs):
+        ad = astrodata.open(filename)
+
+    p = classes_dict[instrument]([ad])
+
+    ad_out = p.determineSlitEdges().pop()
+
+    for coeff in ('c1', 'c2', 'c3'):
+        np.testing.assert_allclose(ad_out[0].SLITEDGE[coeff], 0, atol=0.25)
 
 
 def test_trace_apertures():
