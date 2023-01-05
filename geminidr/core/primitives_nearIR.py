@@ -291,9 +291,13 @@ class NearIR(Bookkeeping):
         intraquad_smooth = smoothing_extent * 10
         for (ystart, xstart), quad_edges in edges.items():
             xslice = slice(xstart, xstart+qxsize)
-            for edge in quad_edges:
+            for i, edge in enumerate(quad_edges):
                 # "edge" is the row number in the quad (0-indexed) *above* the edge
-                this_smooth = min(intraquad_smooth, edge, qysize-edge)
+                try:  # ensure we don't go over a subsequent edge
+                    this_smooth = min(intraquad_smooth, edge, qysize-edge,
+                                      abs(edge - quad_edges[i+1]))
+                except IndexError:
+                    this_smooth = min(intraquad_smooth, edge, qysize-edge)
                 edge += ystart  # the real row number
                 arr1_slicers = (slice(edge, edge+this_smooth), xslice)
                 arr2_slicers = (slice(edge-this_smooth, edge), xslice)
@@ -515,11 +519,14 @@ class NearIR(Bookkeeping):
                         edges[ystart, xstart]["clean"] = True
                         cleaned_quads += 1
 
-                combined_pattern_strength = np.mean(pattern_strengths, axis=0)
-                new_edges, affected_rows = find_edges(
-                    combined_pattern_strength, sigma=canny_sigma,
-                    min_range=simple_thres, pysize=pysize)
-                top_affected_rows = flip(affected_rows, padding)
+                if cleaned_quads > 0:
+                    combined_pattern_strength = np.mean(pattern_strengths, axis=0)
+                    new_edges, affected_rows = find_edges(
+                        combined_pattern_strength, sigma=canny_sigma,
+                        min_range=simple_thres, pysize=pysize)
+                    print(new_edges)
+                    print(affected_rows)
+                    top_affected_rows = flip(affected_rows, padding)
                 for (ystart, xstart), _dict in edges.items():
                     if _dict["clean"]:
                         quad_slice = (slice(ystart, ystart + qysize),
