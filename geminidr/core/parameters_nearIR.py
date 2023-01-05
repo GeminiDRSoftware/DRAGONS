@@ -54,7 +54,7 @@ class cleanReadoutConfig(config.Config):
     sg_win_size = config.RangeField("Smoothing window size (pixels) for Savitzky-Golay filter", int, 25, min=3)
     simple_thres = config.RangeField("Pattern edge detection threshold", float, 0.6, min=0.0)
     pat_strength_thres = config.RangeField("Pattern strength threshold", float, 15.0, min=0.0)
-    clean = config.Field("Behavior of the routine? Must be one of default, skip, or force", str, "skip")
+    clean = config.Field("Behavior of the routine? Must be one of default, skip, or force", str, "default")
     debug_canny_sigma = config.RangeField("Standard deviation for smoothing of Canny edge-finding", float, 3, min=1)
 
 
