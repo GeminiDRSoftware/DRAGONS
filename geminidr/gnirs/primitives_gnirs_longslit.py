@@ -44,7 +44,7 @@ class GNIRSLongslit(GNIRSSpect):
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
         """
         Adds an illumination mask to each AD object. The default illumination mask
-        masks off extra orders and/or unilluminated areas outside order blocking filter range.
+        masks off extra orders and/or unilluminated areas outside the order blocking filter range.
 
         Parameters
         ----------
@@ -54,8 +54,8 @@ class GNIRSLongslit(GNIRSSpect):
             name of illumination mask mask (None -> use default)
 
         """
-        # GNIRS order blocking filter wvl range (um), based on conservative transmissivity,
-        # or inter-order minima
+        # Cut-on and cut-off wavelengths (um) of GNIRS order-blocking filters, based on conservative transmissivity (1%),
+        # or inter-order minima.
         bl_filter_range_dict = {'X': (1.01, 1.19),
                                 'J': (1.15, 1.385),
                                 'H': (1.46, 1.84),
@@ -99,9 +99,9 @@ class GNIRSLongslit(GNIRSSpect):
                     ext.mask[:filter_cutoff_pix] |= DQ.unilluminated
                     ext.mask[filter_cuton_pix:] |= DQ.unilluminated
                 if filter_cutoff_pix > 0:
-                    log.stdinfo(f"Masking columns 1 to {filter_cutoff_pix+1}")
+                    log.stdinfo(f"Masking rows 1 to {filter_cutoff_pix+1}")
                 if filter_cuton_pix < (ad[0].shape[dispaxis] - 1):
-                    log.stdinfo(f"Masking columns {filter_cuton_pix+1} to {(ad[0].shape[dispaxis])}")
+                    log.stdinfo(f"Masking rows {filter_cuton_pix+1} to {(ad[0].shape[dispaxis])}")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

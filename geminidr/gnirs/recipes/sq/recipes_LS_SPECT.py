@@ -38,4 +38,25 @@ def reduceScience(p):
     p.storeProcessedScience(suffix="_1D")
 
 
+def  makeWavelengthSolution(p):
+    """
+    Process GNIRS longslist science in order to create wavelength and distortion
+    solutions using sky emission lines.
+
+    Inputs are:
+      * raw science - no other calibrations required.
+    """
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.stackFrames()
+    p.makeIRAFCompatible()
+    p.determineWavelengthSolution()
+    p.determineDistortion(debug=True)
+    p.storeProcessedArc()
+    p.writeOutputs()
+
+
 _default = reduceScience

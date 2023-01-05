@@ -28,6 +28,7 @@ import warnings
 import numpy as np
 from astropy.modeling import fitting, models
 from astropy.stats import sigma_clip, sigma_clipped_stats
+from matplotlib import pyplot as plt
 from scipy import interpolate, optimize, signal
 
 from astrodata import NDAstroData
@@ -417,7 +418,7 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
     return data, mask, variance, extract_slice
 
 
-def estimate_peak_width(data, mask=None, boxcar_size=None):
+def estimate_peak_width(data, mask=None, boxcar_size=None, nlines=None):
     """
     Estimates the FWHM of the spectral features (arc lines) by inspecting
     pixels around the brightest peaks.
@@ -443,7 +444,10 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
     niters = 0
     if boxcar_size:
         data = data - at.boxcar(data, size=boxcar_size)
-    while len(widths) < 10 and niters < 100:
+    num = 10
+    if nlines != None:
+        num = nlines
+    while len(widths) < num and niters < 100:
         index = np.argmax(data * goodpix)
         with warnings.catch_warnings():  # width=0 warnings
             warnings.simplefilter("ignore")
@@ -1286,7 +1290,7 @@ def cwt_ricker(data, widths, **kwargs):
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                 cwidth=5, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
                 max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
-                min_peak_value=None):
+                min_peak_value=None, min_line_length=0.):
     """
     This function traces features along one axis of a two-dimensional image.
     Initial peak locations are provided and then these are matched to peaks
@@ -1337,6 +1341,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     min_peak_value: int or float
         Minimum amplitude of fit to be considered as a real detection. Peaks
         smaller than this value will be counted as a miss.
+    min_line_length: float
+        Minimum length of traced feature (as a fraction of the tracing dimension length)
+        to be considered as a useful line.
 
     Returns
     -------
@@ -1516,11 +1523,18 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
         step *= -1
 
+    # Remove short lines
+    def keep_line(line, min_length):
+        positions = [element[0] for element in line]
+        return (max(positions) - min(positions)) > min_length * ext_data.shape[0]
+    final_coord_lists = [line for line in coord_lists if keep_line(line, min_line_length)]
+    final_peaks = [cl[0][1] for cl in final_coord_lists]
+
     # List of traced peak positions
-    in_coords = np.array([c for coo in coord_lists for c in coo]).T
+    in_coords = np.array([c for coo in final_coord_lists for c in coo]).T
     # List of "reference" positions (i.e., the coordinate perpendicular to
     # the line remains constant at its initial value
-    ref_coords = np.array([(ypos, ref) for coo, ref in zip(coord_lists, initial_peaks) for (ypos, xpos) in coo]).T
+    ref_coords = np.array([(ypos, ref) for coo, ref in zip(final_coord_lists, final_peaks) for (ypos, xpos) in coo]).T
 
     # Return the coordinate lists, in the form (x-coords, y-coords),
     # regardless of the dispersion axis

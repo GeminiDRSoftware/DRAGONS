@@ -594,7 +594,7 @@ class Visualize(PrimitivesBASE):
                 stack_size = 1
 
             group_id = ad.group_id().split('_[')[0]
-            group_id += ad.group_id().split(']')[1]
+            group_id += ad.group_id().split(']')[-1]
 
             offset = (ad.telescope_y_offset() if ad.dispersion_axis()[0] == 1
                       else ad.telescope_x_offset())

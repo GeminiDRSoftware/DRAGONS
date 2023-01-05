@@ -24,6 +24,7 @@ timestamp_keys = {
     "cleanReadout": "CLNRDOUT",
     "combineNodAndShuffleBeams": "NSCOMB",
     "correctBackgroundToReference": "CORRBG",
+    "createNewAperture": "CRTNWAPT",
     "makeSlitIllum": "MAKESILL",
     "cutFootprints": "CUTSFP",
     "darkCorrect": "DARKCORR",

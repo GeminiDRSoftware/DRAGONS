@@ -135,7 +135,7 @@ class F2Longslit(F2Spect):
                 cenwave = ad.central_wavelength(asNanometers=True)
                 dispersion = ad.dispersion(asNanometers=True)[0]
                 filter = ad.filter_name(pretty=True)
-                if filter in {"HK", "JK"}:
+                if filter in {"HK", "JH"}:
                         filter = ad.filter_name(keepID=True)
                 cenwave_offset = self._get_cenwave_offset(ad)
                 index = (ad.disperser(pretty=True), filter)
@@ -151,9 +151,9 @@ class F2Longslit(F2Spect):
                     ext.mask[:filter_cutoff_pix] |= DQ.unilluminated
                     ext.mask[filter_cuton_pix:] |= DQ.unilluminated
                 if filter_cutoff_pix > 0:
-                    log.stdinfo(f"Masking columns 1 to {filter_cutoff_pix+1}")
+                    log.stdinfo(f"Masking rows 1 to {filter_cutoff_pix+1}")
                 if filter_cuton_pix < (ad[0].shape[dispaxis] - 1):
-                    log.stdinfo(f"Masking columns {filter_cuton_pix+1} to {(ad[0].shape[dispaxis])}")
+                    log.stdinfo(f"Masking rows {filter_cuton_pix+1} to {(ad[0].shape[dispaxis])}")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
