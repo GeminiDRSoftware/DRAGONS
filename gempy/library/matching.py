@@ -62,7 +62,7 @@ class BruteLandscapeFitter(Fitter):
         #        return 0
 
         out_coords = (np.array(self.grid_model(*updated_model(*in_coords))) + 0.5).astype(np.int32)
-        if len(in_coords) == 1:
+        if self.n_inputs == 1:
             out_coords = out_coords[np.newaxis, :]
         #result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords))
         result = cython_utils.landstat(landscape.ravel(), out_coords.ravel(),
@@ -92,9 +92,7 @@ class BruteLandscapeFitter(Fitter):
             the "landscape", populated by "mountains"
         """
         # Turn 1D arrays into tuples to allow iteration over axes
-        try:
-            iter(coords[0])
-        except TypeError:
+        if self.n_outputs == 1:
             coords = (coords,)
 
         landscape = np.zeros(landshape)
@@ -128,19 +126,13 @@ class BruteLandscapeFitter(Fitter):
     def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
                  landscape=None, scale=None, **kwargs):
         model_copy = _validate_model(model, self.supported_constraints)
+        self.n_inputs, self.n_outputs = model.n_inputs, model.n_outputs
 
         # Turn 1D arrays into tuples to allow iteration over axes
-        try:
-            iter(in_coords[0])
-        except TypeError:
+        if self.n_inputs == 1:
             in_coords = (in_coords,)
-        try:
-            iter(ref_coords[0])
-        except TypeError:
+        if self.n_outputs == 1:
             ref_coords = (ref_coords,)
-            output1d = True
-        else:
-            output1d = False
 
         # Remember, coords are x-first (reversed python order)
         self.grid_model = models.Identity(len(in_coords))
@@ -158,7 +150,7 @@ class BruteLandscapeFitter(Fitter):
 
         # We need to fiddle around a bit here to ensure a 1D output gets
         # returned in a way that can be unpacked (like higher-D outputs)
-        if output1d:
+        if self.n_outputs == 1:
             m = self.grid_model.copy()
             self.grid_model = lambda *args: m(args)
         if landscape is None:
@@ -314,15 +306,12 @@ class KDTreeFitter(Fitter):
         """
         _validate_constraints(self.supported_constraints, model)
         model_copy = model.copy()
+        self.n_inputs, self.n_outputs = model.n_inputs, model.n_outputs
 
         # Turn 1D arrays into tuples to allow iteration over axes
-        try:
-            iter(in_coords[0])
-        except TypeError:
+        if self.n_inputs == 1:
             in_coords = (in_coords,)
-        try:
-            iter(ref_coords[0])
-        except TypeError:
+        if self.n_outputs == 1:
             ref_coords = (ref_coords,)
 
         # Starting simplex step size is set to be 5% of parameter values
@@ -433,7 +422,7 @@ class KDTreeFitter(Fitter):
         #out_coords = np.array(list(zip(*out_coords)))
         #dist, idx = tree.query(out_coords, k=self.k,
         #                       distance_upper_bound=self.maxsep)
-        if len(in_coords) > 1:
+        if self.n_outputs > 1:
             dist, idx = tree.query(out_coords.T, k=self.k,
                                    distance_upper_bound=self.maxsep)
         else:
