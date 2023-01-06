@@ -2001,7 +2001,8 @@ class Spect(Resample):
                         log.stdinfo(f"Determining solution for extension {ext.id}")
 
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                        ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                        ext, uiparams.values, p=self, linelist=linelist,
+                        bad_bits=DQ.not_signal)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found "
                                     f"for {ext.id}")
@@ -2522,7 +2523,7 @@ class Spect(Resample):
         log.fullinfo(f"  spatial_order: {y_order_in}")
         log.fullinfo(f"  bkgmodel: {bkgmodel}")
         log.fullinfo(f"  sigclip: {params['sigclip']}")
-        log.fullinfo(f"  sigfrac: {params['sigfrac']}\m")
+        log.fullinfo(f"  sigfrac: {params['sigfrac']}\n")
 
         for ad in adinputs:
             is_in_adu = ad[0].is_in_adu()
