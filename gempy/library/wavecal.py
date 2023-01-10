@@ -1,12 +1,13 @@
 import re
 from itertools import product as cart_product
+from functools import reduce
 
 import numpy as np
 from scipy.spatial import cKDTree
 from bisect import bisect
 
 from astropy import units as u
-from astropy.modeling import fix_inputs, fitting, models
+from astropy.modeling import fix_inputs, fitting, models, Model
 from astropy.table import Table
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -326,9 +327,18 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
                                    domain=[0, npix-1])
     else:
         ndim = len(ext.shape)
-        axis_dict = {ndim-i-1: axes.get(i, 0.5 * (length-1))
-                     for i, length in enumerate(ext.shape) if i != dispersion_axis}
-        model = (fix_inputs(fwd_transform, axis_dict) |
+        #axis_dict = {ndim-i-1: axes.get(i, 0.5 * (length-1))
+        #             for i, length in enumerate(ext.shape) if i != dispersion_axis}
+        #model = (fix_inputs(fwd_transform, axis_dict) |
+        #         models.Mapping((0,), n_inputs=fwd_transform.n_outputs))
+        # Ugly hack until fix_inputs broadcasting is fixed
+        # https://github.com/astropy/astropy/issues/12021
+        axis_models = [models.Const1D(axes.get(i, 0.5 * (length-1)))
+                       for i, length in enumerate(ext.shape)]
+        axis_models[dispersion_axis] = models.Identity(1)
+        model = (models.Mapping((0,) * ndim) |
+                 reduce(Model.__and__, axis_models[::-1]) |
+                 fwd_transform |
                  models.Mapping((0,), n_inputs=fwd_transform.n_outputs))
         if dispersion or central_wavelength:
             actual_cenwave = model(0.5 * (npix - 1))
