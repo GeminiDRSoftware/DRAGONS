@@ -82,6 +82,66 @@ class Spect(Resample):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
+    def adjustWavelengthZeroPoint(self, adinputs=None, **params):
+        """
+        Find sky lines and match them to a linelist in order to shift the
+        wavelength scale zero point slightly to account for flexure in the
+        telescope.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Wavelength calibrated 2D spectra.
+        suffix : str
+            Suffix to be added to output files
+        center : None or int
+            Central row/column for 1D extraction (None => use middle).
+        nsum : int, optional
+            Number of rows/columns to average.
+
+        """
+        # Set up log
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        center = params["center"]
+
+        for ad in adinputs:
+
+            for ext in ad:
+                # Values taken from defaults for determineWavelengthSolution
+                config_dict = {
+                        "central_wavelength": None,
+                        "interactive": False,
+                        "center": center,
+                        "nsum": 10,
+                        "fwidth": None,
+                        "min_snr": 10,
+                        "min_sep": 2,
+                        "nbright": 0,
+                        "dispersion": None,
+                        "debug_alternative_centers": False,
+                        "in_vacuo": False,
+                    }
+                input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
+                    ext, config_dict, p=self, linelist=None, bad_bits=DQ.not_signal)
+
+                # Fit a Chebyshev1D model to the peaks found.
+
+                # Get an appropriate linelist (we must have these defined somewhere?)
+
+                # KDTreeFit the peaks to the linelist.
+
+                # Match peaks to the linelist and do a standard least-squares fit
+                # (possibly)
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
     def adjustWCSToReference(self, adinputs=None, **params):
         """
         Compute offsets along the slit by cross-correlation, or use offset

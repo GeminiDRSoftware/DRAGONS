@@ -11,6 +11,7 @@ timestamp_keys = {
     "addObjectMaskToDQ": "ADOBJMSK",
     "addReferenceCatalog": "ADDRECAT",
     "addVAR": "ADDVAR",
+    "adjustWavelengthZeroPoint": "CORRWVZP",
     "adjustWCSToReference": "CORRWCS",
     "ADUToElectrons": "ADUTOELE",
     "applyDQPlane": "APLDQPLN",

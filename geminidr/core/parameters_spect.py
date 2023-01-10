@@ -28,6 +28,12 @@ def validate_regions_int(value, multiple=False):
     ranges = at.parse_user_regions(value, dtype=int, allow_step=True)
     return multiple or len(ranges) == 1
 
+class adjustWavelengthZeroPointConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthZeroPointAdjusted",
+                          optional=True)
+    center = config.RangeField("Central row/column to extract", int, None,
+                                min=1, optional=True)
+
 
 class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",
