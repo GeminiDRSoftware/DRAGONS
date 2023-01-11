@@ -153,20 +153,46 @@ class GNIRSSpect(Spect, GNIRS):
         :class:`~gempy.library.matching.KDTreeFitter`,
         """
         for ad in adinputs:
-            if params["order"] is None:
-                disp = ad.disperser(pretty=True)
-                filt = ad.filter_name(pretty=True)
-                cam = ad.camera(pretty=True)
-                cenwave = ad.central_wavelength(asMicrometers=True)
+            disp = ad.disperser(pretty=True)
+            filt = ad.filter_name(pretty=True)
+            cam = ad.camera(pretty=True)
+            cenwave = ad.central_wavelength(asMicrometers=True)
 
-                if ((filt == "H" and cenwave >= 1.75) or (filt == "K" and cenwave >= 2.2)) \
-                        and ((cam.startswith('Long') and disp.startswith('32')) or
-                             (cam.startswith('Short') and disp.startswith('111'))):
-                        params["order"] = 1
-                elif disp.startswith('111') and cam.startswith('Long'):
-                        params["order"] = 1
-                else:
-                    params["order"] = 3
+            if 'ARC' in ad.tags:
+                if params["min_snr"] is None:
+                    params["min_snr"] = 20
+                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+                if params["debug_min_lines"] is None:
+                    params["debug_min_lines"] = 100000
+
+                if params["order"] is None:
+                    if ((filt == "H" and cenwave >= 1.75) or (filt == "K" and cenwave >= 2.2)) \
+                            and ((cam.startswith('Long') and disp.startswith('32')) or
+                                 (cam.startswith('Short') and disp.startswith('111'))):
+                            params["order"] = 1
+                    elif disp.startswith('111') and cam.startswith('Long'):
+                            params["order"] = 1
+                    else:
+                        params["order"] = 3
+                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
+            else:
+                params["lsigma"] = 2
+                params["hsigma"] = 2
+
+                if params["debug_min_lines"] is None:
+                    params["debug_min_lines"] = 15
+
+                if params["order"] is None:
+                    if ad.camera(pretty=True).startswith('Long') and \
+                            ad.disperser(pretty=True).startswith('111') and \
+                            3.65 <= cenwave <= 3.75:
+                            params["order"] = 1
+                    else:
+                     params["order"] = 3
+                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
+                if params["min_snr"] is None:
+                    params["min_snr"] = 10
+                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
         adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
 
@@ -249,12 +275,16 @@ class GNIRSSpect(Spect, GNIRS):
                         params["spectral_order"] = 1
                 else:
                     params["spectral_order"] = 2
+                self.log.stdinfo(f'Parameter "spectral_order" is set to None. '
+                                 f'Using spectral_order={params["spectral_order"]}')
 
             if params["min_line_length"] is None:
                 if cam.startswith('Long'):
                     params["min_line_length"] = 0.8
                 else:
                     params["min_line_length"] = 0.6
+                self.log.stdinfo(f'Parameter "min_line_length" is set to None. '
+                 f'Using min_line_length={params["min_line_length"]}')
         adinputs = super().determineDistortion(adinputs, **params)
         return adinputs
 
@@ -266,6 +296,7 @@ class GNIRSSpect(Spect, GNIRS):
         is_lowres = ad.disperser(pretty=True).startswith('10') or \
                     (ad.disperser(pretty=True).startswith('32') and
                         ad.camera(pretty=True).startswith('Short'))
+
         if 'ARC' in ad.tags:
             if 'Xe' in ad.object():
                 linelist ='Ar_Xe.dat'
@@ -276,11 +307,29 @@ class GNIRSSpect(Spect, GNIRS):
                     linelist = 'argon.dat'
             else:
                 raise ValueError(f"No default line list found for {ad.object()}-type arc. Please provide a line list.")
+
         else:
-            if ad.filter_name(pretty=True).startswith('L'):
-                linelist = 'skyLband.dat'
-            elif ad.filter_name(pretty=True).startswith('M'):
-                linelist = 'skyMband.dat'
+            if ad.filter_name(pretty=True).startswith('M'):
+                resolution = self._get_resolution(ad)
+                if resolution >= 5000:
+                    linelist = 'sky_M_band_high_res.dat'
+                elif (2000 <= resolution < 5000):
+                    linelist = 'sky_M_band_med_res.dat'
+                elif (500 <= resolution < 2000):
+                    linelist = 'sky_M_band_low_res.dat'
+                elif resolution < 500:
+                    linelist = 'sky_M_band_very_low_res.dat'
+            elif ad.filter_name(pretty=True).startswith('L'):
+                resolution = self._get_resolution(ad)
+                if resolution >=10000:
+                    linelist = 'sky_L_band_high_res.dat'
+                elif (3000 <= resolution < 10000):
+                    linelist = 'sky_L_band_med_res.dat'
+                elif (1000 <= resolution < 3000):
+                    linelist = 'sky_L_band_low_res.dat'
+                elif resolution < 1000:
+                    linelist = 'sky_L_band_very_low_res.dat'
+
             elif is_lowres:
                 linelist = 'sky.dat'
             else:
@@ -290,3 +339,41 @@ class GNIRSSpect(Spect, GNIRS):
         filename = os.path.join(lookup_dir, linelist)
 
         return wavecal.LineList(filename)
+
+
+    def _get_resolution(self, ad=None):
+        resolution_2pix_slit = {('M, 10/mm, 0.05'): 1200,
+                                ('M, 32/mm, 0.15'): 1240,
+                                ('M, 32/mm, 0.05'): 3700,
+                                ('M, 111/mm, 0.15'): 4300,
+                                ('M, 111/mm, 0.05'): 12800,
+                                ('L, 10/mm, 0.05'): 1800,
+                                ('L, 32/mm, 0.15'): 1800,
+                                ('L, 32/mm, 0.05'): 5400,
+                                ('L, 111/mm, 0.15'): 6400,
+                                ('L, 111/mm, 0.05'): 19000}
+
+        filter = str(ad.filter_name(pretty=True))[0]
+        grating = ad._grating(pretty=True, stripID=True)
+        pix_scale = ad.pixel_scale()
+        config = f"{filter}, {grating}, {pix_scale}"
+
+        resolution_2pix = resolution_2pix_slit.get(config)
+        slit_width_pix = ad.slit_width()/pix_scale
+
+        return resolution_2pix * 2 / slit_width_pix
+
+    def _get_cenwave_accuracy(self, ad=None):
+        # Accuracy of central wavelength (nm) for a given instrument/setup.
+        # According to GNIRS instrument pages "wavelength settings are accurate
+        # to better than 5 percent of the wavelength coverage".
+        # However using 7% covers more cases. For the arcs dc0=10 works just fine for all modes.
+
+        mband = ad.filter_name(pretty=True).startswith('M')
+        lband = ad.filter_name(pretty=True).startswith('L')
+
+        if 'ARC' in ad.tags or not (mband or lband):
+            dcenwave = 10
+        else:
+            dcenwave = abs(ad.dispersion(asNanometers=True)) * 1024 * 0.07
+        return dcenwave

@@ -418,7 +418,7 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
     return data, mask, variance, extract_slice
 
 
-def estimate_peak_width(data, mask=None, boxcar_size=None):
+def estimate_peak_width(data, mask=None, boxcar_size=None, nlines=None):
     """
     Estimates the FWHM of the spectral features (arc lines) by inspecting
     pixels around the brightest peaks.
@@ -444,7 +444,10 @@ def estimate_peak_width(data, mask=None, boxcar_size=None):
     niters = 0
     if boxcar_size:
         data = data - at.boxcar(data, size=boxcar_size)
-    while len(widths) < 10 and niters < 100:
+    num = 10
+    if nlines != None:
+        num = nlines
+    while len(widths) < num and niters < 100:
         index = np.argmax(data * goodpix)
         with warnings.catch_warnings():  # width=0 warnings
             warnings.simplefilter("ignore")
