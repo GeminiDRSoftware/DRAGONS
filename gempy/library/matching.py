@@ -91,10 +91,6 @@ class BruteLandscapeFitter(Fitter):
         float array:
             the "landscape", populated by "mountains"
         """
-        # Turn 1D arrays into tuples to allow iteration over axes
-        if self.n_outputs == 1:
-            coords = (coords,)
-
         landscape = np.zeros(landshape)
         hw = int(maxsig * sigma)
         grid = np.meshgrid(*[np.arange(0, hw * 2 + 1)] * landscape.ndim)
