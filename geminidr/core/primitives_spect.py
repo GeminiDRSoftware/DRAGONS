@@ -1638,6 +1638,7 @@ class Spect(Resample):
                     fixed = (spatial_order == 0)
                     model, m_final_2d, m_inverse_2d = create_distortion_model(
                         m_init_2d, dispaxis, in_coords, ref_coords, fixed)
+                    model.name = 'RECT'
 
                 # Attach the table to the extension as a new plane if none of
                 # the edge pairs failed to be fit.
