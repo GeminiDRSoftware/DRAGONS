@@ -115,6 +115,8 @@ class determineDistortionConfig(config.Config):
 
 class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
+    spectral_order = config.RangeField("Fitting order in spectral direction",
+                                       int, 3, min=1)
     edges1 = config.ListField("List of left edges of illuminated region(s)",
                               float, default=None, minLength=1,
                               optional=True, single=True)
@@ -176,6 +178,9 @@ class extractSpectraConfig(config.Config):
 def check_section(value):
     # Check for validity of a section string
     subsections = value.split(',')
+    if len(subsections) == 1 and subsections[0] == '':
+        # no Sections
+        return True
     for i, (x1, x2) in enumerate(s.split(':') for s in subsections):
         try:
             x1 = int(x1)
@@ -202,7 +207,7 @@ class findAperturesConfig(config.Config):
     percentile = config.RangeField("Percentile to determine signal for each spatial pixel",
                                    int, 80, min=1, max=100, optional=True, inclusiveMax=True)
     section = config.Field("Pixel section(s) for measuring the spatial profile",
-                           str, None, optional=True, check=check_section)
+                           str, "", optional=False, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
                                        "between sky lines", int, 50, min=1)
     min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",

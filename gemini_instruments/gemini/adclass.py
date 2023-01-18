@@ -9,6 +9,7 @@ import re
 import math
 import datetime
 import dateutil.parser
+from itertools import chain
 
 import numpy as np
 
@@ -384,17 +385,23 @@ class AstroDataGemini(AstroData):
 
     def _parse_section(self, keyword, pretty):
         try:
-            value_filter = (str if pretty else Section.from_string)
+            value_filter = lambda x: (x.asIRAFsection() if pretty else x)
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':
+                def _encode_shape(shape):
+                    if not shape:
+                        return None
+                    return Section(*chain.from_iterable([(0, npix) for npix in shape[::-1]]))
                 if self.is_single:
-                    sections = '[1:{1},1:{0}]'.format(*self.shape)
+                    sections = _encode_shape(self.shape)
                 else:
-                    sections = ['[1:{1},1:{0}]'.format(*ext.shape)
-                                for ext in self]
+                    sections = [_encode_shape(ext.shape) for ext in self]
             else:
-                sections = self.hdr.get(keyword)
+                if self.is_single:
+                    sections = Section.from_string(self.hdr.get(keyword))
+                else:
+                    sections = [Section.from_string(sec) if sec is not None else None for sec in self.hdr.get(keyword)]
             if self.is_single:
                 return process_fn(sections)
             else:
@@ -2151,9 +2158,11 @@ class AstroDataGemini(AstroData):
 
         pixel_scale_list = []
         for ext in self:
+            if len(ext.shape) < 2:
+                return None
             try:
                 pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
-            except (IndexError, AttributeError):
+            except (IndexError, AttributeError) as iae:
                 scale = empirical_pixel_scale(ext)
                 if scale is not None:
                     pixel_scale_list.append(scale)

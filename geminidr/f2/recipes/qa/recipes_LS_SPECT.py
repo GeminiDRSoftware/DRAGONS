@@ -2,7 +2,10 @@
 Recipes available to data with tags ['F2', 'SPECT', LS'].
 Default is "reduceScience".
 """
+from time import sleep
+
 recipe_tags = {'F2', 'SPECT', 'LS'}
+
 
 def reduceScience(p):
     """
@@ -20,6 +23,7 @@ def reduceScience(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
     p.darkCorrect()
+    p.measureIQ(display=True)
     p.flatCorrect()
     p.attachWavelengthSolution()
     p.addToList(purpose='forSky')
@@ -48,7 +52,7 @@ def reduceScience(p):
     p.measureIQ(display=True)
     p.traceApertures()
     p.extractSpectra()
-    p.plotspectraForQA()
+    p.plotSpectraForQA()
     
     
 _default = reduceScience

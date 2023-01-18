@@ -382,28 +382,13 @@ def ad(path_to_inputs, request):
     return ad
 
 def get_linelist(ad):
-    is_lowres = ad.disperser(pretty=True).startswith('10') or \
-                    (ad.disperser(pretty=True).startswith('32') and
-                        ad.camera(pretty=True).startswith('Short'))
     if 'ARC' in ad.tags:
-        if 'Xe' in ad.object():
-            linelist ='Ar_Xe.dat'
-        elif "Ar" in ad.object():
-            if is_lowres:
-                linelist = 'lowresargon.dat'
-            else:
-                linelist = 'argon.dat'
-        else:
-            raise ValueError(f"No default line list found for {ad.object()}-type arc. Please provide a line list.")
+        linelist = 'argon.dat'
+        if ad.disperser(pretty=True) == "HK" and \
+                ad.filter_name(pretty=True) == "JH":
+            linelist = 'lowresargon_with_2nd_ord.dat'
     else:
-        if ad.filter_name(pretty=True).startswith('L'):
-            linelist = 'skyLband.dat'
-        elif ad.filter_name(pretty=True).startswith('M'):
-            linelist = 'skyMband.dat'
-        elif is_lowres:
-            linelist = 'sky.dat'
-        else:
-            linelist = 'nearIRsky.dat'
+        linelist = 'nearIRsky.dat'
 
     return linelist
 
