@@ -139,7 +139,7 @@ class F2Spect(Spect, F2):
                     ad.filter_name(pretty=True) == "JH":
                 linelist = 'lowresargon_with_2nd_ord.dat'
         else:
-            linelist = 'sky.dat'
+            linelist = 'nearIRsky.dat'
 
         self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
