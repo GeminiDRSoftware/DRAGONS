@@ -27,7 +27,7 @@ def ad(request):
 
 @pytest.mark.dragons_remote_data
 def test_is_right_instance(ad):
-    assert isinstance(ad, gemini_instruments.gmos.adclass.AstroDataGhost)
+    assert isinstance(ad, gemini_instruments.ghost.adclass.AstroDataGhost)
 
 
 @pytest.mark.dragons_remote_data
