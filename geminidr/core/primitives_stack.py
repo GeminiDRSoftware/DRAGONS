@@ -73,6 +73,12 @@ class Stack(PrimitivesBASE):
         if not all(dark.exposure_time() == adinputs[0].exposure_time()
                    for dark in adinputs[1:]):
                 raise ValueError("Darks are not of equal exposure time")
+        if any('NODANDSHUFFLE' in dark.tags for dark in adinputs):
+            if not all('NODANDSHUFFLE' in dark.tags for dark in adinputs):
+                raise ValueError("Some darks are nod-and-shuffle, some are not.")
+            if not all(dark.shuffle_pixels() == adinputs[0].shuffle_pixels()
+                       for dark in adinputs[1:]):
+                raise ValueError("Darks are not of equal shuffle size.")
 
         stack_params = self._inherit_params(params, "stackFrames")
         stack_params.update({'zero': False, 'scale': False})
