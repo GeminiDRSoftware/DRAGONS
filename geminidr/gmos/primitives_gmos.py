@@ -37,6 +37,53 @@ class GMOS(Gemini, CCD):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos)
 
+    def darkCorrect(self, adinputs=None, **params):
+        """
+        This primitive will subtract each SCI extension of the inputs by those
+        of the corresponding dark. If the inputs contain VAR or DQ frames,
+        those will also be updated accordingly due to the subtraction on the
+        data. If no dark is provided, the calibration database(s) will be
+        queried.
+
+        For GMOS Hamamatsu CCDs, nod & shuffle darks are optional.
+        They are required for the other flavors of CCDs.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        dark: str/list
+            name(s) of the dark file(s) to be subtracted
+        do_dark: bool
+            perform dark correction?
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        dark = params['dark']
+
+        if all('NODANDSHUFFLE' in ad.tags for ad in adinputs) and \
+            all('Hamamatsu' in ad.detector_name(pretty=True) \
+                for ad in adinputs):
+
+            if dark is None:
+                dark_list = self.caldb.get_processed_dark(adinputs).files
+            else:
+                dark_list = dark
+            params['dark'] = dark_list
+
+            save_mode = self.mode
+            if 'sq' == self.mode:
+                self.mode = 'ql'
+            adinputs = super().darkCorrect(adinputs, **params)
+            self.mode = save_mode
+
+        else:   # the generic darkCorrect is sufficient
+            adinputs = super().darkCorrect(adinputs, **params)
+
+        return adinputs
+
+
     def maskFaultyAmp(self, adinputs=None, **params):
         log = self.log
 
