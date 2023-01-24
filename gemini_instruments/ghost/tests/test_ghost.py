@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import pytest
 
 import astrodata
@@ -50,6 +52,54 @@ def test_various_tags():
     assert 'STD' in ad.tags
     assert 'GHOST' in ad.tags
     assert 'BUNDLE' in ad.tags
+
+
+@pytest.mark.dragons_remote_data
+def test_detector_x_bin():
+    path = astrodata.testing.download_from_archive("S20221209S0007.fits")
+    ad = astrodata.open(path)
+    xbin = ad.detector_x_bin()
+    # should be a dict, since we are a bundle
+    assert(isinstance(xbin, dict))
+
+
+@pytest.mark.dragons_remote_data
+def test_ut_datetime():
+    path = astrodata.testing.download_from_archive("S20221209S0007.fits")
+    ad = astrodata.open(path)
+    udt = ad.ut_datetime()
+    # Check against expected UT Datetime, this descriptor also exercises the nascent PHU logic
+    assert(abs(udt - datetime(2022, 12, 8, 20, 52, 22)) < timedelta(seconds=1))
+
+
+@pytest.mark.dragons_remote_data
+def test_data_label():
+    path = astrodata.testing.download_from_archive("S20221209S0007.fits")
+    ad = astrodata.open(path)
+    dl = ad.data_label()
+    # Check against expected UT Datetime, this descriptor also exercises the nascent PHU logic
+    assert(dl == 'GS-ENG-GHOST-COM-3-123-001')
+
+
+@pytest.mark.dragons_remote_data
+def test_tab_bias():
+    path = astrodata.testing.download_from_archive("S20221208S0089.fits")
+    ad = astrodata.open(path)
+    assert('BIAS' in ad.tags)
+
+
+@pytest.mark.dragons_remote_data
+def test_tab_flat():
+    path = astrodata.testing.download_from_archive("S20221209S0026.fits")
+    ad = astrodata.open(path)
+    assert('FLAT' in ad.tags)
+
+
+@pytest.mark.dragons_remote_data
+def test_tab_arc():
+    path = astrodata.testing.download_from_archive("S20221208S0064.fits")
+    ad = astrodata.open(path)
+    assert('ARC' in ad.tags)
 
 
 if __name__ == '__main__':
