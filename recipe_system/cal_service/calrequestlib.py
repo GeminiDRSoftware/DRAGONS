@@ -112,15 +112,24 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
         # Add composite detector_binning to request so we can query Header field of same name in cals
         dvx = desc_dict["detector_x_bin"] if "detector_x_bin" in desc_dict else None
         dvy = desc_dict["detector_y_bin"] if "detector_y_bin" in desc_dict else None
+
+        # Quick check to handle when these are dictionaries, i.e. for GHOST data
         if (dvx is not None) and (dvy is not None):
             if isinstance(dvx, dict) or isinstance(dvy, dict):
-                arm = None
-                if hasattr(ad, "arm"):
-                    arm = ad.arm()
-                if isinstance(dvx, dict):
-                    dvx = dvx.get(arm, None) if arm is not None else None
-                if isinstance(dvy, dict):
-                    dvy = dvy.get(arm, None) if arm is not None else None
+                # dict always means multi-arm data
+                # We preserve binning if it matches across all arms, else None
+                dvxs = set([x for x in dvx.values() if x is not None])
+                dvys = set([y for y in dvy.values() if y is not None])
+                if len(dvxs) == 1 and len(dvys) == 1:
+                    dvx = dvxs.pop()
+                    dvy = dvys.pop()
+                else:
+                    # No "right" answer for what binning is for file as a whole
+                    dvx = None
+                    dvy = None
+
+        # By now, we have normalized to single-valued binnings
+        if (dvx is not None) and (dvy is not None):
             desc_dict["detector_binning"] = "%dx%d" % (dvx, dvy) if dvx is not None and dvy is not None else None
         else:
             desc_dict["detector_binning"] = None
