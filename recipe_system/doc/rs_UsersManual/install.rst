@@ -104,14 +104,7 @@ Python 3.7.
 
 ::
 
-    $ conda create -n dragons python=3.7 dragons
-
-    Or, to include things like ds9
-
-    $ conda create -n dragons python=3.7 dragons stsci
-
-Most users will probably want to install the extra astronomy tools that come
-with the ``stsci`` conda package.
+    $ conda create -n dragons python=3.7 dragons ds9
 
 To use this environment, activate it::
 
@@ -123,16 +116,13 @@ command to your ``.bash_profile``, after the "conda init" block.
 
 .. note::
     As a side note, if you are going to use PyRAF regularly, for example to
-    reduce Gemini data not yet supported in DRAGONS, you should be installing
-    Python 2.7 **as well** in a different environment, along with the ``gemini``,
-    ``iraf-all`` and ``pyraf-all`` conda packages.  Do not use PyRAF from the
-    Python 3 environment; PyRAF is very slow under Python 3.
+    reduce Gemini data not yet supported in DRAGONS, you should install the
+    ``iraf-all`` and ``pyraf-all`` conda packages as well.
 
-    $ conda create -n geminiconda python=2.7 iraf-all pyraf-all stsci gemini
+    $ conda create -n geminiconda python=3.7 iraf-all pyraf-all ds9 dragons
 
-    DRAGONS and the Recipe System do not need IRAF, PyRAF.  Only DRAGONS v2
-    is compatible with Python 2.7.   See the Gemini website for information on
-    how to configure IRAF (|geminiiraf_link|)
+    DRAGONS and the Recipe System do not need IRAF or PyRAF, however. See the
+    Gemini website for information on how to configure IRAF (|geminiiraf_link|)
 
 .. _configure::
 

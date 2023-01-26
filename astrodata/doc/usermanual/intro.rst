@@ -107,7 +107,7 @@ repository, the tar file or the conda package.
     recommend that you use this specific version of Python with DRAGONS.
     ::
 
-    $ conda create -n dragons python=3.7 dragons stsci
+    $ conda create -n dragons python=3.7 dragons ds9
 
 
 #. Activate your new virtual environment.
