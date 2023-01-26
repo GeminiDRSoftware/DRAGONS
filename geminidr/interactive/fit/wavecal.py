@@ -337,38 +337,42 @@ class WavelengthSolutionPanel(Fit1DPanel):
                              range(len(self.spectrum.data["wavelengths"])))(x)
             new_peaks = np.setdiff1d(self.model.meta["peaks"],
                                      self.model.x, assume_unique=True)
+        # This will fail if no line was deleted before user attempts to identify a line,
+        # so do it only if there are new_peaks
+        if len(new_peaks) > 0:
             index = np.argmin(abs(new_peaks - pixel))
 
-            # If we've clicked "close" to a real peak (based on viewport size),
-            # then select that
-            if abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1):
-                peak = new_peaks[index]
-                print(f"Retrieved peak from list at {peak}")
+        # If we've clicked "close" to a real peak (based on viewport size),
+        # then select that
+        if len(new_peaks) > 0 and \
+                (abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1)):
+            peak = new_peaks[index]
+            print(f"Retrieved peak from list at {peak}")
+        else:
+            # TODO: Check this behaves sensibly, and doesn't find
+            # all tiny bumps
+            if self.absorption:
+                pinpoint_data = cwt_ricker(-self.spectrum.data["spectrum"],
+                                       [0.42466 * fwidth])[0]
             else:
-                # TODO: Check this behaves sensibly, and doesn't find
-                # all tiny bumps
-                if self.absorption:
-                    pinpoint_data = cwt_ricker(-self.spectrum.data["spectrum"],
-                                           [0.42466 * fwidth])[0]
-                else:
-                    pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
-                                           [0.42466 * fwidth])[0]
-                eps = np.finfo(np.float32).eps  # Minimum representative data
-                pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
-                try:
-                    peak = pinpoint_peaks(pinpoint_data, None, np.array([pixel]))[0][0]
-                    print(f"Found peak at pixel {peak}")
-                except IndexError:  # no peak
-                    print("Couldn't find a peak")
-                    return
-            est_wave = self.model.evaluate(peak)[0]
-            if not (x1 < est_wave < x2):  # peak outside viewport
+                pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
+                                       [0.42466 * fwidth])[0]
+            eps = np.finfo(np.float32).eps  # Minimum representative data
+            pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
+            try:
+                peak = pinpoint_peaks(pinpoint_data, [pixel], None)[0][0]
+                print(f"Found peak at pixel {peak}")
+            except IndexError:  # no peak
+                print("Couldn't find a peak")
                 return
+        est_wave = self.model.evaluate(peak)[0]
+        if not (x1 < est_wave < x2):  # peak outside viewport
+            return
         else:
             est_wave = self.model.evaluate(peak)[0]  # evaluate always returns array
 
-        # Find all unidentified arc lines that this could be, maintaining
-        # monotonicity
+    # Find all unidentified arc lines that this could be, maintaining
+    # monotonicity
         all_lines = self.model.meta["linelist"].wavelengths(
             in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm")
         lower_limit, upper_limit = get_closest(self.model.y, est_wave)
