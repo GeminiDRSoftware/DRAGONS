@@ -347,8 +347,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             else:
                 # TODO: Check this behaves sensibly, and doesn't find
                 # all tiny bumps
-                absorption=True
-                if absorption:
+                if self.absorption:
                     pinpoint_data = cwt_ricker(-self.spectrum.data["spectrum"],
                                            [0.42466 * fwidth])[0]
                 else:
