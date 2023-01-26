@@ -231,10 +231,6 @@ on Python 3.7:
    # specifying the environment with an environment variable:
    $ TOXENV=py37-unit tox
 
-.. note::
-    Since we use the `astroconda <http://ssb.stsci.edu/astroconda>`_ channel
-    which does not have packages for Python 3.8 and 3.9, tox can currently
-    only be used with Python 3.7.
 
 Pinpointing Tests
 -----------------

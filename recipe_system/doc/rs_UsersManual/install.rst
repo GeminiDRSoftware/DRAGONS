@@ -89,13 +89,12 @@ anaconda.  To activate or deactivate Anaconda manually::
     $ conda activate
     $ conda deactivate
 
-Now that Anaconda works, we add the needed astronomy software.  Add the
-Astroconda channel and the Gemini channel.  Those channels host
-the conda astronomy packages.
+Now that Anaconda works, we add the needed astronomy software.  Add conda-forge
+and the Gemini channel.  Those channels host the conda astronomy packages.
 
 ::
 
-    $ conda config --add channels http://ssb.stsci.edu/astroconda
+    $ conda config --add channels conda-forge
     $ conda config --add channels http://astroconda.gemini.edu/public
 
 The next step is to create a virtual environment and install the DRAGONS

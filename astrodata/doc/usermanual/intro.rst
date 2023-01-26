@@ -56,7 +56,7 @@ Installing Astrodata
 
 The |astrodata| package has a few dependencies, |astropy|, |numpy| and others.
 The best way to get everything you need is to install Anaconda_, and the
-|dragons| stack from the AstroConda channel.
+|dragons| stack from conda-forge and Gemini's public conda channel.
 
 |astrodata| itself is part of |DRAGONS|. It is available from the
 repository, as a tar file, or as a conda package. The bare |astrodata| package
@@ -86,12 +86,12 @@ repository, the tar file or the conda package.
     $ conda init
 
 #. Set up conda channels.
-    Configure the ``conda`` package manager to look in the AstroConda channel
-    hosted by STScI, and in the GEMINI Conda Channel. This is a one-time step.
-    It affects current and future Anaconda installations belonging to the same
-    user on the same machine.::
+    Configure the ``conda`` package manager to look in conda-forge, and in the
+    GEMINI Conda Channel. This is a one-time step. It affects current and
+    future Anaconda installations belonging to the same user on the same
+    machine.::
 
-    $ conda config --add channels http://ssb.stsci.edu/astroconda
+    $ conda config --add channels conda-forge
     $ conda config --add channels http://astroconda.gemini.edu/public
 
 #. Create an environment.
