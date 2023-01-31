@@ -1208,7 +1208,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     reinit_widgets.append(self.reinit_button)
                     self.modal_widget = self.reinit_button
 
-                    reset_reinit_button = self.build_reset_button()
+                    # If the "Reset" button we create here is clicked, we want
+                    # the UI to reconstruct the input data.  To do this, we pass
+                    # the reconstruct_points function as the optional extra
+                    # handler
+                    reset_reinit_button = self.build_reset_button(extra_handler_fn=self.reconstruct_points)
                     reinit_widgets.append(reset_reinit_button)
 
                 elif len(reinit_widgets) == 1:
@@ -1331,6 +1335,21 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.layout = column(*layout_ls, sizing_mode="stretch_width")
         doc.add_root(self.layout)
 
+    def reconstruct_points_additional_work(self, data):
+        """
+        This method may contain any additional work the UI wants
+        to do when reconstructing points.
+
+        This is a no-op by default, but if we have subclasses, they are
+        able to override this to add additional functionality with full
+        access to the reconstructed dictionary of input data.  For
+        example, wavecal can update the spectra being displayed based
+        on the selected row.
+
+        :return:
+        """
+        pass
+
     def reconstruct_points(self):
         """
         Reconstruct the initial points to work with.
@@ -1380,6 +1399,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                                                    this_dict.get("weights"),
                                                    extra_masks=extra_masks)
                         fit.perform_fit()
+
+                    self.reconstruct_points_additional_work(data)
 
                 if self.modal_widget:
                     self.modal_widget.disabled = False

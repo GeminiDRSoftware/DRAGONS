@@ -475,6 +475,20 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             image.append(model.y[goodpix])
         return image
 
+    def reconstruct_points_additional_work(self, data):
+        """
+        Reconstruct the initial points to work with.
+        """
+        super().reconstruct_points_additional_work(data)
+        if data is not None:
+            for i, fit in enumerate(self.fits):
+                if self.returns_list:
+                    this_dict = {k: v[i] for k, v in data.items()}
+                else:
+                    this_dict = data
+                # spectrum update
+                self.panels[i].spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
+
 
 def get_closest(arr, value):
     """
