@@ -70,7 +70,9 @@ class Stack(PrimitivesBASE):
         if not all('DARK' in dark.tags for dark in adinputs):
             raise ValueError("Not all inputs have DARK tag")
 
-        if not all(dark.exposure_time() == adinputs[0].exposure_time()
+        # some GMOS 2008 darks were found to have exposure times varied by a
+        # tiny little amount.  So we use a delta to check for equality.
+        if not all(abs(dark.exposure_time() - adinputs[0].exposure_time()) < 0.01
                    for dark in adinputs[1:]):
                 raise ValueError("Darks are not of equal exposure time")
         if any('NODANDSHUFFLE' in dark.tags for dark in adinputs):
