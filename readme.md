@@ -28,7 +28,7 @@ data.  The products have not been verified for scientific accuracy.
 
 To install:
 
-$ conda create -n dragons python=3.7 dragons stsci
+$ conda create -n dragons python=3.7 dragons ds9
 
 A list of changes since 2.1.1. can be found in the [Change Logs](https://dragons.readthedocs.io/en/v3.0.2/changes.html).
 
