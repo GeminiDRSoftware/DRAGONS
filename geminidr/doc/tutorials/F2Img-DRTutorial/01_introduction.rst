@@ -39,8 +39,6 @@ been installed. If you have an error message, make sure:
 
     - A Conda Virtual Environment is properly created and is active;
 
-    - AstroConda (STScI) is properly installed within the Virtual Environment;
-
     - DRAGONS was successfully installed within the Conda Virtual Environment;
 
 
