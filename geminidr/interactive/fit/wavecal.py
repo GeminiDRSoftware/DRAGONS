@@ -42,12 +42,21 @@ def disable_when_identifying(fn):
 
 class WavelengthSolutionPanel(Fit1DPanel):
     def __init__(self, visualizer, fitting_parameters, domain=None,
-                 x=None, y=None, weights=None, meta=None, **kwargs):
+                 x=None, y=None, weights=None, absorption=False, meta=None, **kwargs):
         # No need to compute wavelengths here as the model_change_handler() does it
-        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
+        self.absorption = absorption
+        if absorption:
+            self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
+                                            'spectrum': -meta["spectrum"]})
+        else:
+            self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
                                              'spectrum': meta["spectrum"]})
+
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
+
+        if len(x) == 0:
+            kwargs["initial_fit"] = meta["fit"]
 
         super().__init__(visualizer, fitting_parameters, domain, x, y,
                          weights=weights, **kwargs)
@@ -211,7 +220,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
             #height = (44 / 29 * self.spectrum.data['spectrum'].max() -
             #          1.1 * self.spectrum.data['spectrum'].min())
             height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
-        padding = 0.25 * height
+        if self.absorption:
+            padding = -0.05 * height
+        else:
+            padding = 0.25 * height
         try:
             return [self.spectrum.data["spectrum"][int(xx + 0.5)] + padding for xx in x]
         except TypeError:
@@ -223,6 +235,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if self.currently_identifying:
             lheight = 0.05 * (self.p_spectrum.y_range.end -
                               self.p_spectrum.y_range.start)
+#            if self.absorption:
+#                # TODO: check if this works -OS
+#                self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] - lheight
+#            else:
             self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
 
     # I could put the extra stuff in a second listener but the name of this
@@ -331,12 +347,16 @@ class WavelengthSolutionPanel(Fit1DPanel):
             else:
                 # TODO: Check this behaves sensibly, and doesn't find
                 # all tiny bumps
-                pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
+                if self.absorption:
+                    pinpoint_data = cwt_ricker(-self.spectrum.data["spectrum"],
+                                           [0.42466 * fwidth])[0]
+                else:
+                    pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
                                            [0.42466 * fwidth])[0]
                 eps = np.finfo(np.float32).eps  # Minimum representative data
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
                 try:
-                    peak = pinpoint_peaks(pinpoint_data, None, [pixel])[0][0]
+                    peak = pinpoint_peaks(pinpoint_data, None, np.array([pixel]))[0][0]
                     print(f"Found peak at pixel {peak}")
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
@@ -365,8 +385,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.new_line_dropdown.options = []
             self.new_line_dropdown.disabled = True
         self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
-        lheight = 0.05 * (self.p_spectrum.y_range.end -
-                          self.p_spectrum.y_range.start)
+        lheight = (self.p_spectrum.y_range.end -
+                   self.p_spectrum.y_range.start) * (-0.05 if self.absorption else 0.05)
+        # TODO: check what happens here in case of absorption -OS
         height = self.spectrum.data["spectrum"][int(peak + 0.5)]
         self.new_line_marker.data = {"x": [est_wave] * 2,
                                      "y": [height, height + lheight]}

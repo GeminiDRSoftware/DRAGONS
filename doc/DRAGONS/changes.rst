@@ -6,21 +6,97 @@
 Change Logs
 ***********
 
+3.0.2 and 3.0.3
+===============
+
+Note that 3.0.2 was found to have one broken recipe, 3.0.3 fixes it.
+
+Bug Fixes
+---------
+
+**geminidr.core**
+
+* Continue without crashing when ``traceApertures`` cannot identify a
+  starting location for a trace.
+
+* Fix issues with assignment of on-source/sky frames when the user specifies
+  specific frames.
+
+* Fix bug where ``stackFrames`` crashed if using the ``statsec`` parameter
+  when scaling or zero-offsetting.
+
+* In fringeCorrect, ``do_cal=force`` has been reactivated.
+
+* Better handling of infinites and NaN in the flat normalization.
+
+**geminidr.gmos**
+
+* Added new primitive to the recipes to mask amplifier 5 in GMOS-S data
+  obtained since January 28, 2022.  GMOS-S amplifier 5 suffered a major
+  failure and it is not usable.
+
+* Ensure that the masks are used when calculating the statistics in
+  scaleByIntensity.
+
+**geminidr.gnirs**
+
+* Added missing support for YPHOT filter.
+
+**geminidr.f2***
+
+* Support of the Flamingos 2 filters.
+
+New Features
+------------
+
+** geminidr **
+
+* Add ``wave_units`` and ``data_units`` parameters to ``write1DSpectra`` to
+  configure the output
+
+* Under-the-hood modification to distinguish data reduced in quicklook mode
+  versus science mode.
+
+Interface Modifications
+-----------------------
+* Internal Gemini catalog server URL updated.
+
+Documentation
+------------
+
+* Various fixes to the documentation affecting formatting, not the content.
+
+
 3.0.1
 =====
 
 Bug Fixes
 ---------
 
-**geminidr**
-
 **geminidr.core**
 
 * Fix bug where ``section`` start/end comparison was made on string, not
   numeric, values.
 
-* Expose ``min_snr`` parameter in ``findApertures`` and hide ``use_snr``
-  (and set its default to ``False``).
+**gempy.library.transform**
+
+* Fix bug that caused longslit spectra to have incorrect WCS, offset from true
+  slit location.
+
+
+Interface Modifications
+-----------------------
+
+**geminidr.core**
+
+* Expose ``min_snr`` parameter in ``findApertures``, make ``use_snr=False``
+  the default, and estimate noise from pixel-to-pixel variations, regardless
+  of its value.
+
+Documentation
+-------------
+
+* Various fixes to the documentation.
 
 
 3.0.0

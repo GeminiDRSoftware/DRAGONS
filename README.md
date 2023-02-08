@@ -11,10 +11,12 @@
 </table>
 
 # Current Status
-**The stable version is v3.0.1.**  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5777701.svg)](https://doi.org/10.5281/zenodo.5777701) DRAGONS is distributed as a conda package, *dragons*, and it is 
+**The stable version is v3.0.3.**  
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6812161.svg)](https://doi.org/10.5281/zenodo.6812161) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
-Version 3.0.1 is recommended for the reduction of **imaging** data from Gemini's
+Version 3.0 is recommend of the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI.
 
 There is now basic GMOS longslit support in DRAGONS to use only
@@ -24,18 +26,18 @@ data for science purposes, please continue to use the [Gemini IRAF package](http
 To install DRAGONS:
 
 ```
-$ conda create -n dragons python=3.7 dragons stsci
+$ conda create -n dragons python=3.7 dragons ds9
 ```
 
 You might need to add two relevant conda channels if you haven't already:
 
 ```
-$ conda config --add channels http://ssb.stsci.edu/astroconda
+$ conda config --add channels conda-forge
 $ conda config --add channels http://astroconda.gemini.edu/public
 ```
 
 
-A list of changes since 2.1.1. can be found in the [Change Logs](https://dragons.readthedocs.io/en/v3.0.0/changes.html).
+A list of changes since 2.1.1. can be found in the [Change Logs](https://dragons.readthedocs.io/en/v3.0.2/changes.html).
 
 ---
 # What is DRAGONS
@@ -50,7 +52,7 @@ reduction of Gemini data.
 # Documentation
 Documentation on DRAGONS v3.0 is available on "readthedocs" at:
 
-* https://dragons.readthedocs.io/en/release-3.0.x
+* https://dragons.readthedocs.io/en/v3.0.3/
 
 There your will find manuals for Astrodata and the Recipe System, and hands-on
 tutorials on reducing Gemini imaging data with DRAGONS.

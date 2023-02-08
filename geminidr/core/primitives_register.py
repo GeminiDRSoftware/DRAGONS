@@ -3,12 +3,9 @@
 #
 #                                                          primitives_register.py
 # ------------------------------------------------------------------------------
-import re
 import math
 import numpy as np
 from astropy.modeling import models
-from astropy import units as u
-from astropy.coordinates import Angle
 
 from copy import deepcopy
 
@@ -247,14 +244,15 @@ class Register(PrimitivesBASE):
             if not use_wcs:
                 ad[0].wcs = deepcopy(adref[0].wcs)
             try:
-                ad[0].wcs.insert_transform(ad[0].wcs.input_frame, transform, after=True)
+                ad[0].wcs.insert_transform(ad[0].wcs.input_frame,
+                                           am.make_serializable(transform), after=True)
             except AttributeError:  # no WCS
-                ad[0].wcs = gWCS([(cf.Frame2D(name="pixels"), transform),
+                ad[0].wcs = gWCS([(cf.Frame2D(name="pixels"), am.make_serializable(transform)),
                                   (cf.Frame2D(name="world"), None)])
 
             # Update X_WORLD and Y_WORLD (RA and DEC) in OBJCAT
             try:
-                x, y = ad[0].OBJCAT['X_IMAGE']-1, ad[0].OBJCAT['Y_IMAGE']-1
+                x, y = ad[0].OBJCAT['X_IMAGE'].data-1, ad[0].OBJCAT['Y_IMAGE'].data-1
             except (AttributeError, KeyError):
                 pass
             else:
@@ -443,9 +441,10 @@ class Register(PrimitivesBASE):
 
                 if num_matched > 0:
                     # Update OBJCAT (X_WORLD, Y_WORLD)
-                    crpix = (0, 0)  # doesn't matter since we're only doing a shift
+                    crpix = (0, 0)  # doesn't matter since we're only reporting a shift
                     ra0, dec0 = ext.wcs(*crpix)
-                    ext.wcs.insert_transform(ext.wcs.input_frame, transform, after=True)
+                    ext.wcs.insert_transform(ext.wcs.input_frame,
+                                             am.make_serializable(transform), after=True)
                     objcat['X_WORLD'], objcat['Y_WORLD'] = ext.wcs(objcat['X_IMAGE']-1,
                                                                    objcat['Y_IMAGE']-1)
 
@@ -541,7 +540,7 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
 
     if center_of_rotation is None:
         if 'GNIRS' in adref.tags:
-            center_of_rotation = (629.0, 519.0)  # (x, y; 0-indexed)
+            center_of_rotation = (519.0, 629.0)  # (y, x; 0-indexed)
         else:
             try:
                 for m in adref[0].wcs.forward_transform:

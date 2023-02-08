@@ -41,16 +41,16 @@ CAT_SERVERS = {
 # There must be an entry in this dictionary for each server
 # listed in cat_servers above
 SERVER_URLS = {
-    'sdss9_mko': "http://mkocatalog2/cgi-bin/conesearch.py?CATALOG=sdss9&",
-    'sdss9_cpo': "http://cpocatalog2/cgi-bin/conesearch.py?CATALOG=sdss9&",
+    'sdss9_mko': "http://gncatalog.gemini.edu/cgi-bin/conesearch.py?CATALOG=sdss9&",
+    'sdss9_cpo': "http://gscatalog.gemini.edu/cgi-bin/conesearch.py?CATALOG=sdss9&",
     'sdss9_vizier': "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=sdss9&",
-    '2mass_mko': "http://mkocatalog2/cgi-bin/conesearch.py?CATALOG=twomass_psc&",
-    '2mass_cpo': "http://cpocatalog2/cgi-bin/conesearch.py?CATALOG=twomass_psc&",
+    '2mass_mko': "http://gncatalog.gemini.edu/cgi-bin/conesearch.py?CATALOG=twomass_psc&",
+    '2mass_cpo': "http://gscatalog.gemini.edu/cgi-bin/conesearch.py?CATALOG=twomass_psc&",
     '2mass_vizier': "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=2mass&",
-    'ukidss9_mko': "http://mkocatalog2/cgi-bin/conesearch.py?CATALOG=ukidss&",
-    'ukidss9_cpo': "http://cpocatalog2/cgi-bin/conesearch.py?CATALOG=ukidss&",
-    'gmos_mko': "http://mkocatalog2/cgi-bin/conesearch.py?CATALOG=gmos&",
-    'gmos_cpo': "http://cpocatalog2/cgi-bin/conesearch.py?CATALOG=gmos&",
+    'ukidss9_mko': "http://gncatalog.gemini.edu/cgi-bin/conesearch.py?CATALOG=ukidss&",
+    'ukidss9_cpo': "http://gscatalog.gemini.edu/cgi-bin/conesearch.py?CATALOG=ukidss&",
+    'gmos_mko': "http://gncatalog.gemini.edu/cgi-bin/conesearch.py?CATALOG=gmos&",
+    'gmos_cpo': "http://gscatalog.gemini.edu/cgi-bin/conesearch.py?CATALOG=gmos&",
 }
 
 # This defines the column names *we* will use for that catalog.

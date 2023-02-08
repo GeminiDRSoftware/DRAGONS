@@ -10,12 +10,12 @@ import numbers
 
 from copy import deepcopy
 from datetime import datetime
-from importlib import import_module
 from functools import wraps
 from collections import namedtuple
 
 import numpy as np
 
+from astropy.coordinates import SkyCoord
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
@@ -892,7 +892,8 @@ def clip_sources(ad):
 
     # Produce warning but return what is expected
     if not any([hasattr(ext, 'OBJCAT') for ext in ad_iterable]):
-        log.warning("No OBJCATs found on input. Has detectSources() been run?")
+        input = f"{ad.filename} extension {ad.id}" if single else ad.filename
+        log.warning(f"No OBJCAT(s) found on {input}. Has detectSources() been run?")
         return Table() if single else [Table()] * len(ad)
 
     good_sources = []
@@ -1051,6 +1052,8 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
 
         elif "bpm" in caltype:
             ad.phu.set("BPMASK", True, "Bad pixel mask")
+            ad.phu.set("OBSTYPE", "BPM", keyword_comments["OBSTYPE"])
+            ad.phu.set("OBJECT", "BPM", keyword_comments["OBJECT"])
         else:
             raise ValueError("Caltype {} not supported".format(caltype))
 
@@ -1165,6 +1168,7 @@ def fit_continuum(ad):
 
     pixel_scale = ad.pixel_scale()
     spatial_box = int(5.0 / pixel_scale)
+    MIN_APERTURE_WIDTH = 10  # pixels
 
     # Initialize the Gaussian width to FWHM = 1.2 arcsec
     init_width = 1.2 / (pixel_scale * (2 * np.sqrt(2 * np.log(2))))
@@ -1200,7 +1204,7 @@ def fit_continuum(ad):
             # are a multiple of 512 pixels. We do this because the data are
             # unlikely to have gone through traceApertures() so we can't
             # account for curvature in the spectral trace.
-            hwidth = 512 // spectral_bin
+            hwidth = min(512 // spectral_bin, dispersed_length // 2)
             centers = [i*hwidth for i in range(1, dispersed_length // hwidth, 1)]
         spectral_slices = [slice(center-hwidth, center+hwidth) for center in centers]
 
@@ -1245,10 +1249,13 @@ def fit_continuum(ad):
             coord = 0.5 * (spectral_slice.start + spectral_slice.stop)
 
             if find_sources_while_iterating:
+                _slice = ((spectral_slice, slice(None)) if dispaxis == 0
+                          else (slice(None), spectral_slice))
+                ndd = ext.nddata[_slice]
                 if ext.mask is None:
-                    profile = np.percentile(ext.data, 95, axis=dispaxis)
+                    profile = np.percentile(ndd.data, 95, axis=dispaxis)
                 else:
-                    profile = np.percentile(np.where(ext.mask == 0, ext.data, -np.inf),
+                    profile = np.percentile(np.where(ndd.mask == 0, ndd.data, -np.inf),
                                             95, axis=dispaxis)
                 center = np.argmax(profile[spatial_slice]) + spatial_slice.start
                 spatial_slices = [slice(max(center - spatial_box, 0),
@@ -1264,7 +1271,7 @@ def fit_continuum(ad):
                 length = spatial_slice.stop - spatial_slice.start
 
                 # General sanity requirement (will reject bad Apertures)
-                if length < 10:
+                if length < MIN_APERTURE_WIDTH:
                     continue
 
                 # These are all in terms of the full unsliced extension
@@ -1281,6 +1288,8 @@ def fit_continuum(ad):
                 data, mask, var = NDStacker.mean(ndd)
                 if mask is not None:
                     mask = (mask == 0)
+                    if mask.sum() < MIN_APERTURE_WIDTH:
+                        continue
                 try:
                     maxflux = np.max(abs(data[mask]))
                 except ValueError:
@@ -1322,7 +1331,10 @@ def fit_continuum(ad):
                 fit_it = fitting.LevMarLSQFitter()
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    m_final = fit_it(m_init, pixels[mask], data[mask])
+                    try:
+                        m_final = fit_it(m_init, pixels[mask], data[mask])
+                    except:  # anything that goes wrong
+                        continue
 
                 if fit_it.fit_info['ierr'] < 5:
                     # This is kind of ugly and empirical; philosophy is that peak should
@@ -1348,18 +1360,18 @@ def fit_continuum(ad):
                             weight_list.append(max(m_final.mean_1 - pixels.min(),
                                                    pixels.max() - m_final.mean_0))
 
-
         # Now do something with the list of measurements
         fwhm_pix = np.array(fwhm_list)
         fwhm_arcsec = pixel_scale * fwhm_pix
-
         table = Table([x_list, y_list, fwhm_pix, fwhm_arcsec, weight_list],
                     names=("x", "y", "fwhm", "fwhm_arcsec", "weight"))
 
         # Clip outliers in FWHM
         if len(table) >= 3:
-            table = table[~sigma_clip(table['fwhm_arcsec'], sigma=2,
-                                      maxiters=2).mask]
+            ret_value = at.weighted_sigma_clip(
+                table['fwhm_arcsec'].data, weights=table['weight'].data,
+                sigma_lower=2, sigma_upper=1.5, maxiters=3)
+            table = table[~ret_value.mask]
         good_sources.append(table)
 
     return good_sources[0] if single else good_sources
@@ -1631,7 +1643,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
         raise TypeError("argument 'keyword' required")
 
     # Get the current time to use for the time of last modification
-    tlm = datetime.now().isoformat()[0:-7]
+    tlm = datetime.utcnow().isoformat()
 
     # Construct the default comment
     if comment is None:
@@ -1651,7 +1663,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
 
 
 def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
-                          separate_ext=True, ignore_mask=False):
+                          separate_ext=True, ignore_mask=False, section=None):
     """
     Return background value, and its std deviation, as measured directly
     from pixels in the SCI image. DQ plane are used (if they exist)
@@ -1671,6 +1683,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         return information for each extension, rather than the whole AD?
     ignore_mask : bool
         if True, ignore the mask and OBJMASK
+    section: slice/None
+        region to use for statistics
 
     Returns
     -------
@@ -1692,24 +1706,25 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         flags = None
         # Use DQ and OBJMASK to flag pixels
         if not single and not separate_ext:
-            bg_data = np.array([ext.data for ext in ad]).ravel()
+            bg_data = np.array([ext.data[section] for ext in ad]).ravel()
             if not ignore_mask:
                 flags = np.array([ext.mask | getattr(ext, 'OBJMASK', 0)
                                   if ext.mask is not None
-                    else getattr(ext, 'OBJMASK', np.empty_like(ext.data, dtype=bool))
-                                  for ext in ad]).ravel()
+                    else getattr(ext, 'OBJMASK', np.zeros_like(ext.data, dtype=bool))
+                                  for ext in ad])[section].ravel()
         else:
             if not ignore_mask:
-                flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
-                    else getattr(ext, 'OBJMASK', None)
-            bg_data = ext.data.ravel()
+                flags = ((ext.mask | getattr(ext, 'OBJMASK', 0))[section]
+                    if ext.mask is not None else
+                         ext.OBJMASK[section] if hasattr(ext, 'OBJMASK') else None)
+            bg_data = ext.data[section].ravel()
 
         if flags is None:
             bg_data = bg_data[::sampling]
         else:
             bg_data = bg_data[flags.ravel() == 0][::sampling]
 
-        if len(bg_data) > 0:
+        if len(bg_data) > 1:
             if gaussfit:
                 lsigma, hsigma = 3, 1
                 bg, bg_std = sigma_clipped_stats(bg_data, sigma=5, maxiters=5)[1:]
@@ -1875,6 +1890,52 @@ def obsmode_del(ad):
                 ad.phu.remove(keyword)
     return ad
 
+
+def offsets_relative_to_slit(ext1, ext2):
+    """
+    Determine the spatial offsets between the pointings of two AstroData
+    objects, expressed parallel and perpendicular to the slit axis.
+    The issue here is that the world_to_pixel transformation is insensitive
+    to coordinate movement perpendicular to the slit. The calculation is
+    performed by determining the pointing of one AD from its center of
+    projection and the pointing of the other from its WCS evaluated at the
+    same pixel location. The position angle of the slit is calculated from
+    the sky displacement when offsetting 500 pixels (arbitrary) along the
+    slit axis.
+
+    Parameters
+    ----------
+    ext1, ext2: single-slice AstroData instances
+        the two AD objects (assumed to be of the same subclass)
+
+    Returns
+    -------
+    dist_para: float
+        separation (in arcsec) parallel to the slit
+    dist_perp: float
+        separation (in arcsec) perpendicular to the slit
+    """
+    wcs1 = ext1.wcs
+    try:
+        ra1, dec1 = at.get_center_of_projection(wcs1)
+    except TypeError:
+        raise ValueError(f"Cannot get center of projection for {ext1.filename}")
+    dispaxis = 2 - ext1.dispersion_axis()  # python sense
+    cenwave, *_ = wcs1(*(0.5 * np.asarray(ext1.shape)[::-1]))
+    x, y = wcs1.invert(cenwave, ra1, dec1)
+
+    # Get PA of slit by finding coordinates along the slit
+    coord1 = SkyCoord(ra1, dec1, unit='deg')
+    ra2, dec2 = wcs1(x, y+500)[-2:] if dispaxis == 1 else wcs1(x+500, y)[-2:]
+    pa = coord1.position_angle(SkyCoord(ra2, dec2, unit='deg')).deg
+
+    # Calculate PA and angular distance between sky coords of the same pixel
+    # on the two input ADs
+    ra2, dec2 = ext2.wcs(x, y)[-2:]
+    coord2 = SkyCoord(ra2, dec2, unit='deg')
+    return at.spherical_offsets_by_pa(coord1, coord2, pa)
+
+
 def parse_sextractor_param(param_file):
     """
     Provides a list of columns being produced by SExtractor
@@ -1984,7 +2045,13 @@ def sky_factor(nd1, nd2, skyfunc, multiplicative=False, threshold=0.001):
     factor = 0
     if multiplicative:
         current_sky = 1
-        ndcopy = deepcopy(nd1)
+        # A subtlety here: deepcopy-ing an AD slice will create a full AD
+        # object, and so skyfunc() will return a list instead of the single
+        # float value we want. So make sure the copy is a single slice too
+        if isinstance(nd1, astrodata.AstroData) and nd1.is_single:
+            ndcopy = deepcopy(nd1)[0]
+        else:
+            ndcopy = deepcopy(nd1)
         while abs(current_sky) > threshold:
             f = skyfunc(ndcopy) / skyfunc(nd2)
             ndcopy.subtract(nd2.multiply(f))
@@ -2189,7 +2256,7 @@ class ExposureGroup:
     # pass around nddata instances rather than lists or dictionaries but
     # that's not even well defined within AstroPy yet.
 
-    def __init__(self, adinputs, pkg=None, frac_FOV=1.0):
+    def __init__(self, adinputs, fields_overlap=None, frac_FOV=1.0):
         """
         Parameters
         ----------
@@ -2210,20 +2277,17 @@ class ExposureGroup:
         # Make sure the field scaling is valid:
         if not isinstance(frac_FOV, numbers.Number) or frac_FOV < 0.:
             raise ValueError('frac_FOV must be >= 0.')
+        if not callable(fields_overlap):
+            raise ValueError('fields_overlap must be callable')
 
         # Initialize members:
-        self.members = {}
+        self.members = []
         self._frac_FOV = frac_FOV
-        self.group_center = (0., 0.)
+        self.group_center = None
         self.add_members(adinputs)
-        try:
-            FOV = import_module('{}.FOV'.format(pkg))
-            self._pointing_in_field = FOV.pointing_in_field
-        except (ImportError, AttributeError):
-            raise NameError("FOV.pointing_in_field() function not found in {}".
-                            format(pkg))
+        self._fields_overlap = fields_overlap
 
-    def pointing_in_field(self, ad, fast=True):
+    def fields_overlap(self, ad):
         """
         Determine whether or not a new pointing falls within this group.
         The check can be done against either the group center, or against
@@ -2242,14 +2306,9 @@ class ExposureGroup:
         bool: whether or not the input point is within the field of view
             (adjusted by the frac_FOV specified when creating the group).
         """
-        if fast:
-            return self._pointing_in_field(ad, self.group_center,
-                                           frac_FOV=self._frac_FOV)
-        else:
-            for offset in self.members.values():
-                if self._pointing_in_field(ad, offset,
-                                           frac_FOV=self._frac_FOV):
-                    return True
+        for ad_in_group in self.members:
+            if self._fields_overlap(ad, ad_in_group, frac_FOV=self._frac_FOV):
+                return True
         return False
 
     def __len__(self):
@@ -2268,14 +2327,11 @@ class ExposureGroup:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def list(self):
-        """
-        List the AstroData instances associated with this group.
+    def __contains__(self, item):
+        return item in self.members
 
-        :returns: Exposure list
-        :rtype: list of AstroData instances
-        """
-        return list(self.members.keys())
+    def list(self):
+        return self.members
 
     def add_members(self, adinputs):
         """
@@ -2288,28 +2344,21 @@ class ExposureGroup:
         if not isinstance(adinputs, list):
             adinputs = [adinputs]
         # How many points were there previously and will there be now?
-        ngroups = self.__len__()
-        ntot = ngroups + len(adinputs)
+        for ad in adinputs:
+            if ad not in self.members:
+                self.members.append(ad)
+                ad_coord = SkyCoord(ad.ra(), ad.dec(), unit='deg')
+                if self.group_center:
+                    separation = self.group_center.separation(ad_coord)
+                    pa = self.group_center.position_angle(ad_coord)
+                    # We move the group center fractionally towards the new
+                    # position
+                    self.group_center = self.group_center.directional_offset_by(
+                        pa, separation / len(self))
+                else:
+                    self.group_center = ad_coord
 
-        # Create dict for new members and complain if coords are invalid
-        new_dict = {ad: (ad.detector_x_offset(), ad.detector_y_offset())
-                    for ad in adinputs}
-        for ad, offsets in new_dict.items():
-            if not all(isinstance(offset, numbers.Number) for offset in offsets):
-                    raise ValueError("non-numeric coordinate {} from {}"
-                                     "".format(offsets, ad.filename))
-
-        # Add the new points to the group list:
-        self.members.update(new_dict)
-
-        # Update the group centroid to account for the new points
-        new_vals = list(new_dict.values())
-        newsum = [sum(axvals) for axvals in zip(*new_vals)]
-        self.group_center = [(cval * ngroups + nval) / ntot
-                             for cval, nval in zip(self.group_center, newsum)]
-
-
-def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
+def group_exposures(adinputs, fields_overlap=None, frac_FOV=1.0):
     """
     Sort a list of AstroData instances into dither groups around common
     nod positions, according to their pointing offsets.
@@ -2327,6 +2376,10 @@ def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
     IQ problems towards the edges of the field. OTOH intermediate offsets
     are generally difficult to achieve anyway due to guide probe limits
     when the instrumental FOV is comparable to that of the telescope.
+
+    The algorithm has been improved (but made slightly slower) to be
+    independent of the order in which files arrive. If a pointing overlaps
+    with two (or more) existing groups, it will unify these groups.
 
     Parameters
     ----------
@@ -2350,25 +2403,18 @@ def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
     groups = []
 
     for ad in adinputs:
-        # Should this pointing be associated with an existing group?
-        # Check against field centers first.
-        found = False
-        for group in groups:
-            if group.pointing_in_field(ad, fast=True):
-                group.add_members(ad)
-                found = True
-                break
-
-        # If we haven't found a match, do a more rigorous (slower) check
-        # against all members of each group
-        if not found:
-            for group in groups:
-                if group.pointing_in_field(ad, fast=False):
+        found = None
+        for i, group in reversed(list(enumerate(groups))):
+            if group.fields_overlap(ad):
+                if found is None:
                     group.add_members(ad)
-                    found = True
-                    break
-            if not found:
-                groups.append(ExposureGroup(ad, pkg, frac_FOV=frac_FOV))
+                else:
+                    group.add_members(groups[found].list())
+                    del groups[found]
+                found = i
+        if found is None:
+            groups.append(ExposureGroup(ad, fields_overlap=fields_overlap,
+                                        frac_FOV=frac_FOV))
 
     # Here this simple algorithm could be made more robust for borderline
     # spacing (a bit smaller than the field size) by merging clusters that

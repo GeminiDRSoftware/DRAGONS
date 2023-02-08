@@ -3,19 +3,19 @@
 #
 #                                                      primitives_gnirs_image.py
 # ------------------------------------------------------------------------------
+import os
+
 import numpy as np
-import scipy.ndimage
-from skimage.morphology import binary_dilation
+from scipy import ndimage
 
-import astrodata
-import gemini_instruments
+import astrodata, gemini_instruments
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
-
-from .lookups import FOV as fov
 
 from .primitives_gnirs import GNIRS
 from ..core import Image, Photometry
 from . import parameters_gnirs_image
+from .lookups import maskdb
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -74,134 +74,174 @@ class GNIRSImage(GNIRS, Image, Photometry):
 
         # Fetching a corrected illumination mask with a keyhole that aligns
         # with the science data
-        illum = self._get_illum_mask_filename(reference)
-        if illum is None:
-            log.warning("No illumination mask found for {}, no mask can "
-                        "be added to the DQ planes of the inputs".
-                        format(reference.filename))
+        illum_mask = _create_illum_mask(reference, log, xshift=params["xshift"],
+                                        yshift=params["yshift"])
+        if illum_mask is None:
+            log.warning(f"No illumination mask found for {reference.filename},"
+                        " no mask can be added to the DQ planes of the inputs")
             return adinputs
 
-        illum_ad = astrodata.open(illum)
-        corr_illum_ad = _position_illum_mask(reference, illum_ad, log)
-
+        illum_mask = illum_mask.astype(DQ.datatype) * DQ.unilluminated
         for ad in adinputs:
-            final_illum = gt.clip_auxiliary_data(ad, aux=corr_illum_ad,
-                    aux_type="bpm")
-
             # binary_OR the illumination mask or create a DQ plane from it.
             if ad[0].mask is None:
-                ad[0].mask = final_illum[0].data
+                ad[0].mask = illum_mask
             else:
-                ad[0].mask |= final_illum[0].data
+                ad[0].mask |= illum_mask
 
             # Update the filename
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def _get_illum_mask_filename(self, ad):
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
         """
-        Gets the illumMask filename for an input science frame, using
-        illumMask_dict in geminidr.<instrument>.lookups.maskdb.py and looks
-        for a key <INSTRUMENT>_<MODE>_<XBIN><YBIN>. This file will be sent
-        to clip_auxiliary_data for a subframe ROI.
+        Checks whether the fields of view of two F2 images overlap
+        sufficiently to be considered part of a single ExposureGroup.
+        GNIRSImage requires its own code since it has a weird FOV.
+
+        Parameters
+        ----------
+        ad1: AstroData
+            one of the input AD objects
+        ad2: AstroData
+            the other input AD object
+        frac_FOV: float (0 < frac_FOV <= 1)
+            fraction of the field of view for an overlap to be considered. If
+            frac_FOV=1, *any* overlap is considered to be OK
 
         Returns
         -------
-        str/None: Filename of the appropriate illumination mask
+        bool: do the fields overlap sufficiently?
         """
-        # TODO: Look at the whole pointing_in_field situation
-        return fov.get_illum_mask_filename(ad)
+        center = np.array([512, 512])
+        # We inverse-scale by frac_FOV
+        shift = -(ad2[0].wcs.invert(*ad1[0].wcs(*center)) - center) / frac_FOV
+        illum_data = _create_illum_mask(ad1, self.log, align=False)
+        shifted_data = ndimage.shift(illum_data, shift, order=0,
+                                     cval=DQ.unilluminated)
+        return np.any(~(illum_data | shifted_data))
+
+    def _get_illum_mask_filename(self, ad):
+        """Should never be called"""
+        raise NotImplementedError("GNIRS IMAGE has no illum_mask files")
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
-def _position_illum_mask(adinput, illum, log, max_dy=20):
+
+def _create_illum_mask(ad, log, align=True, xshift=0, yshift=0):
     """
-    This function is used to reposition a GNIRS illumination mask so that
-    the keyhole matches with the science data.
+    Creates a keyhole mask for GNIRS imaging using geometric shapes. If
+    requested this is aligned with an AD instance based on its illuminated
+    pixels.
 
     Parameters
     ----------
     adinput: AstroData
         single AD instance to which the keyhole should be matched
-    illum: AstroData
-        the standard illumination mask
     log: logger
         the log
-    max_dy: int
-        maximum y shift allowed
+    align: bool
+        align the mask to the AD instance? (set to False for testing whether
+        images overlap)
+    xshift: int
+        pixel shift in x compared to automated placement
+    yshift: int
+        pixel shift in y compared to automated placement
+
+    Returns
+    -------
+    mask: a boolean ndarray of the masked pixels
     """
-    # Normalizing and thresholding the science data to get a rough
-    # illumination mask. A 5x5 box around non-illuminated pixels is also
-    # flagged as non-illuminated to better handle the edge effects. The
-    # limit for thresholding is twice the median *and* more than 3x the
-    # read noise. A check is made that a reasonable number of pixels
-    # pass this test, since center_of_mass() will always return a result
-    # even when it really shouldn't.
-    addata = adinput[0].data
-    med = max(np.median(addata), 0.0)
-    # Get read noise in appropriate units (descriptor returns electrons)
-    rdnoise = adinput.read_noise()[0]
-    if adinput.is_in_adu():
-        rdnoise /= adinput.gain()[0]
-    # Set UNilliminated pixels here, to allow the binary_dilation to work
-    threshpixdata = np.where(np.logical_and(addata>2*med, addata>3*rdnoise),
-                             np.int16(0), np.int16(1))
-    structure = np.ones((5,5))
-    threshpixdata = binary_dilation(threshpixdata, structure)
+    # Center of Mass X and Y and number of illuminated pixels
+    # Apparently no difference between the two ShortBlue cameras but we keep
+    # the component number in here in case that's not true of future cameras
+    keyhole_dict = {('LongBlue_G5542', False):  (537.2, 454.8, 205000),
+                    ('LongBlue_G5542', True):   (518.4, 452.9, 275000),
+                    ('LongRed_G5543', False):   (451.0, 429.1, 198000),
+                    ('LongRed_G5543', True):    (532.4, 507.7, 272000),
+                    ('ShortBlue_G5538', False): (504.6, 446.8, 25000),
+                    ('ShortBlue_G5538', True):  (506.8, 457.1, 49000),
+                    ('ShortBlue_G5540', False): (504.6, 446.8, 25000),
+                    ('ShortBlue_G5540', True):  (506.8, 457.1, 49000),
+                    ('ShortRed_G5539', True):   (519.3, 472.6, 58000)}
 
-    # There can be stray illumination (ghosts?) on the array which will upset
-    # the centre-of-mass measurement, so disregard pixels more than a certain
-    # distance from the keyhole in the illumination mask
-    illum_shape = illum[0].data.shape
-    data_shape = threshpixdata.shape
-    first, last = np.argmin(illum[0].data), np.argmin(illum[0].data[::-1])
-    ymin = np.unravel_index(first, illum_shape)[0]
-    ymax = illum_shape[0] - np.unravel_index(last, illum_shape)[0]
-    if ymin > max_dy:
-        threshpixdata[:ymin-max_dy] = np.ones((ymin-max_dy, data_shape[1]))
-    if ymax + max_dy < data_shape[0]:
-        threshpixdata[ymax+max_dy:] = np.ones((data_shape[0]-ymax-max_dy,
-                                               data_shape[1]))
+    pixscale = ad.pixel_scale()
+    wings = 'PHOT' not in ad.filter_name(pretty=True)
+    try:
+        comx0, comy0, ngood = keyhole_dict[ad.camera(), wings]
+    except KeyError:
+        return
+    comx, comy = comx0, comy0
 
-    # Invert to set illuminated pixels. Demand a minimum number of such pixels
-    keyhole = 1 - threshpixdata
-    numpix_mask_illum = np.sum(illum[0].data==0)
-    numpix_data_illum = np.sum(keyhole)
-    if numpix_data_illum < 0.5 * numpix_mask_illum:
-        log.warning("Only {} illuminated pixels detected in {}, when {} are"
-                    "expected. Using the illumination mask without adjustment"
-                    ".".format(numpix_data_illum, adinput.filename,
-                               numpix_mask_illum))
-        return illum
+    addata = ad[0].data
+    if align:
+        med = max(np.median(addata), 0.0)
+        # Get read noise in appropriate units (descriptor returns electrons)
+        rdnoise = ad.read_noise()[0]
+        if ad.is_in_adu():
+            rdnoise /= ad.gain()[0]
 
-    # Finding the centre of mass of the rough pixel mask and using
-    # this in comparison with the centre of mass of the illumination
-    # mass to adjust the keyholes to align. Note that the
-    # center_of_mass function has switched x and y axes compared to normal.
-    comx_illummask = illum.phu['CENMASSX']
-    comy_illummask = illum.phu['CENMASSY']
-    comy, comx = scipy.ndimage.measurements.center_of_mass(keyhole)
-    if not np.isnan(comx) and not np.isnan(comy):
-        dx = int(comx - comx_illummask)
-        dy = int(comy - comy_illummask)
-    else:
-        log.warning("The centre of mass of {} cannot be measured, so "
-                "the illumination mask cannot be positioned and "
-                "will be used without adjustment".format(adinput.filename))
-        return illum
+        # Do a bit of binary dilation of unilluminated pixels in order to
+        # eliminate small groups of bright bad pixels
+        threshold = med + 3 * rdnoise
+        structure = np.ones((5, 5))
+        regions, nregions = ndimage.label(
+            ~ndimage.binary_dilation(addata < threshold, structure))
+        # Find the region with the most pixels (but not region 0)
+        keyhole_region = np.argmax([(regions == i).sum()
+                                    for i in range(1, nregions+1)]) + 1
 
-    # Recording the shifts in the header of the illumination mask
-    log.stdinfo("Applying shifts to the illumination mask: dx = {}px, dy = "
-                "{}px.".format(dx, dy))
-    illum.phu.set('OBSHIFTX', dx, "Relative x shift to object frame")
-    illum.phu.set('OBSHIFTY', dy, "Relative y shift to object frame")
+        n_inregion = (regions == keyhole_region).sum()
+        if n_inregion > 0.5 * ngood:
+            comy, comx = ndimage.center_of_mass(regions == keyhole_region)
+        else:
+            log.warning(f"Only {n_inregion} illuminated pixels detected in "
+                        f"{ad.filename}, when {ngood} are expected. Using the "
+                        "default illumination mask position.")
 
-    # Applying the offsets to the illumination mask
-    illumpixdata1 = illum[0].data
-    illumpixdata2 = np.roll(illumpixdata1, dx, 1)
-    illumpixdata3 = np.roll(illumpixdata2, dy, 0)
-    illum[0].data = illumpixdata3
+    r1 = 14.7 / pixscale  # keyhole circle has radius of 14.7 arcsec
+    width = 9.6 / pixscale  # "bar" is 9.3 arcsec wide
+    length = 97.8 / pixscale  # "bar" is 97.8 arcsec long
 
-    return illum
+    y, x = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
+    mask = np.ones_like(addata, dtype=bool)
+    xedges = comx + np.array([-0.5, 0.5]) * length + xshift
+    xc = comx + 2 + xshift
+    yc = comy + 3.2 / pixscale + yshift
+
+    # Not much data so this is a bit ad hoc
+    if 'Red' in ad.camera():
+        xedges -= 5
+        xc -= 5
+        yc -= 4
+
+    if wings:
+        # Having wings means the CoM is much higher than the circle centre
+        wingshift = 15 * (min(xedges[1], 1023) - max(xedges[0], 0)) / 1023
+        yc -= wingshift
+        # If the bar covers the full width of the detector, then the CoM's
+        # horizontal position is not at the centre of the circle
+        if xedges[0] <= 0:  # only Long cameras
+            xc += (comx - 512) * 2.5
+    elif pixscale < 0.1:
+        yc -= 4
+
+    # The "bar"
+    mask[np.logical_and.reduce([xedges[0] <= x, x <= xedges[1],
+                                y > yc - 0.5 * width - 0.01 * (comx - x),
+                                y <= yc + 0.5 * width - 0.01 * (comx - x)])] = False
+    # The keyhole
+    mask[np.logical_and((x - xc) ** 2 + (y - yc) ** 2 < r1 * r1,
+                        y < yc)] = False
+    if not wings:
+        r2 = (1.13 if pixscale < 0.1 else 1.29) * r1
+        mask[(x - xc) ** 2 + (y - yc) ** 2 > r2 * r2] = True
+
+    if align:
+        dx, dy = comx - comx0, comy - comy0
+        log.stdinfo("Applying shifts to the illumination mask: "
+                    f"dx = {dx:.1f}px, dy = {dy:.1f}px.")
+
+    return mask

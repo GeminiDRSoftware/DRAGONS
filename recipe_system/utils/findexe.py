@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import os
 import psutil
+from psutil import NoSuchProcess
 
 
 def findexe(exe):
@@ -33,20 +34,23 @@ def findexe(exe):
     """
     pids = []
     for proc in psutil.process_iter():
-        pinfo = proc.as_dict(attrs=['pid', 'cmdline'])
-        cl = pinfo['cmdline']
-        if not cl:
-            continue
-        else:
-            arg1 = cl[0]
         try:
-            arg2 = cl[1]
-        except IndexError:
-            arg2 = ''
+            pinfo = proc.as_dict(attrs=['pid', 'cmdline'])
+            cl = pinfo['cmdline']
+            if not cl:
+                continue
+            else:
+                arg1 = cl[0]
+            try:
+                arg2 = cl[1]
+            except IndexError:
+                arg2 = ''
 
-        subarg1 = os.path.split(arg1)[1].strip()
-        subarg2 = os.path.split(arg2)[1].strip() if arg2 else arg2
-        if exe == subarg1 or exe == subarg2:
-            pids.append(pinfo['pid'])
+            subarg1 = os.path.split(arg1)[1].strip()
+            subarg2 = os.path.split(arg2)[1].strip() if arg2 else arg2
+            if exe == subarg1 or exe == subarg2:
+                pids.append(pinfo['pid'])
+        except NoSuchProcess as nspe:
+            pass
 
     return pids

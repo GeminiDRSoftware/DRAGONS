@@ -634,14 +634,34 @@ class PrimitiveVisualizer(ABC):
                         title = params.titles[key]
                     else:
                         title = _title_from_field(field)
-                    widget = TextInput(title=title,
-                                       min_width=100,
-                                       max_width=256,
-                                       width_policy="fit",
-                                       placeholder=params.placeholders[key]
-                                       if key in params.placeholders else None)
-                    self.widgets[key] = widget
-                    widgets.append(widget)
+                    val = self.ui_params.values.get(key, "")
+                    if val is None:
+                        # TextInput can't handle None value
+                        raise ValueError(f"None value cannot be expressed in UI and {key} parameter came in as None")
+                    else:
+                        widget = TextInput(title=title,
+                                           min_width=100,
+                                           max_width=256,
+                                           width_policy="fit",
+                                           placeholder=params.placeholders[key]
+                                           if key in params.placeholders else None,
+                                           value=val)
+
+                        class TextHandler:
+                            def __init__(self, key, extras, fn):
+                                self.key = key
+                                self.extras = extras
+                                self.fn = fn
+
+                            def handler(self, name, old, new):
+                                self.extras[self.key] = new
+                                if reinit_live and self.fn is not None:
+                                    self.fn()
+
+                        widget.on_change("value", TextHandler(key, self.extras, lambda: self.reconstruct_points()).handler)
+
+                        self.widgets[key] = widget
+                        widgets.append(widget)
         return widgets
 
     def slider_handler_factory(self, key, reinit_live=False):
@@ -1404,6 +1424,7 @@ class GIRegionView(GIRegionListener):
                 region.annotation.right = 0
                 region.start = 0
                 region.stop = 0
+                self.whisker_data.patch({'base': [(region.whisker_id, None)], 'lower': [(region.whisker_id, None)], 'upper': [(region.whisker_id, None)]})
                 # TODO remove it (impossible?)
         # We have to defer this as the delete may come via the keypress URL
         # But we aren't in the PrimitiveVisualizaer so we reference the

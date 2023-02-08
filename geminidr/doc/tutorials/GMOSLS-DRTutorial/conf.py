@@ -28,7 +28,7 @@ release = '3.1.0-dev'
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
 
-today = 'October 2021'
+today = 'December 2021'
 
 # -- General configuration ---------------------------------------------------
 

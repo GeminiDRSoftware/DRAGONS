@@ -6,13 +6,6 @@ from geminidr.core import parameters_stack, parameters_photometry
 from geminidr.core import parameters_generic
 
 
-class applyStackedObjectMaskConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_stackedObjMaskApplied", optional=True)
-    source = config.Field("Filename of/Stream containing stacked image", str, None)
-    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
-    threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
-
-
 class fringeCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_fringeCorrected", optional=True)
     fringe = config.ListField("Fringe frame to subtract", (str, AstroData),
@@ -25,6 +18,8 @@ class fringeCorrectConfig(parameters_generic.calRequirementConfig):
 class makeFringeFrameConfig(parameters_stack.core_stacking_config, parameters_photometry.detectSourcesConfig):
     subtract_median_image = config.Field("Subtract median image?", bool, True)
     dilation = config.RangeField("Object dilation radius (pixels)", float, 2., min=0)
+    debug_distance = config.RangeField("Minimum association distance (arcsec)",
+                                       float, 5., min=0)
     def setDefaults(self):
         self.suffix = "_fringe"
         self.reject_method = "varclip"
@@ -52,6 +47,14 @@ class scaleByIntensityConfig(config.Config):
                                             "median": "Scale by median"},
                                  default = "mean")
     separate_ext = config.Field("Scale extensions separately?", bool, False)
+
+
+class transferObjectMaskConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_objmaskTransferred", optional=True)
+    source = config.Field("Filename of/Stream containing stacked image", str, None)
+    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
+    threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
+    dilation = config.RangeField("Dilation radius (pixels)", float, 1.5, min=0)
 
 
 class flagCosmicRaysByStackingConfig(config.Config):

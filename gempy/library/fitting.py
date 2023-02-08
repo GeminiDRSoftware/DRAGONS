@@ -514,6 +514,22 @@ class fit_1D:
         else:
             return self._models[0]
 
+    def offset_fit(self, offset):
+        """
+        Applies a constant shift to the model fit.
+
+        Parameters
+        ----------
+        offset: float
+            amount by which all fits are to be shifted
+        """
+        astropy_model = isinstance(self._models, Model)
+        if astropy_model:
+            self._models.c0 += offset
+        else:
+            for spline in self._models:
+                t, c, k = spline.tck
+                c[:-(k+1)] += offset
 
     def extract_params(self):
         """
