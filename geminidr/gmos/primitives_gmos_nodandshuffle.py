@@ -103,7 +103,9 @@ class GMOSNodAndShuffle(GMOS):
                     # the keyword with the most likely value and check that
                     # we get the correct result
                     ad2.phu['QOFFSET'] = ad.phu['QOFFSET'] - nod_arcsec
-                    if ad.detector_y_offset() - ad2.detector_y_offset() != nod_pixels:
+
+                    if abs((ad.detector_y_offset() - ad2.detector_y_offset()) - \
+                           nod_pixels) > 0.000001:
                         ad2.phu['QOFFSET'] = ad.phu['QOFFSET'] + nod_arcsec
 
                     ad2 = self.adjustWCSToReference(
