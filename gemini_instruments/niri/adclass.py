@@ -1,6 +1,7 @@
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
 import math
+import re
 
 from . import lookup
 from .. import gmu
@@ -268,6 +269,59 @@ class AstroDataNiri(AstroDataGemini):
             return 'MIRROR'
 
     @astro_data_descriptor
+    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+        """
+        Returns the dispersion in meters per pixel as a list (one value per
+        extension) or a float if used on a single-extension slice. It is
+        possible to control the units of wavelength using the input arguments.
+
+        Parameters
+        ----------
+        asMicrometers : bool
+            If True, return the wavelength in microns
+        asNanometers : bool
+            If True, return the wavelength in nanometers
+        asAngstroms : bool
+            If True, return the wavelength in Angstroms
+
+        Returns
+        -------
+        list/float
+            The dispersion(s)
+
+        """
+
+        camera = self.camera()
+        disperser = self.disperser(stripID=True)
+        config = (camera, disperser)
+
+        dispersion = lookup.dispersion_by_config[config]
+
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        output_units = "meters"  # By default
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+
+        dispersion = gmu.convert_units('angstroms', dispersion, output_units)
+
+        if not self.is_single:
+            dispersion = [dispersion] * len(self)
+
+        return dispersion
+
+    @returns_list
+    @astro_data_descriptor
+    def dispersion_axis(self):
+        return 1
+
+    @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
         #TODO: Complete rewrite here so serious testing required
         """
@@ -385,26 +439,6 @@ class AstroDataNiri(AstroDataGemini):
             return [zpt - (2.5 * math.log10(g) if in_adu else 0) if zpt and g
                     else None for g in gain]
 
-    @astro_data_descriptor
-    def nonlinearity_coeffs(self):
-        """
-        Returns a namedtuple containing the necessary information to perform
-        a nonlinearity correction.
-
-        Returns
-        -------
-        namedtuple/list
-            nonlinearity info (max counts, exptime correction, gamma, eta)
-        """
-        read_mode = self.read_mode()
-        well_depth = self.well_depth_setting()
-        naxis2 = self.hdr.get('NAXIS2')
-        if self.is_single:
-            return lookup.nonlin_coeffs.get((read_mode, naxis2, well_depth))
-        else:
-            return [lookup.nonlin_coeffs.get((read_mode, size, well_depth))
-                    for size in naxis2]
-
     @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
@@ -514,6 +548,22 @@ class AstroDataNiri(AstroDataGemini):
                 return None
         else:
             return [int(well * coadds / g) if g and well else None for g in gain]
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.focal_plane_mask(pretty=True)
+        if 'pix' in fpmask:
+            m = re.match('f(.*)-(.*)pix', fpmask)
+            return int(m.group(2)) * 0.7 / int(m.group(1))
+        return None
 
     @astro_data_descriptor
     def well_depth_setting(self):

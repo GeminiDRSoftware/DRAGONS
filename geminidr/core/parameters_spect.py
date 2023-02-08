@@ -7,6 +7,8 @@ from astrodata import AstroData
 from geminidr.core import parameters_generic
 from gempy.library import config, astrotools as at
 
+from . import parameters_preprocess
+
 
 def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
@@ -73,20 +75,56 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
         del self.grow
 
 
+class createNewApertureConfig(config.Config):
+    aperture = config.Field("Base aperture to offset from", int, None, optional=False)
+    shift = config.Field("Shift (in pixels) to new aperture", float, None, optional=False)
+    aper_upper = config.RangeField("Offset to new upper edge", float, None,
+                                   optional=True, min=0., inclusiveMin=False)
+    aper_lower = config.RangeField("Offset to new lower edge", float, None,
+                                   optional=True, max=0., inclusiveMax=False)
+    suffix = config.Field("Filename suffix", str, "_newApertureCreated", optional=True)
+
+    def validate(self):
+        config.Config.validate(self)
+        if (self.aper_lower and self.aper_upper) or\
+           (not self.aper_lower and not self.aper_upper):
+            pass
+        else:
+            raise ValueError("Both aper_lower and aper_upper must either be "
+                             "specified, or left as None.")
+
+
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=0)
     id_only = config.Field("Use only lines identified for wavelength calibration?", bool, False)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
     fwidth = config.RangeField("Feature width in pixels if reidentifying",
-                               float, None, min=2., optional=True)
+                               float, None, min=1., optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
+    min_line_length = config.RangeField("Exclude line traces shorter than this fraction of spatial dimension",
+                                        float, 0., min=0., max=1.)
+    debug_reject_bad = config.Field("Reject lines with suspiciously high SNR (e.g. bad columns)?", bool, True)
     debug = config.Field("Display line traces on image display?", bool, False)
+
+
+class determineSlitEdgesConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
+    spectral_order = config.RangeField("Fitting order in spectral direction",
+                                       int, 3, min=1)
+    edges1 = config.ListField("List of left edges of illuminated region(s)",
+                              float, default=None, minLength=1,
+                              optional=True, single=True)
+    edges2 = config.ListField("List of right edges of illuminated region(s)",
+                              float, default=None, minLength=1,
+                              optional=True, single=True)
+    debug = config.Field("Plot fits of edges and print extra information?",
+                         bool, False)
 
 
 class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
@@ -101,14 +139,13 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                             "local": "weighted by strength relative to local peaks"},
                                    default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
-    min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
-                             check=list_of_ints_check)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=5000., optional=True)
     dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
                                    min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
+    absorption = config.Field("Is feature type absorption?", bool, False)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
@@ -118,6 +155,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
         del self.function
         del self.grow
         self.niter = 3
+
 
 class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
@@ -140,6 +178,9 @@ class extractSpectraConfig(config.Config):
 def check_section(value):
     # Check for validity of a section string
     subsections = value.split(',')
+    if len(subsections) == 1 and subsections[0] == '':
+        # no Sections
+        return True
     for i, (x1, x2) in enumerate(s.split(':') for s in subsections):
         try:
             x1 = int(x1)
@@ -166,7 +207,7 @@ class findAperturesConfig(config.Config):
     percentile = config.RangeField("Percentile to determine signal for each spatial pixel",
                                    int, 80, min=1, max=100, optional=True, inclusiveMax=True)
     section = config.Field("Pixel section(s) for measuring the spatial profile",
-                           str, None, optional=True, check=check_section)
+                           str, "", optional=False, check=check_section)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels "
                                        "between sky lines", int, 50, min=1)
     min_snr = config.RangeField("Signal-to-noise ratio threshold for peak detection",
@@ -204,22 +245,18 @@ class flagCosmicRaysConfig(config.Config):
     spectral_order = config.Field(
         doc="Order for fitting and subtracting object continuum and sky line "
         "models, prior to running the main cosmic ray detection algorithm. "
-        "When None, defaults are used, according to the image size (as in "
-        "the IRAF task gemcrspec). To control which fits are performed, use "
-        "the bkgmodel parameter.",
+        "To control which fits are performed, use the bkgmodel parameter.",
         dtype=int,
         optional=True,
-        default=None,
+        default=9,
     )
     spatial_order = config.Field(
         doc="Order for fitting and subtracting object continuum and sky line "
         "models, prior to running the main cosmic ray detection algorithm. "
-        "When None, defaults are used, according to the image size (as in "
-        "the IRAF task gemcrspec). To control which fits are performed, use "
-        "the bkgmodel parameter.",
+        "To control which fits are performed, use the bkgmodel parameter.",
         dtype=int,
         optional=True,
-        default=None,
+        default=5,
     )
     bkgmodel = config.ChoiceField(
         doc="Set which background model(s) to use, between 'object', "
@@ -397,10 +434,18 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
+class maskBeyondSlitConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit", optional=True)
+    debug = config.Field("Plot the mask created.",
+                         bool, False)
+
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    threshold = config.RangeField("Threshold for flagging unilluminated pixels",
+                                  float, 0.01, min=0.01, max=1.0)
+    interactive = config.Field("Interactive fitting?", bool, False)
 
     def setDefaults(self):
         self.order = 20
@@ -424,6 +469,12 @@ class resampleToCommonFrameConfig(config.Config):
             raise ValueError("Maximum 3 of w1, w2, dw, npix must be specified")
         if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
             raise ValueError("Ending wavelength must be greater than starting wavelength")
+
+
+class separateSkyConfig(parameters_preprocess.separateSkyConfig):
+    debug_allowable_perpendicular_offset = config.RangeField(
+        "Maximum allowable offset perpendicular to the slit (arcsec)",
+        float, None, min=0, inclusiveMin=False, optional=True)
 
 
 class skyCorrectFromSlitConfig(config.core_1Dfitting_config):

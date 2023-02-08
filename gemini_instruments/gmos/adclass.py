@@ -803,6 +803,18 @@ class AstroDataGmos(AstroDataGemini):
         return (ayoff, byoff)
 
     @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return (self.phu[self._keyword_for('position_angle')] + 180) % 360
+
+    @astro_data_descriptor
     def shuffle_pixels(self):
         """
         Returns the number of rows that the charge has been shuffled, in
@@ -1073,6 +1085,21 @@ class AstroDataGmos(AstroDataGemini):
                               for w, p, blev, g, e_per_adu in zip(
                         well_limit, processed_limit, bias_levels, gain, self._electrons_per_adu())]
         return saturation
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.focal_plane_mask(pretty=True)
+        if 'arcsec' in fpmask:
+            return float(fpmask.replace('arcsec', ''))
+        return None
 
     @astro_data_descriptor
     def wcs_ra(self):

@@ -3,10 +3,10 @@ import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 from astrodata.fits import windowedOp
+from astrodata import wcs as adwcs
 from astrodata.nddata import ADVarianceUncertainty, NDAstroData
 from astropy.io import fits
 from astropy.nddata import NDData, VarianceUncertainty
-from astropy.wcs import WCS
 from astropy.modeling import models
 from astropy.table import Table
 from gwcs.wcs import WCS as gWCS
@@ -20,7 +20,9 @@ def testnd():
     nd = NDAstroData(data=np.arange(np.prod(shape)).reshape(shape),
                      variance=np.ones(shape) + 0.5,
                      mask=np.zeros(shape, dtype=bool),
-                     wcs=WCS(header=hdr),
+                     wcs=gWCS(models.Shift(1) & models.Shift(2),
+                              input_frame=adwcs.pixel_frame(2),
+                              output_frame=adwcs.pixel_frame(2, name='world')),
                      unit='ct')
     nd.meta['other'] = {'OBJMASK': np.arange(np.prod(shape)).reshape(shape),
                         'OBJCAT': Table([[1,2,3]], names=[['number']])}
@@ -39,7 +41,7 @@ def test_var(testnd):
 def test_window(testnd):
     win = testnd.window[2:4, 3:5]
     assert win.unit == 'ct'
-    assert_array_equal(win.wcs.wcs.crpix, [1, 2])
+    #assert_array_equal(win.wcs.wcs.crpix, [1, 2])
     assert_array_equal(win.data, [[13, 14], [18, 19]])
     assert_array_equal(win.mask, [[False, False], [False, True]])
     assert_array_almost_equal(win.uncertainty.array, 1.5)
@@ -76,6 +78,7 @@ def test_transpose(testnd):
     ndt = testnd.T
     assert_array_equal(ndt.data[0], [0, 5, 10, 15, 20])
     assert ndt.variance[-1, 0] == 10
+    assert ndt.wcs(1, 2) == testnd.wcs(2, 1)
 
 
 def test_set_section(testnd):
@@ -146,6 +149,17 @@ def test_access_to_other_planes(testnd):
 
 def test_access_to_other_planes_when_windowed(testnd):
     ndwindow = testnd.window[1:, 1:]
+    assert ndwindow.data.shape == (4, 4)
+    assert ndwindow.data[0, 0] == testnd.shape[1] + 1
+    assert ndwindow.OBJMASK.shape == (4, 4)
+    assert ndwindow.OBJMASK[0, 0] == testnd.shape[1] + 1
+    assert isinstance(ndwindow.OBJCAT, Table)
+    assert len(ndwindow.OBJCAT) == 3
+
+
+# Basically the same test as above but using slicing.
+def test_access_to_other_planes_when_sliced(testnd):
+    ndwindow = testnd[1:, 1:]
     assert ndwindow.data.shape == (4, 4)
     assert ndwindow.data[0, 0] == testnd.shape[1] + 1
     assert ndwindow.OBJMASK.shape == (4, 4)
