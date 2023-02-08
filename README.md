@@ -27,13 +27,13 @@ data for science purposes, please continue to use the [Gemini IRAF package](http
 To install DRAGONS:
 
 ```
-$ conda create -n dragons python=3.7 dragons stsci
+$ conda create -n dragons python=3.7 dragons ds9
 ```
 
 You might need to add two relevant conda channels if you haven't already:
 
 ```
-$ conda config --add channels http://ssb.stsci.edu/astroconda
+$ conda config --add channels conda-forge
 $ conda config --add channels http://astroconda.gemini.edu/public
 ```
 
