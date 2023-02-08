@@ -38,9 +38,14 @@ from scipy import optimize
 
 from specutils.utils.wcs_utils import air_to_vac
 
+import astrodata, gemini_instruments
 from gempy.library import astromodels as am
+from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
+from geminidr.f2.primitives_f2_longslit import F2Longslit
+from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from geminidr.niri.primitives_niri_image import NIRIImage
+from geminidr.niri.primitives_niri_longslit import NIRILongslit
 
 # -- Tests --------------------------------------------------------------------
 
@@ -102,6 +107,67 @@ def test_find_apertures():
     _p.findApertures()
 
 
+@pytest.mark.preprocessed_data
+def test_create_new_aperture(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
+    p = GNIRSLongslit([ad])
+
+    # Test creating a new aperture
+    p.createNewAperture(aperture=1, shift=100)
+    assert ad[0].APERTURE[1]['c0'] == pytest.approx(471.745)
+    assert ad[0].APERTURE[1]['aper_lower'] == pytest.approx(-21.13415)
+    assert ad[0].APERTURE[1]['aper_upper'] == pytest.approx(23.07667)
+
+    # Create another aperature and test aper_lower & aper_upper parameters
+    p.createNewAperture(aperture=1, shift=-100, aper_lower=-10, aper_upper=10)
+    assert ad[0].APERTURE[2]['c0'] == pytest.approx(271.745)
+    assert ad[0].APERTURE[2]['aper_lower'] == pytest.approx(-10)
+    assert ad[0].APERTURE[2]['aper_upper'] == pytest.approx(10)
+
+    # Delete aperture in the midde, test that aperture number increments
+    del ad[0].APERTURE[1]
+    p.createNewAperture(aperture=1, shift=100)
+    assert ad[0].APERTURE[2]['c0'] == pytest.approx(471.745)
+
+
+@pytest.mark.preprocessed_data
+def test_create_new_aperture_warnings_and_errors(path_to_inputs, caplog):
+    ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
+    p = GNIRSLongslit([ad])
+
+    # Check that only passing one 'aper' parameter raises a ValueError
+    with pytest.raises(ValueError):
+        p.createNewAperture(aperture=1, shift=100, aper_lower=10, aper_upper=None)
+        p.createNewAperture(aperture=1, shift=100, aper_lower=None, aper_upper=10)
+
+    # Check that aper_upper & aper_lower limits are respected
+    with pytest.raises(FieldValidationError):
+        p.createNewAperture(aperture=1, shift=10, aper_lower=-2, aper_upper=-1)
+    with pytest.raises(FieldValidationError):
+        p.createNewAperture(aperture=1, shift=10, aper_lower=1, aper_upper=2)
+    with pytest.raises(FieldValidationError):
+        p.createNewAperture(aperture=1, shift=100, aper_lower=5, aper_upper=10)
+    with pytest.raises(FieldValidationError):
+        p.createNewAperture(aperture=1, shift=100, aper_lower=-10, aper_upper=-5)
+
+    # Check that appropriate warnings are generated when creating apertures
+    # with either the 'center' or an edge off the end of the array. Do them in
+    # this order since the third and fourth also generate the warnings of the
+    # first two.
+    p.createNewAperture(aperture=1, shift=600, aper_lower=-5, aper_upper=400)
+    assert any('New aperture is partially off right of image.' in record.message
+                for record in caplog.records)
+    p.createNewAperture(aperture=1, shift=-300, aper_lower=-500, aper_upper=5)
+    assert any('New aperture is partially off left of image.' in record.message
+                for record in caplog.records)
+    p.createNewAperture(aperture=1, shift=1000)
+    assert any('New aperture is entirely off right of image.' in record.message
+                for record in caplog.records)
+    p.createNewAperture(aperture=1, shift=-1000)
+    assert any('New aperture is entirely off left of image.' in record.message
+                for record in caplog.records)
+
+
 @pytest.mark.parametrize('in_vacuo', (False, True, None))
 def test_get_spectrophotometry(path_to_outputs, in_vacuo):
 
@@ -117,7 +183,7 @@ def test_get_spectrophotometry(path_to_outputs, in_vacuo):
             names=['WAVELENGTH', 'FLUX', 'FWHM'])
 
         _table.name = os.path.join(path_to_outputs, 'specphot.dat')
-        _table.write(_table.name, format='ascii')
+        _table.write(_table.name, format='ascii', overwrite=True)
 
         return _table.name
 
@@ -271,6 +337,147 @@ def test_sky_correct_from_slit_with_multiple_sources():
                                   aperture_growth=2)[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
+
+
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize('filename,instrument',
+                         [('N20121118S0375_stack.fits', 'GNIRS'),
+                          ('S20040413S0268_stack.fits', 'GNIRS'),
+                          ('N20110718S0129_stack.fits', 'GNIRS'),
+                          ('S20140728S0282_stack.fits', 'F2'),
+                          ('S20131015S0043_stack.fits', 'F2'),
+                          ('S20140111S0155_stack.fits', 'F2'),
+                          ('N20090925S0312_stack.fits', 'NIRI'),
+                          ('N20081223S0263_stack.fits', 'NIRI'),
+                          ])
+def test_determine_slit_edges(filename, instrument, change_working_dir,
+                              path_to_inputs):
+
+    # Dictionary of SLITEDGE table results of the fits to the edges of the
+    # illuminated region of the given flats.
+    results_dict = {
+        'N20121118S0375_stack.fits': {
+            # GNIRS 111/mm LongBlue, off right edge of detector.
+            'c0': (33.532680341140335, 1025.8427086736597),
+            'c1': (-6.962491642935299, -6.962491642935299),
+            'c2': (-0.008639441981396224, -0.008639441981396224),
+            'c3': (0.006629301489564899, 0.006629301489564899)
+            },
+        'S20040413S0268_stack.fits': {
+            # GNIRS 32/mm ShortRed, centered
+            'c0': (175.1038780784617, 833.0919423028884),
+            'c1': (-1.539657063828468, -1.1023324795483416),
+            'c2': (-0.18673502127430647, 0.2131179499350503),
+            'c3': (-0.014948550646791112, 0.006686383003339903)
+            },
+        'N20110718S0129_stack.fits': {
+            # GNIRS 10/mm LongRed, one-off slit length shorter than normal.
+            'c0': (3.566833182251458, 897.1397974632922),
+            'c1': (-6.0544148638266035, -9.960620341672538),
+            'c2': (0.8947922316257532, 0.025634028590147614),
+            'c3': (0.5814317533641548, 0.012033436540264349)
+            },
+        'S20140728S0282_stack.fits': {
+            # F2 1pix-slit, HK, off left edge of detector.
+            'c0': (14.2347097150639, 1523.234709715064),
+            'c1': (62.14113511752838, 62.14113511752838),
+            'c2': (-1.9125412940944726, -1.9125412940944726),
+            'c3': (-0.050606934418499595, -0.050606934418499595)
+            },
+        'S20131015S0043_stack.fits': {
+            # F2 2pix-slit, JH.
+            'c0': (34.536800027052735, 1504.7962402622616),
+            'c1': (-2.152961200179425, 2.3511131672766807),
+            'c2': (-1.601418225294633, -2.1174852354416442),
+            'c3': (-1.5700522625671025, 0.09513029975888616),
+            'c4': (-4.24411360006377, 0.2518257633168614)
+            },
+        'S20140111S0155_stack.fits': {
+            # F2 2pix-slit, R3K. Efficiency drops to zero in middle.
+            'c0': (43.70026068842856, 1507.7421230551906),
+            'c1': (-6.235410307377804, -6.578431648509839),
+            'c2': (6.929845453000161, -2.996437641711837),
+            'c3': (0.23347486719205496, -0.04967233624948784)
+            },
+        'N20081223S0263_stack.fits': {
+            # NIRI f/6 4pix "blue" slit
+            'c0': (275.5204150559385, 715.3069316746302),
+            'c1': (2.872550744587704, 2.712112393776839),
+            'c2': (-0.10925863620137954, 0.7216836016094347),
+            'c3': (0.00016773603353222372, -0.0023568404108366085)
+            },
+        'N20090925S0312_stack.fits': {
+            # NIRI f/32 10pix slit, which is also the f/6 2pix slit
+            'c0': (-1.7415119488127857, 1013.2584880511872),
+            'c1': (1.3095852317414478, 1.3095852317414478),
+            'c2': (-0.18732505002211716, -0.18732505002211716),
+            'c3': (-0.19919994899021326, -0.19919994899021326)
+        }
+    }
+
+    classes_dict = {'GNIRS': GNIRSLongslit,
+                    'F2': F2Longslit,
+                    'NIRI': NIRILongslit}
+
+    with change_working_dir(path_to_inputs):
+
+        ad = astrodata.open(filename)
+
+    p = classes_dict[instrument]([ad])
+
+    if filename == 'N20110718S0129_stack.fits':
+        # Give edges explicitly since the slit is shorter than nominal.
+        e1, e2 = [10], [906]
+    else:
+        e1, e2 = None, None
+    if filename == 'S20131015S0043_stack.fits':
+        # This file benefits from a 4th-order fit.
+        order = 4
+    else:
+        order = 3
+
+    ad_out = p.determineSlitEdges(edges1=e1, edges2=e2,
+                                  spectral_order=order).pop()
+
+    for i, row in enumerate(ad_out[0].SLITEDGE):
+        m = am.table_to_model(row)
+        m_ref = m.copy()
+        for param in m.param_names:
+            setattr(m_ref, param, results_dict[filename][param][i])
+        x = np.arange(*m.domain)
+        np.testing.assert_allclose(m(x), m_ref(x), atol=1.)
+
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize('filename,instrument',
+                         [# GNIRS, 111/mm LongBlue
+                          ('N20121118S0375_distortionCorrected.fits', 'GNIRS'),
+                          # GNIRS 32/mm ShortRed
+                          ('N20100915S0162_distortionCorrected.fits', 'GNIRS'),
+                          # F2 6 pix slit, JH
+                          ('S20131019S0050_distortionCorrected.fits', 'F2'),
+                          # F2 2 pix slit, HK
+                          ('S20131127S0229_distortionCorrected.fits', 'F2'),
+                          # NIRI 6 pix slit, f/6
+                          ('N20100614S0569_distortionCorrected.fits', 'NIRI'),
+                          # NIRI 2 pix slit, f/6 (stay light streaks)
+                          ('N20100619S0602_distortionCorrected.fits', 'NIRI'),
+                          ])
+def test_slit_rectification(filename, instrument, change_working_dir,
+                              path_to_inputs):
+
+    classes_dict = {'GNIRS': GNIRSLongslit,
+                    'F2': F2Longslit,
+                    'NIRI': NIRILongslit}
+
+    with change_working_dir(path_to_inputs):
+        ad = astrodata.open(filename)
+
+    p = classes_dict[instrument]([ad])
+
+    ad_out = p.determineSlitEdges().pop()
+
+    for coeff in ('c1', 'c2', 'c3'):
+        np.testing.assert_allclose(ad_out[0].SLITEDGE[coeff], 0, atol=0.25)
 
 
 def test_trace_apertures():

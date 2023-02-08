@@ -5,11 +5,13 @@ from geminidr.core import parameters_photometry, parameters_register, parameters
 
 class adjustWCSToReferenceConfig(parameters_register.adjustWCSToReferenceConfig):
     final = config.RangeField("Search radius for object matching (arcseconds)",
-                              float, 0.2, min=0, inclusiveMin=False)
+                              float, 0.5, min=0, inclusiveMin=False)
     order = config.RangeField("Order of fitting polynomial", int, 3, min=1,
                               max=10, inclusiveMax=True)
     max_iters = config.RangeField("Maximum number of iterations for polynomial fit",
                                   int, 5, min=1, max=20, inclusiveMax=True)
+    debug = config.Field("Produce plots to aid debugging?", bool, False)
+
     def setDefaults(self):
         del self.method, self.fallback
         self.first_pass = 3.0
@@ -30,8 +32,10 @@ class determineAstrometricSolutionConfig(parameters_register.determineAstrometri
                               int, 3, min=1, max=10, inclusiveMax=True)
     max_iters = config.RangeField("Maximum number of iterations for polynomial fit",
                                   int, 5, min=1, max=20, inclusiveMax=True)
+    debug = config.Field("Produce plots and files to aid debugging?", bool, False)
+
     def setDefaults(self):
-        self.initial = 3
+        self.initial = 5
         self.final = 0.5
 
 

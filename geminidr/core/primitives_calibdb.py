@@ -103,6 +103,12 @@ class CalibDB(PrimitivesBASE):
         self._assert_calibrations(adinputs, cals)
         return adinputs
 
+    def getBPM(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_bpm(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
+        return adinputs
+
     def getMDF(self, adinputs=None):
         cals = self.caldb.get_calibrations(adinputs, caltype="mask")
         self._assert_calibrations(adinputs, cals)
@@ -132,22 +138,32 @@ class CalibDB(PrimitivesBASE):
         prior to storing AD objects as calibrations
         """
         for ad in adinputs:
+            mark_history = True
+
             if 'PROCMODE' not in ad.phu:
                 ad.phu.set('PROCMODE', self.mode)
             mode = ad.phu['PROCMODE']
 
             # if user mode: not uploading and sq, don't add mode.
-            if mode is 'sq' and (not self.upload or 'calibs' not in self.upload) :
+            if mode == 'sq' and (not self.upload or 'calibs' not in self.upload) :
                 proc_suffix = f""
+            elif 'BPM' in ad.tags:
+                proc_suffix = f""
+                if 'PROCBPM' in ad.phu:
+                    mark_history = False
             else:
                 proc_suffix = f"_{mode}"
 
             if suffix:
                 proc_suffix += suffix
-            ad.update_filename(suffix=proc_suffix, strip=True)
+                strip = True
+            else:
+                strip = False
+            ad.update_filename(suffix=proc_suffix, strip=strip)
             if update_datalab:
                 _update_datalab(ad, suffix, mode, self.keyword_comments)
-            gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
+            if mark_history:
+                gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
         return adinputs
 
     def storeProcessedArc(self, adinputs=None, suffix=None, force=False):
@@ -172,13 +188,14 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeBPM(self, adinputs=None, suffix=None):
-        caltype = 'bpm'
+    def storeBPM(self, adinputs=None, suffix=None, force=False):
+        caltype = 'processed_bpm'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
-                                            keyword_comments=self.keyword_comments)
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
+                                                keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                                           primname=self.myself(), update_datalab=False, keyword="BPM")
+                                           primname=self.myself(), update_datalab=False, keyword="PROCBPM")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
@@ -257,15 +274,13 @@ class CalibDB(PrimitivesBASE):
 
             ad.write(overwrite=True)
 
-        if self.mode not in ['sq', 'ql', 'qa']:
-            self.log.warning(f'Mode {self.mode} not recognized in '
-                             'storeScience, not storing anything')
-            return adinputs
+            if mode not in ['sq', 'ql', 'qa']:
+                self.log.warning(f'Mode "{mode}" not recognized in '
+                             f'storeScience, not storing {ad.filename}')
+            elif mode != 'qa' and self.upload and 'science' in self.upload:
+                # This logic will be handled by the CalDB objects, but check here to
+                # avoid changing and resetting filenames
 
-        # This logic will be handled by the CalDB objects, but check here to
-        # avoid changing and resetting filenames
-        if mode != 'qa' and self.upload and 'science' in self.upload:
-            for ad in adinputs:
                 old_filename = ad.filename
                 ad.update_filename(suffix=f"_{mode}"+suffix, strip=True)
                 self.caldb.store_calibration(ad, caltype="processed_science")

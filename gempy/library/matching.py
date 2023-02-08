@@ -270,7 +270,6 @@ class KDTreeFitter(Fitter):
         self.maxsep = self.sigma * maxsig
         self.k = k
         self.proximity_function = partial(proximity_function, sigma=self.sigma)
-
         try:
             opt_method = getattr(optimize, method)
             self._method = None
@@ -358,7 +357,7 @@ class KDTreeFitter(Fitter):
         tree = spatial.cKDTree(ref_coords)
         # avoid _convert_input since tree can't be coerced to a float
         farg = (model_copy, in_coords, tree)
-        p0, _ = _model_to_fit_params(model_copy)
+        p0, *_ = _model_to_fit_params(model_copy)
 
         arg_names = inspect.getfullargspec(self._opt_method).args
         args = [self.objective_function]

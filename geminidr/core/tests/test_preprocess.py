@@ -19,6 +19,9 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
                            assert_array_equal)
 
+from recipe_system.cal_service.userdb import UserDB
+from recipe_system.cal_service.caldb import CalReturn
+
 DEBUG = bool(os.getenv('DEBUG', False))
 
 nonlinearity_datasets = (
@@ -41,10 +44,15 @@ def niri_images(niri_image):
     return NIRIImage(adinputs)
 
 @pytest.fixture
-def niriprim():
+def niriprim(monkeypatch):
     file_path = download_from_archive("N20190120S0287.fits")
     ad = astrodata.open(file_path)
     p = NIRIImage([ad])
+
+    def mock_get_processed_bpm(*args, **kwargs):
+        bpm_file = os.path.join(os.path.dirname(__file__), '../../niri/lookups/BPM/NIRI_bpm.fits')
+        return CalReturn([bpm_file], [None])
+    monkeypatch.setattr(p.caldb, "get_processed_bpm", mock_get_processed_bpm)
     p.addDQ()
     return p
 
@@ -509,25 +517,25 @@ def test_associate_sky_pass_skies(niri_sequence):
 
     assert in_sky_names == out_sky_names
 
-@pytest.mark.parametrize('use_all',
-                         [False, True])
-def test_associate_sky_use_all(use_all, niri_sequence):
+def test_associate_sky_use_all(niri_sequence):
 
     objects = niri_sequence('object')
     skies1 = niri_sequence('sky1')
     skies2 = niri_sequence('sky2')
-    skies3 = niri_sequence('sky3')
 
-    p = NIRIImage(objects + skies1 + skies2 + skies3)
+    expected_skies = set([ad.filename for ad in skies2])
+
+    p = NIRIImage(objects + skies1 + skies2)
     p.separateSky()
-    # This test checks that minimum distance is respected, unless
-    # 'use_all' == True.
-    p.associateSky(distance=320, use_all=use_all)
+    # Check that 'use_all' sets all skies beyond the minimum distance as sky.
+    # Skies from "sky1" should be within the minimum distance, so all frames
+    # in the 'main' stream should have all skies from "sky2" in their SKYTABLE.
+    p.associateSky(distance=305, use_all=True)
 
-    for ad in p.showList():
+    for ad in p.streams['main']:
         skies = set([row[0].replace('_skyAssociated', '')
                      for row in ad.SKYTABLE])
-        assert (skies1[0].phu['ORIGNAME'] in skies) == use_all
+        assert skies == expected_skies - set([ad.phu['ORIGNAME']])
 
 def test_associate_sky_exclude_all(niri_sequence):
 

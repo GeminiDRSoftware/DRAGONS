@@ -299,6 +299,9 @@ before stacking. The tool for distortion correction and image stacking is
 
             conda install disco_stu
 
+.. note:: The ``disco_stu`` manual can be found at http://www.gemini.edu/sciops/data/software/disco_stu.pdf
+
+
 This package was created to be accessed via command line (See the
 :ref:`stack_science_files` command line section). Because of that,
 the API is not the most polished, and using it requires a fair number of steps.

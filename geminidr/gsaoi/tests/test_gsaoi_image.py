@@ -10,6 +10,13 @@ from geminidr.gsaoi.primitives_gsaoi_image import GSAOIImage
 from gempy.library import matching
 
 
+@pytest.mark.gsaoi
+def test_placeholder():
+    # Just making sure we have at least one non-slow GSAOI test in case that's what is causing issues in Jenkins
+    pass
+
+
+@pytest.mark.gsaoi
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
 def test_gsaoi_adjust_wcs_no_refcat(change_working_dir, path_to_refs, adinputs):
@@ -27,6 +34,7 @@ def test_gsaoi_adjust_wcs_no_refcat(change_working_dir, path_to_refs, adinputs):
             ad_compare(ad, ref_ad, atol=0.1, rtol=1e-5)
 
 
+@pytest.mark.gsaoi
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
 def test_gsaoi_resample_to_refcat(path_to_inputs, adinputs):

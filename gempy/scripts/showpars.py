@@ -54,8 +54,12 @@ def get_pars(filename, adpkg=None, drpkg=None):
 
 
 def showpars(pobj, primname, tags, show_docstring):
-    print(f"Dataset tagged as {tags}")
-    print(f"\nSettable parameters on '{primname}':")
+    print(f"Dataset tagged as {tags}\n")
+    if primname not in pobj.params:
+        raise KeyError(f"{primname} doesn't exist for "
+                       "this data type.")
+
+    print(f"Settable parameters on '{primname}':")
     print("=" * 40)
     print(f"{'Name':20s} {'Current setting':20s} Description\n")
 

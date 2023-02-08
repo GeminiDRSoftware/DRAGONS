@@ -9,6 +9,7 @@ import re
 import math
 import datetime
 import dateutil.parser
+from itertools import chain
 
 import numpy as np
 
@@ -81,10 +82,12 @@ gemini_keyword_names = dict(
     nominal_photometric_zeropoint = 'NOMPHOTZ',
     non_linear_level = 'NONLINEA',
     observation_epoch = 'OBSEPOCH',
+    observation_id = 'OBSID',
     observation_mode = 'OBSMODE',
     oiwfs = 'OIWFS_ST',
     overscan_section = 'OVERSEC',
     pixel_scale = 'PIXSCALE',
+    position_angle = 'PA',
     prism = 'PRISM',
     pupil_mask = 'PUPILMSK',
     pwfs1 = 'PWFS1_ST',
@@ -221,7 +224,7 @@ class AstroDataGemini(AstroData):
     @astro_data_tag
     def _type_gcal_lamp(self):
         gcallamp = self.phu.get('GCALLAMP')
-        if gcallamp == 'IRhigh' or (gcallamp is not None and gcallamp.startswith('QH')):
+        if gcallamp in ('IRhigh', 'IRlow') or (gcallamp is not None and gcallamp.startswith('QH')):
             shut = self.phu.get('GCALSHUT')
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
@@ -273,7 +276,7 @@ class AstroDataGemini(AstroData):
 
     @astro_data_tag
     def _type_bad_pixel_mask(self):
-        if 'BPMASK' in self.phu:
+        if 'BPMASK' in self.phu or 'PROCBPM' in self.phu:
             return TagSet(['BPM', 'CAL', 'PROCESSED'],
                             blocks=['IMAGE', 'SPECT', 'NON_SIDEREAL',
                                     'AZEL_TARGET',
@@ -382,17 +385,23 @@ class AstroDataGemini(AstroData):
 
     def _parse_section(self, keyword, pretty):
         try:
-            value_filter = (str if pretty else Section.from_string)
+            value_filter = lambda x: (x.asIRAFsection() if pretty else x)
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':
+                def _encode_shape(shape):
+                    if not shape:
+                        return None
+                    return Section(*chain.from_iterable([(0, npix) for npix in shape[::-1]]))
                 if self.is_single:
-                    sections = '[1:{1},1:{0}]'.format(*self.shape)
+                    sections = _encode_shape(self.shape)
                 else:
-                    sections = ['[1:{1},1:{0}]'.format(*ext.shape)
-                                for ext in self]
+                    sections = [_encode_shape(ext.shape) for ext in self]
             else:
-                sections = self.hdr.get(keyword)
+                if self.is_single:
+                    sections = Section.from_string(self.hdr.get(keyword))
+                else:
+                    sections = [Section.from_string(sec) if sec is not None else None for sec in self.hdr.get(keyword)]
             if self.is_single:
                 return process_fn(sections)
             else:
@@ -614,6 +623,8 @@ class AstroDataGemini(AstroData):
         # We assume that the central_wavelength keyword is in microns
         keyword = self._keyword_for('central_wavelength')
         wave_in_microns = self.phu.get(keyword, -1)
+        # Convert to float if they saved it as a string
+        wave_in_microns = float(wave_in_microns) if isinstance(wave_in_microns, str) else wave_in_microns
         if wave_in_microns < 0:
             return None
         return gmu.convert_units('micrometers', wave_in_microns,
@@ -1004,7 +1015,7 @@ class AstroDataGemini(AstroData):
             return exposure_time
 
     @astro_data_descriptor
-    def filter_name(self, stripID=False, pretty=False):
+    def filter_name(self, stripID=False, pretty=False, keepID=False):
         """
         Returns the name of the filter(s) used.  The component ID can be
         removed with either 'stripID' or 'pretty'.  If a combination of filters
@@ -1385,6 +1396,18 @@ class AstroDataGemini(AstroData):
         return self._get_wcs_pixel_scale(mean=True)
 
     @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return self.phu[self._keyword_for('position_angle')]
+
+    @astro_data_descriptor
     def program_id(self):
         """
         Returns the ID of the program the observation was taken for
@@ -1629,6 +1652,20 @@ class AstroDataGemini(AstroData):
             the slit name
         """
         return self.phu.get(self._keyword_for('slit'))
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float
+            the slit width in arcseconds
+        """
+        if 'SPECT' in self.tags:
+            raise NotImplementedError("A slit width is not defined for this instrument")
+        return None
 
     @astro_data_descriptor
     def target_ra(self, offset=False, pm=True, icrs=False):
@@ -2121,9 +2158,11 @@ class AstroDataGemini(AstroData):
 
         pixel_scale_list = []
         for ext in self:
+            if len(ext.shape) < 2:
+                return None
             try:
                 pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
-            except (IndexError, AttributeError):
+            except (IndexError, AttributeError) as iae:
                 scale = empirical_pixel_scale(ext)
                 if scale is not None:
                     pixel_scale_list.append(scale)

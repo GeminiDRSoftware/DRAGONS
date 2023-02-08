@@ -11,6 +11,7 @@ from scipy import interpolate, optimize
 
 from astropy import units as u
 from astropy import stats
+from astropy.coordinates import Angle
 from astropy.modeling import models, fitting
 
 
@@ -362,6 +363,23 @@ def create_mask_from_regions(points, regions=None):
     return mask
 
 
+def get_center_of_projection(wcs):
+    """
+    Determines the location of the center of projection from a gWCS object
+
+    Parameters
+    ----------
+    wcs: gWCS object
+
+    Returns
+    -------
+    ra, dec: location of pole
+    """
+    for m in wcs.forward_transform:
+        if isinstance(m, models.RotateNative2Celestial):
+            return (m.lon.value, m.lat.value)
+
+
 def get_corners(shape):
     """
     This is a recursive function to calculate the corner indices
@@ -425,6 +443,34 @@ def get_spline3_extrema(spline):
     return np.array(minima), np.array(maxima)
 
 
+def spherical_offsets_by_pa(coord1, coord2, position_angle=0):
+    """
+    Calculates the spherical offsets between two sky coordinates relative to
+    a specific position angle.
+
+    Parameters
+    ----------
+    coord1: astropy.coordinates.SkyCoord object
+        initial position
+    coord2: astropy.coordinates.SkyCoord object
+        offset position
+    position_angle: float
+        position angle (in degrees) of slit
+
+    Returns
+    -------
+    dist_para, dist_perp: floats
+        the offsets (in arcseconds) parallel and perpendicular to the slit
+        between the two coordinates
+    """
+    frame = coord1.skyoffset_frame(rotation=Angle(position_angle, unit='deg'))
+    offset_coord = coord2.transform_to(frame)
+    # coord1 is (0, 0) in the new frame of course
+    dist_para = offset_coord.lat.deg * 3600
+    dist_perp = offset_coord.lon.deg * 3600
+    return dist_para, dist_perp
+
+
 def transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
     This function takes a list of arrays and returns them (or a section of them),
@@ -446,6 +492,60 @@ def transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
     return list(None if arg is None
                 else arg.T[section] if transpose else arg[section] for arg in args)
+
+
+def weighted_sigma_clip(data, weights=None, sigma=3, sigma_lower=None,
+                        sigma_upper=None, maxiters=5):
+    """
+    Perform sigma-clipping on a dataset, accounting for different relative
+    weights of the data.
+
+    Parameters
+    ----------
+    data: array/masked_array
+        the data
+    weights: array/None
+        relative weights of the data
+    sigma: float/None
+        number of standard deviations to clip if clipping symmetrically
+    sigma_lower: float/None
+        number of standard deviations for lower clip (non-symmetric)
+    sigma_upper: float/None
+        number of standard deviations for upper clip (non-symmetric)
+    maxiters: int
+        maximum number of iterations to perform
+
+    Returns
+    -------
+    np.ma.masked_array: data with mask indicating clipped points
+    """
+    if sigma_lower is None or sigma_upper is None:
+        sigma_lower = sigma_upper = sigma
+    if weights is None:
+        weights = np.ones_like(data)
+
+    if isinstance(data, np.ma.masked_array):
+        good = ~data.mask
+        data = data.data
+    else:
+        good = np.ones_like(data, dtype=bool)
+
+    niter = 0
+    while True:
+        avg = (np.average(data[good], weights=weights[good]) if niter > 0
+               else np.median(data[good]))
+        ngood = good.sum()
+        if ngood <= 1 or niter == maxiters:
+            break
+        std = np.sqrt(np.sum(weights[good] * (data[good] - avg) ** 2) /
+                      np.sum(weights[good]))
+        good[np.logical_or(data < avg - sigma_lower * std,
+                           data > avg + sigma_upper * std)] = False
+        if good.sum() == ngood:
+            break
+        niter += 1
+
+    return np.ma.masked_array(data, mask=~good)
 
 
 def clipped_mean(data):
