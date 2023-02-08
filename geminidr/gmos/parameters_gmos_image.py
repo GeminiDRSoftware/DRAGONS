@@ -20,6 +20,13 @@ class addDQConfig(parameters_standardize.addDQConfig):
 class makeFringeFrameConfig(parameters_image.makeFringeFrameConfig):
     subtract_median_image = config.Field("Subtract median image?", bool, None, optional=True)
 
+class QECorrectConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_bgAdjusted", optional=True)
+    factors = config.ListField("Scaling factors", float, None, minLength=2,
+                               maxLength=2, optional=True)
+    common = config.Field("Use the same scaling factors for all inputs?",
+                          bool, True)
+
 class scaleFlatsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_scaled", optional=True)
 

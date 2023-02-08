@@ -28,13 +28,14 @@ def reduce(p):
     p.separateSky()
     p.associateSky()
     p.skyCorrect(mask_objects=False)
+    p.cleanReadout()
     p.detectSources()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
     p.scaleCountsToReference()
     p.stackFrames()
     p.writeOutputs()
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
     return
 
 _default = reduce

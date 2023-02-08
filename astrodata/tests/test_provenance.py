@@ -5,7 +5,7 @@ import pytest
 
 import astrodata
 from astrodata import fits
-from astrodata.provenance import (PROVENANCE_DATE_FORMAT, add_provenance,
+from astrodata.provenance import (add_provenance,
                                   add_provenance_history, clone_provenance,
                                   clone_provenance_history)
 
@@ -25,7 +25,7 @@ def ad2():
 
 
 def test_add_get_provenance(ad):
-    timestamp = datetime.now().strftime(PROVENANCE_DATE_FORMAT)
+    timestamp = datetime.utcnow().isoformat()
     filename = "filename"
     md5 = "md5"
     primitive = "provenance_added_by"
@@ -51,7 +51,7 @@ def test_add_get_provenance(ad):
 
 
 def test_add_duplicate_provenance(ad):
-    timestamp = datetime.now().strftime(PROVENANCE_DATE_FORMAT)
+    timestamp = datetime.utcnow().isoformat()
     filename = "filename"
     md5 = "md5"
     primitive = "provenance_added_by"
@@ -64,10 +64,10 @@ def test_add_duplicate_provenance(ad):
 
 
 def test_add_get_provenance_history(ad):
-    timestamp_start = datetime.now()
+    timestamp_start = datetime.utcnow()
     timestamp_end = (timestamp_start +
-                     timedelta(days=1)).strftime(PROVENANCE_DATE_FORMAT)
-    timestamp_start = timestamp_start.strftime(PROVENANCE_DATE_FORMAT)
+                     timedelta(days=1)).isoformat()
+    timestamp_start = timestamp_start.isoformat()
     primitive = "primitive"
     args = "args"
 
@@ -83,10 +83,10 @@ def test_add_get_provenance_history(ad):
 
 
 def test_add_dupe_provenance_history(ad):
-    timestamp_start = datetime.now()
+    timestamp_start = datetime.utcnow()
     timestamp_end = (timestamp_start +
-                     timedelta(days=1)).strftime(PROVENANCE_DATE_FORMAT)
-    timestamp_start = timestamp_start.strftime(PROVENANCE_DATE_FORMAT)
+                     timedelta(days=1)).isoformat()
+    timestamp_start = timestamp_start.isoformat()
     primitive = "primitive"
     args = "args"
 
@@ -98,7 +98,7 @@ def test_add_dupe_provenance_history(ad):
 
 
 def test_clone_provenance(ad, ad2):
-    timestamp = datetime.now().strftime(PROVENANCE_DATE_FORMAT)
+    timestamp = datetime.utcnow().isoformat()
     filename = "filename"
     md5 = "md5"
     primitive = "provenance_added_by"
@@ -112,10 +112,10 @@ def test_clone_provenance(ad, ad2):
 
 
 def test_clone_provenance_history(ad, ad2):
-    timestamp_start = datetime.now()
+    timestamp_start = datetime.utcnow()
     timestamp_end = (timestamp_start +
-                     timedelta(days=1)).strftime(PROVENANCE_DATE_FORMAT)
-    timestamp_start = timestamp_start.strftime(PROVENANCE_DATE_FORMAT)
+                     timedelta(days=1)).isoformat()
+    timestamp_start = timestamp_start.isoformat()
     primitive = "primitive"
     args = "args"
 

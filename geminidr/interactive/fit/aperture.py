@@ -167,7 +167,7 @@ class FindSourceAperturesModel:
         # the slit is vertical, the WCS has not been modified
         target_location = ext.wcs.invert(
             ext.central_wavelength(asNanometers=True), ext.target_ra(),
-            ext.target_dec())[2 - ext.dispersion_axis()]
+            ext.target_dec())[1]
         # gWCS will return NaN coords if sent Nones, so assume target is in center
         if np.isnan(target_location):
             target_location = (self.profile_shape - 1) / 2
@@ -269,7 +269,7 @@ class FindSourceAperturesModel:
         if peaks.size:
             initx = peaks[np.argmin(abs(peaks - x))]
             if abs(initx - x) <= 20:
-                peaks = pinpoint_peaks(self.profile, self.prof_mask, [initx])[0]
+                peaks = pinpoint_peaks(data=self.profile, mask=self.prof_mask, peaks=[initx])[0]
                 limits = get_limits(np.nan_to_num(self.profile),
                                     self.prof_mask,
                                     peaks=peaks,
@@ -999,7 +999,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         return np.array(locations), limits
 
 
-def interactive_find_source_apertures(ext, ui_params=None, **kwargs):
+def interactive_find_source_apertures(ext, ui_params=None, filename=None, **kwargs):
     """
     Perform an interactive find of source apertures with the given initial
     parameters.
@@ -1012,6 +1012,10 @@ def interactive_find_source_apertures(ext, ui_params=None, **kwargs):
 
     """
     model = FindSourceAperturesModel(ext, **kwargs)
-    fsav = FindSourceAperturesVisualizer(model, ui_params=ui_params, filename_info=ext.filename)
+    if not filename:
+        filename = ext.filename
+    if not filename and hasattr(ext, "orig_filename"):
+        filename = ext.orig_filename
+    fsav = FindSourceAperturesVisualizer(model, ui_params=ui_params, filename_info=filename)
     interactive_fitter(fsav)
     return fsav.result()

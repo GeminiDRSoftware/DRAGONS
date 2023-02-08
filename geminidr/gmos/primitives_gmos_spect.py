@@ -8,14 +8,16 @@ import os
 import numpy as np
 from importlib import import_module
 from datetime import datetime
-from functools import reduce
-from copy import deepcopy
+from copy import copy, deepcopy
+from functools import partial
 
 from astropy.modeling import models, Model
 from astropy import units as u
 from scipy.interpolate import UnivariateSpline
 
+import geminidr
 from geminidr.core import Spect
+from gempy.library.fitting import fit_1D
 from .primitives_gmos import GMOS
 from . import parameters_gmos_spect
 
@@ -27,7 +29,8 @@ from gempy.library import astromodels as am
 from gempy.library import transform, wavecal
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
-
+from ..interactive.fit.wavecal import WavelengthSolutionVisualizer
+from ..interactive.interactive import UIParameters
 
 # Put this here for now!
 def qeModel(ext, use_iraf=False):
@@ -384,7 +387,146 @@ class GMOSSpect(Spect, GMOS):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def standardizeWCS(self, adinputs=None, suffix=None):
+    def flagCosmicRays(self, adinputs=None, **params):
+        """
+        Detect and clean cosmic rays in a 2D wavelength-dispersed image,
+        using the well-known LA Cosmic algorithm of van Dokkum (2001)*, as
+        implemented in McCully's optimized version for Python, "astroscrappy"+.
+
+        * LA Cosmic: http://www.astro.yale.edu/dokkum/lacosmic
+        + astroscrappy: https://github.com/astropy/astroscrappy
+
+        Parameters
+        ----------
+        suffix : str
+            Suffix to be added to output files.
+
+        spectral_order, spatial_order : int or None, optional
+            Order for fitting and subtracting object continuum and sky line
+            models, prior to running the main cosmic ray detection algorithm.
+            When None, defaults optimized for GMOS are used. To control which
+            fits are performed, use the bkgmodel parameter.
+
+       bkgmodel : {'both', 'object', 'skyline', 'none'}, optional
+           Set which background model(s) to use, between 'object', 'skyline',
+           'both', or 'none'. Different data may get better results with
+           different background models.
+           'both': Use both object and sky line models.
+           'object': Use object model only.
+           'skyline': Use sky line model only.
+           'none': Don't use a background model.
+           Default: 'skyline'.
+
+        bitmask : int, optional
+            Bits in the input data quality `flags` that are to be used to
+            exclude bad pixels from cosmic ray detection and cleaning. Default
+            65535 (all non-zero bits, up to 16 planes).
+
+        sigclip : float, optional
+            Laplacian-to-noise limit for cosmic ray detection. Lower values
+            will flag more pixels as cosmic rays. Default: 4.5.
+
+        sigfrac : float, optional
+            Fractional detection limit for neighboring pixels. For cosmic ray
+            neighbor pixels, a lapacian-to-noise detection limit of
+            sigfrac * sigclip will be used. Default: 0.3.
+
+        objlim : float, optional
+            Minimum contrast between Laplacian image and the fine structure
+            image.  Increase this value if cores of bright stars are flagged
+            as cosmic rays. Default: 5.0.
+
+        niter : int, optional
+            Number of iterations of the LA Cosmic algorithm to perform.
+            Default: 4.
+
+        sepmed : boolean, optional
+            Use the separable median filter instead of the full median filter.
+            The separable median is not identical to the full median filter,
+            but they are approximately the same and the separable median filter
+            is significantly faster and still detects cosmic rays well.
+            Default: True
+
+        cleantype : {'median', 'medmask', 'meanmask', 'idw'}, optional
+            Set which clean algorithm is used:
+            'median': An umasked 5x5 median filter
+            'medmask': A masked 5x5 median filter
+            'meanmask': A masked 5x5 mean filter
+            'idw': A masked 5x5 inverse distance weighted interpolation
+            Default: "meanmask".
+
+        fsmode : {'median', 'convolve'}, optional
+            Method to build the fine structure image:
+            'median': Use the median filter in the standard LA Cosmic algorithm
+            'convolve': Convolve the image with the psf kernel to calculate the
+            fine structure image.
+            Default: 'median'.
+
+        psfmodel : {'gauss', 'gaussx', 'gaussy', 'moffat'}, optional
+            Model to use to generate the psf kernel if fsmode == 'convolve' and
+            psfk is None. The current choices are Gaussian and Moffat profiles.
+            'gauss' and 'moffat' produce circular PSF kernels. The 'gaussx' and
+            'gaussy' produce Gaussian kernels in the x and y directions
+            respectively. Default: "gauss".
+
+        psffwhm : float, optional
+            Full Width Half Maximum of the PSF to use to generate the kernel.
+            Default: 2.5.
+
+        psfsize : int, optional
+            Size of the kernel to calculate. Returned kernel will have size
+            psfsize x psfsize. psfsize should be odd. Default: 7.
+
+        psfbeta : float, optional
+            Moffat beta parameter. Only used if fsmode=='convolve' and
+            psfmodel=='moffat'. Default: 4.765.
+
+        verbose : boolean, optional
+            Print to the screen or not. Default: False.
+
+        debug : bool
+            Enable plots for debugging and store object and sky fits in the
+            ad objects.
+
+        """
+        spectral_order_param = params.pop('spectral_order')
+        spatial_order_param = params.pop('spatial_order')
+
+        adoutputs = []
+        for ad in adinputs:
+            spectral_order = 9 if spectral_order_param is None else spectral_order_param
+
+            # Values selected to work on skyline-heavy data.
+            # Eg. R400, 750nm, >1000 sec.
+            # In some cases, the curvature of the lines lead to a really bad
+            # sky line model unless the order is rather large.
+            # The users should pay attention and adjust spatial_order when
+            # the defaults below do not work.  We need a better solution.
+            # The values are set purely from empirical evidence, we don't
+            # fully understand.
+            if ad.detector_roi_setting() == 'Full Frame':
+                spatial_order = ((45 if ad.detector_x_bin() >= 2 else 5)
+                                 if spatial_order_param is None else spatial_order_param)
+            elif ad.detector_roi_setting() == 'Central Spectrum':
+                spatial_order = ((15 if ad.detector_x_bin() == 2 else 5)
+                                 if spatial_order_param is None else spatial_order_param)
+            else:  # custom ROI?  Use the generic flagCR default.
+                spatial_order = None
+
+            if spatial_order is None:
+                adoutputs.extend(super().flagCosmicRays([ad],
+                                         spectral_order=spectral_order,
+                                         **params))
+            else:
+                adoutputs.extend(super().flagCosmicRays([ad],
+                                         spectral_order=spectral_order,
+                                         spatial_order=spatial_order,
+                                         **params))
+
+        # ?? delete adinputs ??
+        return adoutputs
+
+    def standardizeWCS(self, adinputs=None, **params):
         """
         This primitive updates the WCS attribute of each NDAstroData extension
         in the input AstroData objects. For spectroscopic data, it means
@@ -402,6 +544,7 @@ class GMOSSpect(Spect, GMOS):
         log = self.log
         timestamp_key = self.timestamp_keys[self.myself()]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        super().standardizeWCS(adinputs, **params)
 
         for ad in adinputs:
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
@@ -412,12 +555,11 @@ class GMOSSpect(Spect, GMOS):
                 cenwave = cenwave
             transform.add_longslit_wcs(ad, central_wavelength=cenwave)
 
-            # Timestamp and update filename
+            # Timestamp. Suffix was updated in the super() call
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None):
+    def _get_arc_linelist(self, waves=None, ad=None):
         use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
 
         use_second_order = False
@@ -426,3 +568,7 @@ class GMOSSpect(Spect, GMOS):
         filename = os.path.join(lookup_dir,
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
         return wavecal.LineList(filename)
+
+    def _get_cenwave_accuracy(self, ad=None):
+        # Accuracy of central wavelength (nm) for a given instrument/setup.
+        return 10

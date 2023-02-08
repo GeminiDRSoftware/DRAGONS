@@ -711,7 +711,7 @@ class Transform:
         else:
             mapping = GeoMap(self, output_shape, inverse=inverse)
             output_array = ndimage.map_coordinates(input_array, mapping.coords,
-                                        output_shape, order=order, cval=cval)
+                                        order=order, cval=cval)
         return output_array
 
     @classmethod
@@ -1024,10 +1024,6 @@ class DataGroup:
                     # Jacobian at every input point. This is done by numerical
                     # derivatives so expand the output pixel grid.
                     if conserve:
-
-                        self.log.warning("Flux conservation has not been fully "
-                                         "tested for non-affine transforms")
-
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
                         transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
 
@@ -1240,6 +1236,16 @@ class DataGroup:
         """
         trans_output_shape = tuple(length * subsample for length in output_shape)
 
+        # Any NaN or Inf values in the array prior to resampling can cause
+        # havoc. There shouldn't be any, but let's check and spit out a
+        # warning if there are, so we at least produce a sensible output array.
+        isnan = np.isnan(input_array)
+        isinf = np.isinf(input_array)
+        if isnan.any() or isinf.any():
+            log.warning(f"There are {isnan.sum()} NaN and {isinf.sum()} inf "
+                        f"values in the {output_key} array. Setting to zero.")
+            input_array[isnan | isinf] = 0
+
         # We want to transform any DQ bit arrays into floats so we can sample
         # the "ringing" from the interpolation and flag appropriately
         out_dtype = np.float32 if np.issubdtype(
@@ -1408,7 +1414,7 @@ def add_mosaic_wcs(ad, geotable):
 
 
 @insert_descriptor_values()
-def add_longslit_wcs(ad, central_wavelength=None):
+def add_longslit_wcs(ad, central_wavelength=None, pointing=None):
     """
     Attach a gWCS object to all extensions of an AstroData objects,
     representing the approximate spectroscopic WCS, as returned by
@@ -1420,6 +1426,8 @@ def add_longslit_wcs(ad, central_wavelength=None):
         the AstroData instance requiring a WCS
     central_wavelength : float / None
         central wavelength in nm (None => use descriptor)
+    pointing: 2-tuple / None
+        RA and Dec of pointing center to reproject WCS
 
     Returns
     -------
@@ -1430,14 +1438,18 @@ def add_longslit_wcs(ad, central_wavelength=None):
 
     # TODO: This appears to be true for GMOS. Revisit for other multi-extension
     # spectrographs once they arrive and GMOS tests are written
-    crval1 = set(ad.hdr['CRVAL1'])
-    crval2 = set(ad.hdr['CRVAL2'])
-    if len(crval1) * len(crval2) != 1:
-        raise ValueError(f"Not all CRPIX1/CRPIX2 keywords are the same in {ad.filename}")
+    if pointing is None:
+        crval1 = set(ad.hdr['CRVAL1'])
+        crval2 = set(ad.hdr['CRVAL2'])
+        if len(crval1) * len(crval2) != 1:
+            raise ValueError(f"Not all CRVAL1/CRVAL2 keywords are the same in {ad.filename}")
+        pointing = (crval1.pop(), crval2.pop())
+
+    if ad.dispersion() is None:
+        raise ValueError(f"Unknown dispersion for {ad.filename}")
 
     for ext, dispaxis, dw in zip(ad, ad.dispersion_axis(), ad.dispersion(asNanometers=True)):
-        wcs = ext.wcs
-        if not isinstance(wcs.output_frame, cf.CelestialFrame):
+        if not isinstance(ext.wcs.output_frame, cf.CelestialFrame):
             raise TypeError(f"Output frame of {ad.filename} extension {ext.id}"
                             " is not a CelestialFrame instance")
 
@@ -1450,16 +1462,21 @@ def add_longslit_wcs(ad, central_wavelength=None):
                                           axes_names='AWAV')
         output_frame = cf.CompositeFrame([spectral_frame, sky_frame], name='world')
 
-        transform = ext.wcs.forward_transform
-        crpix = transform[f'crpix{dispaxis}'].offset.value
+        transform = adwcs.create_new_image_projection(ext.wcs.forward_transform, pointing)
+        crpix = transform.inverse(*pointing)
+
         transform.name = None  # so we can reuse "SKY"
         #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :-crpix})
         if dispaxis == 1:
-            sky_model = models.Mapping((0, 0)) | (models.Const1D(-crpix) & models.Identity(1)) | transform
+            sky_model = (models.Mapping((0, 0)) |
+                         (models.Const1D(0) & models.Shift(-crpix[1])))
         else:
-            sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(-crpix)) | transform
+            sky_model = (models.Mapping((0, 0)) |
+                         (models.Shift(-crpix[0]) & models.Const1D(0)))
+        sky_model |= transform[2:]
+        sky_model[-1].lon, sky_model[-1].lat = pointing
         sky_model.name = 'SKY'
-        wave_model = (models.Shift(crpix) | models.Scale(dw) |
+        wave_model = (models.Shift(-crpix[dispaxis-1]) | models.Scale(dw) |
                       models.Shift(central_wavelength))
         wave_model.name = 'WAVE'
 
@@ -1471,7 +1488,7 @@ def add_longslit_wcs(ad, central_wavelength=None):
                                  models.Mapping((0,), n_inputs=2))
             transform = models.Mapping((1, 0)) | wave_model & sky_model
 
-        new_wcs = gWCS([(wcs.input_frame, transform),
+        new_wcs = gWCS([(ext.wcs.input_frame, transform),
                         (output_frame, None)])
         ext.wcs = new_wcs
 

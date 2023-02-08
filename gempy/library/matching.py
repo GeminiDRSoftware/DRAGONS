@@ -63,7 +63,7 @@ class BruteLandscapeFitter(Fitter):
 
         out_coords = (np.array(self.grid_model(*updated_model(*in_coords))) + 0.5).astype(np.int32)
         if len(in_coords) == 1:
-            out_coords = out_coords[np.new_axis, :]
+            out_coords = out_coords[np.newaxis, :]
         #result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords))
         result = cython_utils.landstat(landscape.ravel(), out_coords.ravel(),
                                        np.array(landscape.shape, dtype=np.int32),
@@ -138,6 +138,9 @@ class BruteLandscapeFitter(Fitter):
             iter(ref_coords[0])
         except TypeError:
             ref_coords = (ref_coords,)
+            output1d = True
+        else:
+            output1d = False
 
         # Remember, coords are x-first (reversed python order)
         self.grid_model = models.Identity(len(in_coords))
@@ -152,6 +155,13 @@ class BruteLandscapeFitter(Fitter):
             else:
                 scale = 1
                 landshape = tuple(int(_max) for _max in maxs)[::-1]
+
+        # We need to fiddle around a bit here to ensure a 1D output gets
+        # returned in a way that can be unpacked (like higher-D outputs)
+        if output1d:
+            m = self.grid_model.copy()
+            self.grid_model = lambda *args: m(args)
+        if landscape is None:
             landscape = self.mklandscape(ref_coords, sigma*scale, maxsig, landshape)
 
         farg = (model_copy, np.asanyarray(in_coords, dtype=float), landscape)
@@ -260,7 +270,6 @@ class KDTreeFitter(Fitter):
         self.maxsep = self.sigma * maxsig
         self.k = k
         self.proximity_function = partial(proximity_function, sigma=self.sigma)
-
         try:
             opt_method = getattr(optimize, method)
             self._method = None
@@ -348,7 +357,7 @@ class KDTreeFitter(Fitter):
         tree = spatial.cKDTree(ref_coords)
         # avoid _convert_input since tree can't be coerced to a float
         farg = (model_copy, in_coords, tree)
-        p0, _ = _model_to_fit_params(model_copy)
+        p0, *_ = _model_to_fit_params(model_copy)
 
         arg_names = inspect.getfullargspec(self._opt_method).args
         args = [self.objective_function]
@@ -663,8 +672,8 @@ def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
     elif abs(rotation) > rot_threshold:
         m_rotate.angle.fixed = True
         m_init = m_rotate | m_init
-        log.warning("A rotation of {:.3f} degrees is expected but the "
-                    "rotation is fixed".format(rotation))
+        log.warning(f"A rotation of {rotation:.3f} degrees is applied but "
+                    "held fixed")
 
     m_magnify = Scale2D(magnification)
     if scale:
@@ -673,12 +682,21 @@ def find_alignment_transform(incoords, refcoords, transform=None, shape=None,
     elif abs(magnification - 1) > mag_threshold:
         m_magnify.factor.fixed = True
         m_init = m_magnify | m_init
-        log.warning("A magnification of {:.4f} is expected but the "
-                    "magnification is fixed".format(magnification))
+        log.warning(f"A magnification of {magnification:.4f} is applied but "
+                    "held fixed")
 
     # Tolerance here aims to achieve <0.1 pixel differences in the tests
-    m_final = fit_model(m_init, incoords, refcoords, sigma=sigma, scale=factor,
-                        brute=brute, tolerance=sigma*1e-5)
+    try:
+        m_final = fit_model(m_init, incoords, refcoords, sigma=sigma, scale=factor,
+                            brute=brute, tolerance=sigma*1e-5)
+    except ValueError as e:
+        if any(np.logical_or(max(refco) < min(inco), min(refco) > max(inco))
+               for inco, refco in zip(incoords, refcoords)):
+            log.warning("No overlap between input and reference coords")
+            m_final = models.Identity(len(incoords))
+        else:
+            raise e
+
     if return_matches:
         matched = match_sources(m_final(*incoords), refcoords, radius=match_radius)
         ind2 = np.where(matched >= 0)

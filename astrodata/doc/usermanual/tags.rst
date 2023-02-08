@@ -160,7 +160,7 @@ types of data an instrument can produce.
 Tags are about what the dataset is, not it's flavor.  The Astrodata
 "descriptors" (see the section on :ref:`headers`) will describe the flavor.
 For example, tags will say that the data is an image, but the descriptor
-will say whether it is B-band or R-band.   Tags are used for recipe and
+will say whether it is B-band or R-band. Tags are used for recipe and
 primitive selection.  A way to understand the difference between a tag and
 a descriptor is in terms of the recipe that will be selected: A GMOS image
 will use the same recipe whether it's a B-band or R-band image. However,

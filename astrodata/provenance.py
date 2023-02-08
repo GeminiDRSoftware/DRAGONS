@@ -4,9 +4,6 @@ from astropy.table import Table
 from datetime import datetime
 
 
-PROVENANCE_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
-
-
 def add_provenance(ad, filename, md5, primitive, timestamp=None):
     """
     Add the given provenance entry to the full set of provenance records on
@@ -30,7 +27,7 @@ def add_provenance(ad, filename, md5, primitive, timestamp=None):
         return
 
     if timestamp is None:
-        timestamp = datetime.now().strftime(PROVENANCE_DATE_FORMAT)
+        timestamp = datetime.utcnow().isoformat()
 
     if hasattr(ad, 'PROVENANCE'):
         existing_provenance = ad.PROVENANCE
@@ -233,7 +230,7 @@ def provenance_summary(ad, provenance=True, provenance_history=True):
             primitive_col_idx, args_col_idx, timestamp_start_col_idx, timestamp_stop_col_idx = \
                 find_provenance_history_column_indices(ad)
 
-            primitive_col_size = 8
+            primitive_col_size = 9
             timestamp_start_col_size = 28
             timestamp_stop_col_size = 28
             args_col_size = 16

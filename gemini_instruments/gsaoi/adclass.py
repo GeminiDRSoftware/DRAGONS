@@ -219,19 +219,6 @@ class AstroDataGsaoi(AstroDataGemini):
             return [_zpt(a, filter_name, g, in_adu)
                     for a, g in zip(array_name, gain)]
 
-    @astro_data_descriptor
-    def nonlinearity_coeffs(self):
-        """
-        For each extension, return a tuple (a0,a1,a2) of coefficients such
-        that the linearized counts are a0 + a1*c _ a2*c^2 for raw counts c
-
-        Returns
-        -------
-        tuple/list
-            coefficients
-        """
-        return self._look_up_arr_property('coeffs')
-
     @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
@@ -316,8 +303,11 @@ class AstroDataGsaoi(AstroDataGemini):
         orig_gain = self._look_up_arr_property('gain')
         gain = self.gain()
         if self.is_single:
-            return welldepth * orig_gain / gain
-        return [w * o / g for w, o, g in zip(welldepth, orig_gain, gain)]
+            try:
+                return welldepth * orig_gain / gain
+            except TypeError:
+                return None
+        return [w * o / g if w and o and g else None for w, o, g in zip(welldepth, orig_gain, gain)]
 
     @astro_data_descriptor
     def wcs_ra(self):

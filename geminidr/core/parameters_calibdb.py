@@ -10,7 +10,8 @@ class setCalibrationConfig(config.Config):
         "Type of calibration assigned",
         str,
         allowed={"processed_arc": "processed ARC",
-                 "processed_bias": "procsessed BIAS",
+                 "processed_bias": "processed BIAS",
+                 "processed_bpm": "processed BPM",
                  "processed_dark": "processed DARK",
                  "processed_flat": "processed FLAT",
                  "processed_fringe": "processed fringe",
@@ -49,6 +50,10 @@ class getProcessedSlitIllumConfig(config.Config):
     pass
 
 
+class getBPMConfig(config.Config):
+    pass
+
+
 class getMDFConfig(config.Config):
     pass
 
@@ -61,7 +66,7 @@ class storeCalibrationConfig(config.Config):
                  "processed_dark": "processed DARK",
                  "processed_flat": "processed FLAT",
                  "processed_fringe": "processed fringe",
-                 "bpm": "bad pixel mask",
+                 "processed_bpm": "processed bad pixel mask",
                  "processed_standard": "processed standard",
                  "processed_slitillum": "processed slitillum",
                  },
@@ -80,7 +85,9 @@ class storeProcessedBiasConfig(config.Config):
 
 
 class storeBPMConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_bpm", optional=True)
+    suffix = config.Field("Filename suffix", str, None, optional=True)
+    force = config.Field("Force input to be identified as a bpm?",
+                         bool, False)
 
 
 class storeProcessedDarkConfig(config.Config):

@@ -101,6 +101,7 @@ class Visualize(PrimitivesBASE):
                 log.warning("Too many images; only the first 16 are displayed")
                 break
 
+            copied = False
             # Threshold and bias make sense only for SCI extension
             if extname != 'SCI':
                 threshold = None
@@ -123,6 +124,7 @@ class Visualize(PrimitivesBASE):
                     else:
                         # addDQ operates in place so deepcopy to preserve input
                         ad = self.addDQ([deepcopy(ad)])[0]
+                        copied = True
 
             if remove_bias:
                 if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
@@ -138,7 +140,9 @@ class Visualize(PrimitivesBASE):
                         bias_level = None
 
                     if bias_level is not None:
-                        ad = deepcopy(ad)  # Leave original untouched!
+                        if not copied:
+                            ad = deepcopy(ad)  # Leave original untouched!
+                            copied = True
                         log.stdinfo("Subtracting approximate bias level from "
                                     "{} for display".format(ad.filename))
                         log.fullinfo("Bias levels used: {}".format(str(bias_level)))
@@ -158,7 +162,10 @@ class Visualize(PrimitivesBASE):
                 # slices, so we need to ensure the correct offsets are applied
                 # to each slice
                 array_info = gt.array_information(ad)
-                ad = self.tileArrays([ad], tile_all=True)[0]
+                if copied:
+                    ad = self.tileArrays([ad], tile_all=True)[0]
+                else:
+                    ad = self.tileArrays([deepcopy(ad)], tile_all=True)[0]
                 # Logic here in case num_ext overlays sent to be applied to all ADs
                 if overlays and len(overlays) + overlay_index >= num_ext:
                     new_overlay = []
@@ -355,7 +362,7 @@ class Visualize(PrimitivesBASE):
                 ad_out[0].hdr[ad._keyword_for('read_noise')] = np.mean(ad.read_noise())
             propagate_gain(ad_out[0], ad.gain())
 
-            ad_out.orig_filename = ad.filename
+            ad_out.orig_filename = ad.orig_filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
             adoutputs.append(ad_out)
@@ -587,7 +594,7 @@ class Visualize(PrimitivesBASE):
                 stack_size = 1
 
             group_id = ad.group_id().split('_[')[0]
-            group_id += ad.group_id().split(']')[1]
+            group_id += ad.group_id().split(']')[-1]
 
             offset = (ad.telescope_y_offset() if ad.dispersion_axis()[0] == 1
                       else ad.telescope_x_offset())

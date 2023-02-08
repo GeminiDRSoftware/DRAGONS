@@ -3,9 +3,13 @@
 #
 #                                                      primitives_gsaoi_image.py
 # ------------------------------------------------------------------------------
+import re
 import math
 from functools import reduce
 import numpy as np
+
+from matplotlib import collections, pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 from astropy.modeling import models, fitting, Model
 from astropy.stats import sigma_clip
@@ -28,6 +32,7 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 from .primitives_gsaoi import GSAOI
 from . import parameters_gsaoi_image
 from .lookups import gsaoi_static_distortion_info as gsdi
+from .lookups.geometry_conf import tile_gaps
 
 
 @parameter_override
@@ -92,6 +97,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
         scale = params["scale"]
         order = params["order"]
         max_iters = params["max_iters"]
+        debug = params["debug"]
+        debug_figs = []
 
         self._attach_static_distortion(adinputs)
 
@@ -121,7 +128,13 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
         for ad in adinputs[1:]:
             objcat = merge_gsaoi_objcats(ad, cull_sources=cull_sources)
+            if objcat is None:
+                log.warning(f"No sources to correlate in {ad.filename}. "
+                            "Cannot adjust WCS.")
+                continue
+
             incoords = (objcat['X_STATIC'], objcat['Y_STATIC'])
+            # from this 'static' frame to the reference's variable (or static)
             transform = ad[0].wcs.get_transform(
                 "static", ad[0].wcs.output_frame) | ref_transform.inverse
 
@@ -153,10 +166,15 @@ class GSAOIImage(GSAOI, Image, Photometry):
                     matched = match_sources(refcoords, transform(*incoords),
                                             radius=final)
 
+            if debug:
+                debug_figs.append(make_alignment_figure(
+                    refcoords, transform(*incoords), matched,
+                    adref.filename, ad.filename, final))
+
             num_matched = np.sum(matched >= 0)
             if num_matched < min_sources:
-                log.warning(f"Too few correlated sources ({num_matched}). "
-                            "Cannot adjust WCS.")
+                log.warning(f"Too few correlated sources in {ad.filename} "
+                            f"({num_matched}). Cannot adjust WCS.")
                 continue
 
             if num_matched > 0:
@@ -189,12 +207,17 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 for ext in ad:
                     var_frame = cf.Frame2D(unit=(u.arcsec, u.arcsec), name="variable")
                     ext.wcs = gWCS(ext.wcs.pipeline[:1] +
-                                   [(ext.wcs.pipeline[1].frame, transform),
+                                   [(ext.wcs.pipeline[1].frame, am.make_serializable(transform)),
                                     (var_frame, ref_transform),
                                     (ext.wcs.output_frame, None)])
             else:
                 log.stdinfo("Could not determine astrometric offset for "
                             f"{ad.filename}")
+
+        if debug:
+            with PdfPages(f"debug_{self.myself()}.pdf") as pdf:
+                for fig in debug_figs:
+                    pdf.savefig(fig)
 
         # Timestamp and update filename
         for ad in adinputs:
@@ -238,6 +261,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
         final = params["final"]
         order = params["order"]
         max_iters = params["max_iters"]
+        debug = params["debug"]
+        debug_figs = []
 
         self._attach_static_distortion(adinputs)
         if any(self.timestamp_keys["adjustWCSToReference"] in ad.phu for ad in adinputs):
@@ -278,8 +303,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                                        "static") for ext in ad]
             all_corners = np.concatenate([np.array(static(*np.array(at.get_corners(ext.shape)).T))
                                           for ext, static in zip(ad, static_transforms)], axis=1)
-            xmin, ymin = all_corners.min(axis=1) - initial
-            xmax, ymax = all_corners.max(axis=1) + initial
+            xmin, ymin = all_corners.min(axis=1) - 2 * initial
+            xmax, ymax = all_corners.max(axis=1) + 2 * initial
 
             # This will be the same for all extensions if the user hasn't
             # hacked it (which is something we can't really check)
@@ -287,8 +312,10 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                                                 ad[0].wcs.output_frame)
             xref, yref = static_to_world_transform.inverse(refcat['RAJ2000'],
                                                            refcat['DEJ2000'])
-            #refcat["X_STATIC"], refcat["Y_STATIC"] = xref, yref
-            #refcat.write(f"ref_{ad.filename}", overwrite=True)
+            if debug:
+                refcat["X_STATIC"], refcat["Y_STATIC"] = xref, yref
+                refcat.write(f"ref_{ad.filename}", overwrite=True)
+                objcat.write(f"obj_{ad.filename}", overwrite=True)
             in_field = np.all((xref > xmin, xref < xmax,
                                yref > ymin, yref < ymax), axis=0)
             num_ref_sources = in_field.sum()
@@ -299,20 +326,20 @@ class GSAOIImage(GSAOI, Image, Photometry):
             m_init = (models.Shift(0, bounds={'offset': (-initial, initial)}) &
                       models.Shift(0, bounds={'offset': (-initial, initial)}))
             if rotate:
-                m_init = am.Rotate2D(0, bounds={'angle': (-5, 5)}) | m_init
+                m_init = am.Rotate2D(0, bounds={'angle': (-2, 2)}) | m_init
             if scale:
-                m_init = am.Scale2D(1, bounds={'factor': (0.95, 1.05)}) | m_init
+                m_init = am.Scale2D(1, bounds={'factor': (0.98, 1.02)}) | m_init
 
             # How many objects do we want to try to match? Keep brightest ones only
             objcat_len = len(objcat)
-            if objcat_len > 2 * num_ref_sources:
-                keep_num = max(2 * num_ref_sources, min(10, objcat_len))
+            if objcat_len > 3 * num_ref_sources:
+                keep_num = max(3 * num_ref_sources, min(10, objcat_len))
             else:
                 keep_num = objcat_len
             sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
 
             log.stdinfo(f"Aligning {ad.filename} with {num_ref_sources} REFCAT"
-                        f" and {objcat_len} OBJCAT sources")
+                        f" and {keep_num} OBJCAT sources")
             in_coords = (objcat['X_STATIC'][sorted_idx],
                          objcat['Y_STATIC'][sorted_idx])
             ref_coords = (xref[in_field], yref[in_field])
@@ -320,6 +347,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
             transform = fit_model(m_init, in_coords, ref_coords,
                                   sigma=0.2, tolerance=0.001,
                                   brute=True, scale=1/0.02)
+
             # This order will assign the closest OBJCAT to each REFCAT source
             matched = match_sources((xref, yref),
                                     transform(objcat['X_STATIC'], objcat['Y_STATIC']),
@@ -347,9 +375,18 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 # (OBJCAT) source for the input (REFCAT) source
                 dx, dy = [], []
                 xtrans, ytrans = transform(objcat['X_STATIC'], objcat['Y_STATIC'])
+                ratrans, dectrans = static_to_world_transform(xtrans, ytrans)
                 cospa, sinpa = math.cos(ad.phu['PA']), math.sin(ad.phu['PA'])
-                xmatched = np.full((len(objcat),), -999, dtype=float)
-                ymatched = np.full((len(objcat),), -999, dtype=float)
+                log.fullinfo("   xpix   ypix   RA  (OBJCAT)  DEC   RA "
+                             "(xformed)  DEC   RA  (REFCAT)  DEC")
+                log.fullinfo("-" * 75)
+
+                if debug:
+                    debug_figs.append(make_alignment_figure(
+                        transform.inverse(xref, yref),
+                        (objcat['X_STATIC'], objcat['Y_STATIC']),
+                        matched, "refcat", ad.filename, final))
+
                 for i, m in enumerate(matched):
                     if m >= 0:
                         try:
@@ -363,11 +400,12 @@ class GSAOIImage(GSAOI, Image, Photometry):
                             pass
                         dx.append(xref[i] - xtrans[m])
                         dy.append(yref[i] - ytrans[m])
-                        xmatched[m], ymatched[m] = xref[i], yref[i]
-
-                #objcat["X_MATCHED"], objcat["Y_MATCHED"] = xmatched, ymatched
-                #objcat["X_TRANS"], objcat['Y_TRANS'] = xtrans, ytrans
-                #objcat.write(f'obj_{ad.filename}', overwrite=True)
+                        refra, refdec = refcat['RAJ2000', 'DEJ2000'][i]
+                        extid, objx, objy, objra, objdec = objcat[
+                            'ext_index', 'X_IMAGE', 'Y_IMAGE', 'X_WORLD', 'Y_WORLD'][m]
+                        log.stdinfo(f"{extid:1d} {objx:6.1f} {objy:6.1f} "
+                                    f"{objra:9.5f} {objdec:9.5f} {ratrans[m]:9.5f} "
+                                    f"{dectrans[m]:9.5f} {refra:9.5f} {refdec:9.5f}")
 
                 x0, y0 = transform(0, 0)
                 delta_ra = x0 * cospa - y0 * sinpa
@@ -375,11 +413,11 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 dra = np.array(dx) * cospa - np.array(dy) * sinpa
                 ddec = np.array(dx) * sinpa + np.array(dy) * cospa
                 dra_std, ddec_std = dra.std(), ddec.std()
-                log.fullinfo(f"WCS Updated for {ad.filename}. Astrometric "
+                log.stdinfo(f"\nWCS Updated for {ad.filename}. Astrometric "
                              "offset is:")
-                log.fullinfo("RA: {:6.2f} +/- {:.2f} arcsec".
+                log.stdinfo("RA: {:6.2f} +/- {:.2f} arcsec".
                              format(delta_ra, dra_std))
-                log.fullinfo("Dec:{:6.2f} +/- {:.2f} arcsec".
+                log.stdinfo("Dec:{:6.2f} +/- {:.2f} arcsec".
                              format(delta_dec, ddec_std))
                 info_list = [{"dra": delta_ra, "dra_std": dra_std,
                               "ddec": delta_dec, "ddec_std": ddec_std,
@@ -390,6 +428,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                          self.mode, upload=True)
 
                 # Update OBJCAT (X_WORLD, Y_WORLD)
+                transform = am.make_serializable(transform)
                 for index, ext in enumerate(ad):
                     # TODO: use insert_frame method
                     var_frame = cf.Frame2D(unit=(u.arcsec, u.arcsec), name="variable")
@@ -397,13 +436,18 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                    [(ext.wcs.pipeline[1].frame, transform),
                                     (var_frame, static_to_world_transform),
                                     (ext.wcs.output_frame, None)])
-                    ext.objcat = objcat[objcat['ext_index'] == index]
-                    ext.objcat['X_WORLD'], ext.objcat['Y_WORLD'] = ext.wcs(ext.objcat['X_IMAGE']-1,
-                                                                           ext.objcat['Y_IMAGE']-1)
-                    ext.objcat.remove_columns(['ext_index', 'X_STATIC', 'Y_STATIC'])
+                    ext.OBJCAT = objcat[objcat['ext_index'] == index]
+                    ext.OBJCAT['X_WORLD'], ext.OBJCAT['Y_WORLD'] = ext.wcs(ext.OBJCAT['X_IMAGE'].data-1,
+                                                                           ext.OBJCAT['Y_IMAGE'].data-1)
+                    ext.OBJCAT.remove_columns(['ext_index', 'X_STATIC', 'Y_STATIC'])
             else:
                 log.stdinfo("Could not determine astrometric offset for "
                             f"{ad.filename}")
+
+            if debug:
+                with PdfPages(f"debug_{self.myself()}.pdf") as pdf:
+                    for fig in debug_figs:
+                        pdf.savefig(fig)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -524,6 +568,44 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
         return adinputs
 
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
+        """
+        Checks whether the fields of view of two F2 images overlap
+        sufficiently to be considerd part of a single ExposureGroup.
+        GSAOIImage requires its own code since it has multiple detectors
+
+        Parameters
+        ----------
+        ad1: AstroData
+            one of the input AD objects
+        ad2: AstroData
+            the other input AD object
+        frac_FOV: float (0 < frac_FOV <= 1)
+            fraction of the field of view for an overlap to be considered. If
+            frac_FOV=1, *any* overlap is considered to be OK
+
+        Returns
+        -------
+        bool: do the fields overlap sufficiently?
+        """
+        # In case they've been mosaicked in some way
+        if len(ad1) * len(ad2) == 1:
+            return super()._fields_overlap(ad1, ad2, frac_FOV)
+        elif len(ad1) == 1 or len(ad2) == 1:
+            raise NotImplementedError("Cannot compute overlap for GSAOI images"
+                                      "if only one has been mosaicked")
+
+        # We try to deal with the possibility of only 3 working detectors
+        # which means we can't make assumptions about their relative positions
+        # Compute center of FOV in ad[0] pixel coords
+        gaps = tile_gaps[ad1.detector_name()]
+        centers = [[2048 + 0.5 * gap if p1 == 0 else -0.5 * gap
+                    for p1, gap in zip(ad[0].detector_section()[::2], gaps)]
+                   for ad in (ad1, ad2)]
+        pos2 = ad2[0].wcs.invert(*ad1[0].wcs(*centers[0]))
+        return all(abs(p1 - p2) < frac_FOV * (4096 + gap)
+                   for p1, p2, gap in zip(centers[1], pos2, gaps))
+
 
 def merge_gsaoi_objcats(ad, cull_sources=False):
     """
@@ -559,7 +641,9 @@ def merge_gsaoi_objcats(ad, cull_sources=False):
         objcat['X_STATIC'], objcat['Y_STATIC'] = static(objcat['X_IMAGE'] - 1,
                                                         objcat['Y_IMAGE'] - 1)
         objcats.append(objcat)
-    return table.vstack(objcats, metadata_conflicts='silent')
+    if objcats:
+        return table.vstack(objcats, metadata_conflicts='silent')
+    return
 
 
 def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
@@ -597,7 +681,7 @@ def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
     """
     affine = adwcs.calculate_affine_matrices(transform, shape=(100, 100))
     num_params = [len(models.Polynomial2D(degree=i).parameters)
-                  for i in range(order+1)]
+                  for i in range(1, order+1)]
 
     orig_order = last_order = order
     xref, yref = ref_coords
@@ -611,6 +695,9 @@ def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
     matched = match_sources((xref, yref), transform(xin, yin),
                             radius=match_radius)
     num_matched = np.sum(matched >= 0)
+    if num_matched < 3:
+        raise RuntimeError(f"Only {num_matched} matched sources. Must be >=3.")
+
     niter = 0
     while True:
         # No point trying to compute a more complex model if it will
@@ -658,3 +745,54 @@ def create_polynomial_transform(transform, in_coords, ref_coords, order=3,
         xmodel_inv, ymodel_inv = xmodel_inv[0], ymodel_inv[0]
     transform.inverse = models.Mapping((0, 1, 0, 1)) | (xmodel_inv & ymodel_inv)
     return transform, matched
+
+
+def make_alignment_figure(coords1, coords2, matched, fname1, fname2, radius=1):
+    """
+    Creates and returns a simple labelled figure showing the locations of
+    sources from two catalogues in the "static" plane, so the user can
+    assess how well the alignment has worked. Matched sources are indicated
+    by black circles, unmatched sources by blue circles.
+
+    Note: this plot is created to include the initial alignment transform,
+    but *not* the more complex polynomial transform. Therefore misalignments
+    should get resolved by the polynomial and are nothing to worry about.
+
+    Parameters
+    ----------
+    coords1: 2-tuple
+        first set of coords (to be plotted in black)
+    coords2: 2-tuple
+        second set of coords (to be plotted in red)
+    matched: sequence
+        sources in coords2 which have been matched
+    fname1: str
+        filename (or other identifier) of first coords
+    fname2: str
+        filename (or other identifier) of second coords
+    radius: float
+        matching radius (arcsec): used for plotting circles
+
+    Returns
+    -------
+    Figure object
+    """
+    def trim_filename(fname):
+        return re.sub("_(.*)\.(.*)", "", fname)
+
+    fig, ax = plt.subplots()
+    ax.set_title(f"{trim_filename(fname1)}[open] / "
+                 f"{trim_filename(fname2)}")
+    ax.set_xlabel("X_STATIC (arcsec)")
+    ax.set_ylabel("Y_STATIC (arcsec)")
+    ax.set_xlim(-45, 45)
+    ax.set_ylim(-45, 45)
+    ax.set_aspect('equal')
+    ax.grid(color='0.9', zorder=0)
+    ax.plot(*coords2, 'r.', zorder=10)
+    for x, y, m in zip(*coords1, matched):
+        circle = plt.Circle((x, y), radius=radius, linewidth=1, fill=None,
+                            edgecolor='k' if m > -1 else 'b', zorder=20)
+        ax.add_patch(circle)
+    fig.tight_layout()
+    return fig

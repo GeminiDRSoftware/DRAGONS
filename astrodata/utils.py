@@ -266,6 +266,9 @@ class Section(tuple):
     @staticmethod
     def from_string(value):
         """The inverse of __str__, produce a Section object from a string"""
+        # if we were sent None, return None
+        if value is None:
+            return None
         return Section(*[y for x in value.strip("[]").split(",")
                          for start, end in [x.split(":")]
                          for y in (None if start == '' else int(start)-1,

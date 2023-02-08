@@ -136,6 +136,7 @@ def test_resampling_non_linearize(adinputs, caplog):
 
 # Local Fixtures and Helper Functions -----------------------------------------
 def _check_params(records, expected):
+    assert len(records) > 0  # make sure caplog is capturing something!
     for record in records:
         if record.message.startswith('Resampling and linearizing'):
             assert expected in record.message
