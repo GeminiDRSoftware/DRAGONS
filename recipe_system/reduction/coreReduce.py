@@ -187,101 +187,9 @@ class Reduce:
         self._output_filenames = reduce_data(files=self.files, mode=self.mode, drpkg=self.drpkg,
                                              recipename=self.recipename,
                                              uparms=self.uparms, ucals=self.ucals, upload=self.upload,
-                                             config_file=self.config_file, suffix=self.suffix)
+                                             config_file=self.config_file, suffix=self.suffix, 
+                                             add_replay_suffix=self.add_replay_suffix)
 
-        try:
-            adinputs = self._convert_inputs(ffiles)
-        except OSError as err:
-            log.error(str(err))
-            raise
-
-        # build mapper inputs, pass no 'ad' objects.
-        # mappers now receive tags and instr pkg name, e.g., 'gmos'
-        datatags = set(list(adinputs[0].tags)[:])
-        instpkg = adinputs[0].instrument(generic=True).lower()
-
-        rm = RecipeMapper(datatags, instpkg, mode=self.mode, drpkg=self.drpkg,
-                          recipename=self.recipename)
-        try:
-            recipe = rm.get_applicable_recipe()
-        except ModeError as err:
-            log.warning("WARNING: {}".format(err))
-            pass
-        except RecipeNotFound:
-            log.warning("No recipe can be found in {} recipe libs.".format(instpkg))
-            log.warning("Searching primitives ...")
-            # If it's not a primitive, we'll crash later on, so assume it's a
-            # primitive and update uparms to prepend the name to any parameters
-            # without the primitive named explicitly
-            self.uparms = [((k if ':' in k else f"{self.recipename}:{k}"), v)
-                           for k, v in self.uparms]
-        rm = None
-
-        # PrimitiveMapper now returns the primitive class, not an instance.
-        pm = PrimitiveMapper(datatags, instpkg, mode=self.mode, drpkg=self.drpkg)
-        try:
-            pclass = pm.get_applicable_primitives()
-        except PrimitivesNotFound as err:
-            log.error(str(err))
-            raise
-
-        p = pclass(adinputs, mode=self.mode, ucals=self.ucals, uparms=self.uparms,
-                   upload=self.upload, config_file=self.config_file)
-
-        # Clean references to avoid keeping adinputs objects in memory one
-        # there are no more needed.
-        adinputs = None
-
-        # If the RecipeMapper was unable to find a specified user recipe,
-        # it is possible that the recipe passed was a primitive name.
-        # Here we examine the primitive set to see if this recipe is actually
-        # a primitive name.
-        norec_msg = "{} recipes do not define a '{}' recipe for these data."
-        if recipe is None and self.recipename == '_default':
-            raise RecipeNotFound(norec_msg.format(instpkg.upper(), self.mode))
-
-        if recipe is None:
-            try:
-                primitive_as_recipe = getattr(p, self.recipename)
-            except AttributeError as err:
-                err = "Recipe {} Not Found".format(self.recipename)
-                log.error(str(err))
-                raise RecipeNotFound("No primitive named {}".format(self.recipename))
-
-            pname = primitive_as_recipe.__name__
-            log.stdinfo("Found '{}' as a primitive.".format(pname))
-            self._logheader(pname)
-            try:
-                primitive_as_recipe()
-            except Exception as err:
-                log_traceback(log)
-                log.error(str(err))
-                raise
-        else:
-            self._logheader(recipe)
-            try:
-                recipe(p)
-            except Exception:
-                log.error("Reduce received an unhandled exception. Aborting ...")
-                log_traceback(log)
-                log.stdinfo("Writing final outputs ...")
-                self._write_final(p.streams['main'])
-                self._output_filenames = [ad.filename for ad in p.streams['main']]
-                raise
-
-        for ad in p.streams['main']:
-            record_reduction_in_ad(ad)
-        if self.add_replay_suffix:
-            for ad in p.streams['main']:
-                m = re.search(r'(.*)\.fits', ad.filename)
-                if m:
-                    ad.update_filename(suffix="_replayed", strip=False)
-
-        self._write_final(p.streams['main'])
-        self._output_filenames = [ad.filename for ad in p.streams['main']]
-        log.stdinfo("\nreduce completed successfully.")
-
-        record_reduction()
 
     # -------------------------------- prive -----------------------------------
     def _check_files(self, ffiles):
@@ -583,7 +491,7 @@ def _log_reduce(files, mode, drpkg, recipename, uparms, ucals, upload, config_fi
 
 
 def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, ucals={},
-                upload=None, config_file=None, suffix=None, logmode=None):
+                upload=None, config_file=None, suffix=None, logmode=None, add_replay_suffix=False):
     """
     Map and run the requested or defaulted recipe.
 
@@ -714,9 +622,19 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
             _output_filenames = [ad.filename for ad in p.streams['main']]
             raise
 
+    for ad in p.streams['main']:
+        record_reduction_in_ad(ad)
+    if add_replay_suffix:
+        for ad in p.streams['main']:
+            m = re.search(r'(.*)\.fits', ad.filename)
+            if m:
+                ad.update_filename(suffix="_replayed", strip=False)
+
     _write_final(p.streams['main'], suffix)
     _output_filenames = [ad.filename for ad in p.streams['main']]
 
     log.stdinfo("\nreduce completed successfully.")
+
+    record_reduction()
 
     return _output_filenames
