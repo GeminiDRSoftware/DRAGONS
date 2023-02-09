@@ -1606,21 +1606,30 @@ class Spect(Resample):
 
                     if (coords_one is not None and coords_two is not None):
                         log.fullinfo("Getting coordinates from both traced edges.")
-                        in_coords = [np.concatenate([a, b]) for a, b in zip(
-                            coords_one[2:], coords_two[2:])]
-                        ref_coords = [np.concatenate([a, b]) for a, b in zip(
-                            coords_one[:2], coords_two[:2])]
-
                         # If both edges have been traced, use order 1 for the
                         # spatial order of the distortion model.
                         spatial_order = 1
                     else:
-                        # If only one edge has been traced, get the values from it.
-                        log.fullinfo("Only one was edge was traced, get "
-                                     "coordinates from it.")
-                        coords = coords_one if coords_two is None else coords_two
-                        in_coords = coords[2:]
-                        ref_coords = coords[:2]
+                        # If only one edge has been traced, need to create a
+                        # copy of it for the other edge, shifted by the (nominal)
+                        # slit width.
+                        log.fullinfo("Only one was edge was traced, copying "
+                                     "values for the other edge shifted by the "
+                                     "slit width.")
+                        if coords_two is None:
+                            coords_two = deepcopy(coords_one)
+                            coords_two[dispaxis] += slit_widths[key]
+                            coords_two[dispaxis + 2] += slit_widths[key]
+                        else:
+                            coords_one = deepcopy(coords_two)
+                            coords_one[dispaxis] -= slit_widths[key]
+                            coords_one[dispaxis + 2] -= slit_widths[key]
+
+                    # Generate the coordinates for the model from the edges.
+                    in_coords = [np.concatenate([a, b]) for a, b in zip(
+                        coords_one[2:], coords_two[2:])]
+                    ref_coords = [np.concatenate([a, b]) for a, b in zip(
+                        coords_one[:2], coords_two[:2])]
 
                     if dispaxis == 0:
                         x_ord, y_ord = 1, spectral_order
@@ -1647,7 +1656,8 @@ class Spect(Resample):
                     log.debug('Appending the table below as "SLITEDGE".')
                     log.debug(ext.SLITEDGE)
 
-                    # Put this model as the first step if there's an existing WCS
+                    # Put the slit rectification model as the first step if
+                    # there's an existing WCS
                     if ext.wcs is None:
                         ext.wcs = gWCS([(ext.wcs.input_frame, model),
                                         (cf.Frame2D(name="rectified"), None)])

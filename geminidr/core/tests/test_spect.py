@@ -459,7 +459,7 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
                           ('S20131127S0229_distortionCorrected.fits', 'F2'),
                           # NIRI 6 pix slit, f/6
                           ('N20100614S0569_distortionCorrected.fits', 'NIRI'),
-                          # NIRI 2 pix slit, f/6 (stay light streaks)
+                          # NIRI 2 pix slit, f/6 (stray light streaks)
                           ('N20100619S0602_distortionCorrected.fits', 'NIRI'),
                           ])
 def test_slit_rectification(filename, instrument, change_working_dir,
