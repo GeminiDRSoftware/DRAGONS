@@ -201,7 +201,7 @@ class PrimitiveVisualizer(ABC):
                 for callback in self.widgets[fname]._callbacks['value_throttled']:
                     callback(attrib='value_throttled', old=old, new=reset_value)
 
-    def build_reset_button(self):
+    def build_reset_button(self, extra_handler_fn=None):
         reset_reinit_button = bm.Button(
             button_type='warning',
             height=35,
@@ -212,6 +212,8 @@ class PrimitiveVisualizer(ABC):
         def reset_dialog_handler(result):
             if result:
                 self.reset_reinit_panel()
+                if extra_handler_fn:
+                    extra_handler_fn()
 
         self.make_ok_cancel_dialog(
             btn=reset_reinit_button,
