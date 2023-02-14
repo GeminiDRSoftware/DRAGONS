@@ -218,7 +218,8 @@ class GMOSClassicLongslit(GMOSSpect):
                     print(f"Row medians scaled by {row_medians.max()}")
 
                 if shift is None:
-                    xcorr = correlate(model, row_medians[edges:-edges], mode='valid')
+                    rmed = row_medians[edges:-edges]
+                    xcorr = correlate(model, rmed - rmed.min(), mode='valid')
                     cntr = xcorr.size // 2
                     xcorr = xcorr[cntr-mshift:cntr+mshift+1]
                     # This line avoids numerical errors
