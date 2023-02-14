@@ -1625,6 +1625,17 @@ class Spect(Resample):
                         in_coords = coords[2:]
                         ref_coords = coords[:2]
 
+                        # Find the value of the trace closest to the midpoint of
+                        # the detector and set that as the reference pixel - in
+                        # essense "rotating" the image around that point (rather
+                        # than one of the endpoints of the trace).
+                        half_detector = ext.shape[1 - dispaxis] // 2
+                        dists = np.array([abs(n - half_detector)
+                                          for n in ref_coords[1 - dispaxis]])
+                        midpoint = in_coords[dispaxis][dists.argmin()]
+                        ref_coords[dispaxis] = np.full_like(ref_coords[dispaxis],
+                                                            midpoint)
+
                     if dispaxis == 0:
                         x_ord, y_ord = 1, spectral_order
                     else:
@@ -1634,6 +1645,7 @@ class Spect(Resample):
                         x_degree=x_ord, y_degree=y_ord,
                         x_domain=[0, ext.shape[1]-1],
                         y_domain=[0, ext.shape[0]-1])
+
                     # Create the distortion model from the available coords.
                     # Currently this is set up for a single slit (i.e. longslit)
                     # and will need some thinking/refactoring for XD, MOS.
