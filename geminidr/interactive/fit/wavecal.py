@@ -337,11 +337,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
                              range(len(self.spectrum.data["wavelengths"])))(x)
             new_peaks = np.setdiff1d(self.model.meta["peaks"],
                                      self.model.x, assume_unique=True)
-            index = np.argmin(abs(new_peaks - pixel))
+            # This will fail if no line was deleted before user attempts to identify a line,
+            # so do it only if there are new_peaks
+            if len(new_peaks) > 0:
+                index = np.argmin(abs(new_peaks - pixel))
 
             # If we've clicked "close" to a real peak (based on viewport size),
             # then select that
-            if abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1):
+            if len(new_peaks) > 0 and \
+                    (abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1)):
                 peak = new_peaks[index]
                 print(f"Retrieved peak from list at {peak}")
             else:
@@ -356,7 +360,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 eps = np.finfo(np.float32).eps  # Minimum representative data
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
                 try:
-                    peak = pinpoint_peaks(pinpoint_data, None, np.array([pixel]))[0][0]
+                    peak = pinpoint_peaks(pinpoint_data, [pixel], None)[0][0]
                     print(f"Found peak at pixel {peak}")
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
@@ -491,6 +495,20 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
             image.append(model.y[goodpix])
         return image
+
+    def reconstruct_points_additional_work(self, data):
+        """
+        Reconstruct the initial points to work with.
+        """
+        super().reconstruct_points_additional_work(data)
+        if data is not None:
+            for i, fit in enumerate(self.fits):
+                if self.returns_list:
+                    this_dict = {k: v[i] for k, v in data.items()}
+                else:
+                    this_dict = data
+                # spectrum update
+                self.panels[i].spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
 
 
 def get_closest(arr, value):
