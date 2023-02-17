@@ -1240,12 +1240,12 @@ class Spect(Resample):
 
                 # This is identical to the code in determineWavelengthSolution()
                 if fwidth is None:
-                    data, _, _, _ = tracing.average_along_slit(ext, center=None, nsum=nsum)
+                    data, _, _, _ = tracing.average_along_slit(ext, center=start, nsum=nsum)
                     fwidth = tracing.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 if initial_peaks is None:
-                    data, mask, variance, extract_slice = tracing.average_along_slit(ext, center=None, nsum=nsum)
+                    data, mask, variance, extract_slice = tracing.average_along_slit(ext, center=start, nsum=nsum)
                     log.stdinfo("Finding peaks by extracting {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
 

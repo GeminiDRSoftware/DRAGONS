@@ -201,7 +201,7 @@ class PrimitiveVisualizer(ABC):
                 for callback in self.widgets[fname]._callbacks['value_throttled']:
                     callback(attrib='value_throttled', old=old, new=reset_value)
 
-    def build_reset_button(self):
+    def build_reset_button(self, extra_handler_fn=None):
         reset_reinit_button = bm.Button(
             button_type='warning',
             height=35,
@@ -212,6 +212,8 @@ class PrimitiveVisualizer(ABC):
         def reset_dialog_handler(result):
             if result:
                 self.reset_reinit_panel()
+                if extra_handler_fn:
+                    extra_handler_fn()
 
         self.make_ok_cancel_dialog(
             btn=reset_reinit_button,
@@ -635,29 +637,33 @@ class PrimitiveVisualizer(ABC):
                     else:
                         title = _title_from_field(field)
                     val = self.ui_params.values.get(key, "")
-                    widget = TextInput(title=title,
-                                       min_width=100,
-                                       max_width=256,
-                                       width_policy="fit",
-                                       placeholder=params.placeholders[key]
-                                       if key in params.placeholders else None,
-                                       value=val)
+                    if val is None:
+                        # TextInput can't handle None value
+                        raise ValueError(f"None value cannot be expressed in UI and {key} parameter came in as None")
+                    else:
+                        widget = TextInput(title=title,
+                                           min_width=100,
+                                           max_width=256,
+                                           width_policy="fit",
+                                           placeholder=params.placeholders[key]
+                                           if key in params.placeholders else None,
+                                           value=val)
 
-                    class TextHandler:
-                        def __init__(self, key, extras, fn):
-                            self.key = key
-                            self.extras = extras
-                            self.fn = fn
+                        class TextHandler:
+                            def __init__(self, key, extras, fn):
+                                self.key = key
+                                self.extras = extras
+                                self.fn = fn
 
-                        def handler(self, name, old, new):
-                            self.extras[self.key] = new
-                            if reinit_live and self.fn is not None:
-                                self.fn()
+                            def handler(self, name, old, new):
+                                self.extras[self.key] = new
+                                if reinit_live and self.fn is not None:
+                                    self.fn()
 
-                    widget.on_change("value", TextHandler(key, self.extras, lambda: self.reconstruct_points()).handler)
+                        widget.on_change("value", TextHandler(key, self.extras, lambda: self.reconstruct_points()).handler)
 
-                    self.widgets[key] = widget
-                    widgets.append(widget)
+                        self.widgets[key] = widget
+                        widgets.append(widget)
         return widgets
 
     def slider_handler_factory(self, key, reinit_live=False):

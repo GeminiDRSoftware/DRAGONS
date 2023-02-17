@@ -55,7 +55,7 @@ def  makeWavelengthSolution(p):
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
     p.determineDistortion(debug=True)
-    p.storeProcessedArc()
+    p.storeProcessedArc(force=True)
     p.writeOutputs()
 
 

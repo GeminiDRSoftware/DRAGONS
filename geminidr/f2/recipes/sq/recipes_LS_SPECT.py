@@ -35,6 +35,29 @@ def reduceScience(p):
     p.storeProcessedScience(suffix="_2D")
     p.extractSpectra()
     p.storeProcessedScience(suffix="_1D")
-    
+
+
+def  makeWavelengthSolution(p):
+    """
+    Process F2 longslist science in order to create wavelength and distortion
+    solutions using sky emission lines.
+
+    Inputs are:
+       * raw science with caldb requests:
+          * procdark with matching exptime
+          * procflat
+    """
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.darkCorrect()
+    #p.flatCorrect()
+    p.makeIRAFCompatible()
+    p.determineWavelengthSolution()
+    p.determineDistortion(debug=True)
+    p.storeProcessedArc(force=True)
+    p.writeOutputs()
     
 _default = reduceScience

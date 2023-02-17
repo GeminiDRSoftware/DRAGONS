@@ -371,15 +371,15 @@ class NearIR(Bookkeeping):
             on each side of the interface.
             Note that for intra-quad leveling, this width is broadened by a factor 10.
         sg_win_size: int
-            Smoothing window size for the Savitzky-Golay filter applied during automated 
-            detection of pattern coverage. 
+            Smoothing window size for the Savitzky-Golay filter applied during automated
+            detection of pattern coverage.
         simple_thres: float
-            Threshold used in automated detection of pattern coverage. 
-            Favorable range [0.3, 0.8]. If the result (at the intra-quad level) is not satisfactory, 
-            play with this parameter. 
+            Threshold used in automated detection of pattern coverage.
+            Favorable range [0.3, 0.8]. If the result (at the intra-quad level) is not satisfactory,
+            play with this parameter.
         pat_strength_thres: float
-            Threshold used to characterise the strength of the pattern noise. If greater than 
-            this value, run the whole machinery otherwise leave the frame untouched.  
+            Threshold used to characterise the strength of the pattern noise. If greater than
+            this value, run the whole machinery otherwise leave the frame untouched.
         clean: str, Default: "skip"
             Must be one of "skip", "default", or "force".
             skip: Skip this routine entirely when called from a recipe.
@@ -524,8 +524,6 @@ class NearIR(Bookkeeping):
                     new_edges, affected_rows = find_edges(
                         combined_pattern_strength, sigma=canny_sigma,
                         min_range=simple_thres, pysize=pysize)
-                    print(new_edges)
-                    print(affected_rows)
                     top_affected_rows = flip(affected_rows, padding)
                 for (ystart, xstart), _dict in edges.items():
                     if _dict["clean"]:
