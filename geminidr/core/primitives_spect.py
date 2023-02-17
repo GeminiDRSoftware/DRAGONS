@@ -96,22 +96,68 @@ class Spect(Resample):
             Suffix to be added to output files
         center : None or int
             Central row/column for 1D extraction (None => use middle).
-        nsum : int, optional
-            Number of rows/columns to average.
-
+        shift : float, Default : None
+            An optional shift to apply to the wavelength scale, in pixels. If
+            not given, the shift will be calculated from the sky lines present
+            in the image.
         """
+
+        def _apply_shift(shift, dispaxis, ext):
+            """ Create a model to shift the wavelength scale by
+
+            Parameters
+            ----------
+            shift : float
+                The shift to apply, in pixels (will be converted to wavelength)
+            dispaxis : int, 0 or 1
+                The dispersion axis, in the Python sense
+            ext : Astrodata extension
+                The extension to apply the shift to.
+            """
+            dx, dy = 0, 0
+            if dispaxis == 0:
+                dy = shift
+            elif dispaxis == 1:
+                dx = shift
+            else:
+                raise ValueError("'dispaxis' must be 0 or 1")
+
+            # This should work for both orientations without having to code
+            # them separately.
+            model = models.Shift(dx) & models.Shift(dy)
+            model.name = 'FLEXCORR'
+            # TODO: "test"?
+            ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                 cf.Frame2D(name="test"))
+
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         center = params["center"]
+        shift = params["shift"]
+        max_shift = params["debug_max_shift"]
 
         for ad in adinputs:
+            log.stdinfo("Adjusting wavelength scale zero point for "
+                        f"{ad.filename}")
 
             for ext in ad:
+                dispaxis = 2 - ext.dispersion_axis()  # Python sense
+
+                # If the user specifies a shift value, apply it and continue
+                if shift is not None:
+                    _apply_shift(shift, dispaxis, ext)
+                    continue
+
+                # Otherwise, we'll need to automatically find the shift.
                 # Values taken from defaults for determineWavelengthSolution
                 config_dict = {
+                        "order": 8,
+                        "niter": 3,
+                        "lsigma": 3.0,
+                        "hsigma": 3.0,
                         "central_wavelength": None,
                         "interactive": False,
                         "center": center,
@@ -119,22 +165,70 @@ class Spect(Resample):
                         "fwidth": None,
                         "min_snr": 10,
                         "min_sep": 2,
+                        "weighting": "global",
                         "nbright": 0,
                         "dispersion": None,
+                        "debug_min_lines": 5,
                         "debug_alternative_centers": False,
                         "in_vacuo": False,
                     }
-                input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                    ext, config_dict, p=self, linelist=None, bad_bits=DQ.not_signal)
 
-                # Fit a Chebyshev1D model to the peaks found.
 
-                # Get an appropriate linelist (we must have these defined somewhere?)
+                input_data = wavecal.get_all_input_data(
+                    ext, self, config_dict, linelist=None, bad_bits=DQ.not_signal)
+                spectrum = input_data["spectrum"]
+                init_models = input_data["init_models"]
+                domain = init_models[0].meta["domain"]
+                peaks, weights = input_data["peaks"], input_data["weights"]
+                sky_lines = input_data["linelist"].wavelengths(in_vacuo=False,
+                                                               units='nm')
 
-                # KDTreeFit the peaks to the linelist.
+                m_init = init_models[0]
+                # Fix all parameters in the model so that they don't change
+                # (only the shift that will be added next)
+                for p in m_init.param_names:
+                    getattr(m_init, p).fixed = True
 
-                # Match peaks to the linelist and do a standard least-squares fit
-                # (possibly)
+                # Add a bounded Shift model in front of the wavelength solution
+                shift = 0
+                m_init = models.Shift(shift, bounds={'offset': (-max_shift,
+                     max_shift)}) | m_init
+                m_init.meta["domain"] = domain
+
+                fwidth = input_data["fwidth"]
+                dw = np.diff(m_init(np.arange(spectrum.size))).mean()
+                kdsigma = fwidth * abs(dw)
+                k = 1 if kdsigma < 3 else 2
+
+                pixel_start = domain[0] + 0.5 * np.diff(domain)[0]
+
+                matches = wavecal.perform_piecewise_fit(
+                    m_init, peaks, sky_lines,
+                    pixel_start, kdsigma,
+                    order=config_dict["order"],
+                    min_lines_per_fit=config_dict['debug_min_lines'],
+                    k=k, dcenwave=10)
+
+                fit_it = KDTreeFitter(sigma=2 * abs(dw), maxsig=5,
+                                      k=k, method='Nelder-Mead')
+                m_final = fit_it(m_init, peaks, sky_lines,
+                                 in_weights=weights[config_dict["weighting"]],
+                                 ref_weights=input_data["linelist"].weights,
+                                 matches=matches)
+
+                # mask = [i for i in matches if i > -1]
+                # input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
+                #     ext, config_dict, p=self, linelist=None, bad_bits=DQ.not_signal)
+                # wavecal.save_fit_as_pdf(input_data["spectrum"],
+                                        # fit1d.points[~fit1d.mask],
+                                        # fit1d.image[~fit1d.mask], ad.filename)
+                                        # peaks[mask], sky_lines[]
+
+                # Apply the shift to the wavelength scale
+                shift = m_final.offset_0.value
+                log.stdinfo(f"Adjusting wavelength scale by {shift:0.2f} "
+                             "pixels.")
+                _apply_shift(shift, dispaxis, ext)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

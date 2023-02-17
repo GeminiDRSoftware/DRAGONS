@@ -122,6 +122,11 @@ class LineList:
             self._weights = np.genfromtxt(data_lines, usecols=[1])
         except ValueError:
             self._weights = None
+        # np.genfromtxt() silently returns an array of NaNs if it finds a column
+        # in the given location but which it can't coerce to numerical form.
+        # The check below catches that situation.
+        if (self._weights is not None) and (np.isnan(self._weights).all()):
+            self._weights = None
 
     def wavelengths(self, in_vacuo=None, units=None):
         """Return line wavelengths in air/vacuum (possibly with particular units)"""
@@ -661,7 +666,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     Given a starting location, a suitable fitting region is "grown" outwards
     until it has at least the specified number of both input and output
     coordinates to fit. A fit (usually linear, but quadratic if more than
-    half the arra yis being used and the final fit is order >= 2) is made
+    half the array is being used and the final fit is order >= 2) is made
     to this region and coordinate matches are found. The matches at the
     extreme ends are then used as the starts of subsequent fits, moving
     outwards until the edges of the data are reached.

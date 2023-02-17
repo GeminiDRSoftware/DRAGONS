@@ -141,7 +141,7 @@ class F2Spect(Spect, F2):
         else:
             linelist = 'sky.dat'
 
-        self.log.stdinfo(f"Using linelist {linelist}")
+        self.log.stdinfo(f"Using linelist '{linelist}'")
         filename = os.path.join(lookup_dir, linelist)
         return wavecal.LineList(filename)
 
