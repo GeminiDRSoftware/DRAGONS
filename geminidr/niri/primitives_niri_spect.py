@@ -57,19 +57,19 @@ class NIRISpect(Spect, NIRI):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    
+
     # MS: following two functions are largely a copy from primitives_gnirs_spect.py
-    # for doing a basic wavecal. 
+    # for doing a basic wavecal.
     # Expect Olesja will improve it when she gets to NIRI.
     def determineWavelengthSolution(self, adinputs=None, **params):
         for ad in adinputs:
             if params["central_wavelength"] is None:
-                    params["central_wavelength"] = ad.central_wavelength(asNanometers=True) 
+                    params["central_wavelength"] = ad.central_wavelength(asNanometers=True)
 
         adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
 
-    
+
     def _get_arc_linelist(self, waves=None, ad=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
@@ -89,7 +89,7 @@ class NIRISpect(Spect, NIRI):
             else:
                 linelist = 'nearIRsky.dat'
 
-        self.log.stdinfo(f"Using linelist {linelist}")
+        self.log.stdinfo(f"Using linelist '{linelist}'")
         filename = os.path.join(lookup_dir, linelist)
 
         return wavecal.LineList(filename)
