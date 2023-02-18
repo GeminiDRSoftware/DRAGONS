@@ -17,7 +17,7 @@ def reduce(p):
         A primitive set matching the recipe_tags.
     """
     p.prepare()
-    p.addDQ(add_illum_mask=False)
+    p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.biasCorrect()
