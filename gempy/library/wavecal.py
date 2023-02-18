@@ -422,7 +422,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     return input_data, fit1d, acceptable_fit
 
 
-def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
+def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
+                       skylines=False):
     """
     There's a specific order needed to do things:
     1) The initial model and 1D spectrum give us the wavelength extrema
@@ -441,6 +442,9 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     config : dict from UIParameters object containing parameters
         dict created by "values()" method of UIParameters (which requires a
         Config object for initialization)
+    skylines : bool
+        True if the reference lines being used are skylines, othewise False if
+        the are arc lines
 
     Returns
     -------
@@ -515,7 +519,9 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     if linelist is None:
         linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext)
     # This wants to be logged even in interactive mode
-    p.log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} arc lines")
+    sky_or_arc = 'sky' if skylines else 'arc'
+    p.log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} "
+                  f"{sky_or_arc} lines")
 
     m_init = [m_init]
     kdsigma = fwidth * abs(dw0)

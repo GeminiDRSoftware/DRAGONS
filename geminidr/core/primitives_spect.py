@@ -97,12 +97,12 @@ class Spect(Resample):
         center : None or int
             Central row/column for 1D extraction (None => use middle).
         shift : float, Default : None
-            An optional shift to apply to the wavelength scale, in pixels. If
-            not given, the shift will be calculated from the sky lines present
-            in the image.
+            An optional shift to apply directly to the wavelength scale, in
+            pixels. If not given, the shift will be calculated from the sky
+            lines present in the image.
         """
 
-        def _apply_shift(shift, dispaxis, ext):
+        def _add_shift_model_to_wcs(shift, dispaxis, ext):
             """ Create a model to shift the wavelength scale by
 
             Parameters
@@ -148,13 +148,15 @@ class Spect(Resample):
 
                 # If the user specifies a shift value, apply it and continue
                 if shift is not None:
-                    _apply_shift(shift, dispaxis, ext)
+                    _add_shift_model_to_wcs(shift, dispaxis, ext)
+                    log.stdinfo(f"Shifting wavelength scale by {shift:0.2} "
+                                "pixels.")
                     continue
 
                 # Otherwise, we'll need to automatically find the shift.
                 # Values taken from defaults for determineWavelengthSolution
                 config_dict = {
-                        "order": 8,
+                        "order": 3,
                         "niter": 3,
                         "lsigma": 3.0,
                         "hsigma": 3.0,
@@ -175,7 +177,8 @@ class Spect(Resample):
 
 
                 input_data = wavecal.get_all_input_data(
-                    ext, self, config_dict, linelist=None, bad_bits=DQ.not_signal)
+                    ext, self, config_dict, linelist=None,
+                    bad_bits=DQ.not_signal, skylines=True)
                 spectrum = input_data["spectrum"]
                 init_models = input_data["init_models"]
                 domain = init_models[0].meta["domain"]
@@ -228,7 +231,7 @@ class Spect(Resample):
                 shift = m_final.offset_0.value
                 log.stdinfo(f"Adjusting wavelength scale by {shift:0.2f} "
                              "pixels.")
-                _apply_shift(shift, dispaxis, ext)
+                _add_shift_model_to_wcs(shift, dispaxis, ext)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
