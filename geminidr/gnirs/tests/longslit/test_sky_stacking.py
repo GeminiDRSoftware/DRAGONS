@@ -18,6 +18,7 @@ def gnirs_abba():
              'N20141119S0333.fits', 'N20141119S0334.fits')]
 
 # ---- Tests ------------------------------------------------------------------
+@pytest.mark.dragons_remote_data
 @pytest.mark.gnirsls
 def test_associate_sky_abba(gnirs_abba):
 
@@ -41,6 +42,7 @@ def test_associate_sky_abba(gnirs_abba):
     for ad in (b1, b2):
         assert set(ad.SKYTABLE['SKYNAME']) == a_frames
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.gnirsls
 def test_associate_sky_pass_skies(gnirs_abba):
 
@@ -54,6 +56,7 @@ def test_associate_sky_pass_skies(gnirs_abba):
 
     assert in_sky_names == out_sky_names
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.gnirsls
 def test_associate_sky_use_all(gnirs_abba):
 
@@ -71,6 +74,7 @@ def test_associate_sky_use_all(gnirs_abba):
         # Check that each AD has all the other frames as skies, but not itself.
         assert skies == in_sky_names - set([ad.phu['ORIGNAME']])
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.gnirsls
 def test_associate_sky_exclude_all(gnirs_abba):
     p = GNIRSLongslit(gnirs_abba)
@@ -82,3 +86,32 @@ def test_associate_sky_exclude_all(gnirs_abba):
     for ad in p.showList():
         with pytest.raises(AttributeError):
             ad.SKYTABLE
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.gnirsls
+def test_associate_sky_quasi_abcde():
+    results = {'N20220220S0106.fits': [1, 2, 3],
+               'N20220220S0107.fits': [0, 2, 3],
+               'N20220220S0108.fits': [0, 1, 3],
+               'N20220220S0109.fits': [1, 2, 4],
+               'N20220220S0110.fits': [1, 2, 3]}
+
+    files = ['N20220220S0106.fits', 'N20220220S0107.fits',
+             'N20220220S0108.fits', 'N20220220S0109.fits',
+             'N20220220S0110.fits']
+
+    print('Downloaded files')
+    data = [astrodata.open(download_from_archive(f)) for f in files]
+
+    p = GNIRSLongslit(data)
+    p.prepare()
+    p.separateSky()
+    p.associateSky()
+
+    for ad in p.showList():
+        print(ad.phu['ORIGNAME'])
+        print(ad.SKYTABLE['SKYNAME'])
+        skies = set([s for s in ad.SKYTABLE['SKYNAME']])
+
+        assert skies == set([files[i].replace('.fits', '_skyAssociated.fits')
+                             for i in results[ad.phu['ORIGNAME']]])
