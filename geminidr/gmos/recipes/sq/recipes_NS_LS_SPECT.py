@@ -26,7 +26,7 @@ def reduce(p):
     p.darkCorrect()
     p.attachWavelengthSolution()
     p.flatCorrect()
-    #p.flagCosmicRays()
+    p.flagCosmicRays()
     p.skyCorrectNodAndShuffle()
     p.QECorrect()
     p.distortionCorrect()
