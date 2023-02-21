@@ -10,6 +10,8 @@ from importlib import import_module
 
 from geminidr.core import Spect
 
+from gemini_instruments.gnirs import lookup
+
 from .primitives_gnirs import GNIRS
 from . import parameters_gnirs_spect
 
@@ -157,6 +159,7 @@ class GNIRSSpect(Spect, GNIRS):
             filt = ad.filter_name(pretty=True)
             cam = ad.camera(pretty=True)
             cenwave = ad.central_wavelength(asMicrometers=True)
+            log = self.log
 
             if 'ARC' in ad.tags:
                 if params["min_snr"] is None:
@@ -176,23 +179,51 @@ class GNIRSSpect(Spect, GNIRS):
                         params["order"] = 3
                     self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
             else:
+                # works better with line lists made from ATRAN
                 params["lsigma"] = 2
                 params["hsigma"] = 2
 
                 if params["debug_min_lines"] is None:
                     params["debug_min_lines"] = 15
 
-                if params["order"] is None:
-                    if ad.camera(pretty=True).startswith('Long') and \
-                            ad.disperser(pretty=True).startswith('111') and \
-                            3.65 <= cenwave <= 3.75:
-                            params["order"] = 1
-                    else:
-                     params["order"] = 3
-                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
-                if params["min_snr"] is None:
-                    params["min_snr"] = 10
-                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+                if params["absorption"] is True:
+                    # don't use the intensities provided in the telluric absorption line lists
+                    # for weight matching
+                    if params["use_intens"] is None:
+                        params["use_intens"] = False
+                        self.log.stdinfo(f'Parameter "use_intens" is set to None. Using use_intens={params["use_intens"]}')
+
+                    if params["order"] is None:
+                        params["order"] = 1
+                        self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
+
+                    if params["min_snr"] is None:
+                        params["min_snr"] = 1
+                        self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+
+                    if params["center"] is None:
+                        try:
+                            aptable = ad[0].APERTURE
+                            params["center"] = int(aptable['c0'].data[0])
+                        except (AttributeError, KeyError):
+                            log.error("Could not find aperture locations in "
+                                        f"{ad.filename} - continuing")
+                            continue
+                        self.log.stdinfo(f'Extracting spectrum from columns '
+                                    f'[{params["center"]-params["nsum"]}:{params["center"]+params["nsum"]}]')
+                else:
+                    # Telluric emission
+                    if params["order"] is None:
+                        if ad.camera(pretty=True).startswith('Long') and \
+                                ad.disperser(pretty=True).startswith('111') and \
+                                3.65 <= cenwave <= 3.75:
+                                params["order"] = 1
+                        else:
+                         params["order"] = 3
+                        self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
+                    if params["min_snr"] is None:
+                        params["min_snr"] = 10
+                        self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
         adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
 
@@ -289,7 +320,7 @@ class GNIRSSpect(Spect, GNIRS):
         return adinputs
 
 
-    def _get_arc_linelist(self, waves=None, ad=None):
+    def _get_arc_linelist(self, waves=None, ad=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
 
@@ -309,31 +340,42 @@ class GNIRSSpect(Spect, GNIRS):
                 raise ValueError(f"No default line list found for {ad.object()}-type arc. Please provide a line list.")
 
         else:
-            if ad.filter_name(pretty=True).startswith('M'):
-                resolution = self._get_resolution(ad)
-                if resolution >= 5000:
-                    linelist = 'sky_M_band_high_res.dat'
-                elif (2000 <= resolution < 5000):
-                    linelist = 'sky_M_band_med_res.dat'
-                elif (500 <= resolution < 2000):
-                    linelist = 'sky_M_band_low_res.dat'
-                elif resolution < 500:
-                    linelist = 'sky_M_band_very_low_res.dat'
-            elif ad.filter_name(pretty=True).startswith('L'):
-                resolution = self._get_resolution(ad)
-                if resolution >=10000:
-                    linelist = 'sky_L_band_high_res.dat'
-                elif (3000 <= resolution < 10000):
-                    linelist = 'sky_L_band_med_res.dat'
-                elif (1000 <= resolution < 3000):
-                    linelist = 'sky_L_band_low_res.dat'
-                elif resolution < 1000:
-                    linelist = 'sky_L_band_very_low_res.dat'
+            resolution = self._get_resolution(ad)
 
-            elif is_lowres:
-                linelist = 'sky.dat'
+            if config.absorption is True:
+                if resolution >= 10000:
+                    linelist = 'sky_absorp_XJHK_high_res_large.dat'
+                elif (3000 <= resolution < 10000):
+                    linelist = "sky_absorp_XJHK_med_res.dat"
+                elif (1000 <= resolution < 3000):
+                    linelist = "sky_absorp_XJHK_low_res.dat"
+                elif resolution < 1000:
+                    linelist = "sky_absorp_XJHK_very_low_res.dat"
             else:
-                linelist = 'nearIRsky.dat'
+                if ad.filter_name(pretty=True).startswith('M'):
+                    if resolution >= 5000:
+                        linelist = 'sky_M_band_high_res.dat'
+                    elif (2000 <= resolution < 5000):
+                        linelist = 'sky_M_band_med_res.dat'
+                    elif (500 <= resolution < 2000):
+                        linelist = 'sky_M_band_low_res.dat'
+                    elif resolution < 500:
+                        linelist = 'sky_M_band_very_low_res.dat'
+                elif ad.filter_name(pretty=True).startswith('L'):
+                    resolution = self._get_resolution(ad)
+                    if resolution >=10000:
+                        linelist = 'sky_L_band_high_res.dat'
+                    elif (3000 <= resolution < 10000):
+                        linelist = 'sky_L_band_med_res.dat'
+                    elif (1000 <= resolution < 3000):
+                        linelist = 'sky_L_band_low_res.dat'
+                    elif resolution < 1000:
+                        linelist = 'sky_L_band_very_low_res.dat'
+
+                elif is_lowres:
+                    linelist = 'sky.dat'
+                else:
+                    linelist = 'nearIRsky.dat'
 
         self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
@@ -342,26 +384,22 @@ class GNIRSSpect(Spect, GNIRS):
 
 
     def _get_resolution(self, ad=None):
-        resolution_2pix_slit = {('M, 10/mm, 0.05'): 1200,
-                                ('M, 32/mm, 0.15'): 1240,
-                                ('M, 32/mm, 0.05'): 3700,
-                                ('M, 111/mm, 0.15'): 4300,
-                                ('M, 111/mm, 0.05'): 12800,
-                                ('L, 10/mm, 0.05'): 1800,
-                                ('L, 32/mm, 0.15'): 1800,
-                                ('L, 32/mm, 0.05'): 5400,
-                                ('L, 111/mm, 0.15'): 6400,
-                                ('L, 111/mm, 0.05'): 19000}
-
-        filter = str(ad.filter_name(pretty=True))[0]
+        if ad.pixel_scale() == lookup.pixel_scale_shrt:
+            camera = "Short"
+        elif ad.pixel_scale() == lookup.pixel_scale_long:
+            camera = "Long"
+        else:
+            camera = None
         grating = ad._grating(pretty=True, stripID=True)
-        pix_scale = ad.pixel_scale()
-        config = f"{filter}, {grating}, {pix_scale}"
+        filter = str(ad.filter_name(pretty=True))[0]
+        config = f"{grating}, {camera}"
 
-        resolution_2pix = resolution_2pix_slit.get(config)
+        resolution_2pix_slit = lookup.dispersion_and_resolution.get(config, {}).get(filter)[1]
+        print(f"resolution_2pix_slit={resolution_2pix_slit}")
+        pix_scale = ad.pixel_scale()
         slit_width_pix = ad.slit_width()/pix_scale
 
-        return resolution_2pix * 2 / slit_width_pix
+        return resolution_2pix_slit * 2 / slit_width_pix
 
     def _get_cenwave_accuracy(self, ad=None):
         # Accuracy of central wavelength (nm) for a given instrument/setup.

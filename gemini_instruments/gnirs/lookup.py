@@ -249,3 +249,19 @@ dispersion_by_config = {
     ("Gemini-North, 111/mm, Short") : {"X":-0.9225, "J": -1.1099, "H": -1.3869, "K": -1.8503, "L": -2.76,  "M": -5.625},
     ("Gemini-North, 111/mm, Long")  : {"X":-0.3089, "J": -0.3712, "H": -0.4644, "K": -0.6186, "L": -0.92,  "M": -1.875}
 }
+
+dispersion_and_resolution = {
+    # Dictionary keys are in the following order:
+    # "grating, camera".
+    # Dictionary values are in the following order:
+    # "Filter": (dispersion, resolving power)
+    # Dispersion values are in A/pix.
+    # The dispersion values are based on wvl. coverages for each filter/mode listed in GNIRS instrument pages.
+    # Resolving power values are for 2 pix wide slit (from GNIRS instrument pages).
+    ("10/mm, Short")  : {"M":(-19.39, None)},
+    ("10/mm, Long")   : {"X":(-3.24, 2100),"J":(-3.89, 1600),"H":(-4.85, 1700),"K":(-6.47, 1700),"L":(-9.72, 1800),"M":(-19.43, 1200)},
+    ("32/mm, Short")  : {"X":(-3.23, 1700),"J":(-3.88, 1600),"H":(-4.84, 1700),"K":(-6.46, 1700),"L":(-9.69, 1800),"M":(-19.34, 1240)},
+    ("32/mm, Long")   : {"X":(-1.07, 5100),"J":(-1.29, 4800),"H":(-1.62, 5100),"K":(-2.16, 5100),"L":(-3.24, 5400),"M":(-6.45, 3700)},
+    ("111/mm, Short") : {"X":(-0.92, 6600),"J":(-1.10, 7200),"H":(-1.39, 5900),"K":(-1.85, 5900),"L":(-2.73, 6400),"M":(-5.62, 4300)},
+    ("111/mm, Long")  : {"X":(-0.309, 17800),"J":(-0.371, 17000),"H":(-0.464, 17800),"K":(-0.618, 17800),"L":(-0.922, 19000),"M":(-1.875, 12800)}
+}

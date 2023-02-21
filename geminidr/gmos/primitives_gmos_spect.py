@@ -559,7 +559,7 @@ class GMOSSpect(Spect, GMOS):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ad=None):
+    def _get_arc_linelist(self, waves=None, ad=None, config=None):
         use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
 
         use_second_order = False

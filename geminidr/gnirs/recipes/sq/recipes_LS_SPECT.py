@@ -58,5 +58,33 @@ def  makeWavelengthSolution(p):
     p.storeProcessedArc(force=True)
     p.writeOutputs()
 
+def  makeWavelengthSolutionFromAbsorption(p):
+    """
+    Process GNIRS longslist science in order to create wavelength solution
+    using telluric absorption in the target spectrum. Copy distortion model
+    to the resulting calibration frame from the associated arc.
+
+    Inputs are:
+      * processed arc
+      * processed flat
+    """
+    p.prepare()
+    p.addDQ()
+    # p.nonlinearityCorrect() # non-linearity correction tbd
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True, read_noise=True)
+    p.flatCorrect()
+    p.attachWavelengthSolution()
+    p.writeOutputs()
+    p.copyInputs(instream="main", outstream="with_distortion_model")
+    p.separateSky()
+    p.associateSky()
+    p.skyCorrect()
+    p.cleanReadout()
+    p.distortionCorrect()
+    p.findApertures(interactive=True)
+    p.determineWavelengthSolution(absorption=True)
+    p.transferDistortionModel(source="with_distortion_model")
+    p.storeProcessedArc(force=True)
 
 _default = reduceScience

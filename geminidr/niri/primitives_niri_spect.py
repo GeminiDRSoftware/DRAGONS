@@ -70,7 +70,7 @@ class NIRISpect(Spect, NIRI):
         return adinputs
 
     
-    def _get_arc_linelist(self, waves=None, ad=None):
+    def _get_arc_linelist(self, waves=None, ad=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
 

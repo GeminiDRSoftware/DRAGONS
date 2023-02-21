@@ -144,6 +144,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
     dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
                                    min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
+    use_intens = config.Field("Use line intensities in the line list (if any)?", bool, True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, False)
     absorption = config.Field("Is feature type absorption?", bool, False)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), '15,20',
@@ -220,6 +221,9 @@ class findAperturesConfig(config.Config):
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
                                        int, None, min=1, inclusiveMax=True, optional=True)
 
+class transferDistortionModelConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_distortionModelTransferred", optional=True)
+    source = config.Field("Stream to transfer from", str, None)
 
 class flagCosmicRaysConfig(config.Config):
     suffix = config.Field(

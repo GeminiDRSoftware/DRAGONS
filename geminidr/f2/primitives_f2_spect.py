@@ -129,7 +129,7 @@ class F2Spect(Spect, F2):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ad=None):
+    def _get_arc_linelist(self, waves=None, ad=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
 

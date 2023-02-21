@@ -4214,7 +4214,7 @@ class Spect(Resample):
 
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ad=None):
+    def _get_arc_linelist(self, waves=None, ad=None, config=None):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
@@ -4429,6 +4429,68 @@ class Spect(Resample):
         dist_para, dist_perp = gt.offsets_relative_to_slit(ad1[0], ad2[0])
         return (abs(dist_para) <= frac_FOV * slit_length and
                 abs(dist_perp) <= max_perpendicular_offset)
+
+
+    def transferDistortionModel(self, adinputs=None, suffix=None, source=None):
+        """
+        This primitive copies distortion_model from the AD(s) in another ("source")
+        stream to the ADs in this stream, if there was none. There must be the same
+        number of ADs in each stream.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        source: str
+            name of stream containing ADs whose "distortion_model" you want
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        if source not in self.streams.keys():
+            log.info(f"Stream {source} does not exist so nothing to transfer")
+            return adinputs
+
+        source_length = len(self.streams[source])
+        if not source_length == len(adinputs):
+            log.warning("Incompatible stream lengths: "
+                        f"{len(adinputs)} and {source_length}")
+            return adinputs
+
+        log.stdinfo(f"Transferring distortion model from stream '{source}'")
+        # Copy distortion model from ad2 to ad1
+        for ad1, ad2 in zip(*gt.make_lists(adinputs, self.streams[source])):
+            fail = False
+            distortion_models = []
+            for ext1, ext2 in zip(ad1, ad2):
+                wcs1 = ext1.nddata.wcs
+                wcs2 = ext2.nddata.wcs
+                if 'distortion_corrected' in wcs1.available_frames:
+                    log.warning(f"{ad1.filename}: already contains distortion model. "
+                            " Continuing.")
+                    fail = True
+                    break
+                try:
+                    if 'distortion_corrected' not in wcs2.available_frames:
+                        log.warning("Could not find a 'distortion_corrected' frame "
+                            f"in {ad2.filename} extension {ext2.id} - "
+                            "continuing")
+                        fail = True
+                        break
+                except AttributeError:
+                    fail = True
+                    break
+                else:
+                    m_distcorr = wcs2.get_transform(wcs2.input_frame,
+                                               'distortion_corrected')
+                    distortion_models.append(m_distcorr)
+            if not fail:
+                for ext, dist in zip(ad1, distortion_models):
+                    ext.nddata.wcs.insert_frame(ext.nddata.wcs.input_frame, dist,
+                                                cf.Frame2D(name="distortion_corrected"))
+
+                ad1.update_filename(suffix=suffix, strip=True)
+        return adinputs
 
 # -----------------------------------------------------------------------------
 

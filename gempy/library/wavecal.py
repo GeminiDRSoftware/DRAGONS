@@ -495,7 +495,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     # user-defined file, only read it if arc_lines is undefined
     # (i.e., first time through the loop)
     if linelist is None:
-        linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext)
+        linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext, config=config)
     # This wants to be logged even in interactive mode
     p.log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} arc lines")
 
@@ -540,8 +540,10 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     min_lines = [int(x) for x in str(config.debug_min_lines).split(',')]
     best_score = np.inf
     arc_lines = linelist.wavelengths(in_vacuo=config.in_vacuo, units="nm")
-    arc_weights = linelist.weights
-
+    if config.use_intens:
+        arc_weights = linelist.weights
+    else:
+        arc_weights = None
     # Create an initial fit_1D object using the initial wavelength model
     # (always the first model in the init_models list) as a fallback in case
     # don't get a better solution. Since we can't create a fit_1D object
