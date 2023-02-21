@@ -100,7 +100,6 @@ def test_associate_sky_quasi_abcde():
              'N20220220S0108.fits', 'N20220220S0109.fits',
              'N20220220S0110.fits']
 
-    print('Downloaded files')
     data = [astrodata.open(download_from_archive(f)) for f in files]
 
     p = GNIRSLongslit(data)
