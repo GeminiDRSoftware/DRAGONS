@@ -395,7 +395,6 @@ class GNIRSSpect(Spect, GNIRS):
         config = f"{grating}, {camera}"
 
         resolution_2pix_slit = lookup.dispersion_and_resolution.get(config, {}).get(filter)[1]
-        print(f"resolution_2pix_slit={resolution_2pix_slit}")
         pix_scale = ad.pixel_scale()
         slit_width_pix = ad.slit_width()/pix_scale
 

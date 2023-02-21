@@ -82,7 +82,7 @@ def  makeWavelengthSolutionFromAbsorption(p):
     p.skyCorrect()
     p.cleanReadout()
     p.distortionCorrect()
-    p.findApertures(interactive=True)
+    p.findApertures()
     p.determineWavelengthSolution(absorption=True)
     p.transferDistortionModel(source="with_distortion_model")
     p.storeProcessedArc(force=True)

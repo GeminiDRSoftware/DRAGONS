@@ -235,11 +235,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if self.currently_identifying:
             lheight = 0.05 * (self.p_spectrum.y_range.end -
                               self.p_spectrum.y_range.start)
-#            if self.absorption:
-#                # TODO: check if this works -OS
-#                self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] - lheight
-#            else:
-            self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
+            if self.absorption:
+                self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] - lheight
+            else:
+                self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
@@ -473,9 +472,10 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
     A Visualizer specific to determineWavelengthSolution
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, absorption=None, **kwargs):
         super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
-                         help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT)
+                         help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
+                         absorption=absorption)
         #self.widgets["in_vacuo"] = bm.RadioButtonGroup(
         #    labels=["Air", "Vacuum"], active=0)
         #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
@@ -483,6 +483,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             text="<b>Calibrating to wavelengths in {}</b>".format(
                 "vacuo" if self.ui_params.in_vacuo else "air"), align="center")
         self.widgets["in_vacuo"].disabled = True
+        self.absorption = absorption
 
     @property
     def meta(self):
@@ -508,8 +509,10 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                 else:
                     this_dict = data
                 # spectrum update
-                self.panels[i].spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
-
+                if self.absorption == True:
+                    self.panels[i].spectrum.data['spectrum'] = -this_dict["meta"]["spectrum"]
+                else:
+                    self.panels[i].spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
 
 def get_closest(arr, value):
     """
