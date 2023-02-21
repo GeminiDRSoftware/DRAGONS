@@ -135,7 +135,6 @@ class GMOSNodAndShuffle(GMOS):
                     ad_out = transform.resample_from_wcs(
                         ext, 'nod_aligned', order=order, subsample=subsample,
                         parallel=False, output_shape=ext.shape, origin=(0,0))
-                    ad_out.write("junk.fits", overwrite=True)
                     ext.subtract(ad_out[0])
                     ext.wcs = orig_wcs
             else:
