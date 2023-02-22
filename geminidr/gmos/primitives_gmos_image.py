@@ -494,7 +494,6 @@ class GMOSImage(GMOS, Image, Photometry):
         if not calc_scaling:
             log.stdinfo("Using user-supplied scaling factors: "
                         "{:.3f} {:.3f}".format(*factors))
-
         for ad in adinputs:
             if 'Hamamatsu' not in ad.detector_name(pretty=True):
                 log.stdinfo(f"{ad.filename} needs no correction as it does "
@@ -553,7 +552,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
         # If we had to wait in order to calculate a single pair of scaling
         # factors for all inputs, calculate and apply that now
-        if calc_scaling and common:
+        if calc_scaling and common and ads_to_correct:
             scale_factors = 1 / np.average(
                 np.asarray(scalings), weights=np.asarray(scaling_samples), axis=0)
             log.stdinfo("Calculated scale factors of {:.3f}, {:.3f} for all "
