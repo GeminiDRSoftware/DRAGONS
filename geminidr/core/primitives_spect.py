@@ -2526,8 +2526,7 @@ class Spect(Resample):
             dispaxis = ndim - 1 - dispaxis_wcs  # python sense
             # Store these values for later!
             refad = adinputs[0]
-            ref_coords = (refad.central_wavelength(asNanometers=True),
-                          refad.target_ra(), refad.target_dec())
+            ref_coords = refad[0].wcs(*((dim-1)/2 for dim in refad[0].shape))
             ref_pixels = [np.asarray(ad[0].wcs.invert(*ref_coords)[::-1])
                           for ad in adinputs]
             # Locations in frame of reference AD. The spectral axis is
