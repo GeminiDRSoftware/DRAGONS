@@ -143,6 +143,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                          height_policy="max")
         self.identify_button.on_click(self.identify_lines)
 
+        self.clear_all_lines_button = bm.Button(label="Clear all lines", width=200,
+                                         button_type="warning", width_policy="fit",
+                                         height_policy="max")
+        self.clear_all_lines_button.on_click(self.clear_all_lines)
+
         self.new_line_prompt = bm.Div(text="", style={"font-size": "16px",},
                                       width_policy="max")
         self.new_line_dropdown = bm.Select(options=[], width=100,
@@ -183,7 +188,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                 row(bm.Spacer(sizing_mode="stretch_width"), new_line_ok_button, new_line_cancel_button),
                                 width_policy="max"))
 
-        identify_panel = row(self.identify_button, self.new_line_div)
+        identify_panel = row(self.identify_button, self.clear_all_lines_button, self.new_line_div)
 
         info_panel = InfoPanel(self.enable_regions, self.enable_user_masking)
         self.model.add_listener(info_panel.model_change_handler)
@@ -406,6 +411,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
         new_data = {col: list(values)[:index] + list(values)[index+1:]
                     for col, values in self.model.data.data.items()}
         self.model.data.data = new_data
+        self.model.perform_fit()
+
+    def clear_all_lines(self):
+        """
+        Called when the user clicks the "Clear all ines" button. Deletes
+        all identified lines, performs a new fit.
+        """
+        self.model.data.data = {col: [] for col, values in self.model.data.data.items()}
         self.model.perform_fit()
 
     def identify_lines(self):
