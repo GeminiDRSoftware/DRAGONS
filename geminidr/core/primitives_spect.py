@@ -1601,7 +1601,10 @@ class Spect(Resample):
                     coords_two = pair.get(f'coords_{edge2}', None)
 
                     # Assume only one edge traced for now, so spatial order 0
-                    # for the model to rectify the slit.
+                    # for the model to rectify the slit. This means that the
+                    # shift isn't a function of location in the spatial direction
+                    # (i.e., the same shift should be applied to all pixels in
+                    # the same row/column).
                     spatial_order = 0
 
                     if (coords_one is not None and coords_two is not None):
@@ -1622,6 +1625,17 @@ class Spect(Resample):
                         in_coords = coords[2:]
                         ref_coords = coords[:2]
 
+                        # Find the value of the trace closest to the midpoint of
+                        # the detector and set that as the reference pixel - in
+                        # essense "rotating" the image around that point (rather
+                        # than one of the endpoints of the trace).
+                        half_detector = ext.shape[1 - dispaxis] // 2
+                        dists = np.array([abs(n - half_detector)
+                                          for n in ref_coords[1 - dispaxis]])
+                        midpoint = in_coords[dispaxis][dists.argmin()]
+                        ref_coords[dispaxis] = np.full_like(ref_coords[dispaxis],
+                                                            midpoint)
+
                     if dispaxis == 0:
                         x_ord, y_ord = 1, spectral_order
                     else:
@@ -1631,6 +1645,7 @@ class Spect(Resample):
                         x_degree=x_ord, y_degree=y_ord,
                         x_domain=[0, ext.shape[1]-1],
                         y_domain=[0, ext.shape[0]-1])
+
                     # Create the distortion model from the available coords.
                     # Currently this is set up for a single slit (i.e. longslit)
                     # and will need some thinking/refactoring for XD, MOS.
@@ -1638,6 +1653,7 @@ class Spect(Resample):
                     fixed = (spatial_order == 0)
                     model, m_final_2d, m_inverse_2d = create_distortion_model(
                         m_init_2d, dispaxis, in_coords, ref_coords, fixed)
+                    model.name = 'RECT'
 
                 # Attach the table to the extension as a new plane if none of
                 # the edge pairs failed to be fit.
@@ -1646,7 +1662,8 @@ class Spect(Resample):
                     log.debug('Appending the table below as "SLITEDGE".')
                     log.debug(ext.SLITEDGE)
 
-                    # Put this model as the first step if there's an existing WCS
+                    # Put the slit rectification model as the first step in the
+                    # WCS if one already exists.
                     if ext.wcs is None:
                         ext.wcs = gWCS([(ext.wcs.input_frame, model),
                                         (cf.Frame2D(name="rectified"), None)])
@@ -4550,13 +4567,14 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
     # traceable line.
     if transform_axis == 0:
         domain_start, domain_end = m_init.x_domain
-        param = 'c1_0'
+        param_names = [f'c1_{i}' for i in range(m_init.y_degree + 1)]
     else:
         domain_start, domain_end = m_init.y_domain
-        param = 'c0_1'
+        param_names = [f'c{i}_1' for i in range(m_init.x_degree + 1)]
     domain_centre = 0.5 * (domain_start + domain_end)
     if fixed_linear:
-        getattr(m_init, param).fixed = True
+        for pn in param_names:
+            getattr(m_init, pn).fixed = True
     shifts = ref_coords[transform_axis] - in_coords[transform_axis]
 
     # Find model to transform actual (x,y) locations to the
@@ -4567,7 +4585,8 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
     m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
     for m in (m_final, m_inverse):
         m.c0_0 += domain_centre
-        getattr(m, param).value += domain_end - domain_centre
+        # param_names[0] will be 'c1_0' (tranforms_axis == 0) or 'c0_1'.
+        getattr(m, param_names[0]).value += domain_end - domain_centre
 
     if transform_axis == 0:
         model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
