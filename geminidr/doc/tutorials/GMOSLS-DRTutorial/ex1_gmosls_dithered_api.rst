@@ -1,9 +1,9 @@
-.. 04_dithered_api.rst
+.. ex1_gmosls_dithered_api.rst
 
 .. _dithered_api:
 
 **********************************************************************
-Example 1-B: Dithered Point Source Longslit - Using the "Reduce" class
+Example 1: Longslit Dithered Point Source - Using the "Reduce" class
 **********************************************************************
 
 A reduction can be initiated from the command line as shown in

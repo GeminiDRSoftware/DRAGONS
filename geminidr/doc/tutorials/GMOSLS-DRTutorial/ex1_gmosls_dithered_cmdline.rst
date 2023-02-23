@@ -1,10 +1,11 @@
-.. 03_dithered_cmdline.rst
+.. ex1_gmosls_dithered_cmdline.rst
 
 .. _dithered_cmdline:
 
-*****************************************************************************
-Example 1-A: Dithered Point Source Longslit - Using the "reduce" command line
-*****************************************************************************
+****************************************************************************
+Example 1 - Longslit Dithered Point Source - Using the "reduce" command line
+****************************************************************************
+
 
 In this example we will reduce a GMOS longslit observation of a DB white
 dwarf candidate using the "|reduce|" command that is operated directly from
@@ -60,6 +61,7 @@ Let's set up the local calibration manager for this session.
 
 In ``~/.dragons/``, create or edit the configuration file ``dragonsrc`` as
 follow::
+
     [interactive]
     browser = your_prefered_browser
 
