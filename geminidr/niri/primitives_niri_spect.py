@@ -89,7 +89,7 @@ class NIRISpect(Spect, NIRI):
             else:
                 linelist = 'nearIRsky.dat'
 
-        self.log.stdinfo(f"Using linelist '{linelist}'")
+        self.log.debug(f"Using linelist '{linelist}'")
         filename = os.path.join(lookup_dir, linelist)
 
         return wavecal.LineList(filename)
