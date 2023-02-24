@@ -423,7 +423,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
 
 
 def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
-                       skylines=False):
+                       skylines=False, loglevel='stdinfo'):
     """
     There's a specific order needed to do things:
     1) The initial model and 1D spectrum give us the wavelength extrema
@@ -445,6 +445,12 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     skylines : bool
         True if the reference lines being used are skylines, othewise False if
         the are arc lines
+    loglevel : str, ('stdinfo', 'fullinfo', 'debug')
+        Sets the log level at which to print some output from the function. If
+        left at the default 'stdinfo', all information will be printed to the
+        terminal; setting it to a lower level will cause it by default to only
+        appear in the reduction log (though it can appear in the terminal if
+        the logging level specified there allows it).
 
     Returns
     -------
@@ -461,14 +467,18 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     cenwave = config["central_wavelength"]
 
     log = FakeLog() if config["interactive"] == True else p.log
+    # This allows suppression of the terminal log output by calling the function
+    # with loglevel='debug'.
+    logit = getattr(log, loglevel)
+
     # Create 1D spectrum for calibration
     if ext.data.ndim > 1:
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
         data, mask, variance, extract_slice = tracing.average_along_slit(
             ext, center=config["center"], nsum=config["nsum"])
-        log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                    format(direction, extract_slice.start + 1, extract_slice.stop))
+        logit("Extracting 1D spectrum from {}s {} to {}".
+              format(direction, extract_slice.start + 1, extract_slice.stop))
         middle = 0.5 * (extract_slice.start + extract_slice.stop - 1)
         axes = {dispaxis: middle}
         location = f"{direction} {int(middle)}"
@@ -485,7 +495,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
 
     if config["fwidth"] is None:
         fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30)
-        log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
+        logit(f"Estimated feature width: {fwidth:.2f} pixels")
     else:
         fwidth = config["fwidth"]
 
@@ -509,8 +519,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
 
     waves = m_init([0, 0.5 * (data.size - 1), data.size - 1])
     dw0 = (waves[2] - waves[0]) / (data.size - 1)
-    log.stdinfo("Wavelengths at start, middle, end (nm), and dispersion "
-                f"(nm/pixel):\n{waves} {dw0:.4f}")
+    logit("Wavelengths at start, middle, end (nm), and dispersion "
+          f"(nm/pixel):\n{waves} {dw0:.4f}")
 
     # Get list of arc lines (probably from a text file dependent on the
     # input spectrum, so a private method of the primitivesClass). If a
@@ -519,9 +529,9 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     if linelist is None:
         linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext)
     # This wants to be logged even in interactive mode
-    sky_or_arc = 'sky' if skylines else 'arc'
-    p.log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} "
-                  f"{sky_or_arc} lines")
+    sky_or_arc = 'reference sky' if skylines else 'arc'
+    logit(f"Found {len(peaks)} peaks and {len(linelist)} "
+          f"{sky_or_arc} lines")
 
     m_init = [m_init]
     kdsigma = fwidth * abs(dw0)
