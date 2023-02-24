@@ -103,7 +103,13 @@ class Spect(Resample):
         """
 
         def _add_shift_model_to_wcs(shift, dispaxis, ext):
-            """ Create a model to shift the wavelength scale by
+            """ Create a model to shift the wavelength scale by and add to WCS
+
+            This function creates a compound model of two Shift models in
+            parallel, with the one in the `dispaxis` direction getting the value
+            of `shift`. This allows the resulting compound model to applied to
+            a WCS without any special handling for different spectral axis
+            orientations.
 
             Parameters
             ----------
@@ -120,15 +126,15 @@ class Spect(Resample):
             elif dispaxis == 1:
                 dx = shift
             else:
-                raise ValueError("'dispaxis' must be 0 or 1")
+                raise ValueError("'dispaxis' must be 0 (vertical) or "
+                                 "1 (horizontal)")
 
             # This should work for both orientations without having to code
             # them separately.
             model = models.Shift(dx) & models.Shift(dy)
             model.name = 'FLEXCORR'
-            # TODO: "test"?
             ext.wcs.insert_frame(ext.wcs.input_frame, model,
-                                 cf.Frame2D(name="test"))
+                                 cf.Frame2D(name="wavelength_scale_adjusted"))
 
         # Set up log
         log = self.log
@@ -140,8 +146,7 @@ class Spect(Resample):
         max_shift = params["debug_max_shift"]
 
         for ad in adinputs:
-            log.stdinfo("Adjusting wavelength scale zero point for "
-                        f"{ad.filename}")
+            log.stdinfo(f"{ad.filename}: adjusting wavelength scale zero point")
 
             for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()  # Python sense
@@ -149,12 +154,14 @@ class Spect(Resample):
                 # If the user specifies a shift value, apply it and continue
                 if shift is not None:
                     _add_shift_model_to_wcs(shift, dispaxis, ext)
-                    log.stdinfo(f"Shifting wavelength scale by {shift:0.2} "
-                                "pixels.")
+                    log.stdinfo("    Shifted wavelength scale for extension "
+                                f"{ext.id} by {shift:0.3f} "
+                                f"pixels.")
                     continue
 
                 # Otherwise, we'll need to automatically find the shift.
-                # Values taken from defaults for determineWavelengthSolution
+                # Values (generally) taken from the defaults for
+                # determineWavelengthSolution, with some changes.
                 config_dict = {
                         "order": 3,
                         "niter": 3,
@@ -170,15 +177,15 @@ class Spect(Resample):
                         "weighting": "global",
                         "nbright": 0,
                         "dispersion": None,
-                        "debug_min_lines": 5,
+                        "debug_min_lines": 15,
                         "debug_alternative_centers": False,
                         "in_vacuo": False,
                     }
 
-
                 input_data = wavecal.get_all_input_data(
                     ext, self, config_dict, linelist=None,
-                    bad_bits=DQ.not_signal, skylines=True)
+                    bad_bits=DQ.not_signal, skylines=True,
+                    loglevel='fullinfo')
                 spectrum = input_data["spectrum"]
                 init_models = input_data["init_models"]
                 domain = init_models[0].meta["domain"]
@@ -188,13 +195,12 @@ class Spect(Resample):
 
                 m_init = init_models[0]
                 # Fix all parameters in the model so that they don't change
-                # (only the shift that will be added next)
+                # (only the Shift which will be added next).
                 for p in m_init.param_names:
                     getattr(m_init, p).fixed = True
 
                 # Add a bounded Shift model in front of the wavelength solution
-                shift = 0
-                m_init = models.Shift(shift, bounds={'offset': (-max_shift,
+                m_init = models.Shift(0, bounds={'offset': (-max_shift,
                      max_shift)}) | m_init
                 m_init.meta["domain"] = domain
 
@@ -205,6 +211,7 @@ class Spect(Resample):
 
                 pixel_start = domain[0] + 0.5 * np.diff(domain)[0]
 
+                # Find matches between the sky lines list and measured peaks.
                 matches = wavecal.perform_piecewise_fit(
                     m_init, peaks, sky_lines,
                     pixel_start, kdsigma,
@@ -219,19 +226,19 @@ class Spect(Resample):
                                  ref_weights=input_data["linelist"].weights,
                                  matches=matches)
 
-                # mask = [i for i in matches if i > -1]
-                # input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                #     ext, config_dict, p=self, linelist=None, bad_bits=DQ.not_signal)
-                # wavecal.save_fit_as_pdf(input_data["spectrum"],
-                                        # fit1d.points[~fit1d.mask],
-                                        # fit1d.image[~fit1d.mask], ad.filename)
-                                        # peaks[mask], sky_lines[]
+                mask = [i for i in matches if i > -1]
+                log.fullinfo(f"    Matched {len(mask)}/{len(peaks)} peaks "
+                            f"({len(mask)/len(peaks):.0%}) in the image")
+                # Create a plot of the solution for quick QA.
+                wavecal.save_fit_as_pdf(input_data["spectrum"],
+                                        peaks, sky_lines[mask], ad.filename)
 
                 # Apply the shift to the wavelength scale
-                shift = m_final.offset_0.value
-                log.stdinfo(f"Adjusting wavelength scale by {shift:0.2f} "
-                             "pixels.")
-                _add_shift_model_to_wcs(shift, dispaxis, ext)
+                shift_final = m_final.offset_0.value
+                log.stdinfo(f"    Shifted wavelength scale for "
+                            f"extension {ext.id} by {shift_final:0.3f} "
+                             "pixels")
+                _add_shift_model_to_wcs(shift_final, dispaxis, ext)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
