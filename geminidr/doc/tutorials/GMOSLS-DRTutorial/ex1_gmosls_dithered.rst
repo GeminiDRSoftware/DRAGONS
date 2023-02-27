@@ -1,5 +1,7 @@
 .. ex1_gmosls_dithered.rst
 
+.. _dithered_example:
+
 ******************************************
 Example 1 - Longslit Dithered Point Source
 ******************************************

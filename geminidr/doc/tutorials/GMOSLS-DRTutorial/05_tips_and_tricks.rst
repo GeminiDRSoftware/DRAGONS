@@ -53,7 +53,7 @@ do it.
     import astrodata
     import gemini_instruments
 
-    ad = astrodata.open('S20170826S0160_ql_standard.fits')
+    ad = astrodata.open('S20170826S0160_standard.fits')
 
     sensfunc = ad[0].SENSFUNC
 

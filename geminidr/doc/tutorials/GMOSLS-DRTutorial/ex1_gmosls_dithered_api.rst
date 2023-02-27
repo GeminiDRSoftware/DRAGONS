@@ -2,18 +2,18 @@
 
 .. _dithered_api:
 
-**********************************************************************
-Example 1: Longslit Dithered Point Source - Using the "Reduce" class
-**********************************************************************
+*********************************************************************
+Example 1 - Longslit Dithered Point Source - Using the "Reduce" class
+*********************************************************************
 
 A reduction can be initiated from the command line as shown in
 :ref:`dithered_cmdline` and it can also be done programmatically as we will
 show here.  The classes and modules of the RecipeSystem can be
 accessed directly for those who want to write Python programs to drive their
 reduction.  In this example we replicate the command line reduction from
-Example 1-A, this time using the Python interface instead of the command line.
-Of course what is shown here could be packaged in modules for greater
-automation.
+command line version of Example 1 but this time using the Python
+programmatic interface. What is shown here could be packaged in modules for
+greater automation.
 
 The dataset
 ===========
@@ -76,9 +76,10 @@ Importing libraries
     from gempy.adlibrary import dataselect
 
 The ``dataselect`` module will be used to create file lists for the
-darks, the flats and the science observations. The ``cal_service`` package
-is our interface to the local calibration database. Finally, the
-``Reduce`` class is used to set up and run the data reduction.
+biases, the flats, the arcs, the standard, and the science observations.
+The ``cal_service`` package is our interface to the local calibration
+database. The ``Reduce`` class is used to set up and run the data
+reduction.
 
 
 Setting up the logger
@@ -97,23 +98,37 @@ Set up the Local Calibration Manager
 ------------------------------------
 DRAGONS comes with a local calibration manager
 that uses the same calibration association rules as the Gemini Observatory
-Archive.  This allows the ``Reduce`` instance to make requests to a local
-light-weigth database for matching
-**processed** calibrations when needed to reduce a dataset.
+Archive.  This allows the ``Reduce`` instance to make requests to a local light-weight database for matching **processed**
+calibrations and BPMs when they are needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
 In ``~/.dragons/``, edit the configuration file ``dragonsrc`` as follow::
 
+    [interactive]
+    browser = your_prefered_browser
+
     [calibs]
-    databases = <where_the_data_package_is>/gmosls_tutorial/playground/cal_manager.db
+    databases = where_the_data_package_is/gmosls_tutorial/playground/cal_manager.db get store
 
-This tells the system where to put the calibration database, the
-database that will keep track of the processed calibration we are going to
-send to it.
+The ``[interactive]`` section defines your prefered browser.  DRAGONS will open
+the interactive tools using that browser.  The allowed strings are "safari",
+"chrome", and "firefox".
 
-.. note:: The tilde (``~``) in the path above refers to your home directory.
-    Also, mind the dot in ``.dragons``.
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
+
+.. note:: ``~`` in the path above refers to your home directory.  Also, mind
+   the dot in ``.dragons``.
 
 The calibration database is initialized and the calibration service is
 configured like this:
@@ -124,6 +139,11 @@ configured like this:
 
     caldb = cal_service.set_local_database()
     caldb.init()
+
+.. warning:: If the calibration database already exists, ``caldb.init()`` will
+             delete it and create a new, empty one.  Use ``wipe=False`` to
+             prevent that from happening.  (``wipe=False`` matches the
+             behavior of the command line ``caldb``).
 
 The calibration service is now ready to use.  If you need more details,
 check the "|caldb|" documentation in the Recipe System User Manual.
@@ -266,8 +286,9 @@ at Gemini are in that table.
 
 A list for the science observation
 ----------------------------------
-The science observations are what is left, anything that is not a calibration
-or assigned the tag ``CAL``.
+The science observations are what is left, that is anything that is not a
+calibration. Calibrations are assigned the astrodata tag ``CAL``, therefore
+we can select against that tag to get the science observations.
 
 First, let's have a look at the list of objects.
 
@@ -307,19 +328,39 @@ will do that here to show how it would be done.  To be clear, the
         dataselect.expr_parser('object=="J2145+0031"')
     )
 
-
-Master Bias
-===========
-We create the master biases with the ``Reduce`` class.  We will run it
-twice, once of each of the two raw bias lists, then add the master biases
-produced to the local calibration manager with the ``caldb`` instance.
-The output is written to disk and its name is
-stored in the ``Reduce`` instance.  The calibration service expects the
-name of a file on disk.
+Bad Pixel Mask
+==============
+Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
+calibrations.  They
+are downloadable from the archive instead of being packaged with the software.
+They are automatically associated like any other calibrations.  This means that
+the user now must download the BPMs along with the other calibrations and add
+the BPMs to the local calibration manager.  To add the BPM included in the
+data package to the local calibration database:
 
 .. code-block:: python
     :linenos:
     :lineno-start: 47
+
+    for bpm in dataselect.select_data(all_files, ['BPM']):
+        caldb.add_cal(bpm)
+
+
+Master Bias
+===========
+We create the master biases with the ``Reduce`` class.  We will run it
+twice, once for each of the two raw bias lists, then add the master biases
+produced to the local calibration manager with the ``caldb`` instance.
+The output is written to disk and its name is stored in the ``Reduce``
+instance.  The calibration service expects the name of a file on disk.
+
+Because the database was given the "store" option in the ``dragonsrc`` file,
+the processed biases will be automatically added to the database at the end
+of the recipe.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 49
 
     reduce_biasstd = Reduce()
     reduce_biassci = Reduce()
@@ -328,9 +369,6 @@ name of a file on disk.
     reduce_biasstd.runr()
     reduce_biassci.runr()
 
-    caldb.add_cal(reduce_biasstd.output_filenames[0])
-    caldb.add_cal(reduce_biassci.output_filenames[0])
-
 The two master biases are: ``S20170825S0347_bias.fits`` and
 ``S20171021S0265_bias.fits``.
 
@@ -338,6 +376,15 @@ The two master biases are: ``S20170825S0347_bias.fits`` and
     first file in the list with ``_bias`` appended as a suffix.  This is the
     general naming scheme used by the ``Recipe System``.
 
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+    .. code-block::
+
+        caldb.add_cal(reduce_biasstd.output_filenames[0])
+        caldb.add_cal(reduce_biassci.output_filenames[0])
 
 
 Master Flat Field
@@ -358,32 +405,43 @@ calibration manager.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 56
+    :lineno-start: 55
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
-    reduce_flats.mode = 'ql'
     reduce_flats.runr()
 
-    for f in reduce_flats.output_filenames:
-        caldb.add_cal(f)
+The primitive ``normalizeFlat``, used in the recipe, has an interactive mode.
+To activate the interactive mode:
 
+.. code-block:: python
+    :linenos:
+    :lineno-start: 58
 
-.. note:: GMOS longslit reduction is currently available only for quicklook
-   reduction.  The science quality recipes do not exist, hence the use of the
-   ``ql`` mode to activate the "quicklook" recipes.
+    reduce_flats = Reduce()
+    reduce_flats.files.extend(flats)
+    reduce_flats.uparms = [('interactive', True)]
+    reduce_flats.runr()
 
+The interactive tools are introduced in section :ref:`interactive`.
+
+.. note:: If the database is not set to "store" automatically,  the
+          processed flats can be added manually as follows:
+
+          .. code-block:: python
+
+              for f in reduce_arcs.output_filenames:
+                  caldb.add_cal(f)
 
 
 Processed Arc - Wavelength Solution
 ===================================
 GMOS longslit arc can be obtained at night with the observation sequence,
 if requested by the program, but are often obtained at the end of the night
-instead.  In this example, the arcs have been obtained at night, as part of
-the sequence.
-
-Like the spectroscopic flats, they are not stacked which means that
-they can be sent to reduce all to together and will be reduced individually.
+or the following afternoon instead.  In this example, the arcs have been obtained at night, as part of
+the sequence. Like the spectroscopic flats, they are not
+stacked which means that they can be sent to reduce all together and will
+be reduced individually.
 
 The wavelength solution is automatically calculated and the algorithm has
 been found to be quite reliable.  There might be cases where it fails; inspect
@@ -392,21 +450,25 @@ logs to confirm a good solution.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 63
+    :lineno-start: 62
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
-    reduce_arcs.mode = 'ql'
     reduce_arcs.runr()
 
-    for f in reduce_arcs.output_filenames:
-        caldb.add_cal(f)
+The primitive ``determineWavelengthSolution``, used in the recipe, has an
+interactive mode. To activate the interactive mode:
 
-.. note:: Failures of the wavelength solution calculation are not easy to fix
-   in quicklook mode.  It might be better to simply not use the arc at all and
-   rely on the approximate solution instead.  When the science quality package
-   is released, there will be interactive tools to fix a bad solution.
-   Remember, this version only offers quicklook reduction for GMOS longslit.
+.. code-block:: python
+    :linenos:
+    :lineno-start: 65
+
+    reduce_arcs = Reduce()
+    reduce_arcs.files.extend(arcs)
+    reduce_arcs.uparms = [('interactive', True)]
+    reduce_arcs.runr()
+
+The interactive tools are introduced in section :ref:`interactive`.
 
 
 Processed Standard - Sensitivity Function
@@ -421,42 +483,71 @@ to calculate the sensitivity function.  It has been shown that a difference of
 10 or so nanometers does not significantly impact the spectrophotometric
 calibration.
 
-The reduction of the standard will be using a master bias, a master flat,
+The reduction of the standard will be using a BPM, a master bias, a master flat,
 and a processed arc.  If those have been added to the local calibration
-manager, they will be picked up automatically.
+manager, they will be picked up automatically.  The output of the reduction
+includes the sensitivity function and will be added to the calibration
+database automatically if the "store" option is set in the ``dragonsrc``
+configuration file.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 70
+    :lineno-start: 69
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
-    reduce_std.mode = 'ql'
     reduce_std.runr()
 
-    caldb.add_cal(reduce_std.output_filenames[0])
+Four primitives in the default recipe for spectrophotometric standard have
+an interactive interface: ``skyCorrectFromSlit``, ``findApertures``,
+``traceApertures``, and ``calculateSensitivity``.  To activate the interactive
+mode for all four:
 
-To inspect the spectrum:
+.. code-block:: python
+    :linenos:
+    :lineno-start: 72
+
+    reduce_std = Reduce()
+    reduce_std.files.extend(stdstar)
+    reduce_arcs.uparms = [('interactive', True)]
+    reduce_std.runr()
+
+Since the standard star spectrum is bright and strong, and the exposure short,
+it is somewhat unlikely that interactivity will be needed for the sky
+subtraction, or finding and tracing the spectrum.  The fitting of the
+sensitivity function however can sometimes benefit from little adjustment.
+
+To activate the interactive mode **only** for the measurement of the
+sensitivity function:
 
 .. code-block:: python
     :linenos:
     :lineno-start: 76
 
-    from gempy.adlibrary import plotting
-    import matplotlib.pyplot as plt
+    reduce_std = Reduce()
+    reduce_std.files.extend(stdstar)
+    reduce_arcs.uparms = [('calculateSensitivity:interactive', True)]
+    reduce_std.runr()
 
-    ad = astrodata.open(reduce_std.output_filenames[0])
-    plt.ioff()
-    plotting.dgsplot_matplotlib(ad, 1)
-    plt.ion()
+The interactive tools are introduced in section :ref:`interactive`.
 
+.. note:: If you wish to inspect the spectrum in aperture 1:
 
-To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
-script, see Tips and Tricks :ref:`plot_1d`.
+    .. code-block:: python
 
-The sensitivity function is stored within the processed standard spectrum.  To
-learn how to plot it, see Tips and Tricks :ref:`plot_sensfunc`.
+        from gempy.adlibrary import plotting
+        import matplotlib.pyplot as plt
 
+        ad = astrodata.open(reduce_std.output_filenames[0])
+        plt.ioff()
+        plotting.dgsplot_matplotlib(ad, 1)
+        plt.ion()
+
+    To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
+    Python script, see Tips and Tricks :ref:`plot_1d`.
+
+    The sensitivity function is stored within the processed standard spectrum.
+    To learn how to plot it, see Tips and Tricks :ref:`plot_sensfunc`.
 
 
 Science Observations
@@ -467,10 +558,10 @@ register the four images in both directions, align and stack them before
 extracting the 1-D spectrum.
 
 .. note::  In this observation, there is only one source to extract.  If there
-   were multiple sources in slits, regardless of whether they are of interest to
-   the program, DRAGONS will locate them, trace them, and extract them automatically.
-   Each extracted spectrum is stored in an individual extension in the output
-   multi-extension FITS file.
+   were multiple sources in the slit, regardless of whether they are of
+   interest to the program, DRAGONS will locate them, trace them, and extract
+   them automatically. Each extracted spectrum is stored in an individual
+   extension in the output multi-extension FITS file.
 
 This is what one raw image looks like.
 
@@ -480,16 +571,16 @@ This is what one raw image looks like.
 
 With the master bias, the master flat, the processed arcs (one for each of the
 grating position, aka central wavelength), and the processed standard in the
-local calibration manager, to reduce the science observations and extract the 1-D
-spectrum, one only needs to do as follows.
+local calibration manager, one only needs to do as follows to reduce the
+science observations and extract the 1-D spectrum.
+
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 83
+    :lineno-start: 80
 
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
-    reduce_science.mode = 'ql'
     reduce_science.runr()
 
 This produces a 2-D spectrum (``S20171022S0087_2D.fits``) which has been
@@ -504,7 +595,7 @@ This is what the 2-D spectrum looks like.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 87
+    :lineno-start: 83
 
     display = Reduce()
     display.files = ['S20171022S0087_2D.fits']
@@ -515,17 +606,17 @@ This is what the 2-D spectrum looks like.
    :width: 600
    :alt: 2D stacked spectrum
 
-The apertures found are list in the log for the ``findApertures`` just before
-the call to ``traceApertures``.  Information about the apertures are also
-available in the header of each extracted spectrum: ``XTRACTED``, ``XTRACTLO``,
-``XTRACTHI``, for aperture center, lower limit, and upper limit, respectively.
-
+The apertures found are listed in the log for the ``findApertures`` primitive,
+just before the call to ``traceApertures``.  Information about the apertures
+are also available in the header of each extracted spectrum: ``XTRACTED``,
+``XTRACTLO``, ``XTRACTHI``, for aperture center, lower limit, and upper limit,
+respectively.
 
 This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 91
+    :lineno-start: 87
 
     from gempy.adlibrary import plotting
     import matplotlib.pyplot as plt
@@ -548,7 +639,7 @@ If you need an ascii representation of the spectum, you can use the primitive
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 98
+    :lineno-start: 94
 
     writeascii = Reduce()
     writeascii.files = ['S20171022S0087_1D.fits']
@@ -566,7 +657,7 @@ To use a different format, set the ``format`` parameters.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 102
+    :lineno-start: 98
 
     writeascii = Reduce()
     writeascii.files = ['S20171022S0087_1D.fits']
