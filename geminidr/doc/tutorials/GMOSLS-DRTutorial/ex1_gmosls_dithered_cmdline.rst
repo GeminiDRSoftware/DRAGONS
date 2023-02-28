@@ -69,7 +69,7 @@ follow::
     databases = where_the_data_package_is/gmosls_tutorial/playground/cal_manager.db get store
 
 
-The ``[interactive]`` section defines your prefered browser.  DRAGONS will open
+The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
 the interactive tools using that browser.  The allowed strings are "safari",
 "chrome", and "firefox".
 
@@ -93,7 +93,7 @@ The next step is to initialize the calibration database::
     caldb init
 
 That's it.  It is ready to use.  You can check the configuration and confirm the
-setting with ``caldb config``.
+settings with ``caldb config``.
 
 You can manually add processed calibrations with ``caldb add <filename>``
 (we will later for the BPM), list the database content with ``caldb list``,

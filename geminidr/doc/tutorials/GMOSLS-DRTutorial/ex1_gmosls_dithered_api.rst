@@ -70,7 +70,7 @@ Importing libraries
     import glob
 
     import astrodata
-    import gemni_instruments
+    import gemini_instruments
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system import cal_service
     from gempy.adlibrary import dataselect
@@ -94,8 +94,8 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
     logutils.config(file_name='gmosls_tutorial.log')
 
 
-Set up the Local Calibration Manager
-------------------------------------
+Set up the Calibration Service
+------------------------------
 DRAGONS comes with a local calibration manager
 that uses the same calibration association rules as the Gemini Observatory
 Archive.  This allows the ``Reduce`` instance to make requests to a local light-weight database for matching **processed**
@@ -330,8 +330,8 @@ will do that here to show how it would be done.  To be clear, the
 
 Bad Pixel Mask
 ==============
-Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
-calibrations.  They
+Starting with DRAGONS v3.1, the static bad pixel masks (BPMs) are now handled
+as calibrations.  They
 are downloadable from the archive instead of being packaged with the software.
 They are automatically associated like any other calibrations.  This means that
 the user now must download the BPMs along with the other calibrations and add
@@ -349,8 +349,9 @@ data package to the local calibration database:
 Master Bias
 ===========
 We create the master biases with the ``Reduce`` class.  We will run it
-twice, once for each of the two raw bias lists, then add the master biases
-produced to the local calibration manager with the ``caldb`` instance.
+twice, once for each of the two raw bias lists.  The master biases
+will be automatically added to the local calibration manager when the "store"
+parameter is present in the ``.dragonsrc`` configuration file.
 The output is written to disk and its name is stored in the ``Reduce``
 instance.  The calibration service expects the name of a file on disk.
 
