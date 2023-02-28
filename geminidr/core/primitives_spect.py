@@ -179,9 +179,18 @@ class Spect(Resample):
                         "dispersion": None,
                         "debug_min_lines": 15,
                         "debug_alternative_centers": False,
-                        "in_vacuo": False,
                     }
 
+                wave_scale = ext.wcs.output_frame.axes_names[0]
+                if wave_scale == 'WAVE':
+                    config_dict["in_vacuo"] = True
+                    log.stdinfo("Calibrated in vacuum.")
+                elif wave_scale == 'AWAV':
+                    log.stdinfo("Calibrated in air.")
+                    config_dict["in_vacuo"] = False
+                else:
+                    raise ValueError("Cannot interpret wavelength scale "
+                                     f"for {extid} (found '{wave_scale}'")
                 input_data = wavecal.get_all_input_data(
                     ext, self, config_dict, linelist=None,
                     bad_bits=DQ.not_signal, skylines=True,
@@ -190,8 +199,8 @@ class Spect(Resample):
                 init_models = input_data["init_models"]
                 domain = init_models[0].meta["domain"]
                 peaks, weights = input_data["peaks"], input_data["weights"]
-                sky_lines = input_data["linelist"].wavelengths(in_vacuo=False,
-                                                               units='nm')
+                sky_lines = input_data["linelist"].wavelengths(
+                    in_vacuo=config_dict["in_vacuo"], units='nm')
 
                 m_init = init_models[0]
                 # Fix all parameters in the model so that they don't change
