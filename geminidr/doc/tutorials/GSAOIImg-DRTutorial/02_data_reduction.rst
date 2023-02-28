@@ -72,11 +72,13 @@ follow:
 .. code-block:: none
 
     [calibs]
-    databases = ${path_to_my_data}/gsaoiimg_tutorial/playground/cal_manager.db get
+    databases = ${path_to_my_data}/gsaoiimg_tutorial/playground/cal_manager.db get store
 
 This simply tells the system where to put the calibration database, the
 database that will keep track of the processed calibrations we are going to
-send to it.
+send to it. The ``store`` option in the database line above indicates that calibrations
+will be automatically added to the database as they are produced, without having to
+explicitly add them to the database by running ``caldb add``. 
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
    Also, mind the dot in ``.dragons``.
@@ -89,8 +91,8 @@ Then initialize the calibration database:
 
 That's it! It is ready to use!
 
-You can add processed calibrations with ``caldb add <filename>`` (we will
-later), list the database content with ``caldb list``, and
+You can add processed calibrations with ``caldb add <filename>``, list the
+database content with ``caldb list``, and
 ``caldb remove <filename>`` to remove a file **only** from the database
 (it will **not** remove the file on disk). For more the details, check the
 Recipe System Local Calibration Manager documentation, |caldb|.
@@ -245,6 +247,13 @@ follows:
 ..  code-block:: bash
 
    $ reduce @flats_Kshort.list
+
+
+If you have not included the ``store`` option in your definition of the database
+directory, then add the flat to the calibration database:
+
+..  code-block:: bash
+
    $ caldb add S20170505S0030_flat.fits
 
 
@@ -275,12 +284,9 @@ flat field is still valid and will crop it to match the ROIs.
 
     $ reduce @std_9132.list
 
-To stack, the tool ``disco_stu`` is needed for GSAOI.  It is discussed later
-in this chapter.
+.. note:: The ``reduce`` command will automatically align and stack the images. 
+Therefore, it is no longer necessary to use the ``disco_stu`` tool for GSAOI.
 
-::
-
-    $ disco `dataselect *_skyCorrected.fits --expr='observation_class=="partnerCal"'`
 
 
 .. _processing_science_files:
@@ -298,7 +304,7 @@ sky frame.
       GSAOI instead of the multiplicative ``scale_sky`` parameter.  It was
       found to work better when the sky background per pixel is very low,
       which is common due to the short exposure time needed to avoid
-      saturating stars and the small pixel scale. The reader is encourage
+      saturating stars and the small pixel scale. The reader is encouraged
       to experiment with ``scale_sky`` if ``offset_sky`` does not seem to
       lead to an optimal sky subtraction.
 
@@ -317,71 +323,25 @@ for retrieval, we can run ``reduce`` on our science data.
 
    $ reduce @science.list -p skyCorrect:offset_sky=False
 
-This command will generate flat corrected and sky subtracted files but will
-not stack them. You can find which file is which by its suffix
-(``_flatCorrected`` or ``_skyCorrected``).  The on-target files are the ones
-that have been sky subtracted (``_skyCorrected``).  There should be nine of
-them.
-
-The frames are not stacked because of the high level of distortion in the
-GSAOI images that requires special software to correct and properly stack.
-The tool ``disco_stu`` (next section) must be used to stack GSAOI science
-data.
+This command will generate flat corrected files, align them,
+stack them, and orient them such that North is up and East is left. The final
+image will have the name of the first file in the set, with the suffix ``_image``.
+The on-target files are the ones that have been flat corrected (``_flatCorrected``),
+and scaled (``_countsScaled``).  There should be nine of these.
 
 
-.. figure:: _static/img/S20170505S0095_skyCorrected.png
+.. figure:: _static/img/S20170505S0095_image.png
    :align: center
 
-   S20170505S0095 - Flat corrected and sky subtracted
+   S20170505S0095 - Final flat corrected, aligned, and stacked image
 
-The figure above shows an example of the sky-subtracted frames. The
-masked pixels are represented in white color.
-
-.. _stack_science_files:
-
-Stack Sky-Subtracted Science Images
-===================================
-The final step is to stack the images. For that, you must be aware that
-GSAOI images are highly distorted and that this distortion must be corrected
-before stacking. The tool for distortion correction and image stacking is
-``disco_stu``.
-
-.. note:: ``disco_stu`` is installed with conda when the standard Gemini
-          software installation instructions are followed. To install after the
-          fact::
-
-            conda install disco_stu
-
-.. note:: The ``disco_stu`` manual can be found at http://www.gemini.edu/sciops/data/software/disco_stu.pdf
-
-The simplest use of ``disco_stu`` is to run the command ``disco`` on the
-files to be stacked.
-
-.. code-block:: bash
-
-   $ disco `dataselect *_skyCorrected.fits --expr 'observation_class=="science"'` -o my_Kshort_stack.fits
-
-
-By default, ``disco`` will write the output file as ``disco_stack.fits``, the
-``-o`` flag allows us to override that and choose the name of the output
-stack.
-
-For absolute distortion correction and astrometry, ``disco_stu`` can use a
+The figure above shows the final flat-corrected, aligned, and stacked frame.
+For absolute distortion correction and astrometry, ``reduce`` can use a
 reference catalog provided by the user.  Without a reference catalog, like
-above, only the relative distortion between the frames is accounted for.  For
-more information about ``disco_stu`` see the ``disco_stu.pdf`` manual in
-``$CONDA_PREFIX/share/disco_stu``.
+above, only the relative distortion between the frames is accounted for. 
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
-
-
-The final image is shown below.
-
-.. figure:: _static/img/my_Kshort_stack.png
-   :align: center
-
-   Sky Subtracted and Stacked Final Image
 
