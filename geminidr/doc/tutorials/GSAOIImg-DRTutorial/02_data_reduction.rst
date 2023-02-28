@@ -285,7 +285,8 @@ flat field is still valid and will crop it to match the ROIs.
     $ reduce @std_9132.list
 
 .. note:: The ``reduce`` command will automatically align and stack the images. 
-Therefore, it is no longer necessary to use the ``disco_stu`` tool for GSAOI.
+      Therefore, it is no longer necessary to use the ``disco_stu`` tool for GSAOI
+      data.
 
 
 
