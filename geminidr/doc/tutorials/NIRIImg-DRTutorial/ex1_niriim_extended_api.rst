@@ -1,19 +1,19 @@
-.. extended_api.rst
+.. ex1_niriim_extended_api.rst
 
 .. _extended_api:
 
-*******************************************************
-Example 1-B: Extended source - Using the "Reduce" class
-*******************************************************
+*************************************************************************
+Example 1 - Extended source with offset to sky - Using the "Reduce" class
+*************************************************************************
 
 A reduction can be initiated from the command line as shown in
 :ref:`extended_cmdline` and it can also be done programmatically as we will
 show here.  The classes and modules of the RecipeSystem can be
 accessed directly for those who want to write Python programs to drive their
-reduction.  In this example we replicate the command line reduction from
-Example 1-A, this time using the Python interface instead of the command line.
-Of course what is shown here could be packaged in modules for greater
-automation.
+reduction.  In this example we replicate the
+command line version of Example 1 but using the Python
+programmatic interface. What is shown here could be packaged in modules for
+greater automation.
 
 
 The dataset
@@ -23,7 +23,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`dataextended`.
+    :ref:`extended_dataset`.
 
 Here is a copy of the table for quick reference.
 
@@ -40,12 +40,18 @@ Here is a copy of the table for quick reference.
 +---------------+--------------------------------------------+
 | Standard star || N20160102S0295-299                        |
 +---------------+--------------------------------------------+
-
+| BPM           || bpm_20010317_niri_niri_11_full_1amp.fits  |
++---------------+--------------------------------------------+
 
 
 Setting up
 ==========
 First, navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/nirils_tutorial/playground
+
 
 The first steps are to import libraries, set up the calibration manager,
 and set the logger.
@@ -77,29 +83,38 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 9
+    :lineno-start: 8
 
     from gempy.utils import logutils
-    logutils.config(file_name='niri_tutorial.log')
+    logutils.config(file_name='niriim_tutorial.log')
 
 
-Set up the Local Calibration Manager
-------------------------------------
-DRAGONS comes with a local calibration manager and a local, light weight database
+Set up the Calibration Service
+------------------------------
+DRAGONS comes with a local calibration manager
 that uses the same calibration association rules as the Gemini Observatory
-Archive.  This allows the ``Reduce`` instance to make requests for matching
-**processed** calibrations when needed to reduce a dataset.
+Archive.  This allows the ``Reduce`` instance to make requests to a local
+light-weight database for matching **processed**
+calibrations and BPMs when they are needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
 In ``~/.dragons/``, edit the configuration file ``dragonsrc`` as follow::
 
     [calibs]
-    databases = <where_the_data_package_is>/niriimg_tutorial/playground/cal_manager.db get
+    databases = <where_the_data_package_is>/niriimg_tutorial/playground/cal_manager.db get store
 
-This tells the system where to put the calibration database, the
-database that will keep track of the processed calibration we are going to
-send to it.
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.dragons``.
@@ -109,11 +124,15 @@ configured like this:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 11
+    :lineno-start: 10
 
     caldb = cal_service.set_local_database()
     caldb.init()
 
+.. warning:: If the calibration database already exists, ``caldb.init()`` will
+             delete it and create a new, empty one.  Use ``wipe=False`` to
+             prevent that from happening.  (``wipe=False`` matches the
+             behavior of the command line ``caldb``).
 
 The calibration service is now ready to use.  If you need more details,
 check the "|caldb|" documentation in the Recipe System User Manual.
@@ -133,7 +152,7 @@ directory.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 16
+    :lineno-start: 12
 
     all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
@@ -157,7 +176,7 @@ directory.  We use the tag ``DARK`` and the descriptor ``exposure_time``.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 18
+    :lineno-start: 14
 
     all_darks = dataselect.select_data(all_files, ['DARK'])
     for dark in all_darks:
@@ -204,7 +223,7 @@ Let us create our two lists now.  The filenames will be stored in the variables
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 22
+    :lineno-start: 18
 
     darks1s = dataselect.select_data(
         all_files,
@@ -230,7 +249,7 @@ of them to one list.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 35
+    :lineno-start: 31
 
     flats = dataselect.select_data(all_files, ['FLAT'])
 
@@ -244,7 +263,7 @@ observations from that star and not our science target.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 36
+    :lineno-start: 32
 
     stdstar = dataselect.select_data(
         all_files,
@@ -263,7 +282,7 @@ This translate to the following sequence:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 42
+    :lineno-start: 38
 
     target = dataselect.select_data(
         all_files,
@@ -288,43 +307,66 @@ name of a file on disk.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 48
+    :lineno-start: 44
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(darks20s)
     reduce_darks.runr()
 
-    caldb.add_cal(reduce_darks.output_filenames[0])
-
 The ``Reduce`` class is our reduction "controller".  This is where we collect
 all the information necessary for the reduction.  In this case, the only
 information necessary is the list of input files which we add to the
-``files`` attribute.  The ``Reduce.runr{}`` method is where the
+``files`` attribute.  The ``Reduce.runr()`` method is where the
 recipe search is triggered and where it is executed.
 
-.. note:: The file name of the output processed dark is the file name of the first file in the list with `_dark` appended as a suffix.  This the general naming scheme used by the ``Recipe System``.
+.. note:: The file name of the output processed dark is the file name of the
+    first file in the list with _dark appended as a suffix. This is the general
+    naming scheme used by the ``Recipe System``.
+
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+   .. code-block::
+
+        caldb.add_cal(reduce_darks.output_filenames[0])
 
 
 Bad Pixel Mask
 ==============
-The DRAGONS Gemini data reduction package, ``geminidr``, comes with a static
-NIRI bad pixel mask (BPM) that gets automatically added to all the NIRI data
-as they get processed.  The user can also create a *supplemental*, fresher BPM
-from the flats and recent short darks.  That new BPM is later fed to
-the reduction process as a *user BPM* to be combined with the static BPM.
-Using both the static and a fresh BPM from recent data lead to a better
-representation of the bad pixels.  It is an optional but recommended step.
+Starting with DRAGONS v3.1, the static bad pixel masks (BPMs) are now handled
+as calibrations.  They
+are downloadable from the archive instead of being packaged with the software.
+They are automatically associated like any other calibrations.  This means that
+the user now must download the BPMs along with the other calibrations and add
+the BPMs to the local calibration manager.  To add the BPM included in the
+data package to the local calibration database:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 47
+
+    for bpm in dataselect.select_data(all_files, ['BPM']):
+        caldb.add_cal(bpm)
+
+
+The user can also create a *supplemental*, fresher BPM from the flats and
+recent short darks.  That new BPM is later fed to "|reduce|" as a *user BPM*
+to be combined with the static BPM.  Using both the static and a fresh BPM
+from recent data can lead to a better representation of the bad pixels.  It
+is an optional but recommended step.
 
 The flats and the short darks are the inputs.
 
 The flats must be passed first to the input list to ensure that the recipe
-library associated with NIRI flats is selected. We will not use the default
+library associated with NIRI flats is selected.  We will not use the default
 recipe but rather the special recipe from that library called
 ``makeProcessedBPM``.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 53
+    :lineno-start: 49
 
     reduce_bpm = Reduce()
     reduce_bpm.files.extend(flats)
@@ -336,9 +378,8 @@ recipe but rather the special recipe from that library called
 
 The BPM produced is named ``N20160102S0373_bpm.fits``.
 
-The local calibration manager does not yet support BPMs so we cannot add
-it to the database.  It is a future feature.  Until then we have to pass it
-manually to the ``Reduce`` instance to use it, as we will show below.
+Since this is a user-made BPM, you will have to pass it to DRAGONS on the
+as an option on the command line.
 
 
 Master Flat Field
@@ -352,14 +393,12 @@ follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 60
+    :lineno-start: 56
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
     reduce_flats.uparms = [('addDQ:user_bpm', bpm)]
     reduce_flats.runr()
-
-    caldb.add_cal(reduce_flats.output_filenames[0])
 
 Note how we pass in the BPM we created in the previous step.  The ``addDQ``
 primitive, one of the primitives in the recipe, has an input parameter named
@@ -392,7 +431,7 @@ recommended) needs to be specified by the user.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 66
+    :lineno-start: 60
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
@@ -414,7 +453,8 @@ on-target and the off-target appropriately.
 
 The master dark and the master flat will be retrieved automatically from the
 local calibration database. Again, the user BPM needs to be specified as the
-``user_bpm`` argument to ``addDQ``.
+``user_bpm`` argument to ``addDQ``. (The static BPM will be picked from
+database).
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
@@ -424,7 +464,7 @@ the data quality plane (mask) is in the "DQ" extension.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 71
+    :lineno-start: 65
 
     reduce_target = Reduce()
     reduce_target.files.extend(target)

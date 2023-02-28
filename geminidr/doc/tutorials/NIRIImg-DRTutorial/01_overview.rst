@@ -17,11 +17,18 @@ document comes with a downloadable data package that contains all the data
 you need to run the examples presented.  Instructions on where to get that
 package and how to set things up are given in :ref:`datasetup`.
 
-The NIRI tutorial series for the time being contains only one scientific example, the
-reduction of an extended source.  This can be done in two different ways:
+At this time, the NIRI tutorial series contains only one scientific example,
+the reduction of an extended source.  In all cases, the reduction can be done
+in two different ways:
 
-* From the terminal using the command line. (:ref:`Example 1-A <extended_cmdline>`)
-* From Python using the DRAGONS classes and functions. (:ref:`Example 1-B <extended_api>`)
+* From the terminal using the command line.
+* From Python using the DRAGONS classes and functions.
+
+
+We show how to run the same reduction using both methods.
+
+* :ref:`extended_example`
 
 We plan to add additional examples in the future.
 
+See the |RSUserInstall| to install the software if you have not already.
