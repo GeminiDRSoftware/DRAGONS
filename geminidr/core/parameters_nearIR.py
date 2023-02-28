@@ -62,7 +62,7 @@ class cleanFFTReadoutConfig(config.Config):
     win_size = config.RangeField("Window size for Fourier amplitude spectrum thresholding", int, 9, min=3)
     periodicity = config.Field("Periodicity of the pattern noise (pixels)", int, 8)
     sigma_fact = config.RangeField("Sigma factor used for the Fourier amplitude threshold", float, 4., min=0)
-    pat_thres = config.RangeField("Standardized pattern strength threshold", float, -0.3, max=0)
+    pat_thres = config.RangeField("Standardized pattern strength threshold", float, -0.3, max=1.0)
     lquad = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
     l2clean = config.Field("Clean Fourier artifacts?", bool, True)
     l2thres = config.RangeField("Sigma factor to be used in thresholding for l2clean", float, 4., min=0)

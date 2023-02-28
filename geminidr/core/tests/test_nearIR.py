@@ -110,7 +110,7 @@ def test_remove_first_frame_by_filename():
                           "S20060806S0080",  # GNIRS XD spectrum
                           "S20070131S0105",  # GNIRS XD spectrum
                           ])
-def test_clean_readout(in_file,path_to_inputs, path_to_refs):
+def test_clean_readout(in_file, path_to_inputs, path_to_refs):
     ad = astrodata.open(os.path.join(path_to_inputs,
                                      in_file + '_skyCorrected.fits'))
 
@@ -119,4 +119,18 @@ def test_clean_readout(in_file,path_to_inputs, path_to_refs):
 
     ref = astrodata.open(os.path.join(path_to_refs,
                                       in_file + '_readoutCleaned.fits'))
+    assert ad_compare(ad_out, ref)
+
+
+@pytest.mark.regression
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("in_file",
+                         ["N20220902S0145",  # NIRI image, extended source
+                          "N20101227S0040",  # GNIRS LS (par needs tweaking pat_thres=0.1). Only FFT can handle this frame.
+                          ])
+def test_clean_fftreadout(in_file, path_to_inputs, path_to_refs):
+    ad = astrodata.open(os.path.join(path_to_inputs, in_file + '_skyCorrected.fits'))
+    p = primitives_nearIR.NearIR([ad])
+    ad_out = p.cleanFFTReadout(clean="default")[0]
+    ref = astrodata.open(os.path.join(path_to_refs, in_file + '_readoutFFTCleaned.fits'))
     assert ad_compare(ad_out, ref)
