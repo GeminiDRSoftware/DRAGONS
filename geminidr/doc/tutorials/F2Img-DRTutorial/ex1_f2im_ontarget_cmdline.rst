@@ -99,11 +99,10 @@ needed to be done in DRAGONS v3.0).
 That's it. It is ready to use.  You can check the configuration and confirm the
 settings with ``caldb config``.
 
-You can manually add processed calibrations with ``caldb add <filename>``
-(we will later for the BPM), list the database content with ``caldb list``,
-and ``caldb remove <filename>`` to remove a file from the database (it will
-**not** remove the file on disk.)  (See the "|caldb|" documentation for more
-details.)
+You can manually add processed calibrations with ``caldb add <filename>``, list
+the database content with ``caldb list``, and ``caldb remove <filename>`` to
+remove a file from the database (it will **not** remove the file on disk.)
+(See the "|caldb|" documentation for more details.)
 
 
 .. _check_files:

@@ -8,10 +8,7 @@ DRAGONS - Flamingos 2 Data Reduction Tutorial
    PIPE-USER-115_F2Img-DRTutorial
 
 This is a brief tutorial on how to reduce Flamingos-2 images using DRAGONS (Data
-Reduction for Astronomy from Gemini Observatory North and South). It is based on
-information found in the `GEMINI Flamingos-2
-WebPage <https://www.gemini.edu/sciops/instruments/flamingos2/>`_ and in the
-`DRAGONS Documentation on Read The Docs <https://dragons.readthedocs.io/en/v3.0.3/>`_.
+Reduction for Astronomy from Gemini Observatory North and South).
 
 
 .. toctree::

@@ -10,8 +10,8 @@ A reduction can be initiated from the command line as shown in
 :ref:`dithered_cmdline` and it can also be done programmatically as we will
 show here.  The classes and modules of the RecipeSystem can be
 accessed directly for those who want to write Python programs to drive their
-reduction.  In this example we replicate the command line reduction from
-command line version of Example 1 but this time using the Python
+reduction.  In this example we replicate the
+command line version of Example 1 but using the Python
 programmatic interface. What is shown here could be packaged in modules for
 greater automation.
 
