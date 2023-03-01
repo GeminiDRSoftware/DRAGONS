@@ -2583,8 +2583,6 @@ class Spect(Resample):
 
                 # Set up the background and models to be blank initially:
                 background = np.zeros(ext.shape)
-                objfit = np.zeros(ext.shape)
-                skyfit = np.zeros(ext.shape)
 
                 # Fit the object spectrum:
                 if bkgmodel in ('both', 'object'):
@@ -2595,7 +2593,7 @@ class Spect(Resample):
                                     weights=weights,
                                     **fit_1D_params).evaluate()
                 else:
-                    objfit = np.zeros_like(data)
+                    objfit = np.zeros(ext.shape)
                 if debug:
                     ext.OBJFIT = objfit.copy()
 
@@ -2614,7 +2612,7 @@ class Spect(Resample):
                                     weights=weights,
                                     **fit_1D_params).evaluate()
                 else:
-                    skyfit = np.zeros_like(data)
+                    skyfit = np.zeros(ext.shape)
                 if debug:
                     ext.SKYFIT = skyfit
 
