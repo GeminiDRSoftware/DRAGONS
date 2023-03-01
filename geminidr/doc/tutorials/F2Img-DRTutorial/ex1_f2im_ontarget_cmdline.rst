@@ -1,10 +1,10 @@
-.. 02_data_reduction.rst
+.. ex1_f2im_ontarget_cmdline.rst
 
-.. _command_line_data_reduction:
+.. _ontarget_cmdline:
 
-****************************
-Data Reduction with "reduce"
-****************************
+*********************************************************************************
+Example 1 - Small sources with dither on target - Using the "reduce" command line
+*********************************************************************************
 
 This chapter will guide you on reducing **Flamingos-2 imaging data** using
 command line tools. In this example we reduce a Flamingos-2 observation of
@@ -37,7 +37,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`about_data_set`
+    :ref:`ontarget_dataset`
 
 Here is a copy of the table for quick reference.
 
@@ -63,42 +63,46 @@ Set up the Local Calibration Manager
 ====================================
 
 DRAGONS comes with a local calibration manager that uses the same calibration
-association rules as the Gemini Observatory Archive. This allows ``reduce``
+association rules as the Gemini Observatory Archive. This allows "|reduce|"
 to make requests to a local light-weight database for matching **processed**
 calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.dragons/``, create or edit the configuration file ``dragons`` as
+In ``~/.dragons/``, create or edit the configuration file ``dragonsrc`` as
 follow:
 
 .. code-block:: none
 
     [calibs]
-    databases = ${path_to_my_data}/f2img_tutorial/playground/cal_manager.db get
+    databases = ${path_to_my_data}/f2img_tutorial/playground/cal_manager.db get store
 
-This simply tells the system where to put the calibration database that
-will keep track of the processed calibrations we are going to send to it and
-that it should be used for retrieval whenever a processed calibration is
-required.
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
    Also, mind the dot in ``.dragons``.
-
-The database file will be automatically created and the database initialized
-when you first start the reduction. However, you can manually initialize it:
 
 .. code-block:: bash
 
     caldb init
 
-That's it! It is ready to use!
+That's it. It is ready to use.  You can check the configuration and confirm the
+settings with ``caldb config``.
 
-You can add processed calibrations with ``caldb add <filename>`` (we will
-later), list the database content with ``caldb list``, and
-``caldb remove <filename>`` to remove a file from the database
-(it will **not** remove the file on disk). For more the details, check the
-`Recipe System Local Calibration Manager documentation <|caldb|>`_.
+You can manually add processed calibrations with ``caldb add <filename>``, list
+the database content with ``caldb list``, and ``caldb remove <filename>`` to
+remove a file from the database (it will **not** remove the file on disk.)
+(See the "|caldb|" documentation for more details.)
 
 
 .. _check_files:
@@ -150,10 +154,14 @@ on how you like to organize your raw data.
 The DRAGONS data reduction pipeline does not organize the data for you. You
 have to do it. DRAGONS provides tools to help you with that.
 
-The first step is to create lists that will be used in the data reduction
-process. For that, we use |dataselect|. Please, refer to the |dataselect|
-documentation for details regarding its usage.
+The first step is to create input file lists.  The tool "|dataselect|" helps
+with that.  It uses Astrodata tags and "|descriptors|" to select the files and
+send the filenames to a text file that can then be fed to "|reduce|".  (See the
+|astrodatauser| for information about Astrodata.)
 
+First, navigate to the ``playground`` directory in the unpacked data package::
+
+    cd <path>/gmosls_tutorial/playground
 
 Two lists for the darks
 -----------------------
@@ -256,16 +264,20 @@ Here is how you reduce the 120 s dark data into a master dark:
 The ``@`` character before the name of the input file is the "at-file" syntax.
 More details can be found in the |atfile| documentation.
 
-Since the local database has not been configured to automatically store
-processed calibrations, the master dark must be added to the local calibration
-manager using the following command:
+Because the database was given the "store" option in the ``dragonsrc`` file,
+the processed dark will be automatically added to the database at the end of
+the recipe.
 
-.. code-block:: bash
+.. note:: The file name of the output processed dark is the file name of the
+    first file in the list with ``_dark`` appended as a suffix.  This the
+    general naming scheme used by "|reduce|".
 
-    $ caldb add S20131120S0115_dark.fits
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
 
-Now |reduce| will be able to find this processed dark when needed to process
-other observations.
+    ``caldb add S20131120S0115_dark.fits``
 
 .. note::
     The master dark will be saved in the same folder where |reduce| was
@@ -273,18 +285,11 @@ other observations.
     location is to cache a copy of the file. This applies to all the processed
     calibration.
 
-    Some people might prefer adding the copy in the `calibrations` directory
-    as it is safe from a `rm *`, for example.
-
-    .. code-block:: bash
-
-        $ caldb add ./calibrations/processed_dark/S20131120S0115_dark.fits
-
 
 Create a Bad Pixel Mask
 =======================
 
-The Bad Pixel Mask (BPM) can be built using a set of flat images with the
+A Bad Pixel Mask (BPM) can be built using a set of flat images with the
 lamps on and off and a set of short exposure dark files. Here, our shortest dark
 files have 2 second exposure time. Again, we use the |reduce| command to
 produce the BPMs.
@@ -308,9 +313,8 @@ to use. If not specified the system will use the default recipe which is the
 one that produces a master flat, this is not what we want here. The output
 image will be saved in the current working directory with a ``_bpm`` suffix.
 
-The local calibration manager does not yet support BPMs so we cannot add it
-to the database. It is a future feature. Until then we have to pass it
-manually to ``reduce`` to use it, as we will show below.
+Since this is a user-made BPM, you will have to pass it to DRAGONS on the
+as an option on the command line.
 
 
 Create a Master Flat Field
@@ -327,13 +331,13 @@ follow:
 .. code-block:: bash
 
     $ reduce @flats_Y.list -p addDQ:user_bpm="S20131129S0320_bpm.fits"
-    $ caldb add S20131129S0320_flat.fits
 
 Here, the ``-p`` flag tells |reduce| to set the input parameter ``user_bpm``
 of the ``addDQ`` primitive to the filename of the BPM we have just created.
 There will be a message "WARNING - No static BPMs defined". This is
 normal. This is because F2 does not have a static BPM that is distributed
-with the package. Your user BPM is the only one that is available.
+with the associated calibrations. Your user BPM is the only one that is
+available.
 
 
 Reduce the Science Images
@@ -352,7 +356,7 @@ to establish whether this is a dither-on-target or an offset-to-sky sequence
 and then proceeds accordingly. Finally, the sky-subtracted frames are aligned
 and stacked together. Sources in the frames are used for the alignment.
 
-The final product file will have a ``_stack.fits`` suffix and it is shown below.
+The final product file will have a ``_image.fits`` suffix and it is shown below.
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science

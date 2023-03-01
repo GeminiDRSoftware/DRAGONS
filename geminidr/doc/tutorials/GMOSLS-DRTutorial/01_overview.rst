@@ -19,7 +19,7 @@ document comes with a downloadable data package that contains all the data
 you need to run the example presented.  Instructions on where to get that
 package and how to set things up are given in :ref:`datasetup`.
 
-The GMOS longslit tutorial series for now contains one scientific example,
+The GMOS longslit tutorial series, for now, contains only one scientific example,
 the reduction of an observation of a single stellar source with dither in both
 wavelength and spatial direction.
 
@@ -30,9 +30,8 @@ The reduction can be done in two different ways:
 
 We show how to run the same reduction using both methods.
 
-* Dithered point source
-    * :ref:`dithered_cmdline`
-    * :ref:`dithered_api`
+* :ref:`dithered_example`
+
 
 More examples will be added in the future.
 

@@ -68,27 +68,32 @@ follow::
     [calibs]
     databases = where_the_data_package_is/gmosls_tutorial/playground/cal_manager.db get store
 
-This simply tells the system where to put the calibration database, the
-database that will keep track of the processed calibrations we are going to
-send to it.  With the "get" and "store" options, the database will be used
-by DRAGONS to automatically get matching calibrations and to automatically
-store master calibrations that you produce.  If you remove the "store" option
-you will have to ``caldb add`` your calibration product yourself (like what
-needed to be done in DRAGONS v3.0).
 
-The ``[interactive]`` section defines your prefered browser.  DRAGONS will open
+The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
 the interactive tools using that browser.  The allowed strings are "safari",
 "chrome", and "firefox".
+
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 .. note:: ``~`` in the path above refers to your home directory.  Also, mind
    the dot in ``.dragons``.
 
-Then initialize the calibration database::
+The next step is to initialize the calibration database::
 
     caldb init
 
 That's it.  It is ready to use.  You can check the configuration and confirm the
-setting with ``caldb config``.
+settings with ``caldb config``.
 
 You can manually add processed calibrations with ``caldb add <filename>``
 (we will later for the BPM), list the database content with ``caldb list``,
@@ -164,7 +169,8 @@ First, let's see which biases we have for in our raw data directory.
     ../playdata/S20171023S0036.fits             Full Frame
 
 
-We can see the two groups that differ on their ROI.
+We can see the two groups that differ on their ROI.  We can use that as a
+search criterion for creating the list with |dataselect|
 
 ::
 
@@ -179,9 +185,10 @@ not stack the flats.  This allows us to use only one list of the flats.  Each
 will be reduced individually, never interacting with the others.
 
 If you have multiple programs and you want to reduce only the flats for that
-program, you might want to use the ``program_id`` descriptor
+program, you might want to use the ``program_id`` descriptor in the ``--expr``
+expression.
 
-Or, like here, we have only one set of flats, so we will just gather
+Here, we have only one set of flats, so we will just gather
 them all together.
 
 ::
@@ -193,9 +200,9 @@ A list for the arcs
 -------------------
 The GMOS longslit arcs are not normally stacked.  The default recipe does
 not stack the arcs.  This allows us to use only one list of arcs.  Each will be
-reduce individually, never interacting with the others.
+reduced individually, never interacting with the others.
 
-The arcs normally share the ``program_id`` with the science observations if
+The arcs normally share the ``program_id`` with the science observations, if
 you find that you need more accurate sorting.  We do not need it here.
 
 ::
@@ -214,11 +221,12 @@ normally used at Gemini are in the DRAGONS list of recognized standards.
     dataselect ../playdata/*.fits --tags STANDARD -o std.lis
 
 
-A list for the science observation
-----------------------------------
+A list for the science observations
+-----------------------------------
 
-The science observations are what is left, anything that is not a calibration
-or assigned the tag ``CAL``.
+The science observations are what is left, that is anything that is not a
+calibration. Calibrations are assigned the astrodata tag ``CAL``, therefore
+we can select against that tag to get the science observations.
 
 If we had multiple targets, we would need to split them into separate list. To
 inspect what we have we can use |dataselect| and |showd| together.
@@ -245,22 +253,24 @@ here how one would specify the object name for a more surgical selection.
 
 Bad Pixel Mask
 ==============
-Starting with DRAGONS v3.1, the BPMs are now handled as calibrations.  They
+Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
+calibrations.  They
 are downloadable from the archive instead of being packaged with the software.
 They are automatically associated like any other calibrations.  This means that
 the user now must download the BPMs along with the other calibrations and add
-the BPMs to the local calibration manager.  To add the BPM included in the
+the BPMs to the local calibration manager.  To add the static BPM included in the
 data package to the local calibration database:
 
 ::
 
-    caldb add ../playdata/*.bpm
+    caldb add ../playdata/bpm*.fits
 
 
 Master Bias
 ===========
 We create the master biases with the "|reduce|" command.  Because the database
-was given the "store" option, the processed biases will be automatically added
+was given the "store" option in the ``dragonsrc`` file, the processed biases
+will be automatically added
 to the database at the end of the recipe.
 
 ::
@@ -279,8 +289,10 @@ the |atfile| documentation.
 
 .. note:: If you wish to inspect the processed calibrations before adding them
     to the calibration database, remove the "store" option attached to the
-    database in the configuration file.  To add the biases manually following
-    inspection do ``caldb add *_bias.fits``.
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+    ``caldb add *_bias.fits``
 
 
 Master Flat Field
@@ -317,7 +329,8 @@ Processed Arc - Wavelength Solution
 ===================================
 GMOS longslit arc can be obtained at night with the observation sequence,
 if requested by the program, but are often obtained at the end of the night
-or the following afternoon instead.  Like the spectroscopic flats, they are not
+or the following afternoon instead. In this example, the arcs have been obtained at night, as part of
+the sequence. Like the spectroscopic flats, they are not
 stacked which means that they can be sent to reduce all together and will
 be reduced individually.
 
@@ -356,8 +369,8 @@ The reduction of the standard will be using a BPM, a master bias, a master flat,
 and a processed arc.  If those have been added to the local calibration
 manager, they will be picked up automatically.  The output of the reduction
 includes the sensitivity function and will be added to the calibration
-database automatically if the "store" option is set in the configuration
-file.
+database automatically if the "store" option is set in the ``dragonsrc``
+configuration file.
 
 ::
 
@@ -390,8 +403,9 @@ The interactive tools are introduced in section :ref:`interactive`.
 
     dgsplot S20170826S0160_standard.fits 1
 
-   To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
-   script, see Tips and Tricks :ref:`plot_1d`.
+   where ``1`` is the aperture #1, the brightest target.
+   To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
+   Python script, see Tips and Tricks :ref:`plot_1d`.
 
    The sensitivity function is stored within the processed standard spectrum.  To
    learn how to plot it, see Tips and Tricks :ref:`plot_sensfunc`.
@@ -405,10 +419,10 @@ register the four images in both directions, align and stack them before
 extracting the 1-D spectrum.
 
 .. note::  In this observation, there is only one source to extract.  If there
-   were multiple sources in slits, regardless of whether they are of interest to
-   the program, DRAGONS will locate them, trace them, and extract them automatically.
-   Each extracted spectrum is stored in an individual extension in the output
-   multi-extension FITS file.
+   were multiple sources in the slit, regardless of whether they are of
+   interest to the program, DRAGONS will locate them, trace them, and extract
+   them automatically. Each extracted spectrum is stored in an individual
+   extension in the output multi-extension FITS file.
 
 This is what one raw image looks like.
 
@@ -418,12 +432,12 @@ This is what one raw image looks like.
 
 With the master bias, the master flat, the processed arcs (one for each of the
 grating position, aka central wavelength), and the processed standard in the
-local calibration manager, to reduce the science observations and extract the 1-D
-spectrum, one only needs to do as follows.
+local calibration manager, one only needs to do as follows to reduce the
+science observations and extract the 1-D spectrum.
 
 ::
 
-    reduce @sci.lis --ql
+    reduce @sci.lis
 
 This produces a 2-D spectrum (``S20171022S0087_2D.fits``) which has been
 bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
@@ -443,11 +457,11 @@ This is what the 2-D spectrum looks like.
    :width: 600
    :alt: 2D stacked spectrum
 
-The apertures found are listed in the log for the ``findApertures`` just before
-the call to ``traceApertures``.  Information about the apertures are also
-available in the header of each extracted spectrum: ``XTRACTED``, ``XTRACTLO``,
-``XTRACTHI``, for aperture center, lower limit, and upper limit, respectively.
-
+The apertures found are listed in the log for the ``findApertures`` primitive,
+just before the call to ``traceApertures``.  Information about the apertures
+are also available in the header of each extracted spectrum: ``XTRACTED``,
+``XTRACTLO``, ``XTRACTHI``, for aperture center, lower limit, and upper limit,
+respectively.
 
 This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
@@ -463,7 +477,7 @@ To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
 script, see Tips and Tricks :ref:`plot_1d`.
 
 If you need an ascii representation of the spectum, you can use the primitive
-``write1DSpectra`` to extra the values from the FITS file.
+``write1DSpectra`` to extract the values from the FITS file.
 
 ::
 

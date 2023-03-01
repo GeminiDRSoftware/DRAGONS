@@ -1,14 +1,10 @@
-.. 03_api_reduction.rst
+.. ex1_f2im_ontarget_api.rst
 
-.. |github| image:: /_static/img/GitHub-Mark-32px.png
-    :scale: 75%
+.. _ontarget_api:
 
-
-.. _api_data_reduction:
-
-*******************
-Reduction using API
-*******************
+**************************************************************************
+Example 1 - Small sources with dither on target - Using the "Reduce" class
+**************************************************************************
 
 There may be cases where you would be interested in accessing the DRAGONS
 Application Program Interface (API) directly instead of using the command
@@ -22,7 +18,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`about_data_set`.
+    :ref:`ontarget_dataset`.
 
 Here is a copy of the table for quick reference.
 
@@ -44,6 +40,14 @@ Here is a copy of the table for quick reference.
 
 Setting Up
 ==========
+First, navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/gmosls_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
 
 Importing Libraries
 -------------------
@@ -55,24 +59,17 @@ We first import the necessary modules and classes:
 
     import glob
 
-    from gempy.adlibrary import dataselect
-    from recipe_system import cal_service
+    import astrodata
+    import gemini_instruments
     from recipe_system.reduction.coreReduce import Reduce
+    from recipe_system import cal_service
+    from gempy.adlibrary import dataselect
 
-
-:mod:`glob` is a Python built-in package. It will be used to return a
-:class:`list` with the input file names.
-
-
-.. todo @bquint: the gempy auto-api is not being generated anywhere.
-
-
-:mod:`~gempy.adlibrary.dataselect` will be used to create file lists for the
-darks, the flats and the science observations. The
-:mod:`~recipe_system.cal_service` package is our interface with the local
-calibration database. Finally, the
-:class:`~recipe_system.reduction.coreReduce.Reduce` class is used to set up
-and run the data reduction.
+The ``dataselect`` module will be used to create file lists for the
+biases, the flats, the arcs, the standard, and the science observations.
+The ``cal_service`` package is our interface to the local calibration
+database. The ``Reduce`` class is used to set up and run the data
+reduction.
 
 Setting up the logger
 ---------------------
@@ -91,21 +88,35 @@ We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
 Setting up the Calibration Service
 ----------------------------------
 
-Before we continue, let's be sure we have properly setup our calibration
-database and the calibration association service.
+DRAGONS comes with a local calibration manager
+that uses the same calibration association rules as the Gemini Observatory
+Archive.  This allows the ``Reduce`` instance to make requests to a local light-weight database for matching **processed**
+calibrations and BPMs when they are needed to reduce a dataset.
 
-First, check that you have already a ``dragonsrc`` file inside the
-``~/.dragons/``. It should contain:
+Let's set up the local calibration manager for this session.
+
+In ``~/.dragons/``, edit the configuration file ``dragonsrc`` as follow::
 
 .. code-block:: none
 
     [calibs]
-    databases = ${path_to_my_data}/f2img_tutorial/playground/cal_manager.db get
-
+    databases = where_the_data_package_is/f2img_tutorial/playground/cal_manager.db get store
 
 This tells the system where to put the calibration database. This
 database will keep track of the processed calibrations as we add them
 to it.
+
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.dragons``.
@@ -119,23 +130,28 @@ The calibration database is initialized as follows:
     caldb = cal_service.set_local_database()
     caldb.init()
 
+.. warning:: If the calibration database already exists, ``caldb.init()`` will
+             delete it and create a new, empty one.  Use ``wipe=False`` to
+             prevent that from happening.  (``wipe=False`` matches the
+             behavior of the command line ``caldb``).
+
 The calibration service is now ready to use. If you need more details,
-check the
-`Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
-You may wonder why the name of the calibration database needs to be specified
-here when it is in the ``dragonsrc`` file. The reason is that ``dragonsrc``
-defines how to retrieve and store calibrations and can refer to more than one
-database, whereas we will be using the ``caldb`` API to add (and, if
-necessary, remove) files from a *single* database.
+check the "|caldb|" documentation in the Recipe System User Manual.
+
 
 .. _create_file_lists:
 
 Create list of files
 ====================
 
-Next step is to create lists of files that will be used as input to each of the
-data reduction steps. Let us start by creating a :class:`list` of all the
-FITS files in the directory ``../playdata/``.
+The next step is to create input file lists. The module ``dataselect`` helps
+with that.  It uses Astrodata tags and |descriptors| to select the files and
+store the filenames to a Python list that can then be fed to the ``Reduce``
+class. (See the |astrodatauser| for information about Astrodata and for a list
+of |descriptors|.)
+
+The first list we create is a list of all the files in the ``playdata``
+directory.
 
 .. code-block:: python
     :linenos:
@@ -145,14 +161,17 @@ FITS files in the directory ``../playdata/``.
     all_files.sort()
 
 The :meth:`~list.sort` method simply re-organize the list with the file names
-and is an optional step. Before you carry on, you might want to do
+and is an optional, but recommended step. Before you carry on, you might want to do
 ``print(all_files)`` to check if they were properly read.
 
-Now we can use the ``all_files`` :class:`list` as an input to
-:func:`~gempy.adlibrary.dataselect.select_data`.  The
-``dataselect.select_data()`` function signature is::
+We will search that list for files with specific characteristics.  We use
+the ``all_files`` :class:`list` as an input to the function
+``dataselect.select_data()`` .  The function's signature is::
 
     select_data(inputs, tags=[], xtags=[], expression='True')
+
+We show several usage examples below.
+
 
 Two lists for the darks
 -----------------------
@@ -173,9 +192,9 @@ the science observations, those with an exposure time of 120 seconds.
 Above we are requesting data with tags ``F2``, ``DARK``, and ``RAW``, though
 since we only have F2 raw data in the directory, ``DARK`` would be sufficient
 in this case. We are not excluding any tags, as represented by the empty
-list ``[]``. The expression setting the exposure time criterion needs to
-be processed through the ``dataselect`` expression parser,
-:func:`~gempy.adlibrary.dataselect.expr_parser`.
+list ``[]``.
+
+.. note::  All expressions need to be processed with ``dataselect.expr_parser``.
 
 We repeat the same syntax for the 2-second darks:
 
@@ -232,13 +251,14 @@ the expression.
 Create a Master Dark
 ====================
 
-We first create the master dark for the science target, then add it to the
-calibration database. The name of the output master dark is
+We first create the master dark for the science targe.The master biases
+will be automatically added to the local calibration manager when the "store"
+parameter is present in the ``.dragonsrc`` configuration file.
+
+The name of the output master dark is
 ``N20160102S0423_dark.fits``. The output is written to disk and its name is
 stored in the Reduce instance. The calibration service expects the name of a
-file on disk. Note that, even though the database is not configured for
-(automatic) storage in the ``dragonsrc`` file, the ``add_cal()`` method will
-still add the file to it.
+file on disk.
 
 .. code-block:: python
     :linenos:
@@ -248,18 +268,24 @@ still add the file to it.
     reduce_darks.files.extend(dark_files_120s)
     reduce_darks.runr()
 
-    caldb.add_cal(reduce_darks.output_filenames[0])
-
-The :class:`~recipe_system.reduction.coreReduce.Reduce` class is our reduction
+The ``Reduce`` class is our reduction
 "controller". This is where we collect all the information necessary for
 the reduction. In this case, the only information necessary is the list of
-input files which we add to the ``files`` attribute. The
-:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` method is where the
-recipe search is triggered and where it is executed.
+input files which we add to the ``files`` attribute. The ``runr`` method is
+where the recipe search is triggered and where it is executed.
 
 .. note:: The file name of the output processed dark is the file name of the
     first file in the list with _dark appended as a suffix. This is the general
     naming scheme used by the ``Recipe System``.
+
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+   .. code-block::
+
+        caldb.add_cal(reduce_darks.output_filenames[0])
 
 
 .. _api_create_bpm_files:
@@ -269,11 +295,11 @@ Create a Bad Pixel Mask
 
 By default, for F2 imaging data, an illumination mask will be added to the
 data quality plane to identify the pixels beyond the circular aperture as
-"non-illuminated". The package does not have a default bad pixel mask for
-F2 but the user can easily create a fresh bad pixel mask from the flats and
+"non-illuminated". The instrument does not have a downloadable bad pixel mask
+but the user can easily create a fresh bad pixel mask from the flats and
 recent short darks.
 
-The Bad Pixel Mask is created using as follow:
+The Bad Pixel Mask is created as follow:
 
 .. code-block:: python
     :linenos:
@@ -295,9 +321,8 @@ instead of the using the default (which would create a master flat).
 
 The BPM produced is named ``S20131129S0320_bpm.fits``.
 
-The local calibration manager does not yet support BPMs so we cannot add it
-to the database. It is a future feature. Until then we have to pass it
-manually to the ``Reduce`` instance to use it, as we will show below.
+Since this is a user-made BPM, you will have to pass it to DRAGONS on the
+as an option to the ``Reduce`` instance to use it, as we will show below.
 
 
 .. _api_process_flat_files:
@@ -319,15 +344,10 @@ We create the master flat field and add it to the calibration manager as follows
     reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_flats.runr()
 
-    caldb.add_cal(reduce_flats.output_filenames[0])
-
 Note how we pass in the BPM we created in the previous step. The ``addDQ``
 primitive, one of the primitives in the recipe, has an input parameter named
 ``user_bpm``. We assign our BPM to that input parameter. The value of
 ``uparms`` needs to be a :class:`list` of :class:`Tuples`.
-
-Once :meth:`runr()` is finished, we add the master flat to the calibration
-manager (line 59).
 
 
 .. _api_process_science_files:
@@ -353,7 +373,21 @@ science data:
     reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_target.runr()
 
+The final product file will have a ``_image.fits`` suffix and it is shown below.
+
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
+
+.. warning::
+
+    The upper-left quadrant of this science sequence is rather messy. This
+    is caused by the PWFS2 guide probe (see :ref:`issue_p2`). Photometry
+    in this portion of the image is likely to be seriously compromised.
+
+.. the figure below can be created using the script inside the ``savefig``
+   folder.
+
+.. figure:: _static/S20131121S0075_stack.fits.png
+   :align: center

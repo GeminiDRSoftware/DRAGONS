@@ -1,10 +1,11 @@
-.. extended_cmdline.rst
+.. ex1_niriim_extended_cmdline.rst
 
 .. _extended_cmdline:
 
-*********************************************************
-Example 1-A: Extended source - Using the "reduce" command
-*********************************************************
+*********************************************************************************
+Example 1 - Extended source with offset to sky - Using the "reduce" command line
+*********************************************************************************
+
 In this example we will reduce a NIRI observation of an extended source using
 the "|reduce|" command that is operated directly from the unix shell.  Just
 open a terminal and load the DRAGONS conda environment to get started.
@@ -18,7 +19,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`dataextended`.
+    :ref:`extended_dataset`.
 
 Here is a copy of the table for quick reference.
 
@@ -35,6 +36,8 @@ Here is a copy of the table for quick reference.
 +---------------+--------------------------------------------+
 | Standard star || N20160102S0295-299                        |
 +---------------+--------------------------------------------+
+| BPM           || bpm_20010317_niri_niri_11_full_1amp.fits  |
++---------------+--------------------------------------------+
 
 
 Set up the Local Calibration Manager
@@ -50,11 +53,19 @@ In ``~/.dragons/``, create or edit the configuration file ``dragonsrc`` as
 follow::
 
     [calibs]
-    databases = <where_the_data_package_is>/niriimg_tutorial/playground/cal_manager.db get
+    databases = <where_the_data_package_is>/niriimg_tutorial/playground/cal_manager.db get store
 
-This simply tells the system where to put the calibration database, the
-database that will keep track of the processed calibrations we are going to
-send to it.
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 .. note:: ``~`` in the path above refers to your home directory.  Also, don't
     miss the dot in ``.dragons``.
@@ -63,12 +74,14 @@ Then initialize the calibration database::
 
     caldb init
 
-That's it.  It is ready to use.
+That's it.  It is ready to use.  You can check the configuration and confirm the
+settings with ``caldb config``.
 
-You can add processed calibrations with ``caldb add <filename>`` (we will
-later), list the database content with ``caldb list``, and
-``caldb remove <filename>`` to remove a file from the database (it will **not**
-remove the file on disk.)  (See the "|caldb|" documentation for more details.)
+You can manually add processed calibrations with ``caldb add <filename>``, list
+the database content with ``caldb list``, and ``caldb remove <filename>`` to
+remove a file from the database (it will **not** remove the file on disk.)
+(See the "|caldb|" documentation for more details.)
+
 
 
 Create file lists
@@ -87,6 +100,11 @@ send the filenames to a text file that can then be fed to "|reduce|".  (See the
 |astrodatauser| for information about Astrodata.)
 
 First, navigate to the ``playground`` directory in the unpacked data package.
+
+::
+
+    cd <path>/niriim_tutorial/playground
+
 
 Two lists for the darks
 -----------------------
@@ -130,7 +148,7 @@ that list to "|showd|" to show descriptor values, in this case
 
 As one can see above the exposure times all have a small fractional increment.
 This is just a floating point inaccuracy somewhere in the software that
-generates the raw NIRI FITS files.  As far as we are concerned here in this
+generates the raw NIRI FITS files.  As far as we are concerned in this
 tutorial, we are dealing with 20-second and 1-second darks.  The tool
 "|dataselect|" is smart enough to match those exposure times as "close enough".
 So, in our selection expression, we can use "1" and "20" and ignore the extra
@@ -225,25 +243,46 @@ process.
 ::
 
     reduce @darks20s.lis
-    caldb add N20160102S0423_dark.fits
 
 The ``@`` character before the name of the input file is the "at-file" syntax.
 More details can be found in the |atfile| documentation.
+
+Because the database was given the "store" option in the ``dragonsrc`` file,
+the processed dark will be automatically added to the database at the end of
+the recipe.
 
 .. note:: The file name of the output processed dark is the file name of the
     first file in the list with `_dark` appended as a suffix.  This the
     general naming scheme used by "|reduce|".
 
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+    ``caldb add S20131120S0115_dark.fits``
+
 
 Bad Pixel Mask
 ==============
-The DRAGONS Gemini data reduction package, ``geminidr``, comes with a static
-NIRI bad pixel mask (BPM) that gets automatically added to all the NIRI data
-as they gets processed.  The user can also create a *supplemental*, fresher BPM
-from the flats and recent short darks.  That new BPM is later fed to
-"|reduce|" as a *user BPM* to be combined with the static BPM.  Using both the
-static and a fresh BPM from recent data lead to a better representation of the
-bad pixels.  It is an optional but recommended step.
+Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
+calibrations.  They are downloadable from the archive instead of being
+packaged with the software. They are automatically associated like any other
+calibrations.  This means that the user now must download the BPMs along with
+the other calibrations and add the BPMs to the local calibration manager.
+To add the static BPM included in the data package to the local calibration
+database:
+
+::
+
+    caldb add ../playdata/bpm*.fits
+
+
+The user can also create a *supplemental*, fresher BPM from the flats and
+recent short darks.  That new BPM is later fed to "|reduce|" as a *user BPM*
+to be combined with the static BPM.  Using both the static and a fresh BPM
+from recent data can lead to a better representation of the bad pixels.  It
+is an optional but recommended step.
 
 The flats and the short darks are the inputs.
 
@@ -258,9 +297,8 @@ recipe but rather the special recipe from that library called
 
 The BPM produced is named ``N20160102S0373_bpm.fits``.
 
-The local calibration manager does not yet support BPMs so we cannot add
-it to the database.  It is a future feature.  Until then we have to pass it
-manually to "|reduce|" to use it, as we will show below.
+Since this is a user-made BPM, you will have to pass it to DRAGONS on the
+as an option on the command line.
 
 
 Master Flat Field
@@ -273,7 +311,6 @@ We create the master flat field and add it to the calibration database as
 follow::
 
     reduce @flats.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits
-    caldb add N20160102S0373_flat.fits
 
 Note how we pass in the BPM we created in the previous step.  The ``addDQ``
 primitive, one of the primitives in the recipe, has an input parameter named
@@ -296,7 +333,7 @@ be run because the defaults are adjusted to match the input data.
 Standard Star
 =============
 The standard star is reduced more or less the same way as the science
-target (next section) except that darks frames are not obtained for standard
+target (next section) except that dark frames are not obtained for standard
 star observations.  Therefore the dark correction needs to be turned off.
 
 The processed flat field that we added earlier to the local calibration
@@ -321,7 +358,7 @@ on-target and the off-target appropriately.
 
 The master dark and the master flat will be retrieved automatically from the
 local calibration database. Again, the user BPM needs to be specified on
-the command line.
+the command line. (The static BPM will be picked from database).
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
