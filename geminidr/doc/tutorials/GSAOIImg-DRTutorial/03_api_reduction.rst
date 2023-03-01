@@ -96,12 +96,14 @@ First, check that you have already a ``dragonsrc`` file inside the
 .. code-block:: none
 
     [calibs]
-    databases = ${path_to_my_data}/gsaoiimg_tutorial/playground/cal_manager.db get
+    databases = ${path_to_my_data}/gsaoiimg_tutorial/playground/cal_manager.db get store
 
 
 This tells the system where to put the calibration database. This
 database will keep track of the processed calibrations as we add them
-to it.
+to it. The ``store`` option in the database line above indicates that calibrations
+will be automatically added to the database as they are produced, without having to
+explicitly add them to the database by running ``caldb add``. 
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.dragons``.
@@ -232,7 +234,7 @@ follow:
     caldb.add_cal(reduce_flats.output_filenames[0])
 
 Once :meth:`runr()` is finished, we add the master flat to the calibration
-manager (line 38).
+manager (line 39).
 
 
 Reduce Standard Star
@@ -249,15 +251,10 @@ the local calibration database will be fetched automatically.
     reduce_std.files.extend(list_of_std_stars)
     reduce_std.runr()
 
-For stacking the sky-subtracted standard star images, the easiest way is
-probably to use ``disco_stu``'s command line interface as follow:
+.. note:: ``Reduce`` will automatically align and stack the images. 
+      Therefore, it is no longer necessary to use the ``disco_stu`` tool for GSAOI
+      data.
 
-::
-
-    $ disco `dataselect *_skyCorrected.fits --expr='observation_class=="partnerCal"'`
-
-If you really want or need to run ``disco_stu``'s API, see the example later
-in this chapter where we do just that for the science frames.
 
 
 .. _api_process_science_files:
@@ -283,93 +280,25 @@ science data:
     reduce_target.uparms.append(('skyCorrect:offset_sky', False))
     reduce_target.runr()
 
-
-.. _api_stack_science_images:
-
-Stack Sky-subtracted Science Images
-===================================
-The final step is to stack the images. For that, you must be aware that
-GSAOI images are highly distorted and that this distortion must be corrected
-before stacking. The tool for distortion correction and image stacking is
-``disco_stu``.
-
-.. note:: ``disco_stu`` is installed with conda when the standard Gemini
-          software installation instructions are followed. To install after the
-          fact::
-
-            conda install disco_stu
-
-.. note:: The ``disco_stu`` manual can be found at http://www.gemini.edu/sciops/data/software/disco_stu.pdf
+This will generate flat corrected files, align them,
+stack them, and orient them such that North is up and East is left. The final
+image will have the name of the first file in the set, with the suffix ``_image``.
+The on-target files are the ones that have been flat corrected (``_flatCorrected``),
+and scaled (``_countsScaled``).  There should be nine of these.
 
 
-This package was created to be accessed via command line (See the
-:ref:`stack_science_files` command line section). Because of that,
-the API is not the most polished, and using it requires a fair number of steps.
-**If you can use the command line interface, it is recommended that you do so.**
-If not, then let's get to work.
+.. figure:: _static/img/S20170505S0095_image.png
+   :align: center
 
-First, let's import some libraries:
+   S20170505S0095 - Final flat corrected, aligned, and stacked image
 
-.. code-block:: python
-    :linenos:
-    :lineno-start: 46
+The figure above shows the final flat-corrected, aligned, and stacked frame.
+For absolute distortion correction and astrometry, ``Reduce`` can use a
+reference catalog provided by the user.  Without a reference catalog, like
+above, only the relative distortion between the frames is accounted for. 
 
-    from collections import namedtuple
+The output stack units are in electrons (header keyword BUNIT=electrons).
+The output stack is stored in a multi-extension FITS (MEF) file.  The science
+signal is in the "SCI" extension, the variance is in the "VAR" extension, and
+the data quality plane (mask) is in the "DQ" extension.
 
-    from disco_stu import disco
-    from disco_stu.lookups import general_parameters as disco_pars
-
-
-Then we need to create a special class using :func:`~collections.namedtuple`.
-This object will hold information about matching the objects between files:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 50
-
-    MatchInfo = namedtuple(
-        'MatchInfo', [
-            'offset_radius',
-            'match_radius',
-            'min_matches',
-            'degree'
-            ])
-
-We now create objects of ``MatchInfo`` class:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 57
-
-    object_match_info = MatchInfo(
-        disco_pars.OBJCAT_ALIGN_RADIUS[0],
-        disco_pars.OBJCAT_ALIGN_RADIUS[1],
-        None,
-        disco_pars.OBJCAT_POLY_DEGREE
-    )
-
-    reference_match_info = MatchInfo(
-        disco_pars.REFCAT_ALIGN_RADIUS[0],
-        disco_pars.REFCAT_ALIGN_RADIUS[1],
-        disco_pars.REFCAT_MIN_MATCHES,
-        disco_pars.REFCAT_POLY_DEGREE
-    )
-
-Finally, we call the :func:`~disco_stu.disco.disco` function and pass the
-arguments.
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 70
-
-    disco.disco(
-        infiles=reduce_target.output_filenames,
-        output_identifier="my_Kshort_stack",
-        objmatch_info=object_match_info,
-        refmatch_info=reference_match_info,
-        pixel_scale=disco_pars.PIXEL_SCALE,
-        skysub=False,
-    )
-
-This function has many other parameters that can be used to customize this step
-but further details are out of the scope of this tutorial.
