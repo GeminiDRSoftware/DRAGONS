@@ -155,7 +155,7 @@ class Aperture:
             apmask[i, slice(*limits)] = True
         return apmask if dispaxis == 0 else apmask.T
 
-    def standard_extraction(self, data, mask, var, aper_lower, aper_upper):
+    def aperture_extraction(self, data, mask, var, aper_lower, aper_upper):
         """Uniform extraction across an aperture of width pixels"""
         all_x1 = self._center_pixels + aper_lower
         all_x2 = self._center_pixels + aper_upper
@@ -259,7 +259,7 @@ class Aperture:
                 break
 
     def extract(self, ext, width=None, aper_lower=None, aper_upper=None,
-                method='standard', dispaxis=None, viewer=None):
+                method='aperture', dispaxis=None, viewer=None):
         """
         Extract a 1D spectrum by following the model trace and extracting in
         an aperture of a given number of pixels.
