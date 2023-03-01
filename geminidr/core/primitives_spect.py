@@ -1403,7 +1403,7 @@ class Spect(Resample):
             2D spectral images with a `.APERTURE` table.
         suffix : str
             Suffix to be added to output files.
-        method : {'standard', 'weighted', 'optimal'}
+        method : {'standard', optimal', 'default'}
             Extraction method.
         width : float or None
             Width of extraction aperture in pixels.
@@ -1532,12 +1532,17 @@ class Spect(Resample):
                                 pass
                             break
 
+                if method == "default":
+                    this_method = "optimal" if 'STANDARD' in ad.tags else "aperture"
+                else:
+                    this_method = method
+
                 for apnum, (aperture, *coords) in enumerate(zip(apertures, *wcs_coords), start=1):
                     log.stdinfo(f"    Extracting spectrum from aperture {apnum}")
                     self.viewer.width = 2
                     self.viewer.color = colors[(apnum-1) % len(colors)]
-                    ndd_spec = aperture.extract(ext, width=width,
-                                                method=method, viewer=self.viewer if debug else None)
+                    ndd_spec = aperture.extract(
+                        ext, width=width, method=this_method, viewer=self.viewer if debug else None)
 
                     # This whole (rather large) section is an attempt to ensure
                     # that sky apertures don't overlap with source apertures
