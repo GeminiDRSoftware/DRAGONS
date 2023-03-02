@@ -1,10 +1,10 @@
-.. keyhole_api.rst
+.. ex1_gnirsim_twostars_api.rst
 
-.. _keyhole_api:
+.. _twostars_api:
 
-********************************************************************
-Example 1-B: Point source through keyhole - Using the "Reduce" class
-********************************************************************
+********************************************************************************
+Example 1 - Keyhole imaging of two stars with dithers - Using the "Reduce" class
+********************************************************************************
 
 A reduction can be initiated from the command line as shown in
 :ref:`keyhole_cmdline` and it can also be done programmatically as we will
@@ -23,18 +23,20 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`datakeyhole`.
+    :ref:`twostars_dataset`.
 
 Here is a copy of the table for quick reference.
 
-+---------------+--------------------------------------------+
-| Science       || N20120117S0014-33 (J-band, on-target)     |
-+---------------+--------------------------------------------+
-| Science darks || N20120102S0538-547 (60 sec, like Science) |
-+---------------+--------------------------------------------+
-| Flats         || N20120117S0034-41 (lamps-on)              |
-|               || N20120117S0042-49 (lamps-off)             |
-+---------------+--------------------------------------------+
++---------------+----------------------------------------------+
+| Science       || N20120117S0014-33 (J-band, on-target)       |
++---------------+----------------------------------------------+
+| Science darks || N20120102S0538-547 (60 sec, like Science)   |
++---------------+----------------------------------------------+
+| Flats         || N20120117S0034-41 (lamps-on)                |
+|               || N20120117S0042-49 (lamps-off)               |
++---------------+----------------------------------------------+
+| BPM           || bpm_20100716_gnirs_gnirsn_11_full_1amp.fits |
++---------------+----------------------------------------------+
 
 
 Setting up
@@ -52,7 +54,8 @@ Importing Libraries
 
     import glob
 
-    # DRAGONS imports
+    import astrodata
+    import gemini_instruments
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system import cal_service
     from gempy.adlibrary import dataselect
@@ -68,29 +71,38 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 9
+    :lineno-start: 8
 
     from gempy.utils import logutils
-    logutils.config(file_name='gnirs_tutorial.log')
+    logutils.config(file_name='gnirsim_tutorial.log')
 
 
-Set up the Local Calibration Manager
-------------------------------------
-DRAGONS comes with a local calibration manager and a local light weight database
+Set up the Calibration Service
+------------------------------
+DRAGONS comes with a local calibration manager
 that uses the same calibration association rules as the Gemini Observatory
-Archive.  This allows the ``Reduce`` instance to make requests for matching
-**processed** calibrations when needed to reduce a dataset.
+Archive.  This allows the ``Reduce`` instance to make requests to a local
+light-weight database for matching **processed**
+calibrations and BPMs when they are needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
 In ``~/.dragons/``, edit the configuration file ``dragonsrc`` as follow::
 
     [calibs]
-    databases = <where_the_data_package_is>/gnirsimg_tutorial/playground/cal_manager.db get
+    databases = <where_the_data_package_is>/gnirsimg_tutorial/playground/cal_manager.db get store
 
-This tells the system where to put the calibration database, the
-database that will keep track of the processed calibration we are going to
-send to it.
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.dragons``.
@@ -100,10 +112,15 @@ configured like this:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 11
+    :lineno-start: 10
 
     caldb = cal_service.set_local_database()
     caldb.init()
+
+.. warning:: If the calibration database already exists, ``caldb.init()`` will
+             delete it and create a new, empty one.  Use ``wipe=False`` to
+             prevent that from happening.  (``wipe=False`` matches the
+             behavior of the command line ``caldb``).
 
 The calibration service is now ready to use.  If you need more details,
 check the "|caldb|" documentation in the Recipe System User Manual.
@@ -111,14 +128,11 @@ check the "|caldb|" documentation in the Recipe System User Manual.
 
 Create file lists
 =================
-.. |astrouser_link| raw:: html
-
-   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
 
 The next step is to create input file lists.  The tool ``dataselect`` helps
 with that.  It uses Astrodata tags and descriptors to select the files and
 store the filenames to a Python list that can then be fed to the ``Reduce``
-class.  (See the |astrouser_link| for information about Astrodata and for a list
+class.  (See the |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
 
 The first list we create is a list of all the files in the ``playdata``
@@ -126,7 +140,7 @@ directory.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 16
+    :lineno-start: 12
 
     all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
@@ -147,7 +161,7 @@ list, one simply need to select on the ``DARK`` tag:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 18
+    :lineno-start: 14
 
     darks60 = dataselect.select_data(all_files, ['DARK'])
 
@@ -156,7 +170,7 @@ command would use the ``exposure_time`` descriptor:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 19
+    :lineno-start: 15
 
     darks60 = dataselect.select_data(
         all_files,
@@ -175,7 +189,7 @@ of them to one list.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 25
+    :lineno-start: 21
 
     flats = dataselect.select_data(all_files, ['FLAT'])
 
@@ -189,7 +203,7 @@ examples; of course, just one is required.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 26
+    :lineno-start: 22
 
     target = dataselect.select_data(all_files, ['IMAGE'], ['FLAT'])
 
@@ -222,13 +236,11 @@ name of a file on disk.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 43
+    :lineno-start: 39
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(darks60)
     reduce_darks.runr()
-
-    caldb.add_cal(reduce_darks.output_filenames[0])
 
 The ``Reduce`` class is our reduction "controller".  This is where we collect
 all the information necessary for the reduction.  In this case, the only
@@ -236,7 +248,36 @@ information necessary is the list of input files which we add to the
 ``files`` attribute.  The ``Reduce.runr{}`` method is where the
 recipe search is triggered and where it is executed.
 
-.. note:: The file name of the output processed dark is the file name of the first file in the list with `_dark` appended as a suffix.  This the general naming scheme used by the ``Recipe System``.
+.. note:: The file name of the output processed dark is the file name of the
+    first file in the list with _dark appended as a suffix. This is the general
+    naming scheme used by the ``Recipe System``.
+
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+   .. code-block::
+
+      caldb.add_cal(reduce_darks.output_filenames[0])
+
+
+Bad Pixel Mask
+==============
+Starting with DRAGONS v3.1, the static bad pixel masks (BPMs) are now handled
+as calibrations.  They
+are downloadable from the archive instead of being packaged with the software.
+They are automatically associated like any other calibrations.  This means that
+the user now must download the BPMs along with the other calibrations and add
+the BPMs to the local calibration manager.  To add the BPM included in the
+data package to the local calibration database:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 42
+
+    for bpm in dataselect.select_data(all_files, ['BPM']):
+        caldb.add_cal(bpm)
 
 
 Master Flat Field
@@ -250,22 +291,20 @@ follows:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 48
+    :lineno-start: 44
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
     reduce_flats.runr()
 
-    caldb.add_cal(reduce_flats.output_filenames[0])
-
 
 Science Observations
 ====================
-The science target is a point source.  The sequence dithers on-target, moving
-the source across the thin keyhole aperture.  The sky frames for each
+The science targets are two point sources.  The sequence dithers on-target,
+moving the sources across the thin keyhole aperture.  The sky frames for each
 science image will be the adjacent dithered frames obtained within a certain
 time limit.  The default for GNIRS keyhole images is "within 600 seconds".
-This can be seen by using the "|showpars|" command-line tool::
+This can be seen by using "|showpars|"::
 
     showpars ../playdata/N20120117S0014.fits associateSky
 
@@ -273,26 +312,21 @@ This can be seen by using the "|showpars|" command-line tool::
    :scale: 100%
    :align: center
 
-Both the master dark and the master flat are in our local calibration
+The BPM, the master dark and the master flat are in our local calibration
 database.  For any other Gemini facility instrument, they would both be
 retrieved automatically by the calibration manager.  However, GNIRS not being
 an imager, and the keyhole being normally used only for acquisition, it turns
 out that there are no calibration association rules between GNIRS keyhole images
-and darks.  This is a recently discovered limitation that we plan to fix in
-a future release.  In the meantime, we are not stuck, we can simply specify
-the dark on the command line.  The flat will be retrieved automatically.
+and darks.   We can specify the dark on the command line.  The flat will be
+retrieved automatically.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 53
-
-    from recipe_system.utils.reduce_utils import normalize_ucals
-    mycalibrations = ['processed_dark:N20120102S0538_dark.fits']
+    :lineno-start: 47
 
     reduce_target = Reduce()
     reduce_target.files.extend(target)
-    ucals_dict = normalize_ucals(reduce_target.files, mycalibrations)
-    reduce_target.ucals = ucals_dict
+    reduce_target.uparms = [('darkCorrect:dark', 'N20120102S0538_dark.fits')]
     reduce_target.runr()
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
