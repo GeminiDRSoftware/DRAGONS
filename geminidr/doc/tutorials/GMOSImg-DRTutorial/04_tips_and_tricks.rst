@@ -24,7 +24,6 @@ add it to the calibration database:
 .. code-block:: bash
 
     $ reduce @list_of_science.txt -r makeProcessedFringe
-    $ caldb add N20170614S0201_fringe.fits
 
 This command line will produce an image with the ``_fringe`` suffix in the
 current working directory.
@@ -42,8 +41,6 @@ The above can be done with the API as follows:
     reduce_fringe.files.extend(list_of_science)
     reduce_fringe.recipename = 'makeProcessedFringe'
     reduce_fringe.runr()
-
-    caldb.add_cal(reduce_fringe.output_filenames[0])
 
 
 

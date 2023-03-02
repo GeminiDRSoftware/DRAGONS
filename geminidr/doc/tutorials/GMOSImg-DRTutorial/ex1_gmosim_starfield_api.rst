@@ -1,31 +1,28 @@
-.. 03_api_reduction.rst
+.. ex1_gmosim_starfield_api.rst
 
+.. _tarfield_api:
 
-.. |github| image:: /_static/img/GitHub-Mark-32px.png
-    :scale: 75%
+**************************************************************
+Example 1 - Star field with dithers - Using the "Reduce" class
+**************************************************************
 
-
-.. _api_data_reduction:
-
-*******************
-Reduction using API
-*******************
-
-There may be cases where you would be interested in accessing the DRAGONS'
-Application Program Interface (API) directly instead of using the command
-line wrappers to reduce your data. Here we show you how to do the same
-reduction we did in the previous chapter but using the API.
-
+A reduction can be initiated from the command line as shown in
+:ref:`dithered_cmdline` and it can also be done programmatically as we will
+show here.  The classes and modules of the RecipeSystem can be
+accessed directly for those who want to write Python programs to drive their
+reduction.  In this example we replicate the
+command line version of Example 1 but using the Python
+programmatic interface. What is shown here could be packaged in modules for
+greater automation.
 
 The dataset
 ===========
-
 If you have not already, download and unpack the tutorial's data package.
 Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`about_data_set`.
+    :ref:`starfield_dataset`.
 
 Here is a copy of the table for quick reference.
 
@@ -37,6 +34,8 @@ Here is a copy of the table for quick reference.
 +---------------+---------------------+--------------------------------+
 | Twilight Flats|| N20170702S0178-182 || 40 to 16 s, i-band            |
 +---------------+---------------------+--------------------------------+
+| BPM           || bpm_20170306_gmos-n_Ham_22_full_12amp.fits          |
++---------------+------------------------------------------------------+
 
 Setting Up
 ==========
@@ -51,24 +50,18 @@ We first import the necessary modules and classes:
 
     import glob
 
-    from gempy.adlibrary import dataselect
-    from recipe_system import cal_service
+    import astrodata
+    import gemini_instruments
     from recipe_system.reduction.coreReduce import Reduce
+    from recipe_system import cal_service
+    from gempy.adlibrary import dataselect
 
 
-:mod:`glob` is Python built-in packages. It will be used to return a
-:class:`list` with the input file names.
-
-.. todo @bquint: the gempy auto-api is not being generated anywhere. Find a
-    place for it.
-
-
-:mod:`~gempy.adlibrary.dataselect` will be used to create file lists for the
-darks, the flats and the science observations. The
-:mod:`~recipe_system.cal_service` package is our interface with the
-calibration databases. Finally, the
-:class:`~recipe_system.reduction.coreReduce.Reduce` class is used to set up
-and run the data reduction.
+The ``dataselect`` module will be used to create file lists for the
+biases, the flats, the arcs, the standard, and the science observations.
+The ``cal_service`` package is our interface to the local calibration
+database. The ``Reduce`` class is used to set up and run the data
+reduction.
 
 
 Setting up the logger
@@ -88,21 +81,37 @@ We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
 Setting up the Calibration Service
 ----------------------------------
 
-Before we continue, let's be sure we have properly setup our calibration
-database and the calibration association service.
+DRAGONS comes with a local calibration manager
+that uses the same calibration association rules as the Gemini Observatory
+Archive.  This allows the ``Reduce`` instance to make requests to a local light-weight database for matching **processed**
+calibrations and BPMs when they are needed to reduce a dataset.
 
-First, check that you have already a ``dragonsrc`` file inside the
-``~/.dragons/``. It should contain:
+Let's set up the local calibration manager for this session.
+
+In ``~/.dragons/``, edit the configuration file ``dragonsrc`` as follow::
+
 
 .. code-block:: none
 
     [calibs]
-    databases = /path_to_my_data/gmosimg_tutorial_api/playground/cal_manager.db get
+    databases = /path_to_my_data/gmosimg_tutorial_api/playground/cal_manager.db get store
 
 
 This tells the system where to put the calibration database. This
 database will keep track of the processed calibrations as we add them
 to it.
+
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.dragons``.
@@ -117,46 +126,55 @@ configured as follow:
     caldb = cal_service.set_local_database()
     caldb.init()
 
-The calibration service is now ready to use. If you need more details,
-check the
-`Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
+.. warning:: If the calibration database already exists, ``caldb.init()`` will
+             delete it and create a new, empty one.  Use ``wipe=False`` to
+             prevent that from happening.  (``wipe=False`` matches the
+             behavior of the command line ``caldb``).
 
+The calibration service is now ready to use. If you need more details,
+check the "|caldb|" documentation in the Recipe System User Manual.
 
 .. _api_create_file_lists:
 
 Create list of files
 ====================
 
-The next step is to create lists of files that will be used as input to each of the
-data reduction steps. Let us start by creating a :class:`list` of all the
-FITS files in the directory ``../playdata/``.
+The next step is to create input file lists. The module ``dataselect`` helps
+with that.  It uses Astrodata tags and |descriptors| to select the files and
+store the filenames to a Python list that can then be fed to the ``Reduce``
+class. (See the |astrodatauser| for information about Astrodata and for a list
+of |descriptors|.)
+
+The first list we create is a list of all the files in the ``playdata``
+directory.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 15
+    :lineno-start: 12
 
     all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
 
 The :meth:`~list.sort` method simply re-organize the list with the file names
-and is an optional step. Before you carry on, you might want to do
+and is an optional step, but  arecommended step. Before you carry on, you might want to do
 ``print(all_files)`` to check if they were properly read.
 
-Now we can use the ``all_files`` :class:`list` as an input to
-:func:`~gempy.adlibrary.dataselect.select_data`.  The
-``dataselect.select_data()`` function signature is::
+We will search that list for files with specific characteristics.  We use
+the ``all_files`` :class:`list` as an input to the function
+``dataselect.select_data()`` .  The function's signature is::
 
     select_data(inputs, tags=[], xtags=[], expression='True')
 
+We show several usage examples below.
 
 List of Biases
 --------------
 
-Let us, now, select the files that will be used to create a master bias:
+Let us select the files that will be used to create a master bias:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 17
+    :lineno-start: 14
 
     list_of_biases = dataselect.select_data(
         all_files,
@@ -178,7 +196,7 @@ filters. It is not really needed in this case.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 22
+    :lineno-start: 19
 
     list_of_flats = dataselect.select_data(
         all_files,
@@ -187,6 +205,9 @@ filters. It is not really needed in this case.
         dataselect.expr_parser('filter_name=="i"')
     )
 
+.. note::  All expressions need to be processed with ``dataselect.expr_parser``.
+
+
 List of Science Data
 --------------------
 
@@ -194,7 +215,7 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 27
+    :lineno-start: 25
 
     list_of_science = dataselect.select_data(
         all_files,
@@ -208,8 +229,25 @@ Here we left the ``tags`` argument as an empty list and passed the tag
 
 We also added a fourth argument which is not necessary for our current dataset
 but that can be useful for others. It contains an expression that has to be
-parsed by :func:`~gempy.adlibrary.dataselect.expr_parser`, and which ensures
+parsed by ``dataselect.expr_parser``, and which ensures
 that we are getting *science* frames obtained with the *i-band* filter.
+
+Bad Pixel Mask
+==============
+Starting with DRAGONS v3.1, the static bad pixel masks (BPMs) are now handled
+as calibrations.  They
+are downloadable from the archive instead of being packaged with the software.
+They are automatically associated like any other calibrations.  This means that
+the user now must download the BPMs along with the other calibrations and add
+the BPMs to the local calibration manager.  To add the BPM included in the
+data package to the local calibration database:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 31
+
+    for bpm in dataselect.select_data(all_files, ['BPM']):
+        caldb.add_cal(bpm)
 
 
 .. _api_process_bias_files:
@@ -227,18 +265,25 @@ We create the master bias and add it to the calibration manager as follow:
    reduce_bias.files.extend(list_of_biases)
    reduce_bias.runr()
 
-   caldb.add_cal(reduce_bias.output_filenames[0])
-
-The :class:`~recipe_system.reduction.coreReduce.Reduce` class is our reduction
+The ``Reduce`` class is our reduction
 "controller". This is where we collect all the information necessary for
 the reduction. In this case, the only information necessary is the list of
 input files which we add to the ``files`` attribute. The
-:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` method is where the
+``Reduce.runr`` method is where the
 recipe search is triggered and where it is executed.
 
-Once :meth:`runr()` is finished, we add the master bias to the calibration
-manager (line 37).
+.. note:: The file name of the output processed bias is the file name of the
+    first file in the list with ``_bias`` appended as a suffix.  This is the
+    general naming scheme used by the ``Recipe System``.
 
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+    .. code-block::
+
+       caldb.add_cal(reduce_bias.output_filenames[0])
 
 .. _api_process_flat_files:
 
@@ -249,13 +294,11 @@ We create the master flat field and add it to the calibration database as follow
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 38
+    :lineno-start: 36
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats)
     reduce_flats.runr()
-
-    caldb.add_cal(reduce_flats.output_filenames[0])
 
 
 .. _api_process_fring_frame:
@@ -279,7 +322,7 @@ science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 43
+    :lineno-start: 39
 
     reduce_science = Reduce()
     reduce_science.files.extend(list_of_science)

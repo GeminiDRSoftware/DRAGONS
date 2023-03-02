@@ -1,44 +1,25 @@
-.. 02_data_reduction.rst
+.. ex1_gmosim_starfield_cmdline.rst
 
-.. _command_line_data_reduction:
+.. _starfield_cmdline:
 
-**************
-Data Reduction
-**************
+*********************************************************************
+Example 1 - Star field with dithers - Using the "reduce" command line
+*********************************************************************
 
-This chapter will guide you on reducing **GMOS imaging data** using
-command line tools. In this example we reduce a GMOS observation star field.
-The observation is a simple dither-on-target sequence.
-Just open a terminal to get started.
+In this example we will reduce a GMOS imaging observation of a star field
+using the "|reduce|" command that is operated directly from the unix shell.
+Just open a terminal and load the DRAGONS conda environment to get started.
 
-While the example cannot possibly cover all situations, it will help you get
-acquainted with the reduction of GMOS data with DRAGONS. We encourage you to
-look at the :ref:`tips_and_tricks` and :ref:`issues_and_limitations` chapters to
-learn more about GMOS data reduction.
-
-DRAGONS installation comes with a set of scripts that are used to
-reduce astronomical data. The most important script is called
-"|reduce|", which is extensively explained in the |RSUser|.
-It is through that command that a DRAGONS reduction is launched.
-
-For this tutorial, we will be also using other |suptools|,
-like:
-
-* |dataselect|
-* |showd|
-* |typewalk|
-* |caldb|
-
+The observations have been dithered.
 
 The dataset
 ===========
-
 If you have not already, download and unpack the tutorial's data package.
 Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`about_data_set`
+    :ref:`starfield_dataset`.
 
 Here is a copy of the table for quick reference.
 
@@ -50,8 +31,8 @@ Here is a copy of the table for quick reference.
 +---------------+---------------------+--------------------------------+
 | Twilight Flats|| N20170702S0178-182 || 40 to 16 s, i-band            |
 +---------------+---------------------+--------------------------------+
-
-
+| BPM           || bpm_20170306_gmos-n_Ham_22_full_12amp.fits          |
++---------------+------------------------------------------------------+
 
 .. _setup_caldb:
 
@@ -73,9 +54,17 @@ follow:
     [calibs]
     databases = /path_to_my_data/gmosimg_tutorial/playground/cal_manager.db get
 
-This simply tells the system where to put the calibration database, the
-database that will keep track of the processed calibrations we are going to
-send to it.
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 ..  note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.dragons``.
@@ -86,26 +75,21 @@ Then initialize the calibration database:
 
     caldb init
 
-That's it! It is ready to use!  You can check the configuration and confirm
+That's it. It is ready to use.  You can check the configuration and confirm
 the setting with ``caldb config``.
 
-You can add processed calibrations with ``caldb add <filename>`` (we will
-later), list the database content with ``caldb list``, and
-``caldb remove <filename>`` to remove a file **only** from the database
-(it will **not** remove the file on disk). For more the details, check the
-"|caldb|" documentation in the
-`Recipe System: User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/>`_.
-
-.. note:: If you have problems setting up "|caldb|" or want to bypass it for
-      another reason, you can check the
-      :ref:`Bypassing automatic calibration association <bypassing_caldb>`
-      section.
+You can manually add processed calibrations with ``caldb add <filename>``, list
+the database content with ``caldb list``,
+and ``caldb remove <filename>`` to remove a file from the database (it will
+**not** remove the file on disk.)  (See the "|caldb|" documentation for more
+details.)
 
 
 .. _check_files:
 
 Check files
 ===========
+.. todo:: separate the raw data into playdata_ex1, etc.
 
 For this example, all the raw files we need are in the same directory called
 ``../playdata/``. Let us learn a bit about the data we have.
@@ -153,6 +137,10 @@ have to do it. DRAGONS provides tools to help you with that.
 The first step is to create lists that will be used in the data reduction
 process. For that, we use "|dataselect|". Please, refer to the "|dataselect|"
 documentation for details regarding its usage.
+
+First, navigate to the ``playground`` directory in the unpacked data package::
+
+    cd <path>/gmosim_tutorial/playground
 
 List of Biases
 --------------
@@ -215,7 +203,7 @@ line using a "pipe" (``|``):
 
 
 The ``-d`` flag tells "|showd|" which "|descriptors|" will be printed for
-each input file. As you can see, we have only observed target and only
+each input file. As you can see, we have only one target and only one
 exposure time.
 
 To select on target name and exposure time, specify the criteria in the
@@ -231,6 +219,19 @@ are ready to reduce the data.
 
 Please make sure that you are still in the ``playground`` directory.
 
+Bad Pixel Mask
+==============
+Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
+calibrations.  They
+are downloadable from the archive instead of being packaged with the software.
+They are automatically associated like any other calibrations.  This means that
+the user now must download the BPMs along with the other calibrations and add
+the BPMs to the local calibration manager.  To add the static BPM included in the
+data package to the local calibration database:
+
+::
+
+    caldb add ../playdata/bpm*.fits
 
 .. _make_master_bias:
 
@@ -243,32 +244,32 @@ It can be created and added to the calibration database using the commands below
 ..  code-block:: bash
 
    $ reduce @list_of_bias.txt
-   $ caldb add N20170613S0180_bias.fits
-
 
 The ``@`` character before the name of the input file is the "at-file" syntax.
 More details can be found in the |atfile| documentation.
 
+Because the database was given the "store" option in the ``dragonsrc`` file,
+the processed bias will be automatically added to the database at the end of
+the recipe.
+
 To check that the master bias was added to the database, use ``caldb list``.
 
+.. note:: The file name of the output processed bias is the file name of the
+    first file in the list with ``_bias`` appended as a suffix.  This the
+    general naming scheme used by "|reduce|".
+
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+    ``caldb add N20170613S0180_bias.fits``
 
 .. note::
-    The master bias will be saved in the same folder where "|reduce|" was
+    The master bias will be saved in the same folder where |reduce| was
     called *and* inside the ``./calibrations/processed_bias`` folder. The latter
     location is to cache a copy of the file. This applies to all the processed
     calibration.
-
-    Some people might prefer adding the copy in the ``calibrations`` directory
-    as it is safe from a ``rm *``, for example.
-
-    .. code-block:: bash
-
-        $ caldb add ./calibrations/processed_bias/N20170613S0180_bias.fits
-
-.. note::
-    "|reduce|" uses the first filename in the input list as basename and adds
-    ``_bias`` as a suffix to it. So if your first filename is, for example,
-    ``N20170613S0180.fits``, the output will be `N20170613S0180_bias.fits``.
 
 
 .. _process_flat_files:
@@ -282,14 +283,9 @@ result is added to the calibration database.
 ..  code-block:: bash
 
    $ reduce @list_of_flats.txt
-   $ caldb add N20170702S0178_flat.fits
-
 
 Note "|reduce|" will query the local calibration manager for the master bias
 and use it in the data reduction.
-
-Once finished you will have the master flat in the current work directory and
-inside ``./calibrations/processed_flat``. It will have a ``_flat`` suffix.
 
 
 Create Master Fringe Frame
@@ -315,13 +311,12 @@ run ``reduce`` on our science data:
 
 This command will generate bias and flat corrected files and will stack them.
 If a fringe frames is needed this command will apply the correction.  The stacked
-image will have the ``_stack`` suffix.
+image will have the ``_image`` suffix.
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
-
 
 .. note::  Depending on your version of Astropy, you might see a lot of
     Astropy warnings about headers and coordinates system.  You can safely

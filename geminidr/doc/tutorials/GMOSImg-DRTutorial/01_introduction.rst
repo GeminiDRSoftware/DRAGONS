@@ -13,13 +13,19 @@ Introduction
 This tutorial covers the basics of reducing GMOS_ (Gemini Multi-Object
 Spectrographs) data using |DRAGONS|.
 
+Data reduction with DRAGONS can be done in two different ways:
+
+* From the terminal using the command line.
+* From Python using the DRAGONS classes and functions.
+
+We show how to run the same reduction using both methods.
+
+* :ref:`starfield_example`
+
+More examples will be added in the future.
+
 The next two sections explain what are the required software and the data set
 that we use throughout the tutorial.
-:ref:`Chapter 2: Data Reduction <command_line_data_reduction>` contains a
-quick example on how to reduce data using the DRAGONS command line tools.
-:ref:`Chapter 3: Reduction with API <api_data_reduction>` shows how we can
-reduce the data using DRAGONS' packages from within Python.
-
 
 .. _requirements:
 
@@ -73,21 +79,3 @@ will work in the subdirectory named ``gmosimg_tutorial/playground``.
           data yourself, see the step-by-step instructions in the appendix,
           :ref:`goadownload`.
 
-
-.. _about_data_set:
-
-About the dataset
-=================
-The data used for this tutorial is a dithered sequence on a starry field.
-
-The table below contains a summary of the dataset downloaded in the previous
-section:
-
-+---------------+---------------------+--------------------------------+
-| Science       || N20170614S0201-205 || 10 s, i-band                  |
-+---------------+---------------------+--------------------------------+
-| Bias          || N20170613S0180-184 |                                |
-|               || N20170615S0534-538 |                                |
-+---------------+---------------------+--------------------------------+
-| Twilight Flats|| N20170702S0178-182 || 40 to 16 s, i-band            |
-+---------------+---------------------+--------------------------------+
