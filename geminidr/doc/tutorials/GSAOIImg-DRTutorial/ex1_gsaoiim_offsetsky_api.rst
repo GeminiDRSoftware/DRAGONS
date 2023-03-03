@@ -1,14 +1,10 @@
-.. 03_api_reduction.rst
+.. ex1_gsaoiim_offsetsky_api.rst
 
-.. |github| image:: /_static/img/GitHub-Mark-32px.png
-    :scale: 75%
+.. _offsetsky_api:
 
-
-.. _api_data_reduction:
-
-*******************
-Reduction using API
-*******************
+*****************************************************************
+Example 1 - Crowded with offset to sky - Using the "Reduce" class
+*****************************************************************
 
 There may be cases where you might be interested in accessing the DRAGONS'
 Application Program Interface (API) directly instead of using the command
@@ -22,7 +18,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`about_data_set`.
+    :ref:`offsetsky_dataset`.
 
 Here is a copy of the table for quick reference.
 
@@ -34,12 +30,23 @@ Here is a copy of the table for quick reference.
 +---------------+---------------------+--------------------------------+
 | Standard star || S20170504S0114-117 || Kshort, standard star, 30 s   |
 +---------------+---------------------+--------------------------------+
+| BMP           || bpm_20121104_gsaoi_gsaoi_11_full_4amp.fits          |
++---------------+---------------------+--------------------------------+
 
 .. note:: A master dark is not needed for GSAOI.  The dark current is very low.
 
 
 Setting up
 ==========
+
+First, navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/gsaoiim_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
 
 Importing Libraries
 -------------------
@@ -51,24 +58,17 @@ We first import the necessary modules and classes:
 
     import glob
 
+    import astrodata
+    import gemini_instruments
     from gempy.adlibrary import dataselect
     from recipe_system import cal_service
     from recipe_system.reduction.coreReduce import Reduce
 
-
-:mod:`glob` is a Python built-in package. It will be used to return a
-:class:`list` with the input file names.
-
-
-.. todo @bquint: the gempy auto-api is not being generated anywhere.
-
-:mod:`~gempy.adlibrary.dataselect` will be used to create file lists for the
-darks, the flats and the science observations. The
-:mod:`~recipe_system.cal_service` package is our interface with the
-calibration databases. Finally, the
-:class:`~recipe_system.reduction.coreReduce.Reduce` class is used to set up
-and run the data reduction.
-
+The ``dataselect`` module will be used to create file lists for the
+biases, the flats, the arcs, the standard, and the science observations.
+The ``cal_service`` package is our interface to the local calibration
+database. The ``Reduce`` class is used to set up and run the data
+reduction.
 
 Setting up the logger
 ---------------------
@@ -87,23 +87,36 @@ We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
 Setting up the Calibration Service
 ----------------------------------
 
-Before we continue, let's be sure we have properly setup our calibration
-database and the calibration association service.
+DRAGONS comes with a local calibration manager
+that uses the same calibration association rules as the Gemini Observatory
+Archive.  This allows the ``Reduce`` instance to make requests to a local light-weight database for matching **processed**
+calibrations and BPMs when they are needed to reduce a dataset.
 
-First, check that you have already a ``dragonsrc`` file inside the
-``~/.dragons/``. It should contain:
+Let's set up the local calibration manager for this session.
+
+In ``~/.dragons/``, edit the configuration file ``dragonsrc`` as follow::
 
 .. code-block:: none
 
     [calibs]
-    databases = ${path_to_my_data}/gsaoiimg_tutorial/playground/cal_manager.db get store
+    databases = ${path_to_my_data}/gsaoiim_tutorial/playground/cal_manager.db get store
 
 
 This tells the system where to put the calibration database. This
 database will keep track of the processed calibrations as we add them
-to it. The ``store`` option in the database line above indicates that calibrations
-will be automatically added to the database as they are produced, without having to
-explicitly add them to the database by running ``caldb add``. 
+to it.
+
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.dragons``.
@@ -118,6 +131,11 @@ configured as follow:
     caldb = cal_service.set_local_database()
     caldb.init()
 
+.. warning:: If the calibration database already exists, ``caldb.init()`` will
+             delete it and create a new, empty one.  Use ``wipe=False`` to
+             prevent that from happening.  (``wipe=False`` matches the
+             behavior of the command line ``caldb``).
+
 The calibration service is now ready to use. If you need more details,
 check the |caldb| section in the |RSUser|.
 
@@ -126,25 +144,33 @@ check the |caldb| section in the |RSUser|.
 Create list of files
 ====================
 
-Next step is to create lists of files that will be used as input to each of the
-data reduction steps. Let us start by creating a :class:`list` of all the
-FITS files in the directory ``../playdata/``.
+The next step is to create input file lists. The module ``dataselect`` helps
+with that.  It uses Astrodata tags and |descriptors| to select the files and
+store the filenames to a Python list that can then be fed to the ``Reduce``
+class. (See the |astrodatauser| for information about Astrodata and for a list
+of |descriptors|.)
+
+The first list we create is a list of all the files in the ``playdata``
+directory.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 15
+    :lineno-start: 12
 
     all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
 
-Before you carry on, you might want to do ``print(all_files)`` to check if they
-were properly read.
+The :meth:`~list.sort` method simply re-organize the list with the file names
+and is an optional, but  arecommended step. Before you carry on, you might want to do
+``print(all_files)`` to check if they were properly read.
 
-Now we can use the ``all_files`` :class:`list` as an input to
-:func:`~gempy.adlibrary.dataselect.select_data`.  The
-``dataselect.select_data()`` function signature is::
+We will search that list for files with specific characteristics.  We use
+the ``all_files`` :class:`list` as an input to the function
+``dataselect.select_data()`` .  The function's signature is::
 
     select_data(inputs, tags=[], xtags=[], expression='True')
+
+We show several usage examples below.
 
 
 A list for the flats
@@ -156,7 +182,7 @@ filters. It is not really needed in this case.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 17
+    :lineno-start: 14
 
     list_of_flats_Ks = dataselect.select_data(
          all_files,
@@ -172,7 +198,7 @@ For the standard star selection, we use:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 23
+    :lineno-start: 20
 
     list_of_std_stars = dataselect.select_data(
         all_files,
@@ -192,7 +218,7 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 29
+    :lineno-start: 26
 
     list_of_science_images = dataselect.select_data(
         all_files,
@@ -204,6 +230,24 @@ Finally, the science data can be selected using:
 The exposure time is not really needed in this case since there are only
 60-second frames, but it shows how you could have two selection criteria in
 the expression.
+
+
+Bad Pixel Mask
+==============
+Starting with DRAGONS v3.1, the static bad pixel masks (BPMs) are now handled
+as calibrations.  They
+are downloadable from the archive instead of being packaged with the software.
+They are automatically associated like any other calibrations.  This means that
+the user now must download the BPMs along with the other calibrations and add
+the BPMs to the local calibration manager.  To add the BPM included in the
+data package to the local calibration database:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 32
+
+    for bpm in dataselect.select_data(all_files, ['BPM']):
+        caldb.add_cal(bpm)
 
 
 .. _api_process_flat_files:
@@ -225,16 +269,24 @@ follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 35
+    :lineno-start: 34
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats_Ks)
     reduce_flats.runr()
 
-    caldb.add_cal(reduce_flats.output_filenames[0])
+.. note:: The file name of the output processed flat is the file name of the
+    first file in the list with ``_flat`` appended as a suffix.  This is the
+    general naming scheme used by the ``Recipe System``.
 
-Once :meth:`runr()` is finished, we add the master flat to the calibration
-manager (line 39).
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+    .. code-block::
+
+       caldb.add_cal(reduce_flats.output_filenames[0])
 
 
 Reduce Standard Star
@@ -245,15 +297,15 @@ the local calibration database will be fetched automatically.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 40
+    :lineno-start: 37
 
     reduce_std = Reduce()
     reduce_std.files.extend(list_of_std_stars)
     reduce_std.runr()
 
-.. note:: ``Reduce`` will automatically align and stack the images. 
-      Therefore, it is no longer necessary to use the ``disco_stu`` tool for GSAOI
-      data.
+.. note:: ``Reduce`` will automatically align and stack the images.
+      Therefore, it is no longer necessary to use the ``disco_stu`` tool for
+      GSAOI data.
 
 
 
@@ -265,15 +317,15 @@ The science observation uses a dither-on-target with offset-to-sky pattern.
 The sky frames from the offset-to-sky position will be automatically detected
 and used for the sky subtraction.
 
-The master flat will be retrieved automatically from the local calibration
-database.
+The BPM and the master flat will be retrieved automatically from the local
+calibration database.
 
 We use similar commands as before to initiate a new reduction to reduce the
 science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 43
+    :lineno-start: 40
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)
@@ -295,7 +347,7 @@ and scaled (``_countsScaled``).  There should be nine of these.
 The figure above shows the final flat-corrected, aligned, and stacked frame.
 For absolute distortion correction and astrometry, ``Reduce`` can use a
 reference catalog provided by the user.  Without a reference catalog, like
-above, only the relative distortion between the frames is accounted for. 
+above, only the relative distortion between the frames is accounted for.
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science

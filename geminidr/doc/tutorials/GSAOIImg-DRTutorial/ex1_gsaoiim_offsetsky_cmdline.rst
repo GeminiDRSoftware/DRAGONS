@@ -1,14 +1,10 @@
-.. 02_data_reduction.rst
+.. ex1_gsaoiim_offsetsky_cmdline.rst
 
-.. |github| image:: /_static/img/GitHub-Mark-32px.png
-    :scale: 75%
+.. _offsetsky_cmdline:
 
-
-.. _command_line_data_reduction:
-
-****************************
-Data Reduction with "reduce"
-****************************
+************************************************************************
+Example 1 - Crowded with offset to sky - Using the "reduce" command line
+************************************************************************
 
 This chapter will guide you on reducing **GSAOI data** using
 command line tools. In this example we reduce a GSAOI observation of
@@ -38,7 +34,7 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`about_data_set`.
+    :ref:`offsetsky_dataset`.
 
 Here is a copy of the table for quick reference.
 
@@ -50,23 +46,25 @@ Here is a copy of the table for quick reference.
 +---------------+---------------------+--------------------------------+
 | Standard star || S20170504S0114-117 || Kshort, standard star, 30 s   |
 +---------------+---------------------+--------------------------------+
+| BMP           || bpm_20121104_gsaoi_gsaoi_11_full_4amp.fits          |
++---------------+---------------------+--------------------------------+
 
 .. note:: A master dark is not needed for GSAOI.  The dark current is very low.
 
 
 .. _setup_caldb:
 
-Set up the Local Calibration Manager
-====================================
+Set up the Calibration Service
+==============================
 
 DRAGONS comes with a local calibration manager that uses the same calibration
-association rules as the Gemini Observatory Archive. This allows ``reduce``
+association rules as the Gemini Observatory Archive. This allows "|reduce|"
 to make requests to a local light-weight database for matching **processed**
 calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.dragons/``, create or edit the configuration file ``dragons`` as
+In ``~/.dragons/``, create or edit the configuration file ``dragonsrc`` as
 follow:
 
 .. code-block:: none
@@ -74,11 +72,17 @@ follow:
     [calibs]
     databases = ${path_to_my_data}/gsaoiimg_tutorial/playground/cal_manager.db get store
 
-This simply tells the system where to put the calibration database, the
-database that will keep track of the processed calibrations we are going to
-send to it. The ``store`` option in the database line above indicates that calibrations
-will be automatically added to the database as they are produced, without having to
-explicitly add them to the database by running ``caldb add``. 
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the
+database to what suits your needs and preferences.
+
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` your calibration product yourself (like what
+needed to be done in DRAGONS v3.0).
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
    Also, mind the dot in ``.dragons``.
@@ -89,13 +93,13 @@ Then initialize the calibration database:
 
     caldb init
 
-That's it! It is ready to use!
+That's it. It is ready to use.  You can check the configuration and confirm the
+settings with ``caldb config``.
 
-You can add processed calibrations with ``caldb add <filename>``, list the
-database content with ``caldb list``, and
-``caldb remove <filename>`` to remove a file **only** from the database
-(it will **not** remove the file on disk). For more the details, check the
-Recipe System Local Calibration Manager documentation, |caldb|.
+You can manually add processed calibrations with ``caldb add <filename>``, list
+the database content with ``caldb list``, and ``caldb remove <filename>`` to
+remove a file from the database (it will **not** remove the file on disk.)
+(See the "|caldb|" documentation for more details.)
 
 .. _organize_files:
 
@@ -146,10 +150,14 @@ on how you like to organize your raw data.
 The DRAGONS data reduction pipeline does not organize the data for you.  You
 have to do it. DRAGONS provides tools to help you with that.
 
-The first step is to create lists that will be used in the data reduction
-process. For that, we use "|dataselect|". Please, refer to the "|dataselect|"
-documentation for details regarding its usage.
+The first step is to create input file lists.  The tool "|dataselect|" helps
+with that.  It uses Astrodata tags and "|descriptors|" to select the files and
+send the filenames to a text file that can then be fed to "|reduce|".  (See the
+|astrodatauser| for information about Astrodata.)
 
+First, navigate to the ``playground`` directory in the unpacked data package::
+
+    cd <path>/gsaoiim_tutorial/playground
 
 A list for the flats
 --------------------
@@ -232,6 +240,21 @@ is 60 seconds. We also want to pass the output to a new list:
    $ dataselect --expr '(observation_class=="science" and exposure_time==60.)' ../playdata/*.fits -o science.list
 
 
+
+Bad Pixel Mask
+==============
+Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
+calibrations.  They
+are downloadable from the archive instead of being packaged with the software.
+They are automatically associated like any other calibrations.  This means that
+the user now must download the BPMs along with the other calibrations and add
+the BPMs to the local calibration manager.  To add the static BPM included in the
+data package to the local calibration database:
+
+::
+
+    caldb add ../playdata/bpm*.fits
+
 .. _process_flat_files:
 
 Create a Master Flat Field
@@ -248,24 +271,37 @@ follows:
 
    $ reduce @flats_Kshort.list
 
+The ``@`` character before the name of the input file is the "at-file" syntax.
+More details can be found in the |atfile| documentation.
 
-If you have not included the ``store`` option in your definition of the database
-directory, then add the flat to the calibration database:
+Because the database was given the "store" option in the ``dragonsrc`` file,
+the processed dark will be automatically added to the database at the end of
+the recipe.
 
-..  code-block:: bash
+.. note:: The file name of the output processed flat is the file name of the
+    first file in the list with ``_flat`` appended as a suffix.  This the
+    general naming scheme used by "|reduce|".
 
-   $ caldb add S20170505S0030_flat.fits
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
+
+   ``caldb add S20170505S0030_flat.fits``
 
 
-The master flat file is found in two places: inside the same folder where you
-ran ``reduce`` and inside the ``calibrations/processed_flats/`` folder, for
-safekeeping. Here is an example of a master flat:
+.. note::
+    The master flat will be saved in the same folder where |reduce| was
+    called *and* inside the ``./calibrations/processed_flat`` folder. The latter
+    location is to cache a copy of the file. This applies to all the processed
+    calibration.
+
+Here is an example of a master flat:
 
 .. figure:: _static/img/S20170505S0030_flat.png
    :align: center
 
    Master Flat - K-Short Band
-
 
 Note that this figure shows the masked pixels in white color but not all the
 detector features are masked. For example, the "Christmas Tree" on detector
@@ -284,10 +320,9 @@ flat field is still valid and will crop it to match the ROIs.
 
     $ reduce @std_9132.list
 
-.. note:: The ``reduce`` command will automatically align and stack the images. 
-      Therefore, it is no longer necessary to use the ``disco_stu`` tool for GSAOI
-      data.
-
+.. note:: The ``reduce`` command will automatically align and stack the images.
+      Therefore, it is no longer necessary to use the ``disco_stu`` tool for
+      GSAOI data.
 
 
 .. _processing_science_files:
@@ -312,7 +347,6 @@ sky frame.
       (Remember that when the source is extended, both parameters
       normally need to be turned off.)
 
-
 The sky frame comes from off-target sky observations.  We feed the pipeline
 all the on-target and off-target frames.  The software will split the
 on-target and the off-target appropriately using information in the headers.
@@ -326,9 +360,10 @@ for retrieval, we can run ``reduce`` on our science data.
 
 This command will generate flat corrected files, align them,
 stack them, and orient them such that North is up and East is left. The final
-image will have the name of the first file in the set, with the suffix ``_image``.
-The on-target files are the ones that have been flat corrected (``_flatCorrected``),
-and scaled (``_countsScaled``).  There should be nine of these.
+image will have the name of the first file in the set, with the suffix
+``_image``. The on-target files are the ones that have been flat corrected
+(``_flatCorrected``), and scaled (``_countsScaled``).  There should be nine
+of these.
 
 
 .. figure:: _static/img/S20170505S0095_image.png
@@ -339,7 +374,7 @@ and scaled (``_countsScaled``).  There should be nine of these.
 The figure above shows the final flat-corrected, aligned, and stacked frame.
 For absolute distortion correction and astrometry, ``reduce`` can use a
 reference catalog provided by the user.  Without a reference catalog, like
-above, only the relative distortion between the frames is accounted for. 
+above, only the relative distortion between the frames is accounted for.
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science

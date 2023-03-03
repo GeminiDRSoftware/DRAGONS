@@ -12,11 +12,15 @@ This tutorial covers the basics of reducing
 
 The next two sections explain what are the required software and the data set
 that we use throughout the tutorial.
-:ref:`Chapter 2: Data Reduction <command_line_data_reduction>` contains a
-quick example on how to reduce data using the DRAGONS command line tools.
-:ref:`Chapter 3: Reduction with API <api_data_reduction>` shows how we can
-reduce the data using DRAGONS packages from within Python.
 
+The reduction can be done in two different ways:
+
+* From the terminal using the command line.
+* From Python using the DRAGONS classes and functions.
+
+We show how to run the same reduction using both methods.
+
+* :ref:`offsetsky_example`
 
 .. _requirements:
 
@@ -69,22 +73,4 @@ will work in the subdirectory named ``gsaoiimg_tutorial/playground``.
           but if you really want to learn how to search for and retrieve the
           data yourself, see the step-by-step instructions in the appendix,
           :ref:`goadownload`.
-
-.. _about_data_set:
-
-About the dataset
-=================
-
-The table below contains a summary of the dataset downloaded in the previous
-section.  Note that for GSAOI, the dark current is low enough that there is
-no need to correct for it.
-
-+---------------+---------------------+--------------------------------+
-| Science       || S20170505S0095-110 || Kshort-band, on target, 60 s  |
-+---------------+---------------------+--------------------------------+
-| Flats         || S20170505S0030-044 || Lamp on, Kshort, for science  |
-|               || S20170505S0060-074 || Lamp off, Kshort, for science |
-+---------------+---------------------+--------------------------------+
-| Standard star || S20170504S0114-117 || Kshort, standard star, 30 s   |
-+---------------+---------------------+--------------------------------+
 
