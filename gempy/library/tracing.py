@@ -192,9 +192,11 @@ class Aperture:
             var = np.full_like(data[ix1:ix2], var_model.amplitude)
             var_mask = np.zeros_like(var, dtype=bool)
         else:
+            # straightening and resampling sky lines can create unmasked
+            # VAR=0 pixels that shouldn't be used in making the variance model
             mvar_init = models.Polynomial1D(degree=1)
             var_model, var_mask = fit_it(
-                mvar_init, np.ma.masked_where(mask.ravel(),
+                mvar_init, np.ma.masked_where(np.logical_or(mask, var == 0).ravel(),
                                               abs(data).ravel()), var.ravel())
             var_mask = var_mask.reshape(var.shape)[ix1:ix2]
             var = np.where(var_mask, var[ix1:ix2], var_model(data[ix1:ix2]))
