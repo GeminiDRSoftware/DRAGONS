@@ -24,7 +24,7 @@ The data used here is obtained in the Y-band.  Please check the
 :ref:`tips_and_tricks` section for information about the other bands,
 especially for K-band.
 
-The calibrations we use in this example include:
+The calibrations we use in this example are:
 
 * Darks for the science frames.
 * Flats, as a sequence of lamps-on and lamps-off exposures.

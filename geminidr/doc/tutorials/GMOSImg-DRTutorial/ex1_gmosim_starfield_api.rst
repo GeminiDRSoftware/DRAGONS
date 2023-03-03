@@ -301,7 +301,7 @@ We create the master flat field and add it to the calibration database as follow
     reduce_flats.runr()
 
 
-.. _api_process_fring_frame:
+.. _api_process_fringe_frame:
 
 Make Master Fringe Frame
 ========================

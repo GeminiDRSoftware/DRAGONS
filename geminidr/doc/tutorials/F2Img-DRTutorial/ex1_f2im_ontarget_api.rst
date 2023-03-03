@@ -44,7 +44,7 @@ First, navigate to your work directory in the unpacked data package.
 
 ::
 
-    cd <path>/gmosls_tutorial/playground
+    cd <path>/f2im_tutorial/playground
 
 The first steps are to import libraries, set up the calibration manager,
 and set the logger.
@@ -80,7 +80,7 @@ We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
     :lineno-start: 8
 
     from gempy.utils import logutils
-    logutils.config(file_name='f2_data_reduction.log')
+    logutils.config(file_name='f2im_data_reduction.log')
 
 
 .. _set_caldb_api:
@@ -161,7 +161,7 @@ directory.
     all_files.sort()
 
 The :meth:`~list.sort` method simply re-organize the list with the file names
-and is an optional, but recommended step. Before you carry on, you might want to do
+and is an optional, but  arecommended step. Before you carry on, you might want to do
 ``print(all_files)`` to check if they were properly read.
 
 We will search that list for files with specific characteristics.  We use

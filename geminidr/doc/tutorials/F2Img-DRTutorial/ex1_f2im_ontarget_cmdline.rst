@@ -59,8 +59,8 @@ Here is a copy of the table for quick reference.
 
 .. _setup_caldb:
 
-Set up the Local Calibration Manager
-====================================
+Set up the Calibration Service
+==============================
 
 DRAGONS comes with a local calibration manager that uses the same calibration
 association rules as the Gemini Observatory Archive. This allows "|reduce|"
@@ -161,7 +161,7 @@ send the filenames to a text file that can then be fed to "|reduce|".  (See the
 
 First, navigate to the ``playground`` directory in the unpacked data package::
 
-    cd <path>/gmosls_tutorial/playground
+    cd <path>/f2im_tutorial/playground
 
 Two lists for the darks
 -----------------------

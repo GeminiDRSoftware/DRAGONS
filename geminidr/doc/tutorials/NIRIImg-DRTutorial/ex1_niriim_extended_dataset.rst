@@ -14,7 +14,7 @@ as a dense field of stars.  The observation sequence uses an offset to a nearby
 blank portion of the sky to monitor the sky levels since there are no area in
 the science observation that is not "contaminated" by the galaxy.
 
-The calibrations we use for this example include:
+The calibrations we use for this example are:
 
 * BPM. The bad pixel masks are now found in the Gemini Science Archive
   instead of being packaged with the software. They are associated like the
