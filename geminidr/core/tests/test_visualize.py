@@ -11,6 +11,7 @@ import astrodata
 from astrodata.testing import download_from_archive
 from geminidr.core import primitives_visualize
 from geminidr.gmos.primitives_gmos_image import GMOSImage
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 
 
 single_aperture_data = [
@@ -89,6 +90,28 @@ def test_tile_arrays_does_not_raise_different_gain_warning_from_display(astrofak
     p.display()
     assert sum(["have different gains" in rec.msg for rec in caplog.records]) == 0
 
+def test_display_does_not_align_or_add_illum(astrofaker, caplog, monkeypatch):
+    ad = astrofaker.create('GMOS-N', ['IMAGE'])
+    ad.init_default_extensions(overscan=False)
+    p = GMOSLongslit([ad])
+
+    def mock_illum_throw(*args, **kwargs):
+        raise AssertionError("Method should not be called.")
+
+    # There is error recovery around the invocation of get_process_bpm, so we
+    # must track its invocation via a closure instead of relying on throwing to
+    # fail the test.
+    get_bpm_called = False
+    def mock_get_bpm_log_throw(*args, **kwargs):
+        nonlocal get_bpm_called
+        get_bpm_called = True
+        raise AssertionError("Method should not be called.")
+
+    monkeypatch.setattr(p, "addIllumMaskToDQ", mock_illum_throw)
+    monkeypatch.setattr(p.caldb, "get_processed_bpm", mock_get_bpm_log_throw)
+
+    p.display()
+    assert not get_bpm_called
 
 def test_tile_arrays_creates_average_read_noise(astrofaker):
     ad = astrofaker.create('GMOS-N', ['IMAGE'])
@@ -177,7 +200,6 @@ def create_inputs():
     """
     import glob
     import os
-    from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
     from gempy.utils import logutils
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals
