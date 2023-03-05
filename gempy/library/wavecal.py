@@ -354,6 +354,13 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
         # peak locations and line wavelengths of matched peaks/lines
         data["x"].append(fit1d.points[~fit1d.mask])
         data["y"].append(fit1d.image[~fit1d.mask])
+
+        # Get the data needed for the reference spectrum plot to be displayed
+        # in a separate plot in the interactive mode (so far this is GNIRS-only).
+        refplot_data = p._get_refplot_data(ad=ext, config=ui_params)
+        if refplot_data is not None:
+            input_data.update(refplot_data)
+
         data["meta"].append(input_data)
     return data
 
@@ -540,10 +547,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     min_lines = [int(x) for x in str(config.debug_min_lines).split(',')]
     best_score = np.inf
     arc_lines = linelist.wavelengths(in_vacuo=config.in_vacuo, units="nm")
-    if config.use_intens:
-        arc_weights = linelist.weights
-    else:
-        arc_weights = None
+    arc_weights = linelist.weights
     # Create an initial fit_1D object using the initial wavelength model
     # (always the first model in the init_models list) as a fallback in case
     # don't get a better solution. Since we can't create a fit_1D object

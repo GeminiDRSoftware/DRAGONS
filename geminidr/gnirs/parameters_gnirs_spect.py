@@ -25,7 +25,6 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), None,
                                    check=list_of_ints_check, optional=True)
-    use_intens = config.Field("Use line intensities in the line list (if any)?", bool, None, optional=True)
     def setDefaults(self):
         self.in_vacuo = True
 

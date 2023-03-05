@@ -4,9 +4,13 @@
 #                                                        primtives_gnirs_spect.py
 # ------------------------------------------------------------------------------
 import os
+import tempfile
+import numpy as np
 
 
 from importlib import import_module
+
+from astropy.convolution import convolve, Gaussian1DKernel
 
 from geminidr.core import Spect
 
@@ -34,6 +38,7 @@ class GNIRSSpect(Spect, GNIRS):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs_spect)
+        self.refplot_tempfile = None
 
     def standardizeWCS(self, adinputs=None, **params):
         """
@@ -179,7 +184,7 @@ class GNIRSSpect(Spect, GNIRS):
                         params["order"] = 3
                     self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
             else:
-                # works better with line lists made from ATRAN
+                # works better with ATRAN line lists
                 params["lsigma"] = 2
                 params["hsigma"] = 2
 
@@ -187,12 +192,7 @@ class GNIRSSpect(Spect, GNIRS):
                     params["debug_min_lines"] = 15
 
                 if params["absorption"] is True:
-                    # don't use the intensities provided in the telluric absorption line lists
-                    # for weight matching
-                    if params["use_intens"] is None:
-                        params["use_intens"] = False
-                        self.log.stdinfo(f'Parameter "use_intens" is set to None. Using use_intens={params["use_intens"]}')
-
+                    # Telluric absorption case
                     if params["order"] is None:
                         params["order"] = 1
                         self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
@@ -212,7 +212,7 @@ class GNIRSSpect(Spect, GNIRS):
                         self.log.stdinfo(f'Extracting spectrum from columns '
                                     f'[{params["center"]-params["nsum"]}:{params["center"]+params["nsum"]}]')
                 else:
-                    # Telluric emission
+                    # Telluric emission case
                     if params["order"] is None:
                         if ad.camera(pretty=True).startswith('Long') and \
                                 ad.disperser(pretty=True).startswith('111') and \
@@ -301,11 +301,15 @@ class GNIRSSpect(Spect, GNIRS):
             cam = ad.camera(pretty=True)
             cenwave = ad.central_wavelength(asMicrometers=True)
             if params["spectral_order"] is None:
-                if disp.startswith('111') and cam.startswith('Long') and \
-                        cenwave >= 1.65:
-                        params["spectral_order"] = 1
+                if 'ARC' in ad.tags:
+                    if disp.startswith('111') and cam.startswith('Long') and \
+                            cenwave >= 1.65:
+                            params["spectral_order"] = 1
+                    else:
+                        params["spectral_order"] = 2
                 else:
-                    params["spectral_order"] = 2
+                # sky line case
+                    params["spectral_order"] = 3
                 self.log.stdinfo(f'Parameter "spectral_order" is set to None. '
                                  f'Using spectral_order={params["spectral_order"]}')
 
@@ -318,6 +322,125 @@ class GNIRSSpect(Spect, GNIRS):
                  f'Using min_line_length={params["min_line_length"]}')
         adinputs = super().determineDistortion(adinputs, **params)
         return adinputs
+
+    def _get_refplot_data(self, ad=None, config=None):
+        """
+        Generates data necessary for displaying reference plot used to verify line
+        identification.
+
+        Since the reference spectrum stays unchanged when resetting the view or
+        reconstructing points, after generating the data for the plot gets saved to
+        a temporary file, that then is read whenever the spectrum is being reloaded.
+
+        So far this has been implemented only for the modes for which ATRAN model
+        spectra can be used as a reference:
+        - wavecal from telluric absorption in XJHK-bands;
+        - wavecal from telluric "emission" (which in fact is absence of absorption) in
+            L- and M-band.
+
+        Returns
+        -------
+        dict : all the information needed to construct the reference spectrum plot:
+        "refplot_spec" : two-column nd.array containing reference spectrum wavelengths
+                        (nm) and intensities
+        "refplot_linelist" : two-column nd.array containing line wavelengths (nm) and
+                            intensities
+        "refplot_name" : reference plot name string
+        "refplot_y_axis_label" : reference plot y-axis label string
+        """
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   self.inst_lookups).__file__)
+        if 'ARC' in ad.tags:
+            # Not yet implemented for arc spectra.
+            return None
+
+        else:
+            is_atran_spec = False
+            if config.absorption:
+                # Unconvolved ATRAN spectrum for XJHK-bands, wvl = 1000-2500nm,
+                # resampled to 0.02 nm.
+                # ATRAN model params: Alt: 14000ft, WV=2mm, ZA=48deg, R=0
+                is_atran_spec = True
+                ref_spec_file = "atran_1000-2500_uncolvolved_0_02_nm.dat"
+                sampling = 0.02
+                spec_start_wvl = 1000
+                refplot_y_axis_label = "Atmospheric transmission"
+
+            else:
+                filter_name = ad.filter_name(pretty=True)
+                if filter_name.startswith('M') or filter_name.startswith('L'):
+                    # Unconvolved inverse ATRAN spectrum for L and M bands,
+                    # wvl = 2800-6000nm, resampled to 0.02 nm.
+                    # ATRAN model params: Alt: 14000ft, WV=2mm, ZA=48deg, R=0
+                    is_atran_spec = True
+                    ref_spec_file="atran_2800-6000_uncolvolved_inverse_0_02_nm.dat"
+                    sampling = 0.02
+                    spec_start_wvl = 2800
+                    refplot_y_axis_label = "Inverse atm. transmission"
+                else:
+                    # Not yet implemented for wavecal from the OH emission lines in XJHK-bands.
+                    return None
+
+        if self.refplot_tempfile is None:
+            # Set the wavelength range of the reference spectrum at the observation's
+            # wvl range plus 10% on eah side.
+            spec_range = 1.2 * abs(ad.dispersion(asNanometers=True)) * 1024
+            central_wavelength = ad.central_wavelength(asNanometers=True)
+            start_wvl = central_wavelength - (0.5 * spec_range)
+            end_wvl = start_wvl + spec_range
+            resolution = self._get_resolution(ad)
+
+            linelist =self._get_arc_linelist(ad=ad,config=config).wavelengths(config.in_vacuo,
+                                                                              units="nm")
+            # Trim the line list to the wvl range of the reference spectrum
+            refplot_linelist = linelist[np.logical_and(linelist >= start_wvl,
+                                                       linelist <= end_wvl)]
+            if is_atran_spec:
+                refplot_name = f"ATRAN spectrum (WV=2mm, AM=1.5, Alt=14000ft, R={resolution})"
+                ref_spec_file_path = os.path.join(lookup_dir, ref_spec_file)
+                start_row = int((start_wvl - spec_start_wvl) / sampling)
+                nrows = int(spec_range / sampling)
+
+                # Read a portion of the unconvolved spectrum, then convolve to the resolution
+                # of the observation.
+                refplot_spec = np.loadtxt(ref_spec_file_path, skiprows=start_row,
+                                          max_rows=nrows+1)
+
+                # Smooth the reference spectrum with a Gaussian with a constant FWHM value,
+                # where FWHM = cenwave / resolving_power
+                fwhm = (central_wavelength / resolution) * (1 / sampling)
+                gauss_kernel = Gaussian1DKernel(fwhm / 2.35) # FWHM = 2.35 * std
+                refplot_spec[:,1] = convolve(refplot_spec[:,1], gauss_kernel,
+                                             boundary='extend')
+
+                # Get ref. spectrum intensities at the positions of lines in the line list
+                # (this is needed to determine the line label positions).
+                line_intens = []
+                for n, line in enumerate(refplot_linelist):
+                    subtracted = refplot_spec[:,0] - line
+                    min_index = np.argmin(np.abs(subtracted))
+                    line_intens.append(refplot_spec[min_index,1])
+                refplot_linelist = np.array([refplot_linelist, line_intens]).T
+
+                # Write the results to a temporary file, to be used when reloading the plot,
+                # so that we don't have to redo the calculations.
+                self.refplot_tempfile = tempfile.TemporaryFile()
+                np.save(self.refplot_tempfile, refplot_spec)
+                np.save(self.refplot_tempfile, refplot_linelist)
+                np.save(self.refplot_tempfile, refplot_name)
+
+            else:
+                # Not yet implemented for the modes not using ATRAN spectrum as reference.
+                return None
+        else:
+            # Read the precalculated data
+            self.refplot_tempfile.seek(0)
+            refplot_spec = np.load(self.refplot_tempfile)
+            refplot_linelist = np.load(self.refplot_tempfile)
+            refplot_name = np.load(self.refplot_tempfile)
+
+        return {"refplot_spec": refplot_spec, "refplot_linelist": refplot_linelist,
+                "refplot_name": refplot_name, "refplot_y_axis_label": refplot_y_axis_label}
 
 
     def _get_arc_linelist(self, waves=None, ad=None, config=None):
@@ -344,7 +467,7 @@ class GNIRSSpect(Spect, GNIRS):
 
             if config.absorption is True:
                 if resolution >= 10000:
-                    linelist = 'sky_absorp_XJHK_high_res_large.dat'
+                    linelist = 'sky_absorp_XJHK_high_res.dat'
                 elif (3000 <= resolution < 10000):
                     linelist = "sky_absorp_XJHK_med_res.dat"
                 elif (1000 <= resolution < 3000):

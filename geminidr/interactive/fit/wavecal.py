@@ -51,6 +51,19 @@ class WavelengthSolutionPanel(Fit1DPanel):
         else:
             self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
                                              'spectrum': meta["spectrum"]})
+        # Data for the reference plot
+        self.show_refplot = False
+        if not (meta.get("refplot_spec") is None or meta.get("refplot_linelist") is None):
+            self.show_refplot = True
+            self.refplot_spectrum = bm.ColumnDataSource({'wavelengths': meta["refplot_spec"][:,0],
+                                                'refplot_spectrum': meta["refplot_spec"][:,1]})
+            wlengths = meta["refplot_linelist"][:,0]
+            self.refplot_linelist = bm.ColumnDataSource({
+                                    'wavelengths': wlengths,
+                                    'intensities': meta["refplot_linelist"][:,1],
+                                    'labels': ["{:.2f}".format(w) for w in wlengths]})
+            self.refplot_y_axis_label = meta["refplot_y_axis_label"]
+            self.refplot_name = meta["refplot_name"]
 
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
@@ -193,7 +206,35 @@ class WavelengthSolutionPanel(Fit1DPanel):
         info_panel = InfoPanel(self.enable_regions, self.enable_user_masking)
         self.model.add_listener(info_panel.model_change_handler)
 
-        return [p_spectrum, identify_panel, info_panel.component,
+        # ATRAN or other reference spectrum plot
+        if self.show_refplot:
+            p_refplot = figure(plot_width=self.width, plot_height=int(self.height // 1.5),
+                                min_width=400, title=self.refplot_name,
+                                x_axis_label="Wavelength (nm)", y_axis_label=self.refplot_y_axis_label,
+                                tools = "pan,wheel_zoom,box_zoom,reset",
+                                output_backend="webgl",
+                                x_range=self.p_spectrum.x_range, y_range=None,
+                                min_border_left=80)
+            p_refplot.height_policy = 'fixed'
+            p_refplot.width_policy = 'fit'
+            p_refplot.sizing_mode = 'stretch_width'
+            p_refplot.step(x='wavelengths', y='refplot_spectrum', source=self.refplot_spectrum,
+                            line_width=1, color="gray", mode="center")
+            p_refplot.text(x='wavelengths', y= 'heights', text='labels',
+                            source=self.refplot_linelist, angle=0.5 * np.pi,
+                            text_color='gray',
+                            text_baseline='middle', text_align='right',
+                            text_font_size='8pt')
+            p_refplot.y_range.on_change("start", lambda attr, old, new:
+                                         self.update_refplot_label_heights())
+            p_refplot.y_range.on_change("end", lambda attr, old, new:
+                                         self.update_refplot_label_heights())
+            self.p_refplot = p_refplot
+
+            return [p_refplot, p_spectrum, identify_panel, info_panel.component,
+                p_main, p_supp]
+        else:
+            return [p_spectrum, identify_panel, info_panel.component,
                 p_main, p_supp]
 
     @staticmethod
@@ -234,6 +275,28 @@ class WavelengthSolutionPanel(Fit1DPanel):
         except TypeError:
             return self.spectrum.data["spectrum"][int(x + 0.5)] + padding
 
+    def refplot_label_height(self):
+        """
+        Provide a location for a wavelength label identifying a line
+        in the reference spectrum plot
+
+        Returns
+        -------
+        float/list : appropriate y value(s) for writing a label
+        """
+        try:
+            height = self.p_refplot.y_range.end - self.p_refplot.y_range.start
+        except TypeError:  # range is None, plot being initialized
+            # This is calculated on the basis that bokeh pads by 5% of the
+            # data range on each side
+            height = 44 / 29 * np.nanmax(self.refplot_linelist.data["intensities"])
+        if self.absorption:
+            padding = -0.05 * height
+        else:
+            padding = 0.35 * height
+        heights = self.refplot_linelist.data["intensities"] + padding
+        return heights
+
     def update_label_heights(self):
         """Simple callback to move the labels if the spectrum panel is resized"""
         self.model.data.data['heights'] = self.label_height(self.model.x)
@@ -244,6 +307,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] - lheight
             else:
                 self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
+
+    def update_refplot_label_heights(self):
+        """Simple callback to move the labels if the reference spectrum panel is resized"""
+        self.refplot_linelist.data['heights'] = self.refplot_label_height()
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
@@ -259,7 +326,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.model.data.data['nonlinear'] = y - linear_model(x)
         self.model.data.data['heights'] = self.label_height(x)
         self.model.data.data['lines'] = [wavestr(yy) for yy in y]
-
+        if self.show_refplot:
+            self.refplot_linelist.data['heights'] = self.refplot_label_height()
         self.model.evaluation.data['nonlinear'] = (
                 model.evaluation.data['model'] -
                 linear_model(model.evaluation.data['xlinspace']))
