@@ -16,6 +16,7 @@ DRAGONS - GSAOI Data Reduction Tutorial
    :caption: Table of Contents
 
    01_introduction
+   cal_service
    ex1_gsaoiim_offsetsky
    04_tips_and_tricks
    05_issues_and_limitations

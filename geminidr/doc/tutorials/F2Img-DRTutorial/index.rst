@@ -17,7 +17,8 @@ Reduction for Astronomy from Gemini Observatory North and South).
    :caption: Table of Contents
 
    01_introduction
-   ex1_f2im_ontarget.rst
+   cal_service
+   ex1_f2im_ontarget
    04_tips_and_tricks
    05_issues_and_limitations
 

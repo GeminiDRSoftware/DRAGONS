@@ -57,49 +57,12 @@ Here is a copy of the table for quick reference.
 Set up the Calibration Service
 ==============================
 
-DRAGONS comes with a local calibration manager that uses the same calibration
-association rules as the Gemini Observatory Archive. This allows "|reduce|"
-to make requests to a local light-weight database for matching **processed**
-calibrations when needed to reduce a dataset.
+.. important::  Remember to set up the calibration service.
 
-Let's set up the local calibration manager for this session.
+    Instructions to configure and use the calibration service are found in
+    :ref:`cal_service`, specifically the these sections:
+    :ref:`cal_service_config` and :ref:`cal_service_cmdline`.
 
-In ``~/.dragons/``, create or edit the configuration file ``dragonsrc`` as
-follow:
-
-.. code-block:: none
-
-    [calibs]
-    databases = ${path_to_my_data}/gsaoiimg_tutorial/playground/cal_manager.db get store
-
-The ``[calibs]`` section tells the system where to put the calibration database
-and how to name it.  Here we use ``cal_manager.db`` to match what was used in
-the pre-v3.1 version of DRAGONS, but you can now set the name of the
-database to what suits your needs and preferences.
-
-That database will keep track of the processed calibrations that we are going to
-send to it.  With the "get" and "store" options, the database will be used
-by DRAGONS to automatically *get* matching calibrations and to automatically
-*store* master calibrations that you produce.  If you remove the "store" option
-you will have to ``caldb add`` your calibration product yourself (like what
-needed to be done in DRAGONS v3.0).
-
-.. note:: The tilde (``~``) in the path above refers to your home directory.
-   Also, mind the dot in ``.dragons``.
-
-Then initialize the calibration database:
-
-.. code-block:: bash
-
-    caldb init
-
-That's it. It is ready to use.  You can check the configuration and confirm the
-settings with ``caldb config``.
-
-You can manually add processed calibrations with ``caldb add <filename>``, list
-the database content with ``caldb list``, and ``caldb remove <filename>`` to
-remove a file from the database (it will **not** remove the file on disk.)
-(See the "|caldb|" documentation for more details.)
 
 .. _organize_files:
 

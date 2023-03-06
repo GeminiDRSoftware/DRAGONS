@@ -7,7 +7,7 @@ Example 1 - Star field with dithers - Using the "Reduce" class
 **************************************************************
 
 A reduction can be initiated from the command line as shown in
-:ref:`dithered_cmdline` and it can also be done programmatically as we will
+:ref:`starfield_cmdline` and it can also be done programmatically as we will
 show here.  The classes and modules of the RecipeSystem can be
 accessed directly for those who want to write Python programs to drive their
 reduction.  In this example we replicate the
@@ -53,14 +53,12 @@ We first import the necessary modules and classes:
     import astrodata
     import gemini_instruments
     from recipe_system.reduction.coreReduce import Reduce
-    from recipe_system import cal_service
     from gempy.adlibrary import dataselect
 
 
 The ``dataselect`` module will be used to create file lists for the
 biases, the flats, the arcs, the standard, and the science observations.
-The ``cal_service`` package is our interface to the local calibration
-database. The ``Reduce`` class is used to set up and run the data
+The ``Reduce`` class is used to set up and run the data
 reduction.
 
 
@@ -81,58 +79,12 @@ We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
 Setting up the Calibration Service
 ----------------------------------
 
-DRAGONS comes with a local calibration manager
-that uses the same calibration association rules as the Gemini Observatory
-Archive.  This allows the ``Reduce`` instance to make requests to a local light-weight database for matching **processed**
-calibrations and BPMs when they are needed to reduce a dataset.
+.. important::  Remember to set up the calibration service.
 
-Let's set up the local calibration manager for this session.
+    Instructions to configure and use the calibration service are found in
+    :ref:`cal_service`, specifically the these sections:
+    :ref:`cal_service_config` and :ref:`cal_service_api`.
 
-In ``~/.dragons/``, edit the configuration file ``dragonsrc`` as follow::
-
-
-.. code-block:: none
-
-    [calibs]
-    databases = /path_to_my_data/gmosimg_tutorial_api/playground/cal_manager.db get store
-
-
-This tells the system where to put the calibration database. This
-database will keep track of the processed calibrations as we add them
-to it.
-
-The ``[calibs]`` section tells the system where to put the calibration database
-and how to name it.  Here we use ``cal_manager.db`` to match what was used in
-the pre-v3.1 version of DRAGONS, but you can now set the name of the
-database to what suits your needs and preferences.
-
-That database will keep track of the processed calibrations that we are going to
-send to it.  With the "get" and "store" options, the database will be used
-by DRAGONS to automatically *get* matching calibrations and to automatically
-*store* master calibrations that you produce.  If you remove the "store" option
-you will have to ``caldb add`` your calibration product yourself (like what
-needed to be done in DRAGONS v3.0).
-
-.. note:: The tilde (``~``) in the path above refers to your home directory.
-    Also, mind the dot in ``.dragons``.
-
-The calibration database is initialized and the calibration service is
-configured as follow:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 10
-
-    caldb = cal_service.set_local_database()
-    caldb.init()
-
-.. warning:: If the calibration database already exists, ``caldb.init()`` will
-             delete it and create a new, empty one.  Use ``wipe=False`` to
-             prevent that from happening.  (``wipe=False`` matches the
-             behavior of the command line ``caldb``).
-
-The calibration service is now ready to use. If you need more details,
-check the "|caldb|" documentation in the Recipe System User Manual.
 
 .. _api_create_file_lists:
 

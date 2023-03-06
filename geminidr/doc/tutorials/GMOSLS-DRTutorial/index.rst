@@ -17,6 +17,7 @@ Welcome to Tutorial Series - GMOS Longslit Data Reduction with DRAGONS
 
    01_overview
    02_datasets
+   cal_service
    ex1_gmosls_dithered
    05_tips_and_tricks
    06_issues_and_limitations
