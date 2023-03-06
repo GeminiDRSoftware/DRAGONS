@@ -248,6 +248,11 @@ class Reduce:
                 log.error("Reduce received an unhandled exception. Aborting ...")
                 log_traceback(log)
                 log.stdinfo("Writing final outputs ...")
+                try:
+                    for ad in p.streams['main']:
+                        ad.update_filename(suffix="_crash")
+                except:  # in case something has gone really wrong!
+                    log.stdinfo("Problem updating filenames")
                 self._write_final(p.streams['main'])
                 self._output_filenames = [ad.filename for ad in p.streams['main']]
                 raise
