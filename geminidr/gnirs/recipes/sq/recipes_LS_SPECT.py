@@ -38,7 +38,7 @@ def reduceScience(p):
     p.storeProcessedScience(suffix="_1D")
 
 
-def  makeWavelengthSolution(p):
+def  makeWavecalFromSkyEmission(p):
     """
     Process GNIRS longslist science in order to create wavelength and distortion
     solutions using sky emission lines.
@@ -58,13 +58,14 @@ def  makeWavelengthSolution(p):
     p.storeProcessedArc(force=True)
     p.writeOutputs()
 
-def  makeWavelengthSolutionFromAbsorption(p):
+def  makeWavecalFromSkyAbsorption(p):
     """
     Process GNIRS longslist science in order to create wavelength solution
     using telluric absorption in the target spectrum. Copy distortion model
     to the resulting calibration frame from the associated arc.
 
     Inputs are:
+      * raw science
       * processed arc
       * processed flat
     """

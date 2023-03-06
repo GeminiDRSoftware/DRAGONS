@@ -361,7 +361,7 @@ class GNIRSSpect(Spect, GNIRS):
                 # resampled to 0.02 nm.
                 # ATRAN model params: Alt: 14000ft, WV=2mm, ZA=48deg, R=0
                 is_atran_spec = True
-                ref_spec_file = "atran_1000-2500_uncolvolved_0_02_nm.dat"
+                ref_spec_file = "atran_1000-2500_uncolvolved.dat"
                 sampling = 0.02
                 spec_start_wvl = 1000
                 refplot_y_axis_label = "Atmospheric transmission"
@@ -373,7 +373,7 @@ class GNIRSSpect(Spect, GNIRS):
                     # wvl = 2800-6000nm, resampled to 0.02 nm.
                     # ATRAN model params: Alt: 14000ft, WV=2mm, ZA=48deg, R=0
                     is_atran_spec = True
-                    ref_spec_file="atran_2800-6000_uncolvolved_inverse_0_02_nm.dat"
+                    ref_spec_file="atran_2800-6000_uncolvolved_inverse.dat"
                     sampling = 0.02
                     spec_start_wvl = 2800
                     refplot_y_axis_label = "Inverse atm. transmission"
