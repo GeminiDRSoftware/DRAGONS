@@ -19,6 +19,11 @@ from astrodata.provenance import add_provenance
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from gwcs import coordinate_frames as cf
+from gwcs.utils import CoordinateFrameError
+from scipy.interpolate import interp1d
+from scipy.ndimage import binary_dilation
+
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
@@ -27,8 +32,6 @@ from gempy.library import tracing
 from gempy.library.filtering import ring_median_filter
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
-from scipy.interpolate import interp1d
-from scipy.ndimage import binary_dilation
 
 from . import parameters_preprocess
 
@@ -821,6 +824,23 @@ class Preprocess(PrimitivesBASE):
             log.stdinfo(f"{ad.filename}: dividing by the flat "
                          f"{flat.filename}{origin_str}")
             ad.divide(flat)
+
+            # Try to get a slit rectification model from the flat, and if one
+            # exists insert it before the pixels-to-world transform. Print a
+            # warning if one doesn't exist, but allow it to pass.
+            try:
+                rect_model = flat[0].wcs.get_transform('pixels', 'rectified')
+                rectified = True
+            except CoordinateFrameError:
+                log.warning(f"No rectification model found in {flat.filename}")
+                rectified = False
+
+            if rectified:
+                log.stdinfo(f"{ad.filename}: applying slit rectification model "
+                            f"from the flat {flat.filename}")
+                for ext in ad:
+                    ext.wcs.insert_frame(ext.wcs.input_frame, rect_model,
+                                         cf.Frame2D(name='rectified'))
 
             # Update the header and filename, copying QECORR keyword from flat
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
