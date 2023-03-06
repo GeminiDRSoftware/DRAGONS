@@ -97,7 +97,6 @@ def reduceStandard(p):
     p.attachWavelengthSolution()
     p.flatCorrect()
     p.QECorrect()
-    p.flagCosmicRays()
     p.distortionCorrect()
     p.findApertures(max_apertures=1)
     p.skyCorrectFromSlit()
