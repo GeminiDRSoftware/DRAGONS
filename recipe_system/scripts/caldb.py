@@ -217,7 +217,7 @@ class Dispatcher:
         localdb = self.db
         seendbs = list()
         while localdb is not None:
-            if isinstance(self.db, RemoteDB):
+            if isinstance(localdb, RemoteDB):
                 local = False
                 localdb = None
             else:
