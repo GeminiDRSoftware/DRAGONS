@@ -397,7 +397,7 @@ class KDTreeFitter(Fitter):
         self.statistic = result['fun']
         self.niter = result['nit']  # Number of iterations
         self.message = result['message']  # Message about why it terminated
-        self.status = result['status']  # Numeric return status (0 for 'good')
+        self.status = result['success']  # Numeric return status (0 for 'good')
         return model_copy
 
     @staticmethod
