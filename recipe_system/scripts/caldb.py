@@ -213,16 +213,16 @@ class Dispatcher:
             print("   NB: The database does not exist. Please initialize it.")
             print("       (Read the help message about 'init' command)")
         print()
-        # local = True
-        # localdb = self.db
-        # seendbs = list()
-        # while localdb is not None:
-        #     if isinstance(self.db, RemoteDB):
-        #         local = False
-        #         localdb = None
-        #     else:
-        #         seendbs.append(localdb)
-        #         localdb = self.db.nextdb if self.db.nextdb not in seendbs else None
+        local = True
+        localdb = self.db
+        seendbs = list()
+        while localdb is not None:
+            if isinstance(self.db, RemoteDB):
+                local = False
+                localdb = None
+            else:
+                seendbs.append(localdb)
+                localdb = self.db.nextdb if self.db.nextdb not in seendbs else None
         if local:
             print(isactive)
         else:
