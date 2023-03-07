@@ -196,13 +196,13 @@ class Dispatcher:
             print(f"\033[1mDRAGONS will fall back to legacy config, rc file {dragonsrc_location} not found\033[0m")
             print('')
 
-        local = True
+        all_local = True
         filenames = expand_filenames(deprecation_warning=False)
         print(f"Using configuration files: \033[1m{filenames}\033[0m")
         print('')
         for db in dbs:
             if db[0] != LocalDB:
-                local = False
+                all_local = False
             print(db[1])
             print(f"  Type:  {db[0].__name__}")
             print(f"  Get:   {db[2]['get_cal']}")
@@ -213,10 +213,7 @@ class Dispatcher:
             print("   NB: The database does not exist. Please initialize it.")
             print("       (Read the help message about 'init' command)")
         print()
-        if local:
-            print(isactive)
-        else:
-            print(inactive)
+        print(isactive if all_local else inactive)
 
 
 if __name__ == '__main__':
