@@ -201,7 +201,7 @@ class Dispatcher:
         print(f"Using configuration files: \033[1m{filenames}\033[0m")
         print('')
         for db in dbs:
-            if db[0] != LocalDB.__class__:
+            if db[0] != LocalDB:
                 local = False
             print(db[1])
             print(f"  Type:  {db[0].__name__}")
@@ -209,7 +209,7 @@ class Dispatcher:
             print(f"  Store: {db[2]['store_cal']}")
             print('')
         print(f"\nDatabase file: \033[1m{self.db.name}\033[0m")
-        if not exists(self.db.name):
+        if not exists(os.path.expanduser(self.db.name)):
             print("   NB: The database does not exist. Please initialize it.")
             print("       (Read the help message about 'init' command)")
         print()
