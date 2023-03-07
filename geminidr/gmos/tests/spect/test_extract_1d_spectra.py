@@ -65,7 +65,7 @@ def test_regression_on_extract_1d_spectra(ad, ref_ad_factory, change_working_dir
 
         p = primitives_gmos_spect.GMOSSpect([ad])
         p.viewer = geminidr.dormantViewer(p, None)
-        p.extractSpectra(method="standard", width=None, grow=10)
+        p.extractSpectra(method="aperture", width=None, grow=10)
         extracted_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(extracted_ad.filename)

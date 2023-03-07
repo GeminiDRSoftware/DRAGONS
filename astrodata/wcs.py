@@ -882,6 +882,10 @@ def create_new_image_projection(transform, new_center):
     xc, yc = transform.inverse(*current_center)
     xcnew, ycnew = transform.inverse(*new_center)
     xpole, ypole = transform.inverse(0, 90)
+    # astropy >=5.2 returns NaNs for a point not in the same hemisphere as
+    # the projection centre, so use the Celestial South Pole if required
+    if np.isnan(xpole) or np.isnan(ypole):
+        xpole, ypole = transform.inverse(0, -90)
     angle1 = np.arctan2(xpole - xc, ypole - yc)
     angle2 = np.arctan2(xpole - xcnew, ypole - ycnew)
     rotation = (angle1 - angle2) * 180 / np.pi

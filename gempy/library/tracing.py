@@ -155,7 +155,7 @@ class Aperture:
             apmask[i, slice(*limits)] = True
         return apmask if dispaxis == 0 else apmask.T
 
-    def standard_extraction(self, data, mask, var, aper_lower, aper_upper):
+    def aperture_extraction(self, data, mask, var, aper_lower, aper_upper):
         """Uniform extraction across an aperture of width pixels"""
         all_x1 = self._center_pixels + aper_lower
         all_x2 = self._center_pixels + aper_upper
@@ -193,9 +193,11 @@ class Aperture:
             var = np.full_like(data[ix1:ix2], var_model.amplitude)
             var_mask = np.zeros_like(var, dtype=bool)
         else:
+            # straightening and resampling sky lines can create unmasked
+            # VAR=0 pixels that shouldn't be used in making the variance model
             mvar_init = models.Polynomial1D(degree=1)
             var_model, var_mask = fit_it(
-                mvar_init, np.ma.masked_where(mask.ravel(),
+                mvar_init, np.ma.masked_where(np.logical_or(mask, var == 0).ravel(),
                                               abs(data).ravel()), var.ravel())
             var_mask = var_mask.reshape(var.shape)[ix1:ix2]
             var = np.where(var_mask, var[ix1:ix2], var_model(data[ix1:ix2]))
@@ -259,7 +261,7 @@ class Aperture:
                 break
 
     def extract(self, ext, width=None, aper_lower=None, aper_upper=None,
-                method='standard', dispaxis=None, viewer=None):
+                method='aperture', dispaxis=None, viewer=None):
         """
         Extract a 1D spectrum by following the model trace and extracting in
         an aperture of a given number of pixels.

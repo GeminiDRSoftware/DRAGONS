@@ -1,4 +1,4 @@
-# Copyright(c) 2017-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2017-2023 Association of Universities for Research in Astronomy, Inc.
 
 import numpy as np
 from datetime import datetime
@@ -9,8 +9,20 @@ from scipy import optimize, spatial
 from astropy.modeling import fitting, models, Model, FittableModel
 from astropy.modeling.fitting import (_validate_constraints,
                                       _validate_model,
-                                      _fitter_to_model_params,
-                                      _model_to_fit_params, Fitter)
+                                      Fitter)
+try:
+    # New public API in AstroPy 5.1:
+    from astropy.modeling.fitting import (fitter_to_model_params,
+                                          model_to_fit_params)
+except ImportError:  # pragma: no cover
+    # Earlier private API: The second of these returns 2 values instead of 3 in
+    # the new version; we could append the correct model bounds here by copying
+    # a small amount of code from AstroPy 5.1+, but the code below discards
+    # return values after the first one anyway:
+    from astropy.modeling.fitting import (
+        _fitter_to_model_params as fitter_to_model_params,
+        _model_to_fit_params as model_to_fit_params
+    )
 
 from astrodata import wcs as adwcs
 
@@ -165,7 +177,7 @@ class BruteLandscapeFitter(Fitter):
             landscape = self.mklandscape(ref_coords, sigma*scale, maxsig, landshape)
 
         farg = (model_copy, np.asanyarray(in_coords, dtype=float), landscape)
-        p0, _ = _model_to_fit_params(model_copy)
+        p0, *_ = model_to_fit_params(model_copy)
 
         ranges = []
         for p in model_copy.param_names:
@@ -191,7 +203,7 @@ class BruteLandscapeFitter(Fitter):
         # object: this is those were the bounds are equal (i.e. fixed param)
         fitted_params = self._opt_method(self.objective_function, ranges,
                                          farg, Ns=1, finish=None, **kwargs)
-        _fitter_to_model_params(model_copy, fitted_params)
+        fitter_to_model_params(model_copy, fitted_params)
         return model_copy
 
 
@@ -357,7 +369,7 @@ class KDTreeFitter(Fitter):
         tree = spatial.cKDTree(ref_coords)
         # avoid _convert_input since tree can't be coerced to a float
         farg = (model_copy, in_coords, tree)
-        p0, *_ = _model_to_fit_params(model_copy)
+        p0, *_ = model_to_fit_params(model_copy)
 
         arg_names = inspect.getfullargspec(self._opt_method).args
         args = [self.objective_function]
@@ -381,7 +393,7 @@ class KDTreeFitter(Fitter):
         result = self._opt_method(*args, **kwargs)
 
         fitted_params = result['x']
-        _fitter_to_model_params(model_copy, fitted_params)
+        fitter_to_model_params(model_copy, fitted_params)
         self.statistic = result['fun']
         self.niter = result['nit']  # Number of iterations
         self.message = result['message']  # Message about why it terminated

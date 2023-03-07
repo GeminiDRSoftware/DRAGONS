@@ -3,8 +3,7 @@
 from geminidr.core import parameters_standardize
 from gempy.library import config
 from astrodata import AstroData
-from geminidr.core import parameters_generic
-from geminidr.core import parameters_stack
+from geminidr.core import parameters_generic, parameters_spect, parameters_stack
 
 
 def flat_order_check(value):
@@ -31,6 +30,10 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True   # adds bridges in longslit full frame
 
+
+class extractSpectraConfig(parameters_spect.extractSpectraConfig):
+    def setDefaults(self):
+        self.method = "default"
 
 class makeSlitIllumConfig(config.Config):
     bins = config.Field("Total number of bins across the dispersion axis.",

@@ -176,9 +176,10 @@ class distortionCorrectConfig(parameters_generic.calRequirementConfig):
 class extractSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
     method = config.ChoiceField("Extraction method", str,
-                                allowed={"standard": "no weighting",
-                                         "optimal": "optimal extraction"},
-                                default="standard")
+                                allowed={"aperture": "no weighting",
+                                         "optimal": "optimal extraction",
+                                         "default": "use 'optimal' for STANDARDs, and 'aperture' otherwise"},
+                                default="aperture")
     width = config.RangeField("Width of extraction aperture (pixels)", float, None, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
     subtract_sky = config.Field("Subtract sky spectra if the data have not been sky corrected?", bool, True)

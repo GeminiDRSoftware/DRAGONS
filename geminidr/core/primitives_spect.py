@@ -2228,7 +2228,7 @@ class Spect(Resample):
             2D spectral images with a `.APERTURE` table.
         suffix : str
             Suffix to be added to output files.
-        method : {'standard', 'weighted', 'optimal'}
+        method : {'standard', optimal', 'default'}
             Extraction method.
         width : float or None
             Width of extraction aperture in pixels.
@@ -2357,12 +2357,17 @@ class Spect(Resample):
                                 pass
                             break
 
+                if method == "default":
+                    this_method = "optimal" if 'STANDARD' in ad.tags else "aperture"
+                else:
+                    this_method = method
+
                 for apnum, (aperture, *coords) in enumerate(zip(apertures, *wcs_coords), start=1):
                     log.stdinfo(f"    Extracting spectrum from aperture {apnum}")
                     self.viewer.width = 2
                     self.viewer.color = colors[(apnum-1) % len(colors)]
-                    ndd_spec = aperture.extract(ext, width=width,
-                                                method=method, viewer=self.viewer if debug else None)
+                    ndd_spec = aperture.extract(
+                        ext, width=width, method=this_method, viewer=self.viewer if debug else None)
 
                     # This whole (rather large) section is an attempt to ensure
                     # that sky apertures don't overlap with source apertures
@@ -2757,8 +2762,6 @@ class Spect(Resample):
 
                 # Set up the background and models to be blank initially:
                 background = np.zeros(ext.shape)
-                objfit = np.zeros(ext.shape)
-                skyfit = np.zeros(ext.shape)
 
                 # Fit the object spectrum:
                 if bkgmodel in ('both', 'object'):
@@ -2769,7 +2772,7 @@ class Spect(Resample):
                                     weights=weights,
                                     **fit_1D_params).evaluate()
                 else:
-                    objfit = np.zeros_like(data)
+                    objfit = np.zeros(ext.shape)
                 if debug:
                     ext.OBJFIT = objfit.copy()
 
@@ -2788,7 +2791,7 @@ class Spect(Resample):
                                     weights=weights,
                                     **fit_1D_params).evaluate()
                 else:
-                    skyfit = np.zeros_like(data)
+                    skyfit = np.zeros(ext.shape)
                 if debug:
                     ext.SKYFIT = skyfit
 
@@ -3555,8 +3558,7 @@ class Spect(Resample):
             dispaxis = ndim - 1 - dispaxis_wcs  # python sense
             # Store these values for later!
             refad = adinputs[0]
-            ref_coords = (refad.central_wavelength(asNanometers=True),
-                          refad.target_ra(), refad.target_dec())
+            ref_coords = refad[0].wcs(*((dim-1)/2 for dim in refad[0].shape))
             ref_pixels = [np.asarray(ad[0].wcs.invert(*ref_coords)[::-1])
                           for ad in adinputs]
             # Locations in frame of reference AD. The spectral axis is

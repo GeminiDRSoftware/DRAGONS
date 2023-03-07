@@ -600,7 +600,12 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
             log.error("Reduce received an unhandled exception. Aborting ...")
             log_traceback(log)
             log.stdinfo("Writing final outputs ...")
-            _write_final(p.streams['main'], suffix)
+            try:
+                for ad in p.streams['main']:
+                    ad.update_filename(suffix="_crash")
+            except:  # in case something has gone really wrong!
+                log.stdinfo("Problem updating filenames")
+            _write_final(p.streams['main'], None)
             _output_filenames = [ad.filename for ad in p.streams['main']]
             raise
 
