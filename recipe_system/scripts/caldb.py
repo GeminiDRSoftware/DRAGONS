@@ -196,37 +196,24 @@ class Dispatcher:
             print(f"\033[1mDRAGONS will fall back to legacy config, rc file {dragonsrc_location} not found\033[0m")
             print('')
 
-        local = True
+        all_local = True
         filenames = expand_filenames(deprecation_warning=False)
         print(f"Using configuration files: \033[1m{filenames}\033[0m")
         print('')
         for db in dbs:
-            if db[0] != LocalDB.__class__:
-                local = False
+            if db[0] != LocalDB:
+                all_local = False
             print(db[1])
             print(f"  Type:  {db[0].__name__}")
             print(f"  Get:   {db[2]['get_cal']}")
             print(f"  Store: {db[2]['store_cal']}")
             print('')
         print(f"\nDatabase file: \033[1m{self.db.name}\033[0m")
-        if not exists(self.db.name):
+        if not exists(os.path.expanduser(self.db.name)):
             print("   NB: The database does not exist. Please initialize it.")
             print("       (Read the help message about 'init' command)")
         print()
-        # local = True
-        # localdb = self.db
-        # seendbs = list()
-        # while localdb is not None:
-        #     if isinstance(self.db, RemoteDB):
-        #         local = False
-        #         localdb = None
-        #     else:
-        #         seendbs.append(localdb)
-        #         localdb = self.db.nextdb if self.db.nextdb not in seendbs else None
-        if local:
-            print(isactive)
-        else:
-            print(inactive)
+        print(isactive if all_local else inactive)
 
 
 if __name__ == '__main__':
