@@ -1,10 +1,10 @@
-.. ex1_gmosls_dithered_cmdline.rst
+.. ex2_gmosls_large_dither_cmdline.rst
 
-.. _dithered_cmdline:
+.. _cmdline_large_dither:
 
-****************************************************************************
-Example 1 - Longslit Dithered Point Source - Using the "reduce" command line
-****************************************************************************
+********************************************************************************
+Example 2 - Longslit large-dither point source - using the "reduce" command line
+********************************************************************************
 
 
 In this example we will reduce a GMOS longslit observation of a DB white
@@ -55,9 +55,9 @@ Configuring the interactive interface
 In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
 
     [interactive]
-    browser = your_preferred_browser
+    browser = your_prefered_browser
 
-The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
+The ``[interactive]`` section defines your prefered browser.  DRAGONS will open
 the interactive tools using that browser.  The allowed strings are "safari",
 "chrome", and "firefox".
 
@@ -113,29 +113,29 @@ First, let's see which biases we have for in our raw data directory.
 
     dataselect ../playdata/*.fits --tags BIAS | showd -d detector_roi_setting
 
-    -------------------------------------------------------------------
-    filename                                       detector_roi_setting
-    -------------------------------------------------------------------
-    ../playdata/example1/S20170825S0347.fits       Central Spectrum
-    ../playdata/example1/S20170825S0348.fits       Central Spectrum
-    ../playdata/example1/S20170825S0349.fits       Central Spectrum
-    ../playdata/example1/S20170825S0350.fits       Central Spectrum
-    ../playdata/example1/S20170825S0351.fits       Central Spectrum
-    ../playdata/example1/S20170826S0224.fits       Central Spectrum
-    ../playdata/example1/S20170826S0225.fits       Central Spectrum
-    ../playdata/example1/S20170826S0226.fits       Central Spectrum
-    ../playdata/example1/S20170826S0227.fits       Central Spectrum
-    ../playdata/example1/S20170826S0228.fits       Central Spectrum
-    ../playdata/example1/S20171021S0265.fits             Full Frame
-    ../playdata/example1/S20171021S0266.fits             Full Frame
-    ../playdata/example1/S20171021S0267.fits             Full Frame
-    ../playdata/example1/S20171021S0268.fits             Full Frame
-    ../playdata/example1/S20171021S0269.fits             Full Frame
-    ../playdata/example1/S20171023S0032.fits             Full Frame
-    ../playdata/example1/S20171023S0033.fits             Full Frame
-    ../playdata/example1/S20171023S0034.fits             Full Frame
-    ../playdata/example1/S20171023S0035.fits             Full Frame
-    ../playdata/example1/S20171023S0036.fits             Full Frame
+    ------------------------------------------------------
+    filename                          detector_roi_setting
+    ------------------------------------------------------
+    ../playdata/S20170825S0347.fits       Central Spectrum
+    ../playdata/S20170825S0348.fits       Central Spectrum
+    ../playdata/S20170825S0349.fits       Central Spectrum
+    ../playdata/S20170825S0350.fits       Central Spectrum
+    ../playdata/S20170825S0351.fits       Central Spectrum
+    ../playdata/S20170826S0224.fits       Central Spectrum
+    ../playdata/S20170826S0225.fits       Central Spectrum
+    ../playdata/S20170826S0226.fits       Central Spectrum
+    ../playdata/S20170826S0227.fits       Central Spectrum
+    ../playdata/S20170826S0228.fits       Central Spectrum
+    ../playdata/S20171021S0265.fits             Full Frame
+    ../playdata/S20171021S0266.fits             Full Frame
+    ../playdata/S20171021S0267.fits             Full Frame
+    ../playdata/S20171021S0268.fits             Full Frame
+    ../playdata/S20171021S0269.fits             Full Frame
+    ../playdata/S20171023S0032.fits             Full Frame
+    ../playdata/S20171023S0033.fits             Full Frame
+    ../playdata/S20171023S0034.fits             Full Frame
+    ../playdata/S20171023S0035.fits             Full Frame
+    ../playdata/S20171023S0036.fits             Full Frame
 
 
 We can see the two groups that differ on their ROI.  We can use that as a
@@ -143,8 +143,8 @@ search criterion for creating the list with |dataselect|
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags BIAS --expr='detector_roi_setting=="Central Spectrum"' -o biasesstd.lis
-    dataselect ../playdata/example1/*.fits --tags BIAS --expr='detector_roi_setting=="Full Frame"' -o biasessci.lis
+    dataselect ../playdata/*.fits --tags BIAS --expr='detector_roi_setting=="Central Spectrum"' -o biasesstd.lis
+    dataselect ../playdata/*.fits --tags BIAS --expr='detector_roi_setting=="Full Frame"' -o biasessci.lis
 
 
 A list for the flats
@@ -162,7 +162,7 @@ them all together.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags FLAT -o flats.lis
+    dataselect ../playdata/*.fits --tags FLAT -o flats.lis
 
 
 A list for the arcs
@@ -176,7 +176,7 @@ you find that you need more accurate sorting.  We do not need it here.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags ARC -o arcs.lis
+    dataselect ../playdata/*.fits --tags ARC -o arcs.lis
 
 
 A list for the spectrophotometric standard star
@@ -187,7 +187,7 @@ normally used at Gemini are in the DRAGONS list of recognized standards.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags STANDARD -o std.lis
+    dataselect ../playdata/*.fits --tags STANDARD -o std.lis
 
 
 A list for the science observations
@@ -202,15 +202,15 @@ inspect what we have we can use |dataselect| and |showd| together.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --xtags CAL | showd -d object
+    dataselect ../playdata/*.fits --xtags CAL | showd -d object
 
-    -----------------------------------------------------
-    filename                                       object
-    -----------------------------------------------------
-    ../playdata/example1/S20171022S0087.fits   J2145+0031
-    ../playdata/example1/S20171022S0089.fits   J2145+0031
-    ../playdata/example1/S20171022S0095.fits   J2145+0031
-    ../playdata/example1/S20171022S0097.fits   J2145+0031
+    --------------------------------------------
+    filename                              object
+    --------------------------------------------
+    ../playdata/S20171022S0087.fits   J2145+0031
+    ../playdata/S20171022S0089.fits   J2145+0031
+    ../playdata/S20171022S0095.fits   J2145+0031
+    ../playdata/S20171022S0097.fits   J2145+0031
 
 Here we only have one object from the same sequence.  We would not need any
 expression, just excluding calibrations would be sufficient.  But we demonstrate
@@ -218,7 +218,7 @@ here how one would specify the object name for a more surgical selection.
 
 ::
 
-    dataselect ../playdata/example3/*.fits --xtags CAL --expr='object=="J2145+0031"' -o sci.lis
+    dataselect ../playdata/*.fits --xtags CAL --expr='object=="J2145+0031"' -o sci.lis
 
 Bad Pixel Mask
 ==============
@@ -232,7 +232,7 @@ data package to the local calibration database:
 
 ::
 
-    caldb add ../playdata/example1/bpm*.fits
+    caldb add ../playdata/bpm*.fits
 
 
 Master Bias

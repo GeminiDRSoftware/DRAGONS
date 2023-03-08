@@ -31,7 +31,7 @@ The reduction can be done in two different ways:
 We show how to run the same reduction using both methods.
 
 * :ref:`dithered_example`
-
+* :ref:`large_dither_example`
 
 More examples will be added in the future.
 

@@ -1,10 +1,10 @@
-.. ex1_gmosls_dithered_api.rst
+.. ex2_gmosls_large_dither_api.rst
 
-.. _dithered_api:
+.. _api_large_dither:
 
-*********************************************************************
-Example 1 - Longslit Dithered Point Source - Using the "Reduce" class
-*********************************************************************
+*************************************************************************
+Example 2 - Longslit large-dither point source - using the "Reduce" class
+*************************************************************************
 
 A reduction can be initiated from the command line as shown in
 :ref:`dithered_cmdline` and it can also be done programmatically as we will
@@ -26,31 +26,28 @@ The dataset specific to this example is described in:
 
 Here is a copy of the table for quick reference.
 
-+---------------------+---------------------------------------------+
-| Science             || S20171022S0087,89 (515 nm)                 |
-|                     || S20171022S0095,97 (530 nm)                 |
-+---------------------+---------------------------------------------+
-| Science biases      || S20171021S0265-269                         |
-|                     || S20171023S0032-036                         |
-+---------------------+---------------------------------------------+
-| Science flats       || S20171022S0088 (515 nm)                    |
-|                     || S20171022S0096 (530 nm)                    |
-+---------------------+---------------------------------------------+
-| Science arcs        || S20171022S0092 (515 nm)                    |
-|                     || S20171022S0099 (530 nm)                    |
-+---------------------+---------------------------------------------+
-| Standard (LTT2415)  || S20170826S0160 (515 nm)                    |
-+---------------------+---------------------------------------------+
-| Standard biases     || S20170825S0347-351                         |
-|                     || S20170826S0224-228                         |
-+---------------------+---------------------------------------------+
-| Standard flats      || S20170826S0161 (515 nm)                    |
-+---------------------+---------------------------------------------+
-| Standard arc        || S20170826S0162 (515 nm)                    |
-+---------------------+---------------------------------------------+
-| BPM                 || bpm_20140601_gmos-s_Ham_22_full_12amp.fits |
-+---------------------+---------------------------------------------+
-
++---------------------+---------------------------------+
+| Science             || S20171022S0087,89 (515 nm)     |
+|                     || S20171022S0095,97 (530 nm)     |
++---------------------+---------------------------------+
+| Science biases      || S20171021S0265-269             |
+|                     || S20171023S0032-036             |
++---------------------+---------------------------------+
+| Science flats       || S20171022S0088 (515 nm)        |
+|                     || S20171022S0096 (530 nm)        |
++---------------------+---------------------------------+
+| Science arcs        || S20171022S0092 (515 nm)        |
+|                     || S20171022S0099 (530 nm)        |
++---------------------+---------------------------------+
+| Standard (LTT2415)  || S20170826S0160 (515 nm)        |
++---------------------+---------------------------------+
+| Standard biases     || S20170825S0347-351             |
+|                     || S20170826S0224-228             |
++---------------------+---------------------------------+
+| Standard flats      || S20170826S0161 (515 nm)        |
++---------------------+---------------------------------+
+| Standard arc        || S20170826S0162 (515 nm)        |
++---------------------+---------------------------------+
 
 Setting up
 ==========
@@ -132,7 +129,7 @@ directory.
     :linenos:
     :lineno-start: 15
 
-    all_files = glob.glob('../playdata/example1/*.fits')
+    all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
 
 We will search that list for files with specific characteristics.  We use
@@ -167,26 +164,26 @@ for the descriptor of interest, here ``detector_roi_setting``.
 
 ::
 
-    ../playdata/example1/S20170825S0347.fits    Central Spectrum
-    ../playdata/example1/S20170825S0348.fits    Central Spectrum
-    ../playdata/example1/S20170825S0349.fits    Central Spectrum
-    ../playdata/example1/S20170825S0350.fits    Central Spectrum
-    ../playdata/example1/S20170825S0351.fits    Central Spectrum
-    ../playdata/example1/S20170826S0224.fits    Central Spectrum
-    ../playdata/example1/S20170826S0225.fits    Central Spectrum
-    ../playdata/example1/S20170826S0226.fits    Central Spectrum
-    ../playdata/example1/S20170826S0227.fits    Central Spectrum
-    ../playdata/example1/S20170826S0228.fits    Central Spectrum
-    ../playdata/example1/S20171021S0265.fits    Full Frame
-    ../playdata/example1/S20171021S0266.fits    Full Frame
-    ../playdata/example1/S20171021S0267.fits    Full Frame
-    ../playdata/example1/S20171021S0268.fits    Full Frame
-    ../playdata/example1/S20171021S0269.fits    Full Frame
-    ../playdata/example1/S20171023S0032.fits    Full Frame
-    ../playdata/example1/S20171023S0033.fits    Full Frame
-    ../playdata/example1/S20171023S0034.fits    Full Frame
-    ../playdata/example1/S20171023S0035.fits    Full Frame
-    ../playdata/example1/S20171023S0036.fits    Full Frame
+    ../playdata/S20170825S0347.fits    Central Spectrum
+    ../playdata/S20170825S0348.fits    Central Spectrum
+    ../playdata/S20170825S0349.fits    Central Spectrum
+    ../playdata/S20170825S0350.fits    Central Spectrum
+    ../playdata/S20170825S0351.fits    Central Spectrum
+    ../playdata/S20170826S0224.fits    Central Spectrum
+    ../playdata/S20170826S0225.fits    Central Spectrum
+    ../playdata/S20170826S0226.fits    Central Spectrum
+    ../playdata/S20170826S0227.fits    Central Spectrum
+    ../playdata/S20170826S0228.fits    Central Spectrum
+    ../playdata/S20171021S0265.fits    Full Frame
+    ../playdata/S20171021S0266.fits    Full Frame
+    ../playdata/S20171021S0267.fits    Full Frame
+    ../playdata/S20171021S0268.fits    Full Frame
+    ../playdata/S20171021S0269.fits    Full Frame
+    ../playdata/S20171023S0032.fits    Full Frame
+    ../playdata/S20171023S0033.fits    Full Frame
+    ../playdata/S20171023S0034.fits    Full Frame
+    ../playdata/S20171023S0035.fits    Full Frame
+    ../playdata/S20171023S0036.fits    Full Frame
 
 We can clearly see the two groups of biases above.  Let's split them into
 two lists.
@@ -275,10 +272,10 @@ On line 37, remember that the second argument contains the tags to **include**
 
 ::
 
-    ../playdata/example1/S20171022S0087.fits    J2145+0031
-    ../playdata/example1/S20171022S0089.fits    J2145+0031
-    ../playdata/example1/S20171022S0095.fits    J2145+0031
-    ../playdata/example1/S20171022S0097.fits    J2145+0031
+    ../playdata/S20171022S0087.fits    J2145+0031
+    ../playdata/S20171022S0089.fits    J2145+0031
+    ../playdata/S20171022S0095.fits    J2145+0031
+    ../playdata/S20171022S0097.fits    J2145+0031
 
 In this case we only have one target.  If we had more than one, we would need
 several lists and we could use the ``object`` descriptor in an expression.  We
