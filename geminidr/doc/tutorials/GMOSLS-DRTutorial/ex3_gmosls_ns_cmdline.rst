@@ -1,18 +1,18 @@
-.. ex1_gmosls_dithered_cmdline.rst
+.. ex3_gmosls_ns_cmdline.rst
 
-.. _dithered_cmdline:
+.. _ns_cmdline:
 
-****************************************************************************
-Example 1 - Longslit Dithered Point Source - Using the "reduce" command line
-****************************************************************************
+**************************************************************************
+Example 3 - Nod-and-Shuffle Point Source - Using the "reduce" command line
+**************************************************************************
 
 
-In this example we will reduce a GMOS longslit observation of a DB white
-dwarf candidate using the "|reduce|" command that is operated directly from
+In this example we will reduce a GMOS longslit nod-and-shuffle observation of
+a quasar using the "|reduce|" command that is operated directly from
 the unix shell. Just open a terminal and load the DRAGONS conda environment
 to get started.
 
-This observation dithers along the slit and along the dispersion axis.
+This observation dithers along the dispersion axis.
 
 The dataset
 ===========
@@ -21,33 +21,31 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`datadithered`.
+    :ref:`ns_dataset`.
 
 Here is a copy of the table for quick reference.
 
 +---------------------+---------------------------------------------+
-| Science             || S20171022S0087,89 (515 nm)                 |
-|                     || S20171022S0095,97 (530 nm)                 |
+| Science             || N20190926S0130-32 (700 nm)                 |
+|                     || N20190926S0137-39 (710 nm)                 |
 +---------------------+---------------------------------------------+
-| Science biases      || S20171021S0265-269                         |
-|                     || S20171023S0032-036                         |
+| Science biases      || N20190926S0230-234                         |
 +---------------------+---------------------------------------------+
-| Science flats       || S20171022S0088 (515 nm)                    |
-|                     || S20171022S0096 (530 nm)                    |
+| Science flats       || N20190926S0129,133 (700 nm)                |
+|                     || N20190926S0136,140 (710 nm)                |
 +---------------------+---------------------------------------------+
-| Science arcs        || S20171022S0092 (515 nm)                    |
-|                     || S20171022S0099 (530 nm)                    |
+| Science arcs        || N20190926S0134 (700 nm)                    |
+|                     || N20190926S0135 (710 nm)                    |
 +---------------------+---------------------------------------------+
-| Standard (LTT2415)  || S20170826S0160 (515 nm)                    |
+| Standard (G191B2B)  || N20190902S0046 (700 nm)                    |
 +---------------------+---------------------------------------------+
-| Standard biases     || S20170825S0347-351                         |
-|                     || S20170826S0224-228                         |
+| Standard biases     || N20190902S0089-093                         |
 +---------------------+---------------------------------------------+
-| Standard flats      || S20170826S0161 (515 nm)                    |
+| Standard flats      || N20190902S0047 (700 nm)                    |
 +---------------------+---------------------------------------------+
-| Standard arc        || S20170826S0162 (515 nm)                    |
+| Standard arc        || N20190902S0062 (700 nm)                    |
 +---------------------+---------------------------------------------+
-| BPM                 || bpm_20140601_gmos-s_Ham_22_full_12amp.fits |
+| BPM                 || bpm_20170306_gmos-n_Ham_12_full_12amp.fits |
 +---------------------+---------------------------------------------+
 
 Configuring the interactive interface
@@ -102,40 +100,30 @@ standard.
 We can use |dataselect| to select biases for each ROIs.
 
 Given the data that we have in the ``playdata`` directory, we can create
-our GMOS-S bias list using the tags and an expression that uses the ROI
+our GMOS-N bias list using the tags and an expression that uses the ROI
 settings. Remember, this will always depend on what you have in your raw data
 directory.  For easier selection criteria, you might want to keep raw data
 from different programs in different directories.
 
-First, let's see which biases we have for in our raw data directory.
+Let's see which biases we have for in our raw data directory.
 
 ::
 
-    dataselect ../playdata/*.fits --tags BIAS | showd -d detector_roi_setting
+    dataselect ../playdata/example3/*.fits --tags BIAS | showd -d detector_roi_setting
 
-    -------------------------------------------------------------------
-    filename                                       detector_roi_setting
-    -------------------------------------------------------------------
-    ../playdata/example1/S20170825S0347.fits       Central Spectrum
-    ../playdata/example1/S20170825S0348.fits       Central Spectrum
-    ../playdata/example1/S20170825S0349.fits       Central Spectrum
-    ../playdata/example1/S20170825S0350.fits       Central Spectrum
-    ../playdata/example1/S20170825S0351.fits       Central Spectrum
-    ../playdata/example1/S20170826S0224.fits       Central Spectrum
-    ../playdata/example1/S20170826S0225.fits       Central Spectrum
-    ../playdata/example1/S20170826S0226.fits       Central Spectrum
-    ../playdata/example1/S20170826S0227.fits       Central Spectrum
-    ../playdata/example1/S20170826S0228.fits       Central Spectrum
-    ../playdata/example1/S20171021S0265.fits             Full Frame
-    ../playdata/example1/S20171021S0266.fits             Full Frame
-    ../playdata/example1/S20171021S0267.fits             Full Frame
-    ../playdata/example1/S20171021S0268.fits             Full Frame
-    ../playdata/example1/S20171021S0269.fits             Full Frame
-    ../playdata/example1/S20171023S0032.fits             Full Frame
-    ../playdata/example1/S20171023S0033.fits             Full Frame
-    ../playdata/example1/S20171023S0034.fits             Full Frame
-    ../playdata/example1/S20171023S0035.fits             Full Frame
-    ../playdata/example1/S20171023S0036.fits             Full Frame
+    ---------------------------------------------------------------
+    filename                                   detector_roi_setting
+    ---------------------------------------------------------------
+    ../playdata/example3/N20190902S0089.fits       Central Spectrum
+    ../playdata/example3/N20190902S0090.fits       Central Spectrum
+    ../playdata/example3/N20190902S0091.fits       Central Spectrum
+    ../playdata/example3/N20190902S0092.fits       Central Spectrum
+    ../playdata/example3/N20190902S0093.fits       Central Spectrum
+    ../playdata/example3/N20190926S0230.fits             Full Frame
+    ../playdata/example3/N20190926S0231.fits             Full Frame
+    ../playdata/example3/N20190926S0232.fits             Full Frame
+    ../playdata/example3/N20190926S0233.fits             Full Frame
+    ../playdata/example3/N20190926S0234.fits             Full Frame
 
 
 We can see the two groups that differ on their ROI.  We can use that as a
@@ -143,8 +131,8 @@ search criterion for creating the list with |dataselect|
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags BIAS --expr='detector_roi_setting=="Central Spectrum"' -o biasesstd.lis
-    dataselect ../playdata/example1/*.fits --tags BIAS --expr='detector_roi_setting=="Full Frame"' -o biasessci.lis
+    dataselect ../playdata/example3/*.fits --tags BIAS --expr='detector_roi_setting=="Central Spectrum"' -o biasesstd.lis
+    dataselect ../playdata/example3/*.fits --tags BIAS --expr='detector_roi_setting=="Full Frame"' -o biasessci.lis
 
 
 A list for the flats
@@ -153,16 +141,12 @@ The GMOS longslit flats are not normally stacked.   The default recipe does
 not stack the flats.  This allows us to use only one list of the flats.  Each
 will be reduced individually, never interacting with the others.
 
-If you have multiple programs and you want to reduce only the flats for that
-program, you might want to use the ``program_id`` descriptor in the ``--expr``
-expression.
-
-Here, we have only one set of flats, so we will just gather
-them all together.
+The flats used for nod-and-shuffle are normal flats.  The DRAGONS recipe will
+"double" the flat and apply it to each beam.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags FLAT -o flats.lis
+    dataselect ../playdata/example3/*.fits --tags FLAT -o flats.lis
 
 
 A list for the arcs
@@ -176,7 +160,7 @@ you find that you need more accurate sorting.  We do not need it here.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags ARC -o arcs.lis
+    dataselect ../playdata/example3/*.fits --tags ARC -o arcs.lis
 
 
 A list for the spectrophotometric standard star
@@ -187,7 +171,7 @@ normally used at Gemini are in the DRAGONS list of recognized standards.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags STANDARD -o std.lis
+    dataselect ../playdata/example3/*.fits --tags STANDARD -o std.lis
 
 
 A list for the science observations
@@ -202,23 +186,26 @@ inspect what we have we can use |dataselect| and |showd| together.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --xtags CAL | showd -d object
+    dataselect ../playdata/example3/*.fits --xtags CAL | showd -d object
 
-    -----------------------------------------------------
-    filename                                       object
-    -----------------------------------------------------
-    ../playdata/example1/S20171022S0087.fits   J2145+0031
-    ../playdata/example1/S20171022S0089.fits   J2145+0031
-    ../playdata/example1/S20171022S0095.fits   J2145+0031
-    ../playdata/example1/S20171022S0097.fits   J2145+0031
+    --------------------------------------------------
+    filename                                    object
+    --------------------------------------------------
+    ../playdata/example3/N20190926S0130.fits   J013943
+    ../playdata/example3/N20190926S0131.fits   J013943
+    ../playdata/example3/N20190926S0132.fits   J013943
+    ../playdata/example3/N20190926S0137.fits   J013943
+    ../playdata/example3/N20190926S0138.fits   J013943
+    ../playdata/example3/N20190926S0139.fits   J013943
+
 
 Here we only have one object from the same sequence.  We would not need any
-expression, just excluding calibrations would be sufficient.  But we demonstrate
-here how one would specify the object name for a more surgical selection.
+expression, just excluding calibrations is sufficient.
 
 ::
 
-    dataselect ../playdata/example3/*.fits --xtags CAL --expr='object=="J2145+0031"' -o sci.lis
+    dataselect ../playdata/example3/*.fits --xtags CAL -o sci.lis
+
 
 Bad Pixel Mask
 ==============
@@ -232,7 +219,7 @@ data package to the local calibration database:
 
 ::
 
-    caldb add ../playdata/example1/bpm*.fits
+    caldb add ../playdata/example3/bpm*.fits
 
 
 Master Bias
@@ -247,10 +234,10 @@ to the database at the end of the recipe.
     reduce @biasesstd.lis
     reduce @biasessci.lis
 
-The master biases are ``S20170825S0347_bias.fits`` and ``S20171021S0265_bias.fits``;
-this information is in both the terminal log and the log file.  The ``@`` character
-before the name of the input file is the "at-file" syntax. More details can be found in
-the |atfile| documentation.
+The master biases are ``N20190902S0089_bias.fits`` and
+``N20190926S0230_bias.fits``; this information is in both the terminal log
+and the log file.  The ``@`` character before the name of the input file is
+the "at-file" syntax. More details can be found in the |atfile| documentation.
 
 .. note:: The file name of the output processed bias is the file name of the
     first file in the list with ``_bias`` appended as a suffix.  This the
@@ -284,42 +271,25 @@ calibration manager.
 
     reduce @flats.lis
 
-The primitive ``normalizeFlat``, used in the recipe, has an interactive mode.
-To activate the interactive mode:
-
-::
-
-    reduce @flats.lis -p interactive=True
-
-The interactive tools are introduced in section :ref:`interactive`.
-
 
 Processed Arc - Wavelength Solution
 ===================================
 GMOS longslit arc can be obtained at night with the observation sequence,
 if requested by the program, but are often obtained at the end of the night
-or the following afternoon instead. In this example, the arcs have been obtained at night, as part of
-the sequence. Like the spectroscopic flats, they are not
-stacked which means that they can be sent to reduce all together and will
-be reduced individually.
+or the following afternoon instead. In this example, the arcs have been
+obtained at night, as part of the sequence. Like the spectroscopic flats,
+they are not stacked which means that they can be sent to reduce all together
+and will be reduced individually.
 
-The wavelength solution is automatically calculated and has been found to be
-quite reliable.  There might be cases where it fails; inspect the
-``*_mosaic.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
-logs to confirm a good solution.
+The wavelength solution is automatically calculated and the algorithm has
+been found to be quite reliable.  There might be cases where it fails;
+inspect the ``*_mosaic.pdf`` plot and the RMS of
+``determineWavelengthSolution`` in the logs to confirm a good solution.
 
 ::
 
     reduce @arcs.lis
 
-The primitive ``determineWavelengthSolution``, used in the recipe, has an
-interactive mode. To activate the interactive mode:
-
-::
-
-    reduce @arcs.lis -p interactive=True
-
-The interactive tools are introduced in section :ref:`interactive`.
 
 
 Processed Standard - Sensitivity Function
@@ -345,32 +315,9 @@ configuration file.
 
     reduce @std.lis
 
-Four primitives in the default recipe for spectrophotometric standard have
-an interactive interface: ``skyCorrectFromSlit``, ``findApertures``,
-``traceApertures``, and ``calculateSensitivity``.  To activate the interactive
-mode for all four:
-
-::
-
-    reduce @std.lis -p interactive=True
-
-Since the standard star spectrum is bright and strong, and the exposure short,
-it is somewhat unlikely that interactivity will be needed for the sky
-subtraction, or finding and tracing the spectrum.  The fitting of the
-sensitivity function however can sometimes benefit from little adjustment.
-
-To activate the interactive mode **only** for the measurement of the
-sensitivity function:
-
-::
-
-    reduce @std.lis -p calculateSensitivity:interactive=True
-
-The interactive tools are introduced in section :ref:`interactive`.
-
 .. note:: If you wish to inspect the spectrum::
 
-    dgsplot S20170826S0160_standard.fits 1
+    dgsplot N20190902S0046_standard.fits 1
 
    where ``1`` is the aperture #1, the brightest target.
    To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
@@ -382,20 +329,14 @@ The interactive tools are introduced in section :ref:`interactive`.
 
 Science Observations
 ====================
-The science target is a DB white dwarf candidate.  The sequence has four images
-that were dithered spatially and along the dispersion axis.  DRAGONS will
-register the four images in both directions, align and stack them before
-extracting the 1-D spectrum.
-
-.. note::  In this observation, there is only one source to extract.  If there
-   were multiple sources in the slit, regardless of whether they are of
-   interest to the program, DRAGONS will locate them, trace them, and extract
-   them automatically. Each extracted spectrum is stored in an individual
-   extension in the output multi-extension FITS file.
+The science target is a quasar.  The sequence has six images in two groups
+that were dithered along the dispersion axis.  DRAGONS will
+remove the sky from the six images using the nod-and-shuffle beams.  The six
+images will be register and stack before extraction.
 
 This is what one raw image looks like.
 
-.. image:: _graphics/rawscience.png
+.. image:: _graphics/rawscience_ns.png
    :width: 600
    :alt: raw science image
 
@@ -408,23 +349,24 @@ science observations and extract the 1-D spectrum.
 
     reduce @sci.lis
 
-This produces a 2-D spectrum (``S20171022S0087_2D.fits``) which has been
+This produces a 2-D spectrum (``N20190926S0130_2D.fits``) which has been
 bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
-distortion, sky-subtracted, and stacked.  It also produces the 1-D spectrum
-(``S20171022S0087_1D.fits``) extracted from that 2-D spectrum.  The 1-D
-spectrum is flux calibrated with the sensitivity function from the
-spectrophotometric standard. The 1-D spectra are stored as 1-D FITS images in
-extensions of the output Multi-Extension FITS file.
+distortion, sky-subtracted, the beams combined, and then all frames stacked.
+It also produces the 1-D spectrum (``N20190926S0130_1D.fits``) extracted
+from that 2-D spectrum.  The 1-D spectrum is flux calibrated with the
+sensitivity function from the spectrophotometric standard. The 1-D spectra
+are stored as 1-D FITS images in extensions of the output Multi-Extension
+FITS file.
 
-This is what the 2-D spectrum looks like.
+This is what the 2-D spectrum looks like.  Only the middle section is valid.
 
 ::
 
-    reduce -r display S20171022S0087_2D.fits
+    reduce -r display N20190926S0130_2D.fits
 
-.. image:: _graphics/2Dspectrum.png
+.. image:: _graphics/2Dspectrum_ns.png
    :width: 600
-   :alt: 2D stacked spectrum
+   :alt: 2D stacked nod-and-shuffle spectrum
 
 The apertures found are listed in the log for the ``findApertures`` primitive,
 just before the call to ``traceApertures``.  Information about the apertures
@@ -436,31 +378,28 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
 ::
 
-    dgsplot S20171022S0087_1D.fits 1
+    dgsplot N20190926S0130_1D.fits 1
 
-.. image:: _graphics/1Dspectrum.png
+.. image:: _graphics/1Dspectrum_ns.png
    :width: 600
    :alt: 1D spectrum
-
-To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
-script, see Tips and Tricks :ref:`plot_1d`.
 
 If you need an ascii representation of the spectum, you can use the primitive
 ``write1DSpectra`` to extract the values from the FITS file.
 
 ::
 
-    reduce -r write1DSpectra S20171022S0087_1D.fits
+    reduce -r write1DSpectra N20190926S0130_1D.fits
 
 The primitive outputs in the various formats offered by ``astropy.Table``.  To
 see the list, use |showpars|.
 
 ::
 
-    showpars S20171022S0087_1D.fits write1DSpectra
+    showpars N20190926S0130_1D.fits write1DSpectra
 
 To use a different format, set the ``format`` parameters.
 
 ::
 
-    reduce -r write1DSpectra -p format=ascii.ecsv extension='ecsv' S20171022S0087_1D.fits
+    reduce -r write1DSpectra -p format=ascii.ecsv extension='ecsv' N20190926S0130_1D.fits
