@@ -7,12 +7,11 @@ Example 2 - Longslit large-dither point source - using the "reduce" command line
 ********************************************************************************
 
 
-In this example we will reduce a GMOS longslit observation of a DB white
-dwarf candidate using the "|reduce|" command that is operated directly from
-the unix shell. Just open a terminal and load the DRAGONS conda environment
+In this example, we will reduce a GMOS longslit observation of `ORC J0102-2450 <https://ui.adsabs.harvard.edu/abs/2021MNRAS.505L..11K/abstract>`_, 
+an Odd Radio Circle, using the "|reduce|" command that is operated directly from the unix shell. Just open a terminal and load the DRAGONS conda environment
 to get started.
 
-This observation dithers along the slit and along the dispersion axis.
+This observation dithers along the dispersion axis by several tens of nanometer.
 
 The dataset
 ===========
@@ -21,33 +20,36 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`datadithered`.
+    :ref:`data_large_dither`.
 
 Here is a copy of the table for quick reference.
 
 +---------------------+---------------------------------------------+
-| Science             || S20171022S0087,89 (515 nm)                 |
-|                     || S20171022S0095,97 (530 nm)                 |
+| Science             || S20220611S0717 (705 nm)                    |
+|                     || S20220611S0716 (795 nm)                    |
 +---------------------+---------------------------------------------+
-| Science biases      || S20171021S0265-269                         |
-|                     || S20171023S0032-036                         |
+| Science biases      || S20220610S0182-186                         |
+|                     || S20220611S0827,829,830,832,834             |
 +---------------------+---------------------------------------------+
-| Science flats       || S20171022S0088 (515 nm)                    |
-|                     || S20171022S0096 (530 nm)                    |
+| Science flats       || S20220611S0718 (705 nm)                    |
+|                     || S20220611S0715 (795 nm)                    |
 +---------------------+---------------------------------------------+
-| Science arcs        || S20171022S0092 (515 nm)                    |
-|                     || S20171022S0099 (530 nm)                    |
+| Science arcs        || S20220611S0782 (705 nm)                    |
+|                     || S20220611S0779 (795 nm)                    |
 +---------------------+---------------------------------------------+
-| Standard (LTT2415)  || S20170826S0160 (515 nm)                    |
+| Standard (LTT7379)  || S20220608S0098 (705 nm)                    |
+|                     || S20220608S0101 (795 nm)                    |
 +---------------------+---------------------------------------------+
-| Standard biases     || S20170825S0347-351                         |
-|                     || S20170826S0224-228                         |
+| Standard biases     || S20220608S0186-190                         |
+|                     || S20220609S0206-210                         |
 +---------------------+---------------------------------------------+
-| Standard flats      || S20170826S0161 (515 nm)                    |
+| Standard flats      || S20220608S0099 (705 nm)                    |
+|                     || S20220608S0100 (795 nm)                    |
 +---------------------+---------------------------------------------+
-| Standard arc        || S20170826S0162 (515 nm)                    |
+| Standard arc        || S20220608S0124 (705 nm)                    |
+|                     || S20220608S0125 (795 nm)                    |
 +---------------------+---------------------------------------------+
-| BPM                 || bpm_20140601_gmos-s_Ham_22_full_12amp.fits |
+| BPM                 || bpm_20220128_gmos-s_Ham_22_full_12amp.fits |
 +---------------------+---------------------------------------------+
 
 Configuring the interactive interface
@@ -67,14 +69,14 @@ Set up the Local Calibration Manager
 .. important::  Remember to set up the calibration service.
 
     Instructions to configure and use the calibration service are found in
-    :ref:`cal_service`, specifically the these sections:
+    :ref:`cal_service`, specifically these sections:
     :ref:`cal_service_config` and :ref:`cal_service_cmdline`.
 
 
 Create file lists
 =================
 
-This data set contains science and calibration frames. For some programs, it
+This dataset contains science and calibration frames. For some programs, it
 could contain different observed targets and different exposure times depending
 on how you like to organize your raw data.
 
@@ -99,52 +101,51 @@ obtained using different regions-of-interest (ROI).  So we will need two master
 biases, one "Full Frame" for the science and one "Central Spectrum" for the
 standard.
 
-We can use |dataselect| to select biases for each ROIs.
+We can use |dataselect| to select biases for each ROI.
 
-Given the data that we have in the ``playdata`` directory, we can create
+Given the data that we have in the ``playdata/example2`` directory, we can create
 our GMOS-S bias list using the tags and an expression that uses the ROI
 settings. Remember, this will always depend on what you have in your raw data
 directory.  For easier selection criteria, you might want to keep raw data
 from different programs in different directories.
 
-First, let's see which biases we have for in our raw data directory.
+First, let's see which biases we have for the different ROIs in our raw data directory.
 
 ::
 
-    dataselect ../playdata/*.fits --tags BIAS | showd -d detector_roi_setting
+    dataselect ../playdata/example2/*.fits --tags BIAS | showd -d detector_roi_setting
 
-    ------------------------------------------------------
-    filename                          detector_roi_setting
-    ------------------------------------------------------
-    ../playdata/S20170825S0347.fits       Central Spectrum
-    ../playdata/S20170825S0348.fits       Central Spectrum
-    ../playdata/S20170825S0349.fits       Central Spectrum
-    ../playdata/S20170825S0350.fits       Central Spectrum
-    ../playdata/S20170825S0351.fits       Central Spectrum
-    ../playdata/S20170826S0224.fits       Central Spectrum
-    ../playdata/S20170826S0225.fits       Central Spectrum
-    ../playdata/S20170826S0226.fits       Central Spectrum
-    ../playdata/S20170826S0227.fits       Central Spectrum
-    ../playdata/S20170826S0228.fits       Central Spectrum
-    ../playdata/S20171021S0265.fits             Full Frame
-    ../playdata/S20171021S0266.fits             Full Frame
-    ../playdata/S20171021S0267.fits             Full Frame
-    ../playdata/S20171021S0268.fits             Full Frame
-    ../playdata/S20171021S0269.fits             Full Frame
-    ../playdata/S20171023S0032.fits             Full Frame
-    ../playdata/S20171023S0033.fits             Full Frame
-    ../playdata/S20171023S0034.fits             Full Frame
-    ../playdata/S20171023S0035.fits             Full Frame
-    ../playdata/S20171023S0036.fits             Full Frame
-
+    ---------------------------------------------------------------
+    filename                                   detector_roi_setting
+    ---------------------------------------------------------------
+    ../playdata/example2/S20220608S0186.fits       Central Spectrum
+    ../playdata/example2/S20220608S0187.fits       Central Spectrum
+    ../playdata/example2/S20220608S0188.fits       Central Spectrum
+    ../playdata/example2/S20220608S0189.fits       Central Spectrum
+    ../playdata/example2/S20220608S0190.fits       Central Spectrum
+    ../playdata/example2/S20220609S0206.fits       Central Spectrum
+    ../playdata/example2/S20220609S0207.fits       Central Spectrum
+    ../playdata/example2/S20220609S0208.fits       Central Spectrum
+    ../playdata/example2/S20220609S0209.fits       Central Spectrum
+    ../playdata/example2/S20220609S0210.fits       Central Spectrum
+    ../playdata/example2/S20220610S0182.fits             Full Frame
+    ../playdata/example2/S20220610S0183.fits             Full Frame
+    ../playdata/example2/S20220610S0184.fits             Full Frame
+    ../playdata/example2/S20220610S0185.fits             Full Frame
+    ../playdata/example2/S20220610S0186.fits             Full Frame
+    ../playdata/example2/S20220611S0827.fits             Full Frame
+    ../playdata/example2/S20220611S0829.fits             Full Frame
+    ../playdata/example2/S20220611S0830.fits             Full Frame
+    ../playdata/example2/S20220611S0832.fits             Full Frame
+    ../playdata/example2/S20220611S0834.fits             Full Frame
 
 We can see the two groups that differ on their ROI.  We can use that as a
 search criterion for creating the list with |dataselect|
 
 ::
 
-    dataselect ../playdata/*.fits --tags BIAS --expr='detector_roi_setting=="Central Spectrum"' -o biasesstd.lis
-    dataselect ../playdata/*.fits --tags BIAS --expr='detector_roi_setting=="Full Frame"' -o biasessci.lis
+    dataselect ../playdata/example2/*.fits --tags BIAS --expr='detector_roi_setting=="Central Spectrum"' -o biasesstd.lis
+    dataselect ../playdata/example2/*.fits --tags BIAS --expr='detector_roi_setting=="Full Frame"' -o biasessci.lis
 
 
 A list for the flats
@@ -162,7 +163,7 @@ them all together.
 
 ::
 
-    dataselect ../playdata/*.fits --tags FLAT -o flats.lis
+    dataselect ../playdata/example2/*.fits --tags FLAT -o flats.lis
 
 
 A list for the arcs
@@ -176,7 +177,7 @@ you find that you need more accurate sorting.  We do not need it here.
 
 ::
 
-    dataselect ../playdata/*.fits --tags ARC -o arcs.lis
+    dataselect ../playdata/example2/*.fits --tags ARC -o arcs.lis
 
 
 A list for the spectrophotometric standard star
@@ -187,7 +188,7 @@ normally used at Gemini are in the DRAGONS list of recognized standards.
 
 ::
 
-    dataselect ../playdata/*.fits --tags STANDARD -o std.lis
+    dataselect ../playdata/example2/*.fits --tags STANDARD -o std.lis
 
 
 A list for the science observations
@@ -202,15 +203,13 @@ inspect what we have we can use |dataselect| and |showd| together.
 
 ::
 
-    dataselect ../playdata/*.fits --xtags CAL | showd -d object
+    dataselect ../playdata/example2/*.fits --xtags CAL | showd -d object
 
-    --------------------------------------------
-    filename                              object
-    --------------------------------------------
-    ../playdata/S20171022S0087.fits   J2145+0031
-    ../playdata/S20171022S0089.fits   J2145+0031
-    ../playdata/S20171022S0095.fits   J2145+0031
-    ../playdata/S20171022S0097.fits   J2145+0031
+    -------------------------------------------------
+    filename                                   object
+    -------------------------------------------------
+    ../playdata/example2/S20220611S0716.fits     ORC5
+    ../playdata/example2/S20220611S0717.fits     ORC5
 
 Here we only have one object from the same sequence.  We would not need any
 expression, just excluding calibrations would be sufficient.  But we demonstrate
@@ -218,21 +217,20 @@ here how one would specify the object name for a more surgical selection.
 
 ::
 
-    dataselect ../playdata/*.fits --xtags CAL --expr='object=="J2145+0031"' -o sci.lis
+    dataselect ../playdata/example2/*.fits --xtags CAL --expr='object=="ORC5"' -o sci.lis
 
 Bad Pixel Mask
 ==============
 Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
-calibrations.  They
-are downloadable from the archive instead of being packaged with the software.
-They are automatically associated like any other calibrations.  This means that
+calibrations. They are downloadable from the archive instead of being packaged with the software.
+They are automatically associated like any other calibrations. This means that
 the user now must download the BPMs along with the other calibrations and add
 the BPMs to the local calibration manager.  To add the static BPM included in the
 data package to the local calibration database:
 
 ::
 
-    caldb add ../playdata/bpm*.fits
+    caldb add ../playdata/example2/bpm*.fits
 
 
 Master Bias
@@ -247,13 +245,13 @@ to the database at the end of the recipe.
     reduce @biasesstd.lis
     reduce @biasessci.lis
 
-The master biases are ``S20170825S0347_bias.fits`` and ``S20171021S0265_bias.fits``;
+The master biases are ``S20220608S0186_bias.fits`` and ``S20220610S0182_bias.fits``;
 this information is in both the terminal log and the log file.  The ``@`` character
 before the name of the input file is the "at-file" syntax. More details can be found in
 the |atfile| documentation.
 
 .. note:: The file name of the output processed bias is the file name of the
-    first file in the list with ``_bias`` appended as a suffix.  This the
+    first file in the list with ``_bias`` appended as a suffix.  This is the
     general naming scheme used by "|reduce|".
 
 .. note:: If you wish to inspect the processed calibrations before adding them
@@ -266,7 +264,7 @@ the |atfile| documentation.
 
 Master Flat Field
 =================
-GMOS longslit flat field are normally obtained at night along with the
+GMOS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.  The
 matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
@@ -276,7 +274,7 @@ Because of the flexure, GMOS longslit flat field are not stacked.  Each is
 reduced and used individually.  The default recipe takes that into account.
 
 We can send all the flats, regardless of characteristics, to |reduce| and each
-will be reduce individually.  When a calibration is needed, in this case, a
+will be reduced individually.  When a calibration is needed, in this case, a
 master bias, the best match will be obtained automatically from the local
 calibration manager.
 
@@ -298,15 +296,14 @@ Processed Arc - Wavelength Solution
 ===================================
 GMOS longslit arc can be obtained at night with the observation sequence,
 if requested by the program, but are often obtained at the end of the night
-or the following afternoon instead. In this example, the arcs have been obtained at night, as part of
-the sequence. Like the spectroscopic flats, they are not
-stacked which means that they can be sent to reduce all together and will
+or the following afternoon instead. In this example, the arcs have been obtained at night, 
+as part of the sequence. Like the spectroscopic flats, they are not
+stacked, which means that they can be sent to reduce all together and will
 be reduced individually.
 
 The wavelength solution is automatically calculated and has been found to be
-quite reliable.  There might be cases where it fails; inspect the
-``*_mosaic.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
-logs to confirm a good solution.
+quite reliable.  There might be cases where it fails; inspect the RMS of 
+``determineWavelengthSolution`` in the logs to confirm a good solution.
 
 ::
 
@@ -327,12 +324,11 @@ Processed Standard - Sensitivity Function
 The GMOS longslit spectrophotometric standards are normally taken when there
 is a hole in the queue schedule, often when the weather is not good enough
 for science observations.  One standard per configuration, per program is
-the norm.  If you dither along the dispersion axis, most likely only one
-of the positions will have been used for the spectrophotometric standard.
-This is normal for baseline calibrations at Gemini.  The standard is used
-to calculate the sensitivity function.  It has been shown that a difference of
-10 or so nanometers in central wavelength setting does not significantly impact
-the spectrophotometric calibration.
+the norm. For a large dither along the dispersion axis, i.e., a difference 
+in central wavelength much greater than about 10 nm, a spectrophotometric standard should be 
+taken at each of those positions to calculate the respective sensitvity functions. 
+The latter will be used for spectrophotometric calibration of the science observations 
+at the corresponding central wavelengths. 
 
 The reduction of the standard will be using a BPM, a master bias, a master flat,
 and a processed arc.  If those have been added to the local calibration
@@ -358,6 +354,9 @@ Since the standard star spectrum is bright and strong, and the exposure short,
 it is somewhat unlikely that interactivity will be needed for the sky
 subtraction, or finding and tracing the spectrum.  The fitting of the
 sensitivity function however can sometimes benefit from little adjustment.
+
+There is a calculateSensitivity:resampling parameter which will interpolate between the specphot data to give you more datapoints to fit. This is just a linear interpolation so obviously the new datapoints are made up and not real, but if the specphot has a smooth spectrum (as virtually all of them do) these new points aren't far from the truth and so you may get a better result.
+
 
 To activate the interactive mode **only** for the measurement of the
 sensitivity function:
