@@ -332,7 +332,7 @@ Science Observations
 The science target is a quasar.  The sequence has six images in two groups
 that were dithered along the dispersion axis.  DRAGONS will
 remove the sky from the six images using the nod-and-shuffle beams.  The six
-images will be register and stack before extraction.
+images will be register and stacked before extraction.
 
 This is what one raw image looks like.
 

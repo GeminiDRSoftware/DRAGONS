@@ -1,19 +1,26 @@
-.. ex1_gmosls_dithered_api.rst
+.. ex4_gmosls_nsred_api.rst
 
-.. _dithered_api:
+.. _nsred_api:
 
-*********************************************************************
-Example 1 - Longslit Dithered Point Source - Using the "Reduce" class
-*********************************************************************
+******************************************************************************
+Example 4 - Nod-and-Shuffle Correct for Extra Order - Using the "Reduce" class
+******************************************************************************
 
 A reduction can be initiated from the command line as shown in
-:ref:`dithered_cmdline` and it can also be done programmatically as we will
+:ref:`nsred_cmdline` and it can also be done programmatically as we will
 show here.  The classes and modules of the RecipeSystem can be
 accessed directly for those who want to write Python programs to drive their
 reduction.  In this example we replicate the
-command line version of Example 1 but using the Python
+command line version of Example 4 but using the Python
 programmatic interface. What is shown here could be packaged in modules for
 greater automation.
+
+In this example we will reduce a GMOS longslit nod-and-shuffle observation of
+a high redshift quasar.  The particularity here is that the setting is quite
+red and the second order shows up in the spectrum. The configuration uses the
+OG515 blocking filter and the second order light appears at 1030nm. We will
+show how to recognize the effect and then how to not include the light from
+that extra order using the interactive tools.
 
 The dataset
 ===========
@@ -22,35 +29,35 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`datadithered`.
+    :ref:`nsred_dataset`.
 
 Here is a copy of the table for quick reference.
 
-+---------------------+---------------------------------------------+
-| Science             || S20171022S0087,89 (515 nm)                 |
-|                     || S20171022S0095,97 (530 nm)                 |
-+---------------------+---------------------------------------------+
-| Science biases      || S20171021S0265-269                         |
-|                     || S20171023S0032-036                         |
-+---------------------+---------------------------------------------+
-| Science flats       || S20171022S0088 (515 nm)                    |
-|                     || S20171022S0096 (530 nm)                    |
-+---------------------+---------------------------------------------+
-| Science arcs        || S20171022S0092 (515 nm)                    |
-|                     || S20171022S0099 (530 nm)                    |
-+---------------------+---------------------------------------------+
-| Standard (LTT2415)  || S20170826S0160 (515 nm)                    |
-+---------------------+---------------------------------------------+
-| Standard biases     || S20170825S0347-351                         |
-|                     || S20170826S0224-228                         |
-+---------------------+---------------------------------------------+
-| Standard flats      || S20170826S0161 (515 nm)                    |
-+---------------------+---------------------------------------------+
-| Standard arc        || S20170826S0162 (515 nm)                    |
-+---------------------+---------------------------------------------+
-| BPM                 || bpm_20140601_gmos-s_Ham_22_full_12amp.fits |
-+---------------------+---------------------------------------------+
-
++---------------------+--------------------------------------------+
+| Science             || N20080830S0261 (900 nm)                   |
+|                     || N20080830S0262 (890 nm)                   |
+|                     || N20080830S0265 (880 nm)                   |
++---------------------+--------------------------------------------+
+| Science biases      || N20080830S0527-531                        |
++---------------------+--------------------------------------------+
+| Science flats       || N20080830S0260 (900 nm)                   |
+|                     || N20080830S0263 (890 nm)                   |
+|                     || N20080830S0264 (880 nm)                   |
++---------------------+--------------------------------------------+
+| Science arcs        || N20080830S0491 (900 nm)                   |
+|                     || N20080830S0492 (890 nm)                   |
+|                     || N20080830S0493 (880 nm)                   |
++---------------------+--------------------------------------------+
+| Standard (G191B2B)  || N20190902S0046 (900 nm)                   |
++---------------------+--------------------------------------------+
+| Standard biases     || N20081011S0313-317                        |
++---------------------+--------------------------------------------+
+| Standard flats      || N20081010S0534 (900 nm)                   |
++---------------------+--------------------------------------------+
+| Standard arc        || N20081010S0552 (900 nm)                   |
++---------------------+--------------------------------------------+
+| BPM                 || bpm_20010801_gmos-n_EEV_22_full_3amp.fits |
++---------------------+--------------------------------------------+
 
 Setting up
 ==========
@@ -132,7 +139,7 @@ directory.
     :linenos:
     :lineno-start: 9
 
-    all_files = glob.glob('../playdata/example1/*.fits')
+    all_files = glob.glob('../playdata/example4/*.fits')
     all_files.sort()
 
 We will search that list for files with specific characteristics.  We use
@@ -167,26 +174,16 @@ for the descriptor of interest, here ``detector_roi_setting``.
 
 ::
 
-    ../playdata/example1/S20170825S0347.fits    Central Spectrum
-    ../playdata/example1/S20170825S0348.fits    Central Spectrum
-    ../playdata/example1/S20170825S0349.fits    Central Spectrum
-    ../playdata/example1/S20170825S0350.fits    Central Spectrum
-    ../playdata/example1/S20170825S0351.fits    Central Spectrum
-    ../playdata/example1/S20170826S0224.fits    Central Spectrum
-    ../playdata/example1/S20170826S0225.fits    Central Spectrum
-    ../playdata/example1/S20170826S0226.fits    Central Spectrum
-    ../playdata/example1/S20170826S0227.fits    Central Spectrum
-    ../playdata/example1/S20170826S0228.fits    Central Spectrum
-    ../playdata/example1/S20171021S0265.fits    Full Frame
-    ../playdata/example1/S20171021S0266.fits    Full Frame
-    ../playdata/example1/S20171021S0267.fits    Full Frame
-    ../playdata/example1/S20171021S0268.fits    Full Frame
-    ../playdata/example1/S20171021S0269.fits    Full Frame
-    ../playdata/example1/S20171023S0032.fits    Full Frame
-    ../playdata/example1/S20171023S0033.fits    Full Frame
-    ../playdata/example1/S20171023S0034.fits    Full Frame
-    ../playdata/example1/S20171023S0035.fits    Full Frame
-    ../playdata/example1/S20171023S0036.fits    Full Frame
+    ../playdata/example4/N20080830S0527.fits    Full Frame
+    ../playdata/example4/N20080830S0528.fits    Full Frame
+    ../playdata/example4/N20080830S0529.fits    Full Frame
+    ../playdata/example4/N20080830S0530.fits    Full Frame
+    ../playdata/example4/N20080830S0531.fits    Full Frame
+    ../playdata/example4/N20081011S0313.fits    Central Spectrum
+    ../playdata/example4/N20081011S0314.fits    Central Spectrum
+    ../playdata/example4/N20081011S0315.fits    Central Spectrum
+    ../playdata/example4/N20081011S0316.fits    Central Spectrum
+    ../playdata/example4/N20081011S0317.fits    Central Spectrum
 
 We can clearly see the two groups of biases above.  Let's split them into
 two lists.
@@ -211,6 +208,17 @@ two lists.
 
 .. note::  All expressions need to be processed with ``dataselect.expr_parser``.
 
+A list for the darks
+--------------------
+Nod-and-shuffle darks are required for the reduction of nod-and-shuffle
+observations obtained with the EEV CCDs (this case) and the ee2vv CCDs.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 28
+
+    darks = dataselect.select_data(all_files, ['DARK'])
+
 
 A list for the flats
 --------------------
@@ -218,9 +226,12 @@ The GMOS longslit flats are not normally stacked.   The default recipe does
 not stack the flats.  This allows us to use only one list of the flats.  Each
 will be reduced individually, never interacting with the others.
 
+The flats used for nod-and-shuffle are normal flats.  The DRAGONS recipe will
+"double" the flat and apply it to each beam.
+
 .. code-block:: python
     :linenos:
-    :lineno-start: 28
+    :lineno-start: 29
 
     flats = dataselect.select_data(all_files, ['FLAT'])
 
@@ -233,7 +244,7 @@ reduce individually, never interacting with the others.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 29
+    :lineno-start: 30
 
     arcs = dataselect.select_data(all_files, ['ARC'])
 
@@ -247,7 +258,7 @@ at Gemini are in that table.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 30
+    :lineno-start: 31
 
     stdstar = dataselect.select_data(all_files, ['STANDARD'])
 
@@ -262,7 +273,7 @@ First, let's have a look at the list of objects.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 31
+    :lineno-start: 32
 
     all_science = dataselect.select_data(all_files, [], ['CAL'])
     for sci in all_science:
@@ -275,10 +286,9 @@ On line 37, remember that the second argument contains the tags to **include**
 
 ::
 
-    ../playdata/example1/S20171022S0087.fits    J2145+0031
-    ../playdata/example1/S20171022S0089.fits    J2145+0031
-    ../playdata/example1/S20171022S0095.fits    J2145+0031
-    ../playdata/example1/S20171022S0097.fits    J2145+0031
+    ../playdata/example4/N20080830S0261.fits    433819088548
+    ../playdata/example4/N20080830S0262.fits    433819088548
+    ../playdata/example4/N20080830S0265.fits    433819088548
 
 In this case we only have one target.  If we had more than one, we would need
 several lists and we could use the ``object`` descriptor in an expression.  We
@@ -287,14 +297,9 @@ will do that here to show how it would be done.  To be clear, the
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 35
+    :lineno-start: 36
 
-    scitarget = dataselect.select_data(
-        all_files,
-        [],
-        ['CAL'],
-        dataselect.expr_parser('object=="J2145+0031"')
-    )
+    scitarget = dataselect.select_data(all_files, [], ['CAL'])
 
 Bad Pixel Mask
 ==============
@@ -308,7 +313,7 @@ data package to the local calibration database:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 41
+    :lineno-start: 37
 
     for bpm in dataselect.select_data(all_files, ['BPM']):
         caldb.add_cal(bpm)
@@ -329,7 +334,7 @@ of the recipe.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 43
+    :lineno-start: 39
 
     reduce_biasstd = Reduce()
     reduce_biassci = Reduce()
@@ -338,8 +343,8 @@ of the recipe.
     reduce_biasstd.runr()
     reduce_biassci.runr()
 
-The two master biases are: ``S20170825S0347_bias.fits`` and
-``S20171021S0265_bias.fits``.
+The two master biases are: ``N20081011S0313_bias.fits`` and
+``N20080830S0527_bias.fits``.
 
 .. note:: The file name of the output processed bias is the file name of the
     first file in the list with ``_bias`` appended as a suffix.  This is the
@@ -354,6 +359,26 @@ The two master biases are: ``S20170825S0347_bias.fits`` and
 
         caldb.add_cal(reduce_biasstd.output_filenames[0])
         caldb.add_cal(reduce_biassci.output_filenames[0])
+
+Master Nod-and-Shuffle Dark
+===========================
+The nod-and-shuffle darks normally reproduced the same number of charge
+shuffling as was done for the science data observation.  They are done during
+the day, when daytime work allows, or at night when the weather is bad. This
+set was obtained 2 months after the science data.
+
+The darks are stacked together.  Here we use the same bias as for the science
+observation to minimize the amount of data required to download for this
+tutorial.  For a science reduction, it might beneficial to use biases that
+are contemporary to the darks (ie. from around 2008-10-26).
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 45
+
+    reduce_darks = Reduce()
+    reduce_darks.files.extend(darks)
+    reduce_darks.runr()
 
 
 Master Flat Field
@@ -374,33 +399,11 @@ calibration manager.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 49
+    :lineno-start: 48
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
     reduce_flats.runr()
-
-The primitive ``normalizeFlat``, used in the recipe, has an interactive mode.
-To activate the interactive mode:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 52
-
-    reduce_flats = Reduce()
-    reduce_flats.files.extend(flats)
-    reduce_flats.uparms = [('interactive', True)]
-    reduce_flats.runr()
-
-The interactive tools are introduced in section :ref:`interactive`.
-
-.. note:: If the database is not set to "store" automatically,  the
-          processed flats can be added manually as follows:
-
-          .. code-block:: python
-
-              for f in reduce_arcs.output_filenames:
-                  caldb.add_cal(f)
 
 
 Processed Arc - Wavelength Solution
@@ -419,26 +422,13 @@ logs to confirm a good solution.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 57
+    :lineno-start: 51
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
     reduce_arcs.runr()
 
-The primitive ``determineWavelengthSolution``, used in the recipe, has an
-interactive mode. To activate the interactive mode:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 60
-
-    reduce_arcs = Reduce()
-    reduce_arcs.files.extend(arcs)
-    reduce_arcs.uparms = [('interactive', True)]
-    reduce_arcs.runr()
-
-The interactive tools are introduced in section :ref:`interactive`.
-
+.. _ex4_gmosls_nsred_api_sensfunc:
 
 Processed Standard - Sensitivity Function
 =========================================
@@ -461,80 +451,80 @@ configuration file.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 64
+    :lineno-start: 54
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
+    reduce_std.uparms = [('traceApertures:interactive', True),
+                         ('calculateSensitivity:interactive', True)]
     reduce_std.runr()
 
-Four primitives in the default recipe for spectrophotometric standard have
-an interactive interface: ``skyCorrectFromSlit``, ``findApertures``,
-``traceApertures``, and ``calculateSensitivity``.  To activate the interactive
-mode for all four:
+The interactive tools are introduced in a later chapter: :ref:`interactive`.
+Here we will focus on two of them, the one for the trace and the one for the
+calculation of the sensitivity function.
 
-.. code-block:: python
-    :linenos:
-    :lineno-start: 67
+In both cases, we will adjust the *region* to use for the fits.  This is done
+by point the cursor on one edge of the region, typing "r", moving the cursor
+to the other edge, and typing "r" again.   To adjust the edge of an existing
+region, use "e" and the cursor, and "e" again to confirm the adjustment.
+See the summary of keyboard shortcuts at the bottom right of the tool, in
+gray font.
 
-    reduce_std = Reduce()
-    reduce_std.files.extend(stdstar)
-    reduce_arcs.uparms = [('interactive', True)]
-    reduce_std.runr()
+It is also possible to set regions using the "Regions" textbox below the
+plots.
 
-Since the standard star spectrum is bright and strong, and the exposure short,
-it is somewhat unlikely that interactivity will be needed for the sky
-subtraction, or finding and tracing the spectrum.  The fitting of the
-sensitivity function however can sometimes benefit from little adjustment.
+**traceApertures**
 
-To activate the interactive mode **only** for the measurement of the
-sensitivity function:
+Here are the before and after fits.  The x-axis is in pixels with the red-end
+to the left, the blue-end to the right.  You can see the sharp discontinuity
+around pixel 1000.  The points to left of the discontinuity are from the
+second order.  The flux from the first order (right of discontinuity) fades
+away, and the second order takes over.
 
-.. code-block:: python
-    :linenos:
-    :lineno-start: 71
+We want the trace to follow the first order light only.  The region in gray
+is what we need to define.  Using just those points, the trace matches the
+first order light much better.
 
-    reduce_std = Reduce()
-    reduce_std.files.extend(stdstar)
-    reduce_std.uparms = [('calculateSensitivity:interactive', True)]
-    reduce_std.runr()
+.. image:: _graphics/nsred_tracebad.png
+   :width: 325
+   :alt: Trace affected by second order
 
-The interactive tools are introduced in section :ref:`interactive`.
+.. image:: _graphics/nsred_tracebetter.png
+   :width: 325
+   :alt: Trace avoiding second order
 
-.. note:: If you wish to inspect the spectrum in aperture 1:
+**calculateSensitivity**
 
-    .. code-block:: python
+Again, here are the before and after fits.  The x-axis this time is in
+wavelength with the blue-end to the left and the red-end to the right.  The
+fits is good within the region that covers the first order.  But there is
+some flaring at both ends with some on the red side due to our previous cut
+not being aggressive enough.
 
-        from gempy.adlibrary import plotting
-        import matplotlib.pyplot as plt
+Like we did for the trace, we can define a region to use for the fit, this
+is the gray area on the "after" plot.  Another thing that was adjusted is
+the order of the fit.  The default is set to 6, and to avoid flaring on the
+blue-end, we can reduce the order to 4 to have the smooth function shown here.
 
-        ad = astrodata.open(reduce_std.output_filenames[0])
-        plt.ioff()
-        plotting.dgsplot_matplotlib(ad, 1)
-        plt.ion()
+.. image:: _graphics/nsred_sensbad.png
+   :width: 325
+   :alt: Sensitivity function affected second order
 
-    To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
-    Python script, see Tips and Tricks :ref:`plot_1d`.
-
-    The sensitivity function is stored within the processed standard spectrum.
-    To learn how to plot it, see Tips and Tricks :ref:`plot_sensfunc`.
+.. image:: _graphics/nsred_sensbetter.png
+   :width: 325
+   :alt: Sensitivity function avoiding second order
 
 
 Science Observations
 ====================
-The science target is a DB white dwarf candidate.  The sequence has four images
-that were dithered spatially and along the dispersion axis.  DRAGONS will
-register the four images in both directions, align and stack them before
-extracting the 1-D spectrum.
-
-.. note::  In this observation, there is only one source to extract.  If there
-   were multiple sources in the slit, regardless of whether they are of
-   interest to the program, DRAGONS will locate them, trace them, and extract
-   them automatically. Each extracted spectrum is stored in an individual
-   extension in the output multi-extension FITS file.
+The sequence has three images
+that were dithered along the dispersion axis.  DRAGONS will
+remove the sky from the three images using the nod-and-shuffle beams.  The
+resulting 2D spectra will then be register and stacked before extraction.
 
 This is what one raw image looks like.
 
-.. image:: _graphics/rawscience.png
+.. image:: _graphics/rawscience_nsred.png
    :width: 600
    :alt: raw science image
 
@@ -546,34 +536,69 @@ science observations and extract the 1-D spectrum.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 75
+    :lineno-start: 59
 
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
+    reduce_science.uparms = [('traceApertures:interactive', True)]
     reduce_science.runr()
 
-This produces a 2-D spectrum (``S20171022S0087_2D.fits``) which has been
-bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
-distortion, sky-subtracted, and stacked.  It also produces the 1-D spectrum
-(``S20171022S0087_1D.fits``) extracted from that 2-D spectrum.  The 1-D
-spectrum is flux calibrated with the sensitivity function from the
-spectrophotometric standard. The 1-D spectra are stored as 1-D FITS images in
-extensions of the output Multi-Extension FITS file.
+**traceApertures**
 
-This is what the 2-D spectrum looks like.
+Below are the before and after adjustments plots.  The x-axis is in pixel
+like before for the spectrophotometric standard but this time, the data has
+been resampled (for the stacking) before ``traceApertures`` is called.
+Because of that, blue is left and red is right.
+
+A sharp discontinuity is visible where the first order fades away and the second order
+starts showing up, around pixel 2600.  We set the region to use
+only the first order light, the points left of the discontinuity.
+
+This time however note that there are three apertures.  You can see a tab
+for each one in the upper part of the plot.  If you were not interested in
+the other, fainter sources, you could ignore them.  But if the fainter
+sources were of interest, you would want to apply the same region to Aperture
+2 and 3.  The easiest way to do that is to set the region for Aperture 1, and
+then go to the "Regions" box at the bottom, copy the region, and then paste
+that region definition in the "Regions" box in the other two tabs.
+
+
+.. image:: _graphics/nsred_scitracebad.png
+   :width: 325
+   :alt: bad trace of science
+
+.. image:: _graphics/nsred_scitracebetter.png
+   :width: 325
+   :alt: better trace of science that avoids the second order
+
+
+When done, click the green Accept button and the reduction will complete.
+
+
+
+The product includes a 2-D spectrum (``N20080830S0261_2D.fits``) which has been
+bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
+distortion, sky-subtracted, the beams combined, and then all frames stacked.
+It also produces the 1-D spectrum (``N20080830S0261_1D.fits``) extracted
+from that 2-D spectrum.  The 1-D spectrum is flux calibrated with the
+sensitivity function from the spectrophotometric standard. The 1-D spectra
+are stored as 1-D FITS images in extensions of the output Multi-Extension
+
+
+This is what the 2-D spectrum looks like.  Only the middle section is valid.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 78
+    :lineno-start: 63
 
     display = Reduce()
-    display.files = ['S20171022S0087_2D.fits']
+    display.files = ['N20080830S0261_2D.fits']
     display.recipename = 'display'
     display.runr()
 
-.. image:: _graphics/2Dspectrum.png
+.. image:: _graphics/2Dspectrum_nsred.png
    :width: 600
-   :alt: 2D stacked spectrum
+   :alt: 2D stacked nod-and-shuffle spectrum
 
 The apertures found are listed in the log for the ``findApertures`` primitive,
 just before the call to ``traceApertures``.  Information about the apertures
@@ -585,7 +610,7 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 82
+    :lineno-start: 67
 
     from gempy.adlibrary import plotting
     import matplotlib.pyplot as plt
@@ -596,40 +621,26 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
     plt.ion()
 
 
-.. image:: _graphics/1Dspectrum.png
-   :width: 600
+The entire spectrum is plotted including the part redder of the discontinuity
+where there is no light at all from the first order.  What is there is
+whatever got caught in the extraction that followed the extrapolated trace.
+
+The scaling of the plot is obviously wrong, but we can use the matplotlib
+interactive zooming feature to focus on the spectrum from the first order.
+That is shown in the plot on the right.
+
+.. image:: _graphics/1Dspectrum_nsred_notscaled.png
+   :width: 325
    :alt: 1D spectrum
 
-To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
-script, see Tips and Tricks :ref:`plot_1d`.
+.. image:: _graphics/1Dspectrum_nsred.png
+   :width: 325
+   :alt: 1D spectrum
 
-If you need an ascii representation of the spectum, you can use the primitive
-``write1DSpectra`` to extract the values from the FITS file.
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 89
-
-    writeascii = Reduce()
-    writeascii.files = ['S20171022S0087_1D.fits']
-    writeascii.recipename = 'write1DSpectra'
-    writeascii.runr()
-
-The primitive outputs in the various formats offered by ``astropy.Table``.  To
-see the list, use |showpars| **from the command line**.
-
-::
-
-    showpars S20171022S0087_1D.fits write1DSpectra
-
-To use a different format, set the ``format`` parameters.
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 93
-
-    writeascii = Reduce()
-    writeascii.files = ['S20171022S0087_1D.fits']
-    writeascii.recipename = 'write1DSpectra'
-    writeascii.uparms = [('format', 'ascii.ecsv'), ('extension', 'ecsv')]
-    writeascii.runr()
+Note the flaring bluer of 700nm.  This is because the spectrophotometric
+standard was observed with a central wavelength of 900nm and it is unable
+to constrain the sensitivity bluer of ~700nm.  This can be seen in the
+plots of the interactive ``calculateSensitivity``, the bluer point is at 690nm.
+(:ref:`ex4_gmosls_nsred_api_sensfunc`) We have a science spectrum bluer of 690nm because of the other two central
+wavelength settings of 890nm and 880nm.  Observing the standard with a
+central wavelength of 880nm would have help reduce, possible avoid entirely.

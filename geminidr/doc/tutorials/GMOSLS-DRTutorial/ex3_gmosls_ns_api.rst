@@ -11,7 +11,7 @@ A reduction can be initiated from the command line as shown in
 show here.  The classes and modules of the RecipeSystem can be
 accessed directly for those who want to write Python programs to drive their
 reduction.  In this example we replicate the
-command line version of Example 1 but using the Python
+command line version of Example 3 but using the Python
 programmatic interface. What is shown here could be packaged in modules for
 greater automation.
 
@@ -98,7 +98,7 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 8
+    :lineno-start: 7
 
     from gempy.utils import logutils
     logutils.config(file_name='gmosls_tutorial.log')
@@ -127,7 +127,7 @@ directory.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 15
+    :lineno-start: 9
 
     all_files = glob.glob('../playdata/example3/*.fits')
     all_files.sort()
@@ -155,7 +155,7 @@ for the descriptor of interest, here ``detector_roi_setting``.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 17
+    :lineno-start: 11
 
     all_biases = dataselect.select_data(all_files, ['BIAS'])
     for bias in all_biases:
@@ -180,7 +180,7 @@ two lists.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 21
+    :lineno-start: 15
 
     biasstd = dataselect.select_data(
         all_files,
@@ -205,9 +205,12 @@ The GMOS longslit flats are not normally stacked.   The default recipe does
 not stack the flats.  This allows us to use only one list of the flats.  Each
 will be reduced individually, never interacting with the others.
 
+The flats used for nod-and-shuffle are normal flats.  The DRAGONS recipe will
+"double" the flat and apply it to each beam.
+
 .. code-block:: python
     :linenos:
-    :lineno-start: 34
+    :lineno-start: 28
 
     flats = dataselect.select_data(all_files, ['FLAT'])
 
@@ -220,7 +223,7 @@ reduce individually, never interacting with the others.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 35
+    :lineno-start: 29
 
     arcs = dataselect.select_data(all_files, ['ARC'])
 
@@ -234,7 +237,7 @@ at Gemini are in that table.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 36
+    :lineno-start: 30
 
     stdstar = dataselect.select_data(all_files, ['STANDARD'])
 
@@ -249,7 +252,7 @@ First, let's have a look at the list of objects.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 37
+    :lineno-start: 31
 
     all_science = dataselect.select_data(all_files, [], ['CAL'])
     for sci in all_science:
@@ -276,7 +279,7 @@ will do that here to show how it would be done.  To be clear, the
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 41
+    :lineno-start: 35
 
     scitarget = dataselect.select_data(
         all_files,
@@ -296,7 +299,7 @@ data package to the local calibration database:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 47
+    :lineno-start: 40
 
     for bpm in dataselect.select_data(all_files, ['BPM']):
         caldb.add_cal(bpm)
@@ -317,7 +320,7 @@ of the recipe.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 49
+    :lineno-start: 42
 
     reduce_biasstd = Reduce()
     reduce_biassci = Reduce()
@@ -362,7 +365,7 @@ calibration manager.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 55
+    :lineno-start: 48
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
@@ -385,7 +388,7 @@ logs to confirm a good solution.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 62
+    :lineno-start: 51
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
@@ -413,7 +416,7 @@ configuration file.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 69
+    :lineno-start: 54
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
@@ -459,7 +462,7 @@ science observations and extract the 1-D spectrum.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 80
+    :lineno-start: 57
 
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
@@ -477,7 +480,7 @@ This is what the 2-D spectrum looks like.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 83
+    :lineno-start: 60
 
     display = Reduce()
     display.files = ['N20190926S0130_2D.fits']
@@ -498,7 +501,7 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 87
+    :lineno-start: 64
 
     from gempy.adlibrary import plotting
     import matplotlib.pyplot as plt
@@ -521,7 +524,7 @@ If you need an ascii representation of the spectum, you can use the primitive
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 94
+    :lineno-start: 71
 
     writeascii = Reduce()
     writeascii.files = ['N20190926S0130_1D.fits']
@@ -539,7 +542,7 @@ To use a different format, set the ``format`` parameters.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 98
+    :lineno-start: 75
 
     writeascii = Reduce()
     writeascii.files = ['N20190926S0130_1D.fits']
