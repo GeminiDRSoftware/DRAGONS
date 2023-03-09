@@ -56,11 +56,11 @@ author = 'Ricardo Cardenes'
 # built documents.
 #
 # The short X.Y version.
-version = '3.0'
+version = '3.1'
 # The ull version, including alpha/beta/rc tags.
 #release = '3.0.x'
 #rtdurl = 'release-'+release
-release = '3.0.3'
+release = '3.1.0-dev'
 rtdurl = 'v'+release
 
 
@@ -69,12 +69,12 @@ rtdurl = 'v'+release
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
 #
-today = 'July 2022'
+today = 'May 2023'
 #
 # Else, today_fmt is used as the format for a strftime call.
 #
@@ -301,7 +301,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'AstrodataManual.tex', 'Astrodata Manual',
-   'Kathleen Labrie', 'manual'),
+   'DRAGONS Team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -343,7 +343,7 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'astrodatamanual', 'Astrodata Manual',
-     ['Kathleen Labrie'], 1)
+     ['DRAGONS Team'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -358,7 +358,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'AstrodataManual', 'Astrodata Manual',
-   'Kathleen Labrie', 'AstrodataManual',
+   'DRAGONS Team', 'AstrodataManual',
    'Manual for the astrodata package',
    'Miscellaneous'),
 ]

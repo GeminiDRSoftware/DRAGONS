@@ -1,5 +1,11 @@
 .. cheatsheet
 
+.. |AstroData| replace:: :class:`~astrodata.AstroData`
+.. |astropy| replace:: :mod:`astropy`
+.. |gemini_instruments| replace:: :mod:`gemini_instruments`
+.. |NDAstroData| replace:: :class:`~astrodata.nddata.NDAstroData`
+.. |Table| replace:: :class:`~astropy.table.Table`
+
 .. _cheatsheet:
 
 ***********
