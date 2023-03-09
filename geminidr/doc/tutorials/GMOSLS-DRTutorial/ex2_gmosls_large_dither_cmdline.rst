@@ -180,16 +180,35 @@ you find that you need more accurate sorting.  We do not need it here.
     dataselect ../playdata/example2/*.fits --tags ARC -o arcs.lis
 
 
-A list for the spectrophotometric standard star
------------------------------------------------
+Two lists for the spectrophotometric standard star
+--------------------------------------------------
 If a spectrophotometric standard is recognized as such by DRAGONS, it will
 receive the Astrodata tag ``STANDARD``.  All spectrophotometric standards
-normally used at Gemini are in the DRAGONS list of recognized standards.
+normally used at Gemini are in the DRAGONS list of recognized standards. 
+For this example, we will be reducing the standard star observations at each 
+central wavelength separately without stacking them. The standard star reduction 
+recipe stacks all the observations in a given file list. So, we need to create 
+separate file lists for the different central wavelengths. 
+
+First, let's check the central wavelength of the standard star frames in our raw data directory.
 
 ::
 
-    dataselect ../playdata/example2/*.fits --tags STANDARD -o std.lis
+    dataselect ../playdata/example2/*.fits --tags STANDARD | showd -d central_wavelength
 
+    -------------------------------------------------------------
+    filename                                   central_wavelength
+    -------------------------------------------------------------
+    ../playdata/example2/S20220608S0098.fits             7.05e-07
+    ../playdata/example2/S20220608S0101.fits             7.95e-07    
+
+We will then create two standard star lists for the two central wavelengths.  
+
+::
+
+    dataselect ../playdata/example2/*.fits --tags STANDARD --expr='central_wavelength==7.05e-07' -o std_705nm.lis
+    dataselect ../playdata/example2/*.fits --tags STANDARD --expr='central_wavelength==7.95e-07' -o std_795nm.lis
+    
 
 A list for the science observations
 -----------------------------------
@@ -323,11 +342,10 @@ Processed Standard - Sensitivity Function
 =========================================
 The GMOS longslit spectrophotometric standards are normally taken when there
 is a hole in the queue schedule, often when the weather is not good enough
-for science observations.  One standard per configuration, per program is
-the norm. For a large dither along the dispersion axis, i.e., a difference 
+for science observations. For a large dither along the dispersion axis, i.e., a difference 
 in central wavelength much greater than about 10 nm, a spectrophotometric standard should be 
 taken at each of those positions to calculate the respective sensitvity functions. 
-The latter will be used for spectrophotometric calibration of the science observations 
+The latter will then be used for spectrophotometric calibration of the science observations 
 at the corresponding central wavelengths. 
 
 The reduction of the standard will be using a BPM, a master bias, a master flat,
@@ -337,10 +355,6 @@ includes the sensitivity function and will be added to the calibration
 database automatically if the "store" option is set in the ``dragonsrc``
 configuration file.
 
-::
-
-    reduce @std.lis
-
 Four primitives in the default recipe for spectrophotometric standard have
 an interactive interface: ``skyCorrectFromSlit``, ``findApertures``,
 ``traceApertures``, and ``calculateSensitivity``.  To activate the interactive
@@ -348,28 +362,54 @@ mode for all four:
 
 ::
 
-    reduce @std.lis -p interactive=True
+    reduce @std_705nm.lis -p interactive=True
 
 Since the standard star spectrum is bright and strong, and the exposure short,
 it is somewhat unlikely that interactivity will be needed for the sky
 subtraction, or finding and tracing the spectrum.  The fitting of the
-sensitivity function however can sometimes benefit from little adjustment.
-
-There is a calculateSensitivity:resampling parameter which will interpolate between the specphot data to give you more datapoints to fit. This is just a linear interpolation so obviously the new datapoints are made up and not real, but if the specphot has a smooth spectrum (as virtually all of them do) these new points aren't far from the truth and so you may get a better result.
-
+sensitivity function however can sometimes benefit from little adjustment. 
 
 To activate the interactive mode **only** for the measurement of the
 sensitivity function:
 
 ::
 
-    reduce @std.lis -p calculateSensitivity:interactive=True
+    reduce @std_705nm.lis -p calculateSensitivity:interactive=True
 
-The interactive tools are introduced in section :ref:`interactive`.
+The interactive tools are introduced in section :ref:`interactive`. 
 
-.. note:: If you wish to inspect the spectrum::
+In particular, for the standard star observation at central wavelength 795 nm in this 
+dataset, ``calculateSensitivity`` with its default parameter values yields a suboptimal number 
+of data points to constrain its sensitivity curve (see the left plot below; click the panel to enlarge). 
+There is a conspicuous gap between 820 and 980 nm -- a result of the amplifier #5 issue and compounded 
+by the presence of telluric absorption redward of around 880 nm. 
 
-    dgsplot S20170826S0160_standard.fits 1
+To deal with this, we can consider interpolating the (reference) data of the spectrophotometric standard, 
+given that it has a smooth spectrum,  
+to generate new sensitivity data points to fit. 
+This is enabled by the ``resampling`` parameter, whose value 
+we update as follows
+
+::
+
+    reduce @std_795nm.lis -p interactive=True calculateSensitivity:resampling=15.0
+
+.. image:: _graphics/LS_ldred_sens_before.png
+   :width: 325
+   :alt: Sensitivity function before optimization
+   
+   
+.. image:: _graphics/LS_ldred_sens_after.png
+   :width: 325
+   :alt: Sensitivity function after optimization
+
+The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the 
+interactive tool and have manually masked four data points.  
+
+.. note:: If you wish to inspect the spectra::
+
+    dgsplot S20220608S0098_standard.fits 1
+    dgsplot S20220608S0101_standard.fits 1
 
    where ``1`` is the aperture #1, the brightest target.
    To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
@@ -381,47 +421,70 @@ The interactive tools are introduced in section :ref:`interactive`.
 
 Science Observations
 ====================
-The science target is a DB white dwarf candidate.  The sequence has four images
-that were dithered spatially and along the dispersion axis.  DRAGONS will
-register the four images in both directions, align and stack them before
-extracting the 1-D spectrum.
-
-.. note::  In this observation, there is only one source to extract.  If there
-   were multiple sources in the slit, regardless of whether they are of
-   interest to the program, DRAGONS will locate them, trace them, and extract
-   them automatically. Each extracted spectrum is stored in an individual
-   extension in the output multi-extension FITS file.
+As mentioned previously, the science target is the central galaxy of an Odd Radio Circle. The sequence 
+has two images that were dithered along the dispersion axis (with a large step of 90 nm).  
+DRAGONS will register the two images, align and stack them before
+extracting the 1-D spectrum. 
 
 This is what one raw image looks like.
 
-.. image:: _graphics/rawscience.png
+.. image:: _graphics/LS_ldred_rawsci_716.png
    :width: 600
    :alt: raw science image
 
+As can be seen, there are two obvious sources in this observation. Regardless of whether 
+both of them are of interest to the program, DRAGONS will locate, trace, and extract 
+them automatically. Each extracted spectrum is stored in an individual extension 
+in the output multi-extension FITS file.
+
+
 With the master bias, the master flat, the processed arcs (one for each of the
-grating position, aka central wavelength), and the processed standard in the
+grating position, aka central wavelength), and the processed standards in the
 local calibration manager, one only needs to do as follows to reduce the
 science observations and extract the 1-D spectrum.
 
 ::
 
-    reduce @sci.lis
+    reduce -r reduceWithMultipleStandards @sci.lis -p interactive=True
 
-This produces a 2-D spectrum (``S20171022S0087_2D.fits``) which has been
+Here use a different science reduction recipe than the default. The 
+latter performs flux calibration *after* stacking the extracted spectra 
+as described :ref:`here <Science Observations>`, which is not suitable 
+for these observations with a large wavelength dither. The recipe 
+``reduceWithMultipleStandards`` will run flux calibration for each 
+central wavelength using the corresponding sensitivity function from the
+spectrophotometric standard before stacking 
+the observations -- the desired workflow for this example.
+
+You can make use of the interactive tools to optimize the reduction. For 
+the science reduction above, we have deleted any additional apertures found
+by DRAGONS barring the two most prominent ones (see the left plot; click 
+to enlarge). You simply hover over the unwanted peak and press D. Furthermore, 
+we have selected sigma-clipping while tracing the apertures (right plot; 
+click to enlarge). Notice that there is an additional tab for Aperture 2
+in the upper part of the right plot. 
+
+.. image:: _graphics/LS_ldred_findAp_sci.png
+   :width: 325
+   :alt: Apertures found by DRAGONS
+   
+.. image:: _graphics/LS_ldred_traceAp_sci.png
+   :width: 325
+   :alt: Tracing of aperture
+
+The outputs include a 2-D spectrum (``S20220611S0716_2D.fits``), which has been
 bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
-distortion, sky-subtracted, and stacked.  It also produces the 1-D spectrum
-(``S20171022S0087_1D.fits``) extracted from that 2-D spectrum.  The 1-D
-spectrum is flux calibrated with the sensitivity function from the
-spectrophotometric standard. The 1-D spectra are stored as 1-D FITS images in
-extensions of the output Multi-Extension FITS file.
+distortion, sky-subtracted, flux-calibrated, and stacked, and also the 1-D spectrum
+(``S20171022S0087_1D.fits``) extracted from this 2-D spectrum. The 1-D spectra are stored 
+as 1-D FITS images in extensions of the output Multi-Extension FITS file.
 
 This is what the 2-D spectrum looks like.
 
 ::
 
-    reduce -r display S20171022S0087_2D.fits
+    reduce -r display S20220611S0716_2D.fits
 
-.. image:: _graphics/2Dspectrum.png
+.. image:: _graphics/LS_ldred_sci_2D.png
    :width: 600
    :alt: 2D stacked spectrum
 
@@ -431,35 +494,40 @@ are also available in the header of each extracted spectrum: ``XTRACTED``,
 ``XTRACTLO``, ``XTRACTHI``, for aperture center, lower limit, and upper limit,
 respectively.
 
-This is what the 1-D flux-calibrated spectrum of our sole target looks like.
+The 1-D flux-calibrated spectra of the two apertures are shown below.
 
 ::
 
-    dgsplot S20171022S0087_1D.fits 1
+    dgsplot --bokeh S20220611S0716_1D.fits 1
+    dgsplot --bokeh S20220611S0716_1D.fits 2
 
-.. image:: _graphics/1Dspectrum.png
-   :width: 600
-   :alt: 1D spectrum
+.. image:: _graphics/LS_ldred_ap1_spec1D.png
+   :width: 325
+   :alt: 1D spectrum for aperture 1
+   
+.. image:: _graphics/LS_ldred_ap2_spec1D.png
+   :width: 325
+   :alt: 1D spectrum for aperture 2   
 
 To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
 script, see Tips and Tricks :ref:`plot_1d`.
 
-If you need an ascii representation of the spectum, you can use the primitive
+If you need an ascii representation of the spectra, you can use the primitive
 ``write1DSpectra`` to extract the values from the FITS file.
 
 ::
 
-    reduce -r write1DSpectra S20171022S0087_1D.fits
+    reduce -r write1DSpectra S20220611S0716_1D.fits
 
 The primitive outputs in the various formats offered by ``astropy.Table``.  To
 see the list, use |showpars|.
 
 ::
 
-    showpars S20171022S0087_1D.fits write1DSpectra
+    showpars S20220611S0716_1D.fits write1DSpectra
 
 To use a different format, set the ``format`` parameters.
 
 ::
 
-    reduce -r write1DSpectra -p format=ascii.ecsv extension='ecsv' S20171022S0087_1D.fits
+    reduce -r write1DSpectra -p format=ascii.ecsv extension='ecsv' S20220611S0716_1D.fits

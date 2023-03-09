@@ -395,8 +395,8 @@ The interactive tools are introduced in section :ref:`interactive`.
    learn how to plot it, see Tips and Tricks :ref:`plot_sensfunc`.
 
 
-Science Observations
-====================
+_`Science Observations`
+=======================
 The science target is a DB white dwarf candidate.  The sequence has four images
 that were dithered spatially and along the dispersion axis.  DRAGONS will
 register the four images in both directions, align and stack them before
