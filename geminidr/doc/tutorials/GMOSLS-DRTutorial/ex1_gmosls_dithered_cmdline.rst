@@ -366,6 +366,21 @@ sensitivity function:
 
     reduce @std.lis -p calculateSensitivity:interactive=True
 
+Here is an example of what could be adjusted in this particular case.  The
+plots below show the default fit on the left, and the adjusted fit on the
+right.  All that was changed is that the order of the fit was set to "4"
+instead of the default "6".  You can see how the flaring at the red-end is
+reduced.
+
+.. image:: _graphics/dithered_calSensbefore.png
+   :width: 325
+   :alt: calculateSensitivity fit with default
+
+.. image:: _graphics//dithered_calSensafter.png
+   :width: 325
+   :alt: calculateSensitivity fit lower order
+
+
 The interactive tools are introduced in section :ref:`interactive`.
 
 .. note:: If you wish to inspect the spectrum::
