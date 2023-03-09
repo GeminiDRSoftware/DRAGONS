@@ -301,6 +301,7 @@ rst_epilog = """
 .. |ADProg| replace:: :raw-html:`<a href="http://astrodata-programmer-manual.readthedocs.io/en/{v}/">Astrodata Programmer Manual</a>`
 .. |RSProg| replace:: :raw-html:`<a href="http://dragons-recipe-system-programmers-manual.readthedocs.io/en/{v}/">Recipe System Programmers Manual</a>`
 .. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System Users Manual</a>`
+.. |RSUserInstall|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/install.html">Installation Guide</a>`
 
 .. |WSBasicDRAGONS| replace:: :raw-html:`<a href="https://collection-of-dragons-workshops.readthedocs.io/en/latest/BasicDRAGONS-2hr/sphinx/index.html">Basic DRAGONS Workshop</a>`
 

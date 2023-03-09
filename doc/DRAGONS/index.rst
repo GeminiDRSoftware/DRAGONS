@@ -15,6 +15,13 @@ DRAGONS Documentation
    :small:`This document is a collection of links and document IDs making up the
    DRAGONS documentation.`
 
+Installing DRAGONS
+------------------
+
+To install DRAGONS, please follow the installation guide provided in the
+Recipe System User Manual:
+
+  |RSUserInstall|.
 
 Tutorials - Reducing data with DRAGONS
 --------------------------------------
@@ -58,14 +65,14 @@ Releases
    releasenotes.rst
    changes.rst
 
-Developer Notes
----------------
+.. Developer Notes
+.. ---------------
 
-.. toctree::
-   :maxdepth: 1
+.. .. toctree::
+..    :maxdepth: 1
 
-   contributing.rst
-   testing.rst
+..   contributing.rst
+..   testing.rst
 
 .. todolist::
 

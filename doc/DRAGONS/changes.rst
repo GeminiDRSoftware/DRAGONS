@@ -62,7 +62,7 @@ Interface Modifications
 * Internal Gemini catalog server URL updated.
 
 Documentation
-------------
+-------------
 
 * Various fixes to the documentation affecting formatting, not the content.
 
