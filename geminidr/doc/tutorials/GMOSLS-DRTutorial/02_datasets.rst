@@ -6,27 +6,33 @@
 Downloading tutorial datasets
 *****************************
 
-.. todo:: Consider one data pkg per example.  Everything in one might get big.
-
 All the data needed to run this tutorial are found in the tutorial's data
-package:
+packages.  We have split the data packages per example to keep the size
+of each package within some reasonable limit.
 
-    `<http://www.gemini.edu/sciops/data/software/datapkgs/gmosls_tutorial_datapkg-v1.tar>`_
+.. todo:: These data packages need to be uploaded to the website.
+         While we are testing, please get them from this location:
+         `<https://drive.google.com/drive/folders/1QU3HrnuQPkKjLBp51AfA5gEFsqx9k978?usp=share_link>`_
 
-Download it and unpack it somewhere convenient.
+* Example 1: `gmosls_tutorial_datapkg-dithered-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gmosls_tutorial_datapkg-dithered-v1.tar>`_
+* Example 2: `gmosls_tutorial_datapkg-largedither-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gmosls_tutorial_datapkg-largedither-v1.tar>`_
+* Example 3: `gmosls_tutorial_datapkg-ns-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gmosls_tutorial_datapkg-ns-v1.tar>`_
+* Example 4: `gmosls_tutorial_datapkg-nsred-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gmosls_tutorial_datapkg-nsred-v1.tar>`_
+
+Download one or several packages and unpack them somewhere
+convenient.
 
 .. highlight:: bash
-
-.. todo:: UPDATE datapkg to include N&S data. UPDATE version number
-.. todo:: Add the BPMs to the datapkg.
 
 ::
 
     cd <somewhere convenient>
-    tar xvf gmosls_tutorial_datapkg-v1.tar
-    bunzip2 gmosls_tutorial/playdata/*.bz2
+    tar xvf gmosls_tutorial_datapkg-dithered-v1.tar
+    tar xvf gmosls_tutorial_datapkg-ns-v1.tar
+    ...
+    bunzip2 gmosls_tutorial/playdata/example*/*.bz2
 
-The datasets are found in the subdirectory ``gmosls_tutorial/playdata``, and
+The datasets are found in the subdirectory ``gmosls_tutorial/playdata/example#``, and
 we will work in the subdirectory named ``gmosls_tutorial/playground``.
 
 .. note:: All the raw data can also be downloaded from the Gemini Observatory

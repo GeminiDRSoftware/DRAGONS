@@ -6,10 +6,6 @@
 Example 1 - Datasets descriptions
 *********************************
 
-.. todo::  Add dataset description for N&S example.  Probably should start
-           splitting the data description per example otherwise is will
-           get very long.
-
 Dithered Point Source Longslit
 ------------------------------
 This is a GMOS longslit observation.  The primary target is a DB white

@@ -32,6 +32,8 @@ We show how to run the same reduction using both methods.
 
 * :ref:`dithered_example`
 * :ref:`large_dither_example`
+* :ref:`ns_example`
+* :ref:`nsred_example`
 
 More examples will be added in the future.
 
