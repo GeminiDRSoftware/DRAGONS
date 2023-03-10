@@ -1,15 +1,16 @@
-.. ex1_f2im_ontarget_api.rst
+.. ex2_f2im_ultradeep_api.rst
 
-.. _ontarget_api:
+.. _ultradeep_api:
 
 **************************************************************************
-Example 1 - Small sources with dither on target - Using the "Reduce" class
+Example 2 - Deep observation - Using the "Reduce" class
 **************************************************************************
 
 There may be cases where you would be interested in accessing the DRAGONS
 Application Program Interface (API) directly instead of using the command
 line wrappers to reduce your data. Here we show you how to do the same
-reduction we did in the previous chapter but using the API.
+reduction we did in the previous chapter, :ref:`ultradeep_cmdline`,
+but using the API.
 
 The dataset
 ===========
@@ -18,25 +19,20 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`ontarget_dataset`.
+    :ref:`ultradeep_dataset`.
 
 Here is a copy of the table for quick reference.
 
-+---------------+---------------------+--------------------------------+
-| Science       || S20131121S0075-083 | Y-band, 120 s                  |
-+---------------+---------------------+--------------------------------+
-| Darks         || S20131121S0369-375 | 2 s, short darks for BPM       |
-|               +---------------------+--------------------------------+
-|               || S20131120S0115-120 | 120 s, for science data        |
-|               || S20131121S0010     |                                |
-|               || S20131122S0012     |                                |
-|               || S20131122S0438-439 |                                |
-+---------------+---------------------+--------------------------------+
-| Flats         || S20131129S0320-323 | 20 s, Lamp On, Y-band          |
-|               +---------------------+--------------------------------+
-|               || S20131126S1111-116 | 20 s, Lamp Off, Y-band         |
-+---------------+---------------------+--------------------------------+
-
++---------------+---------------------+-----------------------+
+| Science       || S20200104S0075-092 | K-red, 5 s            |
++---------------+---------------------+-----------------------+
+| Darks         || S20200107S0035-041 | 2 s, darks for flats  |
+|               || S20200111S0257-260 | 2 s, darks for flats  |
+|               +---------------------+-----------------------+
+|               || S20200107S0049-161 | 5 s, for science dat  |
++---------------+---------------------+-----------------------+
+| Flats         || S20200108S0010-019 | 2 s, Lamp On, K-red   |
++---------------+---------------------+-----------------------+
 
 Setting Up
 ==========
@@ -81,7 +77,6 @@ We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
     logutils.config(file_name='f2im_data_reduction.log')
 
 
-.. _set_caldb_api:
 
 Setting up the Calibration Service
 ----------------------------------
@@ -94,7 +89,6 @@ Setting up the Calibration Service
 
 
 
-.. _create_file_lists:
 
 Create list of files
 ====================
@@ -105,14 +99,14 @@ store the filenames to a Python list that can then be fed to the ``Reduce``
 class. (See the |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
 
-The first list we create is a list of all the files in the ``playdata/example1/``
+The first list we create is a list of all the files in the ``playdata/example2/``
 directory.
 
 .. code-block:: python
     :linenos:
     :lineno-start: 15
 
-    all_files = glob.glob('../playdata/example1/*.fits')
+    all_files = glob.glob('../playdata/example2/*.fits')
     all_files.sort()
 
 The :meth:`~list.sort` method simply re-organize the list with the file names
@@ -131,17 +125,17 @@ We show several usage examples below.
 Two lists for the darks
 -----------------------
 We select the files that will be used to create a master dark for
-the science observations, those with an exposure time of 120 seconds.
+the science observations, those with an exposure time of 5 seconds.
 
 .. code-block:: python
     :linenos:
     :lineno-start: 17
 
-    dark_files_120s = dataselect.select_data(
+    dark_files_5s = dataselect.select_data(
         all_files,
         ['F2', 'DARK', 'RAW'],
         [],
-        dataselect.expr_parser('exposure_time==120')
+        dataselect.expr_parser('exposure_time==5')
     )
 
 Above we are requesting data with tags ``F2``, ``DARK``, and ``RAW``, though
@@ -174,12 +168,13 @@ filters. It is not really needed in this case.
     :linenos:
     :lineno-start: 29
 
-    list_of_flats_Y = dataselect.select_data(
+    list_of_flats_Kred = dataselect.select_data(
          all_files,
          ['FLAT'],
          [],
-         dataselect.expr_parser('filter_name=="Y"')
+         dataselect.expr_parser('filter_name=="K-red"')
     )
+
 
 A list for the science data
 ---------------------------
@@ -193,7 +188,7 @@ Finally, the science data can be selected using:
         all_files,
         ['F2'],
         [],
-        dataselect.expr_parser('(observation_class=="science" and filter_name=="Y")')
+        dataselect.expr_parser('(observation_class=="science" and filter_name=="K-red")')
     )
 
 The filter name is not really needed in this case since there are only Y-band
@@ -201,7 +196,6 @@ frames, but it shows how you could have two selection criteria in
 the expression.
 
 
-.. _api_process_dark_files:
 
 Create a Master Dark
 ====================
@@ -211,7 +205,7 @@ will be automatically added to the local calibration manager when the "store"
 parameter is present in the ``.dragonsrc`` configuration file.
 
 The name of the output master dark is
-``N20160102S0423_dark.fits``. The output is written to disk and its name is
+``S20200107S0049_dark.fits``. The output is written to disk and its name is
 stored in the Reduce instance. The calibration service expects the name of a
 file on disk.
 
@@ -220,7 +214,7 @@ file on disk.
     :lineno-start: 41
 
     reduce_darks = Reduce()
-    reduce_darks.files.extend(dark_files_120s)
+    reduce_darks.files.extend(dark_files_5s)
     reduce_darks.runr()
 
 The ``Reduce`` class is our reduction
@@ -243,50 +237,13 @@ where the recipe search is triggered and where it is executed.
         caldb.add_cal(reduce_darks.output_filenames[0])
 
 
-.. _api_create_bpm_files:
-
-Create a Bad Pixel Mask
-=======================
-
-By default, for F2 imaging data, an illumination mask will be added to the
-data quality plane to identify the pixels beyond the circular aperture as
-"non-illuminated". The instrument does not have a downloadable bad pixel mask
-but the user can easily create a fresh bad pixel mask from the flats and
-recent short darks.
-
-The Bad Pixel Mask is created as follow:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 46
-
-    reduce_bpm = Reduce()
-    reduce_bpm.files.extend(list_of_flats_Y)
-    reduce_bpm.files.extend(dark_files_2s)
-    reduce_bpm.recipename = 'makeProcessedBPM'
-    reduce_bpm.runr()
-
-    bpm_filename = reduce_bpm.output_filenames[0]
-
-
-The flats must be passed first to the input list to ensure that the recipe
-library associated with F2 flats is selected. We are setting the recipe
-name to ``makeProcessedBPM`` to select that recipe from the recipe library
-instead of the using the default (which would create a master flat).
-
-The BPM produced is named ``S20131129S0320_bpm.fits``.
-
-Since this is a user-made BPM, you will have to pass it to DRAGONS on the
-as an option to the ``Reduce`` instance to use it, as we will show below.
-
-
-.. _api_process_flat_files:
 
 Create a Master Flat Field
 ==========================
-A F2 master flat is created from a series of lamp-on and lamp-off exposures.
-Each flavor is stacked, then the lamp-off stack is subtracted from the
-lamp-on stack and the result normalized.
+The F2 K-red master flat is created from a series of lamp-off exposures and
+darks. They should all have the same exposure time. Each flavor is
+stacked (averaged), then the dark stack is subtracted from the lamp-off
+stack and the result normalized.
 
 We create the master flat field and add it to the calibration manager as follows:
 
@@ -295,17 +252,13 @@ We create the master flat field and add it to the calibration manager as follows
     :lineno-start: 53
 
     reduce_flats = Reduce()
-    reduce_flats.files.extend(list_of_flats_Y)
-    reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
+    reduce_flats.files.extend(list_of_flats_Kred)
+    reduce_flats.files.extend(dark_files_2s)
     reduce_flats.runr()
 
-Note how we pass in the BPM we created in the previous step. The ``addDQ``
-primitive, one of the primitives in the recipe, has an input parameter named
-``user_bpm``. We assign our BPM to that input parameter. The value of
-``uparms`` needs to be a :class:`list` of :class:`Tuples`.
+It is important to put the flats first in that call.  The recipe is selected
+based on the astrodata tags of the first file in the list of inputs.
 
-
-.. _api_process_science_files:
 
 Reduce the Science Images
 =========================
@@ -313,36 +266,77 @@ The science observation uses a dither-on-target pattern. The sky frames will
 be derived automatically for each science frame from the dithered frames.
 
 The master dark and the master flat will be retrieved automatically from the
-local calibration database. Again, the user BPM needs to be specified as the
-``user_bpm`` argument to ``addDQ``.
+local calibration database.
 
-We use similar commands as before to initiate a new reduction to reduce the
-science data:
+We will be running the ``ultradeep`` recipe, the 3-part version.  If you
+prefer to run the whole thing in one shot, just call the full recipe with
+``reduce_target.recipename = 'ultradeep'``.
+
+The first part of the ultradeep recipe does the pre-processing, up to and
+including the flatfield correction.  This part is identical to what is being
+done the in default F2 recipe.
+
 
 .. code-block:: python
     :linenos:
     :lineno-start: 59
 
     reduce_target = Reduce()
-    reduce_target.files.extend(list_of_science_images)
-    reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
+    reduce_target.files = list_of_science_images
+    reduce_target.recipename = 'ultradeep_part1'
     reduce_target.runr()
 
-The final product file will have a ``_image.fits`` suffix and it is shown below.
+The outputs are the ``_flatCorrected`` files.  The list is stored in
+``reduce_target.output_filenames`` which we can pass to the next call.
+
+The ``ultradeep_part2`` recipe takes ``_flatCorrected`` images from part 1 as
+input and continues the reduction to produce a stacked image. It then
+identifies sources in the stack and transfers the object mask (OBJMASK) back
+to the individual input images, saving those to disk, ready for part 3.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 59
+
+    reduce_target.files = reduce_target.output_filenames
+    reduce_target.recipename = 'ultradeep_part2'
+    reduce_target.runr()
+
+The outputs are the ``_objmaskTransferred`` files.
+
+Finally, the ``ultradeep_part3`` recipe takes flat-corrected images with
+the object masks (``_objmaskTransferred``) as inputs and produces a final stack.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 59
+
+    reduce_target.files = reduce_target.output_filenames
+    reduce_target.recipename = 'ultradeep_part3'
+    reduce_target.runr()
+
+The final product file will have a ``_image.fits`` suffix.
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
 
-.. warning::
+For this dataset the benefit of the ultradeep recipe is subtle.  Below we
+show a zoom-in section of the final image when the complete set of 156 images
+is used.  The image on the left is from the default recipe, the one on the
+right is from the ultradeep recipe.
 
-    The upper-left quadrant of this science sequence is rather messy. This
-    is caused by the PWFS2 guide probe (see :ref:`issue_p2`). Photometry
-    in this portion of the image is likely to be seriously compromised.
+.. image:: _graphics/default.png
+   :width: 325
+   :alt: default recipe
 
-.. the figure below can be created using the script inside the ``savefig``
-   folder.
+.. image:: _graphics/ultradeep.png
+   :width: 325
+   :alt: ultradeep recipe
 
-.. figure:: _static/S20131121S0075_stack.fits.png
-   :align: center
+Looking very carefully, it is possible to see weak blotching in the default
+recipe image (left) that does dissappear when the ultradeep recipe is used.
+Even using the full set, it is still subtle.  Therefore, we recommend the
+use of the ultradeep recipe only when you actually needed or when the blotching
+is more severe.  The blotching is expected to be more severe in crowded fields.

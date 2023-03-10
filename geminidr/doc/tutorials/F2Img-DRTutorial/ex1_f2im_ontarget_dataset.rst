@@ -27,7 +27,7 @@ especially for K-band.
 The calibrations we use in this example are:
 
 * Darks for the science frames.
-* Flats, as a sequence of lamps-on and lamps-off exposures.
+* Flats, as a sequence of lamp-on and lamp-off exposures.
 * Short darks to use with the flats to create a bad pixel mask.
 
 The table below contains a summary of the files needed for this example:

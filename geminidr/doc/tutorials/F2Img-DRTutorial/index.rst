@@ -19,6 +19,7 @@ Reduction for Astronomy from Gemini Observatory North and South).
    01_introduction
    cal_service
    ex1_f2im_ontarget
+   ex2_f2im_ultradeep
    04_tips_and_tricks
    05_issues_and_limitations
 

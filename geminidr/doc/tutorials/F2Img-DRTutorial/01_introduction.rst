@@ -22,6 +22,7 @@ The reduction can be done in two different ways:
 We show how to run the same reduction using both methods.
 
 * :ref:`ontarget_example`
+* :ref:`ultradeep_example`
 
 More examples will be added in the future.
 
@@ -58,26 +59,34 @@ Downloading the tutorial datasets
 =================================
 
 All the data needed to run this tutorial are found in the tutorial's data
-package:
+packages.  We have split the data packages per example to keep the size
+of each package within some reasonable limit.
 
-    `<http://www.gemini.edu/sciops/data/software/datapkgs/f2img_tutorial_datapkg-v1.tar>`_
+.. todo:: These data packages need to be uploaded to the website.
+         While we are testing, please get them from this location:
+         `<https://drive.google.com/drive/folders/1QU3HrnuQPkKjLBp51AfA5gEFsqx9k978?usp=share_link>`_
 
-Download it and unpack it somewhere convenient.
+* Example 1: `f2im_tutorial_datapkg-ontarget-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/f2im_tutorial_datapkg-ontarget-v1.tar>`_
+* Example 2: `f2im_tutorial_datapkg-ultradeep-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/f2im_tutorial_datapkg-ultradeep-v1.tar>`_
+
+Download one or several packages and unpack them somewhere
+convenient.
 
 .. highlight:: bash
 
 ::
 
     cd <somewhere convenient>
-    tar xvf f2img_tutorial_datapkg-v1.tar
-    bunzip2 f2img_tutorial/playdata/*.bz2
+    tar xvf f2img_tutorial_datapkg-ontarget-v1.tar
+    tar xvf f2img_tutorial_datapkg-ultradeep-v1.tar
+    bunzip2 f2img_tutorial/playdata/example*/*.bz2
 
-The datasets are found in the subdirectory ``f2img_tutorial/playdata``, and we
+The datasets are found in the subdirectory ``f2img_tutorial/playdata/example#``, and we
 will work in the subdirectory named ``f2img_tutorial/playground``.
 
 .. note:: All the raw data can also be downloaded from the Gemini Observatory
           Archive. Using the tutorial data package is probably more convenient
           but if you really want to learn how to search for and retrieve the
-          data yourself, see the step-by-step instructions in the appendix,
-          :ref:`goadownload`.
+          data yourself, see the step-by-step instructions for Example 1 in
+          the appendix :ref:`goadownload`.
 

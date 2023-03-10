@@ -76,7 +76,7 @@ Check files
 ===========
 
 For this example, all the raw files we need are in the same directory called
-``../playdata/``. Let us learn a bit about the data we have.
+``../playdata/example1/``. Let us learn a bit about the data we have.
 
 Ensure that you are in the ``playground`` directory and that the ``conda``
 environment that includes DRAGONS has been activated.
@@ -85,9 +85,9 @@ Let us call the command tool |typewalk|:
 
 .. code-block:: bash
 
-   $ typewalk -d ../playdata/
+   $ typewalk -d ../playdata/example1/
 
-   directory:  /path_to_my_files/f2img_tutorial/playdata
+   directory:  /path_to_my_files/f2img_tutorial/playdata/example1
         S20131120S0115.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (F2) (GEMINI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
         ...
         S20131121S0075.fits ............... (F2) (GEMINI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
@@ -131,7 +131,7 @@ First, navigate to the ``playground`` directory in the unpacked data package::
 Two lists for the darks
 -----------------------
 
-Our data set contains two sets of DARK files: some 120-seconds darks
+Our data set contains two sets of DARK files: some 120-second darks
 matching the science data and some 2-second darks to create the bad pixel
 mask (BPM). If you did not know the exposure times of the darks, you
 could send the |dataselect| results to the |showd| command line tool as follows
@@ -139,21 +139,21 @@ to get the information:
 
 .. code-block:: bash
 
-   $ dataselect --tags DARK ../playdata/*.fits | showd -d exposure_time
-   -----------------------------------------------
-   filename                          exposure_time
-   -----------------------------------------------
-   ../playdata/S20131120S0115.fits           120.0
-   ../playdata/S20131120S0116.fits           120.0
-   ../playdata/S20131120S0117.fits           120.0
+   $ dataselect --tags DARK ../playdata/example1/*.fits | showd -d exposure_time
+   --------------------------------------------------------
+   filename                                   exposure_time
+   --------------------------------------------------------
+   ../playdata/example1/S20131120S0115.fits           120.0
+   ../playdata/example1/S20131120S0116.fits           120.0
+   ../playdata/example1/S20131120S0117.fits           120.0
    ...
-   ../playdata/S20131121S0369.fits             2.0
-   ../playdata/S20131121S0370.fits             2.0
-   ../playdata/S20131121S0371.fits             2.0
+   ../playdata/example1/S20131121S0369.fits             2.0
+   ../playdata/example1/S20131121S0370.fits             2.0
+   ../playdata/example1/S20131121S0371.fits             2.0
    ...
-   ../playdata/S20131122S0012.fits           120.0
-   ../playdata/S20131122S0438.fits           120.0
-   ../playdata/S20131122S0439.fits           120.0
+   ../playdata/example1/S20131122S0012.fits           120.0
+   ../playdata/example1/S20131122S0438.fits           120.0
+   ../playdata/example1/S20131122S0439.fits           120.0
 
 (The list has been shortened for presentation.)
 
@@ -165,7 +165,7 @@ a list of dark files that have exposure time of 120 seconds:
 
 .. code-block:: bash
 
-   $ dataselect --tags DARK --expr "exposure_time==120" ../playdata/*.fits -o darks_120s.list
+   $ dataselect --tags DARK --expr "exposure_time==120" ../playdata/example1/*.fits -o darks_120s.list
 
 ``--expr`` is used to filter the files based on their |descriptors|. Here we are
 selecting files with exposure time of 120 seconds. You can repeat the same
@@ -173,7 +173,7 @@ command with the other exposure time to get the list of short darks.
 
 .. code-block:: bash
 
-   $ dataselect --tags DARK --expr "exposure_time==2" ../playdata/*.fits -o darks_002s.list
+   $ dataselect --tags DARK --expr "exposure_time==2" ../playdata/example1/*.fits -o darks_002s.list
 
 
 A list for the flats
@@ -182,7 +182,7 @@ Now let us create the list containing the flat files:
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT ../playdata/*.fits -o flats.list
+    $ dataselect --tags FLAT ../playdata/example1/*.fits -o flats.list
 
 We know that our dataset has only one filter (Y-band). If our dataset
 contained data with more filters, we would have had to use the ``--expr``
@@ -190,7 +190,7 @@ option to select the appropriate filter as follows:
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT --expr "filter_name=='Y'" ../playdata/*.fits -o flats_Y.list
+    $ dataselect --tags FLAT --expr "filter_name=='Y'" ../playdata/example1/*.fits -o flats_Y.list
 
 .. note::
     Flamingos-2 Y, J and H flat fields are created from lamps-on and lamps-off
@@ -207,7 +207,7 @@ selection we can use the ``--xtags``, e.g., ``--xtags CAL``.
 
 .. code-block:: bash
 
-    $ dataselect --xtags CAL ../playdata/*.fits -o sci_images.list
+    $ dataselect --xtags CAL ../playdata/example1/*.fits -o sci_images.list
 
 Remember that you can use the ``--expr`` option to select targets with different
 names (``object``) or exposure times (``exposure_time``), or use it with any
