@@ -7,6 +7,7 @@
 import os
 import sys
 # sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../'))
 
 # -- General configuration ------------------------------------------------
 
@@ -429,7 +430,7 @@ def run_api_doc(_):
             build_path
         ] + ignore_paths
 
-        sys.path.insert(0, build_path)
+        sys.path.insert(0, root_path)
 
         try:
             # Sphinx 1.7+
