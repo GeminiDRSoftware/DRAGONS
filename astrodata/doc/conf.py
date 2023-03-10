@@ -48,9 +48,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'Astrodata Programmer Manual'
-copyright = '2022, Association of Universities for Research in Astronomy'
-author = 'Ricardo Cardenes'
+project = 'Astrodata Manual'
+copyright = '2023, Association of Universities for Research in Astronomy'
+author = 'DRAGONS Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

@@ -296,9 +296,9 @@ rst_epilog = """
 .. |GMOSLSTut| replace:: :raw-html:`<a href="http://GMOSLS-DRTutorial.readthedocs.io/en/{v}">GMOS Longslit Data Reduction Tutorial</a>`
 
 
-.. |ADCheat| replace:: :raw-html:`<a href="http://astrodata-cheat-sheet.readthedocs.io/en/{v}/">AstroData Cheat Sheet</a>`
-.. |ADUser| replace:: :raw-html:`<a href="http://astrodata-user-manual.readthedocs.io/en/{v}/">Astrodata User Manual</a>`
-.. |ADProg| replace:: :raw-html:`<a href="http://astrodata-programmer-manual.readthedocs.io/en/{v}/">Astrodata Programmer Manual</a>`
+.. |ADCheat| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/cheatsheet.html">AstroData Cheat Sheet</a>`
+.. |ADUser| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/usermanual/index.html">Astrodata User Manual</a>`
+.. |ADProg| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/progmanual/index.html">Astrodata Programmer Manual</a>`
 .. |RSProg| replace:: :raw-html:`<a href="http://dragons-recipe-system-programmers-manual.readthedocs.io/en/{v}/">Recipe System Programmers Manual</a>`
 .. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System Users Manual</a>`
 .. |RSUserInstall|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/install.html">Installation Guide</a>`
