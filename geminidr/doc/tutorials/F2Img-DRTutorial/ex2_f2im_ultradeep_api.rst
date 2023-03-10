@@ -71,7 +71,7 @@ We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 8
+    :lineno-start: 7
 
     from gempy.utils import logutils
     logutils.config(file_name='f2im_data_reduction.log')
@@ -104,7 +104,7 @@ directory.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 15
+    :lineno-start: 9
 
     all_files = glob.glob('../playdata/example2/*.fits')
     all_files.sort()
@@ -129,7 +129,7 @@ the science observations, those with an exposure time of 5 seconds.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 17
+    :lineno-start: 11
 
     dark_files_5s = dataselect.select_data(
         all_files,
@@ -149,7 +149,7 @@ We repeat the same syntax for the 2-second darks:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 23
+    :lineno-start: 17
 
     dark_files_2s = dataselect.select_data(
         all_files,
@@ -166,7 +166,7 @@ filters. It is not really needed in this case.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 29
+    :lineno-start: 23
 
     list_of_flats_Kred = dataselect.select_data(
          all_files,
@@ -182,7 +182,7 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 35
+    :lineno-start: 29
 
     list_of_science_images = dataselect.select_data(
         all_files,
@@ -211,7 +211,7 @@ file on disk.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 41
+    :lineno-start: 35
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(dark_files_5s)
@@ -249,7 +249,7 @@ We create the master flat field and add it to the calibration manager as follows
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 53
+    :lineno-start: 38
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats_Kred)
@@ -279,7 +279,7 @@ done the in default F2 recipe.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 59
+    :lineno-start: 42
 
     reduce_target = Reduce()
     reduce_target.files = list_of_science_images
@@ -296,7 +296,7 @@ to the individual input images, saving those to disk, ready for part 3.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 59
+    :lineno-start: 46
 
     reduce_target.files = reduce_target.output_filenames
     reduce_target.recipename = 'ultradeep_part2'
@@ -309,7 +309,7 @@ the object masks (``_objmaskTransferred``) as inputs and produces a final stack.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 59
+    :lineno-start: 49
 
     reduce_target.files = reduce_target.output_filenames
     reduce_target.recipename = 'ultradeep_part3'

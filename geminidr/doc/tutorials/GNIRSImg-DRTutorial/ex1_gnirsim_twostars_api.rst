@@ -93,14 +93,14 @@ store the filenames to a Python list that can then be fed to the ``Reduce``
 class.  (See the |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
 
-The first list we create is a list of all the files in the ``playdata``
+The first list we create is a list of all the files in the ``playdata/example1/``
 directory.
 
 .. code-block:: python
     :linenos:
     :lineno-start: 12
 
-    all_files = glob.glob('../playdata/*.fits')
+    all_files = glob.glob('../playdata/example1/*.fits')
     all_files.sort()
 
 We will search that list for files with specific characteristics.  We use
@@ -264,7 +264,7 @@ science image will be the adjacent dithered frames obtained within a certain
 time limit.  The default for GNIRS keyhole images is "within 600 seconds".
 This can be seen by using "|showpars|"::
 
-    showpars ../playdata/N20120117S0014.fits associateSky
+    showpars ../playdata/example1/N20120117S0014.fits associateSky
 
 .. image:: _graphics/showpars_associateSky.png
    :scale: 100%

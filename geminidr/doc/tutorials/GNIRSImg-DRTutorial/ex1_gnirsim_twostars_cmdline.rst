@@ -69,12 +69,12 @@ A list of the darks
 There is only one set of 60-second darks in the data package.  To create the
 list, one simply needs to select on the ``DARK`` tag::
 
-    dataselect ../playdata/*.fits --tags DARK -o darks60.lis
+    dataselect ../playdata/example1/*.fits --tags DARK -o darks60.lis
 
 If there was a need to select specifically on the 60-second darks, the
 command would use the ``exposure_time`` descriptor::
 
-    dataselect ../playdata/*.fits --tags DARK --expr='exposure_time==60' -o darks60.lis
+    dataselect ../playdata/example1/*.fits --tags DARK --expr='exposure_time==60' -o darks60.lis
 
 A list for the flats
 --------------------
@@ -83,7 +83,7 @@ of them to one list.
 
 ::
 
-    dataselect ../playdata/*.fits --tags FLAT -o flats.lis
+    dataselect ../playdata/example1/*.fits --tags FLAT -o flats.lis
 
 A list for the science observations
 -----------------------------------
@@ -95,11 +95,11 @@ examples; of course, just one is required.
 
 ::
 
-    dataselect ../playdata/*.fits --tags IMAGE --xtags FLAT -o target.lis
+    dataselect ../playdata/example1/*.fits --tags IMAGE --xtags FLAT -o target.lis
 
-    dataselect ../playdata/*.fits --xtags FLAT --expr='filter_name=="J"' -o target.lis
+    dataselect ../playdata/example1/*.fits --xtags FLAT --expr='filter_name=="J"' -o target.lis
 
-    dataselect ../playdata/*.fits --expr='object=="GRB120116A"' -o target.lis
+    dataselect ../playdata/example1/*.fits --expr='object=="GRB120116A"' -o target.lis
 
 Pick the one you prefer, they all yield the same list.
 
@@ -146,7 +146,7 @@ data package to the local calibration database:
 
 ::
 
-    caldb add ../playdata/bpm*.fits
+    caldb add ../playdata/example1/bpm*.fits
 
 
 
@@ -170,7 +170,7 @@ science image will be the adjacent dithered frames obtained within a certain
 time limit.  The default for GNIRS keyhole images is "within 600 seconds".
 This can be seen by using "|showpars|"::
 
-    showpars ../playdata/N20120117S0014.fits associateSky
+    showpars ../playdata/example1/N20120117S0014.fits associateSky
 
 .. image:: _graphics/showpars_associateSky.png
    :scale: 100%

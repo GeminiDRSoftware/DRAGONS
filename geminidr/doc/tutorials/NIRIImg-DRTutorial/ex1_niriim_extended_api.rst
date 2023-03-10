@@ -107,14 +107,14 @@ store the filenames to a Python list that can then be fed to the ``Reduce``
 class. (See the |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
 
-The first list we create is a list of all the files in the ``playdata``
+The first list we create is a list of all the files in the ``playdata/example1``
 directory.
 
 .. code-block:: python
     :linenos:
     :lineno-start: 12
 
-    all_files = glob.glob('../playdata/*.fits')
+    all_files = glob.glob('../playdata/example1/*.fits')
     all_files.sort()
 
 We will search that list for files with specific characteristics.  We use
@@ -145,26 +145,26 @@ directory.  We use the tag ``DARK`` and the descriptor ``exposure_time``.
 
 ::
 
-    ../playdata/N20160102S0423.fits    20.002
-    ../playdata/N20160102S0424.fits    20.002
-    ../playdata/N20160102S0425.fits    20.002
-    ../playdata/N20160102S0426.fits    20.002
-    ../playdata/N20160102S0427.fits    20.002
-    ../playdata/N20160102S0428.fits    20.002
-    ../playdata/N20160102S0429.fits    20.002
-    ../playdata/N20160102S0430.fits    20.002
-    ../playdata/N20160102S0431.fits    20.002
-    ../playdata/N20160102S0432.fits    20.002
-    ../playdata/N20160103S0463.fits    1.001
-    ../playdata/N20160103S0464.fits    1.001
-    ../playdata/N20160103S0465.fits    1.001
-    ../playdata/N20160103S0466.fits    1.001
-    ../playdata/N20160103S0467.fits    1.001
-    ../playdata/N20160103S0468.fits    1.001
-    ../playdata/N20160103S0469.fits    1.001
-    ../playdata/N20160103S0470.fits    1.001
-    ../playdata/N20160103S0471.fits    1.001
-    ../playdata/N20160103S0472.fits    1.001
+    ../playdata/example1/N20160102S0423.fits    20.002
+    ../playdata/example1/N20160102S0424.fits    20.002
+    ../playdata/example1/N20160102S0425.fits    20.002
+    ../playdata/example1/N20160102S0426.fits    20.002
+    ../playdata/example1/N20160102S0427.fits    20.002
+    ../playdata/example1/N20160102S0428.fits    20.002
+    ../playdata/example1/N20160102S0429.fits    20.002
+    ../playdata/example1/N20160102S0430.fits    20.002
+    ../playdata/example1/N20160102S0431.fits    20.002
+    ../playdata/example1/N20160102S0432.fits    20.002
+    ../playdata/example1/N20160103S0463.fits    1.001
+    ../playdata/example1/N20160103S0464.fits    1.001
+    ../playdata/example1/N20160103S0465.fits    1.001
+    ../playdata/example1/N20160103S0466.fits    1.001
+    ../playdata/example1/N20160103S0467.fits    1.001
+    ../playdata/example1/N20160103S0468.fits    1.001
+    ../playdata/example1/N20160103S0469.fits    1.001
+    ../playdata/example1/N20160103S0470.fits    1.001
+    ../playdata/example1/N20160103S0471.fits    1.001
+    ../playdata/example1/N20160103S0472.fits    1.001
 
 As one can see above the exposure times all have a small fractional increment.
 This is just a floating point inaccuracy somewhere in the software that
@@ -372,7 +372,7 @@ the input data.
 
 ::
 
-    showpars ../playdata/N20160102S0363.fits addDQ
+    showpars ../playdata/example1/N20160102S0363.fits addDQ
 
 .. image:: _graphics/showpars_addDQ.png
    :scale: 100%

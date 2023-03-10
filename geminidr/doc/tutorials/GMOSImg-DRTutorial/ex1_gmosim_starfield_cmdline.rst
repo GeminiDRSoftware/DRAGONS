@@ -50,10 +50,9 @@ Set up the Calibration Service
 
 Check files
 ===========
-.. todo:: separate the raw data into playdata_ex1, etc.
 
 For this example, all the raw files we need are in the same directory called
-``../playdata/``. Let us learn a bit about the data we have.
+``../playdata/example1``. Let us learn a bit about the data we have.
 
 Ensure that you are in the ``playground`` directory and that the ``conda``
 environment that includes DRAGONS has been activated.
@@ -62,9 +61,9 @@ Let us call the command tool "|typewalk|":
 
 ..  code-block:: bash
 
-    $ typewalk -d ../playdata/
+    $ typewalk -d ../playdata/example1
 
-    directory:  /data/workspace/gmosimg_tutorial/playdata
+    directory:  /data/workspace/gmosimg_tutorial/playdata/example1
      N20170613S0180.fits ............... (AT_ZENITH) (AZEL_TARGET) (BIAS) (CAL) (GEMINI) (GMOS) (NON_SIDEREAL) (NORTH) (RAW) (UNPREPARED)
      ...
      N20170614S0201.fits ............... (GEMINI) (GMOS) (IMAGE) (NORTH) (RAW) (SIDEREAL) (UNPREPARED)
@@ -110,7 +109,7 @@ The bias files are selected with "|dataselect|":
 
 ..  code-block:: bash
 
-    $ dataselect --tags BIAS ../playdata/*.fits -o list_of_bias.txt
+    $ dataselect --tags BIAS ../playdata/example1/*.fits -o list_of_bias.txt
 
 List of Flats
 -------------
@@ -119,7 +118,7 @@ Now we can do the same with the FLAT files:
 
 ..  code-block:: bash
 
-    $ dataselect --tags FLAT ../playdata/*.fits -o list_of_flats.txt
+    $ dataselect --tags FLAT ../playdata/example1/*.fits -o list_of_flats.txt
 
 
 If your dataset has flats obtained with more than one filter, you can add the
@@ -128,7 +127,7 @@ the i-band. For example:
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT --expr 'filter_name=="i"' ../playdata/*.fits -o list_of_flats.txt
+    $ dataselect --tags FLAT --expr 'filter_name=="i"' ../playdata/example1/*.fits -o list_of_flats.txt
 
 
 List for science data
@@ -140,7 +139,7 @@ calibration:
 
 .. code-block:: bash
 
-    $ dataselect --xtags CAL ../playdata/*.fits -o list_of_science.txt
+    $ dataselect --xtags CAL ../playdata/example1/*.fits -o list_of_science.txt
 
 
 This will work for our dataset because we know that a single target was observed
@@ -152,15 +151,15 @@ line using a "pipe" (``|``):
 
 ..  code-block:: bash
 
-    $ dataselect --expr 'observation_class=="science"' ../playdata/*.fits | showd -d object,exposure_time
-    -----------------------------------------------------------
-    filename                             object   exposure_time
-    -----------------------------------------------------------
-    ../playdata/N20170614S0201.fits   starfield            10.0
-    ../playdata/N20170614S0202.fits   starfield            10.0
-    ../playdata/N20170614S0203.fits   starfield            10.0
-    ../playdata/N20170614S0204.fits   starfield            10.0
-    ../playdata/N20170614S0205.fits   starfield            10.0
+    $ dataselect --expr 'observation_class=="science"' ../playdata/example1/*.fits | showd -d object,exposure_time
+    --------------------------------------------------------------------
+    filename                                      object   exposure_time
+    --------------------------------------------------------------------
+    ../playdata/example1/N20170614S0201.fits   starfield            10.0
+    ../playdata/example1/N20170614S0202.fits   starfield            10.0
+    ../playdata/example1/N20170614S0203.fits   starfield            10.0
+    ../playdata/example1/N20170614S0204.fits   starfield            10.0
+    ../playdata/example1/N20170614S0205.fits   starfield            10.0
 
 
 The ``-d`` flag tells "|showd|" which "|descriptors|" will be printed for
@@ -172,7 +171,7 @@ To select on target name and exposure time, specify the criteria in the
 
 .. code-block:: bash
 
-   $ dataselect --expr '(object=="starfield" and exposure_time==10.)' ../playdata/*.fits -o list_of_science.txt
+   $ dataselect --expr '(object=="starfield" and exposure_time==10.)' ../playdata/example1/*.fits -o list_of_science.txt
 
 
 We have our input lists and we have initialized the calibration database, we
@@ -192,7 +191,7 @@ data package to the local calibration database:
 
 ::
 
-    caldb add ../playdata/bpm*.fits
+    caldb add ../playdata/example1/bpm*.fits
 
 .. _make_master_bias:
 

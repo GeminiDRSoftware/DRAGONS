@@ -87,31 +87,31 @@ that list to "|showd|" to show descriptor values, in this case
 
 ::
 
-    dataselect ../playdata/*.fits --tags DARK | showd -d exposure_time
+    dataselect ../playdata/example1/*.fits --tags DARK | showd -d exposure_time
 
-    -----------------------------------------------
-    filename                          exposure_time
-    -----------------------------------------------
-    ../playdata/N20160102S0423.fits          20.002
-    ../playdata/N20160102S0424.fits          20.002
-    ../playdata/N20160102S0425.fits          20.002
-    ../playdata/N20160102S0426.fits          20.002
-    ../playdata/N20160102S0427.fits          20.002
-    ../playdata/N20160102S0428.fits          20.002
-    ../playdata/N20160102S0429.fits          20.002
-    ../playdata/N20160102S0430.fits          20.002
-    ../playdata/N20160102S0431.fits          20.002
-    ../playdata/N20160102S0432.fits          20.002
-    ../playdata/N20160103S0463.fits           1.001
-    ../playdata/N20160103S0464.fits           1.001
-    ../playdata/N20160103S0465.fits           1.001
-    ../playdata/N20160103S0466.fits           1.001
-    ../playdata/N20160103S0467.fits           1.001
-    ../playdata/N20160103S0468.fits           1.001
-    ../playdata/N20160103S0469.fits           1.001
-    ../playdata/N20160103S0470.fits           1.001
-    ../playdata/N20160103S0471.fits           1.001
-    ../playdata/N20160103S0472.fits           1.001
+    --------------------------------------------------------
+    filename                                   exposure_time
+    --------------------------------------------------------
+    ../playdata/example1/N20160102S0423.fits          20.002
+    ../playdata/example1/N20160102S0424.fits          20.002
+    ../playdata/example1/N20160102S0425.fits          20.002
+    ../playdata/example1/N20160102S0426.fits          20.002
+    ../playdata/example1/N20160102S0427.fits          20.002
+    ../playdata/example1/N20160102S0428.fits          20.002
+    ../playdata/example1/N20160102S0429.fits          20.002
+    ../playdata/example1/N20160102S0430.fits          20.002
+    ../playdata/example1/N20160102S0431.fits          20.002
+    ../playdata/example1/N20160102S0432.fits          20.002
+    ../playdata/example1/N20160103S0463.fits           1.001
+    ../playdata/example1/N20160103S0464.fits           1.001
+    ../playdata/example1/N20160103S0465.fits           1.001
+    ../playdata/example1/N20160103S0466.fits           1.001
+    ../playdata/example1/N20160103S0467.fits           1.001
+    ../playdata/example1/N20160103S0468.fits           1.001
+    ../playdata/example1/N20160103S0469.fits           1.001
+    ../playdata/example1/N20160103S0470.fits           1.001
+    ../playdata/example1/N20160103S0471.fits           1.001
+    ../playdata/example1/N20160103S0472.fits           1.001
 
 As one can see above the exposure times all have a small fractional increment.
 This is just a floating point inaccuracy somewhere in the software that
@@ -128,8 +128,8 @@ Let's create our two lists now.
 
 ::
 
-    dataselect ../playdata/*.fits --tags DARK --expr='exposure_time==1' -o darks1s.lis
-    dataselect ../playdata/*.fits --tags DARK --expr='exposure_time==20' -o darks20s.lis
+    dataselect ../playdata/example1/*.fits --tags DARK --expr='exposure_time==1' -o darks1s.lis
+    dataselect ../playdata/example1/*.fits --tags DARK --expr='exposure_time==20' -o darks20s.lis
 
 
 A list for the flats
@@ -139,7 +139,7 @@ of them to one list.
 
 ::
 
-    dataselect ../playdata/*.fits --tags FLAT -o flats.lis
+    dataselect ../playdata/example1/*.fits --tags FLAT -o flats.lis
 
 
 A list for the standard star
@@ -151,21 +151,21 @@ we will print the object name too.
 
 ::
 
-    showd ../playdata/*.fits -d observation_class,object
+    showd ../playdata/example1/*.fits -d observation_class,object
 
-    --------------------------------------------------------------
-    filename                          observation_class     object
-    --------------------------------------------------------------
-    ../playdata/N20160102S0270.fits             science    SN2014J
+    -----------------------------------------------------------------------
+    filename                                   observation_class     object
+    -----------------------------------------------------------------------
+    ../playdata/example1/N20160102S0270.fits             science    SN2014J
     ...
-    ../playdata/N20160102S0295.fits          partnerCal      FS 17
-    ../playdata/N20160102S0296.fits          partnerCal      FS 17
-    ../playdata/N20160102S0297.fits          partnerCal      FS 17
-    ../playdata/N20160102S0298.fits          partnerCal      FS 17
-    ../playdata/N20160102S0299.fits          partnerCal      FS 17
-    ../playdata/N20160102S0363.fits              dayCal   GCALflat
+    ../playdata/example1/N20160102S0295.fits          partnerCal      FS 17
+    ../playdata/example1/N20160102S0296.fits          partnerCal      FS 17
+    ../playdata/example1/N20160102S0297.fits          partnerCal      FS 17
+    ../playdata/example1/N20160102S0298.fits          partnerCal      FS 17
+    ../playdata/example1/N20160102S0299.fits          partnerCal      FS 17
+    ../playdata/example1/N20160102S0363.fits              dayCal   GCALflat
     ...
-    ../playdata/N20160103S0472.fits              dayCal       Dark
+    ../playdata/example1/N20160103S0472.fits              dayCal       Dark
 
 The list is abridged for presentation.
 
@@ -174,13 +174,13 @@ can use either criterion to get our list.
 
 ::
 
-    dataselect ../playdata/*.fits --expr='observation_class=="partnerCal"' -o stdstar.lis
+    dataselect ../playdata/example1/*.fits --expr='observation_class=="partnerCal"' -o stdstar.lis
 
 Or
 
 ::
 
-    dataselect ../playdata/*.fits --expr='object=="FS 17"' -o stdstar.lis
+    dataselect ../playdata/example1/*.fits --expr='object=="FS 17"' -o stdstar.lis
 
 
 A list for the science observations
@@ -191,7 +191,7 @@ exclude the ``FLAT`` tag.
 
 This translates to the following expression::
 
-    dataselect ../playdata/*.fits --tags IMAGE --xtags FLAT --expr='object!="FS 17"' -o target.lis
+    dataselect ../playdata/example1/*.fits --tags IMAGE --xtags FLAT --expr='object!="FS 17"' -o target.lis
 
 One could have used the name of the science target too, like we did for
 selecting the standard star observation in the previous section.  The example
@@ -242,7 +242,7 @@ database:
 
 ::
 
-    caldb add ../playdata/bpm*.fits
+    caldb add ../playdata/example1/bpm*.fits
 
 
 The user can also create a *supplemental*, fresher BPM from the flats and
@@ -289,7 +289,7 @@ be run because the defaults are adjusted to match the input data.
 
 ::
 
-    showpars ../playdata/N20160102S0363.fits addDQ
+    showpars ../playdata/example1/N20160102S0363.fits addDQ
 
 .. image:: _graphics/showpars_addDQ.png
    :scale: 100%

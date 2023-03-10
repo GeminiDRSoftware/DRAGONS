@@ -70,7 +70,7 @@ Check files
 ===========
 
 For this example, all the raw files we need are in the same directory called
-``../playdata/``. Let us learn a bit about the data we have.
+``../playdata/example1``. Let us learn a bit about the data we have.
 
 Ensure that you are in the ``playground`` directory and that the ``conda``
 environment that includes DRAGONS has been activated.
@@ -79,9 +79,9 @@ Let us call the command tool "|typewalk|":
 
 ..  code-block:: bash
 
-    $ typewalk -d ../playdata/
+    $ typewalk -d ../playdata/example1
 
-    directory:  /data/workspace/gsaoiimg_tutorial/playdata
+    directory:  /data/workspace/gsaoiimg_tutorial/playdata/example1
          S20170504S0114.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
          ...
          S20170505S0030.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
@@ -128,7 +128,7 @@ Let us create the list containing the domeflats:
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT ../playdata/*.fits -o flats_Kshort.list
+    $ dataselect --tags FLAT ../playdata/example1/*.fits -o flats_Kshort.list
 
 We know that our dataset has only one filter (Kshort). If our dataset
 contained data with more filters, we would have had to use the ``--expr``
@@ -136,17 +136,17 @@ option to select the appropriate filter as follow:
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT --expr "filter_name=='Kshort'" ../playdata/*.fits -o flats_Kshort.list
+    $ dataselect --tags FLAT --expr "filter_name=='Kshort'" ../playdata/example1/*.fits -o flats_Kshort.list
 
 .. note:: To see the name of the filter, use "|showd|" (show descriptor):
 
      .. code-block:: bash
 
-        $ showd ../playdata/*.fits -d filter_name
-        ----------------------------------------------------
-        filename                                 filter_name
-        ----------------------------------------------------
-        ../playdata/S20170504S0114.fits   Kshort_G1105&Clear
+        $ showd ../playdata/example1/*.fits -d filter_name
+        -------------------------------------------------------------
+        filename                                          filter_name
+        -------------------------------------------------------------
+        ../playdata/example1/S20170504S0114.fits   Kshort_G1105&Clear
         ...
         ...
 
@@ -158,14 +158,14 @@ selecting on partner calibrations and showing the object name:
 
 ..  code-block:: bash
 
-    $ dataselect --expr 'observation_class=="partnerCal"' ../playdata/*.fits | showd -d object
-    ----------------------------------------
-    filename                          object
-    ----------------------------------------
-    ../playdata/S20170504S0114.fits     9132
-    ../playdata/S20170504S0115.fits     9132
-    ../playdata/S20170504S0116.fits     9132
-    ../playdata/S20170504S0117.fits     9132
+    $ dataselect --expr 'observation_class=="partnerCal"' ../playdata/example1/*.fits | showd -d object
+    -------------------------------------------------
+    filename                                   object
+    -------------------------------------------------
+    ../playdata/example1/S20170504S0114.fits     9132
+    ../playdata/example1/S20170504S0115.fits     9132
+    ../playdata/example1/S20170504S0116.fits     9132
+    ../playdata/example1/S20170504S0117.fits     9132
 
 
 If we had more than one object, a list for each standard star is created by
@@ -173,7 +173,7 @@ using the ``object`` descriptor as a selection criterium in "|dataselect|":
 
 .. code-block:: bash
 
-    $ dataselect --expr 'object=="9132"' ../playdata/*.fits -o std_9132.list
+    $ dataselect --expr 'object=="9132"' ../playdata/example1/*.fits -o std_9132.list
 
 
 A list for the science observations
@@ -183,15 +183,15 @@ us check that indeed we have only one science target and a unique exposure time:
 
 .. code-block:: bash
 
-    $ dataselect --expr 'observation_class=="science"' ../playdata/*.fits | showd -d object,exposure_time
-    ---------------------------------------------------------
-    filename                           object   exposure_time
-    ---------------------------------------------------------
-    ../playdata/S20170505S0095.fits   NGC5128            60.0
-    ../playdata/S20170505S0096.fits   NGC5128            60.0
+    $ dataselect --expr 'observation_class=="science"' ../playdata/example1/*.fits | showd -d object,exposure_time
+    ------------------------------------------------------------------
+    filename                                    object   exposure_time
+    ------------------------------------------------------------------
+    ../playdata/example1/S20170505S0095.fits   NGC5128            60.0
+    ../playdata/example1/S20170505S0096.fits   NGC5128            60.0
     ...
-    ../playdata/S20170505S0109.fits   NGC5128            60.0
-    ../playdata/S20170505S0110.fits   NGC5128            60.0
+    ../playdata/example1/S20170505S0109.fits   NGC5128            60.0
+    ../playdata/example1/S20170505S0110.fits   NGC5128            60.0
 
 
 Just to demonstrate how expression are built, let us consider that we need to
@@ -200,7 +200,7 @@ is 60 seconds. We also want to pass the output to a new list:
 
 .. code-block:: bash
 
-   $ dataselect --expr '(observation_class=="science" and exposure_time==60.)' ../playdata/*.fits -o science.list
+   $ dataselect --expr '(observation_class=="science" and exposure_time==60.)' ../playdata/example1/*.fits -o science.list
 
 
 
@@ -216,7 +216,7 @@ data package to the local calibration database:
 
 ::
 
-    caldb add ../playdata/bpm*.fits
+    caldb add ../playdata/example1/bpm*.fits
 
 .. _process_flat_files:
 

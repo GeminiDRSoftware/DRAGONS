@@ -103,14 +103,14 @@ store the filenames to a Python list that can then be fed to the ``Reduce``
 class. (See the |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
 
-The first list we create is a list of all the files in the ``playdata``
+The first list we create is a list of all the files in the ``playdata/example1``
 directory.
 
 .. code-block:: python
     :linenos:
     :lineno-start: 12
 
-    all_files = glob.glob('../playdata/*.fits')
+    all_files = glob.glob('../playdata/example1/*.fits')
     all_files.sort()
 
 The :meth:`~list.sort` method simply re-organize the list with the file names

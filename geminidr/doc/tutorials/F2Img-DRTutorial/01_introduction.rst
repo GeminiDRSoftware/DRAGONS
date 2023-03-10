@@ -10,10 +10,6 @@ This tutorial covers the basics of reducing
 `Flamingos-2 <https://www.gemini.edu/sciops/instruments/flamingos2/>`_  data
 using `DRAGONS <https://dragons.readthedocs.io/>`_.
 
-The F2 imaging tutorial series, for now, contains only one scientific
-example: the reduction of a field of stars and distant
-galaxies with dither on target for sky subtraction.
-
 The reduction can be done in two different ways:
 
 * From the terminal using the command line.

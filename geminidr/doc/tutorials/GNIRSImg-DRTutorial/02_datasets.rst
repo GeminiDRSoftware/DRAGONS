@@ -12,21 +12,25 @@ Downloading the tutorial datasets
 =================================
 
 All the data needed to run this tutorial are found in the tutorial's data
-package:
+packages.
 
-    `<http://www.gemini.edu/sciops/data/software/datapkgs/gnirsimg_tutorial_datapkg-v1.tar>`_
+.. todo:: These data packages need to be uploaded to the website.
+         While we are testing, please get them from this location:
+         `<https://drive.google.com/drive/folders/1QU3HrnuQPkKjLBp51AfA5gEFsqx9k978?usp=share_link>`_
 
-Download it and unpack it somewhere convenient.
+* Example 1: `gnirsim_tutorial_datapkg-twostars-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gnirsim_tutorial_datapkg-twostars-v1.tar>`_
+
+Download the packages and unpack them somewhere convenient.
 
 .. highlight:: bash
 
 ::
 
     cd <somewhere convenient>
-    tar xvf gnirsimg_tutorial_datapkg-v1.tar
-    bunzip2 gnirsimg_tutorial/playdata/*.bz2
+    tar xvf gnirsim_tutorial_datapkg-twostars-v1.tar
+    bunzip2 gnirsimg_tutorial/playdata/example*/*.bz2
 
-The datasets are found in the subdirectory ``gnirsimg_tutorial/playdata``, and we
+The datasets are found in the subdirectory ``gnirsimg_tutorial/playdata/example#``, and we
 will work in the subdirectory named ``gnirsimg_tutorial/playground``.
 
 .. note:: All the raw data can also be downloaded from the Gemini Observatory
