@@ -5,4 +5,4 @@ numpy
 astropy
 asdf
 gwcs
-dateutil
+python-dateutil
