@@ -4,3 +4,4 @@ Cython
 numpy
 astropy
 asdf
+gwcs
