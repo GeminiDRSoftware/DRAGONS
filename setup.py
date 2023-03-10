@@ -106,7 +106,7 @@ setup(name='dragons',
       extras_require={
           'all': ['ginga', 'imexam>=0.8'],
           'docs': ['docutils>=0.15', 'sphinx>=1.2.2',
-                   'sphinx_rtd_theme>=0.3.0'],
+                   'sphinx_rtd_theme>=0.3.0', 'numpy'],
           'test': [
               'pytest>=5.2', 'pytest_dragons>=1.0.0', 'coverage',
               'objgraph>=3.5', 'cycler>=0.10', # 'astrofaker', # needs dragons
