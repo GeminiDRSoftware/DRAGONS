@@ -355,10 +355,22 @@ includes the sensitivity function and will be added to the calibration
 database automatically if the "store" option is set in the ``dragonsrc``
 configuration file.
 
-Four primitives in the default recipe for spectrophotometric standard have
-an interactive interface: ``skyCorrectFromSlit``, ``findApertures``,
-``traceApertures``, and ``calculateSensitivity``.  To activate the interactive
-mode for all four:
+**The 705nm Standard**
+
+In most situation, the default recipe and input parameters will yield a good
+calculation of the sensitivity function.
+
+::
+
+    reduce @std_705nm.lis
+
+
+However, if you suspect a suboptimal reduction or just want to confirm that
+things are going well, there are four primitives in the default recipe for
+spectrophotometric standard have an interactive interface:
+``skyCorrectFromSlit``, ``findApertures``,
+``traceApertures``, and ``calculateSensitivity``.  To activate the
+interactive mode for all four:
 
 ::
 
@@ -378,7 +390,9 @@ sensitivity function:
 
 The interactive tools are introduced in section :ref:`interactive`. 
 
-In particular, for the standard star observation at central wavelength 795 nm in this 
+**The 795nm Standard**
+
+For the standard star observation at central wavelength 795 nm in this
 dataset, ``calculateSensitivity`` with its default parameter values yields a suboptimal number 
 of data points to constrain its sensitivity curve (see the left plot below; click the panel to enlarge). 
 There is a conspicuous gap between 820 and 980 nm -- a result of the amplifier #5 issue and compounded 
@@ -478,7 +492,7 @@ in the upper part of the right plot.
 The outputs include a 2-D spectrum image (``S20220611S0716_2D.fits``), which has been
 bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
 distortion, sky-subtracted, flux-calibrated, and stacked, and also the 1-D spectra
-(``S20171022S0087_1D.fits``) extracted from this 2-D spectrum image. The 1-D spectra are stored 
+(``S20220611S0716_1D.fits``) extracted from this 2-D spectrum image. The 1-D spectra are stored
 as 1-D FITS images in extensions of the output Multi-Extension FITS file, along with their 
 respective variance and data quality (or mask) arrays. 
 
@@ -512,6 +526,18 @@ The 1-D flux-calibrated spectra of the two apertures are shown below.
 .. image:: _graphics/LS_ldred_ap2_spec1D.png
    :width: 325
    :alt: 1D spectrum for aperture 2   
+
+Since there are only two images, several bad columns, and artifacts remain
+in the data.  Many are flagged in the mask, the DQ plane of the output FITS
+files. Flagged pixels are not used in the calculations.  They do show up in the
+data when plotted though.  Correcting for them is a cosmetic step left to the
+user as the only purpose is to improve the look of the spectra, not the
+scientific result.
+
+If you decide to apply a cosmetic correction, you could use the primitive
+``applyDQPlane`` (``reduce -r applyDQPlane S20220611S0716_1D``).  We do not
+recommend that you do science measurements on a file altered for cosmetic
+purposes.
 
 To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
 script, see Tips and Tricks :ref:`plot_1d`.

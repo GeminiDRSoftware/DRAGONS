@@ -260,9 +260,9 @@ the value for the descriptor of interest, here ``central_wavelength``.
     :lineno-start: 32
 
     all_stdstar = dataselect.select_data(all_files, ['STANDARD'])
-    for F in all_stdstar:
-        ad = astrodata.open(F)
-        print(F, '  ', ad.central_wavelength())
+    for std in all_stdstar:
+        ad = astrodata.open(std)
+        print(std, '  ', ad.central_wavelength())
         
 ::
 
@@ -493,14 +493,29 @@ includes the sensitivity function and will be added to the calibration
 database automatically if the "store" option is set in the ``dragonsrc``
 configuration file.
 
-Four primitives in the default recipe for spectrophotometric standard have
-an interactive interface: ``skyCorrectFromSlit``, ``findApertures``,
+**The 705nm Standard**
+
+In most situation, the default recipe and input parameters will yield a good
+calculation of the sensitivity function.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 81
+
+    reduce_std_705nm = Reduce()
+    reduce_std_705nm.files.extend(stdstar_705nm)
+    reduce_std_705nm.runr()
+
+However, if you suspect a suboptimal reduction or just want to confirm that
+things are going well, there are four primitives in the default recipe for
+spectrophotometric standard have an interactive interface:
+``skyCorrectFromSlit``, ``findApertures``,
 ``traceApertures``, and ``calculateSensitivity``.  To activate the interactive
 mode for all four:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 81
+    :lineno-start: 84
 
     reduce_std_705nm = Reduce()
     reduce_std_705nm.files.extend(stdstar_705nm)
@@ -517,7 +532,7 @@ sensitivity function:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 85
+    :lineno-start: 88
 
     reduce_std_705nm = Reduce()
     reduce_std_705nm.files.extend(stdstar_705nm)
@@ -526,7 +541,9 @@ sensitivity function:
 
 The interactive tools are introduced in section :ref:`interactive`.
 
-In particular, for the standard star observation at central wavelength 795 nm in this 
+**The 795nm Standard**
+
+For the standard star observation at central wavelength 795 nm in this
 dataset, ``calculateSensitivity`` with its default parameter values yields a suboptimal number 
 of data points to constrain its sensitivity curve (see the left plot below; click the panel to enlarge). 
 There is a conspicuous gap between 820 and 980 nm -- a result of the amplifier #5 issue and compounded 
@@ -540,7 +557,7 @@ we update as follows
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 89
+    :lineno-start: 92
 
     reduce_std_795nm = Reduce()
     reduce_std_795nm.files.extend(stdstar_795nm)
@@ -608,7 +625,7 @@ science observations and extract the 1-D spectrum.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 95
+    :lineno-start: 98
 
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
@@ -680,7 +697,7 @@ This is what the 2-D spectrum image looks like.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 100
+    :lineno-start: 103
 
     display = Reduce()
     display.files = ['S20220611S0716_2D.fits']
@@ -701,7 +718,7 @@ The 1-D flux-calibrated spectra of the two apertures are shown below.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 104
+    :lineno-start: 107
 
     from gempy.adlibrary import plotting
     import matplotlib.pyplot as plt
@@ -729,7 +746,7 @@ If you need an ascii representation of the spectum, you can use the primitive
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 112
+    :lineno-start: 115
 
     writeascii = Reduce()
     writeascii.files = ['S20220611S0716_1D.fits']
@@ -747,7 +764,7 @@ To use a different format, set the ``format`` parameters.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 116
+    :lineno-start: 119
 
     writeascii = Reduce()
     writeascii.files = ['S20220611S0716_1D.fits']
