@@ -399,7 +399,7 @@ The interactive tools are introduced in section :ref:`interactive`.
 
           .. code-block:: python
 
-              for f in reduce_arcs.output_filenames:
+              for f in reduce_flats.output_filenames:
                   caldb.add_cal(f)
 
 
@@ -478,7 +478,7 @@ mode for all four:
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
-    reduce_arcs.uparms = [('interactive', True)]
+    reduce_std.uparms = [('interactive', True)]
     reduce_std.runr()
 
 Since the standard star spectrum is bright and strong, and the exposure short,

@@ -187,7 +187,7 @@ receive the Astrodata tag ``STANDARD``.  All spectrophotometric standards
 normally used at Gemini are in the DRAGONS list of recognized standards. 
 For this example, we will be reducing the standard star observations at each 
 central wavelength separately without stacking them. The standard star reduction 
-recipe stacks all the observations in a given file list. So, we need to create 
+recipe stacks all the observations in a given file list. So we need to create 
 separate file lists for the different central wavelengths. 
 
 First, let's check the central wavelength of the standard star frames in our raw data directory.
@@ -342,7 +342,7 @@ Processed Standard - Sensitivity Function
 =========================================
 The GMOS longslit spectrophotometric standards are normally taken when there
 is a hole in the queue schedule, often when the weather is not good enough
-for science observations. For a large dither along the dispersion axis, i.e., a difference 
+for science observations. For a large wavelength dither, i.e., a difference 
 in central wavelength much greater than about 10 nm, a spectrophotometric standard should be 
 taken at each of those positions to calculate the respective sensitvity functions. 
 The latter will then be used for spectrophotometric calibration of the science observations 
@@ -392,7 +392,7 @@ we update as follows
 
 ::
 
-    reduce @std_795nm.lis -p interactive=True calculateSensitivity:resampling=15.0
+    reduce @std_795nm.lis -p calculateSensitivity:interactive=True calculateSensitivity:resampling=15.0
 
 .. image:: _graphics/LS_ldred_sens_before.png
    :width: 325
@@ -408,8 +408,8 @@ interactive tool and have manually masked four data points.
 
 .. note:: If you wish to inspect the spectra::
 
-    dgsplot S20220608S0098_standard.fits 1
-    dgsplot S20220608S0101_standard.fits 1
+    dgsplot --bokeh S20220608S0098_standard.fits 1
+    dgsplot --bokeh S20220608S0101_standard.fits 1
 
    where ``1`` is the aperture #1, the brightest target.
    To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
@@ -422,7 +422,7 @@ interactive tool and have manually masked four data points.
 Science Observations
 ====================
 As mentioned previously, the science target is the central galaxy of an Odd Radio Circle. The sequence 
-has two images that were dithered along the dispersion axis (with a large step of 90 nm).  
+has two images that were dithered in wavelength (with a large step of 90 nm).  
 DRAGONS will register the two images, align and stack them before
 extracting the 1-D spectrum. 
 
@@ -432,6 +432,8 @@ This is what one raw image looks like.
    :width: 600
    :alt: raw science image
 
+The broad, white and black vertical bands (slightly to the left of the middle) are related 
+to the GMOS-S amplifier #5 issues. 
 As can be seen, there are two obvious sources in this observation. Regardless of whether 
 both of them are of interest to the program, DRAGONS will locate, trace, and extract 
 them automatically. Each extracted spectrum is stored in an individual extension 
@@ -447,7 +449,8 @@ science observations and extract the 1-D spectrum.
 
     reduce -r reduceWithMultipleStandards @sci.lis -p interactive=True
 
-Here use a different science reduction recipe than the default. The 
+Here we use a different science reduction recipe ``reduceWithMultipleStandards`` 
+than the default. The 
 latter performs flux calibration *after* stacking the extracted spectra 
 as described :ref:`here <Science Observations>`, which is not suitable 
 for these observations with a large wavelength dither. The recipe 
@@ -472,11 +475,12 @@ in the upper part of the right plot.
    :width: 325
    :alt: Tracing of aperture
 
-The outputs include a 2-D spectrum (``S20220611S0716_2D.fits``), which has been
+The outputs include a 2-D spectrum image (``S20220611S0716_2D.fits``), which has been
 bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
-distortion, sky-subtracted, flux-calibrated, and stacked, and also the 1-D spectrum
-(``S20171022S0087_1D.fits``) extracted from this 2-D spectrum. The 1-D spectra are stored 
-as 1-D FITS images in extensions of the output Multi-Extension FITS file.
+distortion, sky-subtracted, flux-calibrated, and stacked, and also the 1-D spectra
+(``S20171022S0087_1D.fits``) extracted from this 2-D spectrum image. The 1-D spectra are stored 
+as 1-D FITS images in extensions of the output Multi-Extension FITS file, along with their 
+respective variance and data quality (or mask) arrays. 
 
 This is what the 2-D spectrum looks like.
 
