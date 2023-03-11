@@ -126,38 +126,6 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
 }
 
-# This is added to the end of RST files - a good place to put substitutions to
-# be used globally.
-rst_epilog = f"""
-.. _`Anaconda`: https://www.anaconda.com/
-.. _`Astropy`: http://docs.astropy.org/en/stable/
-.. _`Conda`: https://conda.io/docs/
-.. _`DRAGONS`: https://dragons.readthedocs.io/
-.. _`Numpy`: https://numpy.org/doc/stable/
-.. _`Recipe System Programmers Manual`: http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/
-.. _`Recipe System Users Manual`: http://dragons-recipe-system-users-manual.readthedocs.io/en/latest/
-
-.. |AstroData| replace:: :class:`~astrodata.AstroData`
-.. |astrodata| replace:: :mod:`~astrodata`
-.. |astropy| replace:: `Astropy`_
-.. |DRAGONS| replace:: `DRAGONS`_
-.. |geminidr| replace:: :mod:`~geminidr`
-.. |gemini_instruments| replace:: :mod:`gemini_instruments`
-.. |gemini| replace:: ``gemini``
-.. |Mapper| replace:: :class:`~recipe_system.mappers.baseMapper.Mapper`
-.. |mappers| replace:: :mod:`recipe_system.mappers`
-.. |NDAstroData| replace:: :class:`~astrodata.nddata.NDAstroData`
-.. |NDData| replace:: :class:`~astropy.nddata.NDData`
-.. |numpy| replace:: `Numpy`_
-.. |PrimitiveMapper| replace:: :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`
-.. |RecipeMapper| replace:: :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
-.. |recipe_system| replace:: :mod:`recipe_system`
-.. |Reduce| replace:: :class:`~recipe_system.reduction.coreReduce.Reduce`
-.. |reduce| replace:: ``reduce``
-.. |Table| replace:: :class:`~astropy.table.Table`
-.. |TagSet| replace:: :class:`~astrodata.TagSet`
-"""
-
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -455,11 +423,40 @@ def setup(app):
     # Automatic API generation
     app.connect('builder-inited', run_api_doc)
 
+# This is added to the end of RST files - a good place to put substitutions to
+# be used globally.
 rst_epilog = """
+.. _`Anaconda`: https://www.anaconda.com/
+.. _`Astropy`: http://docs.astropy.org/en/stable/
+.. _`Conda`: https://conda.io/docs/
+.. _`Numpy`: https://numpy.org/doc/stable/
+.. |numpy| replace:: `Numpy`_
+.. |astropy| replace:: `Astropy`_
+
+.. |AstroData| replace:: :class:`~astrodata.AstroData`
+.. |astrodata| replace:: :mod:`~astrodata`
+.. |geminidr| replace:: :mod:`~geminidr`
+.. |gemini_instruments| replace:: :mod:`gemini_instruments`
+.. |gemini| replace:: ``gemini``
+.. |Mapper| replace:: :class:`~recipe_system.mappers.baseMapper.Mapper`
+.. |mappers| replace:: :mod:`recipe_system.mappers`
+.. |NDAstroData| replace:: :class:`~astrodata.nddata.NDAstroData`
+.. |NDData| replace:: :class:`~astropy.nddata.NDData`
+.. |PrimitiveMapper| replace:: :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`
+.. |RecipeMapper| replace:: :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
+.. |recipe_system| replace:: :mod:`recipe_system`
+.. |Reduce| replace:: :class:`~recipe_system.reduction.coreReduce.Reduce`
+.. |reduce| replace:: ``reduce``
+.. |Table| replace:: :class:`~astropy.table.Table`
+.. |TagSet| replace:: :class:`~astrodata.TagSet`
+
 .. role:: raw-html(raw)
    :format: html
 
-.. |RSProgShow| replace:: :raw-html:`<a href="https://dragons-recipe-system-programmers-manual.readthedocs.io/en/{v}/">https://dragons-recipe-system-programmers-manual.readthedocs.io/en/{v}/</a>`
+.. |DRAGONS| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/en/{v}/">DRAGONS</a>`
+.. |RSProgManual| replace:: :raw-html:`<a href="http://dragons-recipe-system-programmers-manual.readthedocs.io/en/{v}/">Recipe System Programmer Manual</a>`
+.. |RSUserManual| replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System User Manual<a>`
 
 
 """.format(v = rtdurl)
+

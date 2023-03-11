@@ -177,7 +177,8 @@ present (see :ref:`the next chapter <fitskeys>`). If the WCS is modified (for
 example, by refining the pointing or attaching a more accurate wavelength
 calibration), the FITS header keywords are not updated and therefore they should
 never be used to determine the world coordinates of any pixel. These keywords are
-only updated when the object is written to disk as a FITS file.
+only updated when the object is written to disk as a FITS file.  The WCS is
+retrieved as follows: ``ad[0].wcs``.
 
 
 A Note on Memory Usage
