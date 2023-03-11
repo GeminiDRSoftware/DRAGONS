@@ -6,7 +6,7 @@
 Tags
 ****
 
-We described :ref:`above <tags_prop_entry>` how to generate tags for an
+We described :ref:`in previous section <tags_prop_entry>` how to generate tags for an
 AstroData derivative. In this section we'll describe the algorithm that
 generates the complete tag set out of the individual ``TagSet`` instances. The
 algorithm collects all the tags in a list and then decides whether to apply
