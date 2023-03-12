@@ -49,96 +49,25 @@ input datasets is used to set the tags and the import path of the instrument
 package.  It is assumed that all the datasets in the list are of the same type
 and will be reduced with the same recipes and primitives.
 
-**Class Mapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='_default',
-                   usercals=None, uparms=None, upload=None)*
+See the API for |Mapper|.
 
-   Arguments to __init__
-    adinputs
-        A ``list`` of input AstroData objects (required).
-    mode
-        A ``str`` indicating mode name. This defines which recipe set to use.
-        Default is ``'sq'``. See the
-        :ref:`mode definition <modedef>` for addtional information.
-    drpkg
-        A ``str`` indicating the name of the data reduction package to inspect.
-        The default is ``geminidr``. The package *must* be importable and
-        should provide instrument packages of the same form as defined in
-        :ref:`appendix <drpkg>`.
-    recipename
-        A ``str`` indicating the recipe to use for processing. This will
-        override the mapping in part or in whole.  The default is "_default".
-        A recipe library should have a module attribute ``_default`` that
-        is assigned the name of the default function (recipe) to run if that
-        library is selected. This guarantees that if a library is selected there
-        will always be a recipe matching ``recipename`` to run.
+Regarding the ``recipename`` argument, the default is "_default".
+A recipe library should have a module attribute ``_default`` that
+is assigned the name of the default function (recipe) to run if that
+library is selected. This guarantees that if a library is selected there
+will always be a recipe matching ``recipename`` to run.
 
-        ``recipename`` can also be the name of a specific recipe that will be
-        expected to be found in the selected recipe library.
+``recipename`` can also be the name of a specific recipe that will be
+expected to be found in the selected recipe library.
 
-        To completely bypass the recipe mapping and use a user-provided
-        recipe library and a recipe within, ``recipename`` is set to
-	
-        `<(path)library_file_name>.<name_of_recipe_function>`.
+To completely bypass the recipe mapping and use a user-provided
+recipe library and a recipe within, ``recipename`` is set to
 
-        Finally, ``recipename`` can be set to be the name of a single primitive.
-        In that case, the primitive of that name in the mapped primitive set
-        will be run.
-    usercals
-        A ``dict`` of user-specified calibration files, keyed on
-        calibration type.  Calibration types are set from the calibration
-        manager. There is a copy of the list of acceptable types in
-        ``transport_request.py``. E.g., ``{'processed_bias':'foo_bias.fits'}``
-    uparms
-        A ``list`` of tuples representing user parameters passed via command
-        line or the |Reduce| API.  Each may have a specified primitive. If no
-        primitive is specified, the value is applied to all parameters matching
-	the name in any primitives.
+`<(path)library_file_name>.<name_of_recipe_function>`.
 
-        E.g., [('param','value'), ('<primitive_name>:param1','val1')]
-    upload
-        *Internal to Gemini only.*  Default is None.
-
-        A ``list`` of strings indicating the processing products to be
-        uploaded to the internal Gemini database. Allowed values are
-        ``metrics``, ``calib``, ``science``.  The latter is not implemented.
-        For example, the night time quality assessment pipeline produces sky
-        quality metrics.  When ``upload = ['metrics']``, the ``geminidr``
-        primitives ``measureBG``, ``measureCC``, and ``measureIQ`` will upload
-        their results to the internal database.
-
-   Attributes
-    adinputs
-        See above.
-    mode
-        See above.
-    pkg
-        A ``str`` set from the ``instrument`` descriptor of the first AstroData
-        object in the ``adinputs`` list.  Uses the generic name (e.g. gmos
-        rather than gmos-s) and lowercase.  The ``pkg`` string must match the
-        name of an instrument package.  ??KL, add reference to appendix  This
-        is an optimization feature that will limit the primitive and recipe
-        search to the instrument package that matches the input data.
-    dotpackage
-        A ``str`` set from the value of ``drpkg`` and ``pkg`` to represent
-        the dot-path to the package.  Eg. ``gemini_instrument.gmos``.  This
-        will be use for dynamic imports.
-    recipename
-        See above.
-    tags
-        A Python ``set``, set from the ``tags`` of the first AstroData object
-        in the ``adinputs`` list.
-    usercals
-        The value of ``usercals`` as passed to ``__init__`` or an empty
-        dictionary if nothing is passed.
-    userparams
-        A ``dict`` version of list of tuples found in ``uparms``.  The
-        dictionary version can be used more directly by the primitives.
-    _upload, property upload
-        *Internal to Gemini only.*  Default is None.
-
-        A ``list`` of ``str`` to identify the types of upload that are to be
-        performed.  The valid strings are: "metrics", "calib", "science".
-        The ``__init__`` uses a property to parse and this attribute.
+Finally, ``recipename`` can be set to be the name of a single primitive.
+In that case, the primitive of that name in the mapped primitive set
+will be run.
 
 
 PrimitiveMapper
@@ -147,24 +76,6 @@ PrimitiveMapper
 |PrimitiveMapper| is subclassed on |Mapper| and does *not* override
 ``__init__()``.  |PrimitiveMapper| implements the primitive search algorithm
 and provides one public method on the class: ``get_applicable_primitives()``.
-
-**Class PrimitiveMapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='_default',
-                            usercals=None, uparms=None, upload=None)*
-
-   Arguments to __init__
-    See :ref:`Mapper <mapperclass>` above.
-
-   Attributes
-    See :ref:`Mapper <mapperclass>` above.
-
-   Public Methods
-    get_applicable_primitives *(self)*
-        Search the data reduction and instrument packages for the best matching
-        primitive class for the input dataset.
-
-        *Returns*
-            Instance of the selected primitive class.
-
 
 The primitive set search is conducted by comparing the AstroData ``tags``
 attribute of the first input dataset to the ``tagset`` attribute of each
@@ -194,10 +105,10 @@ chosen primitive class.
 
 The instantiation of the primitive class by ``get_applicable_primitives()``
 implies an API requirement on the Primitive class.  It must be possible to
-intantiate a primitive class with the following call::
+instantiate a primitive class with the following call::
 
     PrimitiveClassName(self.adinputs, mode=self.mode, ucals=self.usercals,
-                       uparms=self.userparams, upload=self.upload)
+        uparms=self.userparams, upload=self.upload, config_file=self.config_file)
 
 where ``self`` is an instantiated PrimitiveMapper.
 
@@ -208,24 +119,6 @@ RecipeMapper
 |RecipeMapper| is subclassed on |Mapper| and does *not* override ``__init__()``.
 |RecipeMapper| implements the recipe search algorithm and provides one
 public method on the class: ``get_applicable_recipe()``.
-
-**Class RecipeMapper** *(adinputs,mode='sq',drpkg='geminidr',recipename='_default',
-                         usercals=None, uparms=None, upload=None)*
-
-    Arguments to __init__
-    See :ref:`Mapper <mapperclass>` above.
-
-   Attributes
-    See :ref:`Mapper <mapperclass>` above.
-
-   Public Methods
-    get_applicable_recipe *(self)*
-        Search the data reduction and instrument packages for the best matching
-        recipe library (module) for the input dataset.  Then returns either
-        the *default* recipe or the one named in ``recipename``.
-
-        *Returns*
-            A function defined in an instrument package recipe library.
 
 The recipe library search is conducted by comparing the AstroData ``tags``
 attribute of the first input dataset to the ``recipe_tags`` module attribute
@@ -244,14 +137,15 @@ all previous matches and the best matching recipe library is imported.
 The *default* or the named recipe function is retrieved from the recipe
 library.
 
-A match requires that the primitive class *tagset* be a subset of the
+A match requires that the *recipe_tags* be a subset of the
 AstroData *tags* descriptor.  The *best match* is the one with the
-largest matching subset of the data's tags attribute.  If two or more primitive
-classes return best matches with the same number of tags in their *tagset*,
-then the current algorithm will only return the first *best match* primitive
-class it has encountered.  It is therefore very important to be specific with
-the *tagset* attributes to avoid such multiple match situation and to ensure
-only one true best match.
+largest matching subset of the data's tags attribute.  If two or more
+recipe libraries return best matches with the same number of tags in
+their *recipe_tags*,
+then the current algorithm will only return the first *best match* recipe
+library it has encountered.  It is therefore very important to be specific
+with the *tagset* attributes to avoid such multiple match situation and to
+ensure only one true best match.
 
 The ``get_applicable_recipe()`` method returns this *best match* recipe
 function to the caller.  This is a function object and is callable.

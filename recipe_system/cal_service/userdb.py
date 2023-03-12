@@ -13,6 +13,7 @@ from .caldb import CalDB, CalReturn
 class UserDB(CalDB):
     """
     The class handling the User-defined database, which can contain:
+
     (a) a filename for each caltype that should be returned whenever that
         caltype is requested, irrespective of the AD "making" the request
     (b) a filename to be returned for a given caltype for a specific AD
@@ -30,7 +31,9 @@ class UserDB(CalDB):
         This is cached to disk as a pickle.
     mdf_dict : dict
         A dict of {mdf_key: filename} for the standard focal plane masks
+
     """
+
     def __init__(self, name=None, get_cal=True, mdf_dict=None,
                  user_cals=None, valid_caltypes=None, log=None):
         super().__init__(name=name, get_cal=get_cal, store_cal=True,

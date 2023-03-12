@@ -131,7 +131,7 @@ The recipes are stored in a Recipe Library, a Python module, see below.
 **Recipe Library**
 
 A Recipe Library is a Python module that stores recipes.  The Recipe Library
-is given a tagset for data to recipe mapping by the Recipe System.  All the
+is given a tagset for data for recipe mapping by the Recipe System.  All the
 recipes in a Recipe Library must therefore apply to the same Astrodata tags.
 The Astrodata tagset is stored in the module variable ``recipe_tags``.
 
@@ -344,9 +344,8 @@ Calibration Request Service
 ---------------------------
 
 The Calibration Request Service provides a functional interface to a local
-calibration manager (GeminiCalMgr) or the Gemini Observatory facility
-calibration manager (fitsstore) The Calibration Request Service does **not**
-communicate with the Gemini Observatory Archive.
+calibration manager (GeminiCalMgr), the Gemini Observatory facility
+calibration manager (fitsstore), or the Gemini Observatory Archive.
 
 Primitives requiring **processed** calibration files (biases, flats, etc.)
 will use this functional interface to make calibration requests. These requests 
