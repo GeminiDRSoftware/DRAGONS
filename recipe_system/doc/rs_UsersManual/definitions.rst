@@ -38,7 +38,7 @@ execution summary above: "AstroData tags", "mode", "recipe", "recipe library",
 AstroData Tags
 ==============
 The ``AstroData Tags`` are data identification tags.  When a file is opened
-with ``AstroData``, the software loads the *AstroData configuration files* and
+with ``AstroData``, the software loads the *AstroData configuration modules* and
 attempts to identify the data.
 
 The tags associated with the dataset are compared to tags included in
@@ -79,11 +79,12 @@ The science quality mode, "sq", the default mode, is to be used in most cases.
 The recipes in "sq" mode contain all the steps required to fully reduce data
 without cutting corners. Some steps can be lengthy, some steps might offer
 an optional interactive interface for optimization. This mode requires all
-the calibrations and will return an error in case some of the is not found.
+the calibrations and will return an error in case some are not found.
 
-It is important to notice that a calibration processed with a mode cannot be
-used in another mode. So make sure you are reducing all your data using the same
-mode.
+It is important to notice that a calibration processed with a lower quality
+mode cannot be used by a higher quality mode (sq > ql > qa). For example, a
+quicklook calibration cannot be used for science reduction, but a science
+quality calibration can be used for a quicklook reduction.
 
 
 Recipe

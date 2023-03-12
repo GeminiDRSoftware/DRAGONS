@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'DRAGONS - Recipe System User Manual'
-copyright = '2021, Association of Universities for Research in Astronomy'
+copyright = '2023, Association of Universities for Research in Astronomy'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -69,7 +69,7 @@ rtdurl = 'latest'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'December 2021'
+today = 'May 2023'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 

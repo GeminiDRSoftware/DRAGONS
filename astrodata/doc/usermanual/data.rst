@@ -668,12 +668,13 @@ add a variance plane to our raw data frame.
     >>> ad[0].subtract(mean_overscan)
 
     >>> # Trim the data to remove the overscan section and keep only
-    >>> # the data section.
+    >>> # the data section.  Note that the WCS will be automatically
+    >>> # adjusted when the trimming is done.
     >>> #
     >>> # Here we work on the NDAstroData object to have the variance
     >>> # trimmed automatically to the same size as the science array.
     >>> # To reassign the cropped NDAstroData, we use the reset() method.
-    >>> ad[0].reset(ad[0].nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2])
+    >>> ad[0].reset(ad[0].nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2]
 
     >>> # Now look at the dimensions of the first extension, science
     >>> # and variance.  That extension is smaller than the others.

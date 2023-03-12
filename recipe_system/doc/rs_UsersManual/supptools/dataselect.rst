@@ -5,9 +5,9 @@
 dataselect
 ==========
 The tool ``dataselect`` will help with the bookkeeping and with creating lists
-of input files to feed to the Recipe System.  The tool has a command line and
-an API. This tool finds files that match certain criteria defined through
-AstroData Tags and expressions involving AstroData Descriptors.
+of input files to feed to the Recipe System.  The tool has a command line
+script and an API. This tool finds files that match certain criteria defined
+with AstroData Tags and expressions involving AstroData Descriptors.
 
 You can access the basic documentation from the command line by typing:
 
@@ -15,12 +15,12 @@ You can access the basic documentation from the command line by typing:
 
     $ dataselect --help
 
-    usage: dataselect [-h] [--tags TAGS] [--xtags XTAGS] [--expr EXPRESSION]
-                      [--strict] [--output OUTPUT] [--verbose] [--debug]
+    usage: dataselect [-h] [--tags TAGS] [--xtags XTAGS] [--expr EXPRESSION] [--strict]
+                      [--output OUTPUT] [--adpkg ADPKG] [--verbose] [--debug]
                       inputs [inputs ...]
 
-    Find files that matches certain criteria defined by tags and expression
-    involving descriptors.
+    Find files that matches certain criteria defined by tags and expression involving
+    descriptors.
 
     positional arguments:
       inputs                Input FITS file
@@ -30,14 +30,14 @@ You can access the basic documentation from the command line by typing:
       --tags TAGS, -t TAGS  Comma-separated list of required tags.
       --xtags XTAGS         Comma-separated list of tags to exclude
       --expr EXPRESSION     Expression to apply to descriptors (and tags)
-      --strict              Toggle on strict expression matching for exposure_time
-                            (not just close) and for filter_name (match component
-                            number).
+      --strict              Toggle on strict expression matching for exposure_time (not
+                            just close) and for filter_name (match component number).
       --output OUTPUT, -o OUTPUT
                             Name of the output file
+      --adpkg ADPKG         Name of the astrodata instrument package to useif not
+                            gemini_instruments
       --verbose, -v         Toggle verbose mode when using -o
       --debug               Toggle debug mode
-
 
 ``dataselect`` Command Line Tool
 --------------------------------
@@ -188,10 +188,12 @@ imported::
 The ``strict`` Flag
 -------------------
 
-The ``strict`` flag applies to the descriptors ``exposure_time()`` and
-``filter_name()``.  To keep the user interface more friendly, in the
-expressions, the exposure time is matched on a "close enough" principle and
-the filter name is matched on a "general bandpass name" principle.
+The ``strict`` flag applies to the descriptors ``central_wavelength``,
+``detector_name``, ``disperser``, ``exposure_time()``, ``filter_name()``.
+To keep the user interface more friendly, in the expressions, the exposure
+time and central wavelength are matched on a "close enough" principle and
+the filter name, disperser and detector name are matched on the
+"pretty name" principle.
 
 For example, if the exposure time in the header is 10.001 second, from a user's
 perspective, asking to match "10" seconds is a lot nicer, ``exposure_time==10``.
