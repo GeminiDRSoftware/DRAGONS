@@ -21,7 +21,7 @@ Data reduction with DRAGONS can be done in two different ways:
 We show how to run the same reduction using both methods.
 
 * :ref:`starfield_example`
-* :ref:`separateCCD_example`
+* :ref:`separateCCDs_example`
 
 More examples will be added in the future.
 
