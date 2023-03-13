@@ -65,7 +65,7 @@ of each package within some reasonable limit.
          `<https://drive.google.com/drive/folders/1QU3HrnuQPkKjLBp51AfA5gEFsqx9k978?usp=share_link>`_
 
 * Example 1: `gmosim_tutorial_datapkg-starfield-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gmosim_tutorial_datapkg-starfield-v1.tar>`_
-* Example 2: `gmosim_tutorial_datapkg-separateCCD-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gmosim_tutorial_datapkg-separateCCD-v1.tar>`_
+* Example 2: `gmosim_tutorial_datapkg-separateCCDs-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gmosim_tutorial_datapkg-separateCCDs-v1.tar>`_
 
 Download one or several packages and unpack them somewhere
 convenient.
