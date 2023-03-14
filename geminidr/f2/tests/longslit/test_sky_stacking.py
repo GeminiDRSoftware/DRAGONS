@@ -18,6 +18,7 @@ def f2_abba():
              'S20200301S0073.fits', 'S20200301S0074.fits')]
 
 # ---- Tests ------------------------------------------------------------------
+@pytest.mark.dragons_remote_data
 @pytest.mark.f2ls
 def test_associate_sky_abba(f2_abba):
 
@@ -39,6 +40,7 @@ def test_associate_sky_abba(f2_abba):
     for ad in (b1, b2):
         assert set(ad.SKYTABLE['SKYNAME']) == a_frames
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.f2ls
 def test_associate_sky_pass_skies(f2_abba):
 
@@ -52,6 +54,7 @@ def test_associate_sky_pass_skies(f2_abba):
 
     assert in_sky_names == out_sky_names
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.f2ls
 def test_associate_sky_use_all(f2_abba):
 
@@ -69,6 +72,7 @@ def test_associate_sky_use_all(f2_abba):
         # Check that each AD has all the other frames as skies, but not itself.
         assert skies == in_sky_names - set([ad.phu['ORIGNAME']])
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.f2ls
 def test_associate_sky_exclude_all(f2_abba):
     p = F2Longslit(f2_abba)
@@ -77,6 +81,7 @@ def test_associate_sky_exclude_all(f2_abba):
     # Offset is 40" so this will exclude skies if 'use_all' is False.
     p.associateSky(distance=50)
 
+@pytest.mark.dragons_remote_data
 @pytest.mark.f2ls
 def test_associate_sky_quasi_abcde():
 
