@@ -127,6 +127,11 @@ def test_clean_readout(in_file, path_to_inputs, path_to_refs):
 @pytest.mark.parametrize("in_file",
                          ["N20220902S0145",  # NIRI image, extended source
                           "N20101227S0040",  # GNIRS LS (par needs tweaking pat_thres=0.1). Only FFT can handle this frame.
+                          "S20060826S0305",
+                          "N20170505S0146",
+                          "N20060103S0010",
+                          "N20060218S0138",
+                          "N20051120S0378",
                           ])
 def test_clean_fftreadout(in_file, path_to_inputs, path_to_refs):
     ad = astrodata.open(os.path.join(path_to_inputs, in_file + '_skyCorrected.fits'))
