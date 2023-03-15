@@ -29,6 +29,7 @@ def reduce(p):
     p.flagCosmicRays()
     p.skyCorrectNodAndShuffle()
     p.QECorrect()
+    p.flushPixels()
     p.distortionCorrect()
     p.combineNodAndShuffleBeams()
     p.adjustWCSToReference()
