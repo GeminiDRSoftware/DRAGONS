@@ -21,6 +21,7 @@ WebPage <https://www.gemini.edu/sciops/instruments/gmos/>`_ and in the
    01_introduction
    cal_service
    ex1_gmosim_starfield
+   ex2_gmosim_separateCCDs
    04_tips_and_tricks
    05_issues_and_limitations
 

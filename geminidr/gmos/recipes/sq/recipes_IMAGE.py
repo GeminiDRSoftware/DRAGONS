@@ -82,7 +82,7 @@ def reduceSeparateCCDsCentral(p):
         p.stackFrames(zero=True)
         p.appendStream(stream="all", from_stream="main", copy=False)
     p.mergeInputs(instream="all")
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
 
 
 def reduceSeparateCCDs(p):
@@ -125,7 +125,7 @@ def reduceSeparateCCDs(p):
         p.stackFrames(zero=True)
         p.appendStream(stream="all", from_stream="main", copy=False)
     p.mergeInputs(instream="all")
-    p.storeProcessedScience()
+    p.storeProcessedScience(suffix="_image")
 
 
 def makeProcessedFringe(p):

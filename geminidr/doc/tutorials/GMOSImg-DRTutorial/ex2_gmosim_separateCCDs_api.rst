@@ -1,19 +1,25 @@
-.. ex1_gmosim_starfield_api.rst
+.. ex2_gmosim_separateCCDs_api.rst
 
-.. _starfield_api:
+.. _separateCCDs_api:
 
-**************************************************************
-Example 1 - Star field with dithers - Using the "Reduce" class
-**************************************************************
+****************************************************
+Example 2 - Separate CCDs - Using the "Reduce" class
+****************************************************
 
 A reduction can be initiated from the command line as shown in
-:ref:`starfield_cmdline` and it can also be done programmatically as we will
+:ref:`separateCCDs_cmdline` and it can also be done programmatically as we will
 show here.  The classes and modules of the RecipeSystem can be
 accessed directly for those who want to write Python programs to drive their
 reduction.  In this example we replicate the
-command line version of Example 1 but using the Python
+command line version of Example 2 but using the Python
 programmatic interface. What is shown here could be packaged in modules for
 greater automation.
+
+Instead of running the default recipe, we will run the recipe to reduce
+the CCDs separately instead of mosaicing them before the stack.  Doing the
+reduction this way and not mosaicing the CCDs is used when the science
+objective require very accurate photometry that needs to take into account
+color-terms and the different color responses of the CCDs.
 
 The dataset
 ===========
@@ -22,19 +28,19 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`starfield_dataset`.
+    :ref:`separateCCDs_dataset`.
 
 Here is a copy of the table for quick reference.
 
 +---------------+---------------------+--------------------------------+
-| Science       || N20170614S0201-205 || 10 s, i-band                  |
+| Science       || N20220627S0115-119 || 350 s, i-band                 |
 +---------------+---------------------+--------------------------------+
-| Bias          || N20170613S0180-184 |                                |
-|               || N20170615S0534-538 |                                |
+| Bias          || N20220613S0180-184 || For science                   |
+|               || N20220627S0222-226 || For twilights                 |
 +---------------+---------------------+--------------------------------+
-| Twilight Flats|| N20170702S0178-182 || 40 to 16 s, i-band            |
+| Twilight Flats|| N20220613S0138-142 || r-band                        |
 +---------------+---------------------+--------------------------------+
-| BPM           || bpm_20170306_gmos-n_Ham_22_full_12amp.fits          |
+| BPM           || bpm_20220303_gmos-n_Ham_22_full_12amp.fits          |
 +---------------+------------------------------------------------------+
 
 Setting Up
@@ -74,8 +80,6 @@ We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
     logutils.config(file_name='gmos_data_reduction.log')
 
 
-.. _set_caldb_api:
-
 Setting up the Calibration Service
 ----------------------------------
 
@@ -86,8 +90,6 @@ Setting up the Calibration Service
     :ref:`cal_service_config` and :ref:`cal_service_api`.
 
 
-.. _api_create_file_lists:
-
 Create list of files
 ====================
 
@@ -97,19 +99,19 @@ store the filenames to a Python list that can then be fed to the ``Reduce``
 class. (See the |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
 
-The first list we create is a list of all the files in the ``playdata/example1/``
+The first list we create is a list of all the files in the ``playdata/example2/``
 directory.
 
 .. code-block:: python
     :linenos:
     :lineno-start: 9
 
-    all_files = glob.glob('../playdata/example1/*.fits')
+    all_files = glob.glob('../playdata/example2/*.fits')
     all_files.sort()
 
 The :meth:`~list.sort` method simply re-organize the list with the file names
-and is an optional step, but a recommended step. Before you carry on, you might want to do
-``print(all_files)`` to check if they were properly read.
+and is an optional step, but a recommended step. Before you carry on, you
+might want to do ``print(all_files)`` to check if they were properly read.
 
 We will search that list for files with specific characteristics.  We use
 the ``all_files`` :class:`list` as an input to the function
@@ -121,22 +123,65 @@ We show several usage examples below.
 
 List of Biases
 --------------
+We are going to use two sets of biases, one for the science and one for the
+twilights.  The reason for that is that the twilights and the science were
+obtained weeks apart and it is always safer to use biases that were obtained
+close in time with the data we want to use them on.  It is also a good
+example to show you how to specify a date range in the |dataselect| expression.
 
-Let us select the files that will be used to create a master bias:
+The command line |showd| can be used to inspect the data ahead of time.
+
+::
+
+  $ showd -d object,ut_date ../playdata/example2/N*.fits
+
+    --------------------------------------------------------------------------------
+    filename                                                     object      ut_date
+    --------------------------------------------------------------------------------
+    ../playdata/example2/N20220613S0138.fits                   Twilight   2022-06-13
+    ../playdata/example2/N20220613S0139.fits                   Twilight   2022-06-13
+    ../playdata/example2/N20220613S0140.fits                   Twilight   2022-06-13
+    ../playdata/example2/N20220613S0141.fits                   Twilight   2022-06-13
+    ../playdata/example2/N20220613S0142.fits                   Twilight   2022-06-13
+    ../playdata/example2/N20220613S0180.fits                       Bias   2022-06-13
+    ../playdata/example2/N20220613S0181.fits                       Bias   2022-06-13
+    ../playdata/example2/N20220613S0182.fits                       Bias   2022-06-13
+    ../playdata/example2/N20220613S0183.fits                       Bias   2022-06-13
+    ../playdata/example2/N20220613S0184.fits                       Bias   2022-06-13
+    ../playdata/example2/N20220627S0115.fits   Disrupting UFD Candidate   2022-06-27
+    ../playdata/example2/N20220627S0116.fits   Disrupting UFD Candidate   2022-06-27
+    ../playdata/example2/N20220627S0117.fits   Disrupting UFD Candidate   2022-06-27
+    ../playdata/example2/N20220627S0118.fits   Disrupting UFD Candidate   2022-06-27
+    ../playdata/example2/N20220627S0119.fits   Disrupting UFD Candidate   2022-06-27
+    ../playdata/example2/N20220627S0222.fits                       Bias   2022-06-27
+    ../playdata/example2/N20220627S0223.fits                       Bias   2022-06-27
+    ../playdata/example2/N20220627S0224.fits                       Bias   2022-06-27
+    ../playdata/example2/N20220627S0225.fits                       Bias   2022-06-27
+    ../playdata/example2/N20220627S0226.fits                       Bias   2022-06-27
+
+The science frames were obtained on 2022-06-27 and the twilights on 2022-06-13.
+We will create two lists, one of the biases obtained on each of those two days.
+
+
+Let us select the files that will be used to create the two master biases:
 
 .. code-block:: python
     :linenos:
     :lineno-start: 11
 
-    list_of_biases = dataselect.select_data(
+    biastwi = dataselect.select_data(
         all_files,
         ['BIAS'],
-        []
+        [],
+        dataselect.expr_parser("ut_date=='2022-06-13'")
     )
 
-Note the empty list ``[]`` in line 20. This positional argument receives a list
-of tags that will be used to exclude any files with the matching tag from our
-selection (i.e., equivalent to the ``--xtags`` option).
+    biassci = dataselect.select_data(
+        all_files,
+        ['BIAS'],
+        [],
+        dataselect.expr_parser("ut_date=='2022-06-27'")
+    )
 
 
 List of Flats
@@ -148,13 +193,13 @@ filters. It is not really needed in this case.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 16
+    :lineno-start: 24
 
-    list_of_flats = dataselect.select_data(
+    flats = dataselect.select_data(
         all_files,
         ['FLAT'],
         [],
-        dataselect.expr_parser('filter_name=="i"')
+        dataselect.expr_parser('filter_name=="r"')
     )
 
 .. note::  All expressions need to be processed with ``dataselect.expr_parser``.
@@ -167,13 +212,13 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 22
+    :lineno-start: 30
 
-    list_of_science = dataselect.select_data(
+    sci = dataselect.select_data(
         all_files,
         [],
         ['CAL'],
-        dataselect.expr_parser('(observation_class=="science" and filter_name=="i")')
+        dataselect.expr_parser('(observation_class=="science" and filter_name=="r")')
     )
 
 Here we left the ``tags`` argument as an empty list and passed the tag
@@ -182,7 +227,7 @@ Here we left the ``tags`` argument as an empty list and passed the tag
 We also added a fourth argument which is not necessary for our current dataset
 but that can be useful for others. It contains an expression that has to be
 parsed by ``dataselect.expr_parser``, and which ensures
-that we are getting *science* frames obtained with the *i-band* filter.
+that we are getting *science* frames obtained with the *r-band* filter.
 
 Bad Pixel Mask
 ==============
@@ -196,26 +241,32 @@ data package to the local calibration database:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 28
+    :lineno-start: 36
 
     for bpm in dataselect.select_data(all_files, ['BPM']):
         caldb.add_cal(bpm)
 
 
-.. _api_process_bias_files:
-
 Make Master Bias
 ================
+The reduction of the biases does not mosaic
+the biases and it keeps the CCDs separated, always.  Because of that, the
+reduction of the biases for the "Separate CCDs" recipe is exactly the same
+as for the default recipe.
 
 We create the master bias and add it to the calibration manager as follow:
 
 .. code-block:: python
    :linenos:
-   :lineno-start: 30
+   :lineno-start: 38
 
-   reduce_bias = Reduce()
-   reduce_bias.files.extend(list_of_biases)
-   reduce_bias.runr()
+   reduce_biastwi = Reduce()
+   reduce_biastwi.files.extend(biastwi)
+   reduce_biastwi.runr()
+
+   reduce_biassci = Reduce()
+   reduce_biassci.files.extend(biassci)
+   reduce_biassci.runr()
 
 The ``Reduce`` class is our reduction
 "controller". This is where we collect all the information necessary for
@@ -235,25 +286,26 @@ recipe search is triggered and where it is executed.
 
     .. code-block::
 
-       caldb.add_cal(reduce_bias.output_filenames[0])
+       caldb.add_cal(reduce_biassci.output_filenames[0])
 
-.. _api_process_flat_files:
 
 Make Master Flat
 ================
+The reduction of the
+flats does not mosaic the flats and it keeps the CCDs separated, always.
+Because of that, the reduction of the flats for the "Separate CCDs" recipe
+is exactly the same as for the default recipe.
 
 We create the master flat field and add it to the calibration database as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 33
+    :lineno-start: 45
 
     reduce_flats = Reduce()
-    reduce_flats.files.extend(list_of_flats)
+    reduce_flats.files.extend(flats)
     reduce_flats.runr()
 
-
-.. _api_process_fringe_frame:
 
 Make Master Fringe Frame
 ========================
@@ -264,23 +316,43 @@ Make Master Fringe Frame
     :ref:`tips_and_tricks` chapter.
 
 
-.. _api_process_science_files:
-
 Reduce Science Images
 =====================
 
 We use similar statements as before to initiate a new reduction to reduce the
-science data:
+science data.  Instead of using the default recipe, we
+will explicitly call the recipe ``reduceSeparateCCDs``:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 36
+    :lineno-start: 48
 
     reduce_science = Reduce()
-    reduce_science.files.extend(list_of_science)
+    reduce_science.files.extend(sci)
+    reduce_science.recipename = 'reduceSeparateCCDs'
     reduce_science.runr()
+
+This recipe performs the standardization and corrections needed to
+convert the raw input science images into a stacked image. To deal
+with different color terms on the different CCDs, the images are
+split by CCD midway through the recipe and subsequently reduced
+separately. The relative WCS is determined from mosaicked versions
+of the images and then applied to each of the CCDs separately.
+
+The stacked images of each CCD are in separate extension of the file
+with the ``_image`` suffix.
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
+
+.. note::
+
+    There is another similar recipe that can be used to reduce the CCDs
+    separately:  ``reduceSeparateCCDsCentral``.  The difference is that
+    the relative WCS is determined from the central CCD
+    (CCD2) and then applied to CCDs 1 and 3, while in ``reduceSeparateCCDs``
+    the whole image is used to adjust the WCS.  The "Central" recipe can be
+    faster than the other but potentially less accurate if you do not have
+    a lot of sources in CCD2.

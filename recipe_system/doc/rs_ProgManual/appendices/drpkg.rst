@@ -129,8 +129,8 @@ Requirements on Recipes
 -----------------------
 * A recipe library must contain a module attribute named ``recipe_tags`` that
   contains a Python set of the AstroData tags applicable to the library.
-* A recipe library must contain a module attribute named ``default`` that
-  sets the name of the default recipe for this library.  The ``default``
+* A recipe library must contain a module attribute named ``_default`` that
+  sets the name of the default recipe for this library.  The ``_default``
   attribute needs to be set below the recipe function definition for Python
   to pick it up.
 * A recipe signature must accept the primitive set as the first argument with
