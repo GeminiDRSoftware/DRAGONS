@@ -11,3 +11,6 @@ class standardizeStructureConfig(addMDFConfig):
 
     def setDefaults(self):
         self.suffix = "_structureStandardized"
+
+class checkWCSConfig(config.Config):
+    tolerance = config.RangeField("Positional tolerance (arcsec)", float, 2, min=0.1)

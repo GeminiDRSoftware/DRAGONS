@@ -3,6 +3,8 @@
 #
 #                                                           primitives_gemini.py
 # ------------------------------------------------------------------------------
+from astropy.coordinates import SkyCoord
+
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.core import Bookkeeping, CalibDB, Preprocess
@@ -161,4 +163,49 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
+        return adinputs
+
+    def checkWCS(self, adinputs=None, tolerance=None):
+        """
+        This primitive checks for consistency within the WCS by comparing the
+        header offsets with the WCS coordinates
+
+        Parameters
+        ----------
+        tolerance: float
+            positional tolerance in arcseconds
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        if len(set(ad.instrument() for ad in adinputs)) > 1:
+            raise ValueError("Not all data are from the same instrument")
+        if any('PREPARED' in ad.tags for ad in adinputs):
+            raise ValueError(f"'{self.myself()}' requires unprepared data")
+
+        adref = adinputs[0]
+        refindex = (len(adref) - 1) // 2
+        refpixel = tuple(length // 2 for length in adref[refindex].shape[::-1])
+
+        bad = []
+        for i, ad in enumerate(adinputs):
+            offsets = ad.detector_x_offset(), ad.detector_y_offset()
+            pixel = tuple(r + o for r, o in zip(refpixel, offsets)) + refpixel[2:]
+            # Be wary of third F2 axis
+            coord = SkyCoord(*ad[refindex].wcs(*pixel)[:2], unit='deg')
+            if i == 0:
+                log.stdinfo(f"Using {ad.filename} as the reference")
+                ref_coord = coord
+            else:
+                sep = ref_coord.separation(coord).arcsec
+                if sep > tolerance:
+                    bad.append((ad.filename, sep))
+
+        for (fname, sep) in bad:
+            log.stdinfo(f"{fname} has a discrepancy of {sep:.2f} arcsec")
+
+        if len(bad) > len(adinputs) // 2:
+            log.stdinfo(f"The first frame ({adref.filename}) is likely to "
+                        "be the one in error")
+
         return adinputs
