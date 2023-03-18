@@ -219,6 +219,7 @@ class Spect(Resample):
                 k = 1 if kdsigma < 3 else 2
 
                 pixel_start = domain[0] + 0.5 * np.diff(domain)[0]
+                bound = min(20, input_data["spectral_range"].value / 10)
 
                 # Find matches between the sky lines list and measured peaks.
                 matches = wavecal.perform_piecewise_fit(
@@ -226,7 +227,7 @@ class Spect(Resample):
                     pixel_start, kdsigma,
                     order=config_dict["order"],
                     min_lines_per_fit=config_dict['debug_min_lines'],
-                    k=k, dcenwave=10)
+                    k=k, dcenwave=10, bound=bound)
 
                 fit_it = KDTreeFitter(sigma=2 * abs(dw), maxsig=5,
                                       k=k, method='Nelder-Mead')
