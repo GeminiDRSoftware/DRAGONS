@@ -2191,7 +2191,7 @@ class Spect(Resample):
                         log.stdinfo(f"Determining solution for extension {ext.id}")
 
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                        ext, uiparams.values, p=self, linelist=linelist,
+                        ext, uiparams, p=self, linelist=linelist,
                         bad_bits=DQ.not_signal)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found "

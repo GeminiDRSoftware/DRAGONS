@@ -384,8 +384,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     ----------
     ext: single-slice AstroData
         the extension
-    ui_params: dict
-        dictionary of parameters for the UI, passed from the primitive's Config
+    ui_params: UIParameters object
+        class holding parameters for the UI, passed from the primitive's Config
     p: PrimitivesBASE object
         (needed to get the correct linelist... perhaps only need to pass that fn)
     linelist: str
@@ -404,7 +404,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         whether this fit is likely to be good
     """
     input_data = get_all_input_data(
-        ext, p, ui_params, linelist=linelist, bad_bits=bad_bits)
+        ext, p, ui_params.toDict(), linelist=linelist, bad_bits=bad_bits)
     spectrum = input_data["spectrum"]
     init_models = input_data["init_models"]
     peaks, weights = input_data["peaks"], input_data["weights"]
@@ -413,8 +413,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     kdsigma = fwidth * abs(dw)
     k = 1 if kdsigma < 3 else 2
     fit1d, acceptable_fit = find_solution(
-        init_models, ui_params, peaks=peaks,
-        peak_weights=weights[ui_params["weighting"]],
+        init_models, ui_params.toDict(), peaks=peaks,
+        peak_weights=weights[ui_params.weighting],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
         dcenwave = input_data["cenwave_accuracy"], filename=ext.filename)
 
@@ -439,9 +439,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     p : PrimitivesBASE object
     bad_bits : int
         bitwise-and the mask with this to produce the mask
-    config : dict from UIParameters object containing parameters
-        dict created by "values()" method of UIParameters (which requires a
-        Config object for initialization)
+    config : dict
+        dictionary of parameters
     skylines : bool
         True if the reference lines being used are skylines, othewise False if
         the are arc lines
