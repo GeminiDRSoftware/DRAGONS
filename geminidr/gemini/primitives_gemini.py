@@ -207,5 +207,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         if len(bad) > len(adinputs) // 2:
             log.stdinfo(f"The first frame ({adref.filename}) is likely to "
                         "be the one in error")
+        elif not bad:
+            log.stdinfo("All files appear to be OK")
 
         return adinputs
