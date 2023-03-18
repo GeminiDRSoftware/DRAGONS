@@ -624,7 +624,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                                         kdsigma, order=config["order"],
                                         min_lines_per_fit=min_lines_per_fit,
                                         k=k, dcenwave=dcenwave,
-                                        bound=bound, debug=False)
+                                        bound=bound)
 
         # We perform a regular least-squares fit to all the matches
         # we've made. This allows a high polynomial order to be
@@ -690,7 +690,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                           order=3, min_lines_per_fit=15, k=1,
                           arc_weights=None, dcenwave=10,
-                          bound=20, debug=False):
+                          bound=20):
     """
     This function performs fits in multiple regions of the 1D arc spectrum.
     Given a starting location, a suitable fitting region is "grown" outwards
@@ -723,8 +723,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         weights of output coordinates
     bound : float
         limit on c2 component of Chebyshev polynomial for fit
-    debug : bool
-        output additional debugging material?
 
     Returns
     -------
@@ -781,11 +779,9 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                 if p0 - p1 <= p <= p0 + p1:
                     # automatically removes old (bad) match
                     matches[i] = m
-                    #log.debug("    in={:10.4f}  ref={:10.4f}".format(p, arc_lines[m]))
         try:
             p_lo = peaks[matches > -1].min()
         except ValueError:
-            #log.debug("No matches at all")
             pass
         else:
             if p_lo < p0 <= pixel_start:
