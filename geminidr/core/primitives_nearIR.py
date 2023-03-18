@@ -21,6 +21,10 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 
 from scipy.signal import savgol_filter
 
+from scipy.fft import rfft, rfftfreq, irfft
+from copy import deepcopy
+import pandas as pd
+
 # ------------------------------------------------------------------------------
 
 @parameter_override
@@ -559,6 +563,270 @@ class NearIR(Bookkeeping):
             ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
+
+
+    def cleanFFTReadout(self, adinputs=None, **params):
+        """
+        This attempts to remove the pattern noise in NIRI/GNIRS data 
+        in the Fourier domain. It shares similar capabilities as 
+        cleanReadout (automatically determining pattern coverage, 
+        leveling intra- and inter-quad biases), but with an additonal 
+        advantage of being able to handling pattern noise that varies 
+        from row to row. NOTE, however, it has not been battle-tested 
+        like cleanReadout. Its processing flow is the following. 
+
+        For each quadrant, take the FFT row by row and relying on the 
+        known periodicity of the pattern (8 pix), look for significant 
+        peaks in the amplitude spectrum at the corresponding frequency 
+        and its harmonics, and interpolate over them. This should clean 
+        the noise. Subtract the resulting frame from the input frame 
+        to generate the pattern frame. 
+        Then, leverage the four-fold symmetry of the pattern coverage to 
+        determine the edges. To this end, median-combine the pattern 
+        amplitude functions (using the pattern frame) after standardizing 
+        each separately. The regions unaffected by pattern noise will 
+        show up in such a stacked amplitude function near -1. 
+        Finally, in a similar manner to cleanReadout, the signal levels are 
+        normalized across the edges within each quad and across quads. 
+
+        Parameters
+        ----------
+        suffix: str, Default: "_readoutFFTCleaned"
+            Suffix to be added to output files.
+        win_size: int
+            Window size to compute local threshold for finding significant Fourier peaks at 
+            the target frequencies corresponding to the pattern noise periodicity.  
+        periodicity: int
+            Pattern noise periodicity. For NIRI/GNIRS, it is known to be 8 pix.
+        sigma_fact: float
+            Sigma factor used for the Fourier amplitude threshold. 
+        pat_thres: float
+            Threshold used to characterise the strength of the standardized pattern noise. If 
+            smaller than this value, the pattern noise is absent.  
+        lquad: bool
+            Level the offset in bias level across (sub-)quads that typically accompany
+            pattern noise.
+        l2clean: bool
+            Perform a second-level cleaning of the pattern to do away with Fourier artifacts, 
+            e.g., ringing from bright stars. This operates on the pattern frame and tries to 
+            interpolate over rogue rows.
+        l2thres: float
+            Sigma factor to be used in thresholding for l2clean. For stubborn Fourier artifacts,
+            consider decreasing this value. 
+        clean: str, Default: "skip"
+            Must be one of "skip", "default", or "force".
+            skip: Skip this routine entirely when called from a recipe.
+            default: Apply the pattern subtraction to each quadrant of the image.
+            force: Force the pattern subtraction in each quadrant.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        win_size = params["win_size"]
+        sigma_fact = params["sigma_fact"]
+        pat_thres = params["pat_thres"]
+        lquad = params["lquad"]
+        l2clean = params["l2clean"]
+        l2thres = params["l2thres"]
+        clean = params["clean"]
+        periodicity = params["periodicity"]
+
+        def debug_levelQuad(ext, sig=2.0, smoothing_extent=5):
+            """
+            Parameters
+            ----------
+            ext: AstroData
+                This is the pattern-corrected AstroData.
+            sig: float, Default: 2.0
+                Sigma-clipping threshold used for both lower and upper limits.
+            smoothing_extent: int
+                Width (in pixels) of the region at a given quad interface to be smoothed over
+                on each side of the interface.
+            """
+            qysize, qxsize = [size // 2 for size in ext.data.shape]
+            clippedstats_lr = partial(sigma_clipped_stats, axis=0, sigma=sig)
+            clippedstats_tb = partial(sigma_clipped_stats, axis=1, sigma=sig)
+
+            def find_offset(ext, arr1_slicers, arr2_slicers, clipper):
+                quad_1 = ext.nddata[arr1_slicers[0], arr1_slicers[1]]
+                quad_2 = ext.nddata[arr2_slicers[0], arr2_slicers[1]]
+                if hasattr(ext, 'OBJMASK'):
+                    objmask_1 = ext.OBJMASK[arr1_slicers[0], arr1_slicers[1]]
+                    objmask_2 = ext.OBJMASK[arr2_slicers[0], arr2_slicers[1]]
+                    mask_1 = quad_1.mask | objmask_1
+                    mask_2 = quad_2.mask | objmask_2
+                else:
+                    mask_1 = quad_1.mask
+                    mask_2 = quad_2.mask
+                arr1 = np.ma.masked_array(quad_1.data, mask_1)
+                arr2 = np.ma.masked_array(quad_2.data, mask_2)
+                if arr1.mask.all() or arr2.mask.all():
+                    return 0.0
+
+                meds_1 = clipper(arr1)[1] # 2nd tuple item is median
+                meds_2 = clipper(arr2)[1] # 2nd tuple item is median
+                offsets = meds_1 - meds_2
+                return np.median(offsets[np.isfinite(offsets)]) # to be added to arr2's quad
+
+            ## stitch along qysize
+            for xstart in [0, qxsize]:
+                arr1_slicers = [slice(qysize,qysize + smoothing_extent), slice(xstart,xstart + qxsize)]
+                arr2_slicers = [slice(qysize - smoothing_extent,qysize), slice(xstart,xstart + qxsize)]
+                offset = find_offset(ext, arr1_slicers, arr2_slicers,
+                                     clippedstats_lr
+                                    )
+                ext.data[0:qysize, xstart:xstart + qxsize] += offset
+
+
+            ## stitch in full along 2 x qxsize
+            arr1_slicers = [slice(0,ext.data.shape[0]), slice(qxsize - smoothing_extent,qxsize)]
+            arr2_slicers = [slice(0,ext.data.shape[0]), slice(qxsize,qxsize + smoothing_extent)]
+            offset = find_offset(ext, arr1_slicers, arr2_slicers,
+                                 clippedstats_tb
+                                )
+            ext.data[:, qxsize:2 * qxsize] += offset
+        
+
+        if clean == "skip":
+            log.stdinfo("Skipping cleanReadout since 'clean' is set to 'skip'")
+            return adinputs
+
+        for ad in adinputs:
+            if ad.phu.get(timestamp_key):
+                log.warning(f"No changes will be made to {ad.filename}, since"
+                            " it has already been processed by cleanReadout")
+                continue
+
+            for ext in ad:
+                qysize, qxsize = [size // 2 for size in ext.data.shape]
+                ori_ext = deepcopy(ext)
+                pattern_data = {}
+
+                for ystart, tb in zip((0, qysize),('bottom','top')):
+                    for xstart, lr in zip((0, qxsize),('left','right')):
+                        quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]
+                        ori_quad = ori_ext.nddata[0][ystart:ystart + qysize, xstart:xstart + qxsize]
+
+                        for jj, i in enumerate(range(quad.data.shape[0])):
+                            num_samples = len(quad.data[i,:])
+                            row_data = quad.data[i,:]
+                            row_fft = rfft(row_data)
+                            row_freq = rfftfreq(num_samples, 1) 
+                            amp = np.abs(row_fft)
+                            _ind = np.argmin(np.abs(row_freq - 1/periodicity)) ##find the index closest to the principal target frequency
+                            a_mean, a_median, a_std = sigma_clipped_stats(amp[_ind-win_size:_ind+win_size], sigma=2.0)
+                            amp_threshold = a_mean + sigma_fact * a_std
+
+                            mask = []
+                            if np.interp(1/periodicity, row_freq, amp)>amp_threshold: ##if principal target frequency stands out then automatically clean its harmonics
+                                counter = 1
+                                while int(counter*1/periodicity*num_samples) <= (num_samples-1):
+                                    mask.append(int(counter*1/periodicity*num_samples)) 
+                                    counter += 1
+
+                            mask = np.array(mask)
+                            real_ = row_fft.real
+                            imag_ = row_fft.imag
+                            idx = np.arange(len(row_fft)) 
+                            MM = np.isin(idx, mask)
+                            real_[MM] = np.interp(idx[MM].astype(float), idx[~MM].astype(float), real_[~MM])
+                            imag_[MM] = np.interp(idx[MM].astype(float), idx[~MM].astype(float), imag_[~MM])
+
+                            ## Inverse transform
+                            row_fft.real = real_
+                            row_fft.imag = imag_
+                            row_data_new = irfft(row_fft)
+                            quad.data[i,:] = row_data_new 
+
+                        pattern_data[tb+'-'+lr] = ori_quad.data - quad.data
+
+                if lquad:
+                    ## intra-quad leveling             
+                    for K in ['bottom-left', 'bottom-right']:
+                        pattern_data[K] = np.flipud(pattern_data[K])
+
+                    strength = {}
+                    for K, V in pattern_data.items():
+                        strength[K] = np.std(V, axis=1)
+
+                    collapsed_matrix = pd.DataFrame(strength)
+                    standardized_collapsed_matrix = (collapsed_matrix - collapsed_matrix.median())/collapsed_matrix.std()
+                    collapsed_strength = standardized_collapsed_matrix.median(axis=1)
+
+
+                    MSK = collapsed_strength > pat_thres  #if there is a patch without pattern, then the 'collapsed strength' will be around -1. Can tune this parameter if needed 
+                    if np.sum(MSK) > 0: 
+                        for ystart, tb in zip((0, qysize),('bottom','top')):
+                            for xstart, lr in zip((0, qxsize),('left','right')): 
+                                quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]     
+                                mean_collapsed_signa, median_collapsed_signal, __ = sigma_clipped_stats(quad.data, axis=1, sigma=2.0)
+
+                                if np.sum(MSK) > np.sum(~MSK): ##to normalize the smaller section to the larger section
+                                    MSK = ~MSK
+                                if tb=='bottom':
+                                    mask = np.flipud(MSK)
+                                else:
+                                    mask = deepcopy(MSK)
+
+                                median_collapsed_signal[mask] = np.NAN
+                                mean_collapsed_signa[mask] = np.NAN
+
+                                for _ind in np.arange(len(median_collapsed_signal))[mask]:
+                                    offset = np.nanmean(median_collapsed_signal) - sigma_clipped_stats(quad.data[_ind,:], sigma=2.0)[1]
+                                    quad.data[_ind,:] += offset
+
+
+                    ## inter-quad leveling
+                    debug_levelQuad(ext)
+
+                if l2clean: 
+                    for ystart, tb in zip((0, qysize),('bottom','top')):
+                        for xstart, lr in zip((0, qxsize),('left','right')): 
+                            quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]
+                            ori_quad = ori_ext.nddata[0][ystart:ystart + qysize, xstart:xstart + qxsize]            
+                            ## update the pattern data (lquad, if called, would have modified it) 
+                            pattern_data[tb+'-'+lr] = ori_quad.data - quad.data
+                            if tb=='top':
+                                pattern_data[tb+'-'+lr] = np.flipud(ori_quad.data - quad.data)
+
+                    strength = {}
+                    for K, V in pattern_data.items():
+                        strength[K] = np.std(V, axis=1) 
+
+                    collapsed_matrix = pd.DataFrame(strength)
+                    standardized_collapsed_matrix = (collapsed_matrix - collapsed_matrix.median())/collapsed_matrix.std() 
+                    meddev_matrix = standardized_collapsed_matrix.sub(standardized_collapsed_matrix.mean(axis=1), axis=0) ## flatten the curves
+
+                    pattern_data_new = {}
+                    bucket = np.array([meddev_matrix[V] for V in meddev_matrix.columns]) 
+                    mn, med, st = sigma_clipped_stats(bucket, sigma=2.5) 
+
+                    for K in meddev_matrix.columns:
+                        bb = meddev_matrix[K].values 
+                        mask = (bb < mn - l2thres * st) | (bb > mn + l2thres * st)
+                        pattern_data_new[K] = deepcopy(pattern_data[K])
+                        if np.sum(mask) > 0:
+                            for i in range(pattern_data_new[K].shape[1]): ## work at column-by-column level 
+                                pattern_data_new[K][mask,i] = np.interp(np.arange(pattern_data[K].shape[0])[mask], 
+                                                                     np.arange(pattern_data[K].shape[0])[~mask], pattern_data[K][~mask,i])
+
+                    for K in ['top-left', 'top-right']:
+                        pattern_data_new[K] = np.flipud(pattern_data_new[K])
+
+                    ## create the full improved pattern
+                    temp_top = np.hstack((pattern_data_new['top-left'], pattern_data_new['top-right']))
+                    temp_bottom = np.hstack((pattern_data_new['bottom-left'], pattern_data_new['bottom-right']))
+                    temp = np.vstack((temp_bottom, temp_top))            
+
+                    ext.data = ori_ext.data[0] - temp
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+    
 
     def separateFlatsDarks(self, adinputs=None, **params):
         """
