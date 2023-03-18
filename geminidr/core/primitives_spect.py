@@ -145,6 +145,11 @@ class Spect(Resample):
         shift = params["shift"]
         max_shift = params["debug_max_shift"]
 
+        # Check given shift, if there is one.
+        if shift and shift > max_shift:
+            raise ValueError("Provided shift is larger than parameter "
+                             f"'debug_max_shift': {shift} > {max_shift}")
+
         for ad in adinputs:
             log.stdinfo(f"{ad.filename}: adjusting wavelength scale zero point")
 
