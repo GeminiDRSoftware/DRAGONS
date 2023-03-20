@@ -86,11 +86,6 @@ From the API, the calibration database is initialized as follows:
     caldb.init()
 
 
-.. warning:: If the calibration database already exists, ``caldb.init()`` will
-             **delete it** and create a new, empty one.  Use ``wipe=False`` as
-             an argument to prevent that from happening.  (``wipe=False``
-             matches the behavior of the command line ``caldb``).
-
 The calibration service is now ready to use.
 
 You can manually add processed calibrations with ``caldb.add_cal(<filename>)``,
