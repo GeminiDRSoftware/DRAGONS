@@ -1978,10 +1978,15 @@ class Spect(Resample):
             uiparams.fields["center"].max = min(
                 ext.shape[ext.dispersion_axis() - 1] for ext in ad)
 
+            # In case when absorption lines are used for wavelength calibration,
+            # we set the data to negative to make absorption lines into emission
+            # lines, and perform all calculations on this negative data.
             if absorption:
-                ad = deepcopy(ad)
+                calc_ad = deepcopy(ad)
                 for i, data in enumerate(ad.data):
-                    ad[i].data = -data
+                   calc_ad[i].data = -data
+            else:
+                calc_ad = ad
 
             if interactive:
                 all_fp_init = [fit_1D.translate_params(
@@ -1991,7 +1996,7 @@ class Spect(Resample):
                 for ext in ad:
                     axis = 0 if ext.data.ndim == 1 else 2 - ext.dispersion_axis()
                     domains.append([0, ext.shape[axis] - 1])
-                reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
+                reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
 
 
@@ -2013,12 +2018,12 @@ class Spect(Resample):
                     fit1d.image = image
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
-                for ext in ad:
+                for ext, calc_ext in zip(ad, calc_ad):
                     if len(ad) > 1:
                         log.stdinfo(f"Determining solution for extension {ext.id}")
 
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                        ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                        calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found "
                                     f"for {ext.id}")
@@ -4471,19 +4476,37 @@ class Spect(Resample):
             return adinputs
 
         source_length = len(self.streams[source])
-        if not source_length == len(adinputs):
+        source_files = self.streams[source]
+        if not source_length > len(adinputs):
+            # If number of files in the source stream is larger than in the current stream, assume
+            # that there was frame stacking done in the recipe.
+            # Do model copying only for the ads that have matching original filenames.
+            source_files = []
+            for ad1 in adinputs:
+                orig_filename = ad1.phu.get('ORIGNAME')
+                for ad2 in self.streams[source]:
+                    if ad2.phu.get('ORIGNAME') == orig_filename:
+                        source_files.append(ad2)
+                        break
+                else:
+                    # Didn't find a match
+                    log.warning(f"No matching frame found for "
+                                f"{orig_filename} in the source stream")
+
+        elif source_length < len(adinputs):
             log.warning("Incompatible stream lengths: "
                         f"{len(adinputs)} and {source_length}")
             return adinputs
 
         log.stdinfo(f"Transferring distortion model from stream '{source}'")
+
         # Copy distortion model from ad2 to ad1
-        for ad1, ad2 in zip(*gt.make_lists(adinputs, self.streams[source])):
+        for ad1, ad2 in zip(*gt.make_lists(adinputs, source_files)):
             fail = False
             distortion_models = []
             for ext1, ext2 in zip(ad1, ad2):
-                wcs1 = ext1.nddata.wcs
-                wcs2 = ext2.nddata.wcs
+                wcs1 = ext1.wcs
+                wcs2 = ext2.wcs
                 if 'distortion_corrected' in wcs1.available_frames:
                     log.warning(f"{ad1.filename}: already contains distortion model. "
                             " Continuing.")
@@ -4496,17 +4519,21 @@ class Spect(Resample):
                             "continuing")
                         fail = True
                         break
+                    if 'rectified' not in wcs2.available_frames:
+                        log.warning("Could not find a 'rectified' frame "
+                            f"in {ad2.filename} extension {ext2.id} - "
+                            "continuing")
+                        fail = True
+                        break
                 except AttributeError:
                     fail = True
                     break
                 else:
-                    m_distcorr = wcs2.get_transform(wcs2.input_frame,
-                                               'distortion_corrected')
+                    m_distcorr = wcs2.get_transform("rectified", 'distortion_corrected')
                     distortion_models.append(m_distcorr)
             if not fail:
                 for ext, dist in zip(ad1, distortion_models):
-                    ext.nddata.wcs.insert_frame(ext.nddata.wcs.input_frame, dist,
-                                                cf.Frame2D(name="distortion_corrected"))
+                    ext.wcs.insert_frame(ext.wcs.input_frame, dist, cf.Frame2D(name="distortion_corrected"))
 
                 ad1.update_filename(suffix=suffix, strip=True)
         return adinputs

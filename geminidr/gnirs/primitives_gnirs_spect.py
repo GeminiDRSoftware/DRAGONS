@@ -210,7 +210,8 @@ class GNIRSSpect(Spect, GNIRS):
                                         f"{ad.filename} - continuing")
                             continue
                         self.log.stdinfo(f'Extracting spectrum from columns '
-                                    f'[{params["center"]-params["nsum"]}:{params["center"]+params["nsum"]}]')
+                                    f'[{int(params["center"] - params["nsum"] * 0.5)}:'
+                                         f'{int(params["center"] + params["nsum"] * 0.5)}]')
                 else:
                     # Telluric emission case
                     if params["order"] is None:

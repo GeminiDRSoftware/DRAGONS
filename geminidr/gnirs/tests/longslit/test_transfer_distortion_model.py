@@ -59,7 +59,7 @@ def test_regression_in_distortion_correct(ad, arc_ad, change_working_dir, ref_ad
     wavelengthSolutionAttached and distortion corrected using an associated arc,
     with one for which wavelength solution and distortion correction was done using
     a "processed_arc" created from the same science frame made using
-    makeWavelengthSolutionFromAbsorption recipe.
+    makeWavecalFromSkyAbsorption recipe.
     """
     with change_working_dir():
 
