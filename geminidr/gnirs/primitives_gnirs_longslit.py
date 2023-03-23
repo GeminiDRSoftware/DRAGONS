@@ -184,7 +184,13 @@ class GNIRSLongslit(GNIRSSpect):
                         mdf['slitsize_mx'][0] = corrections['slit_long_north']
 
                 if ('LongBlue' in ad.camera()):
-                    mdf['x_ccd'][0] = corrections['x_longblue_north']
+                    if not ('111/mm' in ad.disperser()):
+                        # 111/mm can have the illuminated region shifted to
+                        # either side 😔, see e.g. N20120419S0097.fits (right
+                        # edge visible) and N20121213S0312.fits (left edge
+                        # visible). Better to leave it uncorrected and trust
+                        # determineSlitEdges to find the edge in that case.
+                        mdf['x_ccd'][0] = corrections['x_longblue_north']
 
 
             # For GNIRS, the 'slitsize_mx' column is in arcsec, so grab it:
