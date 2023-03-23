@@ -738,10 +738,14 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     fits_to_do = [(pixel_start, wave_start, dw_start)]
     while fits_to_do:
         p0, c0, dw = fits_to_do.pop()
+        print(f'p0 = {p0}')
+        print(f'c0 = {c0}')
+        print(f'dw = {dw}')
         if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
             p1 = p0
         else:
             p1 = 0
+        print(f'p1 = {p1}')
         npeaks = narc_lines = 0
         while (min(npeaks, narc_lines) < min_lines_per_fit and
                not (p0 - p1 < 0 and p0 + p1 >= len_data)):
@@ -753,6 +757,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             i2 = bisect(arc_lines, c0 + p1 * abs(dw))
             narc_lines = i2 - i1
         c1 = p1 * dw
+        print(f'c1 = {c1}')
 
         if p1 > 0.25 * len_data and order >= 2:
             m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
@@ -763,17 +768,26 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                                         domain=[p0 - p1, p0 + p1])
         m_init.c0.bounds = (c0 - dc0, c0 + dc0)
         m_init.c1.bounds = (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))
+        print('c0 bounds:', m_init.c0.bounds)
+        print('c1 bounds:', m_init.c1.bounds)
+        if hasattr(m_init, 'c2'):
+            print('c2 bounds:', m_init.c2.bounds)
 
         # Need to set in_weights=None as there aren't many lines so
         # the fit could be swayed by a single very bright line
         m_this = _fit_region(m_init, peaks, arc_lines, kdsigma,
                              in_weights=None, ref_weights=arc_weights,
                              matches=matches, k=k)
+        print(m_this)
         dw = 2 * m_this.c1 / np.diff(m_this.domain)[0]
 
         # Add new matches to the list
+        print(f"match_radius = {match_radius}")
+        print(m_this(peaks))
+        print(arc_lines[100:])
         new_matches = matching.match_sources(m_this(peaks), arc_lines,
                                              radius=match_radius)
+        print(new_matches)
         for i, (m, p) in enumerate(zip(new_matches, peaks)):
             if matches[i] == -1 and m > -1:
                 if p0 - p1 <= p <= p0 + p1:
@@ -827,27 +841,46 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     -------
     Model : improved model fit
     """
+    print(' ------------  _fit_region ------------')
     p0 = np.mean(m_init.domain)
     p1 = 0.5 * np.diff(m_init.domain)[0]
+    print(f'p0 = {p0}')
+    print(f'p1 = {p1}')
     # We're only interested in fitting lines in this region
     new_in_weights = (abs(peaks - p0) <= 1.05 * p1).astype(float)
     if in_weights is not None:
         new_in_weights *= in_weights
     w0 = m_init.c0.value
     w1 = abs(m_init.c1.value)
+    print(f'w0 = {w0}')
+    print(f'w1 = {w1}')
     new_ref_weights = (abs(arc_lines - w0) <= 1.05 * w1).astype(float)
     if ref_weights is not None:
         new_ref_weights *= ref_weights
     new_ref_weights = ref_weights
+
     # Maybe consider two fits here, one with a large kdsigma, and then
     # one with a small one (perhaps the second could use weights)?
     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')
     m_init.linear = False  # supress warning
+    print("m_init:")
+    print(m_init)
+    print("peaks:")
+    print(peaks)
+    print("arc_lines:")
+    print(arc_lines)
+    print("new_in_weights:")
+    print(new_in_weights)
+    print("new_ref_weights:")
+    print(new_ref_weights)
+    print("matches:")
+    print(matches)
     m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
                     ref_weights=new_ref_weights, matches=matches, popsize=30,
                     mutation=(0.5,1.0), workers=-1, updating='deferred',
                     polish=False)
     m_this.linear = True
+    print(' ------------ end _fit_region ----------')
     return m_this
 
 
@@ -916,6 +949,8 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     # be futureproofed in case we change things.
     incoords = fit1d.points[~fit1d.mask]
     outcoords = fit1d.image[~fit1d.mask]
+    print(incoords)
+    print(outcoords)
 
     m_final = fit1d.model
     domain = m_final.domain
