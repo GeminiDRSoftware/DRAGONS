@@ -342,6 +342,7 @@ def test_sky_correct_from_slit_with_multiple_sources():
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename,instrument',
                          [('N20121118S0375_stack.fits', 'GNIRS'),
+                          ('N20180605S0138_stack.fits', 'GNIRS'),
                           ('S20040413S0268_stack.fits', 'GNIRS'),
                           ('N20110718S0129_stack.fits', 'GNIRS'),
                           ('S20140728S0282_stack.fits', 'F2'),
@@ -362,6 +363,13 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
             'c1': (-6.962491642935299, -6.962491642935299),
             'c2': (-0.008639441981396224, -0.008639441981396224),
             'c3': (0.006629301489564899, 0.006629301489564899)
+            },
+        'N20180605S0138_stack.fits': {
+            # GNIRS 111/mm LongBlue, off left edge of detector
+            'c0': (-16.666408005668814, 975.6436215963819),
+            'c1': (-7.318016142494172, -7.318016142494172),
+            'c2': (-0.029505932328147154, -0.029505932328147154),
+            'c3': (0.03802744314590496, 0.03802744314590496)
             },
         'S20040413S0268_stack.fits': {
             # GNIRS 32/mm ShortRed, centered
