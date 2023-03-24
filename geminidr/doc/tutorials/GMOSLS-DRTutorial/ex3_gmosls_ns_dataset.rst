@@ -17,7 +17,7 @@ axis.  DRAGONS will subtract the sky using the two beams, align and stack the
 The data uses the R400 grating on GMOS North equipped with the Hamamatsu CCDs.
 The central wavelengths are 700 nm and 710 nm.  The sequence is::
 
-   (Flat - 3 x Science - Flat - Arc) - (Arc - Flat - 3 x Science - Flat)
+   [Flat, 3 x Science, Flat, Arc], [Arc, Flat, 3 x Science, Flat]
 
 with the first group of four at 700nm and the second at 710 nm.  The
 spectrophotometry standard was obtained about three weeks before the science
@@ -40,7 +40,7 @@ The calibrations we use for this example are:
 * Arcs, for both the science and the standard observations.
 * A spectrophotometric standard.
 
-Here is the files breakdown.  All the files are included in the tutorial data
+Here is the breakdown of the files.  All the files are included in the tutorial data
 package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 
 +---------------------+---------------------------------------------+

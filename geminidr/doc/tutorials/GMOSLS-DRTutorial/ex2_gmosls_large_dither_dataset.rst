@@ -11,12 +11,17 @@ The observation sequence makes a large wavelength dither (several tens of nanome
 GMOS South amplifier #5, which began in January 2022. During reduction, DRAGONS will adjust for the difference in 
 central wavelength and then stack the aligned spectra automatically.
 
-The observation uses the R400 grating on GMOS South. The central wavelengths for this dataset are 705 nm and 795 nm. 
+The observation uses the R400 grating on GMOS South. The central wavelengths
+for this dataset are 795 nm and 705 nm.
 The effective sequence is::
 
-   Flat (795 nm) - Science (795 nm) - Science (705 nm) - Flat (705 nm) - Arc (795 nm) - Arc (705 nm)
+   [Flat, Science], [Science, Flat], [Arc, Arc]
 
-The spectrophotometry standard was observed about three days before the science observation.
+with the first group at 795 nm and the second at 705 nm, the two required
+arcs obtained in the morning.
+
+The spectrophotometry standard was observed about three days before the
+science observation.
 
 
 The calibrations we use for this example are:

@@ -15,11 +15,12 @@ sequence dithers along the dispersion axis and along the slit.  DRAGONS will
 adjust for the difference in central wavelength and spatial positions, and
 then stack the aligned spectra automatically.
 
-The data uses the B600 grating on GMOS South.  The
+The data were obtained in 2017 using the B600 grating on GMOS South.  GMOS
+was equipped with the Hamamatsu detectors at the time.  The
 central wavelengths are 515 nm and 530 nm.  We are using a subset of the
 original sequence to keep the data volume low.  The effective sequence is::
 
-   (Science - Flat - Science - Arc) - (Science - Flat - Science - Arc)
+   [Science, Flat,  Science, Arc], [Science, Flat, Science, Arc]
 
 with the first group of four at 515 and the second at 530 nm.  The
 spectrophotometry standard was obtained about a month before the science
@@ -40,7 +41,7 @@ The calibrations we use for this example are:
 * Arcs, for both the science and the standard observations.
 * A spectrophotometric standard.
 
-Here is the files breakdown.  All the files are included in the tutorial data
+Here is the breakdown of the files.  All the files are included in the tutorial data
 package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 
 +---------------------+---------------------------------------------+

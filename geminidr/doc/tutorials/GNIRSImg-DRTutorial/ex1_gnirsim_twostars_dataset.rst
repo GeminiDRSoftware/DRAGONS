@@ -22,7 +22,7 @@ The calibrations we use for this example are:
 * Darks for the science frames
 * Flats, as a sequence of lamps-on and lamps-off exposures
 
-Here is the files breakdown.  They are included in a tutorial data package.
+Here is the breakdown of the files.  They are included in a tutorial data package.
 They can also be downloaded from the Gemini Observatory Archive (GOA).
 
 +---------------+----------------------------------------------+

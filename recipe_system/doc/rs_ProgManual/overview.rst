@@ -412,7 +412,7 @@ The local calibration manager uses a sqlite database to store the
 location information of the calibrations processed by the user.  Since the
 data were processed locally, there is no need to store the data, just the
 name and the path to the data. The ``caldb`` facility is provided for the
-user to reate and populate (or de-populate) the local database. At
+user to create and populate (or de-populate) the local database. At
 present, this limits the ``dragonsrc`` file to have only a single local
 database. This limitation may be relaxed in the future.
 

@@ -111,7 +111,7 @@ First, let's see which biases we have for in our raw data directory.
 
 ::
 
-    dataselect ../playdata/*.fits --tags BIAS | showd -d detector_roi_setting
+    dataselect ../playdata/example1/*.fits --tags BIAS | showd -d detector_roi_setting
 
     -------------------------------------------------------------------
     filename                                       detector_roi_setting

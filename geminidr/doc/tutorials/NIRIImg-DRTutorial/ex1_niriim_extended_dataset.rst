@@ -25,7 +25,7 @@ The calibrations we use for this example are:
 * Short darks to use with the flats to create a bad pixel mask.
 * A set of standard star observations.
 
-Here is the files breakdown.  They are included in the tutorial data package.
+Here is the breakdown of the files.  They are included in the tutorial data package.
 They can also be downloaded from the Gemini Observatory Archive (GOA).
 
 +---------------+--------------------------------------------+
