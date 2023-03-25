@@ -14,10 +14,6 @@ Downloading the tutorial datasets
 All the data needed to run this tutorial are found in the tutorial's data
 packages.
 
-.. todo:: These data packages need to be uploaded to the website.
-         While we are testing, please get them from this location:
-         `<https://drive.google.com/drive/folders/1QU3HrnuQPkKjLBp51AfA5gEFsqx9k978?usp=share_link>`_
-
 * Example 1: `gnirsim_tutorial_datapkg-twostars-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gnirsim_tutorial_datapkg-twostars-v1.tar>`_
 
 Download the packages and unpack them somewhere convenient.

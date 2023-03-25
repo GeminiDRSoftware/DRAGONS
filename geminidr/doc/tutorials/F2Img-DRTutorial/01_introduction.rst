@@ -58,10 +58,6 @@ All the data needed to run this tutorial are found in the tutorial's data
 packages.  We have split the data packages per example to keep the size
 of each package within some reasonable limit.
 
-.. todo:: These data packages need to be uploaded to the website.
-         While we are testing, please get them from this location:
-         `<https://drive.google.com/drive/folders/1QU3HrnuQPkKjLBp51AfA5gEFsqx9k978?usp=share_link>`_
-
 * Example 1: `f2im_tutorial_datapkg-ontarget-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/f2im_tutorial_datapkg-ontarget-v1.tar>`_
 * Example 2: `f2im_tutorial_datapkg-ultradeep-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/f2im_tutorial_datapkg-ultradeep-v1.tar>`_
 
