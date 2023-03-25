@@ -200,6 +200,18 @@ The filter name is not really needed in this case since there are only Y-band
 frames, but it shows how you could have two selection criteria in
 the expression.
 
+.. note:: For Flamingos-2 data, it is useful to check the World Coordinate
+    System (WCS) of the science data.
+
+    .. code-block::
+
+        checkwcs = Reduce()
+        checkwcs.files = list_of_science_images
+        checkwcs.recipename = 'checkWCS'
+        checkwcs.runr()
+
+    Please see details in :ref:`checkWCS` in the :ref:`tips_and_tricks` chapter.
+
 
 .. _api_process_dark_files:
 

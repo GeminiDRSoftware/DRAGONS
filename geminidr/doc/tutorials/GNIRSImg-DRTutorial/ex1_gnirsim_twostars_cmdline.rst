@@ -103,6 +103,16 @@ examples; of course, just one is required.
 
 Pick the one you prefer, they all yield the same list.
 
+.. note::
+
+   For GNIRS data, it is useful to check the World Coordinate System (WCS)
+   of the science data.
+
+   ::
+
+       $ reduce -r checkWCS @sci_images.list
+
+   Please see details in :ref:`checkWCS` in the :ref:`tips_and_tricks` chapter.
 
 
 Master Dark

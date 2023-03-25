@@ -183,6 +183,18 @@ examples; of course, just one is required.
 
 Pick the one you prefer, in this case, they all yield the same list.
 
+.. note:: For GNIRS data, it is useful to check the World Coordinate
+    System (WCS) of the science data.
+
+    .. code-block::
+
+        checkwcs = Reduce()
+        checkwcs.files = list_of_science_images
+        checkwcs.recipename = 'checkWCS'
+        checkwcs.runr()
+
+    Please see details in :ref:`checkWCS` in the :ref:`tips_and_tricks` chapter.
+
 
 Master Dark
 ===========

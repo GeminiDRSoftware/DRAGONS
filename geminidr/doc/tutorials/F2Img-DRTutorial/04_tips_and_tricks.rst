@@ -38,6 +38,56 @@ structure. Therefore the distribution of emission is not necessarily
 consistent, except for sequential exposures. So it is best to combine
 lamp-off exposures from a single day.
 
+.. _checkWCS:
+
+Checking WCS of science frames
+==============================
+For Flamingos-2 data, it is useful to check the World Coordinate System (WCS)
+of the science data. DRAGONS will fix some small discrepancy but sometimes
+the WCS are not written correctly in the headers causing difficulties with
+the sky subtraction and frame alignment.
+
+We recommend running ``checkWCS`` on the science files.
+
+::
+
+   $ reduce -r checkWCS @sci_images.list
+
+   ======================================================================
+   RECIPE: checkWCS
+   ======================================================================
+   PRIMITIVE: checkWCS
+   -------------------
+   Using S20200104S0075.fits as the reference
+   S20200104S0080.fits has a discrepancy of 2.00 arcsec
+   S20200104S0082.fits has a discrepancy of 2.01 arcsec
+   S20200104S0091.fits has a discrepancy of 2.01 arcsec
+   .
+
+If any frames get flagged, like in the example above, you can still proceed
+but after the reduction, do review the logs to check for any unusual matching
+of the sources during ``adjustWCSToReference`` step, in particular the line
+about the "Number of correlated sources".  If one of the highlighted frame
+has a much lower number of correlated sources than the others, the algorithm
+is unable to overcome the discrepancy; remove the file from the input list
+and reduce again.
+
+In general, discrepancies of the order of what is shown above do not cause
+problems.  When the discrepancy matches the size of the dither, then you will
+have issues and it is best to simply remove that file from you file list right
+away.  When such a large discrepancy happens, the WCS of that file is likely
+to have accidentally inherited the WCS of the previous frame which is
+obviously very wrong.
+
+.. note::  From the API, run ``checkWCS`` like this:
+
+    .. code-block::
+
+        checkwcs = Reduce()
+        checkwcs.files = list_of_science_images
+        checkwcs.recipename = 'checkWCS'
+        checkwcs.runr()
+
 
 .. _bypassing_caldb:
 

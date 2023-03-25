@@ -204,7 +204,16 @@ Remember that you can use the ``--expr`` option to select targets with different
 names (``object``) or exposure times (``exposure_time``), or use it with any
 of the datasets |descriptors|.
 
+.. note::
 
+   For Flamingos-2 data, it is useful to check the World Coordinate System (WCS)
+   of the science data.
+
+   ::
+
+       $ reduce -r checkWCS @sci_images.list
+
+   Please see details in :ref:`checkWCS` in the :ref:`tips_and_tricks` chapter.
 
 
 Create a Master Dark
