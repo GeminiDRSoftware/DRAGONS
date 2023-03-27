@@ -23,10 +23,10 @@ author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
 version = '3.1'
-#release = '3.1.0-dev'
-#rtdurl = 'v'+release
-release = '3.1.x'
-rtdurl = 'release-'+release
+release = '3.1.0'
+rtdurl = 'v'+release
+#release = '3.1.x'
+#rtdurl = 'release-'+release
 #rtdurl = 'latest'
 
 today = 'April 2023'
