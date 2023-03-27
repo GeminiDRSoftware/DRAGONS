@@ -19,16 +19,17 @@
 
 project = 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS'
 copyright = '2023, Association of Universities for Research in Astronomy'
-author = 'Kathleen Labrie'
+author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
 version = '3.1'
-release = '3.1.0-dev'
+#release = '3.1.0-dev'
 #rtdurl = 'v'+release
-#rtdurl = 'release-'+release
-rtdurl = 'latest'
+release = '3.1.x'
+rtdurl = 'release-'+release
+#rtdurl = 'latest'
 
-today = 'May 2023'
+today = 'April 2023'
 
 # -- General configuration ---------------------------------------------------
 
@@ -107,7 +108,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'TutorialSeries-GMOSLSDRDRAGONS.tex', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS Documentation',
-     'Kathleen Labrie', 'manual'),
+     'DRAGONS Team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -148,6 +149,8 @@ rst_epilog = """
 .. |typewalk| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#typewalk" target="_blank">typewalk</a>`
 .. |atfile| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>`
 .. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/usermanual/index.html" target="_blank">Astrodata User Manual</a>`
+
+.. |GMOSImgTut| replace:: :raw-html:`<a href="http://GMOSImg-DRTutorial.readthedocs.io/en/{v}">GMOS Imaging Data Reduction Tutorial</a>`
 
 .. |RSUserInstall| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/{v}/install.html" target="_blank">DRAGONS Installation Instructions</a>`
 """.format(v = rtdurl)

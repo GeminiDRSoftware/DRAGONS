@@ -8,7 +8,7 @@ Introduction
 
 This tutorial covers the basics of reducing
 `GSAOI <https://www.gemini.edu/sciops/instruments/gsaoi/>`_  data using
-`DRAGONS <https://dragons.readthedocs.io/>`_.
+|DRAGONS|.
 
 The next two sections explain what are the required software and the data set
 that we use throughout the tutorial.
@@ -27,9 +27,8 @@ We show how to run the same reduction using both methods.
 Software Requirements
 =====================
 
-Before you start, make sure you have `DRAGONS
-<https://dragons.readthedocs.io/>`_ properly installed and configured on your
-machine. You can test that by typing the following commands:
+Before you start, make sure you have |DRAGONS| properly installed and
+configured on your machine. You can test that by typing the following commands:
 
 .. code-block:: bash
 

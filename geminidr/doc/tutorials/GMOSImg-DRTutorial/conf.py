@@ -31,7 +31,7 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
 project = 'DRAGONS Tutorial<br> GMOS Imaging Data Reduction'
 copyright = '2023, Association of Universities for Research in Astronomy'
-author = 'Bruno C. Quint, Kathleen Labrie'
+author = 'DRAGONS Team'
 
 # The short X.Y version
 #version = astrodata.version(short=True)
@@ -39,10 +39,11 @@ version = '3.1'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-release = '3.1.0-dev'
+#release = '3.1.0-dev'
 #rtdurl = 'v'+release
-#rtdurl = 'release-'+release
-rtdurl = 'latest'
+release = '3.1.x'
+rtdurl = 'release-'+release
+#rtdurl = 'latest'
 
 
 # -- General configuration ---------------------------------------------------
@@ -85,7 +86,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'May 2023'
+today = 'April 2023'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -159,7 +160,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'DRAGONSTutorial-GMOStut.tex', 'DRAGONS Tutorial - GMOS Data Reduction',
-     'Bruno Quint, Kathleen Labrie', 'manual'),
+     'DRAGONS Team', 'manual'),
 ]
 
 

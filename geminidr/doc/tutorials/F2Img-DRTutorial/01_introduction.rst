@@ -8,7 +8,7 @@ Introduction
 
 This tutorial covers the basics of reducing
 `Flamingos-2 <https://www.gemini.edu/sciops/instruments/flamingos2/>`_  data
-using `DRAGONS <https://dragons.readthedocs.io/>`_.
+using |DRAGONS|.
 
 The reduction can be done in two different ways:
 
@@ -30,9 +30,8 @@ that we use throughout the tutorial.
 Software Requirements
 =====================
 
-Before you start, make sure you have `DRAGONS
-<https://dragons.readthedocs.io/>`_ properly installed and configured on your
-machine. You can test that by typing the following commands:
+Before you start, make sure you have |DRAGONS| properly installed and
+configured on your machine. You can test that by typing the following commands:
 
 .. code-block:: bash
 

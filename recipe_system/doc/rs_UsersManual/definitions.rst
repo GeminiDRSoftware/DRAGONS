@@ -2,11 +2,6 @@
 
 .. role:: bolditalic
 
-.. |astrouser_link| raw:: html
-
-   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
-
-
 .. _definition:
 
 ***********
@@ -48,7 +43,7 @@ For Gemini instruments, the AstroData configurations are found in the ``gemini_i
 configuration package to use can be configured on the ``reduce`` command line
 or in the ``Reduce`` class.
 
-More information on AstroData tags can be found in the |astrouser_link|.
+More information on AstroData tags can be found in the |astrodatauser|.
 
 Mode
 ====

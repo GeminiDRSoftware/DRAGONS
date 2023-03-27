@@ -12,7 +12,7 @@ spectroscopic data with DRAGONS.
 GMOS is an imager and spectrograph offering longslit spectroscopy,
 multi-object spectroscopy (MOS), and integral field spectroscopy.  This
 tutorial focuses on the longslit spectroscopy.   For a tutorial on the
-reduction of GMOS imaging data, see `GMOS Imaging Data Reduction Tutorial <http://GMOSImg-DRTutorial.readthedocs.io/en/v3.0.3>`_.
+reduction of GMOS imaging data, see |GMOSImgTut|.
 
 Here is a tutorial that you, the reader, can run and experiment with.  This
 document comes with a downloadable data package that contains all the data

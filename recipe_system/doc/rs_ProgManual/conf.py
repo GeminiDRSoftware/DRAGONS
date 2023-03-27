@@ -37,17 +37,18 @@ else:
 
 project = "DRAGONS - Recipe System Programmer's Manual"
 copyright = '2023, Association of Universities for Research in Astronomy'
-author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
+author = 'DRAGONS Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 version = '3.1'  # The short X.Y version.
-release = '3.1.0-dev'  # The full version, including alpha/beta/rc tags.
+#release = '3.1.0-dev'  # The full version, including alpha/beta/rc tags.
 #rtdurl = 'v'+release
-#rtdurl = 'release-'+release
-rtdurl = 'latest'
+release = '3.1.x'
+rtdurl = 'release-'+release
+#rtdurl = 'latest'
 
 
 # -- General configuration -----------------------------------------------------
@@ -102,7 +103,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'May 2023'
+today = 'April 2023'
 
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
@@ -240,7 +241,7 @@ latex_documents = [
   ('index-latex',
    'RecipeSystemProgManual.tex',
    "DRAGONS - Recipe System Programmer's Manual",
-   'Kenneth Anderson, Kathleen Labrie, Bruno Quint', 'manual'),
+   'DRAGONS Team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -274,7 +275,7 @@ man_pages = [
     ('index',
      'recipesystemprogmanual',
      "DRAGONS - Recipe System Programmer's Manual",
-     ['Kenneth Anderson, Kathleen Labrie, Bruno Quint'], 1)
+     ['DRAGONS Team'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -290,7 +291,7 @@ texinfo_documents = [
   ('index',
    'RecipeSystemProgManual',
    "DRAGONS - Recipe System Programmer's Manual",
-   'Kenneth Anderson, Kathleen Labrie, Bruno Quint',
+   'DRAGONS Team',
    'RecipeSystemProgManual',
    'Recipe System programming "how to"',
    'Miscellaneous'),
