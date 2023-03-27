@@ -50,7 +50,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'DRAGONS'
-copyright = '2021, Association of Universities for Research in Astronomy'
+copyright = '2023, Association of Universities for Research in Astronomy'
 
 # Note that AURA owns the Copyright, not you.
 
@@ -61,7 +61,7 @@ copyright = '2021, Association of Universities for Research in Astronomy'
 # The short X.Y version.
 version = '3.1'
 # The full version, including alpha/beta/rc tags.
-release = '3.1.0-dev'
+release = '3.1.0'
 #rtdurl = 'v'+release
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
@@ -295,7 +295,7 @@ rst_epilog = """
 
 .. |GMOSLSTut| replace:: :raw-html:`<a href="http://GMOSLS-DRTutorial.readthedocs.io/en/{v}">GMOS Longslit Data Reduction Tutorial</a>`
 
-
+.. |ADMaster| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}">Astrodata Manual</a>`
 .. |ADCheat| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/cheatsheet.html">AstroData Cheat Sheet</a>`
 .. |ADUser| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/usermanual/index.html">Astrodata User Manual</a>`
 .. |ADProg| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/progmanual/index.html">Astrodata Programmer Manual</a>`
