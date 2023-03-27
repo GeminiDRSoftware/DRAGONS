@@ -236,8 +236,12 @@ as calibrations.  They
 are downloadable from the archive instead of being packaged with the software.
 They are automatically associated like any other calibrations.  This means that
 the user now must download the BPMs along with the other calibrations and add
-the BPMs to the local calibration manager.  To add the BPM included in the
-data package to the local calibration database:
+the BPMs to the local calibration manager.
+
+See :ref:`getBPM` in :ref:`tips_and_tricks` to learn about the various ways
+to get the BPMs from the archive.
+
+To add the BPM included in the data package to the local calibration database:
 
 .. code-block:: python
     :linenos:
@@ -254,7 +258,7 @@ the biases and it keeps the CCDs separated, always.  Because of that, the
 reduction of the biases for the "Separate CCDs" recipe is exactly the same
 as for the default recipe.
 
-We create the master bias and add it to the calibration manager as follow:
+We create the master bias and add it to the calibration manager as follows:
 
 .. code-block:: python
    :linenos:
@@ -296,7 +300,7 @@ flats does not mosaic the flats and it keeps the CCDs separated, always.
 Because of that, the reduction of the flats for the "Separate CCDs" recipe
 is exactly the same as for the default recipe.
 
-We create the master flat field and add it to the calibration database as follow:
+We create the master flat field and add it to the calibration database as follows:
 
 .. code-block:: python
     :linenos:

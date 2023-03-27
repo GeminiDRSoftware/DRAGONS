@@ -9,6 +9,12 @@ This is a collection of tips and tricks that can be useful for reducing
 different data, or to do it slightly differently from what is presented
 in the example.
 
+Bad Pixel Masks
+===============
+
+Please note that at this time, there are no static bad pixel masks for
+Flamingos-2 data.  DRAGONS will simply acknowledge that in the logs and
+continue with the reduction.
 
 Flatfields
 ==========

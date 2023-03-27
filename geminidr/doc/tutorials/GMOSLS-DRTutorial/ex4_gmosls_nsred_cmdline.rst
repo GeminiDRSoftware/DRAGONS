@@ -221,12 +221,16 @@ expression, just excluding calibrations is sufficient.
 Bad Pixel Mask
 ==============
 Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
-calibrations.  They
-are downloadable from the archive instead of being packaged with the software.
-They are automatically associated like any other calibrations.  This means that
-the user now must download the BPMs along with the other calibrations and add
-the BPMs to the local calibration manager.  To add the static BPM included in the
-data package to the local calibration database:
+calibrations.  They are downloadable from the archive instead of being
+packaged with the software. They are automatically associated like any other
+calibrations.  This means that the user now must download the BPMs along with
+the other calibrations and add the BPMs to the local calibration manager.
+
+See :ref:`getBPM` in :ref:`tips_and_tricks` to learn about the various ways
+to get the BPMs from the archive.
+
+To add the static BPM included in the data package to the local calibration
+database:
 
 ::
 

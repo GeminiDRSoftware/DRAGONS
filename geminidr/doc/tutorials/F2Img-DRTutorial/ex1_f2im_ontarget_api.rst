@@ -266,7 +266,7 @@ data quality plane to identify the pixels beyond the circular aperture as
 but the user can easily create a fresh bad pixel mask from the flats and
 recent short darks.
 
-The Bad Pixel Mask is created as follow:
+The Bad Pixel Mask is created as follows:
 
 .. code-block:: python
     :linenos:

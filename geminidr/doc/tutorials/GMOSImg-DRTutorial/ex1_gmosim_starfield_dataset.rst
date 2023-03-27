@@ -26,6 +26,10 @@ The calibratons we use in this example are:
   use biases contemporary to the twilights.
 * Twilight flats.
 
+.. warning::  The Bad Pixel Masks (BPMs) are now found in the archive rather
+   than packaged with the software.  You must get the static BPM from the
+   archive.  See :ref:`getBPM` in :ref:`tips_and_tricks`.
+
 +---------------+---------------------+--------------------------------+
 | Science       || N20170614S0201-205 || 10 s, i-band                  |
 +---------------+---------------------+--------------------------------+

@@ -25,6 +25,10 @@ The calibratons we use in this example are:
   and the twilight frame, respectively.
 * Twilight flats.
 
+.. warning::  The Bad Pixel Masks (BPMs) are now found in the archive rather
+   than packaged with the software.  You must get the static BPM from the
+   archive.  See :ref:`getBPM` in :ref:`tips_and_tricks`.
+
 .. important::
     For accurate photometry, observations of photometric standard of various
     colors should be obtained and observed on each of the 3 CCDs.

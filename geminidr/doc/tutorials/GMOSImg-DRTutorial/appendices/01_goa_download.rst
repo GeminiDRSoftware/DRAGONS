@@ -32,7 +32,7 @@ Science Data
 ------------
 
 Access the `Gemini Observatory Archive (GOA) <https://archive.gemini.edu/>`_
-and fill the search form as follow:
+and fill the search form as follows:
 
 * Program ID: GN-2017A-SV-151-382
 * Instrument: GMOS-N

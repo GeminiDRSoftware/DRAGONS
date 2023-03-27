@@ -191,8 +191,12 @@ as calibrations.  They
 are downloadable from the archive instead of being packaged with the software.
 They are automatically associated like any other calibrations.  This means that
 the user now must download the BPMs along with the other calibrations and add
-the BPMs to the local calibration manager.  To add the BPM included in the
-data package to the local calibration database:
+the BPMs to the local calibration manager.
+
+See :ref:`getBPM` in :ref:`tips_and_tricks` to learn about the various ways
+to get the BPMs from the archive.
+
+To add the BPM included in the data package to the local calibration database:
 
 .. code-block:: python
     :linenos:
@@ -207,7 +211,7 @@ data package to the local calibration database:
 Make Master Bias
 ================
 
-We create the master bias and add it to the calibration manager as follow:
+We create the master bias and add it to the calibration manager as follows:
 
 .. code-block:: python
    :linenos:
@@ -242,7 +246,7 @@ recipe search is triggered and where it is executed.
 Make Master Flat
 ================
 
-We create the master flat field and add it to the calibration database as follow:
+We create the master flat field and add it to the calibration database as follows:
 
 .. code-block:: python
     :linenos:

@@ -39,6 +39,10 @@ The calibrations we use for this example are:
 * Arcs, for both the science and the standard observations.
 * A spectrophotometric standard.
 
+.. warning::  The Bad Pixel Masks (BPMs) are now found in the archive rather
+   than packaged with the software.  You must get the static BPM from the
+   archive.  See :ref:`getBPM` in :ref:`tips_and_tricks`.
+
 Here is the breakdown of the files.  All the files are included in the tutorial data
 package. They can also be downloaded from the Gemini Observatory Archive (GOA).
 

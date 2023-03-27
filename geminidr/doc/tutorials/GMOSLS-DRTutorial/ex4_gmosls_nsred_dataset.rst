@@ -20,7 +20,7 @@ OG515 blocking filter and the second order light appears at 1030nm.
 The data uses the R400 grating on GMOS North equipped with the EEV CCDs.
 The central wavelengths are 880 nm, 890 nm, and 900 nm.  The sequence is::
 
-   (Flat - Science) - (Science - Flat) - (Flat - Science)
+   [Flat, Science], [Science, Flat], [Flat - Science]
 
 with the first group of four at 900nm, the second at 890nm, and the last at
 880nm.  The arcs were obtained in the morning.  The
@@ -45,6 +45,10 @@ The calibrations we use for this example are:
 * Spectroscopic flats taken with each of the science and standard observations.
 * Arcs, for both the science and the standard observations.
 * A spectrophotometric standard.
+
+.. warning::  The Bad Pixel Masks (BPMs) are now found in the archive rather
+   than packaged with the software.  You must get the static BPM from the
+   archive.  See :ref:`getBPM` in :ref:`tips_and_tricks`.
 
 Here is the files breakdown.  All the files are included in the tutorial data
 package.  They can also be downloaded from the Gemini Observatory Archive (GOA).

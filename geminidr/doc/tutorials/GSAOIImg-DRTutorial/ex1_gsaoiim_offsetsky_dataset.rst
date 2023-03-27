@@ -26,6 +26,11 @@ The calibrations we use in this example are:
 * Flats, as a sequence of lamps-on and lamps-off exposures.
 * A Standard star that could be used for photometry.
 
+.. warning::  The Bad Pixel Masks (BPMs) are now found in the archive rather
+   than packaged with the software.  You must get the static BPM from the
+   archive.  See :ref:`getBPM` in :ref:`tips_and_tricks`.
+
+
 +---------------+---------------------+--------------------------------+
 | Science       || S20170505S0095-110 || Kshort-band, on target, 60 s  |
 +---------------+---------------------+--------------------------------+
