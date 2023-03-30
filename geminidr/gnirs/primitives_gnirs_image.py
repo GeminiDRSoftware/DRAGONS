@@ -12,7 +12,6 @@ from gempy.gemini import gemini_tools as gt
 from .primitives_gnirs import GNIRS
 from ..core import Image, Photometry
 from . import parameters_gnirs_image
-from .lookups import FOV
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
