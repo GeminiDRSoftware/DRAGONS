@@ -50,7 +50,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'DRAGONS'
-copyright = '2021, Association of Universities for Research in Astronomy'
+copyright = '2023, Association of Universities for Research in Astronomy'
 
 # Note that AURA owns the Copyright, not you.
 
@@ -59,10 +59,11 @@ copyright = '2021, Association of Universities for Research in Astronomy'
 # built documents.
 #
 # The short X.Y version.
-version = '3.1'
+version = '3.2'
 # The full version, including alpha/beta/rc tags.
-release = '3.1.0-dev'
+#release = '3.1.0'
 #rtdurl = 'v'+release
+#release = '3.1.x'
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
 
@@ -72,7 +73,7 @@ rtdurl = 'latest'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'December 2021'
+today = 'April 2023'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -295,12 +296,13 @@ rst_epilog = """
 
 .. |GMOSLSTut| replace:: :raw-html:`<a href="http://GMOSLS-DRTutorial.readthedocs.io/en/{v}">GMOS Longslit Data Reduction Tutorial</a>`
 
-
-.. |ADCheat| replace:: :raw-html:`<a href="http://astrodata-cheat-sheet.readthedocs.io/en/{v}/">AstroData Cheat Sheet</a>`
-.. |ADUser| replace:: :raw-html:`<a href="http://astrodata-user-manual.readthedocs.io/en/{v}/">Astrodata User Manual</a>`
-.. |ADProg| replace:: :raw-html:`<a href="http://astrodata-programmer-manual.readthedocs.io/en/{v}/">Astrodata Programmer Manual</a>`
+.. |ADMaster| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}">Astrodata Manual</a>`
+.. |ADCheat| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/cheatsheet.html">AstroData Cheat Sheet</a>`
+.. |ADUser| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/usermanual/index.html">Astrodata User Manual</a>`
+.. |ADProg| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/progmanual/index.html">Astrodata Programmer Manual</a>`
 .. |RSProg| replace:: :raw-html:`<a href="http://dragons-recipe-system-programmers-manual.readthedocs.io/en/{v}/">Recipe System Programmers Manual</a>`
 .. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System Users Manual</a>`
+.. |RSUserInstall|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/install.html">Installation Guide</a>`
 
 .. |WSBasicDRAGONS| replace:: :raw-html:`<a href="https://collection-of-dragons-workshops.readthedocs.io/en/latest/BasicDRAGONS-2hr/sphinx/index.html">Basic DRAGONS Workshop</a>`
 

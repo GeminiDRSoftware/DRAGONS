@@ -26,10 +26,10 @@ If you are looking for a quick reference, please, have a look on the
 Reference Documents
 ===================
 
-    - |DRAGONS|_
+    - |DRAGONS|
     - :doc:`../cheatsheet`
-    - `Recipe System Users Manual`_
-    - `Recipe System Programmers Manual`_
+    - |RSUserManual|
+    - |RSProgManual|
 
 What is |astrodata|?
 ====================
@@ -103,11 +103,11 @@ repository, the tar file or the conda package.
     Here we set up an environment where the ``DRAGONS`` dependencies can
     be installed without affecting the rest of the system when not using that
     virtual environement.  The new virtual environment here is named
-    ``dragons``.  The software has been tested with Python 3.7 hence we
+    ``dragons``.  The software has been tested with Python 3.10 hence we
     recommend that you use this specific version of Python with DRAGONS.
     ::
 
-    $ conda create -n dragons python=3.7 dragons ds9
+    $ conda create -n dragons python=3.10 dragons ds9
 
 
 #. Activate your new virtual environment.
@@ -117,34 +117,35 @@ repository, the tar file or the conda package.
 
 
 #. Configure DRAGONS.
-    These configurations are not stricktly required when using only |astrodata|.
-    It however likely that if you are using |astrodata| you will be using
+    These configurations are not strictly required when using only |astrodata|.
+    It is however likely that if you are using |astrodata| you will be using
     DRAGONS too at some point.  So let's configure it to have it ready to go.
 
-    DRAGONS requires a configuration file located in ``~/.geminidr/``.  The
-    ``rsys.cfg`` file contains basic configuration for DRAGONS local calibration
+    DRAGONS requires a configuration file located in ``~/.dragons/``.  The
+    ``dragonsrc`` file contains basic configuration for DRAGONS local calibration
     manager used by ``reduce``.
 
     ::
 
         $ cd ~
-        $ mkdir .geminidr
-        $ cd .geminidr
-        $ touch rsys.cfg
+        $ mkdir .dragons
+        $ cd .dragons
+        $ touch dragonsrc
 
-    Open ``rsys.cfg`` with your favorite editor and add these lines::
+    Open ``dragonsrc`` with your favorite editor and add these lines::
+        [interactive]
+        browser = one of "safari", "chrome", "firefox"
 
         [calibs]
-        standalone = True
-        database_dir = ~/.geminidr/
+        databases = ~/.dragons/dragons.db
 
-    Next time you start a DRAGONS project, set the ``database_dir`` to a path
+    Next time you start a DRAGONS project, set the ``databases`` to a path
     of your liking, this is where the local calibration database will be written.
 
     Then configure buffers for ``ds9``::
 
         $ cd ~/
-        $ cp $CONDA_PREFIX/lib/python3.7/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
+        $ cp $CONDA_PREFIX/lib/python3.10/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
         $ vi .bash_profile (or use your favority editor)
              Add this line to the .bash_profile:
                 export IMTOOLRC=~/.imtoolrc
@@ -152,12 +153,13 @@ repository, the tar file or the conda package.
 
 Update an existing DRAGONS installation
 ---------------------------------------
+To check which version of DRAGONS you have installed::
+
+    $ conda list dragons
 
 To check for newer version::
 
     $ conda search dragons
-
-    The * will show which version is installed if multiple packages are available.
 
 To update to the newest version::
 
@@ -217,5 +219,7 @@ Astrodata Support
 
 Astrodata is developed and supported by staff at the Gemini Observatory.
 Questions about the reduction of Gemini data should be directed to the
-Gemini Helpdesk system at ``https://www.gemini.edu/sciops/helpdesk/``
-The github issue tracker can be used to report software bugs in DRAGONS.
+Gemini Helpdesk system at
+`<https://noirlab.atlassian.net/servicedesk/customer/portal/12>`_
+The github issue tracker can be used to report software bugs in DRAGONS
+(`<https://github.com/GeminiDRSoftware/DRAGONS>`_).

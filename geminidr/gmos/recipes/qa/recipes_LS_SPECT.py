@@ -32,7 +32,7 @@ def reduceScience(p):
     p.QECorrect()
     p.distortionCorrect()
     p.measureIQ(display=True)
-    p.findApertures()
+    p.findApertures(max_apertures=10)
     p.skyCorrectFromSlit()
     p.measureIQ(display=True)
 

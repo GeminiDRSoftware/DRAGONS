@@ -223,6 +223,9 @@ class AstroDataGemini(AstroData):
 
     @astro_data_tag
     def _type_gcal_lamp(self):
+        if self.phu['INSTRUME'].startswith('GMOS'):
+            return
+
         gcallamp = self.phu.get('GCALLAMP')
         if gcallamp in ('IRhigh', 'IRlow') or (gcallamp is not None and gcallamp.startswith('QH')):
             shut = self.phu.get('GCALSHUT')

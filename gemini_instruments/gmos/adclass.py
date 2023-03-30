@@ -794,12 +794,19 @@ class AstroDataGmos(AstroDataGemini):
         try:
             ayoff = self.phu['NODAYOFF']
             byoff = self.phu['NODBYOFF']
+            if self.instrument() == 'GMOS-S' and self.phu['INPORT'] == 1:
+                ayoff = -1 * ayoff
+                byoff = -1 * byoff
         except KeyError:
             ayoff = 0.0
             try:
                 byoff = self.phu['NODYOFF']
             except KeyError:
                 return None
+        if 'EEV' in self.detector_name() or 'e2v' in self.detector_name():
+            ayoff = -1 * ayoff
+            byoff = -1 * byoff
+
         return (ayoff, byoff)
 
     @astro_data_descriptor

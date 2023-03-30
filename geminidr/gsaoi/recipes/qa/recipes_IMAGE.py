@@ -26,7 +26,7 @@ def reduce_nostack(p):
     p.detectSources(detect_thresh=5., analysis_thresh=5., back_size=128)
     p.measureIQ(display=True)
     p.measureBG()
-    p.addReferenceCatalog()
+    p.addReferenceCatalog(source='2mass')
     p.determineAstrometricSolution()
     p.measureCC()
     p.addToList(purpose='forSky')

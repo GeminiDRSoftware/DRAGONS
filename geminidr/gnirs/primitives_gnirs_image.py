@@ -5,9 +5,6 @@
 # ------------------------------------------------------------------------------
 import os
 
-import numpy as np
-from scipy import ndimage
-
 import astrodata, gemini_instruments
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
@@ -15,7 +12,7 @@ from gempy.gemini import gemini_tools as gt
 from .primitives_gnirs import GNIRS
 from ..core import Image, Photometry
 from . import parameters_gnirs_image
-from .lookups import maskdb
+from .lookups import FOV
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -74,8 +71,8 @@ class GNIRSImage(GNIRS, Image, Photometry):
 
         # Fetching a corrected illumination mask with a keyhole that aligns
         # with the science data
-        illum_mask = _create_illum_mask(reference, log, xshift=params["xshift"],
-                                        yshift=params["yshift"])
+        illum_mask = FOV._create_illum_mask(reference, log, xshift=params["xshift"],
+                                            yshift=params["yshift"])
         if illum_mask is None:
             log.warning(f"No illumination mask found for {reference.filename},"
                         " no mask can be added to the DQ planes of the inputs")

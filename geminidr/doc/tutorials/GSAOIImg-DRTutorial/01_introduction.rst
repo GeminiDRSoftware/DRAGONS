@@ -8,24 +8,27 @@ Introduction
 
 This tutorial covers the basics of reducing
 `GSAOI <https://www.gemini.edu/sciops/instruments/gsaoi/>`_  data using
-`DRAGONS <https://dragons.readthedocs.io/>`_.
+|DRAGONS|.
 
 The next two sections explain what are the required software and the data set
 that we use throughout the tutorial.
-:ref:`Chapter 2: Data Reduction <command_line_data_reduction>` contains a
-quick example on how to reduce data using the DRAGONS command line tools.
-:ref:`Chapter 3: Reduction with API <api_data_reduction>` shows how we can
-reduce the data using DRAGONS packages from within Python.
 
+The reduction can be done in two different ways:
+
+* From the terminal using the command line.
+* From Python using the DRAGONS classes and functions.
+
+We show how to run the same reduction using both methods.
+
+* :ref:`offsetsky_example`
 
 .. _requirements:
 
 Software Requirements
 =====================
 
-Before you start, make sure you have `DRAGONS
-<https://dragons.readthedocs.io/>`_ properly installed and configured on your
-machine. You can test that by typing the following commands:
+Before you start, make sure you have |DRAGONS| properly installed and
+configured on your machine. You can test that by typing the following commands:
 
 .. code-block:: bash
 
@@ -47,44 +50,26 @@ Downloading the tutorial datasets
 =================================
 
 All the data needed to run this tutorial are found in the tutorial's data
-package:
+packages.
 
-    `<http://www.gemini.edu/sciops/data/software/datapkgs/gsaoiimg_tutorial_datapkg-v1.tar>`_
+* Example 1: `gsaoiim_tutorial_datapkg-offsetsky-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gsaoiim_tutorial_datapkg-offsetsky-v1.tar>`_
 
-Download it and unpack it somewhere convenient.
+Download the package and unpack it somewhere convenient.
 
 .. highlight:: bash
 
 ::
 
     cd <somewhere convenient>
-    tar xvf gsaoiimg_tutorial_datapkg-v1.tar
-    bunzip2 gsaoiimg_tutorial/playdata/*.bz2
+    tar xvf gsaoiim_tutorial_datapkg-offsetsky-v1.tar
+    bunzip2 gsaoiimg_tutorial/playdata/example*/*.bz2
 
-The datasets are found in the subdirectory ``gsaoiimg_tutorial/playdata``, and we
+The datasets are found in the subdirectory ``gsaoiimg_tutorial/playdata/example#``, and we
 will work in the subdirectory named ``gsaoiimg_tutorial/playground``.
 
 .. note:: All the raw data can also be downloaded from the Gemini Observatory
           Archive. Using the tutorial data package is probably more convenient
           but if you really want to learn how to search for and retrieve the
-          data yourself, see the step-by-step instructions in the appendix,
-          :ref:`goadownload`.
-
-.. _about_data_set:
-
-About the dataset
-=================
-
-The table below contains a summary of the dataset downloaded in the previous
-section.  Note that for GSAOI, the dark current is low enough that there is
-no need to correct for it.
-
-+---------------+---------------------+--------------------------------+
-| Science       || S20170505S0095-110 || Kshort-band, on target, 60 s  |
-+---------------+---------------------+--------------------------------+
-| Flats         || S20170505S0030-044 || Lamp on, Kshort, for science  |
-|               || S20170505S0060-074 || Lamp off, Kshort, for science |
-+---------------+---------------------+--------------------------------+
-| Standard star || S20170504S0114-117 || Kshort, standard star, 30 s   |
-+---------------+---------------------+--------------------------------+
+          data yourself, see the step-by-step instructions for Example 1
+          in the appendix, :ref:`goadownload`.
 
