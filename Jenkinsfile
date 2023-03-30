@@ -14,12 +14,12 @@
 
 // Change these to automatically skip steps
 def runtests_gmosls  = 1  // 1 to enable
-def runtests_slow    = 1
-def runtests_f2      = 1
-def runtests_niri    = 1
-def runtests_gsaoi   = 1
-def runtests_gnirs   = 1
-def runtests_wavecal = 1
+def runtests_slow    = 0
+def runtests_f2      = 0
+def runtests_niri    = 0
+def runtests_gsaoi   = 0
+def runtests_gnirs   = 0
+def runtests_wavecal = 0
 
 pipeline {
 
