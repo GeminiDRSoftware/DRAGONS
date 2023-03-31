@@ -7,8 +7,8 @@ and to be used in the documentation.
 # --- Setup Version Here ---
 API = 3
 FEATURE = 0
-BUG = 4
-TAG = ''
+BUG = 5
+TAG = 'dev'
 
 
 def version(short=False, tag=TAG):

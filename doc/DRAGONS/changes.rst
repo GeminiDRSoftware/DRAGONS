@@ -6,6 +6,27 @@
 Change Logs
 ***********
 
+3.0.5
+=====
+
+Compatibility
+-------------
+* Ensure that the package builds and operates fine using the ``conda-forge``
+  channel.   STScI has abandonned and retired the ``astroconda`` channel we
+  were previously relying on.
+
+Bug Fixes
+---------
+
+**geminidr.f2**
+
+* Fix two bugs in the F2 ``makeSkyFlat()`` recipe that rendered it non-functional.
+
+**gemini_instruments.gemini**
+
+* Fix the GCAL and LAMP tag family for GMOS.
+
+
 3.0.4
 =====
 

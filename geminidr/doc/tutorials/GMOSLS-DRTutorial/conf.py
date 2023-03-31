@@ -18,17 +18,17 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS'
-copyright = '2022, Association of Universities for Research in Astronomy'
+copyright = '2023, Association of Universities for Research in Astronomy'
 author = 'Kathleen Labrie'
 
 # The full version, including alpha/beta/rc tags
 version = '3.0'
-#release = '3.0.x'
-#rtdurl = 'release-'+release
-release = '3.0.4'
-rtdurl = 'v'+release
+release = '3.0.x'
+rtdurl = 'release-'+release
+#release = '3.0.4'
+#rtdurl = 'v'+release
 
-today = 'November 2022'
+today = 'May 2023'
 
 # -- General configuration ---------------------------------------------------
 

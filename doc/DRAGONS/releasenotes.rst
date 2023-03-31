@@ -6,6 +6,12 @@
 Release Notes
 *************
 
+V3.0.5
+======
+This patch release was built and tested using the ``conda-forge`` channel,
+replacing the dependency on the STScI ``astroconda`` channel.  STScI has
+abandonned and retired the ``astroconda`` project. 
+
 V3.0.4
 ======
 This patch release includes several small fixes and improvements, many

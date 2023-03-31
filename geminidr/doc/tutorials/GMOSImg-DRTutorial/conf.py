@@ -31,7 +31,7 @@ print((' Dragons path: {}\n'.format(dragons_path)))
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial<br> GMOS Imaging Data Reduction'
-copyright = '2022, Association of Universities for Research in Astronomy'
+copyright = '2023, Association of Universities for Research in Astronomy'
 author = 'Bruno C. Quint, Kathleen Labrie'
 
 # The short X.Y version
@@ -40,10 +40,10 @@ version = '3.0'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-#release = '3.0.x'
-#rtdurl = 'release-'+release
-release = '3.0.4'
-rtdurl = 'v'+release
+release = '3.0.x'
+rtdurl = 'release-'+release
+#release = '3.0.4'
+#rtdurl = 'v'+release
 
 
 # -- General configuration ---------------------------------------------------
@@ -86,7 +86,7 @@ language = None
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'November 2022'
+today = 'May 2023'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
