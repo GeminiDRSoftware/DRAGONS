@@ -618,7 +618,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
-        bound = min(20, spectral_range.value / 10)
+        bound = min(20., spectral_range.value / 10.)
 
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
                                         kdsigma, order=config["order"],
