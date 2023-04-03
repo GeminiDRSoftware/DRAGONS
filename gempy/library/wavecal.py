@@ -737,6 +737,9 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
     dc0 = dcenwave
+    bound = (len_data - 1) * abs(dw_start) / 10
+    if bound > 20:
+        bound = 20
     fits_to_do = [(pixel_start, wave_start, dw_start)]
     while fits_to_do:
         p0, c0, dw = fits_to_do.pop()
@@ -759,7 +762,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         if p1 > 0.25 * len_data and order >= 2:
             m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
-            bound = 20
             print(f"bound = {bound}")
             print(f"type = {type(bound)}")
             m_init.c2.bounds = (-bound, bound)
