@@ -416,8 +416,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         init_models, ui_params.toDict(), peaks=peaks,
         peak_weights=weights[ui_params.weighting],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
-        dcenwave = input_data["cenwave_accuracy"],
-        spectral_range=input_data["spectral_range"], filename=ext.filename)
+        dcenwave = input_data["cenwave_accuracy"], filename=ext.filename)
 
     input_data["fit"] = fit1d
     return input_data, fit1d, acceptable_fit
@@ -463,7 +462,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     "fwidth" : feature width (pixels)
     "location" : extraction location (if 2D spectrum)
     "cenwave_accuracy" : accuracy of the central wavelength
-    "spectral_range" : wavelength range of the spectrum
     """
     cenwave = config["central_wavelength"]
 
@@ -522,8 +520,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     dw0 = (waves[2] - waves[0]) / (data.size - 1)
     logit("Wavelengths at start, middle, end (nm), and dispersion "
           f"(nm/pixel):\n{waves} {dw0:.4f}")
-    # Calculate the spectral range
-    spect_range = abs(waves[2] - waves[0]) * u.nm
 
     # Get list of arc lines (probably from a text file dependent on the
     # input spectrum, so a private method of the primitivesClass). If a
@@ -556,13 +552,12 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     return {"spectrum": np.ma.masked_array(data, mask=mask),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
-            "cenwave_accuracy" : dcenwave, "spectral_range": spect_range}
+            "cenwave_accuracy" : dcenwave}
 
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,
-                  kdsigma=1, k=1, filename=None, dcenwave=10,
-                  spectral_range=None):
+                  kdsigma=1, k=1, filename=None, dcenwave=10):
     """
     Find the best wavelength solution from the set of initial models.
 
@@ -576,8 +571,6 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         list of peak weights
     filename : str
         name of file being checked
-    spectral_range : float
-        spectral range being considered
     Returns
     -------
 
@@ -618,13 +611,11 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
-        bound = min(20, spectral_range.value / 10)
 
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
                                         kdsigma, order=config["order"],
                                         min_lines_per_fit=min_lines_per_fit,
-                                        k=k, dcenwave=dcenwave,
-                                        bound=bound)
+                                        k=k, dcenwave=dcenwave)
 
         # We perform a regular least-squares fit to all the matches
         # we've made. This allows a high polynomial order to be
@@ -689,8 +680,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                           order=3, min_lines_per_fit=15, k=1,
-                          arc_weights=None, dcenwave=10,
-                          bound=20):
+                          arc_weights=None, dcenwave=10):
     """
     This function performs fits in multiple regions of the 1D arc spectrum.
     Given a starting location, a suitable fitting region is "grown" outwards
@@ -721,8 +711,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         maximum number of arc lines to match each peak
     arc_weights : array-like/None
         weights of output coordinates
-    bound : float
-        limit on c2 component of Chebyshev polynomial for fit
 
     Returns
     -------
@@ -736,6 +724,12 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     match_radius = 2 * abs(dw_start)
     dc0 = dcenwave
     fits_to_do = [(pixel_start, wave_start, dw_start)]
+    # DB: Calculate a bound for the c2 component of the fitting function. If
+    # the spectral range is less than ~200 nm, it needs to be smaller than the
+    # default of 20 or nondeterministic behavior can occur in wavecal (e.g.,
+    # non-monotonic assignment of wavelengths to lines sometimes, etc.).
+    spect_range = (len_data - 1) * abs(dw_start)
+    c2_bound = 20 if spect_range > 200. else spect_range / 10.
     while fits_to_do:
         p0, c0, dw = fits_to_do.pop()
         print(f'p0 = {p0}')
@@ -762,7 +756,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         if p1 > 0.25 * len_data and order >= 2:
             m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
-            m_init.c2.bounds = (-bound, bound)
+            m_init.c2.bounds = (-c2_bound, c2_bound)
         else:
             m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
