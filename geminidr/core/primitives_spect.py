@@ -1808,8 +1808,11 @@ class Spect(Resample):
                         # In further refactoring, the mosaic WCS should get added
                         # at an earlier stage, separately from resampling.
                         log.warning('Image will be mosaicked.')
+                        # TODO: Analyse this step of the algorithm (After outputs are added to 
+                        # end of list, it is safe to delete current element of list )
                         adinputs.extend(self.mosaicDetectors([ad]))
-                        # adoutputs.extend(self.mosaicDetectors([ad]))
+                        del adinputs[i]
+                        
                     continue
 
                 # Do all the extension WCSs contain a mosaic frame, allowing us to
