@@ -1801,8 +1801,7 @@ class Spect(Resample):
                     if 'sq' in self.mode or do_cal == 'force':
                         fail = True
                     elif len(ad) == 1:
-                        ad
-                        #adoutputs.append(ad)
+
                         adinputs[i] = ad_out
                     else:
                         # In further refactoring, the mosaic WCS should get added
