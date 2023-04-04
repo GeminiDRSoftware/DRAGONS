@@ -6,7 +6,7 @@
 from functools import reduce
 from copy import copy
 import numpy as np
-
+import re
 from astropy.modeling import models, Model
 from gwcs.wcs import WCS as gWCS
 
@@ -85,7 +85,8 @@ class Resample(PrimitivesBASE):
                                  "list of shifts or a filename.")
             else:
                 try:
-                    shifts = [tuple(float(x) for x in line.strip().split(' '))
+                    # \s+ greedily matches whitespace characters [\r\n\t\f\v ] from one and unlimited times 
+                    shifts = [tuple(float(x) for x in re.split("\s+",line.strip()))
                               for line in f.readlines()]
                 except (TypeError, ValueError):
                     raise ValueError(f"Cannot parse shifts from file {shifts_param}")
