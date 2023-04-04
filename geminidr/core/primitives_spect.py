@@ -256,8 +256,8 @@ class Spect(Resample):
                 # Apply the shift to the wavelength scale
                 shift_final = m_final.offset_0.value
                 log.stdinfo(f"    Shifted wavelength scale for "
-                            f"extension {ext.id} by {shift_final:0.3f} "
-                             "pixels")
+                            f"extension {ext.id} by {shift_final:0.4f} "
+                            f"pixels ({shift_final * dw:0.4g} nm)")
                 _add_shift_model_to_wcs(shift_final, dispaxis, ext)
 
             # Timestamp and update the filename
