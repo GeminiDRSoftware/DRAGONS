@@ -32,6 +32,7 @@ fi
 
 echo ${PATH}
 which conda
+conda clean -i
 conda update --quiet conda
 # These 2 channels need removing if testing old branches has reinstated them:
 conda config --remove channels http://ssb.stsci.edu/astroconda || :
