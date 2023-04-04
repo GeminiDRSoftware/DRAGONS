@@ -1718,135 +1718,143 @@ class Spect(Resample):
 
         fail = False
 
-        adoutputs = []
-        for ad in adinputs:
 
-            # We don't check for a timestamp since it's not unreasonable
-            # to do multiple distortion corrections on a single AD object
+        # Nonetype check
+        if not isinstance(adinputs,list):
+            #Might not be needed
+            log.warning("adinputs not formed")
+        else:
+            for i, ad in enumerate(adinputs):
 
-            for ext in ad:
-                try:
-                    idx = ext.wcs.available_frames.index('distortion_corrected')
-                except (ValueError, AttributeError):
-                    have_distcorr = False
-                else:
-                    have_distcorr = idx > 0
-                if not have_distcorr:
-                    log.warning('No distortion transformation attached to'
-                                f' {ad.filename}, extension {ext.id}')
-                    break
+                # We don't check for a timestamp since it's not unreasonable
+                # to do multiple distortion corrections on a single AD object
 
-                # The resampling routine currently relies on a no-op forward
-                # distortion model to size the output correctly (while using
-                # the proper inverse for evaluating the sample points), so we
-                # replace that part of the WCS with Identity here. This hack
-                # gets uglier because any origin shift between arc & science
-                # ROIs that has been prefixed to the distortion model needs to
-                # be preserved; get rid of this at a later iteration by
-                # including ROI shifts in their own frame(s).
-
-                new_pipeline = []
-                # Step through the steps in the pipeline, and replace the
-                # forward transform with Identity(2) for the frame names given
-                # in order to keep the output image size the same (the actual
-                # transform of importance is the inverse transform, which
-                # isn't touched).
-                for index, step in enumerate(ext.wcs.pipeline[:idx]):
-                    if ext.wcs.pipeline[index+1].frame.name in (
-                            'distortion_corrected', 'rectified'):
-                        prev_frame, m_distcorr = step
-
-                        # The model must have a Mapping prior to the Chebyshev2D
-                        # model(s) since coordinates have to be duplicated. Find this
-                        for i in range(m_distcorr.n_submodels):
-                            if isinstance(m_distcorr[i], models.Mapping):
-                                break
-                        else:
-                            raise ValueError("Cannot find Mapping")
-
-                        # Now determine the extent of the submodel that
-                        # encompasses the overall 2D distortion, which will be
-                        # a 2D->2D model
-                        for j in range(i + 1, m_distcorr.n_submodels + 1):
-                            try:
-                                msub = m_distcorr[i:j]
-                            except IndexError:
-                                continue
-                            if msub.n_inputs == msub.n_outputs == 2:
-                                break
-                        else:
-                            raise ValueError("Cannot find distortion model")
-
-                        # Name it so we can replace it
-                        m_distcorr[i:j].name = "DISTCORR"
-                        m_dummy = models.Identity(2)
-                        m_dummy.inverse = msub.inverse
-                        new_m_distcorr = m_distcorr.replace_submodel("DISTCORR",
-                                                                     m_dummy)
-                        new_pipeline.append((prev_frame, new_m_distcorr))
-                    else:  # Keep the step unchanged.
-                        new_pipeline.append(step)
-
-                # Now recreate the WCS using the new pipeline.
-                new_pipeline.extend(ext.wcs.pipeline[idx:])
-                ext.wcs = gWCS(new_pipeline)
-
-            if not have_distcorr:
-                # TODO: Think about this when we have MOS/XD/IFU
-                if 'sq' in self.mode or do_cal == 'force':
-                    fail = True
-                elif len(ad) == 1:
-                    adoutputs.append(ad)
-                else:
-                    # In further refactoring, the mosaic WCS should get added
-                    # at an earlier stage, separately from resampling.
-                    log.warning('Image will be mosaicked.')
-                    adoutputs.extend(self.mosaicDetectors([ad]))
-                continue
-
-            # Do all the extension WCSs contain a mosaic frame, allowing us to
-            # resample them into a single mosaic at the same time as correcting
-            # distortions (they won't have if the arc wasn't mosaicked)?
-            mosaic = all('mosaic' in ext.wcs.available_frames if ext.wcs is not
-                         None else False for ext in ad)
-
-            if mosaic:
-                ad_out = transform.resample_from_wcs(
-                    ad, 'distortion_corrected', order=order,
-                    subsample=subsample, parallel=False
-                )
-            else:
-                for i, ext in enumerate(ad):
-                    if i == 0:
-                        ad_out = transform.resample_from_wcs(
-                            ext, 'distortion_corrected', order=order,
-                            subsample=subsample, parallel=False
-                        )
+                for ext in ad:
+                    try:
+                        idx = ext.wcs.available_frames.index('distortion_corrected')
+                    except (ValueError, AttributeError):
+                        have_distcorr = False
                     else:
-                        ad_out.append(
-                            transform.resample_from_wcs(ext,
-                                                        'distortion_corrected',
-                                                        order=order,
-                                                        subsample=subsample,
-                                                        parallel=False)
-                        )
+                        have_distcorr = idx > 0
+                    if not have_distcorr:
+                        log.warning('No distortion transformation attached to'
+                                    f' {ad.filename}, extension {ext.id}')
+                        break
 
-            # The WCS gets updated by resample_from_wcs. We should also make it
-            # save the (inverted) WCS pipeline components prior to resampling
-            # somehow, to allow mapping rectified co-ordinates back to detector
-            # pixels for calibration & inspection purposes.
+                    # The resampling routine currently relies on a no-op forward
+                    # distortion model to size the output correctly (while using
+                    # the proper inverse for evaluating the sample points), so we
+                    # replace that part of the WCS with Identity here. This hack
+                    # gets uglier because any origin shift between arc & science
+                    # ROIs that has been prefixed to the distortion model needs to
+                    # be preserved; get rid of this at a later iteration by
+                    # including ROI shifts in their own frame(s).
 
-            # Timestamp and update the filename
-            gt.mark_history(ad_out, primname=self.myself(),
-                            keyword=timestamp_key)
-            ad_out.update_filename(suffix=sfx, strip=True)
-            adoutputs.append(ad_out)
+                    new_pipeline = []
+                    # Step through the steps in the pipeline, and replace the
+                    # forward transform with Identity(2) for the frame names given
+                    # in order to keep the output image size the same (the actual
+                    # transform of importance is the inverse transform, which
+                    # isn't tou fched).
+                    for index, step in enumerate(ext.wcs.pipeline[:idx]):
+                        if ext.wcs.pipeline[index+1].frame.name in (
+                                'distortion_corrected', 'rectified'):
+                            prev_frame, m_distcorr = step
 
+                            # The model must have a Mapping prior to the Chebyshev2D
+                            # model(s) since coordinates have to be duplicated. Find this
+                            for i in range(m_distcorr.n_submodels):
+                                if isinstance(m_distcorr[i], models.Mapping):
+                                    break
+                            else:
+                                raise ValueError("Cannot find Mapping")
+
+                            # Now determine the extent of the submodel that
+                            # encompasses the overall 2D distortion, which will be
+                            # a 2D->2D model
+                            for j in range(i + 1, m_distcorr.n_submodels + 1):
+                                try:
+                                    msub = m_distcorr[i:j]
+                                except IndexError:
+                                    continue
+                                if msub.n_inputs == msub.n_outputs == 2:
+                                    break
+                            else:
+                                raise ValueError("Cannot find distortion model")
+
+                            # Name it so we can replace it
+                            m_distcorr[i:j].name = "DISTCORR"
+                            m_dummy = models.Identity(2)
+                            m_dummy.inverse = msub.inverse
+                            new_m_distcorr = m_distcorr.replace_submodel("DISTCORR",
+                                                                        m_dummy)
+                            new_pipeline.append((prev_frame, new_m_distcorr))
+                        else:  # Keep the step unchanged.
+                            new_pipeline.append(step)
+
+                    # Now recreate the WCS using the new pipeline.
+                    new_pipeline.extend(ext.wcs.pipeline[idx:])
+                    ext.wcs = gWCS(new_pipeline)
+
+                if not have_distcorr:
+                    # TODO: Think about this when we have MOS/XD/IFU
+                    if 'sq' in self.mode or do_cal == 'force':
+                        fail = True
+                    elif len(ad) == 1:
+                        ad
+                        #adoutputs.append(ad)
+                        adinputs[i] = ad_out
+                    else:
+                        # In further refactoring, the mosaic WCS should get added
+                        # at an earlier stage, separately from resampling.
+                        log.warning('Image will be mosaicked.')
+                        adinputs.extend(self.mosaicDetectors([ad]))
+                        # adoutputs.extend(self.mosaicDetectors([ad]))
+                    continue
+
+                # Do all the extension WCSs contain a mosaic frame, allowing us to
+                # resample them into a single mosaic at the same time as correcting
+                # distortions (they won't have if the arc wasn't mosaicked)?
+                mosaic = all('mosaic' in ext.wcs.available_frames if ext.wcs is not
+                            None else False for ext in ad)
+
+                if mosaic:
+                    ad_out = transform.resample_from_wcs(
+                        ad, 'distortion_corrected', order=order,
+                        subsample=subsample, parallel=False
+                    )
+                else:
+                    for i, ext in enumerate(ad):
+                        if i == 0:
+                            ad_out = transform.resample_from_wcs(
+                                ext, 'distortion_corrected', order=order,
+                                subsample=subsample, parallel=False
+                            )
+                        else:
+                            ad_out.append(
+                                transform.resample_from_wcs(ext,
+                                                            'distortion_corrected',
+                                                            order=order,
+                                                            subsample=subsample,
+                                                            parallel=False)
+                            )
+
+                # The WCS gets updated by resample_from_wcs. We should also make it
+                # save the (inverted) WCS pipeline components prior to resampling
+                # somehow, to allow mapping rectified co-ordinates back to detector
+                # pixels for calibration & inspection purposes.
+
+                # Timestamp and update the filename
+                gt.mark_history(ad_out, primname=self.myself(),
+                                keyword=timestamp_key)
+                ad_out.update_filename(suffix=sfx, strip=True)
+                # freeing up AD primitive by replacing input with output
+                adinputs[i] = ad_out
         if fail:
             raise OSError("One or more input(s) missing distortion "
                           "calibration; run attachWavelengthSolution first")
-
-        return adoutputs
+        
+        return adinputs
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
