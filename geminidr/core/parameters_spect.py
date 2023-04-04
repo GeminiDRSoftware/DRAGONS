@@ -36,8 +36,7 @@ class adjustWavelengthZeroPointConfig(config.Config):
     shift = config.RangeField("Shift to apply to wavelength scale (in pixels)",
                               float, None, min=0, optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
-                                        float, 50.0, min=0.0)
-
+                                        float, 5., min=0.0)
 
 class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",
