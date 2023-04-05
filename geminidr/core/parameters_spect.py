@@ -35,6 +35,8 @@ class adjustWavelengthZeroPointConfig(config.Config):
                                 min=1, optional=True)
     shift = config.RangeField("Shift to apply to wavelength scale (in pixels)",
                               float, None, min=0, optional=True)
+    verbose = config.Field("Print extra information", bool, False,
+                           optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
                                         float, 5., min=0.0)
 

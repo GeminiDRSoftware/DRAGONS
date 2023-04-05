@@ -144,6 +144,7 @@ class Spect(Resample):
         center = params["center"]
         shift = params["shift"]
         max_shift = params["debug_max_shift"]
+        verbose = params["verbose"]
 
         # Check given shift, if there is one.
         if shift and shift > max_shift:
@@ -197,10 +198,15 @@ class Spect(Resample):
                                      f"for {ext.filename}:{ext.id} "
                                      f"(found '{wave_scale}'")
 
+                # get_all_input_data() outputs several lines of information
+                # which can be useful but confusing if many files are processed,
+                # so use the verbose parameter to allow users to control it.
+                loglevel = "stdinfo" if verbose else "fullinfo"
                 input_data = wavecal.get_all_input_data(
                     ext, self, config_dict, linelist=None,
                     bad_bits=DQ.not_signal, skylines=True,
-                    loglevel='fullinfo')
+                    loglevel=loglevel)
+
                 spectrum = input_data["spectrum"]
                 init_models = input_data["init_models"]
                 domain = init_models[0].meta["domain"]
