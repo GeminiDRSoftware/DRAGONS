@@ -160,8 +160,7 @@ class Spect(Resample):
                 if shift is not None:
                     _add_shift_model_to_wcs(shift, dispaxis, ext)
                     log.stdinfo("    Shifted wavelength scale for extension "
-                                f"{ext.id} by {shift:0.3f} "
-                                f"pixels.")
+                                f"{ext.id} by {shift:0.4g} pixels.")
                     continue
 
                 # Otherwise, we'll need to automatically find the shift.
@@ -256,7 +255,7 @@ class Spect(Resample):
                 # Apply the shift to the wavelength scale
                 shift_final = m_final.offset_0.value
                 log.stdinfo(f"    Shifted wavelength scale for "
-                            f"extension {ext.id} by {shift_final:0.4f} "
+                            f"extension {ext.id} by {shift_final:0.4g} "
                             f"pixels ({shift_final * dw:0.4g} nm)")
                 _add_shift_model_to_wcs(shift_final, dispaxis, ext)
 
