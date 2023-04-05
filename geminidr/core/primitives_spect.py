@@ -210,7 +210,7 @@ class Spect(Resample):
                 sky_weights = input_data["linelist"].weights
                 if sky_weights is None:
                     sky_weights = np.ones_like(sky_lines)
-                    log.warning("No weights were found for the reference linelist")
+                    log.debug("No weights were found for the reference linelist")
 
                 m_init = init_models[0]
                 # Fix all parameters in the model so that they don't change
@@ -220,14 +220,13 @@ class Spect(Resample):
 
                 # Add a bounded Shift model in front of the wavelength solution
                 m_init = models.Shift(0, bounds={'offset': (-max_shift,
-                     max_shift)}) | m_init
+                                                            max_shift)}) | m_init
                 m_init.meta["domain"] = domain
 
                 fwidth = input_data["fwidth"]
                 dw = np.diff(m_init(np.arange(spectrum.size))).mean()
                 kdsigma = fwidth * abs(dw)
                 k = 1 if kdsigma < 3 else 2
-
                 pixel_start = domain[0] + 0.5 * np.diff(domain)[0]
 
                 # Find matches between the sky lines list and measured peaks.
@@ -246,7 +245,7 @@ class Spect(Resample):
                                  matches=matches)
 
                 mask = [i for i in matches if i > -1]
-                log.fullinfo(f"    Matched {len(mask)}/{len(peaks)} peaks "
+                log.stdinfo(f"    Matched {len(mask)}/{len(peaks)} peaks "
                             f"({len(mask)/len(peaks):.0%}) in the image")
                 # Create a plot of the solution for quick QA.
                 wavecal.save_fit_as_pdf(input_data["spectrum"],
