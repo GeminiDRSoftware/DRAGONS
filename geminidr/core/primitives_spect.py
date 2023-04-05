@@ -178,7 +178,7 @@ class Spect(Resample):
                         "fwidth": None,
                         "min_snr": 10,
                         "min_sep": 2,
-                        "weighting": "global",
+                        "weighting": "local",
                         "nbright": 0,
                         "dispersion": None,
                         "debug_min_lines": 15,
@@ -242,7 +242,7 @@ class Spect(Resample):
                                       k=k, method='Nelder-Mead')
                 m_final = fit_it(m_init, peaks, sky_lines,
                                  in_weights=weights[config_dict["weighting"]],
-                                 ref_weights=input_data["linelist"].weights,
+                                 ref_weights=sky_weights,
                                  matches=matches)
 
                 mask = [i for i in matches if i > -1]
