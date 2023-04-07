@@ -218,7 +218,7 @@ here how one would specify the object name for a more surgical selection.
 
 ::
 
-    dataselect ../playdata/example3/*.fits --xtags CAL --expr='object=="J2145+0031"' -o sci.lis
+    dataselect ../playdata/example1/*.fits --xtags CAL --expr='object=="J2145+0031"' -o sci.lis
 
 Bad Pixel Mask
 ==============

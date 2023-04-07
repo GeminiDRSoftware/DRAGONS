@@ -17,9 +17,10 @@ the user need to be aware of.  Please read on.
 New Features
 ------------
 
-Science quality support for GMOS longslit spectroscopy.
+Science quality support for GMOS longslit spectroscopy, including nod-and-shuffle.
   Please refer to the tutorial, |GMOSLSTut|.  DRAGONS is now the official
-  software for reducing GMOS longslit data.
+  software for reducing GMOS longslit data in normal and nod-and-shuffle
+  mode.
 
 New browser-base interactive tools to support spectroscopy.
   The following primitives have an interactive mode that can be activated with
