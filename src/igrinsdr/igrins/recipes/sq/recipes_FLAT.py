@@ -53,7 +53,19 @@ def makeProcessedFlat(p):
     """
 
     p.prepare()
-    # p.makeIRAFCompatible()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    #p.nonlinearityCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.makeLampFlat()
+    # does not yet support multiple slit/order
+    p.determineSlitEdges()
+    # does not yet support multiple slit/order.  Note, name likely to change.
+    p.maskBeyondSlit()
+    # New primitive for IGRINS-2
+    p.normalizeFlat()
+    p.thresholdFlatfield()
     p.storeProcessedFlat()
     return
 
@@ -62,3 +74,21 @@ def makeProcessedFlat(p):
 # We set 'estimateNoise' as a default recipe for temporary, just for testing
 # purpose.
 _default = estimateNoise
+
+
+def makeProcessedBPM(p):
+    """
+    This recipe requires flats and uses the lamp-off as short darks.
+    """
+
+    p.prepare()
+    p.ADUToElectrons()
+    p.selectFromInputs(tags="LAMPOFF", outstream="darks")
+    p.selectFromInputs(tags="FLAT")
+    p.stackFrames(stream="darks")
+    p.makeLampFlat()
+    p.determineSlitEdges()
+    p.normalizeFlat()
+    p.makeBPM()
+    #p.storeBPM()
+    return
