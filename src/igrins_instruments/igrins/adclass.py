@@ -33,6 +33,13 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
         if self.phu.get('OBJTYPE') == 'SKY' or self[0].hdr.get('OBJTYPE') == 'SKY':
             return TagSet(['SKY', 'CAL'])
 
+    @astro_data_tag
+    def _tag_lamp(self):
+        if self.phu.get('FRMTYPE') == "ON":
+            return TagSet(['LAMPON'])
+        elif self.phu.get('FRMTYPE') == "OFF":
+            return TagSet(['LAMPOFF'])
+
     @astro_data_descriptor
     def observation_class(self):
         """
