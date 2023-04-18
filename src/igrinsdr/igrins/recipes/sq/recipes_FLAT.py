@@ -31,7 +31,7 @@ def estimateNoise(p):
     # Select the "level3_removed" stream and make it the output (i.e., input of
     # next primitive)
     p.selectStream(stream_name="LEVEL3_REMOVED")
-    p.stackDarks()
+    p.stackFlats()
     # The table from 'ESTIMATED_NOISE' stream is appended to the stacked image.
     p.addNoiseTable()
     # Set the suffix.
