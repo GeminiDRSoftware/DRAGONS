@@ -130,6 +130,8 @@ class AstroDataIGRINS(_AstroDataIGRINS):
         """
         return lookup.array_properties.get('gain')
 
+    def wcs(self):
+        return object()
 
 class AstroDataIGRINS2(AstroDataIGRINS):
     # single keyword mapping.  add only the ones that are different
