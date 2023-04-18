@@ -59,21 +59,21 @@ def makeProcessedFlat(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.makeLampFlat()
-    # does not yet support multiple slit/order
-    p.determineSlitEdges()
-    # does not yet support multiple slit/order.  Note, name likely to change.
-    p.maskBeyondSlit()
-    # New primitive for IGRINS-2
-    p.normalizeFlat()
-    p.thresholdFlatfield()
-    p.storeProcessedFlat()
+    # # does not yet support multiple slit/order
+    # p.determineSlitEdges()
+    # # does not yet support multiple slit/order.  Note, name likely to change.
+    # p.maskBeyondSlit()
+    # # New primitive for IGRINS-2
+    # p.normalizeFlat()
+    # p.thresholdFlatfield()
+    # p.storeProcessedFlat()
     return
 
-# _default = makeProcessedFlat
+_default = makeProcessedFlat
 
 # We set 'estimateNoise' as a default recipe for temporary, just for testing
 # purpose.
-_default = estimateNoise
+# _default = estimateNoise
 
 
 def makeProcessedBPM(p):
