@@ -133,6 +133,100 @@ class AstroDataIGRINS(_AstroDataIGRINS):
     def wcs(self):
         return object()
 
+    @astro_data_descriptor
+    def read_noise(self):
+        """
+        Returns the read noise in electrons.
+
+        Returns
+        -------
+        float/list
+            gain
+        """
+        return lookup.array_properties.get('read_noise')
+
+    # copied from f2
+    @returns_list
+    @astro_data_descriptor
+    def array_section(self, pretty=False):
+        """
+        Returns the rectangular section that includes the pixels that would be
+        exposed to light.  If pretty is False, a tuple of 0-based coordinates
+        is returned with format (x1, x2, y1, y2).  If pretty is True, a keyword
+        value is returned without parsing as a string.  In this format, the
+        coordinates are generally 1-based.
+
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
+
+        Parameters
+        ----------
+        pretty : bool
+         If True, return the formatted string found in the header.
+
+        Returns
+        -------
+        tuple of integers or list of tuples
+            Location of the pixels exposed to light using Python slice values.
+
+        string or list of strings
+            Location of the pixels exposed to light using an IRAF section
+            format (1-based).
+        """
+        # Since none of the parent class defines array_section, we simply skip.
+        # if 'PREPARED' in self.tags:
+        #     return super().array_section(pretty=pretty)
+
+        value_filter = (str if pretty else Section.from_string)
+        return value_filter('[1:2048,1:2048]')
+
+    @astro_data_descriptor
+    def wcs_ra(self):
+        """
+        Returns the Right Ascension of the center of the field based on the
+        WCS rather than the RA keyword. This just uses the CRVAL1 keyword.
+
+        Returns
+        -------
+        float
+            right ascension in degrees
+        """
+        # Try the first (only if sliced) extension, then the PHU
+        try:
+            h = self[0].hdr
+            crval = h['CRVAL1']
+            ctype = h['CTYPE1']
+        except (KeyError, IndexError):
+            crval = self.phu.get('CRVAL1')
+            ctype = self.phu.get('CTYPE1')
+        # return crval if ctype == 'RA---TAN' else None
+        return 1
+
+    @astro_data_descriptor
+    def wcs_dec(self):
+        """
+        Returns the Declination of the center of the field based on the
+        WCS rather than the DEC keyword. This just uses the CRVAL2 keyword.
+
+        Returns
+        -------
+        float
+            declination in degrees
+        """
+        # Try the first (only if sliced) extension, then the PHU
+        try:
+            h = self[0].hdr
+            crval = h['CRVAL2']
+            ctype = h['CTYPE2']
+        except (KeyError, IndexError):
+            crval = self.phu.get('CRVAL2')
+            ctype = self.phu.get('CTYPE2')
+        #return crval if ctype == 'DEC--TAN' else None
+        return 1
+
+
+
 class AstroDataIGRINS2(AstroDataIGRINS):
     # single keyword mapping.  add only the ones that are different
     # from what's already defined in AstroDataGemini.
