@@ -105,7 +105,8 @@ class Igrins(Gemini, NearIR):
         ad = astrodata.create(phu)
 
         astrodata.add_header_to_table(tbl)
-        ad.append(tbl, name='EST_NOISE')
+        ad.EST_NOISE = tbl
+        # ad.append(tbl, name='EST_NOISE')
 
         self.streams["ESTIMATED_NOISE"] = [ad]
 
@@ -127,7 +128,8 @@ class Igrins(Gemini, NearIR):
         ad_noise_table = self.streams["ESTIMATED_NOISE"][0]
         del self.streams["ESTIMATED_NOISE"]
 
-        ad.append(ad_noise_table.EST_NOISE, name="EST_NOISE")
+        ad.EST_NOISE = ad_noise_table.EST_NOISE
+        # ad.append(ad_noise_table.EST_NOISE, name="EST_NOISE")
 
         return adinputs
 
