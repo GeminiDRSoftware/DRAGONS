@@ -11,7 +11,7 @@ filter_wavelengths = {
 array_properties = {
     # EDIT AS NEEDED
     # somehow the gain needs to be a list
-    "gain"  :  np.array([3]),   # electrons/ADU  (MADE UP VALUE for example)
-    "read_noise"  :  np.array([5]),   # electrons/ADU  (MADE UP VALUE for example)
+    "gain"  :  3,   # electrons/ADU  (MADE UP VALUE for example)
+    "read_noise": 9,
 
 }
