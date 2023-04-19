@@ -1,12 +1,10 @@
-__all__ = ['AstroDataIGRINS', 'AstroDataIGRINS']
+__all__ = ['AstroDataIGRINS', 'AstroDataIGRINS2']
 
 from astrodata import factory
-from gemini_instruments.gemini import addInstrumentFilterWavelengths
-from .adclass import AstroDataIGRINS 
-from .lookup import filter_wavelengths
+from .adclass import _AstroDataIGRINS, AstroDataIGRINS, AstroDataIGRINS2
 
 factory.addClass(AstroDataIGRINS)
+factory.addClass(AstroDataIGRINS2)
 
-addInstrumentFilterWavelengths('fox', filter_wavelengths)
 
 
