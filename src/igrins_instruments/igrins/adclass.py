@@ -118,31 +118,31 @@ class AstroDataIGRINS(_AstroDataIGRINS):
     # Common descriptors
     # ------------------
 
-    @returns_list
-    @astro_data_descriptor
-    def gain(self):
-        """
-        Returns the gain (electrons/ADU) from lookup table
-
-        Returns
-        -------
-        float/list
-            gain
-        """
-        return lookup.array_properties.get('gain')
-
-    @returns_list
-    @astro_data_descriptor
-    def read_noise(self):
-        """
-        Returns the read_noise electron from lookup table
-
-        Returns
-        -------
-        float/list
-            gain
-        """
-        return lookup.array_properties.get('read_noise')
+    # @returns_list
+    # @astro_data_descriptor
+    # def gain(self):
+    #     """
+    #     Returns the gain (electrons/ADU) from lookup table
+    #
+    #     Returns
+    #     -------
+    #     float/list
+    #         gain
+    #     """
+    #     return lookup.array_properties.get('gain')
+    #
+    # @returns_list
+    # @astro_data_descriptor
+    # def read_noise(self):
+    #     """
+    #     Returns the read_noise electron from lookup table
+    #
+    #     Returns
+    #     -------
+    #     float/list
+    #         gain
+    #     """
+    #     return lookup.array_properties.get('read_noise')
 
 
 class AstroDataIGRINS2(AstroDataIGRINS):
