@@ -1,2 +1,9 @@
 
-from stsci.image import median as image_median
+import numpy as np
+
+def image_median(dd, badmasks=None):
+    if badmasks is None:
+        ddm = np.median(dd, axis=0)
+    else:
+        ddm = np.ma.median(np.ma.array(dd, mask=badmasks), axis=0)
+    return ddm
