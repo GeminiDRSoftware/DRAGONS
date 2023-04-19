@@ -1,4 +1,5 @@
-from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
+from astrodata import (astro_data_tag, astro_data_descriptor,
+                       returns_list, TagSet)
 from gemini_instruments import gmu
 from gemini_instruments.common import Section
 from . import lookup
@@ -125,35 +126,10 @@ class AstroDataIGRINS(_AstroDataIGRINS):
     # Common descriptors
     # ------------------
 
-    # @returns_list
-    # @astro_data_descriptor
-    # def gain(self):
-    #     """
-    #     Returns the gain (electrons/ADU) from lookup table
-    #
-    #     Returns
-    #     -------
-    #     float/list
-    #         gain
-    #     """
-    #     return lookup.array_properties.get('gain')
-    #
-    # @returns_list
-    # @astro_data_descriptor
-    # def read_noise(self):
-    #     """
-    #     Returns the read_noise electron from lookup table
-    #
-    #     Returns
-    #     -------
-    #     float/list
-    #         gain
-    #     """
-    #     return lookup.array_properties.get('read_noise')
-
     def wcs(self):
         return object()
 
+    @returns_list
     @astro_data_descriptor
     def read_noise(self):
         """
@@ -162,7 +138,7 @@ class AstroDataIGRINS(_AstroDataIGRINS):
         Returns
         -------
         float/list
-            gain
+            readnoise
         """
         return lookup.array_properties.get('read_noise')
 
