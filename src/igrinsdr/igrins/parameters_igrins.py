@@ -30,3 +30,9 @@ class somePrimitiveConfig(config.Config):
 
 class someStuffConfig(config.Config):
     suffix = config.Field("Output suffix", str, "_somestuff")
+
+class determineSlitEdgesConfig(config.Config):
+    pass
+
+class maskBeyondSlitConfig(config.Config):
+    pass

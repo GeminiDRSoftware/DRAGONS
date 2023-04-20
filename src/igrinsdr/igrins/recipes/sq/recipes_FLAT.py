@@ -59,14 +59,16 @@ def makeProcessedFlat(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.makeLampFlat()
-    # # does not yet support multiple slit/order
-    # p.determineSlitEdges()
-    # # does not yet support multiple slit/order.  Note, name likely to change.
-    # p.maskBeyondSlit()
-    # # New primitive for IGRINS-2
-    # p.normalizeFlat()
-    # p.thresholdFlatfield()
-    # p.storeProcessedFlat()
+    # # IGRINS's version of slit edge detection
+    p.determineSlitEdges()
+    # # IGRINS's version
+    p.maskBeyondSlit()
+    # # IGRINS's version
+    p.normalizeFlat()
+    # We are using dragons's version of thresholdFlatfield.
+    # Do we need to mask out low value pixels from the un-normarlized flat too?
+    p.thresholdFlatfield()
+    p.storeProcessedFlat()
     return
 
 _default = makeProcessedFlat

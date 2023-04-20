@@ -4,6 +4,8 @@
 #                                                         primitives_igrins.py
 # ------------------------------------------------------------------------------
 
+import numpy as np
+
 from astropy.io import fits
 from astropy.table import Table
 
@@ -12,6 +14,7 @@ from gempy.gemini import gemini_tools as gt
 
 from geminidr.gemini.primitives_gemini import Gemini
 from geminidr.core.primitives_nearIR import NearIR
+from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from . import parameters_igrins
 
@@ -22,6 +25,9 @@ from recipe_system.utils.decorators import parameter_override
 
 from .procedures.procedure_dark import (make_guard_n_bg_subtracted_images,
                                         estimate_amp_wise_noise)
+
+from .procedures.trace_flat import trace_flat_edges, table_to_poly
+from .procedures.iter_order import iter_order
 
 
 @parameter_override
@@ -175,3 +181,59 @@ class Igrins(Gemini, NearIR):
         # this needs to be updated at appropriate.
         return len(ad) in [1]
 
+    def determineSlitEdges(self, adinputs=None, **params):
+
+        ad = adinputs[0]
+
+        # ll = trace_flat_edges(ad[0].data)
+        # print(ad.info())
+        # tbl = Table(ll)
+
+        # ad.SLITEDGE = tbl
+
+        for ext in ad:
+            ll = trace_flat_edges(ext.data)
+            tbl = Table(ll)
+
+            ext.SLITEDGE = tbl
+
+        return adinputs
+
+    def maskBeyondSlit(self, adinputs=None, **params):
+
+        ad = adinputs[0]
+
+        for ext in ad:
+            tbl = ext.SLITEDGE
+
+            pp = table_to_poly(tbl)
+
+            mask = np.zeros((2048, 2048), dtype=bool)
+            for o, sl, m in iter_order(pp):
+                mask[sl][m] = True
+
+            ext.mask |= ~mask * DQ.unilluminated
+
+        return adinputs
+
+    def normalizeFlat(self, adinputs=None, **params):
+
+        ad = adinputs[0]
+
+        for ext in ad:
+            tbl = ext.SLITEDGE
+
+            pp = table_to_poly(tbl)
+
+            ext.FLAT_ORIGINAL = ext.data.copy()
+            d = ext.data
+            dq_mask = (ext.mask & DQ.unilluminated).astype(bool)
+            d[dq_mask] = np.nan
+
+            for o, sl, m in iter_order(pp):
+                dn = np.ma.array(d[sl], mask=~m).filled(np.nan)
+                s = np.nanmedian(dn,
+                                 axis=0)
+                d[sl][m] = (dn / s)[m]
+
+        return adinputs
