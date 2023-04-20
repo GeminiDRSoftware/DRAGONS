@@ -416,7 +416,6 @@ def trace_aperture_chebyshev(xy_list, domain=None):
                                        y_thresh=lambda y_m: y_m < domain[0])
         f_list_down.append(f)
         o_list_down.append(oi)
-        print("up")
 
     f_list_up = []
     o_list_up = []
@@ -426,7 +425,6 @@ def trace_aperture_chebyshev(xy_list, domain=None):
                                      y_thresh=lambda y_m: y_m > domain[-1])
         f_list_up.append(f)
         o_list_up.append(oi)
-        print("down")
 
     # if 0:
     #     _get_f(next_orders)

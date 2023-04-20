@@ -59,11 +59,11 @@ def makeProcessedFlat(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.makeLampFlat()
-    # # IGRINS's version of slit edge detection
+    # # ported IGRINS's version of slit edge detection
     p.determineSlitEdges()
-    # # IGRINS's version
+    # # version that support multiple aperture.
     p.maskBeyondSlit()
-    # # IGRINS's version
+    # # very primitive implementation for multiple apertures
     p.normalizeFlat()
     # We are using dragons's version of thresholdFlatfield.
     # Do we need to mask out low value pixels from the un-normarlized flat too?
@@ -84,13 +84,19 @@ def makeProcessedBPM(p):
     """
 
     p.prepare()
+    p.addDQ()
     p.ADUToElectrons()
     p.selectFromInputs(tags="LAMPOFF", outstream="darks")
     p.selectFromInputs(tags="FLAT")
+    # makeBPM require darks stream which should be a single stacked dark.
     p.stackFrames(stream="darks")
     p.makeLampFlat()
     p.determineSlitEdges()
+    p.maskBeyondSlit()
     p.normalizeFlat()
-    p.makeBPM()
+    # Using the DRAGON version for now. It does not seem to mask out anything
+    # for now. Need to check how it works.
+    p.makeBPM(flat_lo_thresh=0.1)
     #p.storeBPM()
     return
+

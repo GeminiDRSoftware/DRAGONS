@@ -230,6 +230,7 @@ class Igrins(Gemini, NearIR):
             dq_mask = (ext.mask & DQ.unilluminated).astype(bool)
             d[dq_mask] = np.nan
 
+            # Very primitive normarlization. Should be improved.
             for o, sl, m in iter_order(pp):
                 dn = np.ma.array(d[sl], mask=~m).filled(np.nan)
                 s = np.nanmedian(dn,
