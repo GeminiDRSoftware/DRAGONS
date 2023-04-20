@@ -94,9 +94,9 @@ def makeProcessedBPM(p):
     p.determineSlitEdges()
     p.maskBeyondSlit()
     p.normalizeFlat()
-    # Using the DRAGON version for now. It does not seem to mask out anything
-    # for now. Need to check how it works.
-    p.makeBPM(flat_lo_thresh=0.1)
+    # Using the DRAGON version for now. We need to find out good parameters.
+    p.makeBPM()
     #p.storeBPM()
     return
 
+# _default = makeProcessedBPM

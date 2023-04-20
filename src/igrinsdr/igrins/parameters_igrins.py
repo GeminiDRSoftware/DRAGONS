@@ -2,6 +2,11 @@
 # define in the primitives_igrins.py file
 
 from gempy.library import config
+from geminidr.core import parameters_nearIR
+
+class addDQConfig(parameters_nearIR.addDQConfig):
+    def setDefaults(self):
+        self.add_illum_mask = True
 
 class selectFrameConfig(config.Config):
     frmtype = config.Field("frametype to filter", str)
@@ -36,3 +41,11 @@ class determineSlitEdgesConfig(config.Config):
 
 class maskBeyondSlitConfig(config.Config):
     pass
+
+class makeBPMConfig(parameters_nearIR.makeBPMConfig):
+    def setDefaults(self):
+        # We need to revisit these parameters.
+        # self.dark_lo_thresh = -150.
+        # self.dark_hi_thresh = 650.
+        self.flat_lo_thresh = 0.1
+        # self.flat_hi_thresh = 1.28
