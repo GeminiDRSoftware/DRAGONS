@@ -238,3 +238,18 @@ class Igrins(Gemini, NearIR):
                 d[sl][m] = (dn / s)[m]
 
         return adinputs
+
+    def fixIgrinsHeader(self, adinputs, **params):
+        ad = adinputs[0]
+
+        for ad in adinputs:
+            for ext in ad:
+                for desc in ('saturation_level', 'non_linear_level'):
+                    kw = ad._keyword_for(desc)
+                    if kw not in ext.hdr:
+                        ext.hdr[kw] = (1.e5, "Test")
+                        # print ("FIX", kw, ext.hdr.comments[kw])
+
+
+        return adinputs
+

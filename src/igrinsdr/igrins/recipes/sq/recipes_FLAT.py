@@ -55,8 +55,12 @@ def makeProcessedFlat(p):
     p.prepare()
     p.addDQ()
     p.addVAR(read_noise=True)
-    #p.nonlinearityCorrect()
+    # ADUToElectrons require, saturation_level and nonlinearity_level in the
+    # header. Since IGRINS does not have these values defined, we add them
+    # here.
+    p.fixIgrinsHeader()
     p.ADUToElectrons()
+    #p.nonlinearityCorrect()
     p.addVAR(poisson_noise=True)
     p.makeLampFlat()
     # # ported IGRINS's version of slit edge detection

@@ -49,3 +49,7 @@ class makeBPMConfig(parameters_nearIR.makeBPMConfig):
         # self.dark_hi_thresh = 650.
         self.flat_lo_thresh = 0.1
         # self.flat_hi_thresh = 1.28
+
+class fixIgrinsHeaderConfig(config.Config):
+    pass
+
