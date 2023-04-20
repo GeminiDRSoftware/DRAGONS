@@ -703,8 +703,8 @@ def trace_flat_edges(flat):
     flat_normed = flat / np.nanmax(flat)
     # if bpmask is None:
     #     flat_bpixed = np.zeros(flat_normed.shape, dtype=bool)
-    bg_fwhm_normed = 0.05
-    flat_mask = flat_normed > 0.1
+    bg_fwhm_normed = 0.02
+    flat_mask = flat_normed > 0.05
 
     flat_deriv_ = get_y_derivativemap(flat_normed,
                                       max_sep_order=150, pad=10,

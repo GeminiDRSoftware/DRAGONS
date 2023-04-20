@@ -53,3 +53,5 @@ class makeBPMConfig(parameters_nearIR.makeBPMConfig):
 class fixIgrinsHeaderConfig(config.Config):
     pass
 
+class referencePixelsCorrectConfig(config.Config):
+    pass

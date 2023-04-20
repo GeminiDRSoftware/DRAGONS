@@ -28,6 +28,7 @@ from .procedures.procedure_dark import (make_guard_n_bg_subtracted_images,
 
 from .procedures.trace_flat import trace_flat_edges, table_to_poly
 from .procedures.iter_order import iter_order
+from .procedures.reference_pixel import fix_pattern_using_reference_pixel
 
 
 @parameter_override
@@ -253,3 +254,9 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
+    def referencePixelsCorrect(self, adinputs, **params):
+        for ad in adinputs:
+            for ext in ad:
+                ext.data = fix_pattern_using_reference_pixel(ext.data)
+
+        return adinputs

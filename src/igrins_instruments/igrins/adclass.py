@@ -30,6 +30,10 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
     )
 
     @astro_data_tag
+    def _tag_spect(self):
+        return TagSet(['SPECT'])
+
+    @astro_data_tag
     def _tag_sky(self):
         if self.phu.get('OBJTYPE') == 'SKY' or self[0].hdr.get('OBJTYPE') == 'SKY':
             return TagSet(['SKY', 'CAL'])
@@ -114,6 +118,22 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
         datalab = f"igrins-{obsdate}-{obsid}"
         return datalab
 
+    @astro_data_descriptor
+    def program_id(self):
+        """
+        Returns the ID of the program the observation was taken for
+
+        Returns
+        -------
+        str
+            the program ID
+        """
+        progid = self.phu.get('GEMPRGID')
+        if progid is None:
+            progid = "GN-2099A-Q-000"
+
+        return progid
+
 class AstroDataIGRINS(_AstroDataIGRINS):
     # single keyword mapping.  add only the ones that are different
     # from what's already defined in AstroDataGemini.
@@ -126,8 +146,8 @@ class AstroDataIGRINS(_AstroDataIGRINS):
     # Common descriptors
     # ------------------
 
-    def wcs(self):
-        return object()
+    # def wcs(self):
+    #     return object()
 
     @returns_list
     @astro_data_descriptor

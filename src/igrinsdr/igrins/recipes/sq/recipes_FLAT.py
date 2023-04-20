@@ -1,10 +1,11 @@
 """
 Recipes available to data with tags ['IGRINS', 'CAL', 'FLAT'].
 """
+from igrinsdr.igrins.primitives_igrins import Igrins
 
 recipe_tags = {'IGRINS', 'CAL', 'FLAT'}
 
-def estimateNoise(p):
+def estimateNoise(p: Igrins):
     """This recipe performs the analysis of irs readout pattern noise in flat off
     images. It creates a stacked image of pattern removed images and add a
     table that descibes its noise characteristics. The result is stored on disk
@@ -20,7 +21,7 @@ def estimateNoise(p):
 
     # Given the list of adinputs of both flat on and off images, we first
     # select the only the off images.
-    p.selectFrame(frmtype="OFF"),
+    p.selectFrame(frmtype="OFF")
     p.prepare()
     # it creates pattern corrected images with several methods (guard, level2,
     # level3). The images are then added to the streams.
@@ -52,13 +53,14 @@ def makeProcessedFlat(p):
         A primitive set matching the recipe_tags.
     """
 
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
-    # ADUToElectrons require, saturation_level and nonlinearity_level in the
+    # ADUToElectrons requires saturation_level and nonlinearity_level in the
     # header. Since IGRINS does not have these values defined, we add them
     # here.
     p.fixIgrinsHeader()
+    p.referencePixelsCorrect()
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
     p.addVAR(poisson_noise=True)
@@ -89,6 +91,8 @@ def makeProcessedBPM(p):
 
     p.prepare()
     p.addDQ()
+    p.fixIgrinsHeader()
+    p.referencePixelsCorrect()
     p.ADUToElectrons()
     p.selectFromInputs(tags="LAMPOFF", outstream="darks")
     p.selectFromInputs(tags="FLAT")
