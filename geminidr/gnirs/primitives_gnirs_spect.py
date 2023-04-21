@@ -330,8 +330,6 @@ class GNIRSSpect(Spect, GNIRS):
                 elif resolution < 1000:
                     linelist = 'sky_L_band_very_low_res.dat'
 
-            elif is_lowres:
-                linelist = 'sky.dat'
             else:
                 linelist = 'nearIRsky.dat'
 
