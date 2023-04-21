@@ -992,7 +992,8 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
 
 @unpack_nddata
-def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None):
+def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
+                   keep_bad=False):
     """
     Improves positions of peaks with centroiding. It uses a deliberately
     small centroiding box to avoid contamination by nearby lines, which
@@ -1015,6 +1016,9 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None):
         number of pixels either side of initial peak to use in centroid
     threshold: float
         threshold to cut data
+    keep_bad: bool
+        if True, keeps the output peak list the same size as the input list,
+        with None values for the peaks that didn't converge
 
     Returns
     -------
@@ -1045,6 +1049,9 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None):
         x2 = int(xc + halfwidth + 2)
         m = mask[x1:x2]
         if x1 < 0 or x2 > data.size - 1 or np.isnan(data[xc]) or np.sum(~m) < 4:
+            if keep_bad:
+                final_peaks.append(None)
+                peak_values.append(None)
             continue
         data_min = data[x1:x2].min()
         data_snippet = data[x1:x2] - data_min
@@ -1094,7 +1101,10 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None):
         if final_peak is not None and not np.isnan(peak_value):
             final_peaks.append(final_peak)
             peak_values.append(peak_value + data_min)
-
+        else:
+            if keep_bad:
+                final_peaks.append(None)
+                peak_values.append(None)
     return final_peaks, peak_values
 
 
