@@ -113,9 +113,12 @@ class AstroDataNiri(AstroDataGemini):
             # return the central wavelength in the default units of meters.
             output_units = "meters"
 
-        # Use the lookup dict, keyed on focal_plane_mask and grism
-        wave_in_angstroms = lookup.spec_wavelengths.get((self.focal_plane_mask(),
-                                                   self.disperser(stripID=True)))
+        # Use the lookup dict, keyed on camera, focal_plane_mask and grism
+        camera = self.camera()
+        disperser = self.disperser(stripID=True)[0:6]
+        fpmask = self.focal_plane_mask(stripID=True)
+
+        wave_in_angstroms = lookup.spec_wavelengths[camera, fpmask, disperser][0]
         return gmu.convert_units('angstroms', wave_in_angstroms,
                              output_units)
 
@@ -292,10 +295,8 @@ class AstroDataNiri(AstroDataGemini):
         """
 
         camera = self.camera()
-        disperser = self.disperser(stripID=True)
-        config = (camera, disperser)
-
-        dispersion = lookup.dispersion_by_config[config]
+        disperser = self.disperser(stripID=True)[0:6]
+        dispersion = lookup.dispersion_by_config[camera, disperser]
 
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters"  # By default
