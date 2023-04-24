@@ -497,7 +497,7 @@ format" and the HST calspec format.
      the software that there is a source and it isn't sky with
      ``-p extractProfile:ifu2=object``.
    * If you do not want the barycentric correction, turn is off with
-    ``-p barycentricCorrect:correction_factor=1``.
+     ``-p barycentricCorrect:correction_factor=1``.
 
 .. warning:: The reduction of the red channel is very slow.  Launch
   and go get a coffee or something.  Make sure that you got the name for the
