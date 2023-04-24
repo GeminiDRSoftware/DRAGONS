@@ -144,8 +144,10 @@ class F2Longslit(F2Spect):
                 filter_cuton_wvl = mask.cutonwvl if mask else None
                 filter_cutoff_wvl = mask.cutoffwvl if mask else None
                 cenwave_pix = dispaxis_center + cenwave_offset
-                filter_cuton_pix = min(int(cenwave_pix - (cenwave - filter_cuton_wvl) / dispersion), ad[0].shape[dispaxis] - 1)
-                filter_cutoff_pix = max(int(cenwave_pix + (filter_cutoff_wvl - cenwave) / dispersion), 0)
+                filter_cuton_pix = min(int(cenwave_pix - (cenwave - filter_cuton_wvl)
+                                           / dispersion), ad[0].shape[dispaxis] - 1)
+                filter_cutoff_pix = max(int(cenwave_pix + (filter_cutoff_wvl - cenwave)
+                                            / dispersion), 0)
 
                 for ext in ad:
                     ext.mask[:filter_cutoff_pix] |= DQ.unilluminated

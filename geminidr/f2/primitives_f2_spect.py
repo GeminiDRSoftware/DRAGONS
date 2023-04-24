@@ -11,10 +11,11 @@ from importlib import import_module
 from geminidr.core import Spect
 from .primitives_f2 import F2
 from . import parameters_f2_spect
-from gemini_instruments.f2.lookup import dispersion_offset_mask
+from gemini_instruments.f2.lookup import dispersion_offset_mask, resolving_power
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform, wavecal
+from gemini_instruments import gmu
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -120,8 +121,7 @@ class F2Spect(Spect, F2):
             # Apply central wavelength offset
             if ad.dispersion() is None:
                 raise ValueError(f"Unknown dispersion for {ad.filename}")
-            cenwave = (ad.central_wavelength(asNanometers=True) +
-                       abs(ad.dispersion(asNanometers=True)[0]) * self._get_cenwave_offset(ad))
+            cenwave = self._get_actual_cenwave(ad[0], asNanometers=True)
             transform.add_longslit_wcs(ad, central_wavelength=cenwave,
                                        pointing=ad[0].wcs(1024, 1024))
 
@@ -129,14 +129,14 @@ class F2Spect(Spect, F2):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ad=None, config=None):
+    def _get_arc_linelist(self, waves=None, ext=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
 
-        if 'ARC' in ad.tags:
+        if 'ARC' in ext.tags:
             linelist = 'argon.dat'
-            if ad.disperser(pretty=True) == "HK" and \
-                    ad.filter_name(pretty=True) == "JH":
+            if ext.disperser(pretty=True) == "HK" and \
+                    ext.filter_name(pretty=True) == "JH":
                 linelist = 'lowresargon_with_2nd_ord.dat'
         else:
             linelist = 'nearIRsky.dat'
@@ -149,9 +149,10 @@ class F2Spect(Spect, F2):
         filter = ad.filter_name(pretty=True)
         if filter in {"HK", "JH"}:
             filter = ad.filter_name(keepID=True)
-        # The following is needed since after the new HK and JH filters were installed, their WAVELENG
-        # keywords wasn't updated until after the specified date, so the cenwave_offset for the
-        # old filters has to be used.
+        # The following is needed because after the new HK and JH filters were
+        # installed in 2021(?), their WAVELENG keywords weren't updated until
+        # the date specified below, so in the meantime the cenwave_offset of
+        # the old filters had to be used.
         if ad.phu['DATE'] < '9999-99-99':
             if filter == "JH_G0816":
                 filter = "JH_G0809"
@@ -161,9 +162,52 @@ class F2Spect(Spect, F2):
         mask = dispersion_offset_mask.get(index, None)
         return mask.cenwaveoffset if mask else None
 
-    def _get_cenwave_accuracy(self, ad=None):
-        # Accuracy of central wavelength (nm) for a given instrument/setup.
-        return 10
+    def _get_actual_cenwave(self, ext=None, asMicrometers=False, asNanometers=False, asAngstroms=False):
+        """
+        For some instruments (NIRI, F2) wavelenght at the central pixel
+        can differ significantly from the descriptor value.
 
-    def _get_refplot_data(self, ad=None, config=None):
-        return None
+        Parameters
+        ----------
+        asMicrometers : bool
+            If True, return the wavelength in microns
+        asNanometers : bool
+            If True, return the wavelength in nanometers
+        asAngstroms : bool
+            If True, return the wavelength in Angstroms
+
+        Returns
+        -------
+        float
+            Actual cenral wavelenght
+        """
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        output_units = "meters" # By default
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+        cenwave = ext.central_wavelength() + \
+                  abs(ext.dispersion()) * self._get_cenwave_offset(ext)
+        actual_cenwave = gmu.convert_units('meters', cenwave, output_units)
+        return actual_cenwave
+
+
+    def _get_resolution(self, ext=None):
+        # For F2 grisms resolution peaks in the middle of tthe filter and drops
+        # dramatically on both sides. Use "average" resolution from the LUT,
+        # (within 70% of filter's range, see F2 web pages).
+        fpmask = ext.focal_plane_mask(pretty=True)
+        if 'pix-slit' in fpmask:
+            slit_width= int(fpmask.replace('pix-slit', ''))
+        else:
+            slit_width = fpmask
+
+        disperser = ext.disperser(pretty=True)
+        print(f"resolution={resolving_power.get(slit_width, {}).get(disperser)}")
+        return resolving_power.get(slit_width, {}).get(disperser)

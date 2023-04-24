@@ -96,3 +96,19 @@ dispersion_offset_mask = {
     #"HK, H": # SV data only
     #"R3K, Y": # ENG data only
 }
+
+resolving_power = {
+    # Average (within 70% of wvl ranges) F2 resolutions for various grism/slit combinations.
+    # The values from the F2 instrument web pages.
+    # Note that average resolutions are significantly lower than peak resolutions.
+    # Dictionary keys:
+    # "slit width in pixels"
+    # Dictionary values:
+    # "Grism": average resolution
+    "1": {"JH": 1300, "HK": 1300, "R3K": 3600},
+    "2": {"JH": 900, "HK": 900, "R3K": 2800},
+    "3": {"JH": 600, "HK": 600, "R3K": 1600},
+    "4": {"JH": 350, "HK": 350, "R3K": 1300},
+    "6": {"JH": 130, "HK": 130, "R3K": 1000},
+    "8": {"JH": 100, "HK": 100, "R3K": 750}
+}

@@ -570,8 +570,5 @@ class GMOSSpect(Spect, GMOS):
         return wavecal.LineList(filename)
 
     def _get_cenwave_accuracy(self, ad=None):
-        # Accuracy of central wavelength (nm) for a given instrument/setup.
+        # Assumed accuracy of central wavelength in nm for a given instrument/setup.
         return 10
-
-    def _get_refplot_data(self, ad=None, config=None):
-        return None
