@@ -5,6 +5,7 @@
 #
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
+import tempfile
 from copy import copy, deepcopy
 from itertools import islice
 import os
@@ -14,10 +15,12 @@ from contextlib import suppress
 from copy import copy, deepcopy
 from functools import partial, reduce
 from importlib import import_module
+from sklearn import preprocessing
 
 import matplotlib
 import numpy as np
 from astropy import units as u
+from astropy.convolution import Gaussian1DKernel, convolve
 from astropy.io.ascii.core import InconsistentTableError
 from astropy.io.registry import IORegistryError
 from astropy.io import fits
@@ -35,6 +38,7 @@ from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
 import astrodata
+from gemini_instruments import gmu
 from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
@@ -42,6 +46,7 @@ from astrodata.provenance import add_provenance
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
+from geminidr.gemini.lookups import qa_constraints, atran_models, oh_synthetic_spectra
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from geminidr.interactive.fit.tracing import interactive_trace_apertures
@@ -55,6 +60,7 @@ from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter, match_sources, fit_model
 from gempy.library.spectral import Spek1D
+from gempy.library.tracing import pinpoint_peaks
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
@@ -81,6 +87,7 @@ class Spect(Resample):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_spect)
+        self.refplot_tempfile = None
 
     def adjustWCSToReference(self, adinputs=None, **params):
         """
@@ -1925,6 +1932,18 @@ class Spect(Resample):
         debug : bool
             Enable plots for debugging.
 
+        debug_num_atran_lines: int/None
+            Number of lines with largest weigths (within a wvl bin) to be used for
+            the generated ATRAN line list.
+
+        debug_wv_band: {'20', '50', '80', '100', 'None'}
+            Water vapour content (as percentile) to be used for ATRAN model
+            selection. If "None", then the value from the header is used.
+
+        debug_resolution: int/None
+            Resolution of the observation (as l/dl), to which ATRAN spectrum should be
+            convolved. If None, the default value for the instrument/mode is used.
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -1963,6 +1982,20 @@ class Spect(Resample):
                             "using default linelist")
             else:
                 log.stdinfo(f"Read arc line list {arc_file}")
+
+        for ad in adinputs:
+            # In the case of wavecal from telluric absorption in object spectrum,
+            # use the location of the brightest aperture as central row/column for
+            # 1D extraction.
+            if absorption:
+                if params["center"] is None:
+                    try:
+                        aptable = ad[0].APERTURE
+                        params["center"] = int(aptable['c0'].data[0])
+                    except (AttributeError, KeyError):
+                        log.error("Could not find aperture locations in "
+                                    f"{ad.filename} - continuing")
+                        continue
 
         # Pass the primitive configuration to the interactive object.
         config = copy(self.params[self.myself()])
@@ -4238,7 +4271,7 @@ class Spect(Resample):
 
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ad=None, config=None):
+    def _get_arc_linelist(self, waves=None, ext=None, config=None):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
@@ -4457,9 +4490,11 @@ class Spect(Resample):
 
     def transferDistortionModel(self, adinputs=None, suffix=None, source=None):
         """
-        This primitive copies distortion_model from the AD(s) in another ("source")
-        stream to the ADs in this stream, if there was none. There must be the same
-        number of ADs in each stream.
+        This primitive transfers distortion_model from the AD(s) in another ("source")
+        stream to the ADs in this stream if there was none, to match the WCS structure
+        of processedArc. If the number of ADs in the source stream is larger than
+        in the current stream, it's assumed that there was frame stacking done in the recipe,
+        and the distortion_model gets transferred only if the AD's ORIGNAME keywords are matching.
 
         Parameters
         ----------
@@ -4519,17 +4554,14 @@ class Spect(Resample):
                             "continuing")
                         fail = True
                         break
-                    if 'rectified' not in wcs2.available_frames:
-                        log.warning("Could not find a 'rectified' frame "
-                            f"in {ad2.filename} extension {ext2.id} - "
-                            "continuing")
-                        fail = True
-                        break
                 except AttributeError:
                     fail = True
                     break
                 else:
-                    m_distcorr = wcs2.get_transform("rectified", 'distortion_corrected')
+                    if 'rectified' not in wcs2.available_frames:
+                        m_distcorr = wcs2.get_transform(wcs2.input_frame, 'distortion_corrected')
+                    else:
+                        m_distcorr = wcs2.get_transform("rectified", 'distortion_corrected')
                     distortion_models.append(m_distcorr)
             if not fail:
                 for ext, dist in zip(ad1, distortion_models):
@@ -4537,6 +4569,478 @@ class Spect(Resample):
 
                 ad1.update_filename(suffix=suffix, strip=True)
         return adinputs
+
+
+    def _get_atran_linelist(self, ext, config):
+        """
+        Returns default filename of the line list generated from an ATRAN
+        model spectrum with model parameters matching the observing conditions
+        and spectral characteristics of the frame.
+
+        Parameters
+        ----------
+        config: Config-like object containing parameters
+
+        Returns
+        -------
+        str: full path to the default ATRAN line list
+        """
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                           self.inst_lookups).__file__)
+        working_dir = os.getcwd()
+
+        user_res = config.debug_resolution
+        user_wv_band = config.debug_wv_band
+
+        site, alt, start_wvl, end_wvl, spec_range, wv_content, resolution \
+            = self._get_atran_model_params(ext, user_wv_band=user_wv_band,
+                                           user_resolution=user_res)
+
+        atran_linelist = 'atran_linelist_{}_{:.0f}-{:.0f}_wv{:.0f}_r{:.0f}.dat'\
+            .format(site,start_wvl,end_wvl,wv_content*1000,resolution)
+
+        atran_filename = os.path.join(lookup_dir, atran_linelist)
+        if not os.path.exists(atran_filename):
+            atran_filename = os.path.join(working_dir, atran_linelist)
+            if self.refplot_tempfile and os.path.exists(atran_filename):
+                # If tempfile exists, it means that the line list has been previously
+                #  generated and was saved to the working directory, look there.
+                print(f"reading pre-generated atran list")
+                return atran_filename
+            else:
+                # If default list was not found, make one.
+                print(f"the list doesn't exist, make atran linelist")
+                self._make_atran_linelist(ext, filename=atran_filename, config=config,
+                                          nlines=config.debug_num_atran_lines)
+        print(f"atran_filename={atran_filename}")
+        return atran_filename
+
+    def _make_atran_linelist(self, ext, filename, config, nlines=50):
+        """
+        Generates line list from a convolved ATRAN spectrum: finds peaks,
+        assings weights, divides spectrum into 10 wavelength bins,
+        selects nlines//10 best lines within each bin, pinpoints the peaks.
+        Saves the linelist to a file, and creates a temporary file with
+        convolved spectrum and line list data to use later for the reference plot.
+
+        Parameters
+        ----------
+        filename: str
+            full name of the linelist
+        config: Config-like object containing parameters
+        nlines: int
+            number of lines in the linelist
+        """
+        wv_band = config.debug_wv_band
+        user_res = config.debug_resolution
+        atran_spec, sampling = self._get_convolved_atran(ext, config=config)
+        site, alt, start_wvl, end_wvl, _, wv_content, resolution = \
+            self._get_atran_model_params(ext, user_wv_band=wv_band, user_resolution=user_res)
+
+        inverse_atran_spec = 1 - atran_spec[:,1]
+        print(f"resolution={resolution}")
+        fwhm = (self._get_actual_cenwave(ext, asNanometers=True) / resolution) * (1 / sampling)
+        print(f"fwhm = {fwhm}")
+        peaks, properties = find_peaks(inverse_atran_spec, prominence=0.001, width=(None,5*fwhm))
+        print(f"peaks={peaks}")
+        weights = preprocessing.normalize((properties["prominences"] / properties["widths"]**2).reshape(1, -1))
+        peaks_with_weights = np.vstack([peaks,weights]).T
+
+        def trim_peaks(peaks, npix, nbins, nlargest, sort=True):
+            """
+            Filters the peaks list, binning it over the range of the whole signal, preserving only the
+            N-largest ones on each bin
+
+            peaks: a 2-column array. The first column is pixel index, the second is signal value
+            npix: total nunmber of pixels
+            nbins: number of desired bins
+            nlargest: number of largest peaks to extract from each bin
+
+            Returns:
+              An array of the same format
+            """
+            pixels_per_bin = npix // nbins
+            padded_npix = npix
+            if npix % nbins != 0:
+                # Not evenly divisible. Adjust!
+                pixels_per_bin += 1
+                padded_npix = pixels_per_bin * nbins
+            weights = np.zeros((padded_npix,), dtype=peaks.dtype)
+            # Put the weights in their place and "bin" the weights array
+            weights[peaks[:,0].astype(int)] = peaks[:,1]
+            binned = weights.reshape((nbins, pixels_per_bin))
+            indices = np.arange(padded_npix).reshape((nbins, pixels_per_bin))
+
+            result = []
+            for row, ind in zip(binned, indices):
+                sorting = np.argpartition(row, -nlargest)
+                sorted_row = row[sorting]
+                nonzeros = sorted_row > 0
+                trimmed_indices = ind[sorting][nonzeros]
+                if len(trimmed_indices) > 0:
+                    result.extend(zip(list(trimmed_indices[-nlargest:]), list(sorted_row[nonzeros][-nlargest:])))
+
+            if sorted:
+                return np.array(sorted(result), dtype=peaks.dtype)
+            else:
+                return np.array(result, dtype=peaks.dtype)
+
+        # For the final line list select n // 10 peaks with largest weights
+        # within each of 10 wavelenght bins.
+        nbins = 10
+        best_peaks = trim_peaks(peaks_with_weights, inverse_atran_spec.shape[0], nbins=nbins,
+                                nlargest=nlines//nbins, sort=True)
+        # Pinpoint peak positions
+        final_peaks, peak_values = pinpoint_peaks(inverse_atran_spec, peaks=best_peaks[:,0],
+                                                  halfwidth=1, keep_bad=True)
+
+        atran_linelist = np.empty([len(final_peaks),3])
+        # wavelenghts
+        atran_linelist[:,0] = final_peaks
+        # intensities
+        atran_linelist[:,1] = peak_values
+        # weights
+        atran_linelist[:,2] = best_peaks[:,1]
+        atran_linelist = atran_linelist[~np.isnan(atran_linelist).any(axis=1), :]
+
+        atran_linelist[:,0] = atran_spec[[int(x) for x in atran_linelist[:,0]]][:,0] + \
+                              [p%1 * sampling for p in atran_linelist[:,0]]
+        atran_linelist = atran_linelist[np.argsort(atran_linelist[:,0])]
+
+        if config.absorption:
+            atran_linelist[:,1] = 1 - atran_linelist[:,1]
+
+        np.savetxt(filename, atran_linelist[:,0], fmt=['%.3f'], header =
+        #np.savetxt(filename, atran_linelist[:,[0,2]], fmt=['%.3f','%.7f'], header =
+            f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm   \n"
+            "Generated from ATRAN synthetic spectrum (Lord, S. D., 1992, NASA Technical Memorandum 103957) \n"
+            " Model parameters: \n"
+            f" Obs altitude:{alt:.0f}, Obs latitude: 39 degrees,\n"
+            f" Water vapor overburden: {wv_content*1000:.0f} mm, Number of atm. layers: 2,\n"
+            f" Zenith angle: 48 deg, Wavelength range: 1.0 - 6.0 microns, Smoothing R:0 \n"
+            "units nanometer\n"
+            "wavelengths IN VACUUM")
+
+        # Create data for reference plot using the convolved spectrum and the line
+        # list generated here
+        print(f"make tempfile")
+        self._make_refplot_data(ext=ext, refplot_spec=atran_spec,
+                                refplot_linelist=atran_linelist[:,[0,1]], config=config)
+
+
+    def _get_convolved_atran(self, ext, config):
+        """
+        Reads a section of an appropriate ATRAN model spectrum file,
+        convolves the spectrum to the resolution of the observation.
+
+        Returns
+        -------
+        spectrum : ndarray
+            2d array of wavelengths (nm) and atmospheric transmission values
+        sampling: float
+            sampling (nm) of the ATRAN model spectrum
+        """
+        path = list(atran_models.__path__).pop()
+
+        site, alt, start_wvl, end_wvl, spec_range, wv_content, resolution = \
+            self._get_atran_model_params(ext, user_resolution=config.debug_resolution,
+                                         user_wv_band=config.debug_wv_band)
+        atran_model_filename = os.path.join(path,
+                    'atran_{}_850-6000nm_wv{:.0f}_za48_r0.dat'
+                                            .format(site,wv_content*1000))
+        print(f"atran_model_filename={atran_model_filename}")
+        # sampling of the ATRAN model spectra (nm)
+        sampling = 0.01
+        # Starting wavelength of the ATRAN spectrum (nm)
+        spec_start_wvl = 850
+        start_row = int((start_wvl - spec_start_wvl) / sampling)
+        nrows = int(spec_range / sampling)
+        # Read the model spectrum within observation's spec. range
+        atran_spec = np.loadtxt(atran_model_filename, skiprows=start_row,
+                                      max_rows=nrows+1)
+        # Smooth the atran spectrum with a Gaussian with a constant FWHM value,
+        # where FWHM = cenwave / resolution
+        fwhm = (self._get_actual_cenwave(ext, asNanometers=True)/ resolution) * (1 / sampling)
+        gauss_kernel = Gaussian1DKernel(fwhm / 2.35) # std = FWHM / 2.35
+        atran_spec[:,1] = convolve(atran_spec[:,1], gauss_kernel,
+                                     boundary='extend')
+
+        return atran_spec, sampling
+
+
+    def _get_refplot_data(self, ext, config, linelist):
+        """
+        Returns all necessary data to create reference plot used to verify line
+        identification: if a tempfile exists, reads the tempfile, otherwise
+
+        Since the reference spectrum stays unchanged when resetting the view or
+        reconstructing points, after generating the data the plot gets saved to
+        a temporary file, that then is read whenever the spectrum is being reloaded.
+
+        Parameters
+        ----------
+        config: Config-like object containing parameters
+        linelist: LineList object
+
+        Returns
+        -------
+        dict : all the information needed to construct the reference spectrum plot:
+        "refplot_spec" : two-column nd.array containing reference spectrum wavelengths
+                        (nm) and intensities
+        "refplot_linelist" : two-column nd.array containing line wavelengths (nm) and
+                            intensities
+        "refplot_name" : reference plot name string
+        "refplot_y_axis_label" : reference plot y-axis label string
+        """
+        if not self.refplot_tempfile:
+            # If the tempfile doesn't exist at this point, it means that the linelist was
+            # either supplied by the user, or that there was a default line list, so
+            # we didn't have to generate a line list from an ATRAN model.
+            # Create refplot data using the provided line list and a refplot spectrum.
+            print(f"no tempfile, make refplot, use linelist = {linelist}")
+            return self._make_refplot_data(ext, refplot_linelist=linelist, config=config)
+        else:
+            # If the tempfile exists, read the pre-calculated data from it.
+            self.refplot_tempfile.seek(0)
+            refplot_spec = np.load(self.refplot_tempfile)
+            refplot_linelist = np.load(self.refplot_tempfile)
+            # Non-arrays or array-like objects are saved as 0-dimensional arrays
+            # so we get their values using .item()
+            refplot_name = np.load(self.refplot_tempfile).item()
+            refplot_y_axis_label = np.load(self.refplot_tempfile).item()
+
+        return {"refplot_spec": refplot_spec, "refplot_linelist": refplot_linelist,
+                    "refplot_name": refplot_name, "refplot_y_axis_label": refplot_y_axis_label}
+
+
+    def _make_refplot_data(self, ext, config, refplot_linelist, refplot_spec=None,
+                           refplot_name=None, refplot_y_axis_label=None):
+        """
+        Generate data for the reference plot (reference spectrum, reference plot name, and
+        the label for the y-axis), depending on the type of spectrum used for wavelength calibration,
+        using the supplied line list. Save the data to a tempfile.
+
+        Parameters
+        ----------
+        config: Config-like object containing parameters
+        refplot_linelist: LineList object or a 2-column nd-array with wavelengths
+                (nm) and line intensities
+        refplot_spec: 2d-array or None
+            two-column nd.array containing reference spectrum wavelengths (nm) and intensities
+        refplot_name: str or None
+            reference plot name string
+        refplot_y_axis_label: str or None
+            reference plot y-axis label string
+
+        Returns
+        -------
+        dict : all the information needed to construct the reference spectrum plot:
+        "refplot_spec" : two-column nd.array containing reference spectrum wavelengths
+                        (nm) and intensities
+        "refplot_linelist" : two-column nd.array containing line wavelengths (nm) and
+                            intensities
+        "refplot_name" : reference plot name string
+        "refplot_y_axis_label" : reference plot y-axis label string
+        """
+        user_res = config.debug_resolution
+        wv_band = config.debug_wv_band
+        site, alt, start_wvl, end_wvl, _, wv_content, resolution = \
+            self._get_atran_model_params(ext, user_wv_band=wv_band, user_resolution=user_res)
+        if 'ARC' in ext.tags:
+            # Reference plots for arc spectra are not implemented
+            return None
+        else:
+            if config.absorption or ext.central_wavelength(asMicrometers=True) >= 2.8:
+            # Use ATRAN models for generating reference plots for wavecal from
+            # sky absorption in science spectrum, or from sky emission in L and M
+                if refplot_spec is None:
+                    print(f"making refplot")
+                    refplot_spec, _ = self._get_convolved_atran(ext, config=config)
+                if refplot_y_axis_label is None:
+                    if config.absorption:
+                        refplot_y_axis_label = "Atmospheric transmission"
+                    else:
+                        refplot_y_axis_label = "Inverse atm. transmission"
+                        refplot_spec[:,1] = 1 - refplot_spec[:,1]
+                if refplot_name is None:
+                    refplot_name = 'ATRAN spectrum (Alt.={}, WV={:.1f}mm, AM=1.5, R={:.0f})'\
+                        .format(alt,wv_content,resolution)
+            else:
+                # In case of wavecal from the OH emission sky lines, we use
+                # a set of pre-calculated synthetic spectra for the reference plots
+                if refplot_spec is None:
+                    path = list(oh_synthetic_spectra.__path__).pop()
+                    if resolution >= 15000:
+                        R = 20000
+                    elif (7500 <= resolution < 15000):
+                        R = 10000
+                    elif (3000 <= resolution < 7500):
+                        R = 5000
+                    elif (1000 <= resolution < 3000):
+                        R = 1500
+                    elif (resolution < 1000):
+                        R = 500
+                    oh_spec_filename = os.path.join(path, "oh_conv_{}_XJHK.dat".format(R))
+                    refplot_spec = np.loadtxt(oh_spec_filename, usecols=(0,1))
+
+                    dispersion_axis = 2 - ext.dispersion_axis()
+                    # The next bit estimates the spectral range that wasn't masked
+                    # by the default illumination mask (which mask off second order
+                    # in some modes of GNIRS and F2).
+                    mask = at.transpose_if_needed(ext.mask, transpose=(dispersion_axis == 0))[0]
+                    center = ext.shape[dispersion_axis]//2
+                    center_col = mask[center][:]
+                    new = np.ones(center_col.shape)
+                    new[center_col >= 64] = 0
+                    ind = np.nonzero(new)
+                    first_non_zero_index = ind[0][0]
+                    print(f"first_non_zero_index={first_non_zero_index}")
+                    last_non_zero_index = ind[0][-1]
+                    print(f"last_non_zero_index={last_non_zero_index}")
+                    # Number of illuminated pixels
+                    npix = last_non_zero_index - first_non_zero_index
+                    print(f"npix={npix}")
+                    spec_range = 2 * self._get_cenwave_accuracy(ext) +\
+                                 abs(ext.dispersion(asNanometers=True)) * npix
+                    print(f"spec_range={spec_range}")
+                    center_shift = (center - (npix//2 + first_non_zero_index)) * ext.dispersion(asNanometers=True)
+                    print(f"center_shift={center_shift}")
+                    start_wvl = self._get_actual_cenwave(ext, asNanometers=True) - (0.5 * spec_range) - center_shift
+                    print(f"start_wvl={start_wvl}")
+                    end_wvl = start_wvl + spec_range
+                    print(f"end_wvl={end_wvl}")
+
+                    refplot_spec = refplot_spec[np.logical_and(refplot_spec[:,0] >= start_wvl,
+                                                             refplot_spec[:,0] <= end_wvl)]
+                    if refplot_y_axis_label is None:
+                        refplot_y_axis_label = "Intensity"
+                    if refplot_name is None:
+                        refplot_name = 'Synthetic spectrum of night-sky OH emission (R={:.0f})'.format(R)
+
+        if isinstance(refplot_linelist, wavecal.LineList):
+            print(f"is LineList)")
+            # If the linelist wasn't generated in this run, it has been supplied as
+            # a LineList object. For the refplot use only line wavelengths, and determine
+            # reference spectrum intensities at the positions of lines in the linelist
+            # (this is needed to determine the line label positions).
+            line_intens = []
+            line_wvls = refplot_linelist.wavelengths(in_vacuo=True, units="nm")
+            print(f"line_wvls={line_wvls}")
+            print(f"refplot_spec={refplot_spec}")
+            for n, line in enumerate(line_wvls):
+                subtracted = refplot_spec[:,0] - line
+                min_index = np.argmin(np.abs(subtracted))
+                line_intens.append(refplot_spec[min_index,1])
+            refplot_linelist = np.array([line_wvls, line_intens]).T
+            print(f"refplot_linelist = {refplot_linelist}")
+            refplot_linelist = refplot_linelist[np.logical_and(refplot_linelist[:,0] >= start_wvl,
+                                                               refplot_linelist[:,0] <= end_wvl)]
+
+        self.refplot_tempfile = tempfile.TemporaryFile()
+        for data in (refplot_spec, refplot_linelist, refplot_name, refplot_y_axis_label):
+            np.save(self.refplot_tempfile, data)
+        self.refplot_tempfile.flush()
+
+        return {"refplot_spec": refplot_spec, "refplot_linelist": refplot_linelist,
+                "refplot_name": refplot_name, "refplot_y_axis_label": refplot_y_axis_label}
+
+
+    def _get_atran_model_params(self, ext, user_wv_band, user_resolution):
+        """
+        Get the observation parameters needed to select the appropriate ATRAN model.
+        """
+        dispaxis = 2 - ext.dispersion_axis()  # python sense
+        npix = ext.shape[dispaxis]
+        dcenwave = self._get_cenwave_accuracy(ext)
+
+        if user_resolution is None:
+            resolution = round(self._get_resolution(ext),  -1)
+        else:
+            resolution = user_resolution
+
+        spec_range = 2 * dcenwave + abs(ext.dispersion(asNanometers=True)) * npix
+        cenwave = self._get_actual_cenwave(ext, asNanometers=True)
+        start_wvl = cenwave - (0.5 * spec_range)
+        end_wvl = start_wvl + spec_range
+        observatory = ext.phu['OBSERVAT']
+        if user_wv_band == "None":
+            raw_wv = ext.raw_wv()
+        else:
+            raw_wv = int(user_wv_band)
+        print(f"raw_wv={raw_wv}")
+        req_wv = ext.requested_wv()
+
+        if raw_wv == 100:
+            # a WV value to use for the case of RAWWV='Any'
+            if observatory == 'Gemini-North':
+                wv_content = 5
+            elif observatory == 'Gemini-South':
+                wv_content = 10
+        else:
+            wv_content = qa_constraints.wvBands.get(observatory).get(str(raw_wv))
+
+        if wv_content is None:
+            self.log.stdinfo(f"Unknown RAWWV for this observation; \n"
+                             f" using the constraint value for the requested WV band: '{req_wv}'-percentile")
+            wv_content = qa_constraints.wvBands.get(observatory, {}).get(req_wv)
+        print(f"wv={wv_content}")
+
+        if observatory == 'Gemini-North':
+            site = 'mk'
+            alt = "13825ft"
+        elif observatory == 'Gemini-South':
+            site = 'cp'
+            alt = "8980ft"
+        return site, alt, start_wvl, end_wvl, spec_range, wv_content, resolution
+
+
+    def _get_resolution(self, ext=None):
+        # Estimated resolwing power of a spectrum at it's actual central wavelenght,
+        # assuming that it depends on 1/(slit width). This is true only for GNIRS (and GMOS?),
+        # for other instruments there should be an instrument-specific implementation.
+        resolution_1pix_slit = self._get_actual_cenwave(ext) / ext.dispersion()
+        slit_width_pix = ext.slit_width()/ext.pixel_scale()
+        return abs(resolution_1pix_slit // slit_width_pix)
+
+    def _get_actual_cenwave(self, ext=None, asMicrometers=False, asNanometers=False, asAngstroms=False):
+        """
+        For some instruments (NIRI, F2) wavelenght at the central pixel
+        can differ significantly from the descriptor value.
+
+        Parameters
+        ----------
+        asMicrometers : bool
+            If True, return the wavelength in microns
+        asNanometers : bool
+            If True, return the wavelength in nanometers
+        asAngstroms : bool
+            If True, return the wavelength in Angstroms
+
+        Returns
+        -------
+        float
+            Actual cenral wavelenght
+        """
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        output_units = "meters" # By default
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+        cenwave = ext.central_wavelength()
+        actual_cenwave = gmu.convert_units('meters', cenwave, output_units)
+
+        return actual_cenwave
+
+
+    def _get_cenwave_accuracy(self, ext=None):
+        # Accuracy of central wavelength (nm) for a given instrument/setup.
+        return 10
 
 # -----------------------------------------------------------------------------
 

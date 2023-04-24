@@ -140,7 +140,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
-                                           min=300., max=5000., optional=True)
+                                           min=300., max=6000., optional=True)
     dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
                                    min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
@@ -150,6 +150,16 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     interactive = config.Field("Display interactive fitter?", bool, False)
+    debug_num_atran_lines = config.RangeField("Number of lines in ATRAN line list", int, 50., min=10, max=300)
+    debug_wv_band = config.ChoiceField("Water Vapor constraint", str,
+                                   allowed={"20": "20%-ile",
+                                            "50": "50%-ile",
+                                            "80": "80%-ile",
+                                            "100": "Any",
+                                            "None": "header value"},
+                                   default="None")
+    debug_resolution = config.RangeField("Resolution of the observation", int, None, min=10, max=100000,
+                                         optional=True)
 
     def setDefaults(self):
         del self.function

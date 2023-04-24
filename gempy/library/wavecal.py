@@ -355,9 +355,10 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
         data["x"].append(fit1d.points[~fit1d.mask])
         data["y"].append(fit1d.image[~fit1d.mask])
 
-        # Get the data needed for the reference spectrum plot to be displayed
-        # in a separate plot in the interactive mode (so far this is GNIRS-only).
-        refplot_data = p._get_refplot_data(ad=ext, config=ui_params)
+        # Get the data necessary for the reference spectrum plot, to be displayed
+        # in a separate plot in the interactive mode (so far non-arc spectra only).
+        refplot_data = p._get_refplot_data(ext=ext, linelist=input_data["linelist"],
+                                           config=ui_params)
         if refplot_data is not None:
             input_data.update(refplot_data)
 
@@ -478,9 +479,12 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config.min_snr, min_sep=config.min_sep,
         reject_bad=False, nbright=config.values.get("nbright", 0))
-    # Do second iteration of fwidth estimation and peak finding in order to get more accurate
-    # line widths (this step is mostly necessary when calibrating from sky lines, as for those
-    # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends to be too high).
+    if len(peaks) == 0:
+        raise ValueError(f"No peaks were found; perhaps try a lower min_snr value?")
+    # Do the second iteration of fwidth estimation and peak finding in order to get more accurate
+    # line widths (this step is mostly necessary when doing wavecal from sky lines, as for those
+    # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends
+    # to be too high).
     if config.fwidth is None:
         fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
         peaks, weights = find_line_peaks(
@@ -502,7 +506,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     # user-defined file, only read it if arc_lines is undefined
     # (i.e., first time through the loop)
     if linelist is None:
-        linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext, config=config)
+        linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ext=ext, config=config)
     # This wants to be logged even in interactive mode
     p.log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} arc lines")
 
@@ -521,7 +525,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
                                 f"scale {m.right.factor_1.value}")
 
     # Get the accuracy of the central wavelength
-    dcenwave = p._get_cenwave_accuracy(ad=ext)
+    dcenwave = p._get_cenwave_accuracy(ext=ext)
 
     return {"spectrum": np.ma.masked_array(data, mask=mask),
             "init_models": m_init, "peaks": peaks, "weights": weights,
