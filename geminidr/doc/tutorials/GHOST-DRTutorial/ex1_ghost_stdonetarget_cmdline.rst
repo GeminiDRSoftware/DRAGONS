@@ -496,6 +496,8 @@ format" and the HST calspec format.
    * If you expected IFU-2 to be on-sky but there's an accidental source, tell
      the software that there is a source and it isn't sky with
      ``-p extractProfile:ifu2=object``.
+   * If you do not want the barycentric correction, turn is off with
+    ``-p barycentricCorrect:correction_factor=1``.
 
 .. warning:: The reduction of the red channel is very slow.  Launch
   and go get a coffee or something.  Make sure that you got the name for the
@@ -514,7 +516,9 @@ format" and the HST calspec format.
   dgsplot S20230416S0079_red001_dragons.fits 1 --bokeh
 
 The final products are the ``_dragons`` files.  In those files, all the orders
-have been stitched together with the wavelength on a log-linear scale.
+have been stitched together with the wavelength on a log-linear scale,
+calibrated to vacuum wavelengths and corrected for barycentric motion (unless
+that correction is turned off.)
 
 The first extension (the "1" in the call to ``dgsplot`` above) is the spectrum.
 The second extension is the spectrum of the sky.  This is for an observation
@@ -545,7 +549,7 @@ the list, use |showpars|.
 The ``_dragons`` files are probably what most people will want to use for
 making their measurements.
 
-The files ``_responseCorrected`` are the reduced spectra *before* the stitching
+The files ``_calibrated`` are the reduced spectra *before* the stitching
 the orders and the format of the file is more complex and somewhat less
 accessible.  But if you need it, you have it.  The flux pixels are in a
 3D array with the first axis of size 2, one for target, one for sky, then a
