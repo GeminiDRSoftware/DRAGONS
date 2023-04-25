@@ -443,7 +443,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         dictionary of parameters
     skylines : bool
         True if the reference lines being used are skylines, othewise False if
-        the are arc lines
+        they are arc lines
     loglevel : str, ('stdinfo', 'fullinfo', 'debug')
         Sets the log level at which to print some output from the function. If
         left at the default 'stdinfo', all information will be printed to the

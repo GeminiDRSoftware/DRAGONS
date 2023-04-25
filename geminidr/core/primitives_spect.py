@@ -100,6 +100,8 @@ class Spect(Resample):
             An optional shift to apply directly to the wavelength scale, in
             pixels. If not given, the shift will be calculated from the sky
             lines present in the image.
+        verbose : bool, Default : False
+            Print additional information on the fitting process.
         """
 
         def _add_shift_model_to_wcs(shift, dispaxis, ext):
@@ -149,10 +151,10 @@ class Spect(Resample):
         # Check given shift, if there is one.
         if shift and shift > max_shift:
             raise ValueError("Provided shift is larger than parameter "
-                             f"'debug_max_shift': {shift} > {max_shift}")
+                             f"'debug_max_shift': {shift:.3g} > {max_shift:.3g}")
 
         for ad in adinputs:
-            log.stdinfo(f"{ad.filename}: adjusting wavelength scale zero point")
+            log.stdinfo(f"{ad.filename}:")
 
             for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()  # Python sense
@@ -1573,7 +1575,7 @@ class Spect(Resample):
 
                 if not edge_pairs:
                     log.warning("No edges could be determined for "
-                                f"{ad.filename} - no SLITEDGE table wil be "
+                                f"{ad.filename} - no SLITEDGE table will be "
                                 "attached. Consider setting positions of "
                                 "edges manually using the `edges1` and "
                                 "`edges2` parameters.")
