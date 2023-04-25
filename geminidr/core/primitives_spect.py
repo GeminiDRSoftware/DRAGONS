@@ -235,29 +235,13 @@ class Spect(Resample):
                 dw = np.diff(m_init(np.arange(spectrum.size))).mean()
                 kdsigma = fwidth * abs(dw)
                 k = 1 if kdsigma < 3 else 2
-                pixel_start = domain[0] + 0.5 * np.diff(domain)[0]
-
-                # Find matches between the sky lines list and measured peaks.
-                matches = wavecal.perform_piecewise_fit(
-                    m_init, peaks, sky_lines,
-                    pixel_start, kdsigma,
-                    order=config_dict["order"],
-                    min_lines_per_fit=config_dict['debug_min_lines'],
-                    k=k, dcenwave=10)
 
                 fit_it = KDTreeFitter(sigma=2 * abs(dw), maxsig=5,
                                       k=k, method='Nelder-Mead')
                 m_final = fit_it(m_init, peaks, sky_lines,
                                  in_weights=weights[config_dict["weighting"]],
-                                 ref_weights=sky_weights,
-                                 matches=matches)
-
-                mask = [i for i in matches if i > -1]
-                log.stdinfo(f"    Matched {len(mask)}/{len(peaks)} peaks "
-                            f"({len(mask)/len(peaks):.0%}) in the image")
-                # Create a plot of the solution for quick QA.
-                wavecal.save_fit_as_pdf(input_data["spectrum"],
-                                        peaks, sky_lines[mask], ad.filename)
+                                 ref_weights=sky_weights, matches=None,
+                                 options={'disp': True if verbose else False})
 
                 # Apply the shift to the wavelength scale
                 shift_final = m_final.offset_0.value
