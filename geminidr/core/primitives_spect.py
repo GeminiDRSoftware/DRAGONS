@@ -158,6 +158,7 @@ class Spect(Resample):
 
             for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()  # Python sense
+                row_or_col = 'row' if dispaxis == 1 else 'column'
 
                 # If the user specifies a shift value, apply it and continue
                 if shift is not None:
@@ -203,11 +204,20 @@ class Spect(Resample):
                 # get_all_input_data() outputs several lines of information
                 # which can be useful but confusing if many files are processed,
                 # so use the verbose parameter to allow users to control it.
+                # loglevel is the level at which the output should be logged,
+                # so higher levels (e.g. stdinfo) print more to the console.
                 loglevel = "stdinfo" if verbose else "fullinfo"
-                input_data = wavecal.get_all_input_data(
-                    ext, self, config_dict, linelist=None,
-                    bad_bits=DQ.not_signal, skylines=True,
-                    loglevel=loglevel)
+                try:
+                    input_data = wavecal.get_all_input_data(
+                        ext, self, config_dict, linelist=None,
+                        bad_bits=DQ.not_signal, skylines=True,
+                        loglevel=loglevel)
+                except ValueError:
+                    raise ValueError("Something went wrong in finding sky "
+                                     "lines - check that the spectrum is being "
+                                     f"taken in a {row_or_col} free of the "
+                                     "object aperture, and change it with the "
+                                     "`center` parameter if necessary")
 
                 spectrum = input_data["spectrum"]
                 init_models = input_data["init_models"]
