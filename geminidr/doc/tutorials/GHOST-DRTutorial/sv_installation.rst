@@ -72,7 +72,7 @@ It is unclear at this time if this will be applicable to the SV data.
 ::
 
   cd <path>/ghost_tutorial/
-  curl -O https://github.com/GeminiDRSoftware/GHOSTDR/tree/master/scripts/fixprogid.py
+  curl -O https://raw.githubusercontent.com/GeminiDRSoftware/GHOSTDR/master/scripts/fixprogid.py
 
 
 About the state of the software
