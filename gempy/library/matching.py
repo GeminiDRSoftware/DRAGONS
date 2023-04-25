@@ -348,7 +348,7 @@ class KDTreeFitter(Fitter):
             for p in model_copy.param_names:
                 pval = getattr(model_copy, p).value
                 ### EDITED THIS LINE SO TAKE A LOOK IF 2D MATCHING GOES WRONG!!
-                if abs(pval) < 20 * xatol and not model_copy.fixed[p]:  # and 'offset' in p
+                if abs(pval).all() < 20 * xatol and not model_copy.fixed[p]:  # and 'offset' in p
                     getattr(model_copy, p).value = 20 * xatol if pval == 0 \
                         else (np.sign(pval) * 20 * xatol)
 
