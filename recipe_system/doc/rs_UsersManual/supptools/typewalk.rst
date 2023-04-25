@@ -14,28 +14,31 @@ option.
 
   -h, --help            show this help message and exit
   -b BATCHNUM, --batch BATCHNUM
-                        In shallow walk mode, number of files to process at a
-                        time in the current directory. Controls behavior in
-                        large data directories. Default = 100.
+                        In shallow walk mode, number of files to process at a time in
+                        the current directory. Controls behavior in large data
+                        directories. Default = 100.
   -d TWDIR, --dir TWDIR
-                        Walk this directory and report tags. default is cwd.
+                        Walk this directory and report types. default is cwd.
   -f FILEMASK, --filemask FILEMASK
-                        Show files matching regex <FILEMASK>. Default is all
-                        .fits and .FITS files.
+                        Show files matching regex <FILEMASK>. Default is all .fits and
+                        .FITS files.
   -n, --norecurse       Do not recurse subdirectories.
-  --or                  Use OR logic on 'tags' criteria. If not specified,
-                        matching logic is AND (See --tags). Eg., --or --tags
-                        SOUTH GMOS IMAGE will report datasets that are one of
-                        SOUTH *OR* GMOS *OR* IMAGE.
+  --or                  Use OR logic on 'types' criteria. If not specified, matching
+                        logic is AND (See --types). Eg., --or --types SOUTH GMOS IMAGE
+                        will report datasets that are one of SOUTH *OR* GMOS *OR*
+                        IMAGE.
   -o OUTFILE, --out OUTFILE
-                        Write reported files to this file. Effective only with
-                        --tags option.
+                        Write reported files to this file. Effective only with --tags
+                        option.
   --tags TAGS [TAGS ...]
-                        Find datasets that match only these tag criteria. Eg.,
-                        --tags SOUTH GMOS IMAGE will report datasets that are
-                        all tagged SOUTH *and* GMOS *and* IMAGE.
+                        Find datasets that match only these tag criteria. Eg., --tags
+                        SOUTH GMOS IMAGE will report datasets that are all tagged
+                        SOUTH *and* GMOS *and* IMAGE.
   --xtags XTAGS [XTAGS ...]
                         Exclude <xtags> from reporting.
+  --adpkg ADPKG         Name of the astrodata instrument package to useif not
+                        gemini_instruments
+
 
 Files are selected and reported through a regular expression mask which,
 by default, finds all ".fits" and ".FITS" files. Users can change this mask

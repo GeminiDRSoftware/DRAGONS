@@ -41,7 +41,7 @@ optimized to give good results in most cases.
 
 A typical ``reduce`` command can look deceptively simple. Without knowing the
 content of the data file, you can simply run ``reduce`` on the data and the
-Recipe System automatically selects the best recipe and primtives based upon
+Recipe System automatically selects the best recipe and primitives based upon
 the data classifications. For example, a call like this one can be all that
 is needed::
 

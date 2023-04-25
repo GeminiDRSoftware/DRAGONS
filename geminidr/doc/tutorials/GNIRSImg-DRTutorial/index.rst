@@ -11,13 +11,13 @@ Tutorial Series - GNIRS Imaging Data Reduction with DRAGONS
    PIPE-USER-117_GNIRSImg_DRtutorial
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    01_overview
    02_datasets
-   03_keyhole_cmdline
-   04_keyhole_api
+   cal_service
+   ex1_gnirsim_twostars
    05_tips_and_tricks
    06_issues_and_limitations
 

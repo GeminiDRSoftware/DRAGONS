@@ -32,8 +32,8 @@ If you run the ``Reduce`` API without setting up a logger, you will notice
 that the output messages appear twice. To prevent this behaviour set up a
 logger. This will send one of the output stream to a file, keeping the other
 on the screen. We recommend using the DRAGONS logger located in the
-:mod:`gempy.utils.logutils` module and its
-:func:`~gempy.utils.logutils.config()` function:
+``gempy.utils.logutils`` module and its
+``~gempy.utils.logutils.config()`` function:
 
 
 .. code-block:: python

@@ -6,6 +6,49 @@
 Release Notes
 *************
 
+V3.1.0
+======
+
+This new release includes many new features, new support, various improvements
+and new tutorials.  See the :ref:`changes` for all the details.
+
+This update of DRAGONS has four big changes over V3.0:
+
+* New science quality reduction for GMOS longslit data
+* The alignment and stacking of GSAOI data is now done within DRAGONS and the]
+  use of ``disco_stu`` is no longer required.
+* The calibration service has gone through a major refactoring.  Of direct
+  impact to the users, DRAGONS can now automatically store processed
+  calibrations and the configuration file is now ``~/.dragons/dragonsrc``
+* Static Bad pixel masks (BPMs) are now handled as calibrations and are
+  distributed via the archive rather than being packaged with the software
+  allowing for faster BPM-update response.
+
+With this release, DRAGONS offers support for:
+
+Science Quality reduction
+   * GMOS imager
+   * NIRI imager
+   * GSAOI imager
+   * F2 imager
+   * GMOS longslit spectrograph
+
+For imaging and GMOS longslit spectroscopy, this software should be used
+instead of the Gemini IRAF package.
+
+To install DRAGONS, please follow the installation guide provided in the
+Recipe System User Manual:
+
+  |RSUserInstall|.
+
+
+V3.0.4
+======
+This patch release includes several small fixes and improvements, many
+related to the Quality Assessment Pipeline run internally at Gemini.
+Provenance for flux calibration is now included.  The patch is recommended
+to all but not critical for most.
+
 V3.0.2 and V3.0.3
 =================
 Note that 3.0.2 was found to have one broken recipe, 3.0.3 fixes it.

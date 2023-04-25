@@ -1406,10 +1406,11 @@ class Spect(Resample):
 
             # Get the expected slit center and length for long slit.
             if (edges1 is not None) and (edges2 is not None):
-                log.fullinfo('Using user-supplied edges.')
+                log.stdinfo('Using user-supplied edges.')
                 exp_edges_1, exp_edges_2 = edges1, edges2
             elif (edges1 is None) and (edges2 is None):
                 exp_edges_1, exp_edges_2 = self._get_slit_edge_estimates(ad)
+                log.debug('Estimating fit edges...')
             else:
                 log.warning("Both `edges1` and `edges2` parameters need to be "
                             "provided in order to use them. Using "

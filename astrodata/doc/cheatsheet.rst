@@ -280,7 +280,7 @@ Delete an extension keyword::
 
 Table header
 ************
-See the Tables section.
+See the :ref:`cheatsheet_tables` section.
 
 
 Pixel data
@@ -346,13 +346,14 @@ Other pixel data operations
     646.11896
 
 
+.. _cheatsheet_tables:
 
 Tables
 ======
 
 Tables are stored as :class:`astropy.table.Table` class. FITS tables are
 represented in :mod:`astrodata` as |Table| and FITS headers are stored in the
-|NDAstroData| :attr:`~astrodata.nddata.NDAstroData.meta` attribute. Most table
+|NDAstroData|  ``meta`` attribute. Most table
 access should be done through the |Table| interface. The best reference is the
 |astropy| documentation itself. Below are just a few examples.
 

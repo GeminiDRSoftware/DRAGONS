@@ -59,8 +59,8 @@ Let's try another ::
     'OVERSCAN_SUBTRACTED', 'PREPARED'}
 
 This file is a science GMOS North image.  It has been processed by the
-Recipe System.  The overscan level has been subtracted and the section has
-been trimmed away.  The tags do NOT include all the processing steps. Rather,
+Recipe System.  The overscan level has been subtracted and the overscan section
+has been trimmed away.  The tags do NOT include all the processing steps. Rather,
 at least from the time being, it focuses on steps that matter when associating
 calibrations.
 

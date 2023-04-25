@@ -43,7 +43,9 @@ class Mapper:
 
     recipename : <str>
                  The recipe to use for processing. Passed by user
-                 with -r or set by caller. Else 'default' recipe.
+                 with -r or set by caller. Else, '_default' recipe.
+                 If defined, it will override the mapping in part or
+                 in whole.
 
     mode : <str>
            Pipeline mode. Selection criterion for recipe sets.

@@ -102,7 +102,8 @@ class Reduce:
           List of products to upload to fitsstore as passed by --upload.
           E.g.,
               --upload metrics calibs
-                                    ==> upload == ['metrics', 'calibs']
+
+         (==> upload == ['metrics', 'calibs'])
          will upload QA metrics to fitsstore and processing calibration
          files.
 

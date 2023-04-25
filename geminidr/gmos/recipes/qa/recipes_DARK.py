@@ -21,7 +21,7 @@ def makeProcessedDark(p):
     """
 
     p.prepare()
-    p.addDQ(static_bpm=None)
+    p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.biasCorrect()

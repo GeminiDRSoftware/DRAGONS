@@ -6,7 +6,7 @@
 
 .. |geminiiraf_link| raw:: html
 
-   <a href="http://www.gemini.edu/node/11823" target="_blank">http://www.gemini.edu/node/11823</a>
+   <a href="https://www.gemini.edu/observing/phase-iii/reducing-data/gemini-iraf-data-reduction-software" target="_blank">https://www.gemini.edu/observing/phase-iii/reducing-data/gemini-iraf-data-reduction-software</a>
 
 .. _install:
 
@@ -18,35 +18,53 @@ The Recipe System is distributed as part of DRAGONS.  DRAGONS is available
 as a conda package.  The installation instructions below will install all
 the necessary dependencies.
 
-The use of the ``bash`` shell is required by Anaconda.
+The use of the ``bash`` shell is recommended.
 
 Install Anaconda
 ================
+
+Download and install Anaconda
+-----------------------------
 If you already have Anaconda installed, you can skip this step and go to
 the :ref:`Install DRAGONS <install_dragons>` section below.  If not, then your
-first step is to get and install Anaconda.  You can download it at:
+first step is to get and install Anaconda.  You can download it from the
+Anaconda website.  We recommend clicking on the "Get Additional Installers"
+instead of using the green Download button as it will allow you to do a finer
+selection.  Here we show how to use the "Command Line Installer"
 
-    |anaconda_link|
++-----------------------------------------+
+|  **Download Anaconda**: |anaconda_link| |
++-----------------------------------------+
 
-Choose the version of Python that suits your other Python needs.  DRAGONS is
-compatible with Python 3.7.  We recommend that you install the standard
-Python 3 version of Anaconda, the specific Python version can be adjusted
-later.
+.. warning::  M1 MacOS Users!!!  DRAGONS is not yet built with the M1
+      architecture. The x86 build will work anyway.  But you have to be careful
+      when you install Anaconda.
+
+      We recommend that you use the "64-bit Command Line Installer", ie. the
+      non-M1 version.  This version is the x86 (aka Intel) build. When using
+      that version, by default, x86 binaries of the various conda packages will
+      be installed.
+
+      M1 can run x86 binaries via the Rosetta interface.  It is seamless.
+
+The current version of DRAGONS has been tested with Python 3.9 and Python 3.10.
+We recommend that you install the standard Python 3 version of Anaconda, the
+specific Python version can be adjusted later, if necessary.
 
 If you have downloaded the graphical installer, follow the graphical installer
 instructions.  Install in your home directory.  It should be the default.
 
-If you have downloaded the command-line installer, type the following in a
-terminal, replacing the ``.sh`` file name to the name of the file you have
-downloaded.  The ``/bin/bash -l`` line is not needed if you are already
-using bash.  The command-line installer allows for more customization of the
-installation.
+If you have downloaded the command-line installer (recommended), type the
+following in a terminal, replacing the ``.sh`` file name to the name of the
+file you have downloaded.  The ``/bin/bash -l`` line is not needed if you are
+already using bash.  The command-line installer allows for more customization
+of the installation.
 
 ::
 
     $ /bin/bash -l
-    $ chmod a+x Anaconda3-2019.03-MacOSX-x86_64.sh
-    $ ./Anaconda3-2019.03-MacOSX-x86_64.sh
+    $ chmod a+x Anaconda3-2022.10-MacOSX-x86_64.sh
+    $ ./Anaconda3-2022.10-MacOSX-x86_64.sh
 
 (``$`` indicates the terminal prompt.)
 
@@ -56,22 +74,18 @@ installation.
    $ conda config --set auto_activate_base false
 
 
-.. _install_dragons:
-
-Install DRAGONS
-===============
-
-Anaconda requires the use of the bash shell.  ``tcsh`` or ``csh`` will not
-work.  If you are using (t)csh, your first step is::
+Verify Anaconda installation
+----------------------------
+We recommend the use of the ``bash`` shell::
 
     $ /bin/bash -l
 
-Make sure that ``~/anaconda3/bin/activate`` is in your ``PATH`` by doing::
+Make sure that ``~/anaconda3/bin/conda`` is in your ``PATH`` by doing::
 
-    $ which activate
+    $ which conda
 
 The Anaconda installer should have added conda configurations to the
-``~/.bash_profile`` for you.  If ``activate`` is not found, try::
+``~/.bash_profile`` for you.  If ``conda`` is not found, try::
 
     $ source ~/.bash_profile
 
@@ -89,8 +103,16 @@ anaconda.  To activate or deactivate Anaconda manually::
     $ conda activate
     $ conda deactivate
 
-Now that Anaconda works, we add the needed astronomy software.  Add conda-forge
-and the Gemini channel.  Those channels host the conda astronomy packages.
+
+.. _install_dragons:
+
+Install DRAGONS
+===============
+With Anaconda installed and ready to go, now we can install DRAGONS and
+the necessary dependencies.
+
+Add conda-forge and the Gemini channel.  Those channels host the conda packages
+that we will need.
 
 ::
 
@@ -100,11 +122,11 @@ and the Gemini channel.  Those channels host the conda astronomy packages.
 The next step is to create a virtual environment and install the DRAGONS
 software and its dependencies in it.  The name of the environment can be
 anything you like.  Here we use "dragons" as the name and we install
-Python 3.7.
+Python 3.10.
 
 ::
 
-    $ conda create -n dragons python=3.7 dragons ds9
+    $ conda create -n dragons python=3.10 dragons ds9
 
 To use this environment, activate it::
 
@@ -115,36 +137,49 @@ If you are planning to use it all the time, you might want to add the
 command to your ``.bash_profile``, after the "conda init" block.
 
 .. note::
+    For Linux users only.
+
     As a side note, if you are going to use PyRAF regularly, for example to
     reduce Gemini data not yet supported in DRAGONS, you should install the
     ``iraf-all`` and ``pyraf-all`` conda packages as well.
 
-    $ conda create -n geminiconda python=3.7 iraf-all pyraf-all ds9 dragons
+    $ conda create -n geminiconda python=3.10 iraf-all pyraf-all ds9 dragons
 
     DRAGONS and the Recipe System do not need IRAF or PyRAF, however. See the
     Gemini website for information on how to configure IRAF (|geminiiraf_link|)
 
-.. _configure::
+.. _configure:
 
 Configure DRAGONS
 =================
-DRAGONS requires a configuration file located in ``~/.geminidr/``::
+DRAGONS requires a configuration file ``dragonsrc`` that is located in
+``~/.dragons/``::
 
     $ cd ~
-    $ mkdir .geminidr
-    $ cd .geminidr
-    $ touch rsys.cfg
+    $ mkdir .dragons
+    $ cd .dragons
+    $ touch dragonsrc
 
-Open ``rsys.cfg`` with your favority editor and add these lines::
+Open ``dragonsrc`` with your favorite editor and add these lines::
+
+    [interactive]
+    browser = safari
 
     [calibs]
-    standalone = True
-    database_dir = ~/.geminidr/
+    databases = ~/.dragons/dragons.db get
 
-Then configure ``ds9`` buffer configurations::
+The browser can be set to any of "safari", "chrome", or "firefox", depending
+on your preferences.  The path and name of the calibration database can be
+anything, as long at the path exists.  The "get" means that DRAGONS will get
+calibrations from that database.  The "store" option can be added after the
+"get" to have DRAGONS automatically add new processed calibrations to the
+database.  See any of the tutorials to see the calibration manager in action.
+
+On a new installation, you will need to configure ``ds9`` buffer
+configurations::
 
     $ cd ~
-    $ cp $CONDA_PREFIX/lib/python3.7/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
+    $ cp $CONDA_PREFIX/lib/python3.10/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
     $ vi .bash_profile   # or use your favorite editor
 
       Add this line to the .bash_profile:
@@ -180,7 +215,7 @@ of your file)::
 
 If all is well, you will see something like::
 
-			--- reduce, v3.0.0 ---
+			--- reduce, v3.1.0 ---
     All submitted files appear valid
     Found 'prepare' as a primitive.
     ================================================================================

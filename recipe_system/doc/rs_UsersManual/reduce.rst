@@ -39,7 +39,7 @@ the command and a filename.
 
 The system defaults to the "sq" mode, ie. science quality recipes.  The best
 match recipe will be used with the best match primitive set.  The required
-processed calibrations will be fetched from the local calibration manager.
+processed calibrations will be fetched from the :ref:`caldb`.
 
 The system defaults to using the Gemini Astrodata configuration package and
 the Gemini data reduction package, ``gemini_instruments`` and ``geminidr``,
@@ -48,7 +48,7 @@ respectively.
 
 Overriding Primitive Parameters
 -------------------------------
-The primitives for each set are given default values that have been found to
+The primitives in each set are given default values that have been found to
 give good results in most cases.  Depending on the data and the science
 objectives, it might be necessary to tweak the primitive parameters to
 optimize the reduction.  The ``-p``, or in long form ``--param`` option allows
@@ -161,24 +161,24 @@ Information Switches
 
        $ reduce -d --logmode quiet fitsfile.fits
 
-	  Literals			var 'dest'		Value
-	 -----------------------------------------------------------------
-	['-d', '--displayflags']        :: displayflags         :: True
-	['-p', '--param']               :: userparam            :: None
-	['--logmode']                   :: logmode              :: quiet
-	['--ql']                        :: mode                 :: sq
-	['--qa']                        :: mode                 :: sq
-	['--upload']                    :: upload               :: None
-	['-r', '--recipe']              :: recipename           :: None
-	['--adpkg']                     :: adpkg                :: None
-	['--suffix']                    :: suffix               :: None
-	['--drpkg']                     :: drpkg                :: geminidr
-	['--user_cal']                  :: user_cal             :: None
-    ['-c', '--config']              :: config_file          :: None
-	['--logfile']                   :: logfile              :: reduce.log
-	-----------------------------------------------------------------
+         Literals			var 'dest'		Value
+         ---------------------------------------------------------------------
+         ['-d', '--displayflags']        :: displayflags         :: True
+         ['-p', '--param']               :: userparam            :: None
+         ['--logmode']                   :: logmode              :: quiet
+         ['--ql']                        :: mode                 :: sq
+         ['--qa']                        :: mode                 :: sq
+         ['--upload']                    :: upload               :: None
+         ['-r', '--recipe']              :: recipename           :: None
+         ['--adpkg']                     :: adpkg                :: None
+         ['--suffix']                    :: suffix               :: None
+         ['--drpkg']                     :: drpkg                :: geminidr
+         ['--user_cal']                  :: user_cal             :: None
+         ['-c', '--config']              :: config_file          :: None
+         ['--logfile']                   :: logfile              :: reduce.log
+         ---------------------------------------------------------------------
 
-       Input fits file(s):	fitsfile.fits
+         Input fits file(s):	fitsfile.fits
 
 
 Configuration Switches and Options
@@ -242,8 +242,7 @@ Configuration Switches and Options
     Set the **mode** of operation to "ql", "quicklook". When no "qa"  or "ql"
     flag are specified the default mode is "sq".  The "ql" mode is use for
     quick, near science quality reduction.  Science quality is not guaranteed.
-    Recipes differ depending on the mode.  *This mode is not yet implemented.
-    "ql" recipes are not yet available.*
+    Recipes differ depending on the mode.
 
 
 **-r <RECIPENAME>, --recipe <RECIPENAME>**
@@ -328,7 +327,7 @@ configurations that are applied.  Here we illustrate how to use it.
 
 Basic @file Usage
 -----------------
-In a previous section we had an example where we were modifying a primmitive's
+In a previous section we had an example where we were modifying a primitive's
 input parameter values.
 
 ::

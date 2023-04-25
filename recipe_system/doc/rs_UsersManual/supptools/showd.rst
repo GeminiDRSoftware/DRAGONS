@@ -11,8 +11,8 @@ show the value of specific AstroData descriptors for the files requested.
 Its basic usage can be printed using the following command::
 
     $ showd --help
-    usage: showd [-h] --descriptors DESCRIPTORS [--csv] [--debug]
-                 [inputs [inputs ...]]
+    usage: showd [-h] --descriptors DESCRIPTORS [--long] [--csv] [--adpkg ADPKG] [--debug]
+                 [inputs ...]
 
     For each input file, show the value of the specified descriptors.
 
@@ -23,8 +23,12 @@ Its basic usage can be printed using the following command::
       -h, --help            show this help message and exit
       --descriptors DESCRIPTORS, -d DESCRIPTORS
                             comma-separated list of descriptor values to return
+      --long                Long format for the descriptor value
       --csv                 Format as CSV list.
+      --adpkg ADPKG         Name of the astrodata instrument package to useif not
+                            gemini_instruments
       --debug               Toggle debug mode
+          --debug               Toggle debug mode
 
 
 One or more descriptors can be printed together. Here is an example:::
@@ -62,7 +66,7 @@ list, CSV list, with the ``--csv`` tag::
 
 The ``showd`` command also integrates well with ``dataselect``. You can use
 :ref:`dataselect` together with ``showd`` if you want to print
-the descriptors values in a data subset::
+the descriptors values of a data subset::
 
     $ dataselect raw/*.fits --tag FLAT | showd -d object,exposure_time
     ----------------------------------------------
