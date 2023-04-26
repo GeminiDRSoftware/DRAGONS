@@ -4,6 +4,8 @@ echo "Checking (Ana/Mini)Conda installation at ${JENKINS_CONDA_HOME}"
 
 mkdir -p "${TMPDIR}"  # otherwise micromamba (miniforge install) crashes
 
+touch "${JENKINS_CONDA_HOME}/bin/anaconda"
+
 ## Remove anaconda to replace with miniconda
 if [ -d "${JENKINS_CONDA_HOME}/bin/anaconda" ]; then
     rm -Rf ${JENKINS_CONDA_HOME}
