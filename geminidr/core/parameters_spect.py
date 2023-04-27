@@ -33,12 +33,12 @@ class adjustWavelengthZeroPointConfig(config.Config):
                           optional=True)
     center = config.RangeField("Central row/column to extract", int, None,
                                 min=1, optional=True)
-    shift = config.RangeField("Shift to apply to wavelength scale (in pixels)",
-                              float, None, min=0, optional=True)
+    shift = config.RangeField("Shift to apply in pixels (None: determine automatically)",
+                              float, 0, min=-2048, max=2048, optional=True)
     verbose = config.Field("Print extra information", bool, False,
                            optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
-                                        float, 5., min=0.0)
+                                        float, 5, min=0)
 
 class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",

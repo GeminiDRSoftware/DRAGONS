@@ -149,9 +149,10 @@ class Spect(Resample):
         verbose = params["verbose"]
 
         # Check given shift, if there is one.
-        if shift and shift > max_shift:
+        if shift and abs(shift) > max_shift:
             raise ValueError("Provided shift is larger than parameter "
-                             f"'debug_max_shift': {shift:.3g} > {max_shift:.3g}")
+                             f"'debug_max_shift': |{shift:.3g}| > "
+                             f"{max_shift:.3g}")
 
         for ad in adinputs:
             log.stdinfo(f"{ad.filename}:")
@@ -161,10 +162,16 @@ class Spect(Resample):
                 row_or_col = 'row' if dispaxis == 1 else 'column'
 
                 # If the user specifies a shift value, apply it and continue
+                # (case of shift == 0 caught and handled above)
                 if shift is not None:
+                    if shift == 0:
+                        msg = "    No wavelength shift from sky lines will be"\
+                              " performed since shift=0"
+                    else:
+                        msg = "    Shifted wavelength scale for extension "\
+                              f"{ext.id} by {shift:0.4g} pixels"
                     _add_shift_model_to_wcs(shift, dispaxis, ext)
-                    log.stdinfo("    Shifted wavelength scale for extension "
-                                f"{ext.id} by {shift:0.4g} pixels.")
+                    log.stdinfo(msg)
                     continue
 
                 # Otherwise, we'll need to automatically find the shift.
