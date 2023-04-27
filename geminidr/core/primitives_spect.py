@@ -4842,17 +4842,19 @@ class Spect(Resample):
         "refplot_name" : reference plot name string
         "refplot_y_axis_label" : reference plot y-axis label string
         """
-        user_res = config.debug_resolution
-        wv_band = config.debug_wv_band
-        site, alt, start_wvl, end_wvl, _, wv_content, resolution = \
-            self._get_atran_model_params(ext, user_wv_band=wv_band, user_resolution=user_res)
+
         if 'ARC' in ext.tags:
             # Reference plots for arc spectra are not implemented
             return None
+
         else:
             if config.absorption or ext.central_wavelength(asMicrometers=True) >= 2.8:
-            # Use ATRAN models for generating reference plots for wavecal from
-            # sky absorption in science spectrum, or from sky emission in L and M
+                user_res = config.debug_resolution
+                wv_band = config.debug_wv_band
+                site, alt, start_wvl, end_wvl, _, wv_content, resolution = \
+                self._get_atran_model_params(ext, user_wv_band=wv_band, user_resolution=user_res)
+                # Use ATRAN models for generating reference plots for wavecal from
+                # sky absorption in science spectrum, or from sky emission in L and M
                 if refplot_spec is None:
                     print(f"making refplot")
                     refplot_spec, _ = self._get_convolved_atran(ext, config=config)
@@ -4870,6 +4872,7 @@ class Spect(Resample):
                 # a set of pre-calculated synthetic spectra for the reference plots
                 if refplot_spec is None:
                     path = list(oh_synthetic_spectra.__path__).pop()
+                    resolution = self._get_resolution(ext)
                     if resolution >= 15000:
                         R = 20000
                     elif (7500 <= resolution < 15000):

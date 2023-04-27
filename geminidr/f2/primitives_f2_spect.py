@@ -145,22 +145,6 @@ class F2Spect(Spect, F2):
         filename = os.path.join(lookup_dir, linelist)
         return wavecal.LineList(filename)
 
-    def _get_cenwave_offset(self, ad=None):
-        filter = ad.filter_name(pretty=True)
-        if filter in {"HK", "JH"}:
-            filter = ad.filter_name(keepID=True)
-        # The following is needed because after the new HK and JH filters were
-        # installed in 2021(?), their WAVELENG keywords weren't updated until
-        # the date specified below, so in the meantime the cenwave_offset of
-        # the old filters had to be used.
-        if ad.phu['DATE'] < '9999-99-99':
-            if filter == "JH_G0816":
-                filter = "JH_G0809"
-            if filter == "HK_G0817":
-                filter = "HK_G0806"
-        index = (ad.disperser(pretty=True), filter)
-        mask = dispersion_offset_mask.get(index, None)
-        return mask.cenwaveoffset if mask else None
 
     def _get_actual_cenwave(self, ext=None, asMicrometers=False, asNanometers=False, asAngstroms=False):
         """
@@ -192,9 +176,12 @@ class F2Spect(Spect, F2):
                 output_units = "nanometers"
             if asAngstroms:
                 output_units = "angstroms"
-        cenwave = ext.central_wavelength() + \
-                  abs(ext.dispersion()) * self._get_cenwave_offset(ext)
-        actual_cenwave = gmu.convert_units('meters', cenwave, output_units)
+        index = (ext.disperser(pretty=True), ext.filter_name(keepID=True))
+        mask = dispersion_offset_mask.get(index, None)
+        cenwave_offset = mask.cenwaveoffset if mask else None
+        actual_cenwave = ext.central_wavelength() + \
+                  abs(ext.dispersion()) * cenwave_offset
+        actual_cenwave = gmu.convert_units('meters', actual_cenwave, output_units)
         return actual_cenwave
 
 
@@ -207,7 +194,5 @@ class F2Spect(Spect, F2):
             slit_width= int(fpmask.replace('pix-slit', ''))
         else:
             slit_width = fpmask
-
         disperser = ext.disperser(pretty=True)
-        print(f"resolution={resolving_power.get(slit_width, {}).get(disperser)}")
-        return resolving_power.get(slit_width, {}).get(disperser)
+        return resolving_power.get(f"{slit_width}", {}).get(f"{disperser}")

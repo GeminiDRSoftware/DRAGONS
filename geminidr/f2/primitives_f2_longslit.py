@@ -134,13 +134,9 @@ class F2Longslit(F2Spect):
                 dispaxis_center = ad[0].shape[dispaxis] // 2
                 cenwave = ad.central_wavelength(asNanometers=True)
                 dispersion = ad.dispersion(asNanometers=True)[0]
-                filter = ad.filter_name(pretty=True)
-                if filter in {"HK", "JH"}:
-                        filter = ad.filter_name(keepID=True)
-                cenwave_offset = self._get_cenwave_offset(ad)
-                index = (ad.disperser(pretty=True), filter)
+                index = (ad.disperser(pretty=True), ad.filter_name(keepID=True))
                 mask = dispersion_offset_mask.get(index, None)
-
+                cenwave_offset = mask.cenwaveoffset if mask else None
                 filter_cuton_wvl = mask.cutonwvl if mask else None
                 filter_cutoff_wvl = mask.cutoffwvl if mask else None
                 cenwave_pix = dispaxis_center + cenwave_offset

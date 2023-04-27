@@ -204,12 +204,21 @@ class AstroDataF2(AstroDataGemini):
             output_units = "meters"
 
         central_wavelength = float(self.phu['WAVELENG'])
+
+        filter = self.filter_name(keepID=True)
         # Header value for this filter in early data is incorrect:
-        if self.phu['FILTER1'] == 'K-long_G0812':
-              central_wavelength = 22000
+        if filter == 'K-long_G0812':
+            central_wavelength = 22000
+        # The new JH_G0816 and HK_G0817 filters were installed in 2022, but their
+        #  WAVELENG header keywords weren't simultaneously updated, thus the correction.
+        if filter == "JH_G0816":
+                central_wavelength = 13385
+        if filter == "HK_G0817":
+                central_wavelength = 19000
 
         if central_wavelength < 0.0:
             return None
+
         else:
             return gmu.convert_units('angstroms', central_wavelength,
                                      output_units)
@@ -345,10 +354,7 @@ class AstroDataF2(AstroDataGemini):
         list/float
             The dispersion(s)
         """
-        filter = self.filter_name(pretty=True)
-        if filter in {"HK", "JH"}:
-            filter = self.filter_name(keepID=True)
-        config = (self.disperser(pretty=True), filter)
+        config = (self.disperser(pretty=True), self.filter_name(keepID=True))
         if config not in dispersion_offset_mask:
             return None
         mask = dispersion_offset_mask.get(config, None)

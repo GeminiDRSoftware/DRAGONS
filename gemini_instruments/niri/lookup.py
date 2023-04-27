@@ -167,8 +167,9 @@ nominal_zeropoints = {
 # Dictionary keys:
 # (camera, focal plane mask, grism)
 # Dictionary values:
-# central wavelength (Å) (from appwave.py), wavelength at central pixel (nm),
-# resolution (from the archived webpage)
+# central wavelength (Å) (apparently this is the center of "useful wvl range"; it is used as cenwave in the archive),
+# wavelength at central pixel (nm) (as measured by OS),
+# resolution (from NIRI webpage)
 spec_wavelengths = {
     ('f6', 'f6-2pix',   'Jgrism') : CenwaveAndRes(12330.0, 1211.0, 770),
     ('f6', 'f6-4pix',   'Jgrism') : CenwaveAndRes(12330.0, 1211.0, 610),
