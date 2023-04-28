@@ -6,6 +6,18 @@
 Change Logs
 ***********
 
+3.1.1
+=====
+
+Improvements
+------------
+
+**geminidr.core**
+
+* Allow input files to ``shiftImages`` to recognize tabs or multiple
+  whitespaces as the delimiter
+
+
 3.1.0
 =====
 
