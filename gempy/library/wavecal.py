@@ -1,12 +1,13 @@
 import re
 from itertools import product as cart_product
+from functools import reduce
 
 import numpy as np
 from scipy.spatial import cKDTree
 from bisect import bisect
 
 from astropy import units as u
-from astropy.modeling import fix_inputs, fitting, models
+from astropy.modeling import fix_inputs, fitting, models, Model
 from astropy.table import Table
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -120,6 +121,11 @@ class LineList:
         try:
             self._weights = np.genfromtxt(data_lines, usecols=[1])
         except ValueError:
+            self._weights = None
+        # np.genfromtxt() silently returns an array of NaNs if it finds a column
+        # in the given location but which it can't coerce to numerical form.
+        # The check below catches that situation.
+        if (self._weights is not None) and (np.isnan(self._weights).all()):
             self._weights = None
 
     def wavelengths(self, in_vacuo=None, units=None):
@@ -326,9 +332,18 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
                                    domain=[0, npix-1])
     else:
         ndim = len(ext.shape)
-        axis_dict = {ndim-i-1: axes.get(i, 0.5 * (length-1))
-                     for i, length in enumerate(ext.shape) if i != dispersion_axis}
-        model = (fix_inputs(fwd_transform, axis_dict) |
+        #axis_dict = {ndim-i-1: axes.get(i, 0.5 * (length-1))
+        #             for i, length in enumerate(ext.shape) if i != dispersion_axis}
+        #model = (fix_inputs(fwd_transform, axis_dict) |
+        #         models.Mapping((0,), n_inputs=fwd_transform.n_outputs))
+        # Ugly hack until fix_inputs broadcasting is fixed
+        # https://github.com/astropy/astropy/issues/12021
+        axis_models = [models.Const1D(axes.get(i, 0.5 * (length-1)))
+                       for i, length in enumerate(ext.shape)]
+        axis_models[dispersion_axis] = models.Identity(1)
+        model = (models.Mapping((0,) * ndim) |
+                 reduce(Model.__and__, axis_models[::-1]) |
+                 fwd_transform |
                  models.Mapping((0,), n_inputs=fwd_transform.n_outputs))
         if dispersion or central_wavelength:
             actual_cenwave = model(0.5 * (npix - 1))
@@ -369,8 +384,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     ----------
     ext: single-slice AstroData
         the extension
-    ui_params: dict
-        dictionary of parameters for the UI, passed from the primitive's Config
+    ui_params: UIParameters object
+        class holding parameters for the UI, passed from the primitive's Config
     p: PrimitivesBASE object
         (needed to get the correct linelist... perhaps only need to pass that fn)
     linelist: str
@@ -389,7 +404,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         whether this fit is likely to be good
     """
     input_data = get_all_input_data(
-        ext, p, ui_params, linelist=linelist, bad_bits=bad_bits)
+        ext, p, ui_params.toDict(), linelist=linelist, bad_bits=bad_bits)
     spectrum = input_data["spectrum"]
     init_models = input_data["init_models"]
     peaks, weights = input_data["peaks"], input_data["weights"]
@@ -398,7 +413,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     kdsigma = fwidth * abs(dw)
     k = 1 if kdsigma < 3 else 2
     fit1d, acceptable_fit = find_solution(
-        init_models, ui_params, peaks=peaks, peak_weights=weights[ui_params.values["weighting"]],
+        init_models, ui_params.toDict(), peaks=peaks,
+        peak_weights=weights[ui_params.weighting],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
         dcenwave = input_data["cenwave_accuracy"], filename=ext.filename)
 
@@ -406,7 +422,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     return input_data, fit1d, acceptable_fit
 
 
-def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
+def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
+                       skylines=False, loglevel='stdinfo'):
     """
     There's a specific order needed to do things:
     1) The initial model and 1D spectrum give us the wavelength extrema
@@ -422,7 +439,17 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     p : PrimitivesBASE object
     bad_bits : int
         bitwise-and the mask with this to produce the mask
-    config : Config-like object containing parameters
+    config : dict
+        dictionary of parameters
+    skylines : bool
+        True if the reference lines being used are skylines, othewise False if
+        they are arc lines
+    loglevel : str, ('stdinfo', 'fullinfo', 'debug')
+        Sets the log level at which to print some output from the function. If
+        left at the default 'stdinfo', all information will be printed to the
+        terminal; setting it to a lower level will cause it by default to only
+        appear in the reduction log (though it can appear in the terminal if
+        the logging level specified there allows it).
 
     Returns
     -------
@@ -436,17 +463,21 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     "location" : extraction location (if 2D spectrum)
     "cenwave_accuracy" : accuracy of the central wavelength
     """
-    cenwave = config.central_wavelength
+    cenwave = config["central_wavelength"]
 
-    log = FakeLog() if config.interactive else p.log
+    log = FakeLog() if config["interactive"] == True else p.log
+    # This allows suppression of the terminal log output by calling the function
+    # with loglevel='debug'.
+    logit = getattr(log, loglevel)
+
     # Create 1D spectrum for calibration
     if ext.data.ndim > 1:
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
         data, mask, variance, extract_slice = tracing.average_along_slit(
-            ext, center=config.center, nsum=config.nsum)
-        log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                    format(direction, extract_slice.start + 1, extract_slice.stop))
+            ext, center=config["center"], nsum=config["nsum"])
+        logit("Extracting 1D spectrum from {}s {} to {}".
+              format(direction, extract_slice.start + 1, extract_slice.stop))
         middle = 0.5 * (extract_slice.start + extract_slice.stop - 1)
         axes = {dispaxis: middle}
         location = f"{direction} {int(middle)}"
@@ -461,34 +492,34 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
         mask &= bad_bits
         data[mask > 0] = 0.
 
-    if config.fwidth is None:
+    if config["fwidth"] is None:
         fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30)
-        log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
+        logit(f"Estimated feature width: {fwidth:.2f} pixels")
     else:
-        fwidth = config.fwidth
+        fwidth = config["fwidth"]
 
     peaks, weights = find_line_peaks(
         data, mask=mask, variance=variance,
-        fwidth=fwidth, min_snr=config.min_snr, min_sep=config.min_sep,
-        reject_bad=False, nbright=config.values.get("nbright", 0))
+        fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
+        reject_bad=False, nbright=config.get("nbright", 0))
     # Do second iteration of fwidth estimation and peak finding in order to get more accurate
     # line widths (this step is mostly necessary when calibrating from sky lines, as for those
     # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends to be too high).
-    if config.fwidth is None:
+    if config["fwidth"] is None:
         fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,
-            fwidth=fwidth, min_snr=config.min_snr, min_sep=config.min_sep,
-            reject_bad=False, nbright=config.values.get("nbright", 0))
+            fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
+            reject_bad=False, nbright=config.get("nbright", 0))
     # Get the initial wavelength solution
     m_init = initial_wavelength_model(
         ext, central_wavelength=cenwave,
-        dispersion=config.dispersion, axes=axes)
+        dispersion=config["dispersion"], axes=axes)
 
     waves = m_init([0, 0.5 * (data.size - 1), data.size - 1])
     dw0 = (waves[2] - waves[0]) / (data.size - 1)
-    log.stdinfo("Wavelengths at start, middle, end (nm), and dispersion "
-                f"(nm/pixel):\n{waves} {dw0:.4f}")
+    logit("Wavelengths at start, middle, end (nm), and dispersion "
+          f"(nm/pixel):\n{waves} {dw0:.4f}")
 
     # Get list of arc lines (probably from a text file dependent on the
     # input spectrum, so a private method of the primitivesClass). If a
@@ -497,14 +528,16 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
     if linelist is None:
         linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext)
     # This wants to be logged even in interactive mode
-    p.log.stdinfo(f"Found {len(peaks)} peaks and {len(linelist)} arc lines")
+    sky_or_arc = 'reference sky' if skylines else 'arc'
+    logit(f"Found {len(peaks)} peaks and {len(linelist)} "
+          f"{sky_or_arc} lines")
 
     m_init = [m_init]
     kdsigma = fwidth * abs(dw0)
     if cenwave is None:
-        if config.debug_alternative_centers:
+        if config["debug_alternative_centers"]:
             alt_models = find_alternative_solutions(
-                peaks, linelist.wavelengths(in_vacuo=config.in_vacuo, units="nm"),
+                peaks, linelist.wavelengths(in_vacuo=config["in_vacuo"], units="nm"),
                 m_init[0], 2.5 * kdsigma, weights=weights["global"])
             if alt_models is not None:
                 m_init.extend(alt_models)
@@ -528,18 +561,24 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     """
     Find the best wavelength solution from the set of initial models.
 
-    models : list of Model instances
+    init_models : list of Model instances
         starting models
-    config : Config object containing parameters
-
+    config : dict
+        dictionary of parameters
+    peaks : list of floats
+        list of peaks found in image
+    peak_weights : list of floats
+        list of peak weights
+    filename : str
+        name of file being checked
     Returns
     -------
 
     """
     log = logutils.get_logger(__name__)
-    min_lines = [int(x) for x in str(config.debug_min_lines).split(',')]
+    min_lines = [int(x) for x in str(config["debug_min_lines"]).split(',')]
     best_score = np.inf
-    arc_lines = linelist.wavelengths(in_vacuo=config.in_vacuo, units="nm")
+    arc_lines = linelist.wavelengths(in_vacuo=config["in_vacuo"], units="nm")
     arc_weights = linelist.weights
 
     # Create an initial fit_1D object using the initial wavelength model
@@ -553,12 +592,12 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     x = np.arange(*domain)
     dw = abs(np.diff(model(domain))[0] / np.diff(domain)[0])
     order = 0
-    while order < config.order:
+    while order < config["order"]:
         order += 1
         fit1d = fit_1D(model(x), points=x, function="chebyshev",
                        order=order, domain=domain,
-                       niter=config.niter, sigma_lower=config.lsigma,
-                       sigma_upper=config.hsigma)
+                       niter=config["niter"], sigma_lower=config["lsigma"],
+                       sigma_upper=config["hsigma"])
         if fit1d.rms < 0.001 * dw:
             break
     fit1d.image = np.array([])
@@ -574,16 +613,16 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         pixel_start = domain[0] + loc_start * len_data
 
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
-                                        kdsigma, order=config.order,
+                                        kdsigma, order=config["order"],
                                         min_lines_per_fit=min_lines_per_fit,
-                                        k=k, dcenwave=dcenwave, debug=False)
+                                        k=k, dcenwave=dcenwave)
 
         # We perform a regular least-squares fit to all the matches
         # we've made. This allows a high polynomial order to be
         # used without the risk of it going off the rails
         fit_it = fitting.LinearLSQFitter()
         if len(matches) > 1:  # need at least 2 lines, right?
-            m_init = models.Chebyshev1D(degree=config.order, domain=domain)
+            m_init = models.Chebyshev1D(degree=config["order"], domain=domain)
             for p, v in zip(model.param_names, model.parameters):
                 if p in m_init.param_names:
                     setattr(m_init, p, v)
@@ -612,8 +651,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 # the interactive fitter, but cull to derive the "best" model
                 fit1d = fit_1D(outcoords, points=incoords, function="chebyshev",
                                order=m_final.degree, domain=m_final.domain,
-                               niter=config.niter, sigma_lower=config.lsigma,
-                               sigma_upper=config.hsigma)
+                               niter=config["niter"], sigma_lower=config["lsigma"],
+                               sigma_upper=config["hsigma"])
                 fit1d.image = np.asarray(outcoords)
             except ValueError:
                 log.warning("Line-matching failed")
@@ -626,14 +665,14 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             # fit but also that it fits some reasonable number of lines
             wmin, wmax = sorted(fit1d.evaluate(points=(0, len_data)))
             nfittable_lines = np.sum(np.logical_and(arc_lines > wmin, arc_lines < wmax))
-            min_matches_required = max(config.order + min(nfittable_lines // 2, 3), 2)
+            min_matches_required = max(config["order"] + min(nfittable_lines // 2, 3), 2)
 
             # Trial and error suggests this criterion works well
-            if fit1d.rms < 0.8 / config.order * fwidth * abs(dw) and nmatched >= min_matches_required:
+            if fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and nmatched >= min_matches_required:
                 return fit1d, True
 
             # This seems to be a reasonably ranking for poor models
-            score = fit1d.rms / max(nmatched - config.order - 1, np.finfo(float).eps)
+            score = fit1d.rms / max(nmatched - config["order"] - 1, np.finfo(float).eps)
             if score < best_score:
                 best_score = score
     return initial_model_fit, False
@@ -641,13 +680,13 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                           order=3, min_lines_per_fit=15, k=1,
-                          arc_weights=None, dcenwave=10, debug=False):
+                          arc_weights=None, dcenwave=10):
     """
     This function performs fits in multiple regions of the 1D arc spectrum.
     Given a starting location, a suitable fitting region is "grown" outwards
     until it has at least the specified number of both input and output
     coordinates to fit. A fit (usually linear, but quadratic if more than
-    half the arra yis being used and the final fit is order >= 2) is made
+    half the array is being used and the final fit is order >= 2) is made
     to this region and coordinate matches are found. The matches at the
     extreme ends are then used as the starts of subsequent fits, moving
     outwards until the edges of the data are reached.
@@ -672,8 +711,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         maximum number of arc lines to match each peak
     arc_weights : array-like/None
         weights of output coordinates
-    debug : bool
-        output additional debugging material?
 
     Returns
     -------
@@ -687,6 +724,12 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     match_radius = 2 * abs(dw_start)
     dc0 = dcenwave
     fits_to_do = [(pixel_start, wave_start, dw_start)]
+    # DB: Calculate a bound for the c2 component of the fitting function. If
+    # the spectral range is less than ~200 nm, it needs to be smaller than the
+    # default of 20 or nondeterministic behavior can occur in wavecal (e.g.,
+    # non-monotonic assignment of wavelengths to lines sometimes, etc.).
+    spect_range = (len_data - 1) * abs(dw_start)
+    c2_bound = 20 if spect_range > 200. else spect_range / 10.
     while fits_to_do:
         p0, c0, dw = fits_to_do.pop()
         if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
@@ -708,7 +751,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         if p1 > 0.25 * len_data and order >= 2:
             m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
-            m_init.c2.bounds = (-20, 20)
+            m_init.c2.bounds = (-c2_bound, c2_bound)
         else:
             m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
@@ -730,11 +773,9 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                 if p0 - p1 <= p <= p0 + p1:
                     # automatically removes old (bad) match
                     matches[i] = m
-                    #log.debug("    in={:10.4f}  ref={:10.4f}".format(p, arc_lines[m]))
         try:
             p_lo = peaks[matches > -1].min()
         except ValueError:
-            #log.debug("No matches at all")
             pass
         else:
             if p_lo < p0 <= pixel_start:
@@ -995,4 +1036,3 @@ def save_fit_as_pdf(data, peaks, arc_lines, filename):
     plt.savefig(filename.replace('.fits', '.pdf'), bbox_inches='tight', dpi=600)
     plt.close()  # KL: otherwise the plot can pop up in subsequent plt.show()
     plt.ion()
-

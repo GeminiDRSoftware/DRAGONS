@@ -836,8 +836,8 @@ class Preprocess(PrimitivesBASE):
                 rectified = False
 
             if rectified:
-                log.stdinfo(f"{ad.filename}: applying slit rectification model "
-                            f"from the flat {flat.filename}")
+                log.stdinfo(f"{ad.filename}: adding slit rectification model "
+                            f"derived from {flat.filename} to WCS")
                 for ext in ad:
                     ext.wcs.insert_frame(ext.wcs.input_frame, rect_model,
                                          cf.Frame2D(name='rectified'))

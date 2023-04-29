@@ -330,12 +330,10 @@ class GNIRSSpect(Spect, GNIRS):
                 elif resolution < 1000:
                     linelist = 'sky_L_band_very_low_res.dat'
 
-            elif is_lowres:
-                linelist = 'sky.dat'
             else:
                 linelist = 'nearIRsky.dat'
 
-        self.log.stdinfo(f"Using linelist {linelist}")
+        self.log.debug(f"Using linelist '{linelist}'")
         filename = os.path.join(lookup_dir, linelist)
 
         return wavecal.LineList(filename)

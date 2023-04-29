@@ -80,7 +80,7 @@ class Aperture:
             self.aper_upper = 0.5 * value
             self.aper_lower = -self.aper_upper
         else:
-            raise ValueError("Width must be positive ()".format(value))
+            raise ValueError("Width must be positive {}".format(value))
 
     @property
     def center(self):

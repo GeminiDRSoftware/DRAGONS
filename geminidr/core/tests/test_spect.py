@@ -338,6 +338,97 @@ def test_sky_correct_from_slit_with_multiple_sources():
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize('in_shift', [0, -1.2, 2.75])
+def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
+                                            path_to_inputs):
+    with change_working_dir(path_to_inputs):
+        ad = astrodata.open('N20220706S0337_wavelengthSolutionAttached.fits')
+
+    p = GNIRSLongslit([ad])
+    ad_out = p.adjustWavelengthZeroPoint(shift=in_shift).pop()
+    transform = ad_out[0].wcs.get_transform('pixels',
+                                            'wavelength_scale_adjusted')
+    shift = getattr(transform, 'offset_1')
+    assert shift == pytest.approx(in_shift)
+
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize('in_shift', [-16, 7.7])
+def test_adjust_wavelength_zero_point_overlarge_shift(in_shift,
+                                                      change_working_dir,
+                                                      path_to_inputs):
+    with change_working_dir(path_to_inputs):
+        ad = astrodata.open('N20220706S0337_wavelengthSolutionAttached.fits')
+
+    p = GNIRSLongslit([ad])
+    with pytest.raises(ValueError):
+        p.adjustWavelengthZeroPoint(shift=in_shift).pop()
+
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+@pytest.mark.parametrize('filename,instrument',
+                         [('N20220706S0337', 'GNIRS'),
+                          ('N20110331S0400', 'GNIRS'),
+                          ('N20150511S0123', 'GNIRS'),
+                          ('N20220718S0140', 'GNIRS'),
+                          ('N20130827S0128', 'GNIRS'),
+                          ('S20140610S0077', 'F2'),
+                          ('S20210430S0138', 'F2'),
+                          ('S20150629S0230', 'F2'),
+                          ('S20210709S0035', 'F2'),
+                          ('S20170215S0111', 'F2'),
+                          ('S20180125S0028', 'F2'),
+                          ('N20050918S0135', 'NIRI'),
+                          ('N20050627S0040', 'NIRI'),
+                          ('N20070615S0118', 'NIRI'),
+                          ('N20061114S0193', 'NIRI'),
+                          ])
+def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
+                                                 change_working_dir,
+                                                 path_to_inputs):
+    # Dictionary of shift values (in pixels) for each file.
+    results = {'N20220706S0337': -0.0119375, # GNIRS 111/mm 0.10" LongBlue
+               'N20110331S0400': 0.1669375,  # GNIRS 111/mm 0.30" ShortBlue
+               'N20150511S0123': -0.0273750, # GNIRS 32/mm  0.45" ShortBlue
+               'N20220718S0140': 2.083875,   # GNIRS 32/mm  0.10" LongBlue
+               'N20130827S0128': -3.2903125, # GNIRS 10/mm  0.10" LongBlue
+               'S20140610S0077': -1.755625,  # F2    R3K 1pix-slit f/16
+               'S20210430S0138': 0.2556250,  # F2    R3K 2pix-slit f/16
+               'S20150629S0230': 0.3927500,  # F2    JH  3pix-slit f/16
+               'S20210709S0035': 0.3030625,  # F2    JH  4pix-slit f/16
+               'S20170215S0111': 0.0551250,  # F2    HK  6pix-slit f/16
+               'S20180125S0028': -0.046375,  # F2    JH  8pix-slit f/16
+               'N20050918S0135': 0.6130625,  # NIRI  Hgrism f6-6pix
+               'N20050627S0040': -0.059625,  # NIRI  Hgrism f6-6pix
+               'N20070615S0118': -0.029875,  # NIRI  Jgrism f6-6pix
+               'N20061114S0193': 0.1915000,  # NIRI  Kgrism f6-2pix
+               }
+
+    classes_dict = {'GNIRS': GNIRSLongslit,
+                    'F2': F2Longslit,
+                    'NIRI': NIRILongslit}
+
+    # In some files the aperture lies (at least partly) in the cental column/row
+    centers = {'N20130827S0128': 800,
+               'N20220718S0140': 300,
+               'S20140610S0077': 600}
+    try:
+        center = centers[filename]
+    except KeyError:
+        center = None
+
+    with change_working_dir(path_to_inputs):
+        ad = astrodata.open(filename + '_wavelengthSolutionAttached.fits')
+
+    p = classes_dict[instrument]([ad])
+    ad_out = p.adjustWavelengthZeroPoint(center=center, shift=None).pop()
+    transform = ad_out[0].wcs.get_transform('pixels',
+                                             'wavelength_scale_adjusted')
+    param = 'offset_0' if instrument == 'NIRI' else 'offset_1'
+    shift = getattr(transform, param)
+
+    assert shift == pytest.approx(results[filename])
+
 
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename,instrument',
