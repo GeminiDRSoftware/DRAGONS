@@ -1368,7 +1368,11 @@ class Spect(Resample):
             Suffix to be added to output files.
         spectral_order : int, Default : 3
             Fitting order in the spectral direction (minimum of 1).
-        debug : bool, Default: False
+        edges1, edges2 : list
+            List (of matching length) of the pixel locations of the edges of
+            illuminated regions in the image. `edges1` should be all the top or
+            left edges, `edges2` the bottom or right edges.
+        debug_plots : bool, Default: False
             Generate plots of several aspects of the fitting process.
 
         Returns
@@ -1383,7 +1387,7 @@ class Spect(Resample):
         sfx = params["suffix"]
 
         # Parse parameters
-        debug = params['debug']
+        debug = params['debug_plots']
         spectral_order = params['spectral_order']
         edges1 = params['edges1']
         edges2 = params['edges2']
@@ -1393,8 +1397,8 @@ class Spect(Resample):
             edges2 = [edges2]
 
         # How far from the edge of the detector an edge must be to be traced.
-        # I.e., peaks within this many pixels of the detector edge likely won't
-        # be able to be traced.
+        # Peaks within this many pixels of the detector edge likely won't be
+        # able to be traced, based on testing.
         buffer = 8
 
         fit1d_params = fit_1D.translate_params({"function": "chebyshev",
@@ -3177,6 +3181,8 @@ class Spect(Resample):
             Spectra with unilluminated regions.
         suffix : str
             Suffix to append to the filename.
+        debug_plots : bool, Default: False
+            Create a plot of the mask created.
 
         Returns
         -------
@@ -3190,7 +3196,7 @@ class Spect(Resample):
         sfx = params["suffix"]
 
         # Parse parameters
-        debug = params['debug']
+        debug = params['debug_plots']
 
         for ad in adinputs:
             log.stdinfo(f"Masking unilluminated regions in {ad.filename}")

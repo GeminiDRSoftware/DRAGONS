@@ -134,8 +134,8 @@ class determineSlitEdgesConfig(config.Config):
     edges2 = config.ListField("List of right edges of illuminated region(s)",
                               float, default=None, minLength=1,
                               optional=True, single=True)
-    debug = config.Field("Plot fits of edges and print extra information?",
-                         bool, False)
+    debug_plots = config.Field("Plot fits of edges and print extra information",
+                               bool, False)
 
 
 class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
@@ -448,8 +448,8 @@ class linearizeSpectraConfig(config.Config):
 
 class maskBeyondSlitConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit", optional=True)
-    debug = config.Field("Plot the mask created.",
-                         bool, False)
+    debug_plots = config.Field("Plot the mask created.",
+                               bool, False)
 
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
