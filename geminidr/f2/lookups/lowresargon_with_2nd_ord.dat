@@ -11,7 +11,8 @@
 #
 # Created by P. Ingraham Apr 06/2005
 #
-# 2nd order lines derived by multiplying the 1st order line wvls by an empirical coeff = 1.953
+# The 2nd order lines were derived by multiplying the 1st order line wavelengths
+# by an empirical coefficient = 1.953
 #
 8115.3110
 8264.5230

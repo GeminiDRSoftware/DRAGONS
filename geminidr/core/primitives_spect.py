@@ -4609,7 +4609,7 @@ class Spect(Resample):
                 return atran_filename
             else:
                 # If default list was not found, make one.
-                print(f"the list doesn't exist, make atran linelist")
+                self.log.stdinfo(f"Generating a linelist from ATRAN synthetic spectrum")
                 self._make_atran_linelist(ext, filename=atran_filename, config=config,
                                           nlines=config.debug_num_atran_lines)
         print(f"atran_filename={atran_filename}")
