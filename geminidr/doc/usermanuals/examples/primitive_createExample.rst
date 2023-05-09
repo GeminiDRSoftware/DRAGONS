@@ -15,6 +15,9 @@ Implementations
 (REMOVE this text in real doc: The Implementations section contains all the
 implementations sharing the name of this primitive.)
 
+* :ref:`primitive_createExample_core.blah`
+* :ref:`primitive_createExample_instrument.instrument_blah`
+
 .. _primitive_createExample_core.blah:
 Generic Implementation - core.primitive_blah module
 ===================================================
@@ -33,14 +36,14 @@ that the one we want here.  If there isn't, just skip.)
 ..    to use "---" as the section indicators at this level to match what we
 ..    already use in the docstrings.)
 
-.. include:: examples/generated-example/geminidr.core.primitives_example.Image.createExample_docstring.rst
+.. include:: generated-example/geminidr.core.primitives_ccd.CCD.subtractOverscan_docstring.rst
 
 .. generated with `utility_scripts/generate_primdoc.py`
 ..    contains:
 ..      Parameter defaults from pex.config system
 ..      showpars-like format
 
-.. include:: primitives/generated-example/geminidr.core.primitives_example.Image.createExample_param.rst
+.. include:: generated-example/geminidr.core.primitives_ccd.CCD.subtractOverscan_param.rst
 
 Algorithm
 ---------
@@ -54,9 +57,11 @@ This section is optional but recommended.  The author write in here any
 relevant information about known issues and limitations.  Free
 form.  Use screenshots and diagram when useful.
 
+----
+
 .. _primitive_createExample_instrument.instrument_blah:
 <Instrument> <Mode> Implementation - instrument.primitives_instrument_blah module
-=============================================================================
+=================================================================================
 .. example:  GMOS Longslit Implementation - gmos.primitives_gmos module
 
 (REMOVE this text in real doc: The description from the docstring for this
@@ -66,7 +71,7 @@ different, it might smarter to just include the `-param.rst` file to avoid
 unnecessary duplication and just refer to the appropriate implementation for
 the rest of the info.)
 
-.. include:: primitives/generated-example/geminidr.gmos.primitives_example.GMOSImage.createExample-param.rst
+.. include:: generated-example/geminidr.gmos.primitives_gmos.GMOS.subtractOverscan_param.rst
 
 Algorithm
 ---------
@@ -78,5 +83,3 @@ Issues and Limitations
 Optional, okay to refer to the section from another implementation to avoid
 unnecessary duplication.
 
-
-.. use the subtractOverscan primitive.

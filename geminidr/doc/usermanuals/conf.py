@@ -18,14 +18,14 @@
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Data Reduction User Reference'
-copyright = '2022, Association of Universities for Research in Astronomy'
+copyright = '2023, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The short X.Y version
 version = '3.1'
 
 # The full version, including alpha/beta/rc tags
-release = '3.1.0-dev'
+release = '3.1.1-dev'
 #rtdurl = 'v'+release
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'January 2022'
+today = 'May 2023'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 

@@ -190,7 +190,8 @@ def write_primitives_rst(primclass, destination):
             f.write(PARAMHEADER)
             for k, v in params.items():
                 if not k.startswith("debug"):
-                    f.write(f'{k:20s} {v!r:20s} {params.doc(k)}\n')
+                    formatted_doc = params.doc(k).replace('\n', '\n      ')
+                    f.write(f'   {k:20s} {v!r:20s} {formatted_doc}\n')
             f.close()
     return
 
@@ -229,7 +230,8 @@ def write_parameters_rst(paramclass, destination, module):
             f.write(PARAMHEADER)
             for k, v in params.items():
                 if not k.startswith("debug"):
-                    f.write(f'{k:20s} {v!r:20s} {params.doc(k)}\n')
+                    formatted_doc = params.doc(k).replace('\n', '\n      ')
+                    f.write(f'   {k:20s} {v!r:20s} {formatted_doc}\n')
             f.close()
     return
 
@@ -254,6 +256,7 @@ if __name__ == '__main__':
 
 
 
+
 ## KL Development Notes
 # Parameters classes.  I will need to do module name parsing to associate with
 # the primitive.
@@ -274,3 +277,6 @@ if __name__ == '__main__':
 #    For the parameters doc, I need to add only a parameter section to the doc when
 #    only the parameters or defaults are changed.  Eg. if everything else is as
 #    the generic, just different defaults, no point in repeating the docstring.
+
+# make testdoc
+# utility_scripts/generate_primdoc.py core gmos -d testdoc
