@@ -185,6 +185,15 @@ configurations::
       Add this line to the .bash_profile:
         export IMTOOLRC=~/.imtoolrc
 
+While not specific at all to DRAGONS, it is recommended to increase the
+Operating System limit on the number of opened files.  We have seen an increase
+in reports of the error "Too many open files."
+
+In your .bash_profile, add the following line to overcome that OS limitation::
+
+    ulimit -n 1024
+
+
 
 .. _test:
 
