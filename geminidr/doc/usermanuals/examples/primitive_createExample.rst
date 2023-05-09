@@ -19,6 +19,7 @@ implementations sharing the name of this primitive.)
 * :ref:`primitive_createExample_instrument.instrument_blah`
 
 .. _primitive_createExample_core.blah:
+
 Generic Implementation - core.primitive_blah module
 ===================================================
 (REMOVE this text in real doc: If there is an implementation in `core`,
@@ -60,6 +61,7 @@ form.  Use screenshots and diagram when useful.
 ----
 
 .. _primitive_createExample_instrument.instrument_blah:
+
 <Instrument> <Mode> Implementation - instrument.primitives_instrument_blah module
 =================================================================================
 .. example:  GMOS Longslit Implementation - gmos.primitives_gmos module

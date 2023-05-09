@@ -9,6 +9,9 @@ that can then be ".. include"d into the primitive main .rst file.
 
 For this to work, the separators in the main sphinx document must be
 followed exactly because the generated files use that convention.
+
+Usage:
+  generate_primdoc -d primitives/generated-doc
 """
 
 import sys

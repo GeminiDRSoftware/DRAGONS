@@ -10,7 +10,7 @@ DRAGONS Data Reduction User Reference
    :maxdepth: 2
    :caption: Contents:
 
-
+   primitives/primitives_index
 
 Indices and tables
 ==================
