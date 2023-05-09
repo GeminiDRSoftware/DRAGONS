@@ -85,7 +85,7 @@ class Resample(PrimitivesBASE):
                                  "list of shifts or a filename.")
             else:
                 try:
-                    shifts = [tuple(float(x) for x in line.strip().split(' '))
+                    shifts = [tuple(float(x) for x in line.strip().split())
                               for line in f.readlines()]
                 except (TypeError, ValueError):
                     raise ValueError(f"Cannot parse shifts from file {shifts_param}")

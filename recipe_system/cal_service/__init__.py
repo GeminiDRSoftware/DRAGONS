@@ -4,6 +4,7 @@
 #                                                                    cal_service
 # ------------------------------------------------------------------------------
 from os import path
+import shlex
 import warnings
 from importlib import import_module
 
@@ -149,7 +150,7 @@ def parse_databases(default_dbname="cal_manager.db"):
     for line in databases.splitlines():
         if not line:  # handle blank lines
             continue
-        db, *flags = line.split()
+        db, *flags = shlex.split(line)
         # "get" is default if there are no flags, but if any flags are
         # specified, then "get" must be there explicitly
         kwargs = {"get_cal": not bool(flags),

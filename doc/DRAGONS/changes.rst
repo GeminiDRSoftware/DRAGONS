@@ -6,6 +6,23 @@
 Change Logs
 ***********
 
+3.1.1
+=====
+
+Improvements
+------------
+
+**geminidr.core**
+
+* Allow input files to ``shiftImages`` to recognize tabs or multiple
+  whitespaces as the delimiter
+
+**recipe_system.cal_service**
+
+* Whitespace now allowed in directory paths (if quoted), e.g.,
+  ``databases = "~/.my dragons/dragons.db"``
+
+
 3.1.0
 =====
 
