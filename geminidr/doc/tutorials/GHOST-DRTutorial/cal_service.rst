@@ -33,7 +33,7 @@ follow:
 
     [calibs]
     standalone = True
-    database_dir = ${path_to_my_data}/ghost_tutorial/playground
+    database_dir = <path_to_my_data>/ghost_tutorial/playground
 
 The ``[calibs]`` section tells the system where to put the calibration database.
 The database file name is ``cal_manager.db``.  In
