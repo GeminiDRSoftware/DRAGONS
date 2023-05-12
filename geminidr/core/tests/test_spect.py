@@ -39,6 +39,7 @@ from scipy import optimize
 from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata, gemini_instruments
+from astrodata.testing import ad_compare
 from gempy.library import astromodels as am
 from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
@@ -545,6 +546,38 @@ def test_determine_slit_edges(filename, instrument, change_working_dir,
             setattr(m_ref, param, results_dict[filename][param][i])
         x = np.arange(*m.domain)
         np.testing.assert_allclose(m(x), m_ref(x), atol=1.)
+
+
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize('in_file,instrument',
+                         [# GNIRS 111/mm LongBlue, off right edge of detector
+                          ('N20121118S0375', 'GNIRS'),
+                          # GNIRS 10/mm LongRed, one-off slit length shorter
+                          ('N20110718S0129', 'GNIRS'),
+                          # F2 1pix-slit, HK, off left edge of detector
+                          ('S20140728S0282', 'F2'),
+                          # F2 2pix-slit, R3K. Efficiency drops to zero in middle
+                          ('S20140111S0155', 'F2'),
+                          # NIRI f/6 4pix "blue" slit
+                          ('N20081223S0263', 'NIRI'),
+                          # NIRI f/32 10pix slit, which is also the f/6 2pix slit
+                          ('N20090925S0312', 'NIRI'),
+                          ])
+def test_mask_beyond_slit(in_file, instrument, change_working_dir,
+                          path_to_inputs, path_to_refs):
+
+    classes_dict = {'GNIRS': GNIRSLongslit,
+                    'F2': F2Longslit,
+                    'NIRI': NIRILongslit}
+
+    ad = astrodata.open(os.path.join(path_to_inputs,
+                                     in_file + '_slitEdgesDetermined.fits'))
+    p = classes_dict[instrument]([ad])
+    ad_out = p.maskBeyondSlit().pop()
+    ref = astrodata.open(os.path.join(path_to_refs,
+                                      in_file + '_maskedBeyondSlit.fits'))
+    assert ad_compare(ad_out, ref)
+
 
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename,instrument',
