@@ -75,21 +75,20 @@ class F2Longslit(F2Spect):
 
         for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
 
-            # F2 doesn't have actual mask defintiion files, so this won't add
-            # anyything, but it will check if the file already has an MDF table
+            # F2 doesn't have actual mask definition files, so this won't add
+            # anything, but it will check if the file already has an MDF table.
             self._addMDF(ad, suffix, mdf)
 
             if hasattr(ad, 'MDF'):
                 continue
             else:
-                log.stdinfo(f"Creating MDF table for F2 file {ad.filename}.")
-
                 maskname = ad.focal_plane_mask(pretty=True).split('-')[0]
 
                 mdf_table = Table(np.array(f2_slit_info[maskname]),
                                   names=('x_ccd', 'slitlength_arcsec',
                                          'slitlength_pixels'))
                 ad.MDF = mdf_table
+                log.stdinfo(f"Adding mask definition information for {ad.filename}")
 
         return adinputs
 
