@@ -80,8 +80,9 @@ class GNIRSSpect(Spect, GNIRS):
         (1-indexed) position of the lines that were matched to the catalogue,
         and the `wavelengths` column contains the matched wavelengths.
 
-        This GNIRS-specific primitive sets the default order in case it's None.
-        It then calls the generic version of the primitive.
+        This GNIRS-specific primitive sets debug_min_lines, order and min_snr
+        values depending on the observing mode, as the default value for these
+        parameters is None. It then calls the generic version of the primitive.
 
         Parameters
         ----------
@@ -152,6 +153,8 @@ class GNIRSSpect(Spect, GNIRS):
         :class:`~gempy.library.matching.KDTreeFitter`,
         """
         for ad in adinputs:
+            min_snr_isNone = True if params["min_snr"] is None else False
+            order_isNone = True if params["order"] is None else False
             disp = ad.disperser(pretty=True)
             filt = ad.filter_name(pretty=True)
             cam = ad.camera(pretty=True)
@@ -161,7 +164,6 @@ class GNIRSSpect(Spect, GNIRS):
             if 'ARC' in ad.tags:
                 if params["min_snr"] is None:
                     params["min_snr"] = 20
-                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
                 if params["debug_min_lines"] is None:
                     params["debug_min_lines"] = 100000
 
@@ -174,9 +176,11 @@ class GNIRSSpect(Spect, GNIRS):
                             params["order"] = 1
                     else:
                         params["order"] = 3
-                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
 
             elif params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
+                # The case of wavecal from absorption, or wavecal from telluric
+                # emission in L- and M-bands, both done using ATRAN lines
+
                 # sigma=2 works better with ATRAN line lists
                 params["lsigma"] = 2
                 params["hsigma"] = 2
@@ -188,11 +192,12 @@ class GNIRSSpect(Spect, GNIRS):
                     # Telluric absorption case
                     if params["order"] is None:
                         params["order"] = 1
-                        self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
 
                     if params["min_snr"] is None:
                         params["min_snr"] = 1
-                        self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+
+                    if params["debug_num_atran_lines"] is None:
+                        params["debug_num_atran_lines"] = 50
 
                     if params["center"] is None:
                         try:
@@ -202,22 +207,49 @@ class GNIRSSpect(Spect, GNIRS):
                             log.error("Could not find aperture locations in "
                                         f"{ad.filename} - continuing")
                             continue
-                        self.log.stdinfo(f'Extracting spectrum from columns '
-                                    f'[{int(params["center"] - params["nsum"] * 0.5)}:'
-                                         f'{int(params["center"] + params["nsum"] * 0.5)}]')
+
                 else:
                     # Telluric emission in L and M-bands
                     if params["order"] is None:
                         params["order"] = 3
-                        self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
+
                     if params["min_snr"] is None:
-                        if ad.camera(pretty=True).startswith('Long') and \
-                                ad.disperser(pretty=True).startswith('111') and \
-                                3.50 <= cenwave <= 4.10:
+                        if filt.startswith('L'):
+                            # Use a lower min_snr for the regions with large illumination gradient,
+                            # and for the region of "comb"-like lines beyond 3.8 um
+                            if (disp.startswith('111') and 3.50 <= cenwave) or \
+                                    (((disp.startswith('111') and cam.startswith('Short')) or
+                                    (disp.startswith('32') and cam.startswith('Long')))
+                                    and 3.80 <= cenwave):
                                 params["min_snr"] = 1
                         else:
                             params["min_snr"] = 10
-                        self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+
+                    if params["debug_num_atran_lines"] is None:
+                        if filt.startswith('M'):
+                            params["debug_num_atran_lines"] = 150
+                        elif filt.startswith('L'):
+                            params["debug_num_atran_lines"] = 100
+                            if ((disp.startswith('111') and cam.startswith('Short')) or
+                                (disp.startswith('32') and cam.startswith('Long'))) and \
+                                    3.80 <= cenwave:
+                                params["debug_num_atran_lines"] = 300
+            else:
+                # OH emission
+                if params["min_snr"] is None:
+                    params["min_snr"] = 10
+                if params["order"] is None:
+                    params["order"] = 3
+                if params["debug_min_lines"] is None:
+                    params["debug_min_lines"] = 15
+                if params["debug_num_atran_lines"] is None:
+                    params["debug_num_atran_lines"] = 50
+
+            if min_snr_isNone:
+                self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+            if order_isNone:
+                self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
+
         adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
 

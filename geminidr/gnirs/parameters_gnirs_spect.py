@@ -25,6 +25,8 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), None,
                                    check=list_of_ints_check, optional=True)
+    debug_num_atran_lines = config.RangeField("Number of lines in ATRAN line list", int, None,
+                                              min=10, max=300, inclusiveMax=True, optional=True)
     def setDefaults(self):
         self.in_vacuo = True
 
