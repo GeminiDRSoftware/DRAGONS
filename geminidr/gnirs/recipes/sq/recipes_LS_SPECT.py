@@ -47,20 +47,18 @@ def  makeWavecalFromSkyEmission(p):
       * raw science - no other calibrations required.
     """
 
-    # Added a temporary workaround for improving distortion model in the frames with
-    # large unilluminated areas by using SLITEDGE table from the processed flat
-    # for masking the regions beyond the slit into which some lines may be traced.
+    # Added p.flatCorrect with a new parameter "rectify" set to "False" as a temporary
+    # workaround for improving distortion model in the frames with
+    # large unilluminated areas by masking the regions beyond the slit into which
+    # some lines may be traced.
 
-    #p.selectFromInputs(tags="FLAT", outstream="flat") # temporary workaround
-    #p.removeFromInputs(tags="FLAT") # temporary workaround
     p.prepare()
     p.addDQ()
     p.addVAR(read_noise=True)
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
+    p.flatCorrect(rectify=False) # temporary workaround
     p.stackFrames()
-    #p.transferAttribute(stream="main", source="flat", attribute="SLITEDGE") # temporary workaround
-    #p.maskBeyondSlit() # temporary workaround
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
     p.determineDistortion(debug=True)
