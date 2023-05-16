@@ -2,8 +2,9 @@
 
 .. _primitives_index:
 
+********************
 Primitives Reference
-====================
+********************
 
 .. toctree::
    :maxdepth: 1
