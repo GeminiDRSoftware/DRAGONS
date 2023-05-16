@@ -22,6 +22,13 @@ Improvements
 * Whitespace now allowed in directory paths (if quoted), e.g.,
   ``databases = "~/.my dragons/dragons.db"``
 
+Bug Fixes
+---------
+
+**geminidr.gmos**
+
+* Fix the QE model selection for the GMOS-S EEV CDDs.
+
 
 3.1.0
 =====
