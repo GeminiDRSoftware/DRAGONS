@@ -27,6 +27,11 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
                                    check=list_of_ints_check, optional=True)
     debug_num_atran_lines = config.RangeField("Number of lines in ATRAN line list", int, None,
                                               min=10, max=300, inclusiveMax=True, optional=True)
+    debug_combiner = config.ChoiceField("Combine method to use in 1D spectrum extraction", str,
+                                   allowed={"mean": "mean",
+                                            "median": "median",
+                                            "none" : "auto-select depending on the mode"},
+                                   default="none")
     def setDefaults(self):
         self.in_vacuo = True
 

@@ -1944,6 +1944,10 @@ class Spect(Resample):
             Resolution of the observation (as l/dl), to which ATRAN spectrum should be
             convolved. If None, the default value for the instrument/mode is used.
 
+        debug_combiner: {"mean", "median"}
+            Method to use for combining rows/columns when extracting 1D-spectrum.
+            Default: "mean".
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -4605,14 +4609,12 @@ class Spect(Resample):
             if self.refplot_tempfile and os.path.exists(atran_filename):
                 # If tempfile exists, it means that the line list has been previously
                 #  generated and was saved to the working directory, look there.
-                print(f"reading pre-generated atran list")
                 return atran_filename
             else:
                 # If default list was not found, make one.
                 self.log.stdinfo(f"Generating a linelist from ATRAN synthetic spectrum")
                 self._make_atran_linelist(ext, filename=atran_filename, config=config,
                                           nlines=config.debug_num_atran_lines)
-        print(f"atran_filename={atran_filename}")
         return atran_filename
 
     def _make_atran_linelist(self, ext, filename, config, nlines=50):
@@ -4638,11 +4640,8 @@ class Spect(Resample):
             self._get_atran_model_params(ext, user_wv_band=wv_band, user_resolution=user_res)
 
         inverse_atran_spec = 1 - atran_spec[:,1]
-        print(f"resolution={resolution}")
         fwhm = (self._get_actual_cenwave(ext, asNanometers=True) / resolution) * (1 / sampling)
-        print(f"fwhm = {fwhm}")
         peaks, properties = find_peaks(inverse_atran_spec, prominence=0.001, width=(None,5*fwhm))
-        print(f"peaks={peaks}")
         weights = preprocessing.normalize((properties["prominences"] / properties["widths"]**2).reshape(1, -1))
         peaks_with_weights = np.vstack([peaks,weights]).T
 
@@ -4710,20 +4709,18 @@ class Spect(Resample):
         if config.absorption:
             atran_linelist[:,1] = 1 - atran_linelist[:,1]
 
-        np.savetxt(filename, atran_linelist[:,0], fmt=['%.3f'], header =
-        #np.savetxt(filename, atran_linelist[:,[0,2]], fmt=['%.3f','%.7f'], header =
-            f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm   \n"
+        header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm   \n"
             "Generated from ATRAN synthetic spectrum (Lord, S. D., 1992, NASA Technical Memorandum 103957) \n"
-            " Model parameters: \n"
-            f" Obs altitude:{alt:.0f}, Obs latitude: 39 degrees,\n"
-            f" Water vapor overburden: {wv_content*1000:.0f} mm, Number of atm. layers: 2,\n"
-            f" Zenith angle: 48 deg, Wavelength range: 1.0 - 6.0 microns, Smoothing R:0 \n"
+            "Model parameters: \n"
+            f"Obs altitude: {alt}, Obs latitude: 39 degrees,\n"
+            f"Water vapor overburden: {wv_content*1000:.0f} microns, Number of atm. layers: 2,\n"
+            "Zenith angle: 48 deg, Wavelength range: 1.0 - 6.0 microns, Smoothing R:0 \n"
             "units nanometer\n"
             "wavelengths IN VACUUM")
+        np.savetxt(filename, atran_linelist[:,0], fmt=['%.3f'], header = header)
 
         # Create data for reference plot using the convolved spectrum and the line
         # list generated here
-        print(f"make tempfile")
         self._make_refplot_data(ext=ext, refplot_spec=atran_spec,
                                 refplot_linelist=atran_linelist[:,[0,1]], config=config)
 
@@ -4748,7 +4745,6 @@ class Spect(Resample):
         atran_model_filename = os.path.join(path,
                     'atran_{}_850-6000nm_wv{:.0f}_za48_r0.dat'
                                             .format(site,wv_content*1000))
-        print(f"atran_model_filename={atran_model_filename}")
         # sampling of the ATRAN model spectra (nm)
         sampling = 0.01
         # Starting wavelength of the ATRAN spectrum (nm)
@@ -4797,7 +4793,6 @@ class Spect(Resample):
             # either supplied by the user, or that there was a default line list, so
             # we didn't have to generate a line list from an ATRAN model.
             # Create refplot data using the provided line list and a refplot spectrum.
-            print(f"no tempfile, make refplot, use linelist = {linelist}")
             return self._make_refplot_data(ext, refplot_linelist=linelist, config=config)
         else:
             # If the tempfile exists, read the pre-calculated data from it.
@@ -4856,7 +4851,6 @@ class Spect(Resample):
                 # Use ATRAN models for generating reference plots for wavecal from
                 # sky absorption in science spectrum, or from sky emission in L and M
                 if refplot_spec is None:
-                    print(f"making refplot")
                     refplot_spec, _ = self._get_convolved_atran(ext, config=config)
                 if refplot_y_axis_label is None:
                     if config.absorption:
@@ -4865,14 +4859,17 @@ class Spect(Resample):
                         refplot_y_axis_label = "Inverse atm. transmission"
                         refplot_spec[:,1] = 1 - refplot_spec[:,1]
                 if refplot_name is None:
-                    refplot_name = 'ATRAN spectrum (Alt.={}, WV={:.1f}mm, AM=1.5, R={:.0f})'\
+                    refplot_name = 'ATRAN spectrum (Alt={}, WV={:.1f}mm, AM=1.5, R={:.0f})'\
                         .format(alt,wv_content,resolution)
             else:
                 # In case of wavecal from the OH emission sky lines, we use
                 # a set of pre-calculated synthetic spectra for the reference plots
                 if refplot_spec is None:
                     path = list(oh_synthetic_spectra.__path__).pop()
-                    resolution = self._get_resolution(ext)
+                    if config.debug_resolution is None:
+                        resolution = round(self._get_resolution(ext),  -1)
+                    else:
+                        resolution = config.debug_resolution
                     if resolution >= 15000:
                         R = 20000
                     elif (7500 <= resolution < 15000):
@@ -4897,21 +4894,14 @@ class Spect(Resample):
                     new[center_col >= 64] = 0
                     ind = np.nonzero(new)
                     first_non_zero_index = ind[0][0]
-                    print(f"first_non_zero_index={first_non_zero_index}")
                     last_non_zero_index = ind[0][-1]
-                    print(f"last_non_zero_index={last_non_zero_index}")
                     # Number of illuminated pixels
                     npix = last_non_zero_index - first_non_zero_index
-                    print(f"npix={npix}")
                     spec_range = 2 * self._get_cenwave_accuracy(ext) +\
                                  abs(ext.dispersion(asNanometers=True)) * npix
-                    print(f"spec_range={spec_range}")
                     center_shift = (center - (npix//2 + first_non_zero_index)) * ext.dispersion(asNanometers=True)
-                    print(f"center_shift={center_shift}")
                     start_wvl = self._get_actual_cenwave(ext, asNanometers=True) - (0.5 * spec_range) - center_shift
-                    print(f"start_wvl={start_wvl}")
                     end_wvl = start_wvl + spec_range
-                    print(f"end_wvl={end_wvl}")
 
                     refplot_spec = refplot_spec[np.logical_and(refplot_spec[:,0] >= start_wvl,
                                                              refplot_spec[:,0] <= end_wvl)]
@@ -4921,21 +4911,17 @@ class Spect(Resample):
                         refplot_name = 'Synthetic spectrum of night-sky OH emission (R={:.0f})'.format(R)
 
         if isinstance(refplot_linelist, wavecal.LineList):
-            print(f"is LineList)")
             # If the linelist wasn't generated in this run, it has been supplied as
             # a LineList object. For the refplot use only line wavelengths, and determine
             # reference spectrum intensities at the positions of lines in the linelist
             # (this is needed to determine the line label positions).
             line_intens = []
             line_wvls = refplot_linelist.wavelengths(in_vacuo=True, units="nm")
-            print(f"line_wvls={line_wvls}")
-            print(f"refplot_spec={refplot_spec}")
             for n, line in enumerate(line_wvls):
                 subtracted = refplot_spec[:,0] - line
                 min_index = np.argmin(np.abs(subtracted))
                 line_intens.append(refplot_spec[min_index,1])
             refplot_linelist = np.array([line_wvls, line_intens]).T
-            print(f"refplot_linelist = {refplot_linelist}")
             refplot_linelist = refplot_linelist[np.logical_and(refplot_linelist[:,0] >= start_wvl,
                                                                refplot_linelist[:,0] <= end_wvl)]
 
@@ -4955,7 +4941,6 @@ class Spect(Resample):
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         npix = ext.shape[dispaxis]
         dcenwave = self._get_cenwave_accuracy(ext)
-
         if user_resolution is None:
             resolution = round(self._get_resolution(ext),  -1)
         else:
@@ -4970,7 +4955,6 @@ class Spect(Resample):
             raw_wv = ext.raw_wv()
         else:
             raw_wv = int(user_wv_band)
-        print(f"raw_wv={raw_wv}")
         req_wv = ext.requested_wv()
 
         if raw_wv == 100:
@@ -4986,7 +4970,6 @@ class Spect(Resample):
             self.log.stdinfo(f"Unknown RAWWV for this observation; \n"
                              f" using the constraint value for the requested WV band: '{req_wv}'-percentile")
             wv_content = qa_constraints.wvBands.get(observatory, {}).get(req_wv)
-        print(f"wv={wv_content}")
 
         if observatory == 'Gemini-North':
             site = 'mk'

@@ -26,7 +26,11 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         self.debug_min_lines = 100000
         self.debug_num_atran_lines = 50
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
-
+    debug_combiner = config.ChoiceField("Combine method to use in 1D spectrum extraction", str,
+                                   allowed={"mean": "mean",
+                                            "median": "median",
+                                            "none" : "auto-select depending on the mode"},
+                                   default="none")
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):
         self.scale_sky = False #MS: IF for whatever reason the exposure times are different between frames being subtracted, that case may require a special treatment

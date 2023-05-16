@@ -69,7 +69,8 @@ class NIRISpect(Spect, NIRI):
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
-        This NIRI-specific primitive sets the default order in case it's None.
+        This NIRI-specific primitive sets the default order in case it's None,
+        and row combining method.
         It then calls the generic version of the primitive.
 
         Parameters
@@ -129,6 +130,22 @@ class NIRISpect(Spect, NIRI):
         debug : bool
             Enable plots for debugging.
 
+        debug_num_atran_lines: int/None
+            Number of lines with largest weigths (within a wvl bin) to be used for
+            the generated ATRAN line list.
+
+        debug_wv_band: {'20', '50', '80', '100', 'None'}
+            Water vapour content (as percentile) to be used for ATRAN model
+            selection. If "None", then the value from the header is used.
+
+        debug_resolution: int/None
+            Resolution of the observation (as l/dl), to which ATRAN spectrum should be
+            convolved. If None, the default value for the instrument/mode is used.
+
+        debug_combiner: {"mean", "median", "none"}
+            Method to use for combining rows/columns when extracting 1D-spectrum.
+            Default: "mean".
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -137,6 +154,12 @@ class NIRISpect(Spect, NIRI):
 """
         for ad in adinputs:
             min_snr_isNone = True if params["min_snr"] is None else False
+
+            if params["debug_combiner"] == "none":
+                if ("ARC" not in ad.tags) and (params["absorption"] is False):
+                     params["debug_combiner"] = "median"
+                else:
+                    params["debug_combiner"] = "mean"
 
             if params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
                 params["lsigma"] = 2

@@ -80,9 +80,10 @@ class GNIRSSpect(Spect, GNIRS):
         (1-indexed) position of the lines that were matched to the catalogue,
         and the `wavelengths` column contains the matched wavelengths.
 
-        This GNIRS-specific primitive sets debug_min_lines, order and min_snr
-        values depending on the observing mode, as the default value for these
-        parameters is None. It then calls the generic version of the primitive.
+        This GNIRS-specific primitive sets debug_min_lines, order, min_snr,
+        debug_num_atran_lines and debug_combiner values depending on the
+        observing mode, as the default value for these parameters is None.
+        It then calls the generic version of the primitive.
 
         Parameters
         ----------
@@ -141,6 +142,22 @@ class GNIRSSpect(Spect, GNIRS):
         debug : bool
             Enable plots for debugging.
 
+        debug_num_atran_lines: int/None
+            Number of lines with largest weigths (within a wvl bin) to be used for
+            the generated ATRAN line list.
+
+        debug_wv_band: {'20', '50', '80', '100', 'None'}
+            Water vapour content (as percentile) to be used for ATRAN model
+            selection. If "None", then the value from the header is used.
+
+        debug_resolution: int/None
+            Resolution of the observation (as l/dl), to which ATRAN spectrum should be
+            convolved. If None, the default value for the instrument/mode is used.
+
+        debug_combiner: {"mean", "median", "none"}
+            Method to use for combining rows/columns when extracting 1D-spectrum.
+            Default: "mean".
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -185,9 +202,6 @@ class GNIRSSpect(Spect, GNIRS):
                 params["lsigma"] = 2
                 params["hsigma"] = 2
 
-                if params["debug_min_lines"] is None:
-                    params["debug_min_lines"] = 15
-
                 if params["absorption"]:
                     # Telluric absorption case
                     if params["order"] is None:
@@ -195,9 +209,6 @@ class GNIRSSpect(Spect, GNIRS):
 
                     if params["min_snr"] is None:
                         params["min_snr"] = 1
-
-                    if params["debug_num_atran_lines"] is None:
-                        params["debug_num_atran_lines"] = 50
 
                     if params["center"] is None:
                         try:
@@ -212,6 +223,9 @@ class GNIRSSpect(Spect, GNIRS):
                     # Telluric emission in L and M-bands
                     if params["order"] is None:
                         params["order"] = 3
+
+                    if params["center"] is None:
+                        params["center"] = 700
 
                     if params["min_snr"] is None:
                         if filt.startswith('L'):
@@ -234,17 +248,28 @@ class GNIRSSpect(Spect, GNIRS):
                                 (disp.startswith('32') and cam.startswith('Long'))) and \
                                     3.80 <= cenwave:
                                 params["debug_num_atran_lines"] = 300
+
+                    if params["debug_combiner"] == "none":
+                        # this is to reduce the impact of hot pixels
+                        if filt.startswith('L') and cenwave >= 3.8:
+                            params["debug_combiner"] = "median"
+                        else:
+                            params["debug_combiner"] = "mean"
             else:
                 # OH emission
                 if params["min_snr"] is None:
                     params["min_snr"] = 10
                 if params["order"] is None:
                     params["order"] = 3
-                if params["debug_min_lines"] is None:
-                    params["debug_min_lines"] = 15
-                if params["debug_num_atran_lines"] is None:
-                    params["debug_num_atran_lines"] = 50
+                if params["center"] is None:
+                    params["center"] = 700
 
+            if params["debug_min_lines"] is None:
+                params["debug_min_lines"] = 15
+            if params["debug_num_atran_lines"] is None:
+                params["debug_num_atran_lines"] = 50
+            if params["debug_combiner"] == "none":
+                params["debug_combiner"] = "mean"
             if min_snr_isNone:
                 self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
             if order_isNone:

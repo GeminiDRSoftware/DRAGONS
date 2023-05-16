@@ -452,7 +452,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0):
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
         data, mask, variance, extract_slice = tracing.average_along_slit(
-            ext, center=config.center, nsum=config.nsum)
+            ext, center=config.center, nsum=config.nsum, combiner=config.debug_combiner)
         log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                     format(direction, extract_slice.start + 1, extract_slice.stop))
         middle = 0.5 * (extract_slice.start + extract_slice.stop - 1)
