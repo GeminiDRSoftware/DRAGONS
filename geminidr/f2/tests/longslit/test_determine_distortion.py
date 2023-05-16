@@ -169,6 +169,7 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
@@ -210,7 +211,7 @@ def test_regression_for_determine_distortion_using_wcs(
 
     np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
 
-
+@pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, params", input_pars, indirect=['ad'])

@@ -212,7 +212,6 @@ class NIRISpect(Spect, NIRI):
         camera = ad.camera()
         disperser = ad.disperser(stripID=True)[0:6]
         fpmask = ad.focal_plane_mask(stripID=True)
-        print(f"resolution = {lookup.spec_wavelengths[camera, fpmask, disperser][2]}")
         return lookup.spec_wavelengths[camera, fpmask, disperser][2]
 
 
