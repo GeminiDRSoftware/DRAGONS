@@ -24,6 +24,8 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         self.order = 3
         self.in_vacuo = True
         self.debug_min_lines = 100000
+        self.debug_num_atran_lines = 50
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):
@@ -31,3 +33,7 @@ class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
         self.offset_sky = False
         self.mask_objects = False
         self.dilation = 0.
+
+class flatCorrectConfig(parameters_preprocess.flatCorrectConfig):
+    def setDefaults(self):
+        self.rectify = True

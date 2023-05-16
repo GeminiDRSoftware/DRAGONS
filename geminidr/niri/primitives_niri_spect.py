@@ -136,11 +136,23 @@ class NIRISpect(Spect, NIRI):
             each slice
 """
         for ad in adinputs:
+            min_snr_isNone = True if params["min_snr"] is None else False
+
             if params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
                 params["lsigma"] = 2
                 params["hsigma"] = 2
                 if params["min_snr"] is None:
-                    params["min_snr"] = 1
+                    if ad.filter_name(pretty=True).startswith('M'):
+                        params["min_snr"] = 10
+                    else:
+                        params["min_snr"] = 1
+            else:
+                if params["min_snr"] is None:
+                    params["min_snr"] = 20
+
+            if min_snr_isNone:
+                self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+
         adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
 
