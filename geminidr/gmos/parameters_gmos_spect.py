@@ -2,7 +2,7 @@
 # in the primitives_gmos_spect.py file, in alphabetical order.
 from astrodata import AstroData
 from gempy.library import config
-from geminidr.core import parameters_spect
+from geminidr.core import parameters_spect, parameters_preprocess
 from geminidr.core import parameters_generic
 
 
@@ -41,3 +41,7 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         self.order = 3
         self._fields["central_wavelength"].max = 1200
         del self.absorption
+
+class flatCorrectConfig(parameters_preprocess.flatCorrectConfig):
+    def setDefaults(self):
+        self.rectify = True
