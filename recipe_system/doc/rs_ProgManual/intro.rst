@@ -57,12 +57,3 @@ rather than a programmer's.
 Users and developers wishing to see more information about the Astrodata
 package, how to use the programmatic interfaces on such objects should consult the
 documents :ref:`listed above <related>`.
-
-
-
- >>> ad = astrodata.open(<fitsfile>)
- |  >>> dtags = set(list(ad.tags)[:])
- |  >>> instpkg = ad.instrument(generic=True).lower()
- |  >>> pm = PrimitiveMapper(dtags, instpkg)
- |  >>> pclass = pm.get_applicable_primitives()
- |  >>> pclass

@@ -29,7 +29,7 @@ class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
 
 class determineAstrometricSolutionConfig(parameters_register.determineAstrometricSolutionConfig):
     order = config.RangeField("Order of fitting polynomial",
-                              int, 3, min=1, max=10, inclusiveMax=True)
+                              int, 2, min=1, max=10, inclusiveMax=True)
     max_iters = config.RangeField("Maximum number of iterations for polynomial fit",
                                   int, 5, min=1, max=20, inclusiveMax=True)
     debug = config.Field("Produce plots and files to aid debugging?", bool, False)

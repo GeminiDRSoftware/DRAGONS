@@ -43,7 +43,7 @@ standard Python methods:
   their not-in-place versions, based on them.
 
 There are a few other methods. For a detailed discussion, please refer to the
-:doc:`api`.
+:ref:`api`.
 
 .. _tags_prop_entry:
 

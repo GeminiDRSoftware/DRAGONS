@@ -8,24 +8,30 @@ Introduction
 
 This tutorial covers the basics of reducing
 `Flamingos-2 <https://www.gemini.edu/sciops/instruments/flamingos2/>`_  data
-using `DRAGONS <https://dragons.readthedocs.io/>`_.
+using |DRAGONS|.
+
+The reduction can be done in two different ways:
+
+* From the terminal using the command line.
+* From Python using the DRAGONS classes and functions.
+
+We show how to run the same reduction using both methods.
+
+* :ref:`ontarget_example`
+* :ref:`ultradeep_example`
+
+More examples will be added in the future.
 
 The next two sections explain what are the required software and the data set
 that we use throughout the tutorial.
-:ref:`Chapter 2: Data Reduction <command_line_data_reduction>` contains a
-quick example on how to reduce data using the DRAGONS command line tools.
-:ref:`Chapter 3: Reduction with API <api_data_reduction>` shows how we can
-reduce the data using DRAGONS packages from within Python.
-
 
 .. _requirements:
 
 Software Requirements
 =====================
 
-Before you start, make sure you have `DRAGONS
-<https://dragons.readthedocs.io/>`_ properly installed and configured on your
-machine. You can test that by typing the following commands:
+Before you start, make sure you have |DRAGONS| properly installed and
+configured on your machine. You can test that by typing the following commands:
 
 .. code-block:: bash
 
@@ -48,59 +54,30 @@ Downloading the tutorial datasets
 =================================
 
 All the data needed to run this tutorial are found in the tutorial's data
-package:
+packages.  We have split the data packages per example to keep the size
+of each package within some reasonable limit.
 
-    `<http://www.gemini.edu/sciops/data/software/datapkgs/f2img_tutorial_datapkg-v1.tar>`_
+* Example 1: `f2im_tutorial_datapkg-ontarget-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/f2im_tutorial_datapkg-ontarget-v1.tar>`_
+* Example 2: `f2im_tutorial_datapkg-ultradeep-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/f2im_tutorial_datapkg-ultradeep-v1.tar>`_
 
-Download it and unpack it somewhere convenient.
+Download one or several packages and unpack them somewhere
+convenient.
 
 .. highlight:: bash
 
 ::
 
     cd <somewhere convenient>
-    tar xvf f2img_tutorial_datapkg-v1.tar
-    bunzip2 f2img_tutorial/playdata/*.bz2
+    tar xvf f2img_tutorial_datapkg-ontarget-v1.tar
+    tar xvf f2img_tutorial_datapkg-ultradeep-v1.tar
+    bunzip2 f2img_tutorial/playdata/example*/*.bz2
 
-The datasets are found in the subdirectory ``f2img_tutorial/playdata``, and we
+The datasets are found in the subdirectory ``f2img_tutorial/playdata/example#``, and we
 will work in the subdirectory named ``f2img_tutorial/playground``.
 
 .. note:: All the raw data can also be downloaded from the Gemini Observatory
           Archive. Using the tutorial data package is probably more convenient
           but if you really want to learn how to search for and retrieve the
-          data yourself, see the step-by-step instructions in the appendix,
-          :ref:`goadownload`.
+          data yourself, see the step-by-step instructions for Example 1 in
+          the appendix :ref:`goadownload`.
 
-
-.. _about_data_set:
-
-About the dataset
-=================
-
-Dither-on-target
-----------------
-This is a Flamingos-2 imaging observation of a star and distant galaxy field
-with dither on target for sky subtraction.
-
-The calibrations we use in this example include:
-
-* Darks for the science frames.
-* Flats, as a sequence of lamps-on and lamps-off exposures.
-* Short darks to use with the flats to create a bad pixel mask.
-
-The table below contains a summary of the files needed for this example:
-
-+---------------+---------------------+--------------------------------+
-| Science       || S20131121S0075-083 | Y-band, 120 s                  |
-+---------------+---------------------+--------------------------------+
-| Darks         || S20131121S0369-375 | 2 s, short darks for BPM       |
-|               +---------------------+--------------------------------+
-|               || S20131120S0115-120 | 120 s, for science data        |
-|               || S20131121S0010     |                                |
-|               || S20131122S0012     |                                |
-|               || S20131122S0438-439 |                                |
-+---------------+---------------------+--------------------------------+
-| Flats         || S20131129S0320-323 | 20 s, Lamp On, Y-band          |
-|               +---------------------+--------------------------------+
-|               || S20131126S1111-116 | 20 s, Lamp Off, Y-band         |
-+---------------+---------------------+--------------------------------+

@@ -89,6 +89,197 @@ class Spect(Resample):
         self._param_update(parameters_spect)
         self.refplot_tempfile = None
 
+    def adjustWavelengthZeroPoint(self, adinputs=None, **params):
+        """
+        Find sky lines and match them to a linelist in order to shift the
+        wavelength scale zero point slightly to account for flexure in the
+        telescope.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Wavelength calibrated 2D spectra.
+        suffix : str
+            Suffix to be added to output files
+        center : None or int
+            Central row/column for 1D extraction (None => use middle).
+        shift : float, Default : None
+            An optional shift to apply directly to the wavelength scale, in
+            pixels. If not given, the shift will be calculated from the sky
+            lines present in the image.
+        verbose : bool, Default : False
+            Print additional information on the fitting process.
+        """
+
+        def _add_shift_model_to_wcs(shift, dispaxis, ext):
+            """ Create a model to shift the wavelength scale by and add to WCS
+
+            This function creates a compound model of two Shift models in
+            parallel, with the one in the `dispaxis` direction getting the value
+            of `shift`. This allows the resulting compound model to applied to
+            a WCS without any special handling for different spectral axis
+            orientations.
+
+            Parameters
+            ----------
+            shift : float
+                The shift to apply, in pixels (will be converted to wavelength)
+            dispaxis : int, 0 or 1
+                The dispersion axis, in the Python sense
+            ext : Astrodata extension
+                The extension to apply the shift to.
+            """
+            dx, dy = 0, 0
+            if dispaxis == 0:
+                dy = shift
+            elif dispaxis == 1:
+                dx = shift
+            else:
+                raise ValueError("'dispaxis' must be 0 (vertical) or "
+                                 "1 (horizontal)")
+
+            # This should work for both orientations without having to code
+            # them separately.
+            model = models.Shift(dx) & models.Shift(dy)
+            model.name = 'FLEXCORR'
+            ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                 cf.Frame2D(name="wavelength_scale_adjusted"))
+
+        # Set up log
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        center = params["center"]
+        shift = params["shift"]
+        max_shift = params["debug_max_shift"]
+        verbose = params["verbose"]
+
+        # Check given shift, if there is one.
+        if shift and abs(shift) > max_shift:
+            raise ValueError("Provided shift is larger than parameter "
+                             f"'debug_max_shift': |{shift:.3g}| > "
+                             f"{max_shift:.3g}")
+
+        for ad in adinputs:
+            log.stdinfo(f"{ad.filename}:")
+
+            for ext in ad:
+                dispaxis = 2 - ext.dispersion_axis()  # Python sense
+                row_or_col = 'row' if dispaxis == 1 else 'column'
+
+                # If the user specifies a shift value, apply it and continue
+                # (case of shift == 0 caught and handled above)
+                if shift is not None:
+                    if shift == 0:
+                        msg = "    No wavelength shift from sky lines will be"\
+                              " performed since shift=0"
+                    else:
+                        msg = "    Shifted wavelength scale for extension "\
+                              f"{ext.id} by {shift:0.4g} pixels"
+                    _add_shift_model_to_wcs(shift, dispaxis, ext)
+                    log.stdinfo(msg)
+                    continue
+
+                # Otherwise, we'll need to automatically find the shift.
+                # Values (generally) taken from the defaults for
+                # determineWavelengthSolution, with some changes.
+                config_dict = {
+                        "order": 3,
+                        "niter": 3,
+                        "lsigma": 3.0,
+                        "hsigma": 3.0,
+                        "central_wavelength": None,
+                        "interactive": False,
+                        "center": center,
+                        "nsum": 10,
+                        "fwidth": None,
+                        "min_snr": 10,
+                        "min_sep": 2,
+                        "weighting": "local",
+                        "nbright": 0,
+                        "dispersion": None,
+                        "debug_min_lines": 15,
+                        "debug_alternative_centers": False,
+                    }
+
+                wave_scale = ext.wcs.output_frame.axes_names[0]
+                if wave_scale == 'WAVE':
+                    config_dict["in_vacuo"] = True
+                    log.fullinfo("Calibrated in vacuum.")
+                elif wave_scale == 'AWAV':
+                    log.fullinfo("Calibrated in air.")
+                    config_dict["in_vacuo"] = False
+                else:
+                    raise ValueError("Cannot interpret wavelength scale "
+                                     f"for {ext.filename}:{ext.id} "
+                                     f"(found '{wave_scale}'")
+
+                # get_all_input_data() outputs several lines of information
+                # which can be useful but confusing if many files are processed,
+                # so use the verbose parameter to allow users to control it.
+                # loglevel is the level at which the output should be logged,
+                # so higher levels (e.g. stdinfo) print more to the console.
+                loglevel = "stdinfo" if verbose else "fullinfo"
+                try:
+                    input_data = wavecal.get_all_input_data(
+                        ext, self, config_dict, linelist=None,
+                        bad_bits=DQ.not_signal, skylines=True,
+                        loglevel=loglevel)
+                except ValueError:
+                    raise ValueError("Something went wrong in finding sky "
+                                     "lines - check that the spectrum is being "
+                                     f"taken in a {row_or_col} free of the "
+                                     "object aperture, and change it with the "
+                                     "`center` parameter if necessary")
+
+                spectrum = input_data["spectrum"]
+                init_models = input_data["init_models"]
+                domain = init_models[0].meta["domain"]
+                peaks, weights = input_data["peaks"], input_data["weights"]
+                sky_lines = input_data["linelist"].wavelengths(
+                    in_vacuo=config_dict["in_vacuo"], units='nm')
+                sky_weights = input_data["linelist"].weights
+                if sky_weights is None:
+                    sky_weights = np.ones_like(sky_lines)
+                    log.debug("No weights were found for the reference linelist")
+
+                m_init = init_models[0]
+                # Fix all parameters in the model so that they don't change
+                # (only the Shift which will be added next).
+                for p in m_init.param_names:
+                    getattr(m_init, p).fixed = True
+
+                # Add a bounded Shift model in front of the wavelength solution
+                m_init = models.Shift(0, bounds={'offset': (-max_shift,
+                                                            max_shift)}) | m_init
+                m_init.meta["domain"] = domain
+
+                fwidth = input_data["fwidth"]
+                dw = np.diff(m_init(np.arange(spectrum.size))).mean()
+                kdsigma = fwidth * abs(dw)
+                k = 1 if kdsigma < 3 else 2
+
+                fit_it = KDTreeFitter(sigma=2 * abs(dw), maxsig=5,
+                                      k=k, method='Nelder-Mead')
+                m_final = fit_it(m_init, peaks, sky_lines,
+                                 in_weights=weights[config_dict["weighting"]],
+                                 ref_weights=sky_weights, matches=None,
+                                 options={'disp': True if verbose else False})
+
+                # Apply the shift to the wavelength scale
+                shift_final = m_final.offset_0.value
+                log.stdinfo(f"    Shifted wavelength scale for "
+                            f"extension {ext.id} by {shift_final:0.4g} "
+                            f"pixels ({shift_final * dw:0.4g} nm)")
+                _add_shift_model_to_wcs(shift_final, dispaxis, ext)
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
     def adjustWCSToReference(self, adinputs=None, **params):
         """
         Compute offsets along the slit by cross-correlation, or use offset
@@ -1229,10 +1420,11 @@ class Spect(Resample):
 
             # Get the expected slit center and length for long slit.
             if (edges1 is not None) and (edges2 is not None):
-                log.fullinfo('Using user-supplied edges.')
+                log.stdinfo('Using user-supplied edges.')
                 exp_edges_1, exp_edges_2 = edges1, edges2
             elif (edges1 is None) and (edges2 is None):
                 exp_edges_1, exp_edges_2 = self._get_slit_edge_estimates(ad)
+                log.debug('Estimating fit edges...')
             else:
                 log.warning("Both `edges1` and `edges2` parameters need to be "
                             "provided in order to use them. Using "
@@ -1392,7 +1584,7 @@ class Spect(Resample):
 
                 if not edge_pairs:
                     log.warning("No edges could be determined for "
-                                f"{ad.filename} - no SLITEDGE table wil be "
+                                f"{ad.filename} - no SLITEDGE table will be "
                                 "attached. Consider setting positions of "
                                 "edges manually using the `edges1` and "
                                 "`edges2` parameters.")
@@ -2586,7 +2778,7 @@ class Spect(Resample):
         log.fullinfo(f"  spatial_order: {y_order_in}")
         log.fullinfo(f"  bkgmodel: {bkgmodel}")
         log.fullinfo(f"  sigclip: {params['sigclip']}")
-        log.fullinfo(f"  sigfrac: {params['sigfrac']}\m")
+        log.fullinfo(f"  sigfrac: {params['sigfrac']}\n")
 
         for ad in adinputs:
             is_in_adu = ad[0].is_in_adu()

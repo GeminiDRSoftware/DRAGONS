@@ -28,6 +28,17 @@ def validate_regions_int(value, multiple=False):
     ranges = at.parse_user_regions(value, dtype=int, allow_step=True)
     return multiple or len(ranges) == 1
 
+class adjustWavelengthZeroPointConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthZeroPointAdjusted",
+                          optional=True)
+    center = config.RangeField("Central row/column to extract", int, None,
+                                min=1, optional=True)
+    shift = config.RangeField("Shift to apply in pixels (None: determine automatically)",
+                              float, 0, min=-2048, max=2048, optional=True)
+    verbose = config.Field("Print extra information", bool, False,
+                           optional=True)
+    debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
+                                        float, 5, min=0)
 
 class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",

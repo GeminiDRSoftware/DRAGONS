@@ -36,16 +36,17 @@ else:
 # -- Project information -----------------------------------------------------
 
 project = "DRAGONS - Recipe System Programmer's Manual"
-copyright = '2021, Association of Universities for Research in Astronomy'
-author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
+copyright = '2023, Association of Universities for Research in Astronomy'
+author = 'DRAGONS Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-version = '3.1'  # The short X.Y version.
-release = '3.1.0-dev'  # The full version, including alpha/beta/rc tags.
+version = '3.2'  # The short X.Y version.
+#release = '3.1.0'  # The full version, including alpha/beta/rc tags.
 #rtdurl = 'v'+release
+#release = '3.1.x'
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
 
@@ -58,6 +59,7 @@ rtdurl = 'latest'
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+#   'sphinx.ext.napoleon',
    'sphinx.ext.autodoc',
    'sphinx.ext.intersphinx',
    'sphinx.ext.todo',
@@ -65,23 +67,23 @@ extensions = [
    'sphinx.ext.imgmath',
    'sphinx.ext.ifconfig',
    'sphinx.ext.viewcode',
-   'sphinx.ext.napoleon',
    'sphinx.ext.graphviz',
 ]
 
+autodoc_mock_imports = ["flask"]
 
 # Napoleon settings
-napoleon_google_docstring = True
-napoleon_numpy_docstring = True
-napoleon_include_init_with_doc = False
-napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = False
-napoleon_use_admonition_for_notes = False
-napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
-napoleon_use_param = True
-napoleon_use_rtype = True
+# napoleon_google_docstring = True
+# napoleon_numpy_docstring = True
+# napoleon_include_init_with_doc = False
+# napoleon_include_private_with_doc = False
+# napoleon_include_special_with_doc = True
+# napoleon_use_admonition_for_examples = False
+# napoleon_use_admonition_for_notes = False
+# napoleon_use_admonition_for_references = False
+# napoleon_use_ivar = False
+# napoleon_use_param = True
+# napoleon_use_rtype = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -101,7 +103,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'December 2021'
+today = 'April 2023'
 
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
@@ -239,7 +241,7 @@ latex_documents = [
   ('index-latex',
    'RecipeSystemProgManual.tex',
    "DRAGONS - Recipe System Programmer's Manual",
-   'Kenneth Anderson, Kathleen Labrie, Bruno Quint', 'manual'),
+   'DRAGONS Team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -273,7 +275,7 @@ man_pages = [
     ('index',
      'recipesystemprogmanual',
      "DRAGONS - Recipe System Programmer's Manual",
-     ['Kenneth Anderson, Kathleen Labrie, Bruno Quint'], 1)
+     ['DRAGONS Team'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -289,7 +291,7 @@ texinfo_documents = [
   ('index',
    'RecipeSystemProgManual',
    "DRAGONS - Recipe System Programmer's Manual",
-   'Kenneth Anderson, Kathleen Labrie, Bruno Quint',
+   'DRAGONS Team',
    'RecipeSystemProgManual',
    'Recipe System programming "how to"',
    'Miscellaneous'),
@@ -356,6 +358,7 @@ def run_api_doc(_):
         current_path = os.getcwd()
 
     relative_path = "../../../"
+    root_path = os.path.abspath(os.path.join(current_path, '..', '..', '..'))
 
     print(("\n Am I running on PyCharm? {}".format(is_running_in_pycharm)))
     print((" Current Path: {}\n".format(current_path)))
@@ -371,7 +374,7 @@ def run_api_doc(_):
 
         ignore_paths = [
             'doc',
-            'test',
+            'test*',
         ]
 
         ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
@@ -385,7 +388,8 @@ def run_api_doc(_):
                    build_path
                ] + ignore_paths
 
-        sys.path.insert(0, build_path)
+        #sys.path.insert(0, build_path)
+        sys.path.insert(0, root_path)
 
         try:
             # Sphinx 1.7+
@@ -426,9 +430,9 @@ rst_epilog = """
 .. |showpars| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#showpars" target="_blank">showpars</a>`
 .. |typewalk| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#typewalk" target="_blank">typewalk</a>`
 .. |atfile| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>`
-.. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/{v}/" target="_blank">Astrodata User Manual</a>`
+.. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/usermanual/index.html" target="_blank">Astrodata User Manual</a>`
 
 .. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System Users Manual</a>`
-.. |astrodataprog| replace:: :raw-html:`<a href="https://astrodata-programmer-manual.readthedocs.io/en/{v}/">Astrodata Programmer Manual</a>`
+.. |astrodataprog| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/progmanual/index.html">Astrodata Programmer Manual</a>`
 
 """.format(v = rtdurl)

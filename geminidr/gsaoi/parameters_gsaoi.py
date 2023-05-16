@@ -17,7 +17,7 @@ class addReferenceCatalogConfig(parameters_photometry.addReferenceCatalogConfig)
 
     def setDefaults(self):
         self.radius = 0.033
-        self.source = "2mass"
+        self.source = None
 
 
 class associateSkyConfig(parameters_preprocess.associateSkyConfig):

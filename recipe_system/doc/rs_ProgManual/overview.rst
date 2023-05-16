@@ -131,7 +131,7 @@ The recipes are stored in a Recipe Library, a Python module, see below.
 **Recipe Library**
 
 A Recipe Library is a Python module that stores recipes.  The Recipe Library
-is given a tagset for data to recipe mapping by the Recipe System.  All the
+is given a tagset for data for recipe mapping by the Recipe System.  All the
 recipes in a Recipe Library must therefore apply to the same Astrodata tags.
 The Astrodata tagset is stored in the module variable ``recipe_tags``.
 
@@ -344,9 +344,8 @@ Calibration Request Service
 ---------------------------
 
 The Calibration Request Service provides a functional interface to a local
-calibration manager (GeminiCalMgr) or the Gemini Observatory facility
-calibration manager (fitsstore) The Calibration Request Service does **not**
-communicate with the Gemini Observatory Archive.
+calibration manager (GeminiCalMgr), the Gemini Observatory facility
+calibration manager (fitsstore), or the Gemini Observatory Archive.
 
 Primitives requiring **processed** calibration files (biases, flats, etc.)
 will use this functional interface to make calibration requests. These requests 
@@ -359,34 +358,43 @@ the requested calibration type (flat, dark, etc). The calibration request
 is processed by the calibration manager's association rules to find the best
 match.
 
-The details of the request depends on the calibration manager being used.
-That is set upon import of the ``calrequestlib`` package. The
-``calibration_search`` module variable is set via the `cal_search_factory()`
-function to either the ``calibration_search`` method in the ``LocalManager``
-class or the ``calibration_search`` function in the ``transport_request``
-module.  The former applies when the local calibration manager is used, the
-latter when the Gemini internal ``fitsstore`` server is used.
+The structure of the calibration service is set up when the primitive class
+object is instantiated by reading the configuration file whose default
+location is ``~/.dragons/dragonsrc``. The service is constructed as a
+series of database instances, each of which is queried in turn via various
+``get_processed_<caltype>`` methods, providing
+a suitable calibration for each requested file (and indicating which
+database successfully served the request) or passing the request onto the
+next database in the series.
 
-In the case of the local calibration manager, the manager's ``get_cal_object``
-function is accessed directly. In the case of the internal fitsstore
-server, an HTTP POST request is made on the server.
+**UserDB**
 
-In both cases, the return value is a tuple with the URLs to the processed
-calibrations and the correspond md5 sums.
+The ``UserDB`` class handles the command-line parameters that define the
+user-defined calibrations, e.g., ``--user_cal processed_flat:myflat.fits``.
+If a calibration has been defined for the type matching the request, then
+this calibration is returned.
 
-The Calibration Request Service is responsible for determining whether the
-matched calibration has already been downloaded from ``fitsstore`` and cached
-by verifying the md5 sums.  If the file is in the cache, the path to the local
-file is returned rather than fetching the file again. If the file has not been
-cached, then the request service downloads the file using the returned URL and
-stores it locally, then that newly downloaded file is passed to the calling
-primitive. The storage directory is called ``calibrations`` in the root
-directory of the tool making the request.
+**LocalDB**
 
-In the case of the local calibration manager, the data are already local.
-The calibration manager only stores filename and path, not the data. The
-path returned is the path to the local version that was added by the user
-to the database.
+The ``LocalDB`` class provides an interface to the ``LocalManager`` class
+which queries the sqlite database containing the locations of the calibration
+files that have been processed and stored by the user.
+
+**RemoteDB**
+
+The ``RemoteDB`` class provides an interface to the Gemini internal
+``fitsstore`` server by making an HTTP POST request. After determining the
+filename of a suitable calibration, it determines whether a file of that name
+and calibration type has already been cached on disk in a subdirectory of
+the ``calibrations`` directory created by DRAGONS, to avoid unnecessary
+repeated downloads.
+
+Both the ``LocalDB`` and ``RemoteDB`` classes have the responsibility of
+verifying the md5 checksum of the file on disk with that stored in the
+database to ensure it hasn't been corrupted. In the case of the local
+database, the file is not returned, while the remote database downloads
+the file again.
+
 
 Calibration Manager
 -------------------
@@ -397,13 +405,16 @@ calibration manager.
 
 The original calibration manager is one used internally
 at Gemini. It is associated with a large database that stores the data too.
-For external users, a light weight local calibration manager is available
+For external users, a lightweight local calibration manager is available
 instead.
 
 The local calibration manager uses a sqlite database to store the
 location information of the calibrations processed by the user.  Since the
 data were processed locally, there is no need to store the data, just the
-name and the path to the data.
+name and the path to the data. The ``caldb`` facility is provided for the
+user to create and populate (or de-populate) the local database. At
+present, this limits the ``dragonsrc`` file to have only a single local
+database. This limitation may be relaxed in the future.
 
 What both calibration managers share are the calibration associations rules,
 rules that will identify the best processed calibrations for a given
@@ -411,11 +422,6 @@ Gemini observation.  Those rules are the same as the rules used by the
 Gemini Observatory Archive.  The internal database is in fact using exactly
 the same software as the GOA.  The local calibration manager uses a subset
 of the code plus a couple extra routines.
-
-The Recipe System knows how to make requests to either of those two sources
-of processed calibration.  For the local calibration manager, the Recipe
-System provides the ``caldb`` facility to create and populate (or de-populate)
-the local database.
 
 The internal Gemini data manager is obviously very Gemini-centric, by
 necessity.  The local calibration manager, distributed as GeminiCalMgr, is

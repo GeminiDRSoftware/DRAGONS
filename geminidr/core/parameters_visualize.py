@@ -34,11 +34,6 @@ class tileArraysConfig(config.Config):
     sci_only = config.Field("Tile only SCI extensions?", bool, False)
     tile_all = config.Field("Tile to single extension?", bool, False)
 
-class oldtileArraysConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_tiled", optional=True)
-    sci_only = config.Field("Tile only SCI extensions?", bool, False)
-    tile_all = config.Field("Tile to single extension?", bool, False)
-
 
 class plotSpectraForQAConfig(config.Config):
     url = config.Field(

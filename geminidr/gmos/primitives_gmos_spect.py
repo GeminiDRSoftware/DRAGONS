@@ -560,6 +560,12 @@ class GMOSSpect(Spect, GMOS):
         return adinputs
 
     def _get_arc_linelist(self, waves=None, ad=None, config=None):
+        # There aren't many lines in the very red, so one way to improve the
+        # wavecal might have been to take out any blocking filter to get all the
+        # lines from ~500 nm at twice the wavelength. The GMOS team doesn't do
+        # that, however, so it would just results in a bunch of extra lines that
+        # don't actually exist, so keep use_second_order = False here; the code
+        # is left as a template for how such stuff might operate.
         use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
 
         use_second_order = False

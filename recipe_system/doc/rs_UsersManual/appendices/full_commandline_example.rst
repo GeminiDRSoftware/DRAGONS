@@ -36,14 +36,12 @@ beginning to end.
    ::
 
     $ reduce @darks20s.lis
-    $ caldb add N20160102S0423_dark.fits
 
 4. Reduce the flats and add the master flat to the calibration database.
 
    ::
 
     $ reduce @flats.lis
-    $ caldb add N20160102S0373_flat.fits
 
 5. Reduce the science target, with some input parameter override.
 

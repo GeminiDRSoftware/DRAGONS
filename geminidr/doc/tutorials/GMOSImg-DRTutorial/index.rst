@@ -10,8 +10,7 @@ DRAGONS - GMOS Data Reduction Tutorial
 This is a brief tutorial on how to reduce GMOS images using DRAGONS. It is
 based on information found in the `GEMINI GMOS
 WebPage <https://www.gemini.edu/sciops/instruments/gmos/>`_ and in the
-`DRAGONS Documentation on Read The Docs <https://dragons.readthedocs.io/en/v3.0.3/>`_.
-
+|DRAGONS| Documentation
 
 .. toctree::
    :maxdepth: 2
@@ -19,8 +18,9 @@ WebPage <https://www.gemini.edu/sciops/instruments/gmos/>`_ and in the
    :caption: Table of Contents
 
    01_introduction
-   02_data_reduction
-   03_api_reduction
+   cal_service
+   ex1_gmosim_starfield
+   ex2_gmosim_separateCCDs
    04_tips_and_tricks
    05_issues_and_limitations
 

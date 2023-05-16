@@ -1713,6 +1713,13 @@ class UIParameters:
         except:
             return object.__getattribute__(self, attr)
 
+    def toDict(self):
+        """
+        Return a dict of field name: value
+
+        """
+        return self.values
+
 
 def do_later(fn):
     """

@@ -257,7 +257,8 @@ to offer.
 Displaying with imexam
 ----------------------
 
-Here is an example how to display pixel data to DS9 with ``imexam``.
+Here is an example how to display pixel data to DS9 with ``imexam``.  You must
+start ``ds9`` before running this example.
 
 ::
 
@@ -667,12 +668,13 @@ add a variance plane to our raw data frame.
     >>> ad[0].subtract(mean_overscan)
 
     >>> # Trim the data to remove the overscan section and keep only
-    >>> # the data section.
+    >>> # the data section.  Note that the WCS will be automatically
+    >>> # adjusted when the trimming is done.
     >>> #
     >>> # Here we work on the NDAstroData object to have the variance
     >>> # trimmed automatically to the same size as the science array.
     >>> # To reassign the cropped NDAstroData, we use the reset() method.
-    >>> ad[0].reset(ad[0].nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2])
+    >>> ad[0].reset(ad[0].nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2]
 
     >>> # Now look at the dimensions of the first extension, science
     >>> # and variance.  That extension is smaller than the others.
@@ -777,8 +779,8 @@ attention.
 Plot Data
 =========
 The main plotting package in Python is ``matplotlib``.  We have used it in the
-previous section on data cubes to plot a spectrum.  There is also relatively
-new project called ``imexam`` which provides astronomy-specific tools for the
+previous section on data cubes to plot a spectrum.  There is also the project
+called ``imexam`` which provides astronomy-specific tools for the
 exploration and measurement of data.  We have also used that package above to
 display images to DS9.
 
@@ -854,7 +856,7 @@ quality plots.  Here we just scratch the surface of Matplotlib.
 imexam
 ------
 For those who have used IRAF, ``imexam`` is a well-known tool.  The Python
-``imexam`` reproduces many of its IRAF predecesor, the interactive mode of
+``imexam`` reproduces many of of the features of its IRAF predecesor, the interactive mode of
 course, but it also offers programmatic tools.  One can even control DS9
 from Python.  As for Matplotlib, here we really just scratch the surface of
 what ``imexam`` has to offer.

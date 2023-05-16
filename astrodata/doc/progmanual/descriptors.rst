@@ -58,7 +58,7 @@ following rules:
 * If the |AstroData| object is a single slice and the undecorated
   descriptor returns a list, only the first element is returned.
 
-An example of the use of this decorator is the
+An example of the use of this decorator is the NIRI
 `~gemini_instruments.niri.AstroDataNiri.gain` descriptor, which reads the
 value from a lookup table and simply returns it.  A single value is only
 appropriate if the |AstroData| object is singly-sliced and the decorator ensures

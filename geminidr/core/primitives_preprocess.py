@@ -843,8 +843,8 @@ class Preprocess(PrimitivesBASE):
                 rectified = False
 
             if rectified:
-                log.stdinfo(f"{ad.filename}: applying slit rectification model "
-                            f"from the flat {flat.filename}")
+                log.stdinfo(f"{ad.filename}: adding slit rectification model "
+                            f"derived from {flat.filename} to WCS")
                 for ext in ad:
                     ext.wcs.insert_frame(ext.wcs.input_frame, rect_model,
                                          cf.Frame2D(name='rectified'))
@@ -1674,7 +1674,11 @@ class Preprocess(PrimitivesBASE):
                         "Setting offset_sky=False.")
             zero = False
 
-        skyfunc = partial(gt.measure_bg_from_image, value_only=True)
+        # TODO: replace this by having min_sampled_pixels instead of sampling
+        # in gt.measure_bg_from_image()
+        sampling = 1 if adinputs[0].instrument() == 'GNIRS' else 10
+        skyfunc = partial(gt.measure_bg_from_image, value_only=True,
+                          sampling=sampling)
 
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
                                              force_ad=True)):

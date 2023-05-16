@@ -107,7 +107,7 @@ class LocalDB(CalDB):
     # initializing it, removing a named calibration, and listing the files
     # it contains.
 
-    def init(self, wipe=True):
+    def init(self, wipe=False):
         """
         Initialize a calibration database. Callers will usually only want to do
         this once. But if called again, it will wipe the old database.
@@ -115,8 +115,8 @@ class LocalDB(CalDB):
         Parameters
         ----------
         wipe : <bool>, optional
-            If the database exists and this parameter is `True` (default
-            value), the file will be removed and recreated before initializing
+            If the database exists and this parameter is `True`, the file will
+            be removed and recreated before initializing
 
         Raises
         ------

@@ -64,14 +64,14 @@ should have empty *tagsets*.
 Mapping Data to Primitives
 --------------------------
 
-At a minimum, |PrimitiveMapper| requires as input a list of AstroData objects.
-Only the first object in the list will be used for mapping.  The whole list
-will be passed to the mapped primitive set once found and instantiated.
+|PrimitiveMapper| requires as input a list of AstroData tags and the name
+of an instrument packages.
 
 The mapping is done by matching the primitive set's ``tagset`` attribute
-to the AstroData tags of the first input element.
+to the AstroData tags.
 
-The primitive set is obtained as follow, where ``ad`` is an AstroData object::
+The primitive set is instantiated as follow, where ``ad`` is an AstroData
+object::
 
    >>> from recipe_system.mappers.primitiveMapper import PrimitiveMapper
    >>> tags = ad.tags
@@ -170,8 +170,8 @@ example::
 
 Mapping Data to Recipes
 -----------------------
-At a minimum, |RecipeMapper| requires as input a list of AstroData objects.
-Only the first object in the list will be used for mapping. The mapping is
+At a minimum, |RecipeMapper| requires as input a list of AstroData tags and
+the name of an instrument package. The mapping is
 done by matching the recipe library's ``recipe_tags`` module attribute
 to the AstroData tags of the first input element.
 
@@ -404,7 +404,7 @@ primitive and their current settings::
 
 Or, prettier ::
 
-    >>> print(*p.param['prepare'].toDict().items(), sep='\n')
+    >>> print(*p.params['prepare'].toDict().items(), sep='\n')
     ('suffix', '_prepared')
     ('mdf', None)
     ('attach_mdf', True)

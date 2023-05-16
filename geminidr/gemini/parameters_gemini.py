@@ -15,7 +15,6 @@ class standardizeStructureConfig(addMDFConfig):
     def setDefaults(self):
         self.suffix = "_structureStandardized"
 
-
 class standardizeWCSConfig(parameters_standardize.standardizeWCSConfig):
     bad_wcs = config.ChoiceField("Method for WCS handling", str,
                                  allowed={'exit': "Exit reduction if discrepant WCS found",
@@ -28,3 +27,6 @@ class standardizeWCSConfig(parameters_standardize.standardizeWCSConfig):
     debug_max_deadtime = config.RangeField("Maximum dead time between exposures to require a new pointing",
                                            float, 60., min=10)
 
+
+class checkWCSConfig(config.Config):
+    tolerance = config.RangeField("Positional tolerance (arcsec)", float, 2, min=0.1)

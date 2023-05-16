@@ -11,13 +11,13 @@ DRAGONS - GSAOI Data Reduction Tutorial
    PIPE-USER-118_GSAOIImg-DRTutorial
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :numbered:
    :caption: Table of Contents
 
    01_introduction
-   02_data_reduction
-   03_api_reduction
+   cal_service
+   ex1_gsaoiim_offsetsky
    04_tips_and_tricks
    05_issues_and_limitations
 

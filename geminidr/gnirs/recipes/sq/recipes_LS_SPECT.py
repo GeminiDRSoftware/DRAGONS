@@ -22,6 +22,7 @@ def reduceScience(p):
     # p.darkCorrect() # no dark correction for GNIRS LS data
     p.flatCorrect()
     p.attachWavelengthSolution()
+    p.adjustWavelengthZeroPoint()
     p.separateSky()
     p.associateSky()
     p.skyCorrect()

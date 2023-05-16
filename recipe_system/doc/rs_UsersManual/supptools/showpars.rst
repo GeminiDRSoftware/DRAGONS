@@ -18,17 +18,21 @@ the function, while GMOS IMAGE ``stackFlats`` overrides that generic method.
 We examine the help on the command line of showpars::
 
     $ showpars -h
-    usage: showpars [-h] [-v] filen primn
+    usage: showpars [-h] [-v] [-d] [--adpkg ADPKG] [--drpkg DRPKG] filename primitive
 
-    Primitive parameter display, v2.2.0
+    Primitive parameter display, v3.1.0
 
     positional arguments:
-      filen          filename
-      primn          primitive name
+      filename       filename
+      primitive      primitive name
 
     optional arguments:
       -h, --help     show this help message and exit
       -v, --version  show program's version number and exit
+      -d, --doc      show the full docstring
+      --adpkg ADPKG  Name of the astrodata instrument package to use if not
+                     gemini_instruments
+      --drpkg DRPKG  Name of the DRAGONS instrument package to use if not geminidr
 
 Two arguments are required: the dataset filename, and the primitive name of
 interest. As readers will note, ``showpars`` provides a wealth of information
