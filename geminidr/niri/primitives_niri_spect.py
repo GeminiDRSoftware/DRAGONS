@@ -192,9 +192,10 @@ class NIRISpect(Spect, NIRI):
             else:
                 raise ValueError(f"No default line list found for {ext.object()}-type arc. Please provide a line list.")
         else:
-            if config.absorption is True or \
+            if config["absorption"] is True or \
                     ext.central_wavelength(asMicrometers=True) >= 2.8:
                 linelist = super()._get_atran_linelist(ext=ext, config=config)
+                self.log.stdinfo(f"Using linelist {linelist}")
                 return wavecal.LineList(linelist)
             # In case of wavecal from sky OH emission use these line lists:
             else:

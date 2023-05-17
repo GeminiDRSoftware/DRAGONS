@@ -373,7 +373,7 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
         # Get the data necessary for the reference spectrum plot, to be displayed
         # in a separate plot in the interactive mode (so far non-arc spectra only).
         refplot_data = p._get_refplot_data(ext=ext, linelist=input_data["linelist"],
-                                           config=ui_params)
+                                           config=ui_params.toDict())
         if refplot_data is not None:
             input_data.update(refplot_data)
 

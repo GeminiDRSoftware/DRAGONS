@@ -399,7 +399,7 @@ class GNIRSSpect(Spect, GNIRS):
             # or 2) wavecal from sky emission lines in L- and M-band, the line list is
             # generated on the fly using the ATRAN model with the params closest to the
             # frame's observing conditions, and convolved to the resolution of the observation.
-            if config.absorption is True or \
+            if config["absorption"] is True or \
                     ext.central_wavelength(asMicrometers=True) >= 2.8:
                 linelist = super()._get_atran_linelist(ext=ext, config=config)
                 self.log.stdinfo(f"Using linelist {linelist}")

@@ -23,8 +23,8 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     def setDefaults(self):
         self.order = 3
         self.in_vacuo = True
-        self.debug_min_lines = 100000
-        self.debug_num_atran_lines = 50
+        self.debug_min_lines = 15
+        self.debug_num_atran_lines = 100
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
     debug_combiner = config.ChoiceField("Combine method to use in 1D spectrum extraction", str,
                                    allowed={"mean": "mean",

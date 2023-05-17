@@ -6,7 +6,6 @@
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
 import tempfile
-from copy import copy, deepcopy
 from itertools import islice
 import os
 import re
@@ -15,7 +14,6 @@ from contextlib import suppress
 from copy import copy, deepcopy
 from functools import partial, reduce
 from importlib import import_module
-from sklearn import preprocessing
 
 import matplotlib
 import numpy as np
@@ -4785,8 +4783,8 @@ class Spect(Resample):
                                            self.inst_lookups).__file__)
         working_dir = os.getcwd()
 
-        user_res = config.debug_resolution
-        user_wv_band = config.debug_wv_band
+        user_res = config["debug_resolution"]
+        user_wv_band = config["debug_wv_band"]
 
         site, alt, start_wvl, end_wvl, spec_range, wv_content, resolution \
             = self._get_atran_model_params(ext, user_wv_band=user_wv_band,
@@ -4806,7 +4804,7 @@ class Spect(Resample):
                 # If default list was not found, make one.
                 self.log.stdinfo(f"Generating a linelist from ATRAN synthetic spectrum")
                 self._make_atran_linelist(ext, filename=atran_filename, config=config,
-                                          nlines=config.debug_num_atran_lines)
+                                          nlines=config["debug_num_atran_lines"])
         return atran_filename
 
     def _make_atran_linelist(self, ext, filename, config, nlines=50):
@@ -4825,8 +4823,8 @@ class Spect(Resample):
         nlines: int
             number of lines in the linelist
         """
-        wv_band = config.debug_wv_band
-        user_res = config.debug_resolution
+        wv_band = config["debug_wv_band"]
+        user_res = config["debug_resolution"]
         atran_spec, sampling = self._get_convolved_atran(ext, config=config)
         site, alt, start_wvl, end_wvl, _, wv_content, resolution = \
             self._get_atran_model_params(ext, user_wv_band=wv_band, user_resolution=user_res)
@@ -4834,7 +4832,7 @@ class Spect(Resample):
         inverse_atran_spec = 1 - atran_spec[:,1]
         fwhm = (self._get_actual_cenwave(ext, asNanometers=True) / resolution) * (1 / sampling)
         peaks, properties = find_peaks(inverse_atran_spec, prominence=0.001, width=(None,5*fwhm))
-        weights = preprocessing.normalize((properties["prominences"] / properties["widths"]**2).reshape(1, -1))
+        weights = properties["prominences"] / properties["widths"]**2
         peaks_with_weights = np.vstack([peaks,weights]).T
 
         def trim_peaks(peaks, npix, nbins, nlargest, sort=True):
@@ -4898,7 +4896,7 @@ class Spect(Resample):
                               [p%1 * sampling for p in atran_linelist[:,0]]
         atran_linelist = atran_linelist[np.argsort(atran_linelist[:,0])]
 
-        if config.absorption:
+        if config["absorption"] is True:
             atran_linelist[:,1] = 1 - atran_linelist[:,1]
 
         header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm   \n"
@@ -4932,8 +4930,8 @@ class Spect(Resample):
         path = list(atran_models.__path__).pop()
 
         site, alt, start_wvl, end_wvl, spec_range, wv_content, resolution = \
-            self._get_atran_model_params(ext, user_resolution=config.debug_resolution,
-                                         user_wv_band=config.debug_wv_band)
+            self._get_atran_model_params(ext, user_resolution=config["debug_resolution"],
+                                         user_wv_band=config["debug_wv_band"])
         atran_model_filename = os.path.join(path,
                     'atran_{}_850-6000nm_wv{:.0f}_za48_r0.dat'
                                             .format(site,wv_content*1000))
@@ -5035,9 +5033,9 @@ class Spect(Resample):
             return None
 
         else:
-            if config.absorption or ext.central_wavelength(asMicrometers=True) >= 2.8:
-                user_res = config.debug_resolution
-                wv_band = config.debug_wv_band
+            if config["absorption"] is True or ext.central_wavelength(asMicrometers=True) >= 2.8:
+                user_res = config["debug_resolution"]
+                wv_band = config["debug_wv_band"]
                 site, alt, start_wvl, end_wvl, _, wv_content, resolution = \
                 self._get_atran_model_params(ext, user_wv_band=wv_band, user_resolution=user_res)
                 # Use ATRAN models for generating reference plots for wavecal from
@@ -5045,7 +5043,7 @@ class Spect(Resample):
                 if refplot_spec is None:
                     refplot_spec, _ = self._get_convolved_atran(ext, config=config)
                 if refplot_y_axis_label is None:
-                    if config.absorption:
+                    if config["absorption"] is True:
                         refplot_y_axis_label = "Atmospheric transmission"
                     else:
                         refplot_y_axis_label = "Inverse atm. transmission"
@@ -5058,10 +5056,10 @@ class Spect(Resample):
                 # a set of pre-calculated synthetic spectra for the reference plots
                 if refplot_spec is None:
                     path = list(oh_synthetic_spectra.__path__).pop()
-                    if config.debug_resolution is None:
+                    if config["debug_resolution"] is None:
                         resolution = round(self._get_resolution(ext),  -1)
                     else:
-                        resolution = config.debug_resolution
+                        resolution = config["debug_resolution"]
                     if resolution >= 15000:
                         R = 20000
                     elif (7500 <= resolution < 15000):
