@@ -211,9 +211,16 @@ class NIRISpect(Spect, NIRI):
         # For NIRI actual resolving power values are much lower than
         # the theoretical ones, so read them from LUT
         camera = ad.camera()
-        disperser = ad.disperser(stripID=True)[0:6]
+        try:
+            disperser = ad.disperser(stripID=True)[0:6]
+        except TypeError:
+            disperser = None
         fpmask = ad.focal_plane_mask(stripID=True)
-        return lookup.spec_wavelengths[camera, fpmask, disperser][2]
+        try:
+            resolution = lookup.spec_wavelengths[camera, fpmask, disperser][2]
+        except KeyError:
+            return None
+        return resolution
 
 
     def _get_actual_cenwave(self, ext=None, asMicrometers=False, asNanometers=False, asAngstroms=False):
@@ -231,9 +238,15 @@ class NIRISpect(Spect, NIRI):
             if asAngstroms:
                 output_units = "angstroms"
         camera = ext.camera()
-        disperser = ext.disperser(stripID=True)[0:6]
+        try:
+            disperser = ext.disperser(stripID=True)[0:6]
+        except TypeError:
+            disperser = None
         fpmask = ext.focal_plane_mask(stripID=True)
-        cenwave = lookup.spec_wavelengths[camera, fpmask, disperser][1]
+        try:
+            cenwave = lookup.spec_wavelengths[camera, fpmask, disperser][1]
+        except KeyError:
+            return None
         actual_cenwave = gmu.convert_units('nanometers', cenwave, output_units)
 
         return actual_cenwave

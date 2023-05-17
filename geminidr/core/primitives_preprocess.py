@@ -837,7 +837,7 @@ class Preprocess(PrimitivesBASE):
                     rectified = True
                 else:
                     rectified = False
-                    log.warning(f"No rectification model will be applied since rectify=False")
+                    log.stdinfo(f"No rectification model will be applied since rectify=False")
             except CoordinateFrameError:
                 log.warning(f"No rectification model found in {flat.filename}")
                 rectified = False

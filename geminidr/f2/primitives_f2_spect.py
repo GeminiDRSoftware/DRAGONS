@@ -198,4 +198,4 @@ class F2Spect(Spect, F2):
         else:
             slit_width = fpmask
         disperser = ext.disperser(pretty=True)
-        return resolving_power.get(f"{slit_width}", {}).get(f"{disperser}")
+        return resolving_power.get(f"{slit_width}", {}).get(f"{disperser}", None)

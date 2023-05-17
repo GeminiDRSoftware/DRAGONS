@@ -115,10 +115,16 @@ class AstroDataNiri(AstroDataGemini):
 
         # Use the lookup dict, keyed on camera, focal_plane_mask and grism
         camera = self.camera()
-        disperser = self.disperser(stripID=True)[0:6]
+        try:
+            disperser = self.disperser(stripID=True)[0:6]
+        except TypeError:
+            disperser = None
         fpmask = self.focal_plane_mask(stripID=True)
 
-        wave_in_angstroms = lookup.spec_wavelengths[camera, fpmask, disperser][0]
+        try:
+            wave_in_angstroms = lookup.spec_wavelengths[camera, fpmask, disperser][0]
+        except KeyError:
+            return None
         return gmu.convert_units('angstroms', wave_in_angstroms,
                              output_units)
 
@@ -295,8 +301,15 @@ class AstroDataNiri(AstroDataGemini):
         """
 
         camera = self.camera()
-        disperser = self.disperser(stripID=True)[0:6]
-        dispersion = lookup.dispersion_by_config[camera, disperser]
+        try:
+            disperser = self.disperser(stripID=True)[0:6]
+        except TypeError:
+            disperser = None
+
+        try:
+            dispersion = lookup.dispersion_by_config[camera, disperser]
+        except KeyError:
+            return None
 
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters"  # By default
