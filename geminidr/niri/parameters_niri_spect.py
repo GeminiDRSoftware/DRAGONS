@@ -17,6 +17,7 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
         self.id_only = True
         self.spectral_order = 3
         self.min_snr = 10
+        self.max_missed = 5
         self.debug_reject_bad = False
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):

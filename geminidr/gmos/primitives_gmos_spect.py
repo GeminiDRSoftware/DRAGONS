@@ -559,7 +559,7 @@ class GMOSSpect(Spect, GMOS):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ad=None, config=None):
+    def _get_arc_linelist(self, waves=None, ext=None, config=None):
         # There aren't many lines in the very red, so one way to improve the
         # wavecal might have been to take out any blocking filter to get all the
         # lines from ~500 nm at twice the wavelength. The GMOS team doesn't do

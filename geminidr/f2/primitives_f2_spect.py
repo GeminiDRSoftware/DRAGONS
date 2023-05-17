@@ -129,6 +129,91 @@ class F2Spect(Spect, F2):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
+
+    def determineDistortion(self, adinputs=None, **params):
+        """
+        Maps the distortion on a detector by tracing lines perpendicular to the
+        dispersion direction. Then it fits a 2D Chebyshev polynomial to the
+        fitted coordinates in the dispersion direction. The distortion map does
+        not change the coordinates in the spatial direction.
+
+        The Chebyshev2D model is stored as part of a gWCS object in each
+        `nddata.wcs` attribute, which gets mapped to a FITS table extension
+        named `WCS` on disk.
+
+        This F2-specific primitive sets the max_missed value, since we want it to be
+        low for arcs (to filter out horizontal noise), and larger for the
+        science frames, to not to loose lines when crossing the object spectrum.
+        It then calls the generic version of the primitive.
+
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Arc data as 2D spectral images with the distortion and wavelength
+            solutions encoded in the WCS.
+
+        suffix :  str
+            Suffix to be added to output files.
+
+        spatial_order : int
+            Order of fit in spatial direction.
+
+        spectral_order : int
+            Order of fit in spectral direction.
+
+        id_only : bool
+            Trace using only those lines identified for wavelength calibration?
+
+        min_snr : float
+            Minimum signal-to-noise ratio for identifying lines (if
+            id_only=False).
+
+        nsum : int
+            Number of rows/columns to sum at each step.
+
+        step : int
+            Size of step in pixels when tracing.
+
+        max_shift : float
+            Maximum orthogonal shift (per pixel) for line-tracing (unbinned).
+
+        max_missed : int
+            Maximum number of steps to miss before a line is lost.
+
+        min_line_length: float
+            Minimum length of traced feature (as a fraction of the tracing dimension
+            length) to be considered as a useful line.
+
+        debug_reject_bad: bool
+            Reject lines with suspiciously high SNR (e.g. bad columns)? (Default: True)
+
+        debug: bool
+            plot arc line traces on image display window?
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The same input list is used as output but each object now has the
+            appropriate `nddata.wcs` defined for each of its extensions. This
+            provides details of the 2D Chebyshev fit which maps the distortion.
+        """
+        for ad in adinputs:
+            if params["max_missed"] is None:
+                if "ARC" in ad.tags:
+                    # In arcs with few lines tracing strong horizontal noise pattern can
+                    # affect distortion model.Using a lower max_missed value helps to
+                    # filter out horizontal noise.
+                    params["max_missed"] = 2
+                else:
+                    # In science frames we want this parameter be set to a higher value, since
+                    # otherwise the line might be abandoned when crossing a bright object spectrum.
+                    params["max_missed"] = 5
+                self.log.stdinfo(f'Parameter "max_missed" is set to None. '
+                f'Using max_missed={params["max_missed"]}')
+        adinputs = super().determineDistortion(adinputs, **params)
+        return adinputs
+
     def _get_arc_linelist(self, waves=None, ext=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)

@@ -236,6 +236,8 @@ class GNIRSSpect(Spect, GNIRS):
                                     (disp.startswith('32') and cam.startswith('Long')))
                                     and 3.80 <= cenwave):
                                 params["min_snr"] = 1
+                            else:
+                                params["min_snr"] = 10
                         else:
                             params["min_snr"] = 10
 
@@ -371,6 +373,19 @@ class GNIRSSpect(Spect, GNIRS):
                     params["min_line_length"] = 0.6
                 self.log.stdinfo(f'Parameter "min_line_length" is set to None. '
                  f'Using min_line_length={params["min_line_length"]}')
+
+            if params["max_missed"] is None:
+                if "ARC" in ad.tags:
+                    # In arcs with few lines tracing strong horizontal noise pattern can
+                    # affect distortion model.Using a lower max_missed value helps to
+                    # filter out horizontal noise.
+                    params["max_missed"] = 2
+                else:
+                    # In science frames we want this parameter be set to a higher value, since
+                    # otherwise the line might be abandoned when crossing a bright object spectrum.
+                    params["max_missed"] = 5
+                self.log.stdinfo(f'Parameter "max_missed" is set to None. '
+                 f'Using max_missed={params["max_missed"]}')
         adinputs = super().determineDistortion(adinputs, **params)
         return adinputs
 
