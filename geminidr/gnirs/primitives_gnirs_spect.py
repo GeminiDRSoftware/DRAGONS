@@ -225,7 +225,7 @@ class GNIRSSpect(Spect, GNIRS):
                         params["order"] = 3
 
                     if params["center"] is None:
-                        params["center"] = 700
+                        params["center"] = 650
 
                     if params["min_snr"] is None:
                         if filt.startswith('L'):
@@ -264,7 +264,7 @@ class GNIRSSpect(Spect, GNIRS):
                 if params["order"] is None:
                     params["order"] = 3
                 if params["center"] is None:
-                    params["center"] = 700
+                    params["center"] = 650
 
             if params["debug_min_lines"] is None:
                 params["debug_min_lines"] = 15

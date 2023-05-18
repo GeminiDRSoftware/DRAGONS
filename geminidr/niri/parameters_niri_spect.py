@@ -13,8 +13,6 @@ def list_of_ints_check(value):
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     def setDefaults(self):
-        # params not checked:
-        self.id_only = True
         self.spectral_order = 3
         self.min_snr = 10
         self.max_missed = 5
