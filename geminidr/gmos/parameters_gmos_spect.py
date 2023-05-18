@@ -41,7 +41,3 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         self.order = 3
         self._fields["central_wavelength"].max = 1200
         del self.absorption
-
-class flatCorrectConfig(parameters_preprocess.flatCorrectConfig):
-    def setDefaults(self):
-        self.rectify = True
