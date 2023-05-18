@@ -529,8 +529,11 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ad=ext)
     # This wants to be logged even in interactive mode
     sky_or_arc = 'reference sky' if skylines else 'arc'
-    logit(f"Found {len(peaks)} peaks and {len(linelist)} "
-          f"{sky_or_arc} lines")
+    msg = f"Found {len(peaks)} peaks and {len(linelist)} {sky_or_arc} lines"
+    if config["interactive"] == True:
+        p.log.stdinfo(msg)
+    else:
+        logit(msg)
 
     m_init = [m_init]
     kdsigma = fwidth * abs(dw0)
