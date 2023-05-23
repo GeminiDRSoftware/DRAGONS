@@ -7,7 +7,9 @@
 
 from astropy.table import Table
 
-
+# primitives_gnirs_crossdispersed imports this dictionary to find the slit
+# definitions based on a key generated from the 'telescope', '_prism', 'decker',
+# '_grating', and 'camera' attributes of a file.
 mdf_table = {}
 
 # Gemini South, Short camera, 32/mm grating
