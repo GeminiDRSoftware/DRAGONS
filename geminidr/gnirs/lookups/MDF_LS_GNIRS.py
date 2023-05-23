@@ -34,6 +34,10 @@ slit_info = {
 # For the LongRed camera on Gemini-North, at least for the 10/mm grating but
 # possibly also for the other gratings, the slit is sometimes offset so that
 # the full 49" length isn't visible, causing the single on-detector edge to
-# vary in position. It seems to be a mostly bimodal distribution, so the values
-# in the table here are something of a compromise which should work for both
-# cases.
+# vary in position. It seems to be a mostly bimodal distribution, with the slit
+# length appearing to be either ~45" or ~49, so the values in the table here
+# are something of a compromise which should work for both cases.
+
+# The LongBlue camera can have the illuminated region shifted from side to side;
+# e.g., N20120419S0097 (right edge visible) vs. N20121213S0312 (left edge
+# visible). The current center is a compromise that allows both to be found.

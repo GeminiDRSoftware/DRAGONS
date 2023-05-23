@@ -15,6 +15,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .primitives_gnirs_spect import GNIRSSpect
 from . import parameters_gnirs_longslit
+from .lookups.MDF_LS_GNIRS import slit_info
 
 # -----------------------------------------------------------------------------
 @parameter_override
@@ -128,15 +129,6 @@ class GNIRSLongslit(GNIRSSpect):
             name of MDF to add (None => use default)
         """
 
-        # "Slit" indicates a change in the expected length of the slit, "x"
-        # denotes a shift in the expected midpoint of the illuminated region.
-        corrections = {'slit_short_south': 103,  # arcsec
-                       'x_32/mm_south': 406,  # pixels
-                       'slit_long_north': 49,  # arcsec
-                       'x_longred_north': 482,  # pixels
-                       'x_longblue_north': 542,  # pixels
-                       }
-
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
@@ -145,71 +137,27 @@ class GNIRSLongslit(GNIRSSpect):
 
         # This is the conversion factor from arcseconds to millimeters of
         # slit width for f/16 on an 8m telescope.
-        arcsec_to_mm = 1.61144
+        # arcsec_to_mm = 1.61144
 
         for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
 
+            # GNIRS LS doesn't use mask definition files, so this won't add
+            # anything, but it will check if the file already has an MDF table.
             self._addMDF(ad, suffix, mdf)
 
-            try:
-                mdf = ad.MDF
-            except AttributeError:
-                log.warning(f"MDF not found for {ad.filename}, continuing.")
+            if hasattr(ad, 'MDF'):
+                log.fullinfo(f"{ad.filename} already has an MDF table.")
                 continue
+            else:
+                telescope = ad.telescope().split('-')[1] # 'North' or 'South'
+                grating = ad._grating(pretty=True)
+                camera = ad.camera(pretty=True)
+                mdf_key = "_".join((telescope, grating, camera))
 
-            # TODO: fix GNIRS WCS handling
-            # At some point, when the WCS for GNIRS is fixed, this code
-            # block can be removed. This is an empirically-determined
-            # correction factor for the fact that the pixel scale is a few
-            # percent different from the nominal value.
-            if 'Short' in ad.camera():
-                slit_correction_factor = 0.96
-            elif 'Long' in ad.camera():
-                slit_correction_factor = 0.97
-
-            # The MDFs for GNIRS are sometimes incorrect, so apply the various
-            # corrections given above as appropriate.
-            if (ad.telescope() == 'Gemini-South'):
-                if ('Short' in ad.camera()):
-                    mdf['slitsize_mx'][0] = corrections['slit_short_south']
-
-                if ('Long' in ad.camera()) and ('32/mm' in ad.disperser()):
-                    mdf['x_ccd'][0] = corrections['x_32/mm_south']
-
-            elif (ad.telescope() == 'Gemini-North'):
-
-                if ('LongRed' in ad.camera()):
-                    mdf['x_ccd'][0] = corrections['x_longred_north']
-                    if ('111/mm' in ad.disperser()):
-                        mdf['slitsize_mx'][0] = corrections['slit_long_north']
-
-                if ('LongBlue' in ad.camera()):
-                    if not ('111/mm' in ad.disperser()):
-                        # 111/mm can have the illuminated region shifted to
-                        # either side 😔, see e.g. N20120419S0097.fits (right
-                        # edge visible) and N20121213S0312.fits (left edge
-                        # visible). Better to leave it uncorrected and trust
-                        # determineSlitEdges to find the edge in that case.
-                        mdf['x_ccd'][0] = corrections['x_longblue_north']
-
-
-            # For GNIRS, the 'slitsize_mx' column is in arcsec, so grab it:
-            arcsec = mdf['slitsize_mx'][0] * slit_correction_factor
-            pixels = arcsec / ad.pixel_scale()
-
-            # Only the 'slitsize_mx' value needs the width correction; the
-            # 'slitsize_my' isn't actually used, but we convert it for
-            # consistency.
-            mdf['slitsize_mx'][0] *= slit_correction_factor / arcsec_to_mm
-            mdf['slitsize_my'][0] /= arcsec_to_mm
-
-            if 'slitlength_arcsec' not in mdf.columns:
-                extra_cols = Table(np.array([arcsec, pixels]),
-                                   names=('slitlength_arcsec',
-                                          'slitlength_pixels'))
-                ad.MDF = hstack([mdf, extra_cols], join_type='inner')
-
-            log.stdinfo('Converted slit sizes from arcseconds to millimeters '
-                        f'in {ad.filename}.')
+                mdf_table = Table(np.array(slit_info[mdf_key]),
+                                  names=('x_ccd', 'slitlength_asec',
+                                         'slitlength_pixels'))
+                ad.MDF = mdf_table
+                log.stdinfo(f"Added MDF table for {ad.filename}")
 
         return adinputs

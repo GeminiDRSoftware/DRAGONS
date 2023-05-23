@@ -15,19 +15,9 @@ from gemini_instruments.f2.lookup import dispersion_offset_mask
 
 from . import parameters_f2_longslit
 from .primitives_f2_spect import F2Spect
+from .lookups.MDF_LS_F2 import slit_info
 
 # -----------------------------------------------------------------------------
-
-# This dictionary contains the following information for each slit configuration:
-# x-coordinate of the pixel in the center of the slit, slit length in arcsec,
-# slit length in pixels. The F2 pixel scale is 0.18 arsec/pixel, according to
-# the instrument webpage.
-f2_slit_info = {'1pix': (763.5, 271.62, 1509),
-                '2pix': (769.5, 265.14, 1473),
-                '3pix': (770.0, 271.80, 1510),
-                '4pix': (772.5, 270.54, 1503),
-                '6pix': (777.0, 271.80, 1510),
-                '8pix': (771.0, 271.80, 1510)}
 
 @parameter_override
 @capture_provenance
@@ -84,7 +74,7 @@ class F2Longslit(F2Spect):
             else:
                 maskname = ad.focal_plane_mask(pretty=True).split('-')[0]
 
-                mdf_table = Table(np.array(f2_slit_info[maskname]),
+                mdf_table = Table(np.array(slit_info[maskname]),
                                   names=('x_ccd', 'slitlength_arcsec',
                                          'slitlength_pixels'))
                 ad.MDF = mdf_table
