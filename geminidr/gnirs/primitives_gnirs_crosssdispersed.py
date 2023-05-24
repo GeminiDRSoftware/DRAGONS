@@ -16,7 +16,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .primitives_gnirs_spect import GNIRSSpect
 from . import parameters_gnirs_crossdispersed
-from .lookups.MDF.xd_MDF_table import mdf_table
+from .lookups.MDF_XD_GNIRS import slit_info
 
 # -----------------------------------------------------------------------------
 @parameter_override
@@ -58,6 +58,9 @@ class GNIRSCrossDispersed(GNIRSSpect):
         mdf_list = mdf or self.caldb.get_calibrations(adinputs,
                                                       caltype="mask").files
 
+        columns = ('slit_id', 'x_ccd', 'y_ccd', 'specorder',
+                   'slitlength_asec', 'slitlength_pixels')
+
         for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
 
             # GNIRS XD doesn't use mask definition files, so this won't add
@@ -65,13 +68,14 @@ class GNIRSCrossDispersed(GNIRSSpect):
             self._addMDF(ad, suffix, mdf)
 
             if hasattr(ad, 'MDF'):
+                log.fullinfo(f"{ad.filename} already has an MDF table.")
                 continue
             else:
                 mdf_key_parts = ('telescope', '_prism', 'decker',
                                  '_grating', 'camera')
                 mdf_key = "_".join(getattr(ad, desc)() for desc in mdf_key_parts)
-
-                ad.MDF = mdf_table[mdf_key]
+                ad.MDF = Table(slit_info[mdf_key],
+                               names=columns)
                 log.stdinfo(f"Added MDF table for {ad.filename}")
 
         return adinputs
