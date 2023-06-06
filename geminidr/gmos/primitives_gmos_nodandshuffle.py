@@ -147,8 +147,7 @@ class GMOSNodAndShuffle(GMOS):
 
         return adinputs
 
-    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=True,
-                    rectify=False):
+    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=True):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,

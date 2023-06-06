@@ -32,6 +32,3 @@ class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
         self.mask_objects = False
         self.dilation = 0.
 
-class flatCorrectConfig(parameters_preprocess.flatCorrectConfig):
-    def setDefaults(self):
-        self.rectify = True

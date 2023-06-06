@@ -81,7 +81,6 @@ class fixPixelsConfig(config.Config):
 class flatCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_flatCorrected", optional=True)
     flat = config.ListField("Flatfield frame", (str, AstroData), None, optional=True, single=True)
-    rectify = config.Field("Apply slit rectification model?", bool, False)
 
 class nonlinearityCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_nonlinearityCorrected", optional=True)

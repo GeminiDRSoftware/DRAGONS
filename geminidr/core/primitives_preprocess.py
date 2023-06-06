@@ -755,7 +755,7 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
 
-    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=True, rectify=False):
+    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=True):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
@@ -775,8 +775,6 @@ class Preprocess(PrimitivesBASE):
             name of flatfield to use
         do_flat: bool
             perform flatfield correction?
-        rectify: bool
-            apply slit rectification model?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -832,12 +830,7 @@ class Preprocess(PrimitivesBASE):
             # warning if one doesn't exist, but allow it to pass.
             try:
                 rect_model = flat[0].wcs.get_transform('pixels', 'rectified')
-                # TODO: parameter "rectify" is a temporary workaround. -OS
-                if rectify:
-                    rectified = True
-                else:
-                    rectified = False
-                    log.stdinfo(f"No rectification model will be applied since rectify=False")
+                rectified = True
             except CoordinateFrameError:
                 log.warning(f"No rectification model found in {flat.filename}")
                 rectified = False
