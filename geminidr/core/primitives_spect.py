@@ -3317,7 +3317,7 @@ class Spect(Resample):
         center : int/None
             central row/column for 1D extraction (None => use middle)
         nsum : int
-            number of rows/columns around center to combine
+            number of rows/columns to average (about "center")
         function : str
             type of function to fit (splineN or polynomial types)
         order : int
@@ -3424,13 +3424,20 @@ class Spect(Resample):
 
             config = self.params[self.myself()]
             config.update(**params)
-            uiparams = UIParameters(config, reinit_params=["center", "nsum", "threshold"])
+            dispaxis = 2 - ad[0].dispersion_axis()
+            line = 'row' if dispaxis == 1 else 'column'
+            title_overrides = {"center": f"Central {line} to extract",
+                               "nsum": f"Number of {line} to average",
+                               "threshold": "Threshold for unilluminated pixels"}
+            uiparams = UIParameters(config, reinit_params=["center", "nsum", "threshold"],
+                                    title_overrides=title_overrides)
 
             # let's update the max center to something reasonable
-            dispaxis = 2 - ad[0].dispersion_axis()
             npix = ad[0].shape[1 - dispaxis]
             uiparams.fields['center'].max = npix
             uiparams.fields['nsum'].max = npix
+
+            xaxis_label = 'x (pixels)' if dispaxis == 1 else 'y (pixels)'
 
             data = reconstruct_points(uiparams)
 
@@ -3455,8 +3462,8 @@ class Spect(Resample):
 
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points,
                                                    all_fp_init,
-                                                   tab_name_fmt="CCD {}",
-                                                   xlabel='x (pixels)', ylabel='counts',
+                                                   tab_name_fmt="Array {}",
+                                                   xlabel=xaxis_label, ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",
                                                    primitive_name="normalizeFlat",

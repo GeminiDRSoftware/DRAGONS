@@ -1659,7 +1659,7 @@ class UIParameters:
             Dictionary of names to new Fields to track
         :reinit_params: list
             List of names of configuration fields to show in the reinit panel
-        :titles_overrides: dict
+        :title_overrides: dict
             Dictionary of overrides for labeling the fields in the UI
         :placeholders: dict
             Dictionary of placeholder text to use for text inputs
