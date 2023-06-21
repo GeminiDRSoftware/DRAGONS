@@ -79,11 +79,11 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py310-unit/reports/*_results.xml'
                             )
-                            echo "Deleting Unit tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
+        //                    echo "Deleting Unit tests workspace ${env.WORKSPACE}"
+        //                    cleanWs()
+        //                    dir("${env.WORKSPACE}@tmp") {
+        //                      deleteDir()
+        //                    }
                         }
         //                failure {
         //                    echo "Archiving tests results for Unit Tests"
@@ -450,4 +450,3 @@ pipeline {
         }
     }
 }
- 
