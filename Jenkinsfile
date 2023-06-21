@@ -445,8 +445,8 @@ pipeline {
 //            deleteDir() /* clean up our workspace */
         }
         always {
-            echo "Delete master workspace ${env.WORKSPACE}"
-            cleanWs()
+//            echo "Delete master workspace ${env.WORKSPACE}"
+//            cleanWs()
         }
     }
 }
