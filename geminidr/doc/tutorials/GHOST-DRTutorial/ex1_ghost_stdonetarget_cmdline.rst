@@ -517,7 +517,7 @@ format" and the HST calspec format.
 
 The final products are the ``_dragons`` files.  In those files, all the orders
 have been stitched together with the wavelength on a log-linear scale,
-calibrated to vacuum wavelengths and corrected for barycentric motion (unless
+calibrated to in-air wavelengths and corrected for barycentric motion (unless
 that correction is turned off.)
 
 The first extension (the "1" in the call to ``dgsplot`` above) is the spectrum.
