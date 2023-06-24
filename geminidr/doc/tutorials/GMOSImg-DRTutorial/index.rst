@@ -12,6 +12,8 @@ based on information found in the `GEMINI GMOS
 WebPage <https://www.gemini.edu/sciops/instruments/gmos/>`_ and in the
 |DRAGONS| Documentation
 
+[Return to the main |DRAGONS| page.]
+
 .. toctree::
    :maxdepth: 2
    :numbered:
