@@ -14,6 +14,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gemini_instruments.f2.lookup import dispersion_offset_mask
 
 from . import parameters_f2_longslit
+from ..core.primitives_longslit import Longslit
 from .primitives_f2_spect import F2Spect
 from .lookups.MDF_LS_F2 import slit_info
 
@@ -21,7 +22,7 @@ from .lookups.MDF_LS_F2 import slit_info
 
 @parameter_override
 @capture_provenance
-class F2Longslit(F2Spect):
+class F2Longslit(F2Spect, Longslit):
     """This class contains all of the processing primitives for the F2Longslit
     level of the type hiearchy tree. It inherits all the primitives from the
     above level.

@@ -38,6 +38,7 @@ from recipe_system.utils.md5 import md5sum
 
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
+from ..core.primitives_longslit import Longslit
 from . import parameters_gmos_longslit
 
 
@@ -66,7 +67,7 @@ class GMOSLongslit():
 
 @parameter_override
 @capture_provenance
-class GMOSClassicLongslit(GMOSSpect):
+class GMOSClassicLongslit(GMOSSpect, Longslit):
     """
     This is the class containing all of the preprocessing primitives
     for the GMOSLongslit level of the type hierarchy tree. It inherits all
@@ -1064,7 +1065,7 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
 
 @parameter_override
 @capture_provenance
-class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle):
+class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle, Longslit):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)
