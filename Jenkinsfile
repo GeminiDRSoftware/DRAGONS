@@ -50,7 +50,7 @@ pipeline {
             }
         }
 
-        stage('Base install') {
+        stage('Pre-install') {
             agent { label "conda" }
             environment {
                 TMPDIR = "${env.WORKSPACE}/.tmp/conda/"
@@ -59,6 +59,8 @@ pipeline {
                 echo "Update the Conda base install for all on-line nodes"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
+                echo "Create a trial Python 3.10 env, to cache new packages"
+                sh 'tox -e py310-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
             }
             post {
                 always {
