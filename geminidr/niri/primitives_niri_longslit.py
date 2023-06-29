@@ -12,6 +12,7 @@ from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
 
 from .primitives_niri_spect import NIRISpect
+from ..core.primitives_longslit import Longslit
 from . import parameters_niri_longslit
 
 # -----------------------------------------------------------------------------
@@ -38,7 +39,7 @@ niri_slit_info = {'f6-2pix': (501, 51.4, 439.),
 
 @parameter_override
 @capture_provenance
-class NIRILongslit(NIRISpect):
+class NIRILongslit(NIRISpect, Longslit):
     """
     This class contains all the preprocessing primitives for the NIRILongslit
     level of the type hierarchy tree. It inherits all the primitives from the

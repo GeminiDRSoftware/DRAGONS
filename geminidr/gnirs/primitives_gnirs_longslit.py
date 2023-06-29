@@ -14,12 +14,13 @@ from recipe_system.utils.decorators import (parameter_override,
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .primitives_gnirs_spect import GNIRSSpect
+from ..core.primitives_longslit import Longslit
 from . import parameters_gnirs_longslit
 
 # -----------------------------------------------------------------------------
 @parameter_override
 @capture_provenance
-class GNIRSLongslit(GNIRSSpect):
+class GNIRSLongslit(GNIRSSpect, Longslit):
     """
     This class contains all of the preprocessing primitives for the
     GNIRSLongslit level of the type hierarchy tree. It inherits all the
