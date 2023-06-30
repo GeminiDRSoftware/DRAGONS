@@ -156,7 +156,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
                 mdf_key = "_".join((telescope, grating, camera))
 
                 mdf_table = Table(np.array(slit_info[mdf_key]),
-                                  names=('x_ccd', 'slitlength_asec',
+                                  names=('x_ccd', 'slitlength_arcsec',
                                          'slitlength_pixels'))
                 ad.MDF = mdf_table
                 log.stdinfo(f"Added MDF table for {ad.filename}")
