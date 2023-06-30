@@ -16,12 +16,13 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .primitives_gnirs_spect import GNIRSSpect
 from . import parameters_gnirs_crossdispersed
+from ..core.primitives_crossdispersed import Crossdispersed
 from .lookups.MDF_XD_GNIRS import slit_info
 
 # -----------------------------------------------------------------------------
 @parameter_override
 @capture_provenance
-class GNIRSCrossDispersed(GNIRSSpect):
+class GNIRSCrossDispersed(GNIRSSpect, Crossdispersed):
     """This class contains all of the preprocessing primitives for the
     GNIRSCrossDispersed level of the type hierarchy tree. It inherits all the
     primitives from the above level.
