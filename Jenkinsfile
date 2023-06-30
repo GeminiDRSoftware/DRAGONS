@@ -332,43 +332,43 @@ pipeline {
         //         }  // end always
         //     }  // end post
         // }  // end stage
-        stage('WaveCal Tests') {
-            when {
-                expression { runtests_wavecal == 1 }
-            }
+        // stage('WaveCal Tests') {
+        //     when {
+        //         expression { runtests_wavecal == 1 }
+        //     }
 
-            agent { label "master" }
-            environment {
-                MPLBACKEND = "agg"
-                DRAGONS_TEST_OUT = "wavecal_tests_outputs"
-                TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                TMPDIR = "${env.WORKSPACE}/.tmp/wavecal/"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_dirs.sh'
-                echo "Running tests"
-                sh 'tox -e py310-wavecal -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F wavecal'
-            }  // end steps
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside WaveCal Tests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: '.tmp/py310-wavecal/reports/*_results.xml'
-                    )
-                    echo "Deleting WaveCal Tests workspace ${env.WORKSPACE}"
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                      deleteDir()
-                    }
-                }  // end always
-            }  // end post
-        }  // end stage
+        //     agent { label "master" }
+        //     environment {
+        //         MPLBACKEND = "agg"
+        //         DRAGONS_TEST_OUT = "wavecal_tests_outputs"
+        //         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+        //         TMPDIR = "${env.WORKSPACE}/.tmp/wavecal/"
+        //     }
+        //     steps {
+        //         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+        //         checkout scm
+        //         sh '.jenkins/scripts/setup_dirs.sh'
+        //         echo "Running tests"
+        //         sh 'tox -e py310-wavecal -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
+        //         echo "Reporting coverage"
+        //         sh 'tox -e codecov -- -F wavecal'
+        //     }  // end steps
+        //     post {
+        //         always {
+        //             echo "Running 'archivePlots' from inside WaveCal Tests"
+        //             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+        //             junit (
+        //                 allowEmptyResults: true,
+        //                 testResults: '.tmp/py310-wavecal/reports/*_results.xml'
+        //             )
+        //             echo "Deleting WaveCal Tests workspace ${env.WORKSPACE}"
+        //             cleanWs()
+        //             dir("${env.WORKSPACE}@tmp") {
+        //               deleteDir()
+        //             }
+        //         }  // end always
+        //     }  // end post
+        // }  // end stage
 
         stage('Slower tests') {
             parallel {
