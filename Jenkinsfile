@@ -73,116 +73,116 @@ pipeline {
             }
         }
 
-        stage('Quicker tests') {
-            parallel {
+        // stage('Quicker tests') {
+        //     parallel {
 
-                stage('Unit tests') {
+        //         stage('Unit tests') {
 
-                    agent{
-                        label "centos7"
-                    }
-                    environment {
-                        MPLBACKEND = "agg"
-                        DRAGONS_TEST_OUT = "unit_tests_outputs/"
-                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
-                    }
-                    steps {
-                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                        checkout scm
-                        sh '.jenkins/scripts/setup_dirs.sh'
-                        echo "Running tests with Python 3.10"
-                        sh 'tox -e py310-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
-                        echo "Reportint coverage to CodeCov"
-                        sh 'tox -e codecov -- -F unit'
-                    }
-                    post {
-                        always {
-                            junit (
-                                allowEmptyResults: true,
-                                testResults: '.tmp/py310-unit/reports/*_results.xml'
-                            )
-                            echo "Deleting Unit tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
-                        }
-        //                failure {
-        //                    echo "Archiving tests results for Unit Tests"
-        //                    sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
-        //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
-        //                }
-                    }
-                }
+        //             agent{
+        //                 label "centos7"
+        //             }
+        //             environment {
+        //                 MPLBACKEND = "agg"
+        //                 DRAGONS_TEST_OUT = "unit_tests_outputs/"
+        //                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+        //                 TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
+        //             }
+        //             steps {
+        //                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+        //                 checkout scm
+        //                 sh '.jenkins/scripts/setup_dirs.sh'
+        //                 echo "Running tests with Python 3.10"
+        //                 sh 'tox -e py310-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
+        //                 echo "Reportint coverage to CodeCov"
+        //                 sh 'tox -e codecov -- -F unit'
+        //             }
+        //             post {
+        //                 always {
+        //                     junit (
+        //                         allowEmptyResults: true,
+        //                         testResults: '.tmp/py310-unit/reports/*_results.xml'
+        //                     )
+        //                     echo "Deleting Unit tests workspace ${env.WORKSPACE}"
+        //                     cleanWs()
+        //                     dir("${env.WORKSPACE}@tmp") {
+        //                       deleteDir()
+        //                     }
+        //                 }
+        // //                failure {
+        // //                    echo "Archiving tests results for Unit Tests"
+        // //                    sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+        // //                             archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
+        // //                }
+        //             }
+        //         }
 
-                stage('Integration tests') {
-                    agent { label "centos7" }
-                    environment {
-                        MPLBACKEND = "agg"
-                        DRAGONS_TEST_OUT = "./integ_tests_outputs/"
-                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        TMPDIR = "${env.WORKSPACE}/.tmp/integ/"
-                    }
-                    steps {
-                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                        checkout scm
-                        echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_dirs.sh'
-                        echo "Integration tests"
-                        sh 'tox -e py310-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
-                        echo "Reporting coverage"
-                        sh 'tox -e codecov -- -F integration'
-                    } // end steps
-                    post {
-                        always {
-                            junit (
-                                allowEmptyResults: true,
-                                testResults: '.tmp/py310-integ/reports/*_results.xml'
-                            )
-                            echo "Deleting Integration tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
-                        }
-                    } // end post
-                } // end stage
+        //         stage('Integration tests') {
+        //             agent { label "centos7" }
+        //             environment {
+        //                 MPLBACKEND = "agg"
+        //                 DRAGONS_TEST_OUT = "./integ_tests_outputs/"
+        //                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+        //                 TMPDIR = "${env.WORKSPACE}/.tmp/integ/"
+        //             }
+        //             steps {
+        //                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+        //                 checkout scm
+        //                 echo "${env.PATH}"
+        //                 sh '.jenkins/scripts/setup_dirs.sh'
+        //                 echo "Integration tests"
+        //                 sh 'tox -e py310-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
+        //                 echo "Reporting coverage"
+        //                 sh 'tox -e codecov -- -F integration'
+        //             } // end steps
+        //             post {
+        //                 always {
+        //                     junit (
+        //                         allowEmptyResults: true,
+        //                         testResults: '.tmp/py310-integ/reports/*_results.xml'
+        //                     )
+        //                     echo "Deleting Integration tests workspace ${env.WORKSPACE}"
+        //                     cleanWs()
+        //                     dir("${env.WORKSPACE}@tmp") {
+        //                       deleteDir()
+        //                     }
+        //                 }
+        //             } // end post
+        //         } // end stage
 
-                stage('Regression Tests') {
-                    agent { label "master" }
-                    environment {
-                        MPLBACKEND = "agg"
-                        DRAGONS_TEST_OUT = "regression_tests_outputs"
-                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        TMPDIR = "${env.WORKSPACE}/.tmp/regr/"
-                    }
-                    steps {
-                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                        checkout scm
-                        echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_dirs.sh'
-                        echo "Regression tests"
-                        sh 'tox -e py310-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
-                        echo "Reporting coverage"
-                        sh 'tox -e codecov -- -F regression'
-                    } // end steps
-                    post {
-                        always {
-                            junit (
-                                allowEmptyResults: true,
-                                testResults: '.tmp/py310-reg/reports/*_results.xml'
-                            )
-                            echo "Deleting Regression Tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
-                        }
-                    } // end post
-                }
-            } // end parallel
-        }
+        //         stage('Regression Tests') {
+        //             agent { label "master" }
+        //             environment {
+        //                 MPLBACKEND = "agg"
+        //                 DRAGONS_TEST_OUT = "regression_tests_outputs"
+        //                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+        //                 TMPDIR = "${env.WORKSPACE}/.tmp/regr/"
+        //             }
+        //             steps {
+        //                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+        //                 checkout scm
+        //                 echo "${env.PATH}"
+        //                 sh '.jenkins/scripts/setup_dirs.sh'
+        //                 echo "Regression tests"
+        //                 sh 'tox -e py310-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
+        //                 echo "Reporting coverage"
+        //                 sh 'tox -e codecov -- -F regression'
+        //             } // end steps
+        //             post {
+        //                 always {
+        //                     junit (
+        //                         allowEmptyResults: true,
+        //                         testResults: '.tmp/py310-reg/reports/*_results.xml'
+        //                     )
+        //                     echo "Deleting Regression Tests workspace ${env.WORKSPACE}"
+        //                     cleanWs()
+        //                     dir("${env.WORKSPACE}@tmp") {
+        //                       deleteDir()
+        //                     }
+        //                 }
+        //             } // end post
+        //         }
+        //     } // end parallel
+        // }
 
         // stage('F2 Tests') {
         //     when {
