@@ -50,7 +50,7 @@ class cleanReadoutConfig(config.Config):
     pattern_y_size = config.Field("Pattern y size (pixels)", int, 4, check=powerof2)
     debug_subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
     level_bias_offset = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
-    smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=5)
+    smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=1)
     sg_win_size = config.RangeField("Smoothing window size (pixels) for Savitzky-Golay filter", int, 25, min=3)
     simple_thres = config.RangeField("Pattern edge detection threshold", float, 0.6, min=0.0)
     pat_strength_thres = config.RangeField("Pattern strength threshold", float, 15.0, min=0.0)
@@ -67,6 +67,7 @@ class cleanFFTReadoutConfig(config.Config):
     l2clean = config.Field("Clean Fourier artifacts?", bool, True)
     l2thres = config.RangeField("Sigma factor to be used in thresholding for l2clean", float, 4., min=0)
     clean = config.Field("Behavior of the routine? Must be one of default, skip, or force", str, "default")
+    smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=1)
 
 class separateFlatsDarksConfig(config.Config):
     pass
