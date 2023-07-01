@@ -21,7 +21,7 @@ class Longslit(Spect):
     the future.
 
     """
-
+    tagset = {'GEMINI', 'SPECT', 'LS'}
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_longslit)

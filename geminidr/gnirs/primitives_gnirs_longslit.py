@@ -14,7 +14,7 @@ from recipe_system.utils.decorators import (parameter_override,
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .primitives_gnirs_spect import GNIRSSpect
-from ..core.primitives_longslit import Longslit
+from geminidr.core.primitives_longslit import Longslit
 from . import parameters_gnirs_longslit
 from .lookups.MDF_LS_GNIRS import slit_info
 

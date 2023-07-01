@@ -14,12 +14,12 @@ from . import parameters_crossdispersed
 
 @parameter_override
 @capture_provenance
-class Crossdispersed(Spect, Preprocess):
+class CrossDispersed(Spect, Preprocess):
     """This is the class containing primitives specifically for crossdispersed
     data. It inherits all the primitives from the level above.
 
     """
-
+    tagset = {'GEMINI', 'SPECT', 'XD'}
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_crossdispersed)
