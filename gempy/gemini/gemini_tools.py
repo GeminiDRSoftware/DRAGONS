@@ -1095,6 +1095,65 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     return adinput
 
 @handle_single_adinput
+def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
+                        return_dtype=None):
+    """
+    This function cuts sections of the science frame into extensions to match
+    the auxiliary data like calibration files or BPMs based on the value of the
+    `detector_section()` keyword in the auxiliary data.
+
+    Parameters
+    ----------
+    adinput: list/AstroData
+        input science image(s)
+    aux: list/AstroData
+        auxiliary file(s) (e.g., BPM, flat) to be clipped
+    aux_type: str
+        type of auxiliary file
+    return_dtype: dtype
+        datatype of returned objects
+
+    Returns
+    -------
+    list/AD:
+        science frame file(s), appropriately cut into multiple extensions
+    """
+    log = logutils.get_logger(__name__)
+    ad_output_list = []
+
+    for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
+        xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+
+        if this_aux.detector_x_bin() != xbin or this_aux.detector_y_bin() != ybin:
+            raise OSError("Auxiliary data {} has different binning to {}".
+                          format(os.path.basename(this_aux.filename), ad.filename))
+        cut_this_ad = False
+
+        for ext in ad:
+            # Make a new science file for appending to, starting with PHU
+            new_ad = astrodata.create(ad.phu)
+            for auxext, detsec in zip(this_aux, this_aux.detector_section()):
+                new_ad.append(ext.nddata[detsec.asslice()])
+                new_ad[-1].SLITEDGE = auxext.SLITEDGE
+                new_ad[-1].hdr[ad._keyword_for('detector_section')] =\
+                    detsec.asIRAFsection(binning=(xbin, ybin))
+            cut_this_ad = True
+
+        if return_dtype:
+            for adext in new_ad:
+                if adext.data.dtype != return_dtype:
+                    adext.data = adext.data.astype(return_dtype)
+                if adext.variance is not None and adext.variance.dtype != return_dtype:
+                    adext.variance = adext.variance.astype(return_dtype)
+
+        ad_output_list.append(new_ad)
+        if cut_this_ad:
+            log.stdinfo(f"Cutting {os.path.basename(ad.filename)} to match "
+                        "auxiliary data")
+
+    return ad_output_list
+
+@handle_single_adinput
 def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
                      allow_empty=False):
     """
