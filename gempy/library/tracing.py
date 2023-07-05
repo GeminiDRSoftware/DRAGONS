@@ -33,6 +33,7 @@ from scipy import interpolate, optimize, signal
 
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from gempy.library import astromodels as am
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
@@ -373,7 +374,8 @@ class Aperture:
 ###############################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
 @insert_descriptor_values("dispersion_axis")
-def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
+def average_along_slit(ext, center=None, offset_from_center=None,
+                       nsum=None, dispersion_axis=None):
     """
     Calculates the average along the slit and its pixel-by-pixel variance.
 
@@ -383,7 +385,10 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
         2D spectral image from which trace is to be extracted.
     center : float or None
         Center of averaging region (None => center of axis).
-        python 0-indexed
+        Python 0-indexed. Used with longslit spectra.
+    offset_from_center : float or None
+        Offset of center of extracted aperature from center of illuminated
+        region. Used with cross-dispersed spectra.
     nsum : int
         Number of rows/columns to combine
 
@@ -397,27 +402,73 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None):
         Variance of the extracted region based on pixel-to-pixel variation.
     extract_slice : slice
         Slice object for extraction region.
+    -- OR --
+    slit_polynomial : `Chebyshev1D` model
+        Chebyshev polynomial representing the center of the extracted aperture.
     """
-    npix = ext.shape[1 - dispersion_axis]
-
+    constant_slit = 'LS' in ext.tags
+    npix, mpix = ext.shape[1 - dispersion_axis], ext.shape[dispersion_axis]
     if nsum is None:
         nsum = npix
     if center is None:
         center = 0.5 * (npix - 1)
+    if offset_from_center is None:
+        offset_from_center = 0
 
-    extract_slice = slice(max(0, int(center + 1 - 0.5 * nsum)),
-                          min(npix, int(center + 1 + 0.5 * nsum)))
+    if constant_slit:
+        extract_slice = slice(max(0, int(center + 1 - 0.5 * nsum)),
+                              min(npix, int(center + 1 + 0.5 * nsum)))
+    else:
+        extract_slice = slice(None)
+
+    # Transpose the data if needed. If the slit is constant, extracting it here
+    # is all that is needed.
     data, mask, variance = at.transpose_if_needed(
         ext.data, ext.mask, ext.variance,
         transpose=(dispersion_axis == 0), section=extract_slice)
 
-    # Create 1D spectrum; pixel-to-pixel variation is a better indicator
-    # of S/N than the VAR plane
-    # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
-    #  Use "variance=None" to make them pass again.
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+    if constant_slit:
+        # Create 1D spectrum; pixel-to-pixel variation is a better indicator
+        # of S/N than the VAR plane
+        # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
+        #  Use "variance=None" to make them pass again.
+        data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
-    return data, mask, variance, extract_slice
+        return data, mask, variance, extract_slice
+
+    else:
+        edge1, edge2 = [am.table_to_model(row) for row in ext.SLITEDGE]
+        # Create a polynomial tracing the slit between the two edges.
+        # The coefficients for this polynomial are a combination of
+        # those of the two edge polynomials times the fraction across the
+        # extension where the center line is to be.
+        center_coeffs = [(p1 + p2) * 0.5 for p1, p2
+                         in zip(edge1.parameters, edge2.parameters)]
+        coeffs_dict = {coeff: value for coeff, value in zip(edge1.param_names,
+                                                            center_coeffs)}
+        coeffs_dict['c0'] += offset_from_center
+        slit_polynomial = models.Chebyshev1D(degree=edge1.degree,
+                                             domain=edge1.domain,
+                                             **coeffs_dict)
+
+        centers = np.array([slit_polynomial(n) for n in range(0, mpix)])
+        data_out = np.empty([mpix], dtype=np.float32)
+        mask_out = np.empty_like(data_out, dtype=np.uint16)
+        variance_out = np.empty_like(data_out)
+
+        # Sum `nsum` pixels around the center at each column.
+        for i, center_pix in enumerate(centers):
+            n1 = center_pix + 1 - 0.5 * nsum
+            n2 = center_pix + 1 + 0.5 * nsum
+            nddata = NDAstroData(data[:, i], mask=mask[:, i],
+                                 variance=variance[:, i])
+            data_out[i], mask_out[i], variance_out[i] = sum1d(nddata, n1, n2)
+
+        # Divide by number of pixels summed to get the mean.
+        data_out /= nsum
+
+        # Pass the polynomial for the center instead of the extract slice
+        return data_out, mask_out, variance_out, slit_polynomial
 
 
 def estimate_peak_width(data, mask=None, boxcar_size=None, nlines=None):
