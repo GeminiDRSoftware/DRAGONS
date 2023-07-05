@@ -3495,11 +3495,26 @@ class Spect(Resample):
                 for ext in admos:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     direction = "row" if dispaxis == 1 else "column"
+                    const_slit = 'LS' in ext.tags
 
-                    data, mask, variance, extract_slice = tracing.average_along_slit(
-                        ext, center=ui_params.center, nsum=ui_params.nsum)
-                    log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                                format(direction, extract_slice.start + 1, extract_slice.stop))
+                    data, mask, variance, extract_info = tracing.average_along_slit(
+                        ext, center=ui_params.nsum, nsum=ui_params.nsum,
+                        offset_from_center=ui_params.offset_from_center)
+                    if const_slit:
+                        log.stdinfo(f"Extracting 1D spectrum from {direction}s "
+                                    f"{extract_info.start + 1} to "
+                                    f"{extract_info.stop}.")
+                    else:
+                        # For non-straight slits, `extract_info` is the 1D
+                        # Chebyshev polynomial that traces the center of the slit.
+                        coeffs = [f"{key}: {value:.2f}" for key, value in
+                                  zip(extract_info.param_names,
+                                      extract_info.parameters)]
+                        log.stdinfo(f"Extracting 1D spectrum for extension {ext.id}")
+                        log.fullinfo(f"  ±{ui_params.nsum/2:.1f} {direction}s "
+                                    "around polynomial with " +
+                                    ", ".join(coeffs))
+
                     mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
                     slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
@@ -3550,6 +3565,7 @@ class Spect(Resample):
             dispaxis = 2 - ad[0].dispersion_axis()
             npix = ad[0].shape[1 - dispaxis]
             uiparams.fields['center'].max = npix
+            uiparams.fields['offset_from_center'].max = npix // 2
             uiparams.fields['nsum'].max = npix
 
             data = reconstruct_points(uiparams)
@@ -3560,9 +3576,9 @@ class Spect(Resample):
                 all_domains = list()
                 all_fp_init = list()
                 for ext, x in zip(admos, x_arr):
-                    pixels = np.arange(ext.shape[1])
-                    all_domains.append([min(pixels), max(pixels)])
                     dispaxis = 2 - ext.dispersion_axis()
+                    pixels = np.arange(ext.shape[dispaxis])
+                    all_domains.append([min(pixels), max(pixels)])
                     all_fp_init.append(fit_1D.translate_params(params))
 
                 config = self.params[self.myself()]
