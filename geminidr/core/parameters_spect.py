@@ -105,6 +105,10 @@ class createNewApertureConfig(config.Config):
                              "specified, or left as None.")
 
 
+class cutSlitsConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitsCut", optional=True)
+
+
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)

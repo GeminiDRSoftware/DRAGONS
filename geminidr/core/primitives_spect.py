@@ -39,6 +39,7 @@ from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
+from astrodata.utils import Section
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
@@ -1144,6 +1145,102 @@ class Spect(Resample):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
+
+
+    def cutSlits(self, adinputs=None, **params):
+        """
+        Extract slits in images into individual extensions.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Data as 2D spectral images with slits defined in a SLITEDGE table.
+        suffix :  str
+            Suffix to be added to output files.
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
+
+        adoutputs = []
+
+        for ad in adinputs:
+
+            log.fullinfo(f"Cutting slits in {ad.filename}")
+            adout = astrodata.create(ad.phu)
+            adout.filename = ad.filename
+            adout.orig_filename = ad.orig_filename
+            for ext in ad:
+                try:
+                    slitedge = ext.SLITEDGE
+                except AttributeError:
+                    log.warning(f"No slits to cut in extension {ext.id}")
+                    adout.append(ext)
+                else:
+                    dispaxis = 2 - ext.dispersion_axis()  # Python Sense
+
+                    # Create pairs of slit edge models by zipping consecutive
+                    # pairs of entries from the table.
+                    pairs = [(m, n) for m, n in zip(islice(slitedge, 0, None, 2),
+                                                    islice(slitedge, 1, None, 2))]
+
+                    for i, slit in enumerate(pairs):
+
+                        model1 = am.table_to_model(slit[0])
+                        model2 = am.table_to_model(slit[1])
+
+                        # Get the coordinates of the bounding box surrounding
+                        # the slit.
+                        if dispaxis == 0: # vertical
+                            y1, y2 = 0, ext.data.shape[dispaxis]
+                            x1 = int(np.floor(model1(y1)))
+                            x2 = int(np.ceil(model2(y2)))
+
+                        if dispaxis == 1: # horizontal
+                            x1, x2 = 0, ext.data.shape[dispaxis]
+                            y1 = int(np.floor(model1(x1)))
+                            y2 = int(np.ceil(model2(x2)))
+
+                        # Create a Section to cut out.
+                        cut_section = Section(x1=x1, x2=x2, y1=y1, y2=y2)
+                        adout.append(ext.nddata[cut_section.asslice()])
+                        log.fullinfo(f"  Cutting slit {i} in extension {ext.id} "
+                                     "with corners at "
+                                     f"({x1}, {y1}) & ({x2}, {y2})")
+
+                        # Add the correct pair of rows from the SLITEDGE table.
+                        adout[i].SLITEDGE = slitedge[2*i:2*i+2]
+                        # Shift the c0 coefficient by the correct offset.
+                        offset = x1 if dispaxis == 0 else y1
+                        adout[i].SLITEDGE["c0"] -= offset
+                        adout[i].SLITEDGE["slit"] = 0  # reset slit number in ext
+
+                        # TODO: this updates the detector_section keyword, which
+                        # is fine for instruments with only one array in the
+                        # detector. NEEDS UPDATING for multi-array instruments
+                        # (e.g., MOS data from MOS), and will need to update
+                        # the array_section keyword then as well.
+                        det_sec_kw = ad._keyword_for('detector_section')
+                        binnings = (ext.detector_x_bin(),
+                                    ext.detector_y_bin())
+                        adout[i].hdr[det_sec_kw] = cut_section.asIRAFsection(
+                            binning=binnings)
+                        adout.hdr.set_comment(
+                            det_sec_kw, self.keyword_comments.get(det_sec_kw))
+
+            # Timestamp and update the filename
+            gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
+            adout.update_filename(suffix=sfx, strip=True)
+
+            adoutputs.append(adout)
+
+        return adoutputs
 
 
     def determineDistortion(self, adinputs=None, **params):

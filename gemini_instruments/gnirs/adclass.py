@@ -187,7 +187,7 @@ class AstroDataGnirs(AstroDataGemini):
         string or list of strings
             Position of extension(s) using an IRAF section format (1-based)
         """
-        return self._parse_section('FULLFRAME', pretty)
+        return self.detector_section(pretty=pretty)
 
     @returns_list
     @astro_data_descriptor
@@ -245,7 +245,12 @@ class AstroDataGnirs(AstroDataGemini):
         string or list of strings
             Position of the detector using an IRAF section format (1-based).
         """
-        return self.array_section(pretty=pretty)
+        keyword = self._keyword_for('detector_section')
+        try:
+            self.hdr[keyword]
+        except KeyError:
+            keyword = 'FULLFRAME'
+        return self._parse_section(keyword, pretty)
 
     @astro_data_descriptor
     def detector_x_offset(self):
@@ -486,7 +491,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         Returns
         -------
-        <float>, 
+        <float>,
             Pixel scale in arcsec
 
         Raises
