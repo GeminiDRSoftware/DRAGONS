@@ -34,11 +34,12 @@ pipeline {
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '5'))
         timestamps()
-        timeout(time: 4, unit: 'HOURS')
+        timeout(time: 6, unit: 'HOURS')
     }
 
     environment {
         MPLBACKEND = "agg"
+        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
     }
 
     stages {
@@ -46,6 +47,29 @@ pipeline {
         stage ("Prepare"){
             steps{
                 sendNotifications 'STARTED'
+            }
+        }
+
+        stage('Pre-install') {
+            agent { label "conda" }
+            environment {
+                TMPDIR = "${env.WORKSPACE}/.tmp/conda/"
+            }
+            steps {
+                echo "Update the Conda base install for all on-line nodes"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Create a trial Python 3.10 env, to cache new packages"
+                sh 'tox -e py310-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
+            }
+            post {
+                always {
+                    echo "Deleting conda temp workspace ${env.WORKSPACE}"
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                      deleteDir()
+                    }
+                }
             }
         }
 
@@ -59,7 +83,6 @@ pipeline {
                     }
                     environment {
                         MPLBACKEND = "agg"
-                        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "unit_tests_outputs/"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                         TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
@@ -67,7 +90,7 @@ pipeline {
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
-                        sh '.jenkins/scripts/setup_agent.sh'
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests with Python 3.10"
                         sh 'tox -e py310-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
@@ -97,7 +120,6 @@ pipeline {
                     agent { label "centos7" }
                     environment {
                         MPLBACKEND = "agg"
-                        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "./integ_tests_outputs/"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                         TMPDIR = "${env.WORKSPACE}/.tmp/integ/"
@@ -106,7 +128,7 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_agent.sh'
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Integration tests"
                         sh 'tox -e py310-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
@@ -131,7 +153,6 @@ pipeline {
                     agent { label "master" }
                     environment {
                         MPLBACKEND = "agg"
-                        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "regression_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                         TMPDIR = "${env.WORKSPACE}/.tmp/regr/"
@@ -140,7 +161,7 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_agent.sh'
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Regression tests"
                         sh 'tox -e py310-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
@@ -171,7 +192,6 @@ pipeline {
             agent { label "master" }
             environment {
                 MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                 DRAGONS_TEST_OUT = "f2_tests_outputs"
                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                 TMPDIR = "${env.WORKSPACE}/.tmp/f2/"
@@ -179,7 +199,7 @@ pipeline {
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
+                sh '.jenkins/scripts/setup_dirs.sh'
                 echo "Running tests"
                 sh 'tox -e py310-f2 -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
@@ -209,7 +229,6 @@ pipeline {
             agent { label "master" }
             environment {
                 MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                 DRAGONS_TEST_OUT = "gsaoi_tests_outputs"
                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                 TMPDIR = "${env.WORKSPACE}/.tmp/gsaoi/"
@@ -217,7 +236,7 @@ pipeline {
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
+                sh '.jenkins/scripts/setup_dirs.sh'
                 echo "Running tests"
                 sh 'tox -e py310-gsaoi -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
@@ -247,7 +266,6 @@ pipeline {
             agent { label "master" }
             environment {
                 MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                 DRAGONS_TEST_OUT = "niri_tests_outputs"
                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                 TMPDIR = "${env.WORKSPACE}/.tmp/niri/"
@@ -255,7 +273,7 @@ pipeline {
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
+                sh '.jenkins/scripts/setup_dirs.sh'
                 echo "Running tests"
                 sh 'tox -e py310-niri -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
@@ -285,7 +303,6 @@ pipeline {
             agent { label "master" }
             environment {
                 MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                 DRAGONS_TEST_OUT = "gnirs_tests_outputs"
                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                 TMPDIR = "${env.WORKSPACE}/.tmp/gnirs/"
@@ -293,7 +310,7 @@ pipeline {
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
+                sh '.jenkins/scripts/setup_dirs.sh'
                 echo "Running tests"
                 sh 'tox -e py310-gnirs -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
@@ -323,7 +340,6 @@ pipeline {
             agent { label "master" }
             environment {
                 MPLBACKEND = "agg"
-                PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                 DRAGONS_TEST_OUT = "wavecal_tests_outputs"
                 TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                 TMPDIR = "${env.WORKSPACE}/.tmp/wavecal/"
@@ -331,7 +347,7 @@ pipeline {
             steps {
                 echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                 checkout scm
-                sh '.jenkins/scripts/setup_agent.sh'
+                sh '.jenkins/scripts/setup_dirs.sh'
                 echo "Running tests"
                 sh 'tox -e py310-wavecal -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
                 echo "Reporting coverage"
@@ -364,7 +380,6 @@ pipeline {
                     agent { label "master" }
                     environment {
                         MPLBACKEND = "agg"
-                        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "gmosls_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                         TMPDIR = "${env.WORKSPACE}/.tmp/gmosls/"
@@ -372,7 +387,7 @@ pipeline {
                     steps {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
-                        sh '.jenkins/scripts/setup_agent.sh'
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
                         sh 'tox -e py310-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
@@ -402,7 +417,6 @@ pipeline {
                     agent { label "master" }
                     environment {
                         MPLBACKEND = "agg"
-                        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
                         DRAGONS_TEST_OUT = "regression_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                         TMPDIR = "${env.WORKSPACE}/.tmp/slow/"
@@ -411,7 +425,7 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_agent.sh'
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Slow tests"
                         sh 'tox -e py310-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"

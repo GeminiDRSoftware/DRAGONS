@@ -492,7 +492,7 @@ class NearIR(Bookkeeping):
                                                  "clean": False}
 
                         # MS: do not touch the quad if pattern strength is weak
-                        if pattern.std() >= pat_strength_thres:
+                        if pattern.std() >= pat_strength_thres or clean == "force":
                             # MS: now finding the applicable roi for pattern subtraction.
                             # Calculate the scaling factors for the pattern in
                             # all pattern boxes and investigate as a fn of row
@@ -613,11 +613,13 @@ class NearIR(Bookkeeping):
         l2thres: float
             Sigma factor to be used in thresholding for l2clean. For stubborn Fourier artifacts,
             consider decreasing this value. 
+	smoothing_extent: int
+            Width (in pixels) of the region at a given quad interface to be smoothed over 
+            on each side of the interface.
         clean: str, Default: "skip"
-            Must be one of "skip", "default", or "force".
+            Must be one of "skip" or "default". Note "force" option doesn't exist for this FFT method.
             skip: Skip this routine entirely when called from a recipe.
             default: Apply the pattern subtraction to each quadrant of the image.
-            force: Force the pattern subtraction in each quadrant.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -631,6 +633,7 @@ class NearIR(Bookkeeping):
         l2thres = params["l2thres"]
         clean = params["clean"]
         periodicity = params["periodicity"]
+        smoothing_extent = params["smoothing_extent"]
 
         def debug_levelQuad(ext, sig=2.0, smoothing_extent=5):
             """
@@ -778,7 +781,7 @@ class NearIR(Bookkeeping):
 
 
                     ## inter-quad leveling
-                    debug_levelQuad(ext)
+                    debug_levelQuad(ext, smoothing_extent=smoothing_extent)
 
                 if l2clean: 
                     for ystart, tb in zip((0, qysize),('bottom','top')):
