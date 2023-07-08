@@ -11,7 +11,6 @@ import os
 import re
 import warnings
 from contextlib import suppress
-from copy import copy, deepcopy
 from functools import partial, reduce
 from importlib import import_module
 
