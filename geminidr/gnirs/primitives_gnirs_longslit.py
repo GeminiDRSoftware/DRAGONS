@@ -5,7 +5,8 @@
 # -----------------------------------------------------------------------------
 
 
-from astropy.table import Table, hstack
+from astropy.modeling import models
+from astropy.table import Table
 import numpy as np
 
 from gempy.gemini import gemini_tools as gt
@@ -104,6 +105,23 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
                     log.stdinfo(f"Masking rows 1 to {filter_cutoff_pix+1}")
                 if filter_cuton_pix < (ad[0].shape[dispaxis] - 1):
                     log.stdinfo(f"Masking rows {filter_cuton_pix+1} to {(ad[0].shape[dispaxis])}")
+                # Mask out vignetting in the lower-left corner found in GNIRS
+                # on Gemini-North. It's only really visible in LongRed camera
+                # data, but no harm adding it to all data for correctness.
+                if 'North' in ad.telescope():
+                    log.fullinfo("Masking vignetting")
+                    width = ext.data.shape[0 - dispaxis]
+                    height = ext.data.shape[1 - dispaxis]
+                    x, y = np.mgrid[0:width, 0:height]
+                    # Numbers taken from model of on-detector edge in vignetted
+                    # data, since the vignetting happens close enough to the
+                    # side of the detector to not really be traceable. It's
+                    # perhaps not pixel-perfect, but it looks reasonable and
+                    # should err on the side of caution.
+                    model = models.Chebyshev1D(1, c0=-1.09277804, c1=-7.2085752,
+                                               domain=(0, 1023))
+                    vignette_mask = y < model(x)
+                    ext.mask |= vignette_mask * DQ.unilluminated
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
