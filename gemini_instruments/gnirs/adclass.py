@@ -308,6 +308,8 @@ class AstroDataGnirs(AstroDataGemini):
 
         grating = self._grating(stripID=stripID, pretty=pretty)
         prism = self._prism(stripID=stripID, pretty=pretty)
+        if prism is None or grating is None:
+            return None
         if prism.startswith('MIR'):
             return grating
 
