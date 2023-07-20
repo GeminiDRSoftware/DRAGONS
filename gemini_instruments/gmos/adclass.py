@@ -991,6 +991,8 @@ class AstroDataGmos(AstroDataGemini):
         except KeyError:
             return None
         detector = self.detector_name(pretty=True)
+        if detector is None:
+            return None
         if detector.startswith('Hamamatsu'):
             return 'slow' if ampinteg > 8000 else 'fast'
         else:
