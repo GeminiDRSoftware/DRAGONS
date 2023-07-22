@@ -18,6 +18,7 @@ from .primitives_gnirs_spect import GNIRSSpect
 from . import parameters_gnirs_crossdispersed
 from geminidr.core.primitives_crossdispersed import CrossDispersed
 from .lookups.MDF_XD_GNIRS import slit_info
+from .lookups.orders_XD_GNIRS import order_info
 
 # -----------------------------------------------------------------------------
 @parameter_override
@@ -80,3 +81,19 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                 log.stdinfo(f"Added MDF table for {ad.filename}")
 
         return adinputs
+
+
+    def _get_order_information_key(self):
+        """
+        This function provides a key to the order-specific information needed
+        for updating the WCS when cutting out slits in XD data.
+
+        Returns
+        -------
+        tuple
+            A tuple of strings representing the attributes of the dict key for
+            information on the orders
+
+        """
+
+        return ('telescope', '_prism', 'decker', '_grating', 'camera')

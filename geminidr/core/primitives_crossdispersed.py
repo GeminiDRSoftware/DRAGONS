@@ -4,6 +4,10 @@
 #                                                  primitives_crossdispersed.py
 # -----------------------------------------------------------------------------
 
+from importlib import import_module
+
+from astropy.modeling import models
+from astropy.table import Table
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
 
@@ -23,6 +27,70 @@ class CrossDispersed(Spect, Preprocess):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_crossdispersed)
+
+    def cutSlits(self, adinputs=None, **params):
+        """
+        Extract slits in images into individual extensions.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Data as 2D spectral images with slits defined in a SLITEDGE table.
+        suffix :  str
+            Suffix to be added to output files.
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
+
+        adinputs = super()._cut_slits(adinputs=adinputs, **params)
+
+        columns = ('central_wavelength', 'dispersion', 'center_offset')
+        order_key_parts = self._get_order_information_key()
+
+        adoutputs = []
+        for ad in adinputs:
+            order_key = "_".join(getattr(ad, desc)() for desc in order_key_parts)
+            order_info = Table(import_module(
+                '.orders_XD_GNIRS', self.inst_lookups).order_info[order_key],
+                names=columns)
+
+            for j, ext in enumerate(ad):
+                dispaxis = 2 - ext.dispersion_axis()  # Python Sense
+                row = order_info[j]
+
+                # Handle the WCS. Need to adjust it for each slit.
+                for idx, step in enumerate(ext.wcs.pipeline):
+                    if ext.wcs.pipeline[idx+1].frame.name == 'world':
+                        if not (isinstance(step.transform[2], models.Scale)
+                            and isinstance(step.transform[3], models.Shift)):
+                            log.warning("No initial wavelength model found - "
+                                        "not modifying the WCS")
+                            break
+
+                        # Central wavelength offset (nm)
+                        step.transform[3].offset = row['central_wavelength']
+                        # Dispersion (nm/pixel)
+                        step.transform[2].factor = row['dispersion']
+                        # Offset of center of slit (pixels) - changes depending
+                        # on dispersion axis
+                        crpix_index = 5 if dispaxis == 0 else 1
+                        step.transform[crpix_index].offset = row['center_offset']
+                        break
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+            adoutputs.append(ad)
+
+        return adoutputs
 
     def flatCorrect(self, adinputs=None, **params):
         """
