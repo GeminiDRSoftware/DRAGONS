@@ -515,7 +515,7 @@ class Bookkeeping(PrimitivesBASE):
                         f"{len(adinputs)} and {source_length}")
             return adinputs
 
-        log.stdinfo(f"Transferring attribute {attribute} from stream {source}")
+        log.stdinfo(f"Transferring attribute '{attribute}' from stream {source}")
 
         # Keep track of whether we find anything to transfer, as failing to
         # do so might indicate a problem and we should warn the user
