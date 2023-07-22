@@ -121,6 +121,7 @@ class CrossDispersed(Spect, Preprocess):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         flat = params['flat']
+        do_flat = params.get('do_flat', None)
 
         if flat is None:
             flat_list = self.caldb.get_processed_flat(adinputs)
@@ -131,7 +132,7 @@ class CrossDispersed(Spect, Preprocess):
         for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
                                     force_ad=(1,))):
             if flat is None:
-                if 'sq' in self.mode or do_cal == 'force':
+                if 'sq' in self.mode or do_flat == 'force':
                    raise OSError("No processed flat listed for "
                                  f"{ad.filename}")
                 else:
@@ -143,6 +144,16 @@ class CrossDispersed(Spect, Preprocess):
             # been cut in the flat reduction.
             cut_ads.append(gt.cut_to_match_auxiliary_data(adinput=ad, aux=flat))
 
-        adinputs = super().flatCorrect(adinputs=cut_ads, **params)
+            # Copy the WCS from each extension in the flat to the corresponding
+            # extension in the file:
+            for i in range(len(cut_ads[-1])):
+                init_wave_model = flat[i].wcs.get_transform('rectified',
+                                                            'world')
+                # The ad being corrected doesn't yet have a 'rectified' frame,
+                # just 'pixels' and 'world', so insert this transform between them.
+                cut_ads[-1][i].wcs.set_transform('pixels', 'world',
+                                                 init_wave_model)
 
-        return adinputs
+        adoutputs = super().flatCorrect(adinputs=cut_ads, **params)
+
+        return adoutputs
