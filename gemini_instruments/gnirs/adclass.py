@@ -52,7 +52,7 @@ class AstroDataGnirs(AstroDataGemini):
             slit = self.phu.get('SLIT', '').lower()
             grat = self.phu.get('GRATING', '')
             prism = self.phu.get('PRISM', '')
-            if slit == 'ifu':
+            if 'ifu' in slit:
                 tags.add('IFU')
             elif ('arcsec' in slit or 'pin' in slit) and 'mm' in grat:
                 if 'MIR' in prism:
@@ -261,6 +261,10 @@ class AstroDataGnirs(AstroDataGemini):
                 fpm = slit
             elif "XD" in decker:
                 fpm = "{}XD".format(slit)
+            elif "HR-IFU" in slit and "HR-IFU" in decker:
+                fpm = "HR-IFU"
+            elif "LR-IFU" in slit and "LR-IFU" in decker:
+                fpm = "LR-IFU"
             elif "IFU" in slit and "IFU" in decker:
                 fpm = "IFU"
             elif "Acq" in slit and "Acq" in decker:
