@@ -388,6 +388,9 @@ class Image(Preprocess, Register, Resample):
         reference : str/AstroData/None
             reference image for resampling (if not provided, the first image
             in the list will be used)
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
