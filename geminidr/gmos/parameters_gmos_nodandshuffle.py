@@ -18,6 +18,8 @@ class combineNodAndShuffleBeamsConfig(config.Config):
                                   float, 0.5, min=0., optional=True)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
+    dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
+                                     float, 0.001, min=0.)
 
 
 class skyCorrectNodAndShuffleConfig(config.Config):

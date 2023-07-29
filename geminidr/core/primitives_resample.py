@@ -54,6 +54,9 @@ class Resample(PrimitivesBASE):
         clean_data: bool
             replace bad pixels with a ring median of their values to avoid
             ringing if using a high-order interpolation?
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -128,7 +131,8 @@ class Resample(PrimitivesBASE):
 
     def _resample_to_new_frame(self, adinputs=None, frame=None, order=3,
                                conserve=True, output_shape=None, origin=None,
-                               clean_data=False, process_objcat=False):
+                               clean_data=False, process_objcat=False,
+                               dq_threshold=0.001):
         """
         This private method resamples a number of AstroData objects to a
         CoordinateFrame they share. It is basically just a wrapper for the
@@ -153,6 +157,9 @@ class Resample(PrimitivesBASE):
             ringing if using a high-order interpolation?
         process_objcat : bool
             update (rather than delete) the OBJCAT?
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
         """
         log = self.log
 
@@ -177,11 +184,12 @@ class Resample(PrimitivesBASE):
             subsample = int(max(abs(np.linalg.det(transform.Transform(ext.wcs.get_transform(
                 frame, ext.wcs.input_frame)).affine_matrices().matrix)) for ext in ad) + 0.5)
             log.debug(f"{ad.filename}: Subsampling factor of {subsample}")
-            ad_out = transform.resample_from_wcs(ad, frame, order=order, conserve=conserve,
-                                                 output_shape=output_shape, origin=origin,
-                                                 process_objcat=process_objcat, subsample=subsample)
+            ad_out = transform.resample_from_wcs(
+                ad, frame, order=order, conserve=conserve,
+                output_shape=output_shape, origin=origin,
+                process_objcat=process_objcat, subsample=subsample,
+                threshold=dq_threshold)
             ad_out.filename = ad.filename
             adoutputs.append(ad_out)
 
         return adoutputs
-
