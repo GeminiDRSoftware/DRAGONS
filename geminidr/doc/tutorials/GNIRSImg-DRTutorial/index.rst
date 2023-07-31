@@ -10,6 +10,8 @@ Tutorial Series - GNIRS Imaging Data Reduction with DRAGONS
 
    PIPE-USER-117_GNIRSImg_DRtutorial
 
+[Return to the main |DRAGONS| page.]
+
 .. toctree::
    :maxdepth: 1
    :caption: Contents:

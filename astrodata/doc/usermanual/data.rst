@@ -674,7 +674,7 @@ add a variance plane to our raw data frame.
     >>> # Here we work on the NDAstroData object to have the variance
     >>> # trimmed automatically to the same size as the science array.
     >>> # To reassign the cropped NDAstroData, we use the reset() method.
-    >>> ad[0].reset(ad[0].nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2]
+    >>> ad[0].reset(ad[0].nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2])
 
     >>> # Now look at the dimensions of the first extension, science
     >>> # and variance.  That extension is smaller than the others.
@@ -771,9 +771,9 @@ attention.
     >>> intensity = adcube[0].data[:, 24, 13]   # (wlen, y, x)
 
     # We plot
-    plt.clf()
-    plt.plot(wavelengths, intensity)
-    plt.show()
+    >>> plt.clf()
+    >>> plt.plot(wavelengths, intensity)
+    >>> plt.show()
 
 
 Plot Data
@@ -874,7 +874,7 @@ what ``imexam`` has to offer.
     >>> ds9.scale('zscale')
 
     # Run in interactive mode.  Try the various commands.
-   >>> ds9.imexam()
+    >>> ds9.imexam()
 
     # Use the programmatic interface
     # First initialize an Imexamine object.

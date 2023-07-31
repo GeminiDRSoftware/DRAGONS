@@ -35,10 +35,11 @@ def reduceScience(p):
     p.stackFrames()
     p.findApertures()
     p.traceApertures()
-    p.storeProcessedScience(suffix="_2D")
+    p.storeProcessedScience(suffix="_2D", outstream="2D")
     p.extractSpectra()
     p.fluxCalibrate()
     p.storeProcessedScience(suffix="_1D")
+    p.appendStream(from_stream="2D")
 
 
 

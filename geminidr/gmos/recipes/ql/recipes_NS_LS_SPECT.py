@@ -7,7 +7,7 @@ The default recipe is "reduce".
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'NODANDSHUFFLE'}
 
 
-from ..sq.recipes_NS_LS_SPECT import reduce
+from geminidr.gmos.recipes.sq.recipes_NS_LS_SPECT import reduce
 
 
 _default = reduce

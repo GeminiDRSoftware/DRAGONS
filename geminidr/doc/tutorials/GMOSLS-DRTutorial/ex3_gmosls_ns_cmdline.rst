@@ -368,6 +368,11 @@ This is what the 2-D spectrum looks like.  Only the middle section is valid.
 
     reduce -r display N20190926S0130_2D.fits
 
+.. note::
+
+    ``ds9`` must be launched by the user ahead of running the display primitive.
+    (``ds9&`` on the terminal prompt.)
+
 .. image:: _graphics/2Dspectrum_ns.png
    :width: 600
    :alt: 2D stacked nod-and-shuffle spectrum

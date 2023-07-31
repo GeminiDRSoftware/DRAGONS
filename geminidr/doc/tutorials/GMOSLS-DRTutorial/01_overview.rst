@@ -16,12 +16,11 @@ reduction of GMOS imaging data, see |GMOSImgTut|.
 
 Here is a tutorial that you, the reader, can run and experiment with.  This
 document comes with a downloadable data package that contains all the data
-you need to run the example presented.  Instructions on where to get that
+you need to run the examples presented.  Instructions on where to get that
 package and how to set things up are given in :ref:`datasetup`.
 
-The GMOS longslit tutorial series, for now, contains only one scientific example,
-the reduction of an observation of a single stellar source with dither in both
-wavelength and spatial direction.
+The GMOS longslit tutorial series contains several scientific examples
+covering normal longslit spectroscopy and nod-and-shuffle spectroscopy.
 
 The reduction can be done in two different ways:
 
@@ -34,7 +33,5 @@ We show how to run the same reduction using both methods.
 * :ref:`large_dither_example`
 * :ref:`ns_example`
 * :ref:`nsred_example`
-
-More examples will be added in the future.
 
 See the |RSUserInstall| to install the software if you have not already.

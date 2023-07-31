@@ -12,6 +12,11 @@ Change Logs
 Improvements
 ------------
 
+**astrodata.provenance**
+
+* Renamed the ``PROVHISTORY`` table to ``HISTORY``, and changed wording in the
+code from "provenance history" to simply "history".
+
 **geminidr.core**
 
 * Allow input files to ``shiftImages`` to recognize tabs or multiple
@@ -21,6 +26,13 @@ Improvements
 
 * Whitespace now allowed in directory paths (if quoted), e.g.,
   ``databases = "~/.my dragons/dragons.db"``
+
+Bug Fixes
+---------
+
+**geminidr.gmos**
+
+* Fix the QE model selection for the GMOS-S EEV CDDs.
 
 
 3.1.0
@@ -34,9 +46,10 @@ the user need to be aware of.  Please read on.
 New Features
 ------------
 
-Science quality support for GMOS longslit spectroscopy.
+Science quality support for GMOS longslit spectroscopy, including nod-and-shuffle.
   Please refer to the tutorial, |GMOSLSTut|.  DRAGONS is now the official
-  software for reducing GMOS longslit data.
+  software for reducing GMOS longslit data in normal and nod-and-shuffle
+  mode.
 
 New browser-base interactive tools to support spectroscopy.
   The following primitives have an interactive mode that can be activated with

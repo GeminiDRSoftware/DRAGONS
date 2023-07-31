@@ -337,6 +337,11 @@ appear on two CCDs.  This is because the each CCD has been stacked individually
 and because of the dithers some sources ended up moving from to the adjacent
 CCD.
 
+.. note::
+
+    ``ds9`` must be launched by the user ahead of running the display primitive.
+    (``ds9&`` on the terminal prompt.)
+
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and

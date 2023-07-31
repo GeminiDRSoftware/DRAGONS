@@ -1,7 +1,7 @@
 """
 This module provides decorator functions for implementing the (somewhat TBD)
-parameter override policy of the prototype primitive classes. This implementation
-is subject to any change in policy.
+parameter override policy of the prototype primitive classes. This
+implementation is subject to any change in policy.
 
 Currently, the policy defines an order of parameter precedence:
 
@@ -52,8 +52,7 @@ from functools import wraps
 
 import geminidr
 from astrodata import AstroData
-from astrodata.provenance import (add_provenance_history, clone_provenance,
-                                  clone_provenance_history)
+from astrodata.provenance import add_history, clone_provenance, clone_history
 from gempy.utils import logutils
 from recipe_system.utils.md5 import md5sum
 
@@ -133,24 +132,25 @@ def make_class_wrapper(wrapped):
 
 def _get_provenance_inputs(adinputs):
     """
-    gets the input information for a future call to store provenance history.
+    gets the input information for a future call to store provenance and
+    history.
 
     The AstroData inputs can change during the call to a primitive.  We use this
-    helper function to extract the 'before' state of things so that we can accurately
-    record provenance history.  After the primitive returns, we have the AstroData
-    objects into which we'll want to record this information.
+    helper function to extract the 'before' state of things so that we can
+    accurately record provenance and history.  After the primitive returns, we
+    have the AstroData objects into which we'll want to record this information.
 
 
     Args
     -----
     adinputs : list of incoming `AstroData` objects
-        We expect to be called before the primitive executes, since we want to capture the
-        state of the adinputs before they may be modified.
+        We expect to be called before the primitive executes, since we want to
+        capture the state of the adinputs before they may be modified.
 
     Returns
     --------
     `dict` by datalabel of dictionaries with the filename, md5, provenance and
-        provenance_history data from the inputs
+        history data from the inputs
     """
     retval = dict()
     for ad in adinputs:
@@ -162,46 +162,22 @@ def _get_provenance_inputs(adinputs):
             provenance = ad.PROVENANCE.copy()
         else:
             provenance = []
-        if hasattr(ad, 'PROVHISTORY'):
-            provenance_history = ad.PROVHISTORY.copy()
+        if hasattr(ad, 'HISTORY'):
+            history = ad.HISTORY.copy()
+        elif hasattr(ad, 'PROVHISTORY'):
+            # Old name for backwards compatability
+            history = ad.PROVHISTORY.copy()
         else:
-            provenance_history = []
+            history = []
 
         retval[ad.data_label()] = {
             "filename": ad.filename,
             "md5": md5,
             "provenance": provenance,
-            "provenance_history": provenance_history
+            "history": history
         }
 
     return retval
-
-
-def _clone_provenance_deprecated(provenance_input, ad):
-    """
-    For a single input's provenance, copy it into the output
-    `AstroData` object as appropriate.
-
-    This takes a dictionary with a source filename, md5 and both it's
-    original provenance and provenance_history information.  It duplicates
-    the provenance data into the outgoing `AstroData` ad object.
-
-    Args
-    -----
-    provenance_input : dictionary with provenance data from a single input.
-        We only care about the `provenance` element, which holds a list of
-        provenance data
-    ad : outgoing `AstroData` object to add provenance data to
-
-    Returns
-    --------
-    none
-
-    """
-    provenance = provenance_input["provenance"]
-
-    for prov in provenance:
-        ad.add_provenance(prov)
 
 
 def _top_level_primitive():
@@ -232,10 +208,10 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
 
     Args
     -----
-    provenance_inputs : provenance and provenance history information to add
-        This is an dictionary keyed by datalabel of dictionaries with the relevant
+    provenance_inputs : provenance and history information to add
+        This is a dictionary keyed by datalabel of dictionaries with the relevant
         provenance for that particular input.  Each dictionary contains the filename,
-        md5 and the provenance and provenance_history of that `AstroData` prior to execution of
+        md5 and the provenance and history of that `AstroData` prior to execution of
         the primitive.
     ret_value : outgoing list of `AstroData` data
     fn : name of the function (primitive) being executed
@@ -251,18 +227,18 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
             if ad.data_label() in provenance_inputs:
                 # output corresponds to an input, we only need to copy from there
                 clone_provenance(provenance_inputs[ad.data_label()]['provenance'], ad)
-                clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
+                clone_history(provenance_inputs[ad.data_label()]['history'], ad)
             else:
-                if hasattr(ad, 'PROVHISTORY'):
+                if hasattr(ad, 'HISTORY') or hasattr(ad, 'PROVHISTORY'):
                     clone_hist = False
                 else:
                     clone_hist = True
                 for provenance_input in provenance_inputs.values():
                     clone_provenance(provenance_input['provenance'], ad)
                     if clone_hist:
-                        clone_provenance_history(provenance_input['provenance_history'], ad)
+                        clone_history(provenance_input['history'], ad)
         for ad in ret_value:
-            add_provenance_history(ad, timestamp_start.isoformat(), timestamp.isoformat(), fn.__name__, args)
+            add_history(ad, timestamp_start.isoformat(), timestamp.isoformat(), fn.__name__, args)
     except Exception as e:
         # we don't want provenance failures to prevent data reduction
         log.warn("Unable to save provenance information, continuing on: %s" % e)
@@ -272,7 +248,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
 @make_class_wrapper
 def capture_provenance(fn):
     """
-    Decorator for carrying forward provenance data and updating the provenance history
+    Decorator for carrying forward provenance data and updating the history
     """
     @wraps(fn)
     def gn(pobj, *args, **kwargs):

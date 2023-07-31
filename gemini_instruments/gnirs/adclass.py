@@ -52,7 +52,7 @@ class AstroDataGnirs(AstroDataGemini):
             slit = self.phu.get('SLIT', '').lower()
             grat = self.phu.get('GRATING', '')
             prism = self.phu.get('PRISM', '')
-            if slit == 'ifu':
+            if 'ifu' in slit:
                 tags.add('IFU')
             elif ('arcsec' in slit or 'pin' in slit) and 'mm' in grat:
                 if 'MIR' in prism:
@@ -217,6 +217,8 @@ class AstroDataGnirs(AstroDataGemini):
 
         grating = self._grating(stripID=stripID, pretty=pretty)
         prism = self._prism(stripID=stripID, pretty=pretty)
+        if prism is None or grating is None:
+            return None
         if prism.startswith('MIR'):
             return grating
 
@@ -259,6 +261,10 @@ class AstroDataGnirs(AstroDataGemini):
                 fpm = slit
             elif "XD" in decker:
                 fpm = "{}XD".format(slit)
+            elif "HR-IFU" in slit and "HR-IFU" in decker:
+                fpm = "HR-IFU"
+            elif "LR-IFU" in slit and "LR-IFU" in decker:
+                fpm = "LR-IFU"
             elif "IFU" in slit and "IFU" in decker:
                 fpm = "IFU"
             elif "Acq" in slit and "Acq" in decker:
@@ -643,7 +649,6 @@ class AstroDataGnirs(AstroDataGemini):
             return gmu.removeComponentID(ret_grating)
         return ret_grating
 
-
     def _prism(self, stripID=False, pretty=False):
         """
         Returns the name of the prism.  The component ID can be removed
@@ -664,7 +669,7 @@ class AstroDataGnirs(AstroDataGemini):
         """
         prism = self.phu.get('PRISM')
         try:
-            match = re.match(r"[LBSR]*\+*([A-Z]*_G\d+)", prism)
+            match = re.match(r"(?:[A-Z0-9]*\+)?([A-Z]*_G\d+)", prism)
             ret_prism = match.group(1)
         except (TypeError, AttributeError):  # prism=None, no match
             return None
