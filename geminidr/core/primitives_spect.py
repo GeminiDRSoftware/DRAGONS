@@ -1842,7 +1842,7 @@ class Spect(Resample):
                     # the detector for each traced edge and set that as the
                     # reference pixel - in essense "rotating" the image around
                     # that point (rather than one of the endpoints of the trace).
-                    half_detector = ext.shape[1 - dispaxis] // 2
+                    half_detector = ext.shape[dispaxis] // 2
                     for coords in (coords_one, coords_two):
                         if coords is not None:
                             dists = np.array([abs(n - half_detector)
