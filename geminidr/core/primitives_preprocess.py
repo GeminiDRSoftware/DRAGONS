@@ -829,18 +829,21 @@ class Preprocess(PrimitivesBASE):
             # exists insert it before the pixels-to-world transform. Print a
             # warning if one doesn't exist, but allow it to pass.
             try:
-                rect_model = flat[0].wcs.get_transform('pixels', 'rectified')
+                flat[0].wcs.get_transform('pixels', 'rectified')
                 rectified = True
             except CoordinateFrameError:
                 log.warning(f"No rectification model found in {flat.filename}")
                 rectified = False
 
             if rectified:
-                log.stdinfo(f"{ad.filename}: adding slit rectification model "
-                            f"derived from {flat.filename} to WCS")
-                for ext in ad:
-                    ext.wcs.insert_frame(ext.wcs.input_frame, rect_model,
-                                         cf.Frame2D(name='rectified'))
+                for ext, ext_f in zip(ad, flat):
+                    log.stdinfo("    Adding slit rectification model "
+                                f"from {flat.filename} (ext {ext.id}) to "
+                                f"WCS of ext {ext_f.id}")
+                    ext.wcs.insert_frame(
+                        ext.wcs.input_frame,
+                        ext_f.wcs.get_transform("pixels", "rectified"),
+                        cf.Frame2D(name='rectified'))
 
             # Update the header and filename, copying QECORR keyword from flat
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])

@@ -36,7 +36,6 @@ def makeProcessedFlat(p):
     p.determineSlitEdges(stream='QHLamp')
     # Transfer SLITEDGE table and slit rectification model (in WCS) back over.
     p.transferAttribute(stream='main', source='QHLamp', attribute='SLITEDGE')
-    p.transferAttribute(stream='main', source='QHLamp', attribute='wcs')
     p.cutSlits(stream='main')
     p.cutSlits(stream='QHLamp')
     # Bring slts 2-6 from QHLamp stream to main (1-indexed).

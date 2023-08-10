@@ -57,6 +57,8 @@ class CrossDispersed(Spect, Preprocess):
         adoutputs = []
         for ad in adinputs:
             order_key = "_".join(getattr(ad, desc)() for desc in order_key_parts)
+            # order_info contains central wavelength, dispersion, and offset
+            # (in pixels) for each slit.
             order_info = Table(import_module(
                 '.orders_XD_GNIRS', self.inst_lookups).order_info[order_key],
                 names=columns)
@@ -68,20 +70,22 @@ class CrossDispersed(Spect, Preprocess):
                 # Handle the WCS. Need to adjust it for each slit.
                 for idx, step in enumerate(ext.wcs.pipeline):
                     if ext.wcs.pipeline[idx+1].frame.name == 'world':
-                        if not (isinstance(step.transform[2], models.Scale)
-                            and isinstance(step.transform[3], models.Shift)):
+                        if not (isinstance(step.transform[4], models.Scale)
+                            and isinstance(step.transform[5], models.Shift)):
                             log.warning("No initial wavelength model found - "
                                         "not modifying the WCS")
                             break
 
                         # Central wavelength offset (nm)
-                        step.transform[3].offset = row['central_wavelength']
+                        step.transform[5].offset = row['central_wavelength']
                         # Dispersion (nm/pixel)
-                        step.transform[2].factor = row['dispersion']
-                        # Offset of center of slit (pixels) - changes depending
-                        # on dispersion axis
-                        crpix_index = 5 if dispaxis == 0 else 1
+                        step.transform[4].factor = row['dispersion']
+                        # Offset of center of slit (pixels) - The order is
+                        # independent of dispersion axis, so the Shift model
+                        # index changes depending on orientation.
+                        crpix_index = 7 if dispaxis == 0 else 3
                         step.transform[crpix_index].offset = row['center_offset']
+                        log.fullinfo(f"Updated WCS for ext {ext.id}")
                         break
 
             # Timestamp and update the filename

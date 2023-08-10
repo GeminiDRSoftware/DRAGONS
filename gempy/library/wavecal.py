@@ -572,8 +572,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
 
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
-                  linelist=None, fwidth=4,
-                  kdsigma=1, k=1, filename=None, dcenwave=10):
+                  linelist=None, fwidth=4, kdsigma=1, k=1, filename=None,
+                  dcenwave=10):
     """
     Find the best wavelength solution from the set of initial models.
 
@@ -589,6 +589,9 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         name of file being checked
     Returns
     -------
+    length-2 tuple
+        A tuple of the best-fit model and a boolean denoting whether or not it
+        is an acceptable fit.
 
     """
     log = logutils.get_logger(__name__)
@@ -596,6 +599,10 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     best_score = np.inf
     arc_lines = linelist.wavelengths(in_vacuo=config["in_vacuo"], units="nm")
     arc_weights = linelist.weights
+    # This allows suppression of the terminal log output by calling the function
+    # with loglevel='debug'.
+    loglevel = "stdinfo" if config["verbose"] else "fullinfo"
+    logit = getattr(log, loglevel)
 
     # Create an initial fit_1D object using the initial wavelength model
     # (always the first model in the init_models list) as a fallback in case
@@ -654,7 +661,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                                            k=k, method='Nelder-Mead')
             m_final = fit_it(m_init, peaks, arc_lines, in_weights=peak_weights,
                              ref_weights=arc_weights, matches=matches)
-            log.stdinfo(f'{repr(m_final)} {fit_it.statistic}')
+            logit(f'{repr(m_final)} {fit_it.statistic}')
 
             # And then recalculate the matches
             match_radius = 4 * fwidth * abs(m_final.c1) / len_data  # 2*fwidth pixels
@@ -674,8 +681,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 log.warning("Line-matching failed")
                 continue
             nmatched = np.sum(~fit1d.mask)
-            log.stdinfo(f"{filename} {repr(fit1d.model)} "
-                        f"{nmatched} {fit1d.rms}")
+            logit(f"{filename} {repr(fit1d.model)} "
+                  f"{nmatched} {fit1d.rms}")
 
             # Calculate how many lines *could* be fit. We require a constrained
             # fit but also that it fits some reasonable number of lines
