@@ -1232,6 +1232,9 @@ class Spect(Resample):
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             for ext in ad:
+                # Need to handle straight slits (longslit for now) and "curved"
+                # slits (currently cross-dispersed).
+                constant_slit = 'LS' in ext.tags
                 if debug:
                     self.viewer.display_image(ext, wcs=False)
                     self.viewer.width = 2
@@ -1282,11 +1285,10 @@ class Spect(Resample):
                     fwidth = tracing.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
-                const_slit = 'LS' in ext.tags
                 if initial_peaks is None:
                     data, mask, variance, extract_info = tracing.average_along_slit(
                         ext, center=start, nsum=nsum)
-                    if const_slit:
+                    if constant_slit:
                         # For (basically) straight slits, `extract_info` is a
                         # range of the starting and ending rows/columns.
                         log.stdinfo("Finding peaks by extracting {}s {} to {}".
@@ -1310,27 +1312,45 @@ class Spect(Resample):
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
 
-                ref_coords = np.array([])
-                for peak in initial_peaks:
-                    if not const_slit:
-                        start = extract_info(peak)
-                    temp_ref_coords, temp_in_coords = tracing.trace_lines(
+                # Straight slits, such as in longslit, can have all the lines
+                # traced simultaneously since they all have the same starting
+                # point. "Curved" slits need to be handled one-by-one. This is
+                # quite a bit slower, so this block of code does the line
+                # tracing based on the slit involved.
+                if constant_slit:
+                    ref_coords, in_coords = tracing.trace_lines(
+                        # Only need a single `start` value for all lines.
                         ext, axis=1 - dispaxis,
-                        start=start, initial=[peak],
+                        start=start, initial=initial_peaks,
                         rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
                         nsum=nsum, max_missed=max_missed,
                         max_shift=max_shift * ybin / xbin,
                         viewer=self.viewer if debug else None,
-                        min_line_length=0.1)
-                    if temp_ref_coords.size:
-                        if not ref_coords.size:
-                            ref_coords = temp_ref_coords
-                            in_coords = temp_in_coords
-                        else:
-                            ref_coords = np.concatenate(
-                                (ref_coords, temp_ref_coords), axis=1)
-                            in_coords = np.concatenate(
-                                (in_coords, temp_in_coords), axis=1)
+                        min_line_length=min_line_length)
+                else:
+                    ref_coords = np.array([])
+                    for peak in initial_peaks:
+                        # Need to start midway along the slit, which varies
+                        # along the dispersion axis. `extract_info` here is the
+                        # polynomial describing that midway line.
+                        start = extract_info(peak)
+                        temp_ref_coords, temp_in_coords = tracing.trace_lines(
+                            ext, axis=1 - dispaxis,
+                            start=start, initial=[peak],
+                            rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
+                            nsum=nsum, max_missed=max_missed,
+                            max_shift=max_shift * ybin / xbin,
+                            viewer=self.viewer if debug else None,
+                            min_line_length=0.1)
+                        if temp_ref_coords.size:
+                            if not ref_coords.size:
+                                ref_coords = temp_ref_coords
+                                in_coords = temp_in_coords
+                            else:
+                                ref_coords = np.concatenate(
+                                    (ref_coords, temp_ref_coords), axis=1)
+                                in_coords = np.concatenate(
+                                    (in_coords, temp_in_coords), axis=1)
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
@@ -3437,12 +3457,12 @@ class Spect(Resample):
                 for ext in admos:
                     dispaxis = 2 - ext.dispersion_axis()  # python sense
                     direction = "row" if dispaxis == 1 else "column"
-                    const_slit = 'LS' in ext.tags
+                    constant_slit = 'LS' in ext.tags
 
                     data, mask, variance, extract_info = tracing.average_along_slit(
                         ext, center=ui_params.nsum, nsum=ui_params.nsum,
                         offset_from_center=ui_params.offset_from_center)
-                    if const_slit:
+                    if constant_slit:
                         log.stdinfo(f"Extracting 1D spectrum from {direction}s "
                                     f"{extract_info.start + 1} to "
                                     f"{extract_info.stop}.")
