@@ -375,7 +375,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
 
             if 'ARC' in ad.tags:
                 if params["min_snr"] is None:
-                    params["min_snr"] = 2
+                    params["min_snr"] = 20
                     self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
                 if params["debug_min_lines"] is None:
                     params["debug_min_lines"] = 100000
