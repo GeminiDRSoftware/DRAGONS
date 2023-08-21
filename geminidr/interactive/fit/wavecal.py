@@ -220,7 +220,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
             p_refplot.sizing_mode = 'stretch_width'
             p_refplot.step(x='wavelengths', y='refplot_spectrum', source=self.refplot_spectrum,
                             line_width=1, color="gray", mode="center")
-            p_refplot.text(x='wavelengths', y= 'heights', text='labels',
+            p_refplot.text(name="labels",
+                           x='wavelengths', y= 'heights', text='labels',
                             source=self.refplot_linelist, angle=0.5 * np.pi,
                             text_color='gray',
                             text_baseline='middle', text_align='right',
@@ -549,21 +550,33 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if new is not None and wavestr(new) not in self.new_line_dropdown.options:
             self.add_new_line()
 
+    def update_refplot_name(self, new_name):
+        self.refplot_name = new_name
+        self.p_refplot.title.text = new_name
+        self.p_refplot.title.update()
+
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
     A Visualizer specific to determineWavelengthSolution
     """
     def __init__(self, *args, absorption=None, **kwargs):
+        self.num_atran_params = None
         super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
                          help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
                          absorption=absorption)
         #self.widgets["in_vacuo"] = bm.RadioButtonGroup(
         #    labels=["Air", "Vacuum"], active=0)
         #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
-        self.reinit_panel.children[-3] = bm.Div(
+        skip_lines = -3
+        if self.num_atran_params is not None:
+            skip_lines = skip_lines - self.num_atran_params - 1
+
+        self.reinit_panel.children[skip_lines] = bm.Div(
             text="<b>Calibrating to wavelengths in {}</b>".format(
                 "vacuo" if self.ui_params.in_vacuo else "air"), align="center")
         self.widgets["in_vacuo"].disabled = True
+        del self.num_atran_params
+
         self.absorption = absorption
 
     @property
@@ -577,6 +590,31 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
             image.append(model.y[goodpix])
         return image
+
+    def make_widgets_from_parameters(self, params, reinit_live: bool = False,
+                                     slider_width: int = 256, add_spacer=False,
+                                     hide_textbox=None):
+        linelist_reinit_params = None
+
+        if params.reinit_params:
+            for key in params.reinit_params:
+                # The following is to add a special subset of UI widgets
+                # for fine-tuning the generated ATRAN linelist
+                if type(key) == dict and "atran_linelist_pars" in key:
+                    linelist_reinit_params = key.get("atran_linelist_pars")
+                    params.reinit_params.remove(key)
+                    params.reinit_params = params.reinit_params+linelist_reinit_params
+
+        lst = super().make_widgets_from_parameters(params)
+        # If there are widgets for controlling ATRAN linelist, add
+        # a title line above them:
+        if linelist_reinit_params is not None:
+            self.num_atran_params = len(linelist_reinit_params)
+            section_title = bm.Div(
+                text="Parameters for ATRAN linelist generation:",
+                align="start", style={"font-weight":"bold"}, margin=(40,0,20,0))
+            lst.insert((-self.num_atran_params), section_title)
+        return lst
 
     def reconstruct_points_additional_work(self, data):
         """
@@ -594,6 +632,25 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     self.panels[i].spectrum.data['spectrum'] = -this_dict["meta"]["spectrum"]
                 else:
                     self.panels[i].spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
+
+                try:
+                    self.panels[i].refplot_spectrum.data['wavelengths'] = this_dict["meta"]["refplot_spec"][:,0]
+                    self.panels[i].refplot_spectrum.data['refplot_spectrum'] = this_dict["meta"]["refplot_spec"][:,1]
+
+                    wlengths = this_dict["meta"]["refplot_linelist"][:,0]
+                    self.panels[i].refplot_linelist.update(
+                        data = {
+                            'wavelengths': wlengths,
+                            'intensities': this_dict["meta"]["refplot_linelist"][:,1],
+                            'labels': ["{:.2f}".format(w) for w in wlengths]
+                        }
+                    )
+                    self.panels[i].update_refplot_label_heights()
+                    self.panels[i].update_refplot_name(this_dict["meta"]["refplot_name"])
+                    self.panels[i].reset_view()
+                except (AttributeError, KeyError):
+                    pass
+
 
 def get_closest(arr, value):
     """

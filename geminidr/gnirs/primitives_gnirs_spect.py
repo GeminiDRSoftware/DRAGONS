@@ -81,7 +81,7 @@ class GNIRSSpect(Spect, GNIRS):
         and the `wavelengths` column contains the matched wavelengths.
 
         This GNIRS-specific primitive sets debug_min_lines, order, min_snr,
-        debug_num_atran_lines and debug_combiner values depending on the
+        num_atran_lines and average values depending on the
         observing mode, as the default value for these parameters is None.
         It then calls the generic version of the primitive.
 
@@ -142,15 +142,15 @@ class GNIRSSpect(Spect, GNIRS):
         debug : bool
             Enable plots for debugging.
 
-        debug_num_atran_lines: int/None
+        num_atran_lines: int/None
             Number of lines with largest weigths (within a wvl bin) to be used for
             the generated ATRAN line list.
 
-        debug_wv_band: {'20', '50', '80', '100', 'None'}
+        wv_band: {'20', '50', '80', '100', 'header'}
             Water vapour content (as percentile) to be used for ATRAN model
-            selection. If "None", then the value from the header is used.
+            selection. If "header", then the value from the header is used.
 
-        debug_resolution: int/None
+        resolution: int/None
             Resolution of the observation (as l/dl), to which ATRAN spectrum should be
             convolved. If None, the default value for the instrument/mode is used.
 
@@ -172,6 +172,8 @@ class GNIRSSpect(Spect, GNIRS):
         for ad in adinputs:
             min_snr_isNone = True if params["min_snr"] is None else False
             order_isNone = True if params["order"] is None else False
+            combine_method_isNone = True if params["combine_method"] == "optimal" else False
+
             disp = ad.disperser(pretty=True)
             filt = ad.filter_name(pretty=True)
             cam = ad.camera(pretty=True)
@@ -197,7 +199,7 @@ class GNIRSSpect(Spect, GNIRS):
             elif params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
                 # The case of wavecal from absorption, or wavecal from telluric
                 # emission in L- and M-bands, both done using ATRAN lines
-
+                self.generated_linelist = True
                 # sigma=2 works better with ATRAN line lists
                 params["lsigma"] = 2
                 params["hsigma"] = 2
@@ -241,22 +243,22 @@ class GNIRSSpect(Spect, GNIRS):
                         else:
                             params["min_snr"] = 10
 
-                    if params["debug_num_atran_lines"] is None:
+                    if params["num_atran_lines"] is None:
                         if filt.startswith('M'):
-                            params["debug_num_atran_lines"] = 150
+                            params["num_atran_lines"] = 150
                         elif filt.startswith('L'):
-                            params["debug_num_atran_lines"] = 100
+                            params["num_atran_lines"] = 100
                             if ((disp.startswith('111') and cam.startswith('Short')) or
                                 (disp.startswith('32') and cam.startswith('Long'))) and \
                                     3.80 <= cenwave:
-                                params["debug_num_atran_lines"] = 300
+                                params["num_atran_lines"] = 300
 
-                    if params["debug_combiner"] == "none":
+                    if params["combine_method"] == "optimal":
                         # this is to reduce the impact of hot pixels
                         if filt.startswith('L') and cenwave >= 3.8:
-                            params["debug_combiner"] = "median"
+                            params["combine_method"] = "median"
                         else:
-                            params["debug_combiner"] = "mean"
+                            params["combine_method"] = "mean"
             else:
                 # OH emission
                 if params["min_snr"] is None:
@@ -268,14 +270,18 @@ class GNIRSSpect(Spect, GNIRS):
 
             if params["debug_min_lines"] is None:
                 params["debug_min_lines"] = 15
-            if params["debug_num_atran_lines"] is None:
-                params["debug_num_atran_lines"] = 50
-            if params["debug_combiner"] == "none":
-                params["debug_combiner"] = "mean"
+            if params["num_atran_lines"] is None:
+                params["num_atran_lines"] = 50
+            if params["combine_method"] == "optimal":
+                params["combine_method"] = "mean"
+
             if min_snr_isNone:
                 self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
             if order_isNone:
                 self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
+            if combine_method_isNone:
+                self.log.stdinfo(f'Parameter "combine_method" is set to "optimal"".'
+                                 f' Using "combine_method"={params["combine_method"]}')
 
         adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
@@ -389,14 +395,14 @@ class GNIRSSpect(Spect, GNIRS):
         adinputs = super().determineDistortion(adinputs, **params)
         return adinputs
 
-
-    def _get_arc_linelist(self, waves=None, ext=None, config=None):
+    def _get_arc_linelist(self, ext, config, waves=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
 
         is_lowres = ext.disperser(pretty=True).startswith('10') or \
                     (ext.disperser(pretty=True).startswith('32') and
                         ext.camera(pretty=True).startswith('Short'))
+        refplot_dict = None
 
         if 'ARC' in ext.tags:
             if 'Xe' in ext.object():
@@ -416,9 +422,9 @@ class GNIRSSpect(Spect, GNIRS):
             # frame's observing conditions, and convolved to the resolution of the observation.
             if config["absorption"] is True or \
                     ext.central_wavelength(asMicrometers=True) >= 2.8:
-                linelist = super()._get_atran_linelist(ext=ext, config=config)
+                linelist, refplot_dict = super()._get_atran_linelist(ext=ext, config=config)
                 self.log.stdinfo(f"Using linelist {linelist}")
-                return wavecal.LineList(linelist)
+                return wavecal.LineList(linelist), refplot_dict
             # In case of wavecal from sky OH emission use this line list:
             else:
                 linelist = 'nearIRsky.dat'
@@ -426,9 +432,9 @@ class GNIRSSpect(Spect, GNIRS):
         self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
 
-        return wavecal.LineList(filename)
+        return wavecal.LineList(filename), refplot_dict
 
-    def _get_cenwave_accuracy(self, ext=None):
+    def _get_cenwave_accuracy(self, ext):
         # Accuracy of central wavelength (nm) for a given instrument/setup.
         # According to GNIRS instrument pages "wavelength settings are accurate
         # to better than 5 percent of the wavelength coverage".

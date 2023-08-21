@@ -130,21 +130,21 @@ class NIRISpect(Spect, NIRI):
         debug : bool
             Enable plots for debugging.
 
-        debug_num_atran_lines: int/None
+        num_atran_lines: int/None
             Number of lines with largest weigths (within a wvl bin) to be used for
             the generated ATRAN line list.
 
-        debug_wv_band: {'20', '50', '80', '100', 'None'}
+        wv_band: {'20', '50', '80', '100', 'header'}
             Water vapour content (as percentile) to be used for ATRAN model
-            selection. If "None", then the value from the header is used.
+            selection. If "header", then the value from the header is used.
 
-        debug_resolution: int/None
+        resolution: int/None
             Resolution of the observation (as l/dl), to which ATRAN spectrum should be
             convolved. If None, the default value for the instrument/mode is used.
 
-        debug_combiner: {"mean", "median", "none"}
+        combine_method: {"mean", "median", "optimal"}
             Method to use for combining rows/columns when extracting 1D-spectrum.
-            Default: "mean".
+            Default: "optimal".
 
         Returns
         -------
@@ -154,11 +154,13 @@ class NIRISpect(Spect, NIRI):
 """
         for ad in adinputs:
             min_snr_isNone = True if params["min_snr"] is None else False
-            if params["debug_combiner"] == "none":
+            combine_method_isNone = True if params["combine_method"] == "optimal" else False
+
+            if params["combine_method"] == "optimal":
                 if ("ARC" not in ad.tags) and (params["absorption"] is False):
-                     params["debug_combiner"] = "median"
+                     params["combine_method"] = "median"
                 else:
-                    params["debug_combiner"] = "mean"
+                    params["combine_method"] = "mean"
 
             if "ARC" in ad.tags:
                 if params["min_snr"] is None:
@@ -180,14 +182,18 @@ class NIRISpect(Spect, NIRI):
 
             if min_snr_isNone:
                 self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+            if combine_method_isNone:
+                self.log.stdinfo(f'Parameter "combine_method" is set to "optimal"".'
+                                 f' Using "combine_method"={params["combine_method"]}')
 
         adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
 
     
-    def _get_arc_linelist(self, waves=None, ext=None, config=None):
+    def _get_arc_linelist(self, ext, config, waves=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
+        refplot_dict = None
 
         if 'ARC' in ext.tags:
             if 'Xe' in ext.object():
@@ -199,9 +205,10 @@ class NIRISpect(Spect, NIRI):
         else:
             if config["absorption"] is True or \
                     ext.central_wavelength(asMicrometers=True) >= 2.8:
-                linelist = super()._get_atran_linelist(ext=ext, config=config)
+                linelist, refplot_dict = \
+                    super()._get_atran_linelist(ext=ext, config=config)
                 self.log.stdinfo(f"Using linelist {linelist}")
-                return wavecal.LineList(linelist)
+                return wavecal.LineList(linelist), refplot_dict
             # In case of wavecal from sky OH emission use these line lists:
             else:
                 linelist = 'nearIRsky.dat'
@@ -209,10 +216,10 @@ class NIRISpect(Spect, NIRI):
         self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
 
-        return wavecal.LineList(filename)
+        return wavecal.LineList(filename), refplot_dict
 
 
-    def _get_resolution(self, ad=None):
+    def _get_resolution(self, ad):
         # For NIRI actual resolving power values are much lower than
         # the theoretical ones, so read them from LUT
         camera = ad.camera()
@@ -228,7 +235,7 @@ class NIRISpect(Spect, NIRI):
         return resolution
 
 
-    def _get_actual_cenwave(self, ext=None, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    def _get_actual_cenwave(self, ext, asMicrometers=False, asNanometers=False, asAngstroms=False):
         # For NIRI wavelength at central pixel doesn't match the descriptor value
 
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]

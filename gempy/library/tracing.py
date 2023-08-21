@@ -417,9 +417,8 @@ def average_along_slit(ext, center=None, nsum=None, dispersion_axis=None, combin
     # of S/N than the VAR plane
     # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
     #  Use "variance=None" to make them pass again.
-    # data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
-    # Sometimes we want to use median combining for wavecal to remove hot pixels,
+    # In some cases we want to use median combining for wavecal to remove hot pixels,
     # but "mean" is the default method
     data, mask, variance = NDStacker.combine(data, mask=mask, variance=None, combiner=combiner)
     return data, mask, variance, extract_slice
@@ -453,7 +452,8 @@ def estimate_peak_width(data, mask=None, boxcar_size=None, nlines=None):
         data = data - at.boxcar(data, size=boxcar_size)
     num = 10
     if nlines != None:
-        num = nlines
+        if nlines > num:
+            num = nlines
     while len(widths) < num and niters < 100:
         index = np.argmax(data * goodpix)
         with warnings.catch_warnings():  # width=0 warnings
@@ -900,7 +900,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # If no variance is supplied we estimate S/N from pixel-to-pixel variations
     # (do this before any smoothing)
     if variance is None:
-        variance = at.std_from_pixel_variations(data[~mask]) ** 2
+        variance = at.std_from_pixel_variations(data[~mask], separation=int(max_width)) ** 2
 
     # For really broad peaks we can do a median filter to remove spikes
     if min(widths) > 10:

@@ -23,16 +23,16 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     order = config.RangeField("Order of fitting function", int, None, min=0,
                               optional=True)
-    min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=0.1, optional=True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), None,
                                    check=list_of_ints_check, optional=True)
-    debug_num_atran_lines = config.RangeField("Number of lines in ATRAN line list", int, None,
+    num_atran_lines = config.RangeField("Max number of lines in ATRAN line list", int, None,
                                               min=10, max=300, inclusiveMax=True, optional=True)
-    debug_combiner = config.ChoiceField("Combine method to use in 1D spectrum extraction", str,
+    combine_method = config.ChoiceField("Combine method to use in 1D spectrum extraction", str,
                                    allowed={"mean": "mean",
                                             "median": "median",
-                                            "none" : "auto-select depending on the mode"},
-                                   default="none")
+                                            "optimal" : "auto-select depending on the mode"},
+                                   default="optimal")
     def setDefaults(self):
         self.in_vacuo = True
 

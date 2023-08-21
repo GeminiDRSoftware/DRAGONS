@@ -371,11 +371,20 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
         data["y"].append(fit1d.image[~fit1d.mask])
 
         # Get the data necessary for the reference spectrum plot, to be displayed
-        # in a separate plot in the interactive mode (so far non-arc spectra only).
-        refplot_data = p._get_refplot_data(ext=ext, linelist=input_data["linelist"],
-                                           config=ui_params.toDict())
-        if refplot_data is not None:
-            input_data.update(refplot_data)
+        # in a separate plot in the interactive mode (so far for non-arc spectra only).
+        if input_data["refplot_data"] is not None:
+            input_data.update(input_data["refplot_data"])
+        else:
+            config=ui_params.toDict()
+            resolution = p._get_resolution(ext) if config["resolution"] is None \
+                else config["resolution"]
+            cenwave = p._get_actual_cenwave(ext) if config["central_wavelength"] is None \
+                else config["central_wavelength"]
+            refplot_data = p._make_refplot_data(ext=ext, refplot_linelist=input_data["linelist"],
+                            wv_band=config["wv_band"], resolution=resolution,
+                            cenwave=cenwave, absorption=config["absorption"], in_vacuo=config["in_vacuo"])
+            if refplot_data is not None:
+                input_data.update(refplot_data)
 
         data["meta"].append(input_data)
     return data
@@ -483,7 +492,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
         data, mask, variance, extract_slice = tracing.average_along_slit(
-            ext, center=config["center"], nsum=config["nsum"], combiner=config["debug_combiner"])
+            ext, center=config["center"], nsum=config["nsum"], combiner=config["combine_method"])
         logit("Extracting 1D spectrum from {}s {} to {}".
               format(direction, extract_slice.start + 1, extract_slice.stop))
         middle = 0.5 * (extract_slice.start + extract_slice.stop - 1)
@@ -506,6 +515,13 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     else:
         fwidth = config["fwidth"]
 
+    # If we are doing wavecal from sky absorption lines in object spectrum,
+    # the most realistic variance estimation comes from the estimation of
+    # pixel-to-pixel variations, as done in `tracing.find_wavelet_peaks`.
+    # The variance estimations coming from `tracing.average_along_slit` don't
+    # provide sensible values in this particular case.
+    if config["absorption"]:
+        variance = None
     peaks, weights = find_line_peaks(
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
@@ -536,8 +552,9 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     # input spectrum, so a private method of the primitivesClass). If a
     # user-defined file, only read it if arc_lines is undefined
     # (i.e., first time through the loop)
+    refplot_dict = None
     if linelist is None:
-        linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ext=ext, config=config)
+        linelist, refplot_dict= p._get_arc_linelist(waves=m_init(np.arange(data.size)), ext=ext, config=config)
     # This wants to be logged even in interactive mode
     sky_or_arc = 'reference sky' if skylines else 'arc'
     msg = f"Found {len(peaks)} peaks and {len(linelist)} {sky_or_arc} lines"
@@ -563,7 +580,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     return {"spectrum": np.ma.masked_array(data, mask=mask),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
-            "cenwave_accuracy" : dcenwave}
+            "cenwave_accuracy" : dcenwave, "refplot_data": refplot_dict}
 
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,

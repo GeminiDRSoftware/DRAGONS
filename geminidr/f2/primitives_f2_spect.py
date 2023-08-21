@@ -214,7 +214,7 @@ class F2Spect(Spect, F2):
         adinputs = super().determineDistortion(adinputs, **params)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ext=None, config=None):
+    def _get_arc_linelist(self, ext, waves=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
 
@@ -234,7 +234,7 @@ class F2Spect(Spect, F2):
         return wavecal.LineList(filename)
 
 
-    def _get_actual_cenwave(self, ext=None, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    def _get_actual_cenwave(self, ext, asMicrometers=False, asNanometers=False, asAngstroms=False):
         """
         For some instruments (NIRI, F2) wavelenght at the central pixel
         can differ significantly from the descriptor value.
@@ -273,7 +273,7 @@ class F2Spect(Spect, F2):
         return actual_cenwave
 
 
-    def _get_resolution(self, ext=None):
+    def _get_resolution(self, ext):
         # For F2 grisms resolution peaks in the middle of tthe filter and drops
         # dramatically on both sides. Use "average" resolution from the LUT,
         # (within 70% of filter's range, see F2 web pages).
