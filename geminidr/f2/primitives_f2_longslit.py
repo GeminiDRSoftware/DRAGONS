@@ -93,7 +93,8 @@ class F2Longslit(F2Spect):
 
         return adinputs
 
-    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
+    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
+                         keep_second_order=False):
         """
         Adds an illumination mask to each AD object. The default illumination mask
         masks off extra orders and/or unilluminated areas outside order blocking filter
@@ -105,6 +106,8 @@ class F2Longslit(F2Spect):
             suffix to be added to output files
         illum_mask : str/None
             name of illumination mask mask (None -> use default)
+        keep_second_order : bool
+            don't apply second order mask? (default is False)
 
         """
         log = self.log
@@ -129,7 +132,8 @@ class F2Longslit(F2Spect):
                                         0).astype(DQ.datatype)
                         ext.mask |= iext
 
-            else:
+            elif keep_second_order is False:
+                # Second order mask
                 dispaxis = 2 - ad[0].dispersion_axis()
                 dispaxis_center = ad[0].shape[dispaxis] // 2
                 cenwave = ad.central_wavelength(asNanometers=True)

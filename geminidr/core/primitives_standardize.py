@@ -51,7 +51,7 @@ class Standardize(PrimitivesBASE):
         user_bpm: str
             Name of the bad pixel mask created by the user from flats and
             darks.  It is an optional BPM that can be added to the static one.
-        illum_mask: bool
+        add_illum_mask: bool
             add illumination mask?
         """
         log = self.log
