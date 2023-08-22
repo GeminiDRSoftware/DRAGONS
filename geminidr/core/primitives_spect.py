@@ -1818,13 +1818,8 @@ class Spect(Resample):
                                 **fit1d_params,)
                             model_fit = am.model_to_table(_fit_1d.model)
 
-                            if _fit_1d.rms > 0.5:
-                                log.warning(f"RMS of fit to {edge} edge is "
-                                            f"{_fit_1d.rms:.2f} pixels. "
-                                            "Consider increasing\n"
-                                            "the order of the fit with the "
-                                            "'spectral_order' parameter")
-                            elif _fit_1d.rms > 2.:
+
+                            if _fit_1d.rms > 2.:
                                 raise RuntimeError(f"RMS of fit to edge {edge} "
                                                    "exceeds 2 pixels "
                                                    f"({_fit_1d.rms:.2f}).\n"
@@ -1832,6 +1827,12 @@ class Spect(Resample):
                                                    "may need to be increased "
                                                    "with the 'spectral_order "
                                                    "parameter.")
+                            elif _fit_1d.rms > 0.5:
+                                log.warning(f"RMS of fit to {edge} edge is "
+                                            f"{_fit_1d.rms:.2f} pixels. "
+                                            "Consider increasing\n"
+                                            "the order of the fit with the "
+                                            "'spectral_order' parameter")
                             else:
                                 log.fullinfo(f"    RMS of fit to {edge} edge is "
                                             f"{_fit_1d.rms:.2f} pixels")
