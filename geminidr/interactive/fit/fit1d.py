@@ -456,7 +456,7 @@ class FittingParametersUI:
             self.function = bm.Div(
                 text=f"Fit Function: <b>{fitting_parameters['function'].capitalize()}</b>",
                 min_width=100, max_width=202, sizing_mode='stretch_width',
-                style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+                styles={"color": "black", "font-size": "115%", "margin-top": "5px"},
                 width_policy='max')
 
         self.description = self.build_description()
@@ -540,7 +540,7 @@ class FittingParametersUI:
             min_width=100,
             max_width=202,
             sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
+            styles={"color": "black", "font-size": "115%", "margin-top": "10px"},
             width_policy='max',
         )
 
@@ -554,7 +554,7 @@ class FittingParametersUI:
                 min_width=100,
                 max_width=202,
                 sizing_mode='stretch_width',
-                style={"color": "black", "font-size": "115%", "margin-top": "5px"},
+                styles={"color": "black", "font-size": "115%", "margin-top": "5px"},
                 width_policy='max',
             )
             column_list = [column_title, self.order_slider, rejection_title,
@@ -585,7 +585,7 @@ class FittingParametersUI:
             min_width=100,
             max_width=202,
             sizing_mode='stretch_width',
-            style={"color": "black", "font-size": "115%", "margin-top": "10px"},
+            styles={"color": "black", "font-size": "115%", "margin-top": "10px"},
             width_policy='min',
         )
 
@@ -781,7 +781,7 @@ class Fit1DPanel:
             'to their original values.  Proceed?', self.reset_dialog_handler)
 
         controller_div = Div(margin=(20, 0, 0, 0), width=220,
-                             style={"color": "gray", "padding": "5px"})
+                             styles={"color": "gray", "padding": "5px"})
         controls = column(*controls_column, reset_button, controller_div,
                           width=220)
 
@@ -1283,7 +1283,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             if turbo_tabs:
                 self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i+1))
             else:
-                tab = bm.Panel(child=tui.component, title=tab_name_fmt.format(i+1))
+                tab = bm.TabPanel(child=tui.component, title=tab_name_fmt.format(i+1))
                 self.tabs.tabs.append(tab)
             self.fits.append(tui.model)
             self.panels.append(tui)
@@ -1500,10 +1500,10 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
     if enable_user_masking:
         tools += ",lasso_select,box_select,tap"
 
-    p_main = figure(plot_width=width, plot_height=height, min_width=400,
+    p_main = figure(width=width, height=height, min_width=400,
                     title='Fit', x_axis_label=xlabel, y_axis_label=ylabel,
                     tools=tools,
-                    output_backend="webgl", x_range=None, y_range=None,
+                    output_backend="webgl", #x_range=None, y_range=None,
                     min_border_left=80)
     p_main.height_policy = 'fixed'
     p_main.width_policy = 'fit'
@@ -1515,12 +1515,12 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
 
     if plot_residuals:
         # x_range is linked to the main plot so that zooming tracks between them
-        p_resid = figure(plot_width=width, plot_height=height // 2,
+        p_resid = figure(width=width, height=height // 2,
                          min_width=400,
                          title='Fit Residuals',
                          x_axis_label=xlabel, y_axis_label='Delta',
                          tools="pan,box_zoom,reset",
-                         output_backend="webgl", x_range=p_main.x_range, y_range=None,
+                         output_backend="webgl", x_range=p_main.x_range, #y_range=None,
                          min_border_left=80)
         p_resid.height_policy = 'fixed'
         p_resid.width_policy = 'fit'
@@ -1531,12 +1531,12 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
         p_resid.scatter(x=xpoint, y='residuals', source=model.data,
                         size=5, legend_field='mask', **model.mask_rendering_kwargs())
     if plot_ratios:
-        p_ratios = figure(plot_width=width, plot_height=height // 2,
+        p_ratios = figure(width=width, height=height // 2,
                           min_width=400,
                           title='Fit Ratios',
                           x_axis_label=xlabel, y_axis_label='Ratio',
                           tools="pan,box_zoom,reset",
-                          output_backend="webgl", x_range=p_main.x_range, y_range=None,
+                          output_backend="webgl", x_range=p_main.x_range, #y_range=None,
                           min_border_left=80)
         p_ratios.height_policy = 'fixed'
         p_ratios.width_policy = 'fit'
@@ -1548,8 +1548,8 @@ def fit1d_figure(width=None, height=None, xpoint='x', ypoint='y',
                          size=5, legend_field='mask', **model.mask_rendering_kwargs())
     if plot_residuals and plot_ratios:
         tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
-        tabs.tabs.append(bm.Panel(child=p_resid, title='Residuals'))
-        tabs.tabs.append(bm.Panel(child=p_ratios, title='Ratios'))
+        tabs.tabs.append(bm.TabPanel(child=p_resid, title='Residuals'))
+        tabs.tabs.append(bm.TabPanel(child=p_ratios, title='Ratios'))
         return p_main, tabs
     elif plot_residuals:
         return p_main, p_resid

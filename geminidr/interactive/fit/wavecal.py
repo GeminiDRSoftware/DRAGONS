@@ -95,12 +95,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
         Controller(p_main, None, self.model.band_model if self.enable_regions else None, controller_div,
                    mask_handlers=mask_handlers, domain=domain)
 
-        p_spectrum = figure(plot_width=self.width, plot_height=self.height,
+        p_spectrum = figure(width=self.width, height=self.height,
                             min_width=400, title='Spectrum',
                             x_axis_label=self.xlabel, y_axis_label="Signal",
                             tools = "pan,wheel_zoom,box_zoom,reset",
                             output_backend="webgl",
-                            x_range=p_main.x_range, y_range=None,
+                            x_range=p_main.x_range, #y_range=None,
                             min_border_left=80)
         p_spectrum.height_policy = 'fixed'
         p_spectrum.width_policy = 'fit'
@@ -134,7 +134,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                          height_policy="max")
         self.identify_button.on_click(self.identify_lines)
 
-        self.new_line_prompt = bm.Div(text="", style={"font-size": "16px",},
+        self.new_line_prompt = bm.Div(text="", styles={"font-size": "16px",},
                                       width_policy="max")
         self.new_line_dropdown = bm.Select(options=[], width=100,
                                            width_policy="fixed")

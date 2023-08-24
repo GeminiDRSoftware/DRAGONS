@@ -106,14 +106,14 @@ class PrimitiveVisualizer(ABC):
         self.submit_button = Button(align='center',
                                     button_type='success',
                                     css_classes=["submit_btn"],
-                                    id="_submit_btn",
+                                    #id="_submit_btn",
                                     label="Accept",
                                     name="submit_btn",
                                     )
         self.abort_button = Button(align='center',
                                    button_type='warning',
                                    css_classes=["submit_btn"],
-                                   id="_warning_btn",
+                                   #id="_warning_btn",
                                    label="Abort",
                                    name="abort_btn",
                                    )
@@ -205,7 +205,7 @@ class PrimitiveVisualizer(ABC):
         reset_reinit_button = bm.Button(
             button_type='warning',
             height=35,
-            id='reset-reinit-pars',
+            #id='reset-reinit-pars',
             label="Reset",
             width=202)
 
@@ -336,7 +336,7 @@ class PrimitiveVisualizer(ABC):
         Returns a Div element that displays the current filename.
         """
         div = Div(text=f"<b>Current&nbsp;filename:&nbsp;</b>&nbsp;{self.filename_info}",
-                  style={
+                  styles={
                          "color": "dimgray",
                          "font-size": "16px",
                          "float": "right",
@@ -622,12 +622,11 @@ class PrimitiveVisualizer(ABC):
                     widget = bm.CheckboxGroup(labels=[" "],
                                               active=[0] if params.values[key] else [],
                                               width_policy="min")
-                    cb_key = key
-                    def _cb_handler(cbkey, val):
-                        self.extras[cbkey] = True if len(val) else False
+                    def _cb_handler(attr, old, new):
+                        self.extras[key] = True if len(new) else False
                         if reinit_live:
                             self.reconstruct_points()
-                    widget.on_click(lambda v: _cb_handler(cb_key, v))
+                    widget.on_change("active", _cb_handler)
                     self.widgets[key] = widget
                     widgets.append(row([Div(text=params.titles[key], align='start'), widget]))
                 else:
@@ -1592,9 +1591,9 @@ class TabsTurboInjector:
         self.tab_dummy_children.append(tab_dummy)
 
         if self.tabs.tabs:
-            self.tabs.tabs.append(bm.Panel(child=row(tab_dummy,), title=title))
+            self.tabs.tabs.append(bm.TabPanel(child=row(tab_dummy,), title=title))
         else:
-            self.tabs.tabs.append(bm.Panel(child=row(tab_child,), title=title))
+            self.tabs.tabs.append(bm.TabPanel(child=row(tab_child,), title=title))
 
     def tabs_callback(self, attr, old, new):
         """
