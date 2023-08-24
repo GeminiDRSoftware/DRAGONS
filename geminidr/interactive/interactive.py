@@ -421,11 +421,11 @@ class PrimitiveVisualizer(ABC):
         # It does, therefore, need it's own widget which we supply as hidden
         # and also double as the means for passing the text message to the js
         def _internal_ok_cancel_handler(args):
-            if args['result'] == [b'confirmed']:
-                result = True
-            else:
-                result = False
-            self.do_later(lambda: self._ok_cancel_callback(result))
+            self.do_later(
+                lambda: self._ok_cancel_callback(
+                    args['result'] == [b'confirmed']
+                )
+            )
 
         # callback_name is the unique ID that will be passed back in to the /handle_callback endpoint
         # so it will execute the python method _internal_ok_cancel_handler
