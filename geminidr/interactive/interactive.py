@@ -110,6 +110,7 @@ class PrimitiveVisualizer(ABC):
                                     label="Accept",
                                     name="submit_btn",
                                     )
+
         self.abort_button = Button(align='center',
                                    button_type='warning',
                                    css_classes=["submit_btn"],
@@ -117,6 +118,7 @@ class PrimitiveVisualizer(ABC):
                                    label="Abort",
                                    name="abort_btn",
                                    )
+
         # The submit_button_handler is only needed to flip the user_accepted flag to True before
         # the bokeh event loop terminates
         # self.submit_button.on_click(self.submit_button_handler)
@@ -1697,7 +1699,7 @@ def do_later(fn):
     """
     Helper method to queue work to be done on the bokeh UI thread.
 
-    When actiona happen as a result of a key press, for instance, this comes in
+    When actions happen as a result of a key press, for instance, this comes in
     on a different thread than bokeh UI is operating on.  Performing any UI
     impacting changes on this other thread can cause issues.  Instead, wrap
     the desired changes in a function and pass it in here to be run on the UI
