@@ -7,6 +7,7 @@ from geminidr.core.tests.test_spect import create_zero_filled_fake_astrodata, fa
 from geminidr.interactive import server
 import gemini_instruments
 
+import pytest
 
 def interactive_test(tst):
     def set_test_mode():
@@ -16,9 +17,10 @@ def interactive_test(tst):
         server.test_mode = save_itm
     return set_test_mode
 
-import pytest
 
 @pytest.mark.skip(reason="interactive tests not yet implemented")
+def placeholder_test():
+    pass
 
 # @interactive_test
 # def test_trace_apertures_interactive():
