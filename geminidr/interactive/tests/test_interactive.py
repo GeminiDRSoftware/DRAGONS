@@ -16,6 +16,9 @@ def interactive_test(tst):
         server.test_mode = save_itm
     return set_test_mode
 
+import pytest
+
+@pytest.mark.skip(reason="interactive tests not yet implemented")
 
 # @interactive_test
 # def test_trace_apertures_interactive():
