@@ -737,14 +737,15 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
     """
     if min_value is None and config is not None:
         field = config._fields.get(attr, None)
-        if field is not None:
-            if hasattr(field, 'min'):
-                min_value = field.min
+
+        # If the field has no min, set to None.
+        min_value = getattr(field, 'min', None)
+
     if max_value is None and config is not None:
         field = config._fields.get(attr, None)
-        if field is not None:
-            if hasattr(field, 'max'):
-                max_value = field.max
+
+        # If the field has no max, set to None.
+        max_value = getattr(field, 'max', None)
 
     if value is None:
         start = min_value if min_value is not None else 0
