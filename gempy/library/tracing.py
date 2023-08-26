@@ -466,6 +466,7 @@ def average_along_slit(ext, center=None, offset_from_center=None,
 
         # Divide by number of pixels summed to get the mean.
         data_out /= nsum
+        variance_out /= nsum * nsum
 
         # Pass the polynomial for the center instead of the extract slice
         return data_out, mask_out, variance_out, slit_polynomial
@@ -941,12 +942,13 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     mask = mask.astype(bool) if mask is not None else np.zeros_like(data, dtype=bool)
 
     max_width = max(widths)
-    window_size = 4 * max_width + 1
+    window_size = int(10 * max_width + 1)
 
     # If no variance is supplied we estimate S/N from pixel-to-pixel variations
     # (do this before any smoothing)
     if variance is None:
-        variance = at.std_from_pixel_variations(data[~mask]) ** 2
+        variance = np.full_like(data, at.std_from_pixel_variations(
+            data[~mask], separation=window_size) ** 2)
 
     # For really broad peaks we can do a median filter to remove spikes
     if min(widths) > 10:
@@ -961,17 +963,54 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     ridge_lines = signal._peak_finding._identify_ridge_lines(
         wavelet_transformed_data, 0.03 * np.asarray(widths), 2)
 
-    filtered = signal._peak_finding._filter_ridge_lines(
-        wavelet_transformed_data, ridge_lines, window_size=window_size,
-        min_length=int(min_frac * len(widths)), min_snr=min_snr)
-    peaks = sorted([x[1][0] for x in filtered])
+    #from scipy.stats import scoreatpercentile
+    #hf_window, odd = divmod(window_size, 2)
+    #row_one = wavelet_transformed_data[0, :]
+    #noises = np.empty_like(row_one)
+    #fig, ax = plt.subplots()
+    #ax.plot(row_one, 'k-')
+    #ax.plot(data, 'k:')
+    #for noise_perc in range(10, 91, 10):
+    #    for ind, val in enumerate(row_one):
+    #        window_start = int(max(ind - hf_window, 0))
+    #        window_end = int(min(ind + hf_window + odd, wavelet_transformed_data.size))
+    #        noises[ind] = scoreatpercentile(row_one[window_start:window_end], per=noise_perc)
+    #    #ax.plot(noises)
+    #plt.show()
+
+    peaks = []
+    for y, x in ridge_lines:
+        snr = wavelet_transformed_data[y[0], x[0]] / np.sqrt(variance[x[0]])
+        if snr > min_snr:
+            peaks.append(x[0])
+
+    #filtered = signal._peak_finding._filter_ridge_lines(
+    #    wavelet_transformed_data, ridge_lines, window_size=window_size,
+    #    min_length=int(min_frac * len(widths)), min_snr=min_snr)
+    #peaks = sorted([x[1][0] for x in filtered])
+    #print("PEAKS")
+    #print(peaks)
+
+    #peaks = signal.find_peaks_cwt(data, widths, wavelet=None,  # Ricker
+    #                      max_distances=0.03 * np.asarray(widths),
+    #                      gap_thresh=2, min_length=int(min_frac * len(widths)),
+    #                      min_snr=min_snr, window_size=window_size,
+    #                              noise_perc=10)
+
+    #print("PEAKS NEW")
+    #print(peaks)
 
     # Estimate the SNR from the wavelet-transformed data to remove continuum
     snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
                     where=variance > 0)
+    fig, ax = plt.subplots()
+    ax.plot(wavelet_transformed_data[0])
+    ax.plot(np.sqrt(variance))
+    plt.show()
 
-    peaks = [x for x in peaks if snr[x] > min_snr]
+    #peaks = [x for x in peaks if snr[x] > min_snr]
+    peaks = sorted(peaks)
 
     # remove adjacent points
     new_peaks = []
@@ -1037,6 +1076,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # routine decide what to do with it.
 
     T = np.array(sorted(good_peaks)).T
+    print(T.T)
     if not T.size:
         T = np.array([[],[]])
     return T
