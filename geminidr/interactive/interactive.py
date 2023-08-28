@@ -747,13 +747,23 @@ def build_text_slider(title, value, step, min_value, max_value, obj=None,
         # If the field has no max, set to None.
         max_value = getattr(field, 'max', None)
 
+    # Check that max_value is None or greater than 0.
+    if max_value is not None and max_value <= 0:
+        max_value = None
+        _log.warn(
+            msg="max_value must be greater than 0. Setting to None."
+        )
+
     if value is None:
-        start = min_value if min_value is not None else 0
-        end = max_value if max_value is not None else 10
+        # If the value is None or Falsey, set to a default value
+        start = min_value or 0
+        end = max_value or 10
         slider_kwargs = {"value": start, "show_value": False}
+
     else:
-        start = min(value, min_value) if min_value is not None else min(value, 0)
-        end = max(value, max_value) if max_value is not None else max(10, value*2)
+        #if min/max value is None or Falsey, use a default.
+        start = min(value, min_value or 0)
+        end = max(value, max_value or 2 * value, 10)
         slider_kwargs = {"value": value, "show_value": True}
 
     # trying to convince int-based sliders to behave
