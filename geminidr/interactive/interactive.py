@@ -47,10 +47,14 @@ def _title_from_field(field):
     """
     if hasattr(field, 'title'):
         title = field.title
+
     elif hasattr(field, 'name'):
         title = field.name.replace('_', ' ').title()
+
     else:
         raise ValueError("Field has neither title nor name, unable to parse a title")
+
+    return title
 
 
 class FitQuality(Enum):
