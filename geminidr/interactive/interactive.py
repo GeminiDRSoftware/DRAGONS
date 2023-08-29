@@ -2061,7 +2061,9 @@ class UIParameters:
         """
         try:
             return self.values[attr]
-        except:
+
+        # Catching RecusionError here in case of circular reference.
+        except RecursionError:
             return object.__getattribute__(self, attr)
 
 
