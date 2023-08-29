@@ -178,7 +178,7 @@ class PrimitiveVisualizer(ABC):
                 {
                     window.close();
                 });
-        """
+            """
         )
 
         # Listen to the disabled state and tweak that inside
@@ -196,7 +196,7 @@ class PrimitiveVisualizer(ABC):
                 {
                     window.close();
                 });
-        """
+            """
         )
         self.abort_button.on_click(self.abort_button_handler)
         self.abort_button.js_on_change("disabled", abort_callback)
@@ -233,9 +233,11 @@ class PrimitiveVisualizer(ABC):
             # Handle CheckboxGroup widgets
             if hasattr(self.widgets[fname], "value"):
                 attr = "value"
+
             else:
                 attr = "active"
                 reset_value = [0] if reset_value else []
+
             old = getattr(self.widgets[fname], attr)
 
             # Update widget value
@@ -245,10 +247,13 @@ class PrimitiveVisualizer(ABC):
                         attr: self.widgets[fname].start,
                         "show_value": False,
                     }
+
                 else:
                     kwargs = {attr: ""}
+
             else:
                 kwargs = {attr: reset_value}
+
             self.widgets[fname].update(**kwargs)
 
             # Update Text Field via callback function
@@ -283,6 +288,7 @@ class PrimitiveVisualizer(ABC):
             message="Do you want to reset the input parameters?",
             callback=reset_dialog_handler,
         )
+
         return reset_reinit_button
 
     def make_ok_cancel_dialog(self, btn, message, callback):
@@ -339,6 +345,7 @@ class PrimitiveVisualizer(ABC):
             """
             % (message, callback_name)
         )
+
         btn.js_on_click(js_confirm_callback)
 
     def submit_button_handler(self):
@@ -359,19 +366,21 @@ class PrimitiveVisualizer(ABC):
             for fit, tab in zip(self.fits, self.tabs.tabs)
             if fit.quality == FitQuality.BAD
         )
+
         poor_fits = ", ".join(
             tab.title
             for fit, tab in zip(self.fits, self.tabs.tabs)
             if fit.quality == FitQuality.POOR
         )
+
         if bad_fits:
             # popup message
             self.show_user_message(
                 f"Failed fit(s) on {bad_fits}. Please "
                 "modify the parameters and try again."
             )
-        elif poor_fits:
 
+        elif poor_fits:
             def cb(accepted):
                 if accepted:
                     # Trigger the exit/fit, otherwise we do nothing
@@ -383,6 +392,7 @@ class PrimitiveVisualizer(ABC):
                 "the fitter.",
                 cb,
             )
+
         else:
             # Fit is good, we can exit
             # Trigger the submit callback via disabling the submit button
@@ -1924,15 +1934,13 @@ class RegionEditor(GIRegionListener):
 
 class TabsTurboInjector:
     """
-    This helper class wraps a bokeh Tabs widget
-    and improves performance by dynamically
-    adding and removing children from the DOM
-    as their tabs are un/selected.
+    This helper class wraps a bokeh Tabs widget and improves performance by
+    dynamically adding and removing children from the DOM as their tabs are
+    un/selected.
 
-    There is a moment when the new tab is visually
-    blank before the contents pop in, but I think
-    the tradeoff is worth it if you're finding your
-    tabs unresponsive at scale.
+    There is a moment when the new tab is visually blank before the contents
+    pop in, but I think the tradeoff is worth it if you're finding your tabs
+    unresponsive at scale.
     """
 
     def __init__(self, tabs: bm.layouts.Tabs):
@@ -1990,6 +1998,7 @@ class TabsTurboInjector:
                     title=title,
                 )
             )
+
         else:
             self.tabs.tabs.append(
                 bm.TabPanel(
@@ -2008,10 +2017,13 @@ class TabsTurboInjector:
 
         :param attr: str
             unused, will be ``active``
+
         :param old: int
             The old selection
+
         :param new: int
             The new selection
+
         """
         if old != new:
 
@@ -2053,12 +2065,16 @@ class UIParameters:
         ----------
         :config: :class:`~gempy.library.config.Config`
             DRAGONS primitive configuration
+
         :extras: dict
             Dictionary of names to new Fields to track
+
         :reinit_params: list
             List of names of configuration fields to show in the reinit panel
+
         :titles_overrides: dict
             Dictionary of overrides for labeling the fields in the UI
+
         :placeholders: dict
             Dictionary of placeholder text to use for text inputs
         """
@@ -2072,6 +2088,7 @@ class UIParameters:
             for fname, field in config._fields.items():
                 self.fields[fname] = copy(field)
                 self.values[fname] = getattr(config, fname)
+
         if extras:
             for fname, field in extras.items():
                 self.fields[fname] = copy(field)
@@ -2084,10 +2101,13 @@ class UIParameters:
         for fname, field in self.fields.items():
             if title_overrides and fname in title_overrides:
                 title = title_overrides[fname]
+
             else:
                 title = field.doc.split("\n")[0]
+
             if not title:
                 title = _title_from_field(field)
+
             self.titles[fname] = title
 
     def update_values(self, **kwargs):
