@@ -466,6 +466,7 @@ def average_along_slit(ext, center=None, offset_from_center=None,
 
         # Divide by number of pixels summed to get the mean.
         data_out /= nsum
+        variance_out /= nsum ** 2
 
         # Pass the polynomial for the center instead of the extract slice
         return data_out, mask_out, variance_out, slit_polynomial
