@@ -144,7 +144,6 @@ class PrimitiveVisualizer(ABC):
 
         self.user_satisfied = False
 
-        # TODO:
         legend_html = (
             'Plot Tools<br/><img src="dragons/static/bokehlegend.png" />'
         )
