@@ -115,7 +115,8 @@ class PrimitiveVisualizer(ABC):
         title : str
             Title fo the primitive for display, currently not used
         primitive_name : str
-            Name of the primitive function related to this UI, used in the title bar
+            Name of the primitive function related to this UI, used in the title
+            bar
         filename_info : str
             Information about the file being operated on
         template : str
@@ -301,9 +302,10 @@ class PrimitiveVisualizer(ABC):
         callback : function
             Function to call with True/False for the user selection of OK/Cancel
         """
-        # This is an older version of ok/cancel that requires a button.  The button is
-        # disabled to activate the dialog.  More recently, we needed ok/cancel without
-        # disabling a button so that is also available.  See `show_ok_cancel`
+        # This is an older version of ok/cancel that requires a button.  The
+        # button is disabled to activate the dialog.  More recently, we needed
+        # ok/cancel without disabling a button so that is also available.  See
+        # `show_ok_cancel`
         # TODO refactor this out in favor of the other exclusively
 
         # This is a bit hacky, but bokeh makes it very difficult to bridge the
@@ -324,9 +326,13 @@ class PrimitiveVisualizer(ABC):
             var confirmed = confirm('%s');
             var cbid = '%s';
             if (confirmed) {
-                $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
+                $.ajax(
+                    '/handle_callback?callback=' + cbid + '&result=confirmed'
+                );
             } else {
-                $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
+                $.ajax(
+                    '/handle_callback?callback=' + cbid + '&result=rejected'
+                );
             }
             """
             % (message, callback_name)
@@ -337,7 +343,8 @@ class PrimitiveVisualizer(ABC):
         """
         Submit button handler.
 
-        This handler checks the sanity of the fit(s) and considers three possibilities.
+        This handler checks the sanity of the fit(s) and considers three
+        possibilities.
 
         1) The fit is good, we proceed ahead as normal
         2) The fit is bad, we pop up a message dialog for the user and they hit
@@ -392,7 +399,8 @@ class PrimitiveVisualizer(ABC):
                 self.abort_button.disabled = True
 
         self.show_ok_cancel(
-            "Are you sure you want to abort?  DRAGONS reduce will exit completely.",
+            "Are you sure you want to abort?  DRAGONS reduce "
+            "will exit completely.",
             cb,
         )
 
@@ -407,7 +415,8 @@ class PrimitiveVisualizer(ABC):
             passed by bokeh, but we do not use it
 
         user_satisfied : bool
-            True if the user was satisfied (i.e. we are responding to the submit button)
+            True if the user was satisfied (i.e. we are responding to the submit
+            button)
 
         Returns
         -------
@@ -422,8 +431,12 @@ class PrimitiveVisualizer(ABC):
         """
         Returns a Div element that displays the current filename.
         """
+        info_html = (
+            f"<b>Current&nbsp;filename:&nbsp;</b>&nbsp;{self.filename_info}"
+        )
+
         div = Div(
-            text=f"<b>Current&nbsp;filename:&nbsp;</b>&nbsp;{self.filename_info}",
+            text=info_html,
             styles={
                 "color": "dimgray",
                 "font-size": "16px",
@@ -534,9 +547,13 @@ class PrimitiveVisualizer(ABC):
             var confirmed = confirm(cb_obj.text);
             var cbid = '%s';
             if (confirmed) {
-                $.ajax('/handle_callback?callback=' + cbid + '&result=confirmed');
+                $.ajax(
+                    '/handle_callback?callback=' + cbid + '&result=confirmed'
+                );
             } else {
-                $.ajax('/handle_callback?callback=' + cbid + '&result=rejected');
+                $.ajax(
+                    '/handle_callback?callback=' + cbid + '&result=rejected'
+                );
             }
             """
             % (callback_name,)
@@ -573,7 +590,8 @@ class PrimitiveVisualizer(ABC):
         message : str
             Text message to show in the ok/cancel dialog
         callback : function
-            Function to call with a bool of True if the user hit OK, or False for Cancel
+            Function to call with a bool of True if the user hit OK, or False
+            for Cancel.
         """
         # This saves the `callback` in the `_ok_cancel_callback` field.  When
         # the callback comes back into the bokeh server, that is the function
@@ -581,9 +599,9 @@ class PrimitiveVisualizer(ABC):
         # We wrap it in a do_later so it will execute on the UI thread.
         self._ok_cancel_callback = lambda x: self.do_later(lambda: callback(x))
 
-        # modifying the text of this hidden widget will trigger the ok/cancel dialog
-        # which will use the text value as it's message.  Then the dialog will
-        # make an AJAX back in and call the `callback` method.
+        # modifying the text of this hidden widget will trigger the ok/cancel
+        # dialog which will use the text value as it's message.  Then the dialog
+        # will make an AJAX back in and call the `callback` method.
         if self._ok_cancel_holder.text == message:
             # needs to be different to trigger the javascript
             self._ok_cancel_holder.text = f"{message} "
@@ -594,16 +612,18 @@ class PrimitiveVisualizer(ABC):
         """
         Perform an operation later, on the bokeh event loop.
 
-        This call lets you stage a function to execute within the bokeh event loop.
-        This is necessary if you want to interact with the bokeh and you are not
-        coming from code that is already executing in that context.  Basically,
-        this happens when the code is executing because a key press in the browser
-        came in through the tornado server via the `handle_key` URL.
+        This call lets you stage a function to execute within the bokeh event
+        loop.  This is necessary if you want to interact with the bokeh and you
+        are not coming from code that is already executing in that context.
+        Basically, this happens when the code is executing because a key press
+        in the browser came in through the tornado server via the `handle_key`
+        URL.
 
         Parameters
         ----------
         fn : function
-            Function to execute in the bokeh loop (should not take required arguments)
+            Function to execute in the bokeh loop (should not take required
+            arguments)
         """
         if self.doc is None:
             if hasattr(self, "log") and self.log is not None:
@@ -622,8 +642,8 @@ class PrimitiveVisualizer(ABC):
         """
         Make a modal dialog that activates whenever the widget is disabled.
 
-        A bit of a hack, but this attaches a modal message that freezes
-        the whole UI when a widget is disabled.  This is intended for long-running
+        A bit of a hack, but this attaches a modal message that freezes the
+        whole UI when a widget is disabled.  This is intended for long-running
         operations.  So, what you do is you set `widget.disabled=True` in your
         code and then use `do_later` to queue a long running bit of work.  When
         that work is finished, it should also do a `widget.disabled=False`.
@@ -697,7 +717,8 @@ class PrimitiveVisualizer(ABC):
         add_spacer : bool
             If True, add a spacer between sliders and their text-boxes
         hide_textbox : list
-            If set, a list of range field names for which we don't want a textbox
+            If set, a list of range field names for which we don't want a
+            textbox
 
         Returns
         -------
@@ -901,7 +922,8 @@ def build_text_slider(
     is_float : bool
         nature of parameter (None => try to figure it out)
     add_spacer : bool
-        Add a spacer element between the slider and the text input (default False)
+        Add a spacer element between the slider and the text input (default
+        False)
     hide_textbox : bool
         If True, don't show a text box and just use a slider (default False)
 
@@ -1097,8 +1119,9 @@ def build_text_slider(
             text_input.value = new
 
     def handle_value(attrib, old, new):
-        # Handle a new value and set the registered object/attribute accordingly
-        # Also updates the slider and calls the registered handler function, if any
+        # Handle a new value and set the registered object/attribute
+        # accordingly.  Also updates the slider and calls the registered handler
+        # function, if any.
         if obj and attr:
             try:
                 if not hasattr(obj, attr) and isinstance(obj, dict):
@@ -1131,8 +1154,9 @@ def build_text_slider(
     else:
         if text_input is not None:
             slider.on_change("value", update_text_input)
-            # since slider is listening to value, this next line will cause the slider
-            # to call the handle_value method and we don't need to do so explicitly
+            # Since slider is listening to value, this next line will cause the
+            # slider to call the handle_value method and we don't need to do so
+            # explicitly.
             text_input.on_change("value", handle_value)
         else:
             slider.on_change("value", handle_value)
@@ -1921,7 +1945,7 @@ class TabsTurboInjector:
         becomes active, the child will be placed into the tab.  When the
         tab is inactive, it will be cleared to improve performance.
 
-        :param child: 
+        :param child:
         :class:~bokeh.core.properties.Instance(bokeh.models.layouts.LayoutDOM)
             Widget to add as a panel's contents
         :param title: str
@@ -1975,7 +1999,8 @@ class TabsTurboInjector:
                 ]
 
             # clear the old tab via an event on the UI loop
-            # we don't want to do it right now - wait until the tab change has happened
+            # we don't want to do it right now - wait until the tab change has
+            # happened
             do_later(clear_old_tab)
             self.tabs.tabs[new].child.children[0] = self.tab_children[new]
 
