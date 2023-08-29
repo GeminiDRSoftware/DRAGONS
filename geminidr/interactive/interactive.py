@@ -115,8 +115,8 @@ class PrimitiveVisualizer(ABC):
         title : str
             Title fo the primitive for display, currently not used
         primitive_name : str
-            Name of the primitive function related to this UI, used in the title
-            bar
+            Name of the primitive function related to this UI, used in the
+            title bar
         filename_info : str
             Information about the file being operated on
         template : str
@@ -260,7 +260,9 @@ class PrimitiveVisualizer(ABC):
                 for callback in self.widgets[fname]._callbacks[
                     "value_throttled"
                 ]:
-                    callback(attrib="value_throttled", old=old, new=reset_value)
+                    callback(
+                        attrib="value_throttled", old=old, new=reset_value
+                    )
 
     def build_reset_button(self, extra_handler_fn=None):
         reset_reinit_button = bm.Button(
@@ -300,7 +302,8 @@ class PrimitiveVisualizer(ABC):
         message : str
             String message to show in the ok/cancel dialog
         callback : function
-            Function to call with True/False for the user selection of OK/Cancel
+            Function to call with True/False for the user selection of
+            OK/Cancel
         """
         # This is an older version of ok/cancel that requires a button.  The
         # button is disabled to activate the dialog.  More recently, we needed
@@ -415,8 +418,8 @@ class PrimitiveVisualizer(ABC):
             passed by bokeh, but we do not use it
 
         user_satisfied : bool
-            True if the user was satisfied (i.e. we are responding to the submit
-            button)
+            True if the user was satisfied (i.e. we are responding to the
+            submit button)
 
         Returns
         -------
@@ -486,7 +489,9 @@ class PrimitiveVisualizer(ABC):
             :attr:`~geminidr.interactive.interactive.PrimitiveVisualizer.doc`
         """
         self.doc = doc
-        doc.on_session_destroyed(lambda stuff: self.session_ended(stuff, False))
+        doc.on_session_destroyed(
+            lambda stuff: self.session_ended(stuff, False)
+        )
 
         self.visualize(doc)
 
@@ -523,11 +528,12 @@ class PrimitiveVisualizer(ABC):
         #################
         # OK/Cancel Setup
         #################
-        # This is a workaround for bokeh so we can drive an ok/cancel dialog box
-        # and have the response sent back down via a Tornado web endpoint.  This
-        # is not dependent on being tied to a button like the earlier version.
-        # It does, therefore, need it's own widget which we supply as hidden
-        # and also double as the means for passing the text message to the js
+        # This is a workaround for bokeh so we can drive an ok/cancel dialog
+        # box and have the response sent back down via a Tornado web endpoint.
+        # This is not dependent on being tied to a button like the earlier
+        # version.  It does, therefore, need it's own widget which we supply as
+        # hidden and also double as the means for passing the text message to
+        # the js
         def _internal_ok_cancel_handler(args):
             self.do_later(
                 lambda: self._ok_cancel_callback(
@@ -600,8 +606,8 @@ class PrimitiveVisualizer(ABC):
         self._ok_cancel_callback = lambda x: self.do_later(lambda: callback(x))
 
         # modifying the text of this hidden widget will trigger the ok/cancel
-        # dialog which will use the text value as it's message.  Then the dialog
-        # will make an AJAX back in and call the `callback` method.
+        # dialog which will use the text value as it's message.  Then the
+        # dialog will make an AJAX back in and call the `callback` method.
         if self._ok_cancel_holder.text == message:
             # needs to be different to trigger the javascript
             self._ok_cancel_holder.text = f"{message} "
@@ -1070,7 +1076,8 @@ def build_text_slider(
         )
 
     def _input_check(val):
-        # Check if the value is viable as an int or float, according to our type
+        # Check if the value is viable as an int or float, according to our
+        # type
         if ((not is_float) and isinstance(val, int)) or (
             is_float and isinstance(val, float)
         ):
@@ -1120,8 +1127,8 @@ def build_text_slider(
 
     def handle_value(attrib, old, new):
         # Handle a new value and set the registered object/attribute
-        # accordingly.  Also updates the slider and calls the registered handler
-        # function, if any.
+        # accordingly.  Also updates the slider and calls the registered
+        # handler function, if any.
         if obj and attr:
             try:
                 if not hasattr(obj, attr) and isinstance(obj, dict):
@@ -1185,8 +1192,8 @@ def connect_region_model(fig, region_model):
         GIRegionView(fig, region_model)
 
     # This is a workaround for a bokeh bug.  Without this, things like the
-    # background shading used for apertures and regions will not update properly
-    # after the figure is visible.
+    # background shading used for apertures and regions will not update
+    # properly after the figure is visible.
     fig.js_on_change(
         "center",
         CustomJS(
@@ -1415,7 +1422,9 @@ class GIRegionModel:
                     # full overlap?
                     if (
                         aregion[0] is None
-                        or (bregion[0] is not None and aregion[0] <= bregion[0])
+                        or (
+                            bregion[0] is not None and aregion[0] <= bregion[0]
+                        )
                     ) and (
                         aregion[1] is None
                         or (bregion is not None and aregion[1] >= bregion[1])
@@ -1424,10 +1433,14 @@ class GIRegionModel:
                         self.delete_region(bkey)
                     elif (
                         bregion[0] is None
-                        or (aregion[0] is not None and aregion[0] >= bregion[0])
+                        or (
+                            aregion[0] is not None and aregion[0] >= bregion[0]
+                        )
                     ) and (
                         bregion[1] is None
-                        or (aregion[1] is not None and aregion[1] <= bregion[1])
+                        or (
+                            aregion[1] is not None and aregion[1] <= bregion[1]
+                        )
                     ):
                         # remove aregion
                         self.delete_region(akey)
@@ -1487,12 +1500,16 @@ class GIRegionModel:
         closest = None
         for region_id, region in self.regions.items():
             distance = None if region[1] is None else abs(region[1] - x)
-            if closest is None or (distance is not None and distance < closest):
+            if closest is None or (
+                distance is not None and distance < closest
+            ):
                 ret_region_id = region_id
                 ret_region = region[0]
                 closest = distance
             distance = None if region[0] is None else abs(region[0] - x)
-            if closest is None or (distance is not None and distance < closest):
+            if closest is None or (
+                distance is not None and distance < closest
+            ):
                 ret_region_id = region_id
                 ret_region = region[1]
                 closest = distance
@@ -1509,8 +1526,8 @@ class GIRegionModel:
 
         Returns
         -------
-        bool : True if there are no regions defined, or if any region contains x
-        in it's range
+        bool : True if there are no regions defined, or if any region contains
+        x in it's range
         """
         if len(self.regions.values()) == 0:
             return True
@@ -1554,8 +1571,9 @@ class GIRegionModel:
 
 class RegionHolder:
     """
-    Used by `~geminidr.interactive.interactive.GIRegionView` to track start/stop
-    independently of the bokeh Annotation since we want to support `None`.
+    Used by `~geminidr.interactive.interactive.GIRegionView` to track
+    start/stop independently of the bokeh Annotation since we want to support
+    `None`.
 
     We need to know if the start/stop values are a specific value or `None`
     which is open ended left/right.
@@ -1608,8 +1626,8 @@ class GIRegionView(GIRegionListener):
             "end", lambda attr, old, new: self.update_viewport()
         )
 
-        # The whisker is a single Bokeh glyph but it draws all of the range bars
-        # for all regions.  These bars are drawn using coordinates in
+        # The whisker is a single Bokeh glyph but it draws all of the range
+        # bars for all regions.  These bars are drawn using coordinates in
         # self.whisker_data. The index is in the arrays if whisker data are a
         # field we track in the self.regions dict
         self.whisker_data = ColumnDataSource(
@@ -1786,12 +1804,17 @@ class RegionEditor(GIRegionListener):
     """
 
     def __init__(self, region_model):
+        title_str = (
+            "Regions (i.e. 101:500,511:900,951: Press 'Enter' to apply):"
+        )
+
         self.text_input = TextInput(
-            title="Regions (i.e. 101:500,511:900,951: Press 'Enter' to apply):",
+            title=title_str,
             max_width=600,
             sizing_mode="stretch_width",
             width_policy="max",
         )
+
         self.text_input.value = region_model.build_regions()
         self.region_model = region_model
         self.region_model.add_listener(self)
@@ -1994,9 +2017,9 @@ class TabsTurboInjector:
         if old != new:
 
             def clear_old_tab():
-                self.tabs.tabs[old].child.children[0] = self.tab_dummy_children[
-                    old
-                ]
+                self.tabs.tabs[old].child.children[
+                    0
+                ] = self.tab_dummy_children[old]
 
             # clear the old tab via an event on the UI loop
             # we don't want to do it right now - wait until the tab change has
