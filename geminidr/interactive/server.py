@@ -352,4 +352,4 @@ def interactive_fitter(visualizer):
     start_server()
     set_visualizer(None)
     if not visualizer.user_satisfied:
-        raise KeyboardInterrupt()
+        raise KeyboardInterrupt(f"User aborted {visualizer.primitive_name}")
