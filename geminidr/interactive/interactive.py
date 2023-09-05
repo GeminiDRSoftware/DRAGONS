@@ -742,9 +742,11 @@ class PrimitiveVisualizer(ABC):
         widgets = []
         if hide_textbox is None:
             hide_textbox = []
+
         if params.reinit_params:
             for key in params.reinit_params:
                 field = params.fields[key]
+
                 if hasattr(field, "min"):
                     is_float = field.dtype is not int
                     if is_float:
@@ -963,16 +965,18 @@ def build_text_slider(
     # Check that max_value is None or greater than 0.
     if max_value is not None and max_value <= 0:
         max_value = None
-        _log.warn(msg="max_value must be greater than 0. Setting to None.")
+        _log.warn(
+            msg="max_value must be greater than 0 or None. Setting to None."
+        )
 
     if value is None:
-        # If the value is None or Falsey, set to a default value
+        # If the value is None/Falsey, set to a default value
         start = min_value or 0
         end = max_value or 10
         slider_kwargs = {"value": start, "show_value": False}
 
     else:
-        # if min/max value is None or Falsey, use a default.
+        # if min/max value is None/Falsey, use a default.
         start = min(value, min_value or 0)
         end = max(value, max_value or 2 * value, 10)
         slider_kwargs = {"value": value, "show_value": True}
@@ -1029,7 +1033,7 @@ def build_text_slider(
                         alert('Maximum is %s');
                         inp.value = %s;
                     }
-                """
+                    """
                     % (
                         "inp.value != null && " if allow_none else "",
                         max_value,
@@ -1048,7 +1052,7 @@ def build_text_slider(
                         alert('Minimum is %s');
                         inp.value = %s;
                     }
-                """
+                    """
                     % (
                         "inp.value != null && " if allow_none else "",
                         min_value,
@@ -1067,6 +1071,7 @@ def build_text_slider(
                     "text_slider_%s" % attr,
                 ],
             )
+
         else:
             component = row(
                 slider,
@@ -1075,6 +1080,7 @@ def build_text_slider(
                     "text_slider_%s" % attr,
                 ],
             )
+
     else:
         text_input = None
         component = row(
@@ -1091,16 +1097,22 @@ def build_text_slider(
             is_float and isinstance(val, float)
         ):
             return True
+
         if val is None and not allow_none:
             return False
+
         if val is None and allow_none:
             return True
+
         try:
             if is_float:
                 float(val)
+
             else:
                 int(val)
+
             return True
+
         except ValueError:
             return False
 
@@ -1109,23 +1121,33 @@ def build_text_slider(
         if text_input is not None and not _input_check(new):
             if _input_check(old):
                 text_input.value = old
+
             return
+
         if new is not None and old != new:
             if is_float:
                 ival = float(new)
+
             else:
                 ival = int(new)
+
             if ival > slider.end and not max_value:
                 slider.end = ival
+
             if ival < slider.end and end < slider.end:
                 slider.end = max(end, ival)
+
             if 0 <= ival < slider.start and min_value is None:
                 slider.start = ival
+
             if ival > slider.start and start > slider.start:
                 slider.start = min(ival, start)
+
             if slider.start <= ival <= slider.end:
                 slider.value = ival
+
             slider.show_value = True
+
         elif new is None:
             slider.show_value = False
 
@@ -1142,19 +1164,24 @@ def build_text_slider(
             try:
                 if not hasattr(obj, attr) and isinstance(obj, dict):
                     obj[attr] = new
+
                 else:
                     obj.__setattr__(attr, new)
+
             except FieldValidationError:
                 # reset textbox
                 if text_input is not None:
                     text_input.remove_on_change("value", handle_value)
                     text_input.value = old
                     text_input.on_change("value", handle_value)
+
             else:
                 update_slider(attrib, old, new)
+
         if handler:
             if new is not None:
                 handler(new)
+
             else:
                 handler(new)
 
@@ -1165,8 +1192,10 @@ def build_text_slider(
         if text_input is not None:
             slider.on_change("value_throttled", update_text_input)
             text_input.on_change("value", handle_value)
+
         else:
             slider.on_change("value_throttled", handle_value)
+
     else:
         if text_input is not None:
             slider.on_change("value", update_text_input)
@@ -1174,8 +1203,10 @@ def build_text_slider(
             # slider to call the handle_value method and we don't need to do so
             # explicitly.
             text_input.on_change("value", handle_value)
+
         else:
             slider.on_change("value", handle_value)
+
     return component
 
 
@@ -2017,13 +2048,10 @@ class TabsTurboInjector:
 
         :param attr: str
             unused, will be ``active``
-
         :param old: int
             The old selection
-
         :param new: int
             The new selection
-
         """
         if old != new:
 
