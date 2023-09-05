@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from tkinter import W
 
 import numpy as np
 
@@ -636,7 +637,11 @@ class FittingParametersUI:
         ------
         list : elements displayed in the column.
         """
-
+        # TODO: The current setup doesn't have a clear way to add alt text to
+        # various sliders and buttons in this interface. It would be good to
+        # refactor this so that it accepts widgets as a list of tuples, for
+        # example, so that adding in individual elements is not a fight with
+        # the source.
         rejection_title = bm.Div(
             text="Rejection Parameters",
             min_width=100,
@@ -973,7 +978,7 @@ class Fit1DPanel:
             label="Reset",
             align="center",
             button_type="warning",
-            width_policy="min",
+            width_policy="max",
         )
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
             reset_button,
@@ -1020,6 +1025,7 @@ class Fit1DPanel:
         if enable_regions:
             region_editor = RegionEditor(band_model)
             fig_column.append(region_editor.get_widget())
+
         col = column(*fig_column)
         col.sizing_mode = "scale_width"
 
@@ -1133,6 +1139,7 @@ class Fit1DPanel:
             ydata = self.model.data.data[self.ypoint]
         except (AttributeError, KeyError):
             pass
+
         else:
 
             def min_max_pad(data, default_min, default_max):
@@ -1654,13 +1661,20 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col.sizing_mode = "scale_width"
         col.width_policy = "max"
 
+        # TODO: This creates a new column that doesn't play nice with the
+        # extant columns in the visualizer. That's why the abort/submit buttons
+        # will overflow into the tabs and not scale properly as they should
+        # with the rest of the content.
+        #
+        # To fix this, need to refactor this code to include the abort/submit
+        # buttons and file name in the same column as the tabs. There's enough
+        # space for it.
         for btn in (self.submit_button, self.abort_button):
             btn.align = "end"
-            btn.height = 35
-            btn.height_policy = "fixed"
+            btn.height = 90
             btn.margin = (0, 5, -20 if not self.pad_buttons else 0, 5)
             btn.width = 212
-            btn.width_policy = "fixed"
+            btn.sizing_mode = "scale_width"
 
         layout_ls = list()
         if self.filename_info:
@@ -1744,7 +1758,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.do_later(fn)
 
         if self.reconstruct_points_fn is not None:
-
             def rfn():
                 data = None
                 try:
