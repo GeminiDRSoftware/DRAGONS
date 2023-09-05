@@ -190,6 +190,7 @@ class InteractiveModel1D(InteractiveModel):
         self.sigma_clip = (
             "sigma" in fitting_parameters and fitting_parameters["sigma"]
         )
+
         self.perform_fit()
         self.evaluation = bm.ColumnDataSource(
             {"xlinspace": xlinspace, "model": self.evaluate(xlinspace)}
@@ -1459,7 +1460,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             the browser. This can speed up the general responsiveness when
             there are many tabs, but introduces a small delay when the user
             switches between tabs.
-        panel_class : Class
+        panel_class : :class:`Panel`
             The class of Panel to use in each tab. This allows specific
             operability for each primitive since most of the functions that do
             the work are methods of this class.
@@ -1505,6 +1506,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                         if modal_button_label
                         else "Reconstruct points",
                     )
+
                     self.reinit_button.on_click(self.reconstruct_points)
                     self.make_modal(self.reinit_button, modal_message)
                     reinit_widgets.append(self.reinit_button)
@@ -1540,9 +1542,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if callable(data_source):
             self.reconstruct_points_fn = data_source
             data = data_source(ui_params=ui_params)
+
         else:
             data = data_source
             self.reconstruct_points_fn = None
+
         self.returns_list = isinstance(data["x"], list)
 
         # Some sanity checks now
@@ -1552,18 +1556,23 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     "'data_source' is a list but "
                     "'fitting_parameters' is not"
                 )
+
             if not (
                 len(fitting_parameters) == len(data["x"]) == len(data["y"])
             ):
                 raise ValueError("Different numbers of models and coordinates")
+
             if not all(
                 [x.size == y.size for x, y in zip(data["x"], data["y"])]
             ):
                 raise ValueError("Different (x, y) array sizes")
+
             self.nfits = len(fitting_parameters)
+
         else:
             if data["x"].size != data["y"].size:
                 raise ValueError("Different (x, y) array sizes")
+
             self.nfits = 1
 
         kwargs.update({"xlabel": xlabel, "ylabel": ylabel})
@@ -1575,26 +1584,32 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             tabs=[],
             name="tabs",
         )
+
         self.tabs.sizing_mode = "scale_width"
 
         if self.nfits == 1:
             turbo_tabs = False
+
         elif turbo_tabs:
             self.turbo = TabsTurboInjector(self.tabs)
 
         for i in range(self.nfits):
             extra_masks = {}
+
             if self.returns_list:
                 this_dict = {k: v[i] for k, v in data.items()}
                 domain = domains[i] if domains else None
                 fitting_params = fitting_parameters[i]
+
             else:
                 this_dict = data
                 domain = domains
                 fitting_params = fitting_parameters
+
             for k in list(this_dict.keys()):
                 if k.endswith("_mask"):
                     extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
+
             tui = panel_class(
                 self,
                 fitting_params,
@@ -1603,15 +1618,19 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 **kwargs,
                 extra_masks=extra_masks,
             )
+
             if turbo_tabs:
                 self.turbo.add_tab(
                     tui.component, title=tab_name_fmt.format(i + 1)
                 )
+
             else:
                 tab = bm.TabPanel(
                     child=tui.component, title=tab_name_fmt.format(i + 1)
                 )
+
                 self.tabs.tabs.append(tab)
+
             self.fits.append(tui.model)
             self.panels.append(tui)
 
@@ -1631,6 +1650,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col = column(
             self.tabs,
         )
+
         col.sizing_mode = "scale_width"
         col.width_policy = "max"
 
@@ -1657,6 +1677,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     css_classes=["top-row"],
                 )
             )
+
         else:
             layout_ls.append(
                 row(self.abort_button, self.submit_button),
@@ -1742,27 +1763,33 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 if data is not None:
                     for i, fit in enumerate(self.fits):
                         extra_masks = {}
+
                         if self.returns_list:
                             this_dict = {k: v[i] for k, v in data.items()}
+
                         else:
                             this_dict = data
+
                         for k in list(this_dict.keys()):
                             if k.endswith("_mask"):
                                 extra_masks[
                                     k.replace("_mask", "")
                                 ] = this_dict.pop(k)
+
                         fit.populate_bokeh_objects(
                             this_dict["x"],
                             this_dict["y"],
                             this_dict.get("weights"),
                             extra_masks=extra_masks,
                         )
+
                         fit.perform_fit()
 
                     self.reconstruct_points_additional_work(data)
 
                 if self.modal_widget:
                     self.modal_widget.disabled = False
+
                 for pnl in self.panels:
                     pnl.reset_view()
 
@@ -1772,8 +1799,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         """
         Get the results of the interactive fit.
 
-        This gets the list of `~gempy.library.fitting.fit_1D` fits of
-        the data to be used by the caller.
+        This gets the list of `~gempy.library.fitting.fit_1D` fits of the data
+        to be used by the caller.
 
         Returns
         -------
@@ -1784,21 +1811,17 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
 def prep_fit1d_params_for_fit1d(fit1d_params):
     """
-    In the UI, which relies on `fit1d_params`, we constrain
-    `niter` to 1 at the low end and separately have a `sigma`
-    boolean checkbox.
+    In the UI, which relies on `fit1d_params`, we constrain `niter` to 1 at the
+    low end and separately have a `sigma` boolean checkbox.
 
-    To support the `sigma` checkbox, here we remap the inputs
-    based on the value of `niter`.  If `niter` is 0, this
-    tells us no `sigma` rejection is desired.  So, in that
-    case, we set `sigma` to False.  We then set `niter` to
-    1 for the UI to work as desired.  Were `niter` passed
-    in as `1` originally, it would remain `1` but `sigma`
-    would be set to `True`.
+    To support the `sigma` checkbox, here we remap the inputs based on the
+    value of `niter`.  If `niter` is 0, this tells us no `sigma` rejection is
+    desired.  So, in that case, we set `sigma` to False.  We then set `niter`
+    to 1 for the UI to work as desired.  Were `niter` passed in as `1`
+    originally, it would remain `1` but `sigma` would be set to `True`.
 
-    The UI will disable all the sigma related inputs when
-    `sigma` is set to False.  It will also exclude them
-    from the parameters sent to `fit_1d`.
+    The UI will disable all the sigma related inputs when `sigma` is set to
+    False.  It will also exclude them from the parameters sent to `fit_1d`.
 
     Parameters
     ----------
@@ -1808,12 +1831,10 @@ def prep_fit1d_params_for_fit1d(fit1d_params):
     """
     # If niter is 0, set sigma to None and niter to 1
     if "niter" in fit1d_params and fit1d_params["niter"] == 0:
-        # we use a min of 1 for niter, then remove the sigmas
-        # to clue the UI in that we are not sigma clipping.
-        # If we disable sigma clipping, niter will be disabled
-        # in the UI.  Allowing a niter selection of 0 with
-        # sigma clipping turned on is counterintuitive for
-        # the user.
+        # we use a min of 1 for niter, then remove the sigmas to clue the UI in
+        # that we are not sigma clipping.  If we disable sigma clipping, niter
+        # will be disabled in the UI.  Allowing a niter selection of 0 with
+        # sigma clipping turned on is counterintuitive for the user.
         fit1d_params["niter"] = 1
         fit1d_params["sigma"] = False
     else:
@@ -1867,23 +1888,24 @@ def fit1d_figure(
     """
 
     tools = "pan,wheel_zoom,box_zoom,reset"
+
     if enable_user_masking:
         tools += ",lasso_select,box_select,tap"
 
     p_main = figure(
         width=width,
         height=height,
-        min_width=400,
+        min_width=200,
+        max_width=800,
         title="Fit",
         x_axis_label=xlabel,
         y_axis_label=ylabel,
         tools=tools,
-        output_backend="webgl",  # x_range=None, y_range=None,
+        output_backend="webgl",
         min_border_left=80,
     )
 
-    p_main.height_policy = "fixed"
-    p_main.width_policy = "fit"
+    p_main.sizing_mode = "stretch_width"
     p_main.scatter(
         x=xpoint,
         y=ypoint,
@@ -1916,8 +1938,6 @@ def fit1d_figure(
             min_border_left=80,
         )
 
-        p_resid.height_policy = "fixed"
-        p_resid.width_policy = "fit"
         p_resid.sizing_mode = "stretch_width"
         connect_region_model(p_resid, model.band_model)
         # Initalizing this will cause the residuals to be calculated
@@ -1944,8 +1964,6 @@ def fit1d_figure(
             x_range=p_main.x_range,  # y_range=None,
             min_border_left=80,
         )
-        p_ratios.height_policy = "fixed"
-        p_ratios.width_policy = "fit"
         p_ratios.sizing_mode = "stretch_width"
         connect_region_model(p_ratios, model.band_model)
         # Initalizing this will cause the ratios to be calculated
