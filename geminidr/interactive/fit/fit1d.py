@@ -77,7 +77,8 @@ class InteractiveModel(ABC):
         Parameters
         ----------
         listener : function
-            This should be a no-arg function and it will get called when the model is updated
+            This should be a no-arg function and it will get called when the
+            model is updated
         """
         if not callable(listener):
             raise ValueError("Listeners must be callables")
@@ -87,7 +88,8 @@ class InteractiveModel(ABC):
         """
         Notify all the registered listeners of a change.
 
-        This calls all our registered listener functions to let them know we have changed.
+        This calls all our registered listener functions to let them know we
+        have changed.
         """
         for listener in self.listeners:
             listener(self)
@@ -197,9 +199,9 @@ class InteractiveModel1D(InteractiveModel):
         """
         Set the fit function to use.
 
-        This sets the function the `gempy.library.fitting.fit_1D` fitter will use
-        to perform the data fit.  It's a helper method to pass the function down
-        to the model.
+        This sets the function the `gempy.library.fitting.fit_1D` fitter will
+        use to perform the data fit.  It's a helper method to pass the function
+        down to the model.
 
         Parameters
         ----------
@@ -249,7 +251,8 @@ class InteractiveModel1D(InteractiveModel):
         mask : array of str
             named mask for coordinates
         extra_masks : dict of boolean arrays
-            points to display but not passed to the fit (for apertures in skyCorrect)
+            points to display but not passed to the fit (for apertures in
+            skyCorrect)
         """
         if mask is None:
             try:  # Handle y as masked array
@@ -366,8 +369,9 @@ class InteractiveModel1D(InteractiveModel):
     @property
     def sigma(self):
         """
-        Maps sigma attribute to :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.lsigma`
-        and :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.hsigma`
+        Maps sigma attribute to
+        :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.lsigma` and
+        :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.hsigma`
 
         Returns
         -------
@@ -380,8 +384,9 @@ class InteractiveModel1D(InteractiveModel):
     @sigma.setter
     def sigma(self, value):
         """
-        Set sigma attr, effectively setting both :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.lsigma`
-        and :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.hsigma`
+        Set sigma attr, effectively setting both
+        :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.lsigma` and
+        :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.hsigma`
 
         Parameters
         ----------
@@ -399,8 +404,9 @@ class InteractiveModel1D(InteractiveModel):
         It then notifies all listeners that the data and model have
         changed so they can respond.
         """
-        # Note that band_mask is now handled by passing a region string to fit_1D
-        # but we still use the band_mask for highlighting the affected points
+        # Note that band_mask is now handled by passing a region string to
+        # fit_1D but we still use the band_mask for highlighting the affected
+        # points.
         if self.sigma_clip:
             fitparms = {
                 x: y
@@ -430,8 +436,9 @@ class InteractiveModel1D(InteractiveModel):
                 **fitparms,
             )
 
-            # For splines, "rank" is the number of spline pieces; for Chebyshevs
-            # it's effectively the number of fitted points (max order+1)
+            # For splines, "rank" is the number of spline pieces; for
+            # Chebyshevs it's effectively the number of fitted points (max
+            # order+1).
             rank = new_fit.fit_info["rank"]
             if rank > 0:
                 if "params" in new_fit.fit_info:  # it's a polynomial
@@ -475,10 +482,12 @@ class InteractiveModel1D(InteractiveModel):
 class FittingParametersUI:
     def __init__(self, vis, fit, fitting_parameters):
         """
-        Class to manage the set of UI controls for the inputs to the fitting model.
+        Class to manage the set of UI controls for the inputs to the fitting
+        model.
 
-        This sets up the controls for sigma rejection, iterations, etc., and manages them.  For
-        instance, unchecking sigma causes the sigma related parameters to be disabled.
+        This sets up the controls for sigma rejection, iterations, etc., and
+        manages them.  For instance, unchecking sigma causes the sigma related
+        parameters to be disabled.
 
         Parameters
         ----------
@@ -487,9 +496,11 @@ class FittingParametersUI:
         fit : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
             The model information for doing the 1-D fit
         fitting_parameters : dict
-            The parameters for performing the fit using fit_1D.  These can be generated with
-            :meth:`fit_1D.translate_params(params)` where params are the parameters for the primitive.
-            This will be passed down from the top level :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
+            The parameters for performing the fit using fit_1D.  These can be
+            generated with :meth:`fit_1D.translate_params(params)` where params
+            are the parameters for the primitive.  This will be passed down
+            from the top level
+            :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
         """
         self.vis = vis
         self.fit = fit
@@ -520,8 +531,13 @@ class FittingParametersUI:
             self.function.on_change("value", fn_select_change)
         else:
             # If the function is fixed
+            function_text = (
+                f"Fit Function: <b>"
+                f"{fitting_parameters['function'].capitalize()}</b>"
+            )
+
             self.function = bm.Div(
-                text=f"Fit Function: <b>{fitting_parameters['function'].capitalize()}</b>",
+                text=function_text,
                 min_width=100,
                 max_width=202,
                 sizing_mode="stretch_width",
@@ -556,7 +572,8 @@ class FittingParametersUI:
             else:
                 max = None
             if key == "niter":
-                # override this, min should be 1 as it is only used when sigma is checked
+                # override this, min should be 1 as it is only used when sigma
+                # is checked
                 min = 1
             return interactive.build_text_slider(
                 title=title,
@@ -643,8 +660,12 @@ class FittingParametersUI:
                 self.sigma_upper_slider,
             ]
         else:
+            column_title_text = (
+                f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>"
+            )
+
             column_title = bm.Div(
-                text=f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>",
+                text=column_title_text,
                 min_width=100,
                 max_width=202,
                 sizing_mode="stretch_width",
@@ -681,7 +702,8 @@ class FittingParametersUI:
         Return
         ------
         :class:`~bokeh.models.Div`
-            :class:`~bokeh.models.Div` component containing the short description.
+            :class:`~bokeh.models.Div` component containing the short
+            description.
         """
         return bm.Div(
             text=text,
@@ -698,8 +720,8 @@ class FittingParametersUI:
 
     def reset_ui(self):
         """
-        Resets all the inputs to their original state.  This can be used by a reset button
-        to undo any changes a user has made to the inputs.
+        Resets all the inputs to their original state.  This can be used by a
+        reset button to undo any changes a user has made to the inputs.
         """
         self.fitting_parameters = {
             x: y for x, y in self.fitting_parameters_for_reset.items()
@@ -756,7 +778,8 @@ class FittingParametersUI:
         This will trigger a fit since the result may
         change.
         """
-        # If we're not sigma-clipping, we don't need to refit the model if sigma changes
+        # If we're not sigma-clipping, we don't need to refit the model if
+        # sigma changes
         if self.fit.sigma_clip:
             self.fit.perform_fit()
 
@@ -766,8 +789,8 @@ class InfoPanel:
         """
         Build an informational panel to hold statistics about the fit.
 
-        This shows the user the RMS of the fit to the data.  It also lists masking counts
-        for the various mask types.
+        This shows the user the RMS of the fit to the data.  It also lists
+        masking counts for the various mask types.
 
         Parameters
         ----------
@@ -795,7 +818,13 @@ class InfoPanel:
             The model that has changed.
         """
         rms_str = "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
-        rms = f'<div class="info_panel"><div class="info_header">RMS: </div><div class="info_text">{rms_str}</div>'
+
+        rms = (
+            f'<div class="info_panel">'
+            f'<div class="info_header">RMS: </div>'
+            f'<div class="info_text">{rms_str}</div>'
+        )
+
         band_count = model.mask.count(BAND_MASK_NAME)
         user_count = model.mask.count(USER_MASK_NAME)
         fit_count = model.mask.count(SIGMA_MASK_NAME)
@@ -805,25 +834,38 @@ class InfoPanel:
             extra_counts[em] = model.mask.count(em)
         total_count = model.x.size
 
-        total = f'<div class="info_header">Total Points: </div><div class="info_text">{total_count}</div>'
+        total = (
+            f'<div class="info_header">Total Points: </div>'
+            f'<div class="info_text">{total_count}</div>'
+        )
+
         band = (
-            f'<div class="info_header">Outside Region(s): </div><div class="info_text">{band_count}</div>'
+            f'<div class="info_header">Outside Region(s): </div>'
+            f'<div class="info_text">{band_count}</div>'
             if self.enable_regions
             else ""
         )
+
         user = (
-            f'<div class="info_header">User Masked: </div><div class="info_text">{user_count}</div>'
+            f'<div class="info_header">User Masked: </div>'
+            f'<div class="info_text">{user_count}</div>'
             if self.enable_user_masking
             else ""
         )
-        fit = f'<div class="info_header">Sigma Clipped:</div><div class="info_text">{fit_count}</div>'
+
+        fit = (
+            f'<div class="info_header">Sigma Clipped:</div>'
+            f'<div class="info_text">{fit_count}</div>'
+        )
 
         extra_masks = "\n".join(
             [
-                f'<div class="info_header">{em.capitalize()}:</div><div class="info_text">{extra_counts[em]}</div>'
+                f'<div class="info_header">{em.capitalize()}:</div>'
+                f'<div class="info_text">{extra_counts[em]}</div>'
                 for em in self.extra_masks
             ]
         )
+
         self.component.update(
             text=rms + total + band + user + fit + extra_masks + "</div>"
         )
@@ -876,13 +918,17 @@ class Fit1DPanel:
         plot_height : int
             height of plot area in pixels
         plot_residuals : bool
-            True if we want the lower plot showing the differential between the data and the fit
+            True if we want the lower plot showing the differential between the
+            data and the fit
         plot_ratios : bool
-            True if we want the lower plot showing the ratio between the data and the fit
+            True if we want the lower plot showing the ratio between the data
+            and the fit
         enable_user_masking : bool
-            True to enable fine-grained data masking by the user using bokeh selections
+            True to enable fine-grained data masking by the user using bokeh
+            selections
         enable_regions : bool
-            True if we want to allow user-defind regions as a means of masking the data
+            True if we want to allow user-defind regions as a means of masking
+            the data
         extra_masks : dict of boolean arrays
             points to display but not use in the fit
         """
@@ -952,16 +998,17 @@ class Fit1DPanel:
             extra_masks=extra_masks,
         )
 
-        # Initializing regions here ensures the listeners are notified of the region(s)
+        # Initializing regions here ensures the listeners are notified of the
+        # changes to regions.
         if fitting_parameters.get("regions") is not None:
             region_tuples = cartesian_regions_to_slices(
                 fitting_parameters["regions"]
             )
             band_model.load_from_tuples(region_tuples)
 
-        # TODO refactor? this is dupe from band_model_handler
-        # hacking it in here so I can account for the initial
-        # state of the band model (which used to be always empty)
+        # TODO refactor? this is dupe from band_model_handler hacking it in
+        # here so I can account for the initial state of the band model (which
+        # used to be always empty)
         mask = [
             BAND_MASK_NAME if not band_model.contains(x) and m == "good" else m
             for x, m in zip(self.model.x, self.model.mask)
@@ -1067,13 +1114,15 @@ class Fit1DPanel:
 
     def reset_view(self):
         """
-        This calculates the x and y ranges for the figure with some custom padding.
+        This calculates the x and y ranges for the figure with some custom
+        padding.
 
-        This is used when we initially build the figure, but also as a listener for
-        whenever the data changes.
+        This is used when we initially build the figure, but also as a listener
+        for whenever the data changes.
         """
         if not hasattr(self, "p_main") or self.p_main is None:
-            # This may be a subclass, p_main is not being stored so nothing to reset
+            # This may be a subclass, p_main is not being stored so nothing to
+            # reset
             return
 
         x_range = None
@@ -1092,7 +1141,8 @@ class Fit1DPanel:
                 mn = min(data)
                 return mn, mx, 0.1 * (mx - mn)
 
-            # if xdata or ydata are empty, we set some arbitrary values so the UI is ok
+            # if xdata or ydata are empty, we set some arbitrary values so the
+            # UI is ok
             x_min, x_max, x_pad = min_max_pad(xdata, 0, 4000)
             if x_min != x_max:
                 self.p_main.x_range.update(
@@ -1115,7 +1165,8 @@ class Fit1DPanel:
         Parameters
         ----------
         result : bool
-            This is the user response to an ok/cancel confirmation dialog.  If False, we do not reset.
+            This is the user response to an ok/cancel confirmation dialog.  If
+            False, we do not reset.
         """
         if result:
             self.fitting_parameters_ui.reset_ui()
@@ -1126,7 +1177,8 @@ class Fit1DPanel:
 
     def model_change_handler(self, model):
         """
-        If the model changes, this gets called to evaluate the fit and save the results.
+        If the model changes, this gets called to evaluate the fit and save the
+        results.
 
         Parameters
         ----------
@@ -1152,7 +1204,8 @@ class Fit1DPanel:
         y : float
             The pointer y coordinate
         mult : float
-            The ratio for the X-axis vs Y-axis, so we can calculate "pixel distance"
+            The ratio for the X-axis vs Y-axis, so we can calculate "pixel
+            distance"
         """
         indices = self.model.data.selected.indices
         if not indices:
@@ -1180,7 +1233,8 @@ class Fit1DPanel:
         y : float
             The pointer y coordinate
         mult : float
-            The ratio for the X-axis vs Y-axis, so we can calculate "pixel distance"
+            The ratio for the X-axis vs Y-axis, so we can calculate "pixel
+            distance"
         """
         indices = self.model.data.selected.indices
         if not indices:
@@ -1214,7 +1268,8 @@ class Fit1DPanel:
         y : float
             Y mouse position in pixels inside the canvas.
         mult : float
-            The ratio of the x axis vs the y axis, for calculating pixel distance
+            The ratio of the x axis vs the y axis, for calculating pixel
+            distance
         action : str
             The type of masking action being done
         """
@@ -1260,7 +1315,7 @@ class Fit1DPanel:
 
             console.log(active);
 
-            if ( active.some(e => e.title == "Pan") ) { 
+            if ( active.some(e => e.title == "Pan") ) {
                 Bokeh.cursor = 'move'; }
         """
 
@@ -1285,9 +1340,9 @@ class Fit1DPanel:
 
 class Fit1DRegionListener(GIRegionListener):
     """
-    Wrapper class so we can just detect when a bands are finished. We don't want
-    to do an expensive recalc as a user is dragging a band around. It creates a
-    band listener that just updates on `finished`.
+    Wrapper class so we can just detect when a bands are finished. We don't
+    want to do an expensive recalc as a user is dragging a band around. It
+    creates a band listener that just updates on `finished`.
 
     Parameters
     ----------
@@ -1313,17 +1368,23 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
     The generic class for interactive fitting of one or more 1D functions
 
     Attributes:
-        reinit_panel: layout containing widgets that control the parameters
-                      affecting the initialization of the (x,y) array(s)
-        reinit_button: the button to reconstruct the (x,y) array(s)
-        tabs: layout containing all the stuff required for an interactive 1D fit
-        submit_button: the button signifying a successful end to the interactive session
-
-        config: the Config object describing the parameters are their constraints
-        widgets: a dict of (param_name, widget) elements that allow the properties
-                 of the widgets to be set/accessed by the calling primitive. So far
-                 I'm only including the widgets in the reinit_panel
-        fits: list of InteractiveModel instances, one per (x,y) array
+        reinit_panel:
+            layout containing widgets that control the parameters affecting the
+            initialization of the (x,y) array(s)
+        reinit_button:
+            the button to reconstruct the (x,y) array(s)
+        tabs:
+            layout containing all the stuff required for an interactive 1D fit
+        submit_button:
+            the button signifying a successful end to the interactive session
+        config:
+            the Config object describing the parameters are their constraints
+        widgets:
+            a dict of (param_name, widget) elements that allow the properties
+            of the widgets to be set/accessed by the calling primitive.  So far
+            I'm only including the widgets in the reinit_panel
+        fits:
+            list of InteractiveModel instances, one per (x,y) array
     """
 
     def __init__(
@@ -1355,12 +1416,15 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             input data or the function to calculate the input data. The dict
             must have keys of "x" and "y" indicating the input data values,
             with each being an array or a list of arrays. There are also
-            optional "weights" (array of weights), "*_mask" (additional input masks),
-            and "meta" (any additional data)
-        fitting_parameters : list of :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
+            optional "weights" (array of weights), "*_mask" (additional input
+            masks), and "meta" (any additional data)
+        fitting_parameters :
+                list of
+                :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
                 or :class:`~geminidr.interactive.fit.fit1d.FittingParameters`
-            Description of parameters to use for `fit_1d`.  These can be easily generated
-            from the primitive's parameters with `fit_1D.translate_params(params)`
+            Description of parameters to use for `fit_1d`.  These can be easily
+            generated from the primitive's parameters with
+            `fit_1D.translate_params(params)`
         modal_message : str
             If set, datapoint calculation is expected to be expensive and a
             'recalculate' button will be shown below the reinit inputs rather
@@ -1379,14 +1443,15 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         title : str
             Title for UI (Interactive <Title>)
         primitive_name : str
-            Name of the primitive this tool is a visualizer for, for displaying in the UI
+            Name of the primitive this tool is a visualizer for, for displaying
+            in the UI
         template : str
             Name of the HTML template to use for the UI
         help_text : str
             HTML help text for popup help, or None to use the default
         recalc_inputs_above : bool
-            If True, put the inputs for recalculating the data points above the plot horizontally, instead
-            of left of the plot vertically
+            If True, put the inputs for recalculating the data points above the
+            plot horizontally, instead of left of the plot vertically
         ui_params : :class:`~geminidr.interactive.interactive.UIParams`
             Parameter set for user input
         turbo_tabs : bool
@@ -1399,7 +1464,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             operability for each primitive since most of the functions that do
             the work are methods of this class.
         pad_buttons : bool
-            If True, pad the abort/accept buttons so the tabs can flow under them
+            If True, pad the abort/accept buttons so the tabs can flow under
+            them
         """
         super().__init__(
             title=title,
@@ -1416,8 +1482,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # Keep a list of panels for access later
         self.panels = list()
 
-        # If we have a widget driving the modal dialog via it's enable/disable state,
-        # store it in this so the recalc knows to re-enable the widget
+        # If we have a widget driving the modal dialog via it's enable/disable
+        # state, store it in this so the recalc knows to re-enable the widget
         self.modal_widget = None
 
         # Make the panel with widgets to control the creation of (x, y) arrays
@@ -1445,9 +1511,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     self.modal_widget = self.reinit_button
 
                     # If the "Reset" button we create here is clicked, we want
-                    # the UI to reconstruct the input data.  To do this, we pass
-                    # the reconstruct_points function as the optional extra
-                    # handler
+                    # the UI to reconstruct the input data.  To do this, we
+                    # pass the reconstruct_points function as the optional
+                    # extra handler
                     reset_reinit_button = self.build_reset_button(
                         extra_handler_fn=self.reconstruct_points
                     )
@@ -1643,7 +1709,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         rollback_config = self.ui_params.values.copy()
 
         def fn():
-            """Top-level code to update the Config with the values from the widgets"""
+            """Top-level code to update the Config with the values from the
+            widgets.
+            """
             config_update = {
                 k: (v.value if getattr(v, "show_value", True) else None)
                 if hasattr(v, "value")
@@ -1660,13 +1728,17 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 data = None
                 try:
                     data = self.reconstruct_points_fn(ui_params=self.ui_params)
+
                 except Exception as e:
-                    # something went wrong, let's revert the inputs
-                    # handling immediately to specifically trap the reconstruct_points_fn call
+                    # something went wrong, let's revert the inputs handling
+                    # immediately to specifically trap the
+                    # reconstruct_points_fn call
                     self.ui_params.update_values(**rollback_config)
                     self.show_user_message(
-                        "Unable to build data from inputs, reverting"
+                        f"Unable to build data from inputs due to exception "
+                        f"({e.__class__.__name__})\nreverting"
                     )
+
                 if data is not None:
                     for i, fit in enumerate(self.fits):
                         extra_masks = {}
@@ -1731,7 +1803,8 @@ def prep_fit1d_params_for_fit1d(fit1d_params):
     Parameters
     ----------
     fit1d_params : dict
-        Dictionary of parameters for the UI and the `fit_1d` fitter, modified in place
+        Dictionary of parameters for the UI and the `fit_1d` fitter, modified
+        in place
     """
     # If niter is 0, set sigma to None and niter to 1
     if "niter" in fit1d_params and fit1d_params["niter"] == 0:
@@ -1828,7 +1901,8 @@ def fit1d_figure(
     )
 
     if plot_residuals:
-        # x_range is linked to the main plot so that zooming tracks between them
+        # x_range is linked to the main plot so that zooming tracks between
+        # them
         p_resid = figure(
             width=width,
             height=height // 2,
