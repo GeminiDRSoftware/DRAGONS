@@ -39,7 +39,13 @@ class InteractiveModel(ABC):
         "good",
         SIGMA_MASK_NAME,
     ] + INPUT_MASK_NAMES
-    MARKERS = ["triangle", "inverted_triangle", "circle", "square", "inverted_triangle"]
+    MARKERS = [
+        "triangle",
+        "inverted_triangle",
+        "circle",
+        "square",
+        "inverted_triangle",
+    ]
     PALETTE = [
         "lightsteelblue",
         "lightskyblue",
@@ -162,7 +168,9 @@ class InteractiveModel1D(InteractiveModel):
             listeners = []
         self.band_model = band_model
         if band_model:
-            band_model.add_listener(Fit1DRegionListener(self.band_model_handler))
+            band_model.add_listener(
+                Fit1DRegionListener(self.band_model_handler)
+            )
 
         self.fitting_parameters = fitting_parameters
         self.domain = domain
@@ -177,7 +185,9 @@ class InteractiveModel1D(InteractiveModel):
             x, y, weights=weights, mask=mask, extra_masks=extra_masks
         )
 
-        self.sigma_clip = "sigma" in fitting_parameters and fitting_parameters["sigma"]
+        self.sigma_clip = (
+            "sigma" in fitting_parameters and fitting_parameters["sigma"]
+        )
         self.perform_fit()
         self.evaluation = bm.ColumnDataSource(
             {"xlinspace": xlinspace, "model": self.evaluate(xlinspace)}
@@ -223,7 +233,9 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.fitting_parameters["regions"] = regions
 
-    def populate_bokeh_objects(self, x, y, weights, mask=None, extra_masks=None):
+    def populate_bokeh_objects(
+        self, x, y, weights, mask=None, extra_masks=None
+    ):
         """
         Initializes bokeh objects like a coord structure with extra
         columns for ratios and residuals and setting up masking
@@ -391,7 +403,9 @@ class InteractiveModel1D(InteractiveModel):
         # but we still use the band_mask for highlighting the affected points
         if self.sigma_clip:
             fitparms = {
-                x: y for x, y in self.fitting_parameters.items() if x not in ["sigma"]
+                x: y
+                for x, y in self.fitting_parameters.items()
+                if x not in ["sigma"]
             }
         else:
             fitparms = {
@@ -410,7 +424,9 @@ class InteractiveModel1D(InteractiveModel):
                 self.y[goodpix],
                 points=self.x[goodpix],
                 domain=self.domain,
-                weights=None if self.weights is None else self.weights[goodpix],
+                weights=None
+                if self.weights is None
+                else self.weights[goodpix],
                 **fitparms,
             )
 
@@ -485,11 +501,16 @@ class FittingParametersUI:
 
         if "function" in vis.ui_params.fields:
             fn = fitting_parameters["function"]
-            fn_allowed = [k for k in vis.ui_params.fields["function"].allowed.keys()]
+            fn_allowed = [
+                k for k in vis.ui_params.fields["function"].allowed.keys()
+            ]
 
             # Dropdown for selecting fit_1D function
             self.function = Select(
-                title="Fitting Function:", value=fn, options=fn_allowed, width=200
+                title="Fitting Function:",
+                value=fn,
+                options=fn_allowed,
+                width=200,
             )
 
             def fn_select_change(attr, old, new):
@@ -504,7 +525,11 @@ class FittingParametersUI:
                 min_width=100,
                 max_width=202,
                 sizing_mode="stretch_width",
-                styles={"color": "black", "font-size": "115%", "margin-top": "5px"},
+                styles={
+                    "color": "black",
+                    "font-size": "115%",
+                    "margin-top": "5px",
+                },
                 width_policy="max",
             )
 
@@ -547,8 +572,12 @@ class FittingParametersUI:
             )
 
         self.order_slider = builder(vis.ui_params, "order", "Order")
-        self.sigma_upper_slider = builder(vis.ui_params, "sigma_upper", "Sigma (Upper)")
-        self.sigma_lower_slider = builder(vis.ui_params, "sigma_lower", "Sigma (Lower)")
+        self.sigma_upper_slider = builder(
+            vis.ui_params, "sigma_upper", "Sigma (Upper)"
+        )
+        self.sigma_lower_slider = builder(
+            vis.ui_params, "sigma_lower", "Sigma (Lower)"
+        )
         self.niter_slider = builder(vis.ui_params, "niter", "Max Iterations")
         if "grow" in fitting_parameters:  # not all have them
             self.grow_slider = builder(vis.ui_params, "grow", "Grow")
@@ -595,7 +624,11 @@ class FittingParametersUI:
             min_width=100,
             max_width=202,
             sizing_mode="stretch_width",
-            styles={"color": "black", "font-size": "115%", "margin-top": "10px"},
+            styles={
+                "color": "black",
+                "font-size": "115%",
+                "margin-top": "10px",
+            },
             width_policy="max",
         )
 
@@ -615,7 +648,11 @@ class FittingParametersUI:
                 min_width=100,
                 max_width=202,
                 sizing_mode="stretch_width",
-                styles={"color": "black", "font-size": "115%", "margin-top": "5px"},
+                styles={
+                    "color": "black",
+                    "font-size": "115%",
+                    "margin-top": "5px",
+                },
                 width_policy="max",
             )
             column_list = [
@@ -651,7 +688,11 @@ class FittingParametersUI:
             min_width=100,
             max_width=202,
             sizing_mode="stretch_width",
-            styles={"color": "black", "font-size": "115%", "margin-top": "10px"},
+            styles={
+                "color": "black",
+                "font-size": "115%",
+                "margin-top": "10px",
+            },
             width_policy="min",
         )
 
@@ -882,7 +923,10 @@ class Fit1DPanel:
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
         reset_button = bm.Button(
-            label="Reset", align="center", button_type="warning", width_policy="min"
+            label="Reset",
+            align="center",
+            button_type="warning",
+            width_policy="min",
         )
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
             reset_button,
@@ -892,9 +936,13 @@ class Fit1DPanel:
         )
 
         controller_div = Div(
-            margin=(20, 0, 0, 0), width=220, styles={"color": "gray", "padding": "5px"}
+            margin=(20, 0, 0, 0),
+            width=220,
+            styles={"color": "gray", "padding": "5px"},
         )
-        controls = column(*controls_column, reset_button, controller_div, width=220)
+        controls = column(
+            *controls_column, reset_button, controller_div, width=220
+        )
 
         fig_column = self.build_figures(
             domain=domain,
@@ -906,7 +954,9 @@ class Fit1DPanel:
 
         # Initializing regions here ensures the listeners are notified of the region(s)
         if fitting_parameters.get("regions") is not None:
-            region_tuples = cartesian_regions_to_slices(fitting_parameters["regions"])
+            region_tuples = cartesian_regions_to_slices(
+                fitting_parameters["regions"]
+            )
             band_model.load_from_tuples(region_tuples)
 
         # TODO refactor? this is dupe from band_model_handler
@@ -926,7 +976,9 @@ class Fit1DPanel:
         col.sizing_mode = "scale_width"
 
         col_order = [col, controls] if central_plot else [controls, col]
-        self.component = row(*col_order, css_classes=["tab-content"], spacing=10)
+        self.component = row(
+            *col_order, css_classes=["tab-content"], spacing=10
+        )
 
     def build_figures(
         self,
@@ -970,11 +1022,16 @@ class Fit1DPanel:
             enable_user_masking=self.enable_user_masking,
         )
         if self.enable_regions:
-            self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
+            self.model.band_model.add_listener(
+                Fit1DRegionListener(self.update_regions)
+            )
             connect_region_model(p_main, self.model.band_model)
 
         if self.enable_user_masking:
-            mask_handlers = (self.mask_button_handler, self.unmask_button_handler)
+            mask_handlers = (
+                self.mask_button_handler,
+                self.unmask_button_handler,
+            )
         else:
             mask_handlers = None
 
@@ -990,7 +1047,9 @@ class Fit1DPanel:
         )
 
         info_panel = InfoPanel(
-            self.enable_regions, self.enable_user_masking, extra_masks=extra_masks
+            self.enable_regions,
+            self.enable_user_masking,
+            extra_masks=extra_masks,
         )
         self.model.add_listener(info_panel.model_change_handler)
 
@@ -1036,10 +1095,14 @@ class Fit1DPanel:
             # if xdata or ydata are empty, we set some arbitrary values so the UI is ok
             x_min, x_max, x_pad = min_max_pad(xdata, 0, 4000)
             if x_min != x_max:
-                self.p_main.x_range.update(start=x_min - x_pad, end=x_max + x_pad * 2)
+                self.p_main.x_range.update(
+                    start=x_min - x_pad, end=x_max + x_pad * 2
+                )
             y_min, y_max, y_pad = min_max_pad(ydata, 0, 100)
             if y_min != y_max:
-                self.p_main.y_range.update(start=y_min - y_pad, end=y_max + y_pad)
+                self.p_main.y_range.update(
+                    start=y_min - y_pad, end=y_max + y_pad
+                )
         if x_range is not None:
             self.p_main.x_range = x_range
         if y_range is not None:
@@ -1163,7 +1226,9 @@ class Fit1DPanel:
         if action not in ("mask", "unmask"):
             action = None
         for i, (xd, yd) in enumerate(zip(xarr, yarr)):
-            if action is None or ((action == "mask") ^ (mask[i] == USER_MASK_NAME)):
+            if action is None or (
+                (action == "mask") ^ (mask[i] == USER_MASK_NAME)
+            ):
                 if xd is not None and yd is not None:
                     ddist = (x - xd) ** 2 + ((y - yd) * mult) ** 2
                     if dist is None or ddist < dist:
@@ -1393,7 +1458,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     def kickoff_modal(attr, old, new):
                         self.reconstruct_points()
 
-                    reinit_widgets[0].children[1].on_change("value", kickoff_modal)
+                    reinit_widgets[0].children[1].on_change(
+                        "value", kickoff_modal
+                    )
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
             if recalc_inputs_above:
@@ -1416,11 +1483,16 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if self.returns_list:
             if not isinstance(fitting_parameters, list):
                 raise ValueError(
-                    "'data_source' is a list but " "'fitting_parameters' is not"
+                    "'data_source' is a list but "
+                    "'fitting_parameters' is not"
                 )
-            if not (len(fitting_parameters) == len(data["x"]) == len(data["y"])):
+            if not (
+                len(fitting_parameters) == len(data["x"]) == len(data["y"])
+            ):
                 raise ValueError("Different numbers of models and coordinates")
-            if not all([x.size == y.size for x, y in zip(data["x"], data["y"])]):
+            if not all(
+                [x.size == y.size for x, y in zip(data["x"], data["y"])]
+            ):
                 raise ValueError("Different (x, y) array sizes")
             self.nfits = len(fitting_parameters)
         else:
@@ -1466,9 +1538,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 extra_masks=extra_masks,
             )
             if turbo_tabs:
-                self.turbo.add_tab(tui.component, title=tab_name_fmt.format(i + 1))
+                self.turbo.add_tab(
+                    tui.component, title=tab_name_fmt.format(i + 1)
+                )
             else:
-                tab = bm.TabPanel(child=tui.component, title=tab_name_fmt.format(i + 1))
+                tab = bm.TabPanel(
+                    child=tui.component, title=tab_name_fmt.format(i + 1)
+                )
                 self.tabs.tabs.append(tab)
             self.fits.append(tui.model)
             self.panels.append(tui)
@@ -1600,7 +1676,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                             this_dict = data
                         for k in list(this_dict.keys()):
                             if k.endswith("_mask"):
-                                extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
+                                extra_masks[
+                                    k.replace("_mask", "")
+                                ] = this_dict.pop(k)
                         fit.populate_bokeh_objects(
                             this_dict["x"],
                             this_dict["y"],
@@ -1742,7 +1820,11 @@ def fit1d_figure(
         **model.mask_rendering_kwargs(),
     )
     p_main.line(
-        x=xline, y=yline, source=model.evaluation, line_width=3, color="crimson"
+        x=xline,
+        y=yline,
+        source=model.evaluation,
+        line_width=3,
+        color="crimson",
     )
 
     if plot_residuals:
