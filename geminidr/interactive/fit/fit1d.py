@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from operator import concat
 
 import numpy as np
 
 from bokeh import models as bm, transform as bt
 from bokeh.layouts import row, column
-from bokeh.models import Div, Select, Range1d, Spacer, CustomJS
+from bokeh.models import Div, Select, Spacer
 from bokeh.plotting import figure
 from bokeh import events
 
@@ -25,7 +24,8 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
-# Names to use for masks.  You can change these to change the label that gets displayed in the legend
+# Names to use for masks.  You can change these to change the label that gets
+# displayed in the legend
 SIGMA_MASK_NAME = "rejected (sigma)"
 USER_MASK_NAME = "rejected (user)"
 BAND_MASK_NAME = "excluded"
