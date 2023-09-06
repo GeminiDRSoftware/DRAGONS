@@ -1485,6 +1485,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         )
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
+
+        # TODO: This may no longer be supported. Leaving it in for now.
         self.pad_buttons = pad_buttons
 
         # Keep a list of panels for access later
@@ -1672,9 +1674,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         for btn in (self.submit_button, self.abort_button):
             btn.align = "end"
             btn.height = 90
-            btn.margin = (0, 5, -20 if not self.pad_buttons else 0, 5)
+            btn.margin = (0, 5, 0, 0)
             btn.width = 212
-            btn.sizing_mode = "scale_width"
+            btn.sizing_mode = "scale_both"
 
         layout_ls = list()
         if self.filename_info:
@@ -1701,12 +1703,15 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         if self.reinit_panel is None:
             layout_ls.append(col)
+
         elif len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
             layout_ls.append(row(self.reinit_panel))
             layout_ls.append(Spacer(height=10))
             layout_ls.append(col)
+
         else:
             layout_ls.append(row(self.reinit_panel, col))
+
         self.layout = column(*layout_ls, sizing_mode="stretch_width")
         doc.add_root(self.layout)
 
