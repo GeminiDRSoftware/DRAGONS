@@ -1,5 +1,6 @@
 import math
 from functools import partial, cmp_to_key
+from tkinter import W
 
 import holoviews as hv
 import numpy as np
@@ -670,13 +671,28 @@ class ApertureView:
                                    self.update_viewport(end=new))
 
         self.annotations_source = ColumnDataSource(data=dict(id=[], text=[], start=[], end=[]))
-        self.labels = LabelSet(x='end', y=380, y_units='screen', text='text',
-                               y_offset=2, source=self.annotations_source, render_mode='canvas')
+
+        self.labels = LabelSet(
+            x='end',
+            y=380,
+            y_units='screen',
+            text='text',
+            y_offset=2,
+            source=self.annotations_source,
+        )
+
         self.fig.add_layout(self.labels)
 
-        self.whisker = Whisker(source=self.annotations_source, base=380, lower="start",
-                               upper="end", dimension='width',
-                               base_units="screen", line_color="purple")
+        self.whisker = Whisker(
+            source=self.annotations_source,
+            base=380,
+            lower="start",
+            upper="end",
+            dimension='width',
+            base_units="screen",
+            line_color="purple"
+        )
+
         self.fig.add_layout(self.whisker)
 
     def update_viewport(self, start=None, end=None):
@@ -839,8 +855,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
     def parameters_view(self):
         model = self.model
 
-        reset_button = Button(label="Reset", button_type='warning',
-                              default_size=200)
+        reset_button = Button(
+            label="Reset",
+            button_type='warning',
+            width=200
+        )
 
         def _reset_handler(result):
             if result:
@@ -852,8 +871,11 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                     reset_button.disabled = False
                 self.do_later(fn)
 
-        find_button = Button(label="Find apertures", button_type='primary',
-                             default_size=200)
+        find_button = Button(
+            label="Find apertures",
+            button_type='primary',
+            width=200
+        )
 
         def _find_handler(result):
             if result:
@@ -916,18 +938,30 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         renumber_label = "Renumber Apertures"
         clear_label = "Clear Apertures"
         if show_add_aperture_button:
-            add_button = Button(label="Add", button_type='primary',
-                                default_size=200)
+            add_button = Button(
+                label="Add",
+                button_type='primary',
+                width=200
+            )
+
             add_button.on_click(self.add_aperture)
             # need shorter labels
             renumber_label = "Renumber"
             clear_label = "Clear"
 
-        renumber_button = Button(label=renumber_label,
-                                 button_type='primary', default_size=200)
+        renumber_button = Button(
+            label=renumber_label,
+            button_type='primary',
+            width=200
+        )
+
         renumber_button.on_click(self.model.renumber_apertures)
-        clear_button = Button(label=clear_label,
-                              button_type='warning', default_size=200)
+
+        clear_button = Button(
+            label=clear_label,
+            button_type='warning',
+            width=200
+        )
 
         def do_clear_apertures():
             def handle_clear(okc):
