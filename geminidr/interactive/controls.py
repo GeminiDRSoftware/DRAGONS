@@ -147,7 +147,7 @@ class Controller(object):
             def _mask(key, x, y):
                 handler = mask_handlers[0]
                 dx = (
-                    (self.fig.x_range.end - self.fig.x_range.start) 
+                    (self.fig.x_range.end - self.fig.x_range.start)
                     / float(self.fig.inner_width)
                 )
 
@@ -165,7 +165,7 @@ class Controller(object):
             def _unmask(key, x, y):
                 handler = mask_handlers[1]
                 dx = (
-                    (self.fig.x_range.end - self.fig.x_range.start) 
+                    (self.fig.x_range.end - self.fig.x_range.start)
                     / float(self.fig.inner_width)
                 )
 
