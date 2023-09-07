@@ -144,45 +144,46 @@ class Controller(object):
                     "argument of Controller"
                 )
 
-            self.register_handler(
-                Handler(
-                    "m",
-                    "Mask selected/closest",
-                    lambda key, x, y: mask_handlers[0](
-                        x,
-                        y,
-                        (
-                            (self.fig.x_range.end - self.fig.x_range.start)
-                            / float(self.fig.inner_width)
-                        )
-                        / (
-                            (self.fig.y_range.end - self.fig.y_range.start)
-                            / float(self.fig.inner_height)
-                        ),
-                    ),
+            def _mask(key, x, y):
+                handler = mask_handlers[0]
+                dx = (
+                    (self.fig.x_range.end - self.fig.x_range.start) 
+                    / float(self.fig.inner_width)
                 )
-            )
-            self.register_handler(
-                Handler(
-                    "u",
-                    "Unmask selected/closest",
-                    lambda key, x, y: mask_handlers[1](
-                        x,
-                        y,
-                        (
-                            (self.fig.x_range.end - self.fig.x_range.start)
-                            / float(self.fig.inner_width)
-                        )
-                        / (
-                            (self.fig.y_range.end - self.fig.y_range.start)
-                            / float(self.fig.inner_height)
-                        ),
-                    ),
+
+                dy = (
+                    (self.fig.y_range.end - self.fig.y_range.start)
+                    / float(self.fig.inner_height)
                 )
+
+                return handler(x, y, dx / dy)
+
+            self.register_handler(
+                Handler("m", "Mask selected/closest", _mask)
             )
+
+            def _unmask(key, x, y):
+                handler = mask_handlers[1]
+                dx = (
+                    (self.fig.x_range.end - self.fig.x_range.start) 
+                    / float(self.fig.inner_width)
+                )
+
+                dy = (
+                    (self.fig.y_range.end - self.fig.y_range.start)
+                    / float(self.fig.inner_height)
+                )
+
+                return handler(x, y, dx / dy)
+
+            self.register_handler(
+                Handler("u", "Unmask selected/closest", _unmask)
+            )
+
         if handlers:
             for handler in handlers:
                 self.register_handler(handler)
+
         self.update_helpmaskingtext()
 
         self.tasks = dict()
