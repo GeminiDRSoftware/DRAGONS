@@ -1,6 +1,5 @@
 import math
 from functools import partial, cmp_to_key
-from tkinter import W
 
 import holoviews as hv
 import numpy as np

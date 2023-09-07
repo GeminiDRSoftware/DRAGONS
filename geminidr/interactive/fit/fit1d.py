@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from tkinter import W
 
 import numpy as np
 
