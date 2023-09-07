@@ -207,12 +207,11 @@ def _shutdown(doc):
         user_satisfied = doc.session_context.request.arguments[
             "user_satisfied"
         ][0].decode("utf-8")
-        if user_satisfied is not None and user_satisfied.lower() in (
-            "0",
-            "n",
-            "f",
-            "no",
-            "false",
+
+        falsey_responses = ("0", "n", "f", "no", "false")
+        if (
+            user_satisfied is not None 
+            and user_satisfied.lower() in falsey_responses
         ):
             user_satisfied = False
     _visualizer.session_ended(None, user_satisfied)
