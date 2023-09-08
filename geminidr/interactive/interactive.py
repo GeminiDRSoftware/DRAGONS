@@ -198,14 +198,17 @@ class PrimitiveVisualizer(ABC):
                 });
             """
         )
+
         self.abort_button.on_click(self.abort_button_handler)
         self.abort_button.js_on_change("disabled", abort_callback)
 
         self.doc = None
         self._message_holder = None
+
         # callback for the new (buttonless) ok/cancel dialog.
         # This gets set just before the dialog is triggered
         self._ok_cancel_callback = None
+
         # Text widget for triggering ok/cancel via DOM text change event
         self._ok_cancel_holder = None
 
@@ -1222,7 +1225,7 @@ def connect_region_model(fig, region_model):
 
     Parameters
     ----------
-    fig : :class:`~bokeh.plotting.Figure`
+    fig : :class:`~bokeh.plotting.figure`
         bokeh Figure to add visualizations too
     region_model : :class:`~geminidr.interactive.interactive.GIRegionModel`
         Band model to add view for
@@ -1649,7 +1652,7 @@ class GIRegionView(GIRegionListener):
 
         Parameters
         ----------
-        fig : :class:`~bokeh.plotting.Figure`
+        fig : :class:`~bokeh.plotting.figure`
             the figure to display the regions in
         model : :class:`~geminidr.interactive.interactive.GIRegionModel`
             the model for the region information (may be shared by multiple

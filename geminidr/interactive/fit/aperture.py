@@ -402,7 +402,7 @@ class AperturePlotView:
 
         Parameters
         ----------
-        fig : :class:`~bokeh.plotting.Figure`
+        fig : :class:`~bokeh.plotting.figure`
             bokeh figure to attach glyphs to
 
         """
@@ -638,7 +638,7 @@ class ApertureView:
     ----------
     model : :class:`ApertureModel`
         Model for tracking the apertures, may be shared across multiple views
-    fig : :class:`~bokeh.plotting.Figure`
+    fig : :class:`~bokeh.plotting.figure`
         bokeh plot for displaying the regions
 
     """
