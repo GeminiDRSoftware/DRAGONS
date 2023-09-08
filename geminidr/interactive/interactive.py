@@ -219,7 +219,7 @@ class PrimitiveVisualizer(ABC):
     # noinspection PyProtectedMember
     def reset_reinit_panel(self, param=None):
         """
-        Reset all the parameters in the Tracing Panel (leftmost column).
+        Reset all the parameters in the Tracing TabPanel (leftmost column).
         If a param is provided, it resets only this parameter in particular.
 
         Parameters

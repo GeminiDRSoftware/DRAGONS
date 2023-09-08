@@ -52,8 +52,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
         super().__init__(visualizer, fitting_parameters, domain, x, y,
                          weights=weights, **kwargs)
 
-        # This has to go on the model (and not this Panel instance) since the
-        # models are returned by the Visualizer, not the Panel instances
+        # This has to go on the model (and not this TabPanel instance) since
+        # the models are returned by the Visualizer, not the TabPanel
+        # instances.
         self.model.meta = meta
         self.model.allow_poor_fits = False
 

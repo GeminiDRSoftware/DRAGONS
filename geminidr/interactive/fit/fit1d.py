@@ -979,6 +979,7 @@ class Fit1DPanel:
             button_type="warning",
             width_policy="max",
         )
+
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
             reset_button,
             "Reset will change all inputs for this tab back "
@@ -1466,7 +1467,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             the browser. This can speed up the general responsiveness when
             there are many tabs, but introduces a small delay when the user
             switches between tabs.
-        panel_class : :class:`Panel`
+        panel_class : :class:`TabPanel`
             The class of Panel to use in each tab. This allows specific
             operability for each primitive since most of the functions that do
             the work are methods of this class.
