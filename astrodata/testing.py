@@ -297,7 +297,7 @@ class ADCompare:
         self.ad2 = ad2
 
     def run_comparison(self, max_miss=0, rtol=1e-7, atol=0, compare=None,
-                       ignore=None, ignore_fits_wcs=True,
+                       ignore=None, ignore_fits_wcs=True, ignore_kw=None,
                        raise_exception=True):
         """
         Perform a comparison between the two AD objects in this instance.
@@ -318,6 +318,8 @@ class ADCompare:
             ignore FITS keywords relating to WCS (to allow a comparison
             between an in-memory AD and one on disk if you're not interested
             in these, without needed to save to disk)
+        ignore_kw: sequence/None
+            additional keywords to ignore in headers
         raise_exception: bool
             raise an AssertionError if the comparison fails? If False,
             the errordict is returned, which may be useful if a very
@@ -330,7 +332,9 @@ class ADCompare:
         self.max_miss = max_miss
         self.rtol = rtol
         self.atol = atol
-        self.ignore_fits_wcs = ignore_fits_wcs
+        self.ignore_kw = self.fits_keys if ignore_fits_wcs else {}
+        if ignore_kw:
+            self.ignore_kw.update(ignore_kw)
         if compare is None:
             compare = ('filename', 'tags', 'numext', 'refcat', 'phu',
                            'hdr', 'attributes', 'wcs')
@@ -367,7 +371,8 @@ class ADCompare:
     def phu(self):
         """Check the PHUs agree"""
         # Ignore NEXTEND as only recently added and len(ad) handles it
-        errorlist = self._header(self.ad1.phu, self.ad2.phu, ignore=['NEXTEND'])
+        errorlist = self._header(self.ad1.phu, self.ad2.phu,
+                                 ignore=self.ignore_kw.union({'NEXTEND'}))
         if errorlist:
             return errorlist
 
@@ -375,8 +380,7 @@ class ADCompare:
         """Check the extension headers agree"""
         errorlist = []
         for i, (hdr1, hdr2) in enumerate(zip(self.ad1.hdr, self.ad2.hdr)):
-            elist = self._header(hdr1, hdr2, ignore=self.fits_keys
-                if self.ignore_fits_wcs else None)
+            elist = self._header(hdr1, hdr2, ignore=self.ignore_kw)
             if elist:
                 errorlist.extend([f'Slice {i} HDR mismatch'] + elist)
         return errorlist
@@ -475,9 +479,15 @@ class ADCompare:
         errorlist = []
         for i, (ext1, ext2) in enumerate(zip(self.ad1, self.ad2)):
             wcs1, wcs2 = ext1.wcs, ext2.wcs
+            if (wcs1 is None) != (wcs2 is None):
+                errorlist.append(f'Slice {i} WCS presence mismatch '
+                                 f'{wcs1 is not None} {wcs2 is not None}')
+                continue
+            elif wcs1 is None:  # and wcs2 is also None
+                continue
             frames1, frames2 = wcs1.available_frames, wcs2.available_frames
             if frames1 != frames2:
-                errorlist.append(f'Slice {i}rames differ: {frames1} v {frames2}')
+                errorlist.append(f'Slice {i} frames differ: {frames1} v {frames2}')
                 return errorlist
             for frame in frames1:
                 frame1, frame2 = getattr(wcs1, frame), getattr(wcs2, frame)

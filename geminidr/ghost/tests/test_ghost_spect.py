@@ -22,8 +22,6 @@ import itertools
 from geminidr.ghost.primitives_ghost_spect import GHOSTSpect
 
 
-# from geminidr.core.test import ad_compare
-
 
 @pytest.mark.ghostspect
 class TestGhost:

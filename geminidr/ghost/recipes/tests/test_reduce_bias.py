@@ -5,13 +5,12 @@ import pytest
 
 import pytest_dragons
 from pytest_dragons.fixtures import *
-from astrodata.testing import download_from_archive
+from astrodata.testing import ad_compare, download_from_archive
 
 import astrodata, gemini_instruments
 from geminidr.ghost.primitives_ghost_bundle import GHOSTBundle
 from geminidr.ghost.primitives_ghost_spect import GHOSTSpect
 from geminidr.ghost.recipes.sq.recipes_BIAS import makeProcessedBias
-from geminidr.core.tests import ad_compare
 
 
 datasets = ["S20230513S0439.fits"]
@@ -34,4 +33,4 @@ def test_reduce_bias(input_filename, path_to_refs):
         adout = p.streams['main'].pop()
         output_filename = adout.filename
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adref, adout)
+        assert ad_compare(adref, adout)

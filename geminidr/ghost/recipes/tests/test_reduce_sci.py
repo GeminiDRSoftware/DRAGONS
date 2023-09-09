@@ -2,17 +2,15 @@
 
 import os
 import pytest
-from numpy.testing import assert_allclose
 
 import pytest_dragons
 from pytest_dragons.fixtures import *
-from astrodata.testing import download_from_archive
+from astrodata.testing import ad_compare, download_from_archive
 
 import astrodata, gemini_instruments
 from geminidr.ghost.primitives_ghost_bundle import GHOSTBundle
 from geminidr.ghost.primitives_ghost_spect import GHOSTSpect
 from geminidr.ghost.recipes.sq.recipes_SPECT import reduceScience
-from geminidr.core.tests import ad_compare
 
 
 # arc bundle and root names of processed_bias and flat
@@ -86,11 +84,11 @@ def test_reduce_science(input_filename, caldict, arm, skysub, path_to_inputs,
         output_filename = adout.filename
         adref = astrodata.open(os.path.join(
             path_to_refs, f"skysub_{skysub}", output_filename))
-        ad_compare(adref, adout)
+        assert ad_compare(adref, adout)
 
         # Now compare the _calibrated.fits files (not order-combined)
         intermediate_filename = output_filename.replace("_dragons", "_calibrated")
         adout = astrodata.open(os.path.join(path_to_outputs, "outputs", intermediate_filename))
         adref = astrodata.open(os.path.join(
             path_to_refs, f"skysub_{skysub}", intermediate_filename))
-        ad_compare(adref, adout)
+        assert ad_compare(adref, adout)

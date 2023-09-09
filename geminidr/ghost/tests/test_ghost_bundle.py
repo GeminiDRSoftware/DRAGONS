@@ -10,7 +10,7 @@ from pytest_dragons.fixtures import *
 
 import astrodata, gemini_instruments
 from astrodata.testing import download_from_archive
-from geminidr.core.tests import ad_compare
+from astrodata.testing import ad_compare
 
 from geminidr.ghost.primitives_ghost_bundle import GHOSTBundle
 
@@ -48,4 +48,4 @@ def test_split_bundle(change_working_dir, path_to_refs):
 
     for adout in blue_files + red_files + slit_files:
         adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
-        ad_compare(adref, adout)
+        assert ad_compare(adref, adout, ignore_kw=['GHOSTDR'])

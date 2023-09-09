@@ -11,7 +11,7 @@ from geminidr.ghost.recipes.sq.recipes_BIAS_SLITV import makeProcessedSlitBias
 from geminidr.ghost.recipes.sq.recipes_FLAT_SLITV import makeProcessedSlitFlat
 from geminidr.ghost.recipes.sq.recipes_ARC_SLITV import makeProcessedSlitArc
 from geminidr.ghost.recipes.sq.recipes_SLITV import makeProcessedSlit
-from geminidr.core.tests import ad_compare
+from astrodata.testing import ad_compare
 
 
 # Input files (and slitbias calibrations if required)
@@ -35,7 +35,7 @@ def test_reduce_slit_bias(input_filename, path_to_inputs, path_to_refs, change_w
         adout = p.streams['main'][0]
         output_filename = adout.filename
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adref, adout)
+        assert ad_compare(adref, adout)
 
 
 @pytest.mark.integration_test
@@ -53,7 +53,7 @@ def test_reduce_slit_flat(input_filename, processed_bias, path_to_inputs,
         adout = p.streams['main'][0]
         output_filename = adout.filename
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adref, adout)
+        assert ad_compare(adref, adout)
 
 
 @pytest.mark.integration_test
@@ -71,7 +71,7 @@ def test_reduce_slit_arc(input_filename, processed_bias, path_to_inputs,
         adout = p.streams['main'][0]
         output_filename = adout.filename
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adref, adout)
+        assert ad_compare(adref, adout)
 
 
 @pytest.mark.integration_test
@@ -89,4 +89,4 @@ def test_reduce_slit_science(input_filename, caldict, path_to_inputs,
         for adout in p.streams['main']:
             output_filename = adout.filename
             adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-            ad_compare(adref, adout)
+            assert ad_compare(adref, adout)
