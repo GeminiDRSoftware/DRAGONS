@@ -156,7 +156,7 @@ class AstroDataTrecs(AstroDataGemini):
             dispersion = 0.0019
         else:
             dispersion = None
-        return gmu.convert_units('microns', dispersion, output_units)
+        return gmu.convert_units('micrometers', dispersion, output_units)
 
     @returns_list
     @astro_data_descriptor
