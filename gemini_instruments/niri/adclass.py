@@ -1,6 +1,7 @@
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
 import math
+import re
 
 from . import lookup
 from .. import gmu
@@ -266,6 +267,63 @@ class AstroDataNiri(AstroDataGemini):
             return gmu.removeComponentID(filter3) if stripID else filter3
         else:
             return 'MIRROR'
+
+    @astro_data_descriptor
+    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+        """
+        Returns the dispersion in meters per pixel as a list (one value per
+        extension) or a float if used on a single-extension slice. It is
+        possible to control the units of wavelength using the input arguments.
+
+        Parameters
+        ----------
+        asMicrometers : bool
+            If True, return the wavelength in microns
+        asNanometers : bool
+            If True, return the wavelength in nanometers
+        asAngstroms : bool
+            If True, return the wavelength in Angstroms
+
+        Returns
+        -------
+        list/float
+            The dispersion(s)
+
+        """
+
+        camera = self.camera()
+        disperser = self.disperser(stripID=True)
+        config = (camera, disperser)
+
+        try:
+            dispersion = lookup.dispersion_by_config[config]
+        except KeyError:
+            dispersion = None
+
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        output_units = "meters"  # By default
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+
+        if dispersion is not None:
+            dispersion = gmu.convert_units('angstroms', dispersion, output_units)
+
+            if not self.is_single:
+                dispersion = [dispersion] * len(self)
+
+        return dispersion
+
+    @returns_list
+    @astro_data_descriptor
+    def dispersion_axis(self):
+        return 1
 
     @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
