@@ -190,6 +190,8 @@ fixture_data = {
     ('GNIRS', 'N20160726S0301.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'NON_SIDEREAL',
                                        'UNPREPARED', 'PINHOLE', 'AZEL_TARGET', 'AT_ZENITH'],
     # tag PINHOLE: SLIT contains 'Pinholes'
+    ('GNIRS', 'S20060507S0125.fits'): ['AZEL_TARGET', 'CAL', 'GEMINI', 'GNIRS', 'NON_SIDEREAL', 'PINHOLE',
+                                       'RAW', 'SOUTH', 'SPECT', 'UNPREPARED', 'XD'],
 
     #    GNIRS IFU
 
