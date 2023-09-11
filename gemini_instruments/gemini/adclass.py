@@ -232,7 +232,10 @@ class AstroDataGemini(AstroData):
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
             elif shut == 'CLOSED':
-                return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
+                # GNIRS PINHOLE files have the QH lamp on, but this isn't really
+                # a useful thing to indicate in tags. DB 20230906
+                return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED',
+                                                                      'PINHOLE'])
         elif self.phu.get('GCALLAMP') == 'No Value' and \
              self.phu.get('GCALSHUT') == 'CLOSED':
             return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
