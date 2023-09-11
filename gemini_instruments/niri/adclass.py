@@ -295,7 +295,10 @@ class AstroDataNiri(AstroDataGemini):
         disperser = self.disperser(stripID=True)
         config = (camera, disperser)
 
-        dispersion = lookup.dispersion_by_config[config]
+        try:
+            dispersion = lookup.dispersion_by_config[config]
+        except KeyError:
+            dispersion = None
 
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters"  # By default
@@ -309,10 +312,11 @@ class AstroDataNiri(AstroDataGemini):
             if asAngstroms:
                 output_units = "angstroms"
 
-        dispersion = gmu.convert_units('angstroms', dispersion, output_units)
+        if dispersion is not None:
+            dispersion = gmu.convert_units('angstroms', dispersion, output_units)
 
-        if not self.is_single:
-            dispersion = [dispersion] * len(self)
+            if not self.is_single:
+                dispersion = [dispersion] * len(self)
 
         return dispersion
 
