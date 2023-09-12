@@ -1,6 +1,7 @@
 fixture_data = {
     # GMOS-Level Tags
-    #   Tags: GMOS, BIAS, DARK, FRINGE, FLAT (whether it's GCAL or TWILIGT), GCALFLAT, TWILIGHT, ARC, IMAGE, SPECT, IFU, LS, MOS, NODANDSHUFFLE, BLUE, RED, TWO
+    #   Tags: GMOS, BIAS, DARK, FRINGE, FLAT (whether it's GCAL or TWILIGT), GCALFLAT, TWILIGHT, ARC, IMAGE, SPECT,
+    #         IFU, LS, MOS, NODANDSHUFFLE, BLUE, RED, TWO
     #
     #   GMOS Bias
     ('GMOS', 'N20110524S0358.fits'): ['AZEL_TARGET', 'CAL', 'GEMINI', 'NORTH', 'GMOS', 'BIAS', 'CAL', 'NON_SIDEREAL',
@@ -13,6 +14,10 @@ fixture_data = {
     ('GMOS', 'S20070318S0274_bias.fits'): ['AT_ZENITH', 'AZEL_TARGET', 'CAL', 'GEMINI', 'SOUTH', 'GMOS', 'BIAS',
                                            'NON_SIDEREAL', 'OVERSCAN_SUBTRACTED', 'OVERSCAN_TRIMMED', 'PREPARED',
                                            'PROCESSED'],
+    ('GMOS', 'N20160407S0076.fits') : ['GMOS', 'GEMINI', 'NORTH', 'AT_ZENITH', 'BIAS', 'AZEL_TARGET', 'CAL',
+                                       'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
+    ('GMOS', 'N20160516S0485.fits') : ['GMOS', 'AT_ZENITH', 'GEMINI', 'NORTH', 'BIAS', 'AZEL_TARGET', 'CAL',
+                                       'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
 
     #   GMOS Dark
     ('GMOS', 'N20160106S0653.fits'): ['AZEL_TARGET', 'GEMINI', 'NORTH', 'GMOS', 'DARK', 'RAW', 'NON_SIDEREAL',
@@ -53,6 +58,7 @@ fixture_data = {
                                       'UNPREPARED'],
     ('GMOS', 'S20140625S0361.fits'): ['CAL', 'GEMINI', 'SOUTH', 'GMOS', 'IMAGE', 'FLAT', 'TWILIGHT', 'SIDEREAL', 'RAW',
                                       'UNPREPARED'],
+    ('GMOS', 'S20120815S0031.fits') : ['GMOS', 'IMAGE', 'SIDEREAL', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'UNPREPARED'],
 
     #   GMOS Longslit Data
     ('GMOS', 'N20160726S0179.fits'): ['GEMINI', 'NORTH', 'GMOS', 'LS', 'RAW', 'SPECT', 'SIDEREAL', 'UNPREPARED',
@@ -67,6 +73,8 @@ fixture_data = {
     # it as TWILIGHT, nor FLAT.
     ('GMOS', 'S20160722S0210.fits'): ['ACQUISITION', 'GEMINI', 'SOUTH', 'GMOS', 'IMAGE', 'RAW', 'SIDEREAL',
                                       'UNPREPARED', 'LS', 'THRUSLIT'],
+    ('GMOS', 'N20160616S0431.fits') : ['GMOS', 'ARC', 'GEMINI', 'NORTH', 'AT_ZENITH', 'LS', 'AZEL_TARGET', 'CAL',
+                                       'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
     # New tag: MASK.  I think that
     # the conditions will be GRATING='MIRROR' and MASKTYP=1.
 
@@ -90,6 +98,8 @@ fixture_data = {
                                       'UNPREPARED'],
     ('GMOS', 'S20060130S0079.fits'): ['GEMINI', 'SOUTH', 'GMOS', 'IFU', 'NODANDSHUFFLE', 'RAW', 'SPECT', 'SIDEREAL',
                                       'UNPREPARED', 'TWOSLIT'],
+    ('GMOS', 'N20111124S0203.fits') : ['GMOS', 'IFU', 'GEMINI', 'NORTH', 'GCALFLAT', 'ONESLIT_RED', 'FLAT',
+                                       'CAL', 'SIDEREAL', 'SPECT', 'RAW', 'UNPREPARED'],
     # The two-slit nature is not identified in the old system.
     # MASKNAME='IFU-NS-2' in that file.  the rule has 'IFU-2-NS', that
     # appears to be wrong.
@@ -113,6 +123,8 @@ fixture_data = {
     # it as TWILIGHT, nor FLAT.
     ('GMOS', 'N20160620S0317.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GMOS', 'IMAGE', 'RAW', 'SIDEREAL',
                                       'UNPREPARED', 'ONESLIT_RED', 'IFU', 'THRUSLIT'],
+    ('GMOS', 'S20051225S0084.fits') : ['GMOS', 'IFU', 'SIDEREAL', 'ONESLIT_BLUE', 'SPECT', 'GEMINI', 'SOUTH',
+                                       'RAW', 'UNPREPARED'],
     # For tag MASK: GRATING == 'MIRROR' AND MASKTYP != 0
 
     #   GMOS N&S Data
@@ -135,6 +147,7 @@ fixture_data = {
                                       'GCALFLAT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'LAMPON', 'AT_ZENITH'],
     ('NIRI', 'N20130404S0470.fits'): ['AT_ZENITH', 'AZEL_TARGET', 'CAL', 'GCAL_IR_OFF', 'GEMINI', 'NORTH', 'IMAGE',
                                       'NIRI', 'FLAT', 'GCALFLAT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'LAMPOFF'],
+    ('NIRI', 'N20160522S0004.fits') : ['NIRI', 'GEMINI', 'NORTH', 'SIDEREAL', 'IMAGE', 'UNPREPARED', 'RAW'],
 
     #   NIRI Longslit
     ('NIRI', 'N20120505S0147.fits'): ['GEMINI', 'NORTH', 'NIRI', 'LS', 'SPECT', 'RAW', 'SIDEREAL', 'UNPREPARED'],
@@ -183,6 +196,7 @@ fixture_data = {
                                        'UNPREPARED', 'FLAT', 'GCALFLAT', 'LAMPON', 'GCAL_IR_ON'],
     ('GNIRS', 'N20160726S0261.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'SIDEREAL',
                                        'UNPREPARED', 'FLAT', 'GCALFLAT', 'LAMPOFF', 'GCAL_IR_OFF'],
+    ('GNIRS', 'N20160523S0191.fits'): ['GNIRS', 'GEMINI', 'NORTH', 'SIDEREAL', 'SPECT', 'UNPREPARED', 'RAW', 'XD'],
     # this one is with the QH lamp.  not sure we need a tag for it.
     ('GNIRS', 'N20160722S0232.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'SIDEREAL',
                                        'UNPREPARED', 'ARC'],
@@ -212,6 +226,8 @@ fixture_data = {
     ('NIFS', 'N20160705S0221.fits'): ['CAL', 'RONCHI', 'AZEL_TARGET', 'GEMINI', 'NORTH', 'IFU', 'NIFS', 'SPECT',
                                       'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'AT_ZENITH', 'GCAL_IR_OFF', 'LAMPOFF',
                                       'GCALFLAT', 'FLAT'],
+    ('NIFS', 'N20160428S0174.fits') : ['NIFS', 'CAL', 'AT_ZENITH', 'DARK', 'GEMINI', 'NORTH', 'AZEL_TARGET',
+                                       'NON_SIDEREAL', 'UNPREPARED', 'RAW'],
 
     # F2 Data
     #   F2 Darks
@@ -266,6 +282,19 @@ fixture_data = {
                                     'UNPREPARED'],
     ('F2', 'S20150624S0172.fits'): ['CAL', 'F2', 'MOS', 'FLAT', 'GCALFLAT', 'LAMPON', 'GCAL_IR_ON', 'SPECT', 'GEMINI',
                                     'SOUTH', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
+    ('F2', 'S20150629S0208.fits') : ['MOS', 'SPECT', 'F2', 'NON_SIDEREAL', 'GEMINI', 'SOUTH', 'UNPREPARED', 'RAW'],
+    ('F2', 'S20150629S0244.fits') : ['AT_ZENITH', 'ARC', 'AZEL_TARGET', 'MOS', 'SPECT', 'F2', 'CAL', 'NON_SIDEREAL',
+                                     'GEMINI', 'SOUTH', 'UNPREPARED', 'RAW'],
+    ('F2', 'S20150629S0245.fits') : ['FLAT', 'AT_ZENITH', 'GCAL_IR_ON', 'AZEL_TARGET', 'MOS', 'SPECT', 'F2', 'CAL',
+                                     'NON_SIDEREAL', 'GEMINI', 'SOUTH', 'UNPREPARED', 'RAW', 'LAMPON', 'GCALFLAT'],
+    ('F2', 'S20160616S0071.fits') : ['ARC', 'SIDEREAL', 'SPECT', 'F2', 'CAL', 'LS', 'GEMINI', 'SOUTH', 'UNPREPARED',
+                                     'RAW'],
+    ('F2', 'S20160616S0072.fits') : ['GCAL_IR_ON', 'FLAT', 'SIDEREAL', 'SPECT', 'F2', 'CAL', 'LS', 'GEMINI', 'SOUTH',
+                                     'UNPREPARED', 'RAW', 'LAMPON', 'GCALFLAT'],
+    ('F2', 'S20160616S0075.fits') : ['IMAGE', 'SIDEREAL', 'F2', 'ACQUISITION', 'IMAGE', 'GEMINI', 'SOUTH', 'UNPREPARED',
+                                     'RAW'],
+    ('F2', 'S20160708S0025.fits') : ['AT_ZENITH', 'AZEL_TARGET', 'DARK', 'F2', 'CAL', 'NON_SIDEREAL', 'GEMINI', 'SOUTH',
+                                     'UNPREPARED', 'RAW'],
 
     # GSAOI Data
     #   GSAOI Darks
@@ -281,38 +310,38 @@ fixture_data = {
     ('GSAOI', 'S20130524S0081_flat.fits'): ['CAL', 'GEMINI', 'SOUTH', 'GSAOI', 'IMAGE', 'FLAT', 'DOMEFLAT',
                                             'NON_SIDEREAL', 'PREPARED', 'PROCESSED', 'LAMPON'],
     # This is a processed image, so we don't care about LAMPON, but it's harmless, and easier to just keep it there
+    ('GSAOI', 'S20150531S0009.fits') : ['FLAT', 'TWILIGHT', 'SIDEREAL', 'CAL', 'IMAGE', 'GSAOI', 'GEMINI', 'SOUTH',
+                                        'UNPREPARED', 'RAW'],
+    ('GSAOI', 'S20160422S0092.fits') : ['SIDEREAL', 'IMAGE', 'GSAOI', 'GEMINI', 'SOUTH', 'UNPREPARED', 'RAW'],
+    ('GSAOI', 'S20160613S0316.fits') : ['DOMEFLAT', 'FLAT', 'AZEL_TARGET', 'CAL', 'IMAGE', 'NON_SIDEREAL', 'GSAOI',
+                                        'GEMINI', 'SOUTH', 'UNPREPARED', 'RAW', 'LAMPOFF'],
 
-    #    ('bhros', 'S20070131S0030.fits') : ['BHROS', 'SIDEREAL', 'GEMINI_SOUTH', 'SPECT', 'UNPREPARED', 'RAW'],
-    #    ('bhros', 'S20070131S0152.fits') : ['AT_ZENITH', 'BHROS', 'AZEL_TARGET', 'NON_SIDEREAL', 'GEMINI_SOUTH', 'SPECT', 'UNPREPARED', 'RAW'],
-    #    ('F2', 'S20150629S0208.fits') : ['MOS', 'SPECT', 'F2', 'NON_SIDEREAL', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('F2', 'S20150629S0245.fits') : ['FLAT', 'AT_ZENITH', 'GCAL_IR_ON', 'AZEL_TARGET', 'MOS', 'SPECT', 'F2', 'CAL', 'NON_SIDEREAL', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('F2', 'S20150629S0244.fits') : ['AT_ZENITH', 'ARC', 'AZEL_TARGET', 'MOS', 'SPECT', 'F2', 'CAL', 'NON_SIDEREAL', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('F2', 'S20160616S0072.fits') : ['GCAL_IR_ON', 'FLAT', 'SIDEREAL', 'SPECT', 'F2', 'CAL', 'LS', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('F2', 'S20160616S0075.fits') : ['IMAGE', 'SIDEREAL', 'F2', 'ACQUISITION', 'IMAGE', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('F2', 'S20160708S0025.fits') : ['AT_ZENITH', 'AZEL_TARGET', 'DARK', 'F2', 'CAL', 'NON_SIDEREAL', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('F2', 'S20160616S0071.fits') : ['ARC', 'SIDEREAL', 'SPECT', 'F2', 'CAL', 'LS', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('gmos', 'S20051225S0084.fits') : ['GMOS', 'IFU', 'BLUE', 'SIDEREAL', 'SPECT', 'GEMINI_SOUTH', 'RAW', 'UNPREPARED'],
-    #    ('gmos', 'N20160616S0431.fits') : ['GMOS', 'ARC', 'GEMINI_NORTH', 'LS', 'AZEL_TARGET', 'CAL', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
-    #    ('gmos', 'N20160516S0485.fits') : ['GMOS', 'AT_ZENITH', 'GEMINI_NORTH', 'BIAS', 'AZEL_TARGET', 'CAL', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
-    #    ('gmos', 'N20160407S0076.fits') : ['GMOS', 'GEMINI_NORTH', 'BIAS', 'AZEL_TARGET', 'CAL', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
-    #    ('gmos', 'N20111124S0203.fits') : ['GMOS', 'IFU', 'RED', 'GEMINI_NORTH', 'FLAT', 'CAL', 'SIDEREAL', 'SPECT', 'RAW', 'UNPREPARED'],
-    #    ('gmos', 'N20160516S0485_bias.fits') : ['GMOS', 'AT_ZENITH', 'GEMINI_NORTH', 'BIAS', 'AZEL_TARGET', 'CAL', 'NON_SIDEREAL', 'PREPARED', 'PROCESSED_BIAS'],
-    #    ('gmos', 'S20120815S0031.fits') : ['GMOS', 'IMAGE', 'SIDEREAL', 'IMAGE', 'GEMINI_SOUTH', 'RAW', 'UNPREPARED'],
-    #    ('GNIRS', 'N20160523S0191.fits'): ['GNIRS', 'GEMINI_NORTH', 'SIDEREAL', 'LS', 'SPECT', 'UNPREPARED', 'RAW'],
-    #    ('gpi', 'S20160523S0215.fits') : ['GPI', 'IFU', 'NON_SIDEREAL', 'SPECT', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('GSAOI', 'S20150531S0009.fits') : ['FLAT', 'TWILIGHT', 'SIDEREAL', 'CAL', 'IMAGE', 'GSAOI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('GSAOI', 'S20160422S0150.fits') : ['AT_ZENITH', 'AZEL_TARGET', 'DARK', 'CAL', 'IMAGE', 'NON_SIDEREAL', 'GSAOI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('GSAOI', 'S20160422S0092.fits') : ['SIDEREAL', 'IMAGE', 'GSAOI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('GSAOI', 'S20160613S0316.fits') : ['DOMEFLAT', 'FLAT', 'AZEL_TARGET', 'CAL', 'IMAGE', 'NON_SIDEREAL', 'GSAOI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('michelle', 'N20030625S0075.fits') : ['GEMINI_NORTH', 'MICHELLE', 'SIDEREAL', 'UNPREPARED', 'RAW'],
-    #    ('nici', 'S20130715S0112.fits') : ['IMAGE', 'SIDEREAL', 'NICI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('nici', 'S20130607S0592.fits') : ['IMAGE', 'AZEL_TARGET', 'DARK', 'CAL', 'NON_SIDEREAL', 'NICI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('nici', 'S20130714S0155.fits') : ['CAL', 'FLAT', 'IMAGE', 'GCAL_IR_ON', 'SIDEREAL', 'NICI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('nici', 'S20130607S0258.fits') : ['ADI_R', 'IMAGE', 'SIDEREAL', 'NICI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('nici', 'S20091206S0101.fits') : ['AT_ZENITH', 'CAL', 'FLAT', 'IMAGE', 'AZEL_TARGET', 'NON_SIDEREAL', 'NICI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('nici', 'S20130806S0071.fits') : ['ASDI', 'IMAGE', 'SIDEREAL', 'NICI', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],
-    #    ('NIFS', 'N20160428S0174.fits') : ['NIFS', 'IFU', 'GEMINI_NORTH', 'AZEL_TARGET', 'NON_SIDEREAL', 'SPECT', 'UNPREPARED', 'RAW'],
-    #    ('NIRI', 'N20160523S0471_forStack.fits') : ['NIRI', 'GEMINI_NORTH', 'SIDEREAL', 'IMAGE', 'PREPARED'],
-    #    ('NIRI', 'N20120505S0564.fits') : ['NIRI', 'GEMINI_NORTH', 'AZEL_TARGET', 'SPECT', 'LS', 'NON_SIDEREAL', 'GCAL_IR_OFF', 'UNPREPARED', 'RAW'],
-    #    ('NIRI', 'N20160522S0004.fits') : ['NIRI', 'GEMINI_NORTH', 'SIDEREAL', 'IMAGE', 'UNPREPARED', 'RAW'],
+    # BHROS Data
+    ('BHROS', 'S20070131S0030.fits') : ['BHROS', 'LAMPOFF', 'GCAL_IR_OFF', 'CAL', 'GCALFLAT', 'FLAT', 'SIDEREAL',
+                                        'GEMINI', 'SOUTH', 'SPECT', 'UNPREPARED', 'RAW'],
+    ('BHROS', 'S20070131S0152.fits') : ['AT_ZENITH', 'BHROS', 'AZEL_TARGET', 'NON_SIDEREAL', 'GEMINI', 'SOUTH', 'SPECT',
+                                        'UNPREPARED', 'RAW'],
+
+    # GPI Data
+    ('GPI', 'S20160523S0215.fits') : ['GPI', 'IFU', 'NON_SIDEREAL', 'SPECT', 'GEMINI', 'SOUTH', 'DARK', 'UNPREPARED',
+                                      'RAW'],
+
+    # MICHELLE Data
+    ('MICHELLE', 'N20030625S0075.fits') : ['GEMINI', 'NORTH', 'MICHELLE', 'SIDEREAL', 'UNPREPARED', 'RAW'],
+
+    # NICI Data
+    ('NICI', 'S20091206S0101.fits') : ['AT_ZENITH', 'CAL', 'FLAT', 'IMAGE', 'AZEL_TARGET', 'NON_SIDEREAL', 'NICI',
+                                       'GEMINI', 'SOUTH', 'GCAL_IR_OFF', 'LAMPOFF', 'UNPREPARED', 'RAW'],
+    ('NICI', 'S20130607S0258.fits') : ['ADI_R', 'IMAGE', 'SIDEREAL', 'NICI', 'GEMINI', 'SOUTH', 'UNPREPARED', 'RAW'],
+    ('NICI', 'S20130607S0592.fits') : ['IMAGE', 'AZEL_TARGET', 'DARK', 'CAL', 'NON_SIDEREAL', 'NICI', 'GEMINI',
+                                       'SOUTH', 'UNPREPARED', 'RAW'],
+    ('NICI', 'S20130714S0155.fits') : ['CAL', 'FLAT', 'IMAGE', 'GCAL_IR_ON', 'SIDEREAL', 'NICI', 'GEMINI', 'SOUTH',
+                                       'GCALFLAT', 'LAMPON', 'UNPREPARED', 'RAW'],
+    ('NICI', 'S20130715S0112.fits') : ['IMAGE', 'SIDEREAL', 'NICI', 'GEMINI', 'SOUTH', 'UNPREPARED', 'RAW'],
+    ('NICI', 'S20130806S0071.fits') : ['ASDI', 'IMAGE', 'SIDEREAL', 'NICI', 'GEMINI', 'SOUTH', 'UNPREPARED', 'RAW'],
+
+
+        # ('gmos', 'N20160516S0485_bias.fits') : ['GMOS', 'AT_ZENITH', 'GEMINI_NORTH', 'BIAS', 'AZEL_TARGET', 'CAL', 'NON_SIDEREAL', 'PREPARED', 'PROCESSED_BIAS'],
+        # ('NIRI', 'N20160523S0471_forStack.fits') : ['NIRI', 'GEMINI_NORTH', 'SIDEREAL', 'IMAGE', 'PREPARED'],
+
 }
