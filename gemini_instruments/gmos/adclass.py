@@ -252,12 +252,17 @@ class AstroDataGmos(AstroDataGemini):
         if central_wavelength <= 0.0:
             return None
         else:
+            converted_central_wavelength = \
+                gmu.convert_units('nanometers', central_wavelength,
+                                     output_units)
             if pretty:
                 # round it up to the nearest Angstrom.
-                central_wavelength = round(central_wavelength*1e10)/1e10
+                power = gmu.unitDict[output_units] - gmu.unitDict['angstroms']
+                factor = math.pow(10, power)
+                converted_central_wavelength = round(converted_central_wavelength*factor)/factor
 
-            return gmu.convert_units('nanometers', central_wavelength,
-                                     output_units)
+            return converted_central_wavelength
+
 
     @astro_data_descriptor
     def detector_name(self, pretty=False):
