@@ -207,7 +207,8 @@ class AstroDataGmos(AstroDataGemini):
         return self.hdr.get('AMPNAME')
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    def central_wavelength(self, asMicrometers=False, asNanometers=False,
+                           asAngstroms=False, pretty=False):
         """
         Returns the central wavelength in meters or specified units
 
@@ -219,6 +220,8 @@ class AstroDataGmos(AstroDataGemini):
             If True, return the wavelength in nanometers
         asAngstroms : bool
             If True, return the wavelength in Angstroms
+        pretty : bool
+            If True, return a round up value to the nearest Angstrom.
 
         Returns
         -------
@@ -249,6 +252,10 @@ class AstroDataGmos(AstroDataGemini):
         if central_wavelength <= 0.0:
             return None
         else:
+            if pretty:
+                # round it up to the nearest Angstrom.
+                central_wavelength = round(central_wavelength*1e10)/1e10
+
             return gmu.convert_units('nanometers', central_wavelength,
                                      output_units)
 
@@ -703,7 +710,7 @@ class AstroDataGmos(AstroDataGemini):
             unique_id_descriptor_list_all.append('disperser')
 
         # List to format descriptor calls using 'pretty=True' parameter
-        call_pretty_version_list = ['filter_name', 'disperser']
+        call_pretty_version_list = ['filter_name', 'disperser', 'central_wavelength']
 
         # Force this to be a list
         force_list = ['amp_read_area']
