@@ -7,8 +7,10 @@ Recipes Reference
 *****************
 
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
+    :numbered:
 
-  gmos_sq_recipes
-..  niri
+
+    gmos_sq_recipes
+..  niri_sq_recipes
 

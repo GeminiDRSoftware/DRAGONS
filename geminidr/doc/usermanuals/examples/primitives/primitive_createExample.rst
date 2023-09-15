@@ -37,14 +37,14 @@ that the one we want here.  If there isn't, just skip.)
 ..    to use "---" as the section indicators at this level to match what we
 ..    already use in the docstrings.)
 
-.. include:: generated-example/geminidr.core.primitives_ccd.CCD.subtractOverscan_docstring.rst
+.. include:: generated_doc/geminidr.core.primitives_ccd.CCD.subtractOverscan_docstring.rst
 
 .. generated with `utility_scripts/generate_primdoc.py`
 ..    contains:
 ..      Parameter defaults from pex.config system
 ..      showpars-like format
 
-.. include:: generated-example/geminidr.core.primitives_ccd.CCD.subtractOverscan_param.rst
+.. include:: generated_doc/geminidr.core.primitives_ccd.CCD.subtractOverscan_param.rst
 
 Algorithm
 ---------
@@ -73,7 +73,7 @@ different, it might smarter to just include the `-param.rst` file to avoid
 unnecessary duplication and just refer to the appropriate implementation for
 the rest of the info.)
 
-.. include:: generated-example/geminidr.gmos.primitives_gmos.GMOS.subtractOverscan_param.rst
+.. include:: generated_doc/geminidr.gmos.primitives_gmos.GMOS.subtractOverscan_param.rst
 
 Algorithm
 ---------

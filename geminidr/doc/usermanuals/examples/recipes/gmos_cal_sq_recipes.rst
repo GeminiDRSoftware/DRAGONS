@@ -6,40 +6,25 @@
 GMOS Calibrations Recipes
 *************************
 
-.. _gmos_cal_wavcal_sq_recipes:
+.. toctree::
+    :maxdepth: 1
+    :caption: All modes
 
-GMOS Wavelength Calibrations and Distortion Recipes
-***************************************************
+    gmos_cal_bias_sq_recipes
+    .. gmos_cal_dark_sq_recipes
 
-.. include:: generated_doc/geminidr.gmos.recipes.sq.recipes_ARC_LS_SPECT.makeProcessedArc.rst
+.. toctree::
+    :maxdepth: 1
+    :caption: Imaging
 
-.. the generated file should have:
-.. ..   * name of the recipe (as heading with ====)
-.. ..   * module and name of recipe library
-.. ..   * recipe tags
-.. ..   * docstring which should include the type of inputs (tags) required.
-.. ..   * the recipe
+    .. gmos_cal_flat_img_sq_recipes
+    .. gmos_cal_fringe_img_sq_recipes
 
-.. then can add author comments as necessary
+.. toctree::
+    :maxdepth: 1
+    :caption: Longslit spectroscopy
 
-.. _gmos_cal_bias_sq_recipes:
+    .. gmos_cal_flat_ls_spect_sq_recipes
+    gmos_cal_wavecal_ls_sq_recipes
+    .. gmos_cal_standard_ls_sq_recipes
 
-GMOS Bias Recipes
-*****************
-
-.. include:: generated_doc/geminidr.gmos.recipes.sq.recipes_BIAS.makeProcessedBias.rst
-
-.. _gmos_cal_dark_sq_recipes:
-
-GMOS Dark Recipes
-*****************
-
-.. _gmos_cal_flat_sq_recipes:
-
-GMOS Flat Field Recipes
-***********************
-
-.. _gmos_cal_fringe_sq_recipes:
-
-GMOS Fringe Frames
-******************

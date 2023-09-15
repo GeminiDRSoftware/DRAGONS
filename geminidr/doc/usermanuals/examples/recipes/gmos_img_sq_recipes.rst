@@ -9,19 +9,24 @@ GMOS Imaging Science Recipes
 Default Recipe
 **************
 
-.. .. include:: generated recipe
+.. include:: generated_doc/geminidr.gmos.recipes.sq.recipes_IMAGE.reduce.rst
 
-.. comment from the author as necessary
+(REMOVE this text:  Anything additional information about the recipe, it's
+usage, likely primitives and parameters to play with, etc. can be added by
+the author here, as necessary.)
 
 Reducing the CCDs Separately
 ****************************
 
-.. comment from author, when to use this
+(REMOVE this text:  Anything additional information about the recipe, it's
+usage, likely primitives and parameters to play with, etc. can be added by
+the author here, as necessary.)
 
-.. .. include:: generated recipe 1
-.. .. include:: generated recipe 2
+.. include:: generated_doc/geminidr.gmos.recipes.sq.recipes_IMAGE.reduceSeparateCCDs.rst
+.. include:: generated_doc/geminidr.gmos.recipes.sq.recipes_IMAGE.reduceSeparateCCDsCentral.rst
 
 Utility Recipes
 ***************
 
-.. .. include:: generated recipe (alignAndStack)
+.. include:: generated_doc/geminidr.gmos.recipes.sq.recipes_IMAGE.alignAndStack.rst
+.. include:: generated_doc/geminidr.gmos.recipes.sq.recipes_IMAGE.makeIRAFCompatible.rst
