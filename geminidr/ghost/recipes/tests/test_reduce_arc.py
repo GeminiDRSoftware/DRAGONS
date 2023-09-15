@@ -49,15 +49,14 @@ def test_reduce_arc(input_filename, caldict, arm, path_to_inputs, path_to_refs):
         path_to_inputs, adinputs[0].phu['ORIGNAME'].split('_')[0] + "_slit_slit.fits")
     processed_slitflat = os.path.join(
         path_to_inputs, flat.replace(".fits", f"_slit_slitflat.fits"))
-    ucals = {(ad.calibration_key(), "processed_bias"):
-                 processed_bias for ad in adinputs}
-    # processed_slit and processed_slitflat not recognized as a user_cal
-    # while processed_flat fails because of the -STACK (it's needed for
-    # extractProfile and fitWavelength)
-    uparms = {"flat": processed_flat,
-              "extractProfile:slit": processed_slit,
-              "extractProfile:slitflat": processed_slitflat}
-    p = GHOSTSpect(adinputs, ucals=ucals, uparms=uparms)
+    processed_bpm = os.path.join(
+        path_to_inputs, f"bpm_20220601_ghost_{arm}_11_full_4amp.fits")
+    ucals = {"processed_bias": processed_bias,
+             "processed_flat": processed_flat,
+             "processed_slit": processed_slit,
+             "processed_slitflat": processed_slitflat,
+             "processed_bpm": processed_bpm}
+    p = GHOSTSpect(adinputs, ucals=ucals)
     makeProcessedArc(p)
     assert len(p.streams['main']) == 1
     adout = p.streams['main'].pop()

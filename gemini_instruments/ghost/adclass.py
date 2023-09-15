@@ -190,7 +190,7 @@ class AstroDataGhost(AstroDataGemini):
         Define the 'bias data' tag set for GHOST data.
         """
         if self.phu.get('OBSTYPE') == 'BIAS':
-            return TagSet(['CAL', 'BIAS'])
+            return TagSet(['CAL', 'BIAS'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_dark(self):
@@ -198,7 +198,7 @@ class AstroDataGhost(AstroDataGemini):
         Define the 'dark data' tag set for GHOST data.
         """
         if self.phu.get('OBSTYPE') == 'DARK':
-            return TagSet(['CAL', 'DARK'])
+            return TagSet(['CAL', 'DARK'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_arc(self):
@@ -233,20 +233,6 @@ class AstroDataGhost(AstroDataGemini):
         if self.phu.get('OBSTYPE') == 'SKY':
             return TagSet(['SKY'])
 
-    @astro_data_tag
-    def _tag_res(self):
-        """
-        Define the tagset for GHOST data of different resolutions.
-        """
-        try:
-            mode = self.phu['SMPNAME']
-        except KeyError:
-            return None
-        if mode.endswith('HI_ONLY'):
-            return TagSet(['HIGH'])
-        else:
-            return TagSet(['STD'])
-
     # MCW 191107 - had to add SLIT back in to make cal system work
     @astro_data_tag
     def _tag_slitv(self):
@@ -254,18 +240,37 @@ class AstroDataGhost(AstroDataGemini):
         Define the 'slit data' tag set for GHOST data.
         """
         if self.phu.get('CAMERA', '').lower().startswith('slit'):
-            return TagSet(['SLITV', 'SLIT', 'IMAGE'],
+            return TagSet(['SLITV', 'SLIT'],
                           blocks=['SPECT', 'BUNDLE'])
 
     @astro_data_tag
-    def _tag_spect(self):
+    def _tag_image(self):
+        """
+        Tag slitviewer images as IMAGE (must be done separately from
+        the "SLITV" so "SLITV" isn't blocked by BIAS or BPM)
+        """
+        if self.phu.get('CAMERA', '').lower().startswith('slit'):
+            return TagSet(['IMAGE'])
+
+    @astro_data_tag
+    def _tag_camera(self):
         """
         Define the 'spectrograph data' tag set for GHOST data.
         """
         # Also returns BLUE or RED if the CAMERA keyword is set thus
-        if 'CAMERA' in self.phu:
-            return TagSet(({self.phu['CAMERA']} & {'BLUE', 'RED'}) | {'SPECT'},
-                          blocks=['BUNDLE'])
+        camera = self.phu.get('CAMERA')
+        if camera in ('BLUE', 'RED'):
+            return TagSet([camera], blocks=['BUNDLE'])
+
+    @astro_data_tag
+    def _tag_spect(self):
+        """
+        Tag echelle frames as SPECT (must be done separately from
+        "RED"/"BLUE" so that isn't blocked by BIAS or BPM)
+        """
+        camera = self.phu.get('CAMERA')
+        if camera in ('BLUE', 'RED'):
+            return TagSet(['SPECT'], blocks=['BUNDLE'])
 
     @astro_data_tag
     def _status_processed_ghost_cals(self):
@@ -385,7 +390,7 @@ class AstroDataGhost(AstroDataGemini):
         """
         Returns an "MxN"-style string because CJS is fed up with not having this!
         """
-        return f"{self.detector_x_bin()}x{self.detector_y_bin()}"
+        return super().binning()
 
     @astro_data_descriptor
     def calibration_key(self):
@@ -393,8 +398,6 @@ class AstroDataGhost(AstroDataGemini):
         Returns a suitable calibration key for GHOST, which includes the arm.
         """
         return (self.data_label().replace('_stack', ''), self.arm())
-
-
 
     # FIXME Remove once headers corrected
     @astro_data_descriptor
@@ -679,6 +682,16 @@ class AstroDataGhost(AstroDataGemini):
         except Exception:
             pass
         return None
+
+    @astro_data_descriptor
+    def saturation_level(self):
+        """Patch because SATURATE=0 for the blue spectrograph"""
+        retval = super().saturation_level()
+        if 'PREPARED' in self.tags:
+            return retval
+        if self.is_single and retval == 0:
+            return 65535
+        return [v if v > 0 else 65535 for v in retval]
 
     @astro_data_descriptor
     @use_nascent_phu_for_bundle

@@ -9,7 +9,7 @@ from .primitives_calibdb_ghost import CalibDBGHOST
 
 from . import parameters_ghost
 
-from .lookups import timestamp_keywords as ghost_stamps
+from .lookups import keyword_comments, timestamp_keywords as ghost_stamps
 
 from recipe_system.utils.decorators import parameter_override
 
@@ -42,18 +42,19 @@ class GHOST(Gemini, CCD, CalibDBGHOST):
     """
     tagset = set()  # Cannot be assigned as a class
 
-    def __init__(self, adinputs, **kwargs):
-        super(GHOST, self).__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'ghostdr.ghost.lookups'
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_ghost)
         # Add GHOST-specific timestamp keywords
         self.timestamp_keys.update(ghost_stamps.timestamp_keys)
+        self.keyword_comments.update(keyword_comments.keyword_comments)
 
     @staticmethod
     def _has_valid_extensions(ad):
         return len(ad) > 0
 
-    def _rebin_ghost_ad(self, ad, xb, yb):
+    def old_rebin_ghost_ad(self, ad, xb, yb):
         """
         Internal helper function to re-bin GHOST data.
 

@@ -8,10 +8,12 @@ import os
 import numpy as np
 from importlib import import_module
 from scipy.ndimage import measurements
+from copy import deepcopy
 
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
+from gempy.adlibrary.manipulate_ad import rebin_data
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -83,6 +85,9 @@ class Standardize(PrimitivesBASE):
                 final_static = [None] * len(ad)
             else:
                 log.stdinfo("Using {} as static BPM\n".format(static.filename))
+                if static.binning() != ad.binning():
+                    static = rebin_data(deepcopy(static), xbin=ad.detector_x_bin(),
+                                        ybin=ad.detector_y_bin())
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
                                                       aux_type='bpm',
                                                       return_dtype=DQ.datatype)
@@ -91,6 +96,9 @@ class Standardize(PrimitivesBASE):
                 final_user = [None] * len(ad)
             else:
                 log.stdinfo("Using {} as user BPM".format(user.filename))
+                if user.binning() != ad.binning():
+                    user = rebin_data(deepcopy(user), xbin=ad.detector_x_bin(),
+                                      ybin=ad.detector_y_bin())
                 final_user = gt.clip_auxiliary_data(ad, aux=user,
                                                     aux_type='bpm',
                                                     return_dtype=DQ.datatype)

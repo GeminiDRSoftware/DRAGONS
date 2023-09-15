@@ -31,6 +31,7 @@ import astrodata
 from geminidr.core.primitives_spect import Spect
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library import tracing, astrotools as at
+from gempy.adlibrary.manipulate_ad import rebin_data
 from gempy.gemini import gemini_tools as gt
 
 from .polyfit import GhostArm, Extractor, SlitView
@@ -40,7 +41,7 @@ from .primitives_ghost import GHOST, filename_updater
 
 from . import parameters_ghost_spect
 
-from .lookups import polyfit_lookup, line_list, keyword_comments, targetn_dict
+from .lookups import polyfit_lookup, line_list
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -90,43 +91,9 @@ class GHOSTSpect(GHOST):
     """Applicable tagset"""
     tagset = set(["GEMINI", "GHOST"])  # NOT SPECT because of bias/dark
 
-    def __init__(self, adinputs, **kwargs):
-        super(GHOSTSpect, self).__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_ghost_spect)
-        self.keyword_comments.update(keyword_comments.keyword_comments)
-
-    def addDQ(self, adinputs=None, **params):
-        """
-        Quick'n'dirty addition of known bad pixels to FLATs only
-        """
-        log = self.log
-        adinputs = super().addDQ(adinputs, **params)
-        for ad in adinputs:
-            if 'FLAT' in ad.tags:
-                xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-                arm = ad.arm()
-                ut_date = ad.ut_date().strftime("%Y-%m-%d")
-                bpm_module = import_module(f'.BPM.badpix_{arm}', self.inst_lookups)
-                try:
-                    regions = [v for k, v in sorted(bpm_module.bpm_dict.items())
-                               if k < ut_date][-1]
-                except IndexError:
-                    log.warning(f"Cannot find BPM information for {ad.filename}")
-                    continue
-                log.stdinfo(f"Adding bad pixels to mask of {ad.filename}")
-                # TODO: rewrite with Section and contains, etc.
-                for (x1, x2, y1, y2) in regions:
-                    for i, (ext, datsec, detsec) in enumerate(
-                            zip(ad, ad.data_section(), ad.detector_section())):
-                        ix1 = (max(x1, detsec.x1) - detsec.x1) // xbin
-                        ix2 = (min(x2, detsec.x2-1) - detsec.x1) // xbin + 1
-                        iy1 = (max(y1, detsec.y1) - detsec.y1) // ybin
-                        iy2 = (min(y2, detsec.y2-1) - detsec.y1) // ybin + 1
-                        if 0 <= ix1 < ix2 and 0 <= iy1 < iy2:
-                            ext.mask[iy1+datsec.y1:iy2+datsec.y1,
-                            ix1+datsec.x1:ix2+datsec.x1] |= DQ.bad_pixel
-
-        return adinputs
 
     def addWavelengthSolution(self, adinputs=None, **params):
         """
@@ -182,14 +149,6 @@ class GHOSTSpect(GHOST):
         # arc_list = params["arcs"]
         arc_before_file = params["arc_before"]
         arc_after_file = params["arc_after"]
-        # if arc_list is None:
-        #     # CJS: This populates the calibrations cache (dictionary) with
-        #     # "processed_slit" filenames for each input AD
-        #     self.getProcessedArc(adinputs)
-        #     # This then gets those filenames
-        #     arc_list = [self._get_cal(ad, 'processed_arc')
-        #                  for ad in adinputs]
-        #     log.stdinfo(arc_list)
 
         # for ad, arcs in zip(
         #         *gt.make_lists(adinputs, arc_list, force_ad=True)):
@@ -295,110 +254,6 @@ class GHOSTSpect(GHOST):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
-
-        return adinputs
-
-    def applyFlatBPM(self, adinputs=None, **params):
-        """
-        Find the flat relevant to the file(s) being processed, and merge the
-        flat's BPM into the target file's.
-
-        GHOST does not use flat subtraction in the traditional sense; instead,
-        the extracted flat profile is subtracted from the extracted object
-        profile. This means that the BPM from the flat needs to be applied to
-        the object file before profile extraction, and hence well before actual
-        flat correction is performed.
-
-        The BPM flat is applied by ``bitwise_or`` combining it into the main
-        adinput(s) BPM.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        flat: str/None
-            Name (full path) of the flatfield to use. If None, try:
-        flatstream: str/None
-            Name of the stream containing the flatfield as the first
-            item in the stream. If None, the calibration service is used
-        write_result: bool
-            Denotes whether or not to write out the result of profile
-            extraction to disk. This is useful for both debugging, and data
-            quality assurance.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        # No attempt to check if this primitive has already been run -
-        # re-applying a flat BPM should have no adverse effects, and the
-        # primitive simply skips if no flat is found.
-
-        # CJS: extractProfile() contains comments explaining what's going on here
-        flat_list = params["flat"]
-        flat_stream = params["flat_stream"]
-        if flat_list is None:
-            if flat_stream is not None:
-                flat_list = self.streams[flat_stream][0]
-            else:
-                self.getProcessedFlat(adinputs)
-                flat_list = [self._get_cal(ad, 'processed_flat')
-                            for ad in adinputs]
-
-        for ad, flat in zip(*gt.make_lists(adinputs, flat_list, force_ad=True)):
-            if flat is None:
-                log.warning("No flat identified/provided for {} - "
-                            "skipping".format(ad.filename))
-                continue
-
-            # Re-bin the flat if necessary
-            # We only need the mask, but it's best to use the full rebin
-            # helper function in case the mask rebin code needs to change
-            if flat.detector_x_bin() != ad.detector_x_bin(
-            ) or flat.detector_y_bin() != ad.detector_y_bin():
-                xb = ad.detector_x_bin()
-                yb = ad.detector_y_bin()
-                flat = self._rebin_ghost_ad(flat, xb, yb)
-                # Re-name the flat so we don't blow away the old one on save
-                flat_filename_orig = flat.filename
-                flat.filename = filename_updater(flat,
-                                                 suffix='_rebin%dx%d' %
-                                                        (xb, yb,),
-                                                 strip=True)
-                flat.write(overwrite=True)
-
-            # CJS: Edited here to require that the science and flat frames'
-            # extensions are the same shape. The original code would no-op
-            # with a warning for each pair that didn't, but I don't see how
-            # this would happen in normal operations. The clip_auxiliary_data()
-            # function in gemini_tools may be an option here.
-            try:
-                gt.check_inputs_match(adinput1=ad, adinput2=flat,
-                                      check_filter=False)
-            except ValueError:
-                log.warning("Input mismatch between flat and {} - "
-                            "skipping".format(ad.filename))
-                continue
-
-            # We don't want to copy over non-linear/saturated pixels from
-            # the flat's DQ since these will be from CR hits and will have
-            # been handled by the median combining
-            for ext, flat_ext in zip(ad, flat):
-                if ext.mask is None:
-                    ext.mask = flat_ext.mask & DQ.not_signal
-                else:
-                    ext.mask |= flat_ext.mask & DQ.not_signal
-
-            ad.phu.set('FLATBPM', os.path.abspath(flat.path),
-                       self.keyword_comments['FLATBPM'])
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
-            if params["write_result"]:
-                ad.phu.set('PROCIMG', os.path.abspath(ad.path),
-                           keyword_comments.keyword_comments['PROCIMG'])
-                ad.write(overwrite=True)
 
         return adinputs
 
@@ -626,20 +481,11 @@ class GHOSTSpect(GHOST):
                         '{}'.format(', '.join([_.filename for _ in adinputs_orig
                                                if _ not in adinputs])))
 
-        if params['dark']:
-            pass
+        dark = params.get("dark")
+        if dark is None:
+            dark_list = self.caldb.get_processed_slitflat(adinputs)
         else:
-            # All this line seems to do is check the valid darks can be found
-            # for the adinputs
-            self.getProcessedDark(adinputs)
-
-        # Here we need to ape the part of subtractDark which creates the
-        # dark_list, then re-bin as required, and send the updated dark_list
-        # through to subtractDark
-        # This is preferable to writing our own subtractDark, as it should
-        # be stable against algorithm changes to dark subtraction
-        dark_list = params["dark"] if params["dark"] else [
-            self._get_cal(ad, 'processed_dark') for ad in adinputs]
+            dark_list = (dark, None)
 
         # We need to make sure we:
         # - Provide a dark AD object for each science frame;
@@ -647,12 +493,12 @@ class GHOSTSpect(GHOST):
         #   multiple times
         dark_list_out = []
         dark_processing_done = {}
-        for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
-                                           force_ad=True)):
+        for ad, dark, origin in zip(*gt.make_lists(adinputs, *dark_list,
+                                           force_ad=(1,))):
             if dark is None:
                 if 'qa' in self.mode:
-                    log.warning("No changes will be made to {}, since no "
-                                "dark was specified".format(ad.filename))
+                    log.warning(f"No changes will be made to {ad.filename}, "
+                                "since no dark was specified")
                     dark_list_out.append(None)
                     continue
                 else:
@@ -667,7 +513,7 @@ class GHOSTSpect(GHOST):
             else:
                 xb = ad.detector_x_bin()
                 yb = ad.detector_y_bin()
-                dark = self._rebin_ghost_ad(dark, xb, yb)
+                dark = rebin_data(deepcopy(dark), xb, yb)
                 # Re-name the dark so we don't blow away the old one on save
                 dark_filename_orig = dark.filename
                 dark.filename = filename_updater(dark,
@@ -693,9 +539,9 @@ class GHOSTSpect(GHOST):
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad, dark, check_filter=False)
 
-            log.stdinfo("Subtracting the dark ({}) from the input "
-                        "AstroData object {}".
-                        format(dark.filename, ad.filename))
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: subtracting the dark "
+                        f"{dark.filename}{origin_str}")
             ad.subtract(dark)
 
             # Record dark used, timestamp, and update filename
@@ -787,17 +633,6 @@ class GHOSTSpect(GHOST):
         apply_centroids = params["apply_centroids"]
         timing = params["debug_timing"]
 
-        # This primitive modifies the input AD structure, so it must now
-        # check if the primitive has already been applied. If so, it must be
-        # skipped.
-        adinputs_orig = list(adinputs)
-        adinputs = [_ for _ in adinputs if not _.phu.get(timestamp_key)]
-        if len(adinputs) != len(adinputs_orig):
-            log.stdinfo('extractProfile is skipping the following files, which '
-                        'already have extracted profiles: '
-                        '{}'.format(','.join([_.filename for _ in adinputs_orig
-                                              if _ not in adinputs])))
-
         # This check is to head off problems where the same flat is used for
         # multiple ADs and gets binned but then needs to be rebinned (which
         # isn't possible because the unbinned flat has been overwritten)
@@ -805,54 +640,33 @@ class GHOSTSpect(GHOST):
         if len(binnings) > 1:
             raise ValueError("Not all input files have the same binning")
 
-        # CJS: Heavily edited because of the new AD way
-        # Get processed slits, slitFlats, and flats (for xmod)
-        # slits and slitFlats may be provided as parameters
-        slit_list = params["slit"]
-        # log.stdinfo('slit_list before processing:')
-        # log.stdinfo('   {}'.format(slit_list))
-        if slit_list is not None and isinstance(slit_list, list):
-            slit_list = [slit_list[i] for i in range(len(slit_list))
-                         if adinputs_orig[i] in adinputs]
-        if slit_list is None:
-            # CJS: This populates the calibrations cache (dictionary) with
-            # "processed_slit" filenames for each input AD
-            self.getProcessedSlit(adinputs)
-            # This then gets those filenames
-            slit_list = [self._get_cal(ad, 'processed_slit')
-                         for ad in adinputs]
-        # log.stdinfo('slit_list after processing:')
-        # log.stdinfo('   {}'.format(slit_list))
+        # Interpret/get the necessary calibrations for all input AD objects
+        slit = params["slit"]
+        if slit is None:
+            slit_list = self.caldb.get_processed_slit(adinputs)
+        elif isinstance(slit, list):
+            slit_list = [(s, None) for s in slit]
+        else:
+            slit_list = (slit, None)
 
-        slitflat_list = params["slitflat"]
-        if slitflat_list is not None and isinstance(slitflat_list, list):
-            slitflat_list = [slitflat_list[i] for i in range(len(slitflat_list))
-                             if adinputs_orig[i] in adinputs]
-        if slitflat_list is None:
-            self.getProcessedSlitFlat(adinputs)
-            slitflat_list = [self._get_cal(ad, 'processed_slitflat')
-                             for ad in adinputs]
+        slitflat = params["slitflat"]
+        if slitflat is None:
+            slitflat_list = self.caldb.get_processed_slitflat(adinputs)
+        elif isinstance(slitflat, list):
+            slitflat_list = [(s, None) for s in slitflat]
+        else:
+            slitflat_list = (slitflat, None)
 
-        flat_list = params['flat']
-        if flat_list is None:
-            self.getProcessedFlat(adinputs)
-            flat_list = [self._get_cal(ad, 'processed_flat')
-                         for ad in adinputs]
+        flat = params['flat']
+        if flat is None:
+            flat_list = self.caldb.get_processed_flat(adinputs)
+        else:
+            flat_list = (flat, None)
 
-        # TODO: Have gt.make_lists handle multiple auxiliary lists?
-        # CJS: Here we call gt.make_lists. This has only been designed to work
-        # with one auxiliary list at present, hence the three calls. This
-        # produces two lists of AD objects the same length, one of the input
-        # ADs and one of the auxiliary files, from the list
-        # of filenames (or single passed parameter). Importantly, if multiple
-        # auxiliary frames are the same, then the file is opened only once and
-        # the reference to this AD is re-used, saving speed and memory.
-        _, slit_list = gt.make_lists(adinputs, slit_list, force_ad=True)
-        _, slitflat_list = gt.make_lists(adinputs, slitflat_list, force_ad=True)
-        _, flat_list = gt.make_lists(adinputs, flat_list, force_ad=True)
-
-        for ad, slit, slitflat, flat in zip(adinputs, slit_list,
-                                            slitflat_list, flat_list):
+        for (ad, slit, slit_origin, slitflat, slitflat_origin, flat,
+             flat_origin) in zip(*gt.make_lists(
+            adinputs, *slit_list, *slitflat_list, *flat_list,
+            force_ad=(1,3,5))):
             # CJS: failure to find a suitable auxiliary file (either because
             # there's no calibration, or it's missing) places a None in the
             # list, allowing a graceful continuation.
@@ -885,10 +699,13 @@ class GHOSTSpect(GHOST):
                 slit_data = slit[0].data
 
             # CJS: Changed to log.debug() and changed the output
+            slit_origin_str = f" (obtained from {slit_origin})" if slit_origin else ""
+            slitflat_origin_str = f" (obtained from {slitflat_origin})" if slitflat_origin else ""
+            flat_origin_str = f" (obtained from {flat_origin})" if flat_origin else ""
             log.stdinfo("Slit parameters: ")
-            log.stdinfo(f"   processed_slit: {slit_filename}")
-            log.stdinfo(f"   processed_slitflat: {slitflat_filename}")
-            log.stdinfo(f"   processed_flat: {flat.filename}")
+            log.stdinfo(f"   processed_slit: {slit_filename}{slit_origin_str}")
+            log.stdinfo(f"   processed_slitflat: {slitflat_filename}{slitflat_origin_str}")
+            log.stdinfo(f"   processed_flat: {flat.filename}{flat_origin_str}")
 
             res_mode = ad.res_mode()
             arm = GhostArm(arm=ad.arm(), mode=res_mode,
@@ -1045,7 +862,7 @@ class GHOSTSpect(GHOST):
             if params["write_result"]:
                 ad.write(overwrite=True)
 
-        return adinputs_orig
+        return adinputs
 
     def interpolateAndCombine(self, adinputs=None, **params):
         """
@@ -1208,32 +1025,35 @@ class GHOSTSpect(GHOST):
         # have new calibrators we wish to apply.
 
         # CJS: See comment in extractProfile() for handling of calibrations
-        flat_list = params["slitflat"]
-        if flat_list is None:
-            self.getProcessedSlitFlat(adinputs)
-            flat_list = [self._get_cal(ad, 'processed_slitflat')
-                         for ad in adinputs]
+        slitflat = params["slitflat"]
+        if slitflat is None:
+            flat_list = self.caldb.get_processed_slitflat(adinputs)
+        else:
+            flat_list = (slitflat, None)
 
-        for ad, slit_flat in zip(*gt.make_lists(adinputs, flat_list,
-                                                force_ad=True)):
+        for ad, slit_flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                                force_ad=(1,))):
             if not {'PREPARED', 'GHOST', 'FLAT'}.issubset(ad.tags):
                 log.warning("findApertures is only run on prepared flats: "
-                            "{} will not be processed".format(ad.filename))
+                            f"{ad.filename} will not be processed")
                 continue
 
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using slitflat "
+                        f"{slit_flat.filename}{origin_str}")
             try:
                 poly_xmod = self._get_polyfit_filename(ad, 'xmod')
-                log.stdinfo('Found xmod: {}'.format(poly_xmod))
+                log.stdinfo(f'Found xmod: {poly_xmod}')
                 poly_spat = self._get_polyfit_filename(ad, 'spatmod')
-                log.stdinfo('Found spatmod: {}'.format(poly_spat))
+                log.stdinfo(f'Found spatmod: {poly_spat}')
                 slitv_fn = self._get_slitv_polyfit_filename(ad)
-                log.stdinfo('Found slitvmod: {}'.format(slitv_fn))
+                log.stdinfo(f'Found slitvmod: {slitv_fn}')
                 xpars = astrodata.open(poly_xmod)
                 spatpars = astrodata.open(poly_spat)
                 slitvpars = astrodata.open(slitv_fn)
             except IOError:
-                log.warning("Cannot open required initial model files for {};"
-                            " skipping".format(ad.filename))
+                log.warning("Cannot open required initial model files; "
+                            "skipping")
                 continue
 
             arm = ad.arm()
@@ -1275,16 +1095,14 @@ class GHOSTSpect(GHOST):
                 # FIXME: MJI Copied directly from extractProfile. Is this compliant?
                 try:
                     poly_wave = self._get_polyfit_filename(ad, 'wavemod')
-                    poly_spat = self._get_polyfit_filename(ad, 'spatmod')
                     poly_spec = self._get_polyfit_filename(ad, 'specmod')
                     poly_rot = self._get_polyfit_filename(ad, 'rotmod')
                     wpars = astrodata.open(poly_wave)
-                    spatpars = astrodata.open(poly_spat)
                     specpars = astrodata.open(poly_spec)
                     rotpars = astrodata.open(poly_rot)
                 except IOError:
                     log.warning("Cannot open required initial model files "
-                                "for {}; skipping".format(ad.filename))
+                                "for PIXELMODEL; skipping")
                     continue
 
                 #Create an extractor instance, so that we can add the pixel model to the 
@@ -1335,22 +1153,27 @@ class GHOSTSpect(GHOST):
         # Make no attempt to check if primitive has already been run - may
         # have new calibrators we wish to apply.
 
-        flat_list = params['flat']
-        if not flat_list:
-            self.getProcessedFlat(adinputs)
-            flat_list = [self._get_cal(ad, 'processed_flat') for ad in adinputs]
+        flat = params['flat']
+        if flat is None:
+            flat_list = self.caldb.get_processed_flat(adinputs)
+        else:
+            flat_list = (flat, None)
 
-        for ad, flat in zip(*gt.make_lists(adinputs, flat_list, force_ad=True)):
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                                   force_ad=(1,))):
             if self.timestamp_keys["extractProfile"] not in ad.phu:
-                log.warning("extractProfile has not been run on {} - "
-                            "skipping".format(ad.filename))
+                log.warning(f"extractProfile has not been run on {ad.filename}; "
+                            "skipping")
                 continue
 
             if flat is None:
                 log.warning("Could not find processed_flat calibration for "
-                            "{} - skipping".format(ad.filename))
+                            f"{ad.filename}; - skipping")
                 continue
 
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the XMOD from the "
+                        f"processed_flat {flat.filename}{origin_str}")
             try:
                 poly_wave = self._get_polyfit_filename(ad, 'wavemod')
                 poly_spat = self._get_polyfit_filename(ad, 'spatmod')
@@ -1361,8 +1184,8 @@ class GHOSTSpect(GHOST):
                 specpars = astrodata.open(poly_spec)
                 rotpars = astrodata.open(poly_rot)
             except IOError:
-                log.warning("Cannot open required initial model files for {};"
-                            " skipping".format(ad.filename))
+                log.warning("Cannot open required initial model files; "
+                            "skipping")
                 continue
 
             # CJS: line_list location is now in lookups/__init__.py
@@ -1384,9 +1207,10 @@ class GHOSTSpect(GHOST):
                         abs(flux - median_filter(flux, size=2*radius+1)),
                         size=2*radius+1)
                     variance = nmad * nmad
-                peaks = tracing.find_peaks(flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
-                                           variance=variance, min_snr=min_snr, min_sep=5,
-                                           pinpoint_index=None, reject_bad=False)
+                peaks = tracing.find_wavelet_peaks(
+                    flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
+                    variance=variance, min_snr=min_snr, min_sep=5,
+                    pinpoint_index=None, reject_bad=False)
                 fit_g = fitting.LevMarLSQFitter()
                 these_peaks = []
                 for x in peaks[0]:
@@ -1480,341 +1304,19 @@ class GHOSTSpect(GHOST):
 
         return adinputs
 
-    def flatCorrect(self, adinputs=None, **params):
+    def measureBlaze(self, adinputs=None, **params):
         """
-        Flat-correct an extracted GHOST profile using a flat profile.
-
-        This primitive works by extracting the
-        profile from the relevant flat field using the object's extracted
-        weights, and then performs simple division.
-
-        .. warning::
-            While the primitive is working, it has been found that the
-            underlying algorithm is flawed. A new algorithm is being developed.
+        This primitive measures the blaze function in each order by summing
+        the signal at each wavelength pixel in a processed_flat and
+        normalizing. The result is then appended as a 2D array with the
+        extension name "BLAZE".
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        flat: str/None
-            Name of the (processed) standard flat to use for flat profile
-            extraction. If None, the primitive will attempt to pull a flat
-            from the calibrations database (or, if specified, the
-            --user_cal processed_flat command-line option)
-        slit: str/None
-            Name of the (processed & stacked) slit image to use for extraction
-            of the profile. If not provided/set to None, the primitive will
-            attempt to pull a processed slit image from the calibrations
-            database (or, if specified, the --user_cal processed_slit
-            command-line option)
-        slitflat: str/None
-            Name of the (processed) slit flat image to use for extraction
-            of the profile. If not provided, set to None, the RecipeSystem
-            will attempt to pull a slit flat from the calibrations system (or,
-            if specified, the --user_cal processed_slitflat command-line
-            option)
-        writeResult: bool
-            Denotes whether or not to write out the result of profile
-            extraction to disk. This is useful for both debugging, and data
-            quality assurance.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-
-        if params['skip']:
-            log.stdinfo('Skipping the flat field correction step')
-            return adinputs
-
-        adinputs_orig = list(adinputs)
-        adinputs = [_ for _ in adinputs if not _.phu.get(timestamp_key)]
-        if len(adinputs) != len(adinputs_orig):
-            log.stdinfo('flatCorrect is skipping the following files, '
-                        'which are already flat corrected: '
-                        '{}'.format(','.join([_ for _ in adinputs_orig
-                                              if _ not in adinputs])))
-
-        # CJS: See extractProfile() refactoring for explanation of changes
-        slit_list = params["slit"]
-        if slit_list is not None and isinstance(slit_list, list):
-            slit_list = [slit_list[i] for i in range(len(slit_list))
-                         if adinputs_orig[i] in adinputs]
-        if slit_list is None:
-            self.getProcessedSlit(adinputs)
-            slit_list = [self._get_cal(ad, 'processed_slit')
-                         for ad in adinputs]
-
-        # CJS: I've renamed flat -> slitflat and obj_flat -> flat because
-        # that's what the things are called! Sorry if I've overstepped.
-        slitflat_list = params["slitflat"]
-        if slitflat_list is not None and isinstance(slitflat_list, list):
-            slitflat_list = [slitflat_list[i] for i in range(len(slitflat_list))
-                         if adinputs_orig[i] in adinputs]
-        if slitflat_list is None:
-            self.getProcessedSlitFlat(adinputs)
-            slitflat_list = [self._get_cal(ad, 'processed_slitflat')
-                         for ad in adinputs]
-
-        flat_list = params["flat"]
-        if flat_list is not None and isinstance(flat_list, list):
-            flat_list = [flat_list[i] for i in range(len(flat_list))
-                         if adinputs_orig[i] in adinputs]
-        if flat_list is None:
-            self.getProcessedFlat(adinputs)
-            flat_list = [self._get_cal(ad, 'processed_flat')
-                         for ad in adinputs]
-
-        # TODO: Have gt.make_lists handle multiple auxiliary lists?
-        _, slit_list = gt.make_lists(adinputs, slit_list, force_ad=True)
-        _, slitflat_list = gt.make_lists(adinputs, slitflat_list, force_ad=True)
-        _, flat_list = gt.make_lists(adinputs, flat_list, force_ad=True)
-
-        for ad, slit, slitflat, flat, in zip(adinputs, slit_list,
-                                             slitflat_list, flat_list):
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by flatCorrect".
-                            format(ad.filename))
-                continue
-
-            # CJS: failure to find a suitable auxiliary file (either because
-            # there's no calibration, or it's missing) places a None in the
-            # list, allowing a graceful continuation.
-            if slit is None or slitflat is None or flat is None:
-                log.warning("Unable to find calibrations for {}; "
-                            "skipping".format(ad.filename))
-                continue
-
-            try:
-                poly_wave = self._get_polyfit_filename(ad, 'wavemod')
-                poly_spat = self._get_polyfit_filename(ad, 'spatmod')
-                poly_spec = self._get_polyfit_filename(ad, 'specmod')
-                poly_rot = self._get_polyfit_filename(ad, 'rotmod')
-                slitv_fn = self._get_slitv_polyfit_filename(ad)
-                wpars = astrodata.open(poly_wave)
-                spatpars = astrodata.open(poly_spat)
-                specpars = astrodata.open(poly_spec)
-                rotpars = astrodata.open(poly_rot)
-                slitvpars = astrodata.open(slitv_fn)
-            except IOError:
-                log.warning("Cannot open required initial model files for {};"
-                            " skipping".format(ad.filename))
-                continue
-
-            res_mode = ad.res_mode()
-            arm = GhostArm(arm=ad.arm(), mode=res_mode, 
-                           detector_x_bin= ad.detector_x_bin(),
-                           detector_y_bin= ad.detector_y_bin()
-                           )
-            arm.spectral_format_with_matrix(flat[0].XMOD,
-                                            wpars[0].data,
-                                            spatpars[0].data,
-                                            specpars[0].data,
-                                            rotpars[0].data,
-                                            )
-
-            sview = SlitView(slit[0].data, slitflat[0].data,
-                             slitvpars.TABLE[0], mode=res_mode,
-                             microns_pix=4.54*180/50,
-                             binning = slit.detector_x_bin())
-
-            extractor = Extractor(arm, sview)
-
-            #FIXME - Marc and were *going* to try:
-            #adjusted_data = arm.bin_data(extractor.adjust_data(flat[0].data))
-            extracted_flux, extracted_var = extractor.two_d_extract(
-                arm.bin_data(flat[0].data), extraction_weights=ad[0].WGT)
-
-            # Normalised extracted flat profile
-            med = np.median(extracted_flux)
-            extracted_flux /= med
-            extracted_var /= med**2
-
-            flatprof_ad = deepcopy(ad)
-            flatprof_ad.update_filename(suffix='_extractedFlatProfile',
-                                        strip=True)
-            flatprof_ad[0].reset(extracted_flux, mask=None,
-                                 variance=extracted_var)
-            if params["write_result"]:
-                flatprof_ad.write(overwrite=True)
-                # Record this as the flat profile used
-                ad.phu.set('FLATPROF', os.path.abspath(flatprof_ad.path),
-                           self.keyword_comments['FLATPROF'])
-            ad.phu.set('FLATIMG', os.path.abspath(flat.path),
-                       keyword_comments.keyword_comments['FLATIMG'])
-            ad.phu.set('SLITIMG', os.path.abspath(slit.path),
-                       keyword_comments.keyword_comments['SLITIMG'])
-            ad.phu.set('SLITFLAT', os.path.abspath(slitflat.path),
-                       keyword_comments.keyword_comments['SLITFLAT'])
-
-            # Divide the flat field through the science data
-            # Arithmetic propagates VAR correctly
-            ad /= flatprof_ad
-
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
-
-        # This nomenclature is misleading - this is the list of
-        # intitially-passed AstroData objects, some of which may have been
-        # skipped, and others which should have been modified by this
-        # primitive
-        return adinputs_orig
-
-    def formatOutput(self, adinputs=None, **params):
-        """
-        Generate an output FITS file containing the data requested by the user.
-
-        This primitive should not be called until *all* required
-        processing steps have been performed on the data. THe resulting FITS
-        file cannot be safely passed through to other primitives.
-
-        .. note::
-            All of the extra data packaged up by this primitive can also be
-            obtained by using the ``write_result=True`` flag on selected
-            other primitives. ``formatOutput`` goes and finds those output
-            files, and then packages them into the main output file for
-            convenience.
-
-        Parameters
-        ----------
-        detail: str
-            The level of detail the user would like in their final output file.
-
-            Note that, in order to preserve the ordering of FITS file
-            extensions, the options are sequential; each option will
-            provide all the data of less-verbose options.
-
-            Valid options are:
-
-            ``default``
-                Only returns the extracted, fully-processed object(s) and sky
-                spectra. In effect, this causes ``formatOutput`` to do nothing.
-                This includes computed variance data for each plane.
-
-            ``processed_image``
-                The option returns the data that have been bias and dark
-                corrected, and has the flat BPM applied (i.e. the state the
-                data are in immediately prior to profile extraction).
-
-            ``flat_profile``
-                This options includes the extracted flat profile used for
-                flat-fielding the data.
-
-            ``sensitivity_curve``
-                This option includes the sensitivity calculated at the
-                :meth:`responseCorrect <responseCorrect>` step of reduction.
-        """
-
-        # This should be the list of allowed detail descriptors in order of
-        # increasing verbosity
-        ALLOWED_DETAILS = ['default', 'processed_image', 'flat_profile',
-                           'sensitivity_curve', ]
-
-        log = self.log
-
-        timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params['suffix']
-
-        if params['detail'] not in ALLOWED_DETAILS:
-            raise ValueError('formatOutput: detail option {} not known. '
-                             'Please use one of: {}'.format(
-                params['detail'],
-                ', '.join(ALLOWED_DETAILS),
-            ))
-
-        detail_index = ALLOWED_DETAILS.index(params['detail'])
-
-        for ad in adinputs:
-            # Move sequentially through the various levels of detail, adding
-            # them as we go along
-            # ad[0].hdr['DATADESC'] = ('Fully-reduced data',
-            #                          self.keyword_comments['DATADESC'], )
-
-            if ALLOWED_DETAILS.index('processed_image') <= detail_index:
-                # Locate the processed image data
-                fn = ad.phu.get('PROCIMG', None)
-                if fn is None:
-                    raise RuntimeError('The processed image file name for {} '
-                                       'has not been '
-                                       'recorded'.format(ad.filename))
-                try:
-                    proc_image = astrodata.open(fn)
-                except astrodata.AstroDataError:
-                    raise RuntimeError('You appear not to have written out '
-                                       'the result of image processing to '
-                                       'disk.')
-
-                log.stdinfo('Opened processed image file {}'.format(fn))
-                ad.append(proc_image[0])
-                ad[-1].hdr['DATADESC'] = ('Processed image',
-                                          self.keyword_comments['DATADESC'])
-
-            if ALLOWED_DETAILS.index('flat_profile') <= detail_index:
-                # Locate the flat profile data
-                fn = ad.phu.get('FLATPROF', None)
-                if fn is None:
-                    raise RuntimeError('The flat profile file name for {} '
-                                       'has not been '
-                                       'recorded'.format(ad.filename))
-                try:
-                    proc_image = astrodata.open(fn)
-                except astrodata.AstroDataError:
-                    raise RuntimeError('You appear not to have written out '
-                                       'the result of flat profiling to '
-                                       'disk.')
-
-                log.stdinfo('Opened flat profile file {}'.format(fn))
-                # proc_image[0].WGT = None
-                try:
-                    del proc_image[0].WGT
-                except AttributeError:
-                    pass
-                ad.append(proc_image[0])
-                ad[-1].hdr['DATADESC'] = ('Flat profile',
-                                          self.keyword_comments['DATADESC'])
-
-            if ALLOWED_DETAILS.index('sensitivity_curve') <= detail_index:
-                fn = ad.phu.get('SENSFUNC', None)
-                if fn is None:
-                    raise RuntimeError('The sensitivity curve file name for {} '
-                                       'has not been '
-                                       'recorded'.format(ad.filename))
-                try:
-                    proc_image = astrodata.open(fn)
-                except astrodata.AstroDataError:
-                    raise RuntimeError('You appear not to have written out '
-                                       'the result of sensitivity calcs to '
-                                       'disk.')
-
-                log.stdinfo('Opened sensitivity curve file {}'.format(fn))
-                # proc_image[0].WGT = None
-                try:
-                    del proc_image[0].WGT
-                except AttributeError:
-                    pass
-                try:
-                    del proc_image[0].WAVL
-                except AttributeError:
-                    pass
-                ad.append(proc_image[0])
-                ad[-1].hdr['DATADESC'] = ('Sensitivity curve (blaze func.)',
-                                          self.keyword_comments['DATADESC'])
-
-            # import pdb; pdb.set_trace();
-
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
-            ad.write(overwrite=True)
-
-        return adinputs
-
-    def measureBlaze(self, adinputs=None, **params):
-        """
-
-        Parameters
-        ----------
-
+        slitflat: str or :class:`astrodata.AstroData` or None
+            slit flat to use; if None, the calibration system is invoked
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1824,18 +1326,22 @@ class GHOSTSpect(GHOST):
         sigma = 3
         max_iters = 5
 
-        slitflat_list = params["slitflat"]
-        if slitflat_list is None:
-            self.getProcessedSlitFlat(adinputs)
-            slitflat_list = [self._get_cal(ad, 'processed_slitflat')
-                             for ad in adinputs]
+        slitflat = params["slitflat"]
+        if slitflat is None:
+            flat_list = self.caldb.get_processed_slitflat(adinputs)
+        else:
+            flat_list = (slitflat, None)
 
-        for ad, slitflat in zip(*gt.make_lists(adinputs, slitflat_list, force_ad=True)):
+        for ad, slitflat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                                       force_ad=(1,))):
             res_mode = ad.res_mode()
             arm = GhostArm(arm=ad.arm(), mode=res_mode,
                            detector_x_bin=ad.detector_x_bin(),
                            detector_y_bin=ad.detector_y_bin())
 
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using slit profile from the "
+                        f"processed_slitflat {slitflat.filename}{origin_str}")
             try:
                 poly_wave = self._get_polyfit_filename(ad, 'wavemod')
                 poly_spat = self._get_polyfit_filename(ad, 'spatmod')
@@ -1848,8 +1354,8 @@ class GHOSTSpect(GHOST):
                 rotpars = astrodata.open(poly_rot)
                 slitvpars = astrodata.open(slitv_fn)
             except IOError:
-                raise RuntimeError("Cannot open required initial model files "
-                                   f"for {ad.filename}; skipping")
+                raise RuntimeError("Cannot open required initial model files; "
+                                   "skipping")
 
             arm.spectral_format_with_matrix(ad[0].XMOD, wpars[0].data,
                         spatpars[0].data, specpars[0].data, rotpars[0].data)
@@ -1912,6 +1418,9 @@ class GHOSTSpect(GHOST):
         if params["skip"]:
             log.stdinfo("Not removing scattered light since skip=True")
             return adinputs
+        else:
+            log.stdinfo("Removal of scattered light is not yet implemented")
+            return adinputs
 
         smoothness = params["debug_spline_smoothness"]
         save_model = params["debug_save_model"]
@@ -1931,7 +1440,7 @@ class GHOSTSpect(GHOST):
             xsampling, ysampling = 16, max(ybin, 4)
             xrebin, yrebin = xsampling // xbin, ysampling // ybin
             if xrebin * yrebin > 1:
-                ad_binned = self._rebin_ghost_ad(deepcopy(ad), xsampling, ysampling)
+                ad_binned = rebin_data(deepcopy(ad), xsampling, ysampling)
             else:
                 ad_binned = ad
             if flat is None:
@@ -2308,6 +1817,17 @@ class GHOSTSpect(GHOST):
 
         return clusters_flat
 
+    def standardizeInstrumentHeaders(self, adinputs=None, **params):
+        """
+        This primitive updates the SATURATE keyword in the headers, because
+        it is (erroneously) set to 0 for the blue spectrograph
+        """
+        kw = adinputs[0]._keyword_for('saturation_level')
+        for ad in adinputs:
+            for ext, sat_level in zip(ad, ad.saturation_level()):
+                ext.hdr[kw] = sat_level
+        return adinputs
+
     def standardizeStructure(self, adinputs=None, **params):
         """
         The Gemini-level version of this primitive
@@ -2590,10 +2110,7 @@ class GHOSTSpect(GHOST):
                              'use getProcessedArc directly.')
 
         ad.phu['ARCBEFOR'] = before
-        self.getProcessedArc([ad,],
-                             howmany=None,
-                             refresh=True)
-        arc_ad = self._get_cal(ad, 'processed_arc', )
+        arc_ad = self.caldb.get_processed_arc([ad]).items()[0][0]
         del ad.phu['ARCBEFOR']
         return arc_ad
 

@@ -62,16 +62,15 @@ def test_reduce_science(input_filename, caldict, arm, skysub, path_to_inputs,
     processed_slit = os.path.join(path_to_inputs, slit)
     processed_arc = os.path.join(path_to_inputs, arc.replace(".fits", f"_{arm}001_arc.fits"))
     processed_slitflat = os.path.join(path_to_inputs, slitflat)
-    ucals = {(ad.calibration_key(), "processed_bias"):
-                 processed_bias for ad in adinputs}
-    # processed_slit and processed_slitflat not recognized as a user_cal
-    # while processed_flat and processed_arc can fail because of the
-    # -STACK (the flat is needed for extractProfile and fitWavelength)
-    uparms = {"flat": processed_flat,
-              "extractProfile:slit": processed_slit,
-              "extractProfile:slitflat": processed_slitflat,
-              "addWavelengthSolution:arc_before": processed_arc,
-              "extractProfile:sky_subtract": skysub}
+    processed_bpm = os.path.join(
+        path_to_inputs, f"bpm_20220601_ghost_{arm}_11_full_4amp.fits")
+    ucals = {"processed_bias": processed_bias,
+             "processed_flat": processed_flat,
+             "processed_arc": processed_arc,
+             "processed_slit": processed_slit,
+             "processed_slitflat": processed_slitflat,
+             "processed_bpm": processed_bpm}
+    uparms = {"extractProfile:sky_subtract": skysub}
     standard = caldict.get('standard')
     if standard:
         standard = standard.replace(".fits", f"_{arm}001_standard.fits")

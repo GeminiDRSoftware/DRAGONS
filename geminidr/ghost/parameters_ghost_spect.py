@@ -177,10 +177,10 @@ class measureBlazeConfig(config.Config):
 class overscanCorrectConfig(parameters_ccd.overscanCorrectConfig):
     def setDefaults(self):
         self.suffix = '_overscanCorrect'
-        self.niterate = 2
-        self.high_reject = 3.0
-        self.low_reject = 3.0
-        self.function = 'poly'
+        self.niter = 2
+        self.lsigma = 3.0
+        self.hsigma = 3.0
+        self.function = 'chebyshev'
         self.nbiascontam = 4
         self.order = 0
 

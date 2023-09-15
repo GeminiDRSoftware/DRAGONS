@@ -357,8 +357,8 @@ class Stack(PrimitivesBASE):
             if process_rn:
                 # Output gets the rms value of the inputs
                 rns = [rn[index] for rn in rn_list]
-                output_rn = np.sqrt(np.mean([np.square(np.asarray(rn).mean())
-                                             for rn in rns]))
+                output_rn = np.sqrt(np.sum([np.square(np.asarray(rn).mean())
+                                             for rn in rns])) / num_img
                 ad_out[-1].hdr[ad_out._keyword_for("read_noise")] = output_rn
 
             log.stdinfo("")

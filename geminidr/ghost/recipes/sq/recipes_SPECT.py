@@ -24,12 +24,6 @@ def reduceScience(p):
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
     p.tileArrays()
-    p.applyFlatBPM() # Bitwise combine the flat BPM with the current BPM
-                     # for the data. This is necessary because the flat isn't
-                     # subtracted in the classical sense - rather, it's profile
-                     # is subtracted from the object profile. Therefore, we
-                     # must apply the BPM of the flat to the object file
-                     # separately, before we extract its profile.
     p.removeScatteredLight()
     p.writeOutputs()
     p.extractProfile()
@@ -64,13 +58,6 @@ def reduceStandard(p):
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
     p.tileArrays()
-    #p.rejectCosmicRays()
-    p.applyFlatBPM() # Bitwise combine the flat BPM with the current BPM
-                     # for the data. This is necessary because the flat isn't
-                     # subtracted in the classical sense - rather, it's profile
-                     # is subtracted from the object profile. Therefore, we
-                     # must apply the BPM of the flat to the object file
-                     # separately, before we extract its profile.
     p.writeOutputs()
     p.extractProfile()
     #p.flatCorrect() # Need to write our own, NOT USE GMOS - extract the flat profile,

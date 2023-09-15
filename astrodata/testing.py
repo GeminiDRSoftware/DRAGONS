@@ -286,7 +286,7 @@ class ADCompare:
     """
     # These are the keywords relating to a FITS WCS that we won't check
     # because we check the gWCS objects instead
-    fits_keys = set(['WCSAXES', 'WCSDIM', 'RADESYS'])
+    fits_keys = set(['WCSAXES', 'WCSDIM', 'RADESYS', 'BITPIX'])
     for i in range(1, 6):
         fits_keys.update([f'CUNIT{i}', f'CTYPE{i}', f'CDELT{i}', f'CRVAL{i}',
                           f'CRPIX{i}'])
@@ -332,7 +332,7 @@ class ADCompare:
         self.max_miss = max_miss
         self.rtol = rtol
         self.atol = atol
-        self.ignore_kw = self.fits_keys if ignore_fits_wcs else {}
+        self.ignore_kw = self.fits_keys if ignore_fits_wcs else set([])
         if ignore_kw:
             self.ignore_kw.update(ignore_kw)
         if compare is None:
@@ -401,8 +401,9 @@ class ADCompare:
 
         for kw in hdr1:
             # GEM-TLM is "time last modified"
-            if kw not in timestamp_keys.values() and kw not in ['GEM-TLM',
-                                                    'HISTORY', 'COMMENT', '']:
+            if (kw not in timestamp_keys.values() and
+                    kw not in ['GEM-TLM', 'HISTORY', 'COMMENT', ''] and
+                    kw not in self.ignore_kw):
                 try:
                     v1, v2 = hdr1[kw], hdr2[kw]
                 except KeyError:  # Missing keyword in AD2

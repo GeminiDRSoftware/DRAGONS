@@ -18,7 +18,8 @@ from astrodata.testing import ad_compare
 # Allow for multiple datasets for each test
 bias_datasets = ["S20230513S0012_slit.fits"]
 flat_datasets = [("S20230513S0010_slit.fits", "S20230513S0012_slit_bias.fits")]
-arc_datasets = [("S20230513S0011_slit.fits", "S20230513S0012_slit_bias.fits")]
+arc_datasets = [("S20230513S0011_slit.fits", {"processed_bias": "S20230513S0012_slit_bias.fits",
+                                              "processed_slitflat": "S20230513S0010_slit_slitflat.fits"})]
 sci_datasets = [("S20230513S0232_slit.fits", {"processed_bias": "S20230513S0012_slit_bias.fits",
                                               "processed_slitflat": "S20230513S0010_slit_slitflat.fits"})]
 
@@ -35,7 +36,7 @@ def test_reduce_slit_bias(input_filename, path_to_inputs, path_to_refs, change_w
         adout = p.streams['main'][0]
         output_filename = adout.filename
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        assert ad_compare(adref, adout)
+        assert ad_compare(adref, adout, ignore_kw=['PROCBIAS'])
 
 
 @pytest.mark.integration_test
@@ -46,32 +47,32 @@ def test_reduce_slit_flat(input_filename, processed_bias, path_to_inputs,
     """Test the complete reduction of slitviewer flat frames"""
     ad = astrodata.open(os.path.join(path_to_inputs, input_filename))
     processed_bias = os.path.join(path_to_inputs, processed_bias)
-    ucals = {(ad.calibration_key(), "processed_bias"): processed_bias}
+    ucals = {"processed_bias": processed_bias}
     p = GHOSTSlit([ad], ucals=ucals)
     with change_working_dir():
         makeProcessedSlitFlat(p)
         adout = p.streams['main'][0]
         output_filename = adout.filename
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        assert ad_compare(adref, adout)
+        assert ad_compare(adref, adout, ignore_kw=['PRSLITFL'])
 
 
 @pytest.mark.integration_test
 @pytest.mark.ghost
-@pytest.mark.parametrize("input_filename, processed_bias", arc_datasets)
-def test_reduce_slit_arc(input_filename, processed_bias, path_to_inputs,
+@pytest.mark.parametrize("input_filename, caldict", arc_datasets)
+def test_reduce_slit_arc(input_filename, caldict, path_to_inputs,
                          path_to_refs, change_working_dir):
     """Test the complete reduction of slitviewer arc frames"""
     ad = astrodata.open(os.path.join(path_to_inputs, input_filename))
-    processed_bias = os.path.join(path_to_inputs, processed_bias)
-    ucals = {(ad.calibration_key(), "processed_bias"): processed_bias}
+    ucals = {k: os.path.join(path_to_inputs, v)
+             for k, v in caldict.items()}
     p = GHOSTSlit([ad], ucals=ucals)
     with change_working_dir():
         makeProcessedSlitArc(p)
         adout = p.streams['main'][0]
         output_filename = adout.filename
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        assert ad_compare(adref, adout)
+        assert ad_compare(adref, adout, ignore_kw=['PRSLITIM'])
 
 
 @pytest.mark.integration_test
@@ -81,7 +82,7 @@ def test_reduce_slit_science(input_filename, caldict, path_to_inputs,
                              path_to_refs, change_working_dir):
     """Test the complete reduction of slitviewer science frames"""
     ad = astrodata.open(os.path.join(path_to_inputs, input_filename))
-    ucals = {(ad.calibration_key(), k): os.path.join(path_to_inputs, v)
+    ucals = {k: os.path.join(path_to_inputs, v)
              for k, v in caldict.items()}
     p = GHOSTSlit([ad], ucals=ucals)
     with change_working_dir():
@@ -89,4 +90,4 @@ def test_reduce_slit_science(input_filename, caldict, path_to_inputs,
         for adout in p.streams['main']:
             output_filename = adout.filename
             adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-            assert ad_compare(adref, adout)
+            assert ad_compare(adref, adout, ignore_kw=['PRSLITIM'])

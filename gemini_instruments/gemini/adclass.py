@@ -522,6 +522,13 @@ class AstroDataGemini(AstroData):
         return self.phu.get(self._keyword_for('azimuth'))
 
     @astro_data_descriptor
+    def binning(self):
+        """
+        Returns an "MxN"-style string because CJS is fed up with not having this!
+        """
+        return f"{self.detector_x_bin()}x{self.detector_y_bin()}"
+
+    @astro_data_descriptor
     def calibration_key(self):
         """
         Returns an object to be used as a key in the Calibrations dict.

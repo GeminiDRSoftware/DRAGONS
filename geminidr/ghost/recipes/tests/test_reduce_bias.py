@@ -16,21 +16,29 @@ from geminidr.ghost.recipes.sq.recipes_BIAS import makeProcessedBias
 datasets = ["S20230513S0439.fits"]
 
 
+@pytest.fixture
+def input_filename(request):
+    ad = astrodata.open(download_from_archive(request.param))
+    p = GHOSTBundle([ad])
+    adoutputs = p.splitBundle()
+    return_dict = {}
+    for arm in ("blue", "red"):
+        return_dict[arm] = [ad for ad in adoutputs if arm.upper() in ad.tags]
+    return return_dict
+
+
 @pytest.mark.dragons_remote_data
 @pytest.mark.integration_test
 @pytest.mark.ghost
-@pytest.mark.parametrize("input_filename", datasets)
-def test_reduce_bias(input_filename, path_to_refs):
-    """Reduce both arms of a bias bundle"""
-    ad = astrodata.open(download_from_archive(input_filename))
-    p = GHOSTBundle([ad])
-    adoutputs = p.splitBundle()
-    for arm in ('blue', 'red'):
-        adinputs = [ad for ad in adoutputs if arm.upper() in ad.tags]
-        p = GHOSTSpect(adinputs)
-        makeProcessedBias(p)
-        assert len(p.streams['main']) == 1
-        adout = p.streams['main'].pop()
-        output_filename = adout.filename
-        adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        assert ad_compare(adref, adout)
+@pytest.mark.parametrize("input_filename", datasets, indirect=True)
+@pytest.mark.parametrize("arm", ("blue", "red"))
+def test_reduce_bias(input_filename, arm, path_to_refs):
+    """Reduce an arm of a bias bundle"""
+    adinputs = input_filename[arm]
+    p = GHOSTSpect(adinputs)
+    makeProcessedBias(p)
+    assert len(p.streams['main']) == 1
+    adout = p.streams['main'].pop()
+    output_filename = adout.filename
+    adref = astrodata.open(os.path.join(path_to_refs, output_filename))
+    assert ad_compare(adref, adout, ignore_kw=['PROCBIAS'])

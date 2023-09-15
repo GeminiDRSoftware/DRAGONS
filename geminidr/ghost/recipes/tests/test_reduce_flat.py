@@ -37,18 +37,20 @@ def input_filename(request):
                          indirect=["input_filename"])
 @pytest.mark.parametrize("arm", ("blue", "red"))
 def test_reduce_flat(input_filename, bias, arm, path_to_inputs, path_to_refs):
-    """Reduce both arms of a flat bundle"""
+    """Reduce an arm of a flat bundle"""
     adinputs = input_filename[arm]
     processed_bias = os.path.join(
         path_to_inputs, bias.replace(".fits", f"_{arm}001_bias.fits"))
     processed_slitflat = os.path.join(
         path_to_inputs, adinputs[0].phu['ORIGNAME'].split('_')[0]+"_slit_slitflat.fits")
-    ucals = {(ad.calibration_key(), "processed_bias"):
-                 processed_bias for ad in adinputs}
+    processed_bpm = os.path.join(
+        path_to_inputs, f"bpm_20220601_ghost_{arm}_11_full_4amp.fits")
+    ucals = {"processed_bias": processed_bias,
+             "processed_slitflat": processed_slitflat,
+             "processed_bpm": processed_bpm}
     # A slitflat is needed for both findApertures and measureBlaze
     # and processed_slitflat not recognized as a user_cal
-    uparms = {"slitflat": processed_slitflat}
-    p = GHOSTSpect(adinputs, ucals=ucals, uparms=uparms)
+    p = GHOSTSpect(adinputs, ucals=ucals)
     makeProcessedFlat(p)
     assert len(p.streams['main']) == 1
     adout = p.streams['main'].pop()

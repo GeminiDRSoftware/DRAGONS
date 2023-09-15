@@ -56,7 +56,7 @@ class Extractum:
             print("-" * 60)
 
         result = optimize.minimize(self.func, coeffs, (self.phi[:, good], self.data[good], c0, c1),
-                                   method='Nelder-Mead', options={'xtol': ftol * min(abs(coeffs[:max(1, len(coeffs)-1)]))})
+                                   method='Nelder-Mead', options={'xatol': ftol * min(abs(coeffs[:max(1, len(coeffs)-1)]))})
         coeffs = result.x
 
         if debug:

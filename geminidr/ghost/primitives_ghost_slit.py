@@ -38,9 +38,23 @@ class GHOSTSlit(GHOST):
     """
     tagset = set(["GEMINI", "GHOST", "SLITV"])
 
-    def __init__(self, adinputs, **kwargs):
-        super(GHOSTSlit, self).__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_ghost_slit)
+
+    def addDQ(self, adinputs=None, **params):
+
+        static_bpm_list = params.pop('static_bpm')
+        if static_bpm_list == "default":
+            static_bpm_list = self.caldb.get_processed_bpm([ad[0] for ad in adinputs])
+            if static_bpm_list is not None:
+                for ad, bpm in zip(adinputs, static_bpm_list.files):
+                    super().addDQ([ad], **params, static_bpm=bpm)
+                return adinputs
+            else:
+                static_bpm_list = None
+        return super().addDQ(adinputs, **params, static_bpm=static_bpm_list)
+
 
     def darkCorrect(self, adinputs=None, **params):
         """
@@ -208,14 +222,14 @@ class GHOSTSlit(GHOST):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        flat_list = params.get("slitflat")
-        if flat_list is None:
-            self.getProcessedSlitFlat(adinputs)
-            flat_list = [self._get_cal(ad, 'processed_slitflat')
-                         for ad in adinputs]
+        flat = params.get("slitflat")
+        if flat is None:
+            flat_list = self.caldb.get_processed_slitflat(adinputs)
+        else:
+            flat_list = (flat, None)
 
-        for ad, slitflat in zip(*gt.make_lists(adinputs, flat_list,
-                                               force_ad=True)):
+        for ad, slitflat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                                       force_ad=(1,))):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by processSlits".
@@ -499,11 +513,11 @@ def _scale_and_stack(all_data, all_var=None, all_mask=None, scale_factors=None):
     out_mask: uint16 array (ny, nx) or None
         output mask
     """
-    out_data = np.sum(all_data * scale_factors, axis=-1)
+    out_data = np.sum(all_data * scale_factors, axis=-1, dtype=np.float32)
     if all_var is None:
         out_var = None
     else:
-        out_var = np.sum(all_var * scale_factors**2, axis=-1)
+        out_var = np.sum(all_var * scale_factors**2, axis=-1, dtype=np.float32)
     if all_mask is None:
         out_mask = None
     else:
