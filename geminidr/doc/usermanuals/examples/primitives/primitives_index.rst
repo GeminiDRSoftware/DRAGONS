@@ -7,7 +7,8 @@ Primitives Reference
 ********************
 
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
+    :numbered:
 
-.. primitive_subtractOverscan
+    primitive_createExample
 

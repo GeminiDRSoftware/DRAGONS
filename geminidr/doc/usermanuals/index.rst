@@ -11,6 +11,7 @@ DRAGONS Data Reduction User Reference
    :caption: Contents:
 
    primitives/primitives_index
+   recipes/recipes_index
 
 Indices and tables
 ==================
