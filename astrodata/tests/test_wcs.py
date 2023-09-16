@@ -1,5 +1,6 @@
 import math
 import pytest
+import numpy as np
 from numpy.testing import assert_allclose
 
 from astropy.modeling import models
@@ -8,6 +9,7 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 from astropy.io.fits import Header
 from gwcs import coordinate_frames as cf
+from gwcs.wcs import WCS as gWCS
 
 import astrodata
 from astrodata import wcs as adwcs
@@ -198,3 +200,28 @@ def test_adding_longslit_wcs(GMOS_LONGSLIT):
     gwcs_coords = new_gwcs(0, crpix2)
     new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
     assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
+
+
+@pytest.mark.dragons_remote_data
+def test_loglinear_axis(NIRI_IMAGE, change_working_dir):
+    """Test that we can add a log-linear axis and write and read it"""
+    ad = astrodata.open(NIRI_IMAGE)
+    coords = ad[0].wcs(200, 300)
+    ad[0].data = np.repeat(ad[0].data[np.newaxis], 5, axis=0)
+    new_input_frame = adwcs.pixel_frame(3)
+    loglinear_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
+                                 axes_names=("Wavelength",), name="WAVE")
+    celestial_frame = ad[0].wcs.output_frame
+    celestial_frame._axes_order = (1, 2)
+    new_output_frame = cf.CompositeFrame([loglinear_frame, celestial_frame],
+                                         name="world")
+    new_wcs = models.Exponential1D(amplitude=1, tau=2) & ad[0].wcs.forward_transform
+    ad[0].wcs = gWCS([(new_input_frame, new_wcs),
+                      (new_output_frame, None)])
+    new_coords = ad[0].wcs(2, 200, 300)
+    assert_allclose(coords, new_coords[1:])
+
+    with change_working_dir():
+        ad.write("test.fits", overwrite=True)
+        ad2 = astrodata.open("test.fits")
+        assert_allclose(ad2[0].wcs(2, 200, 300), new_coords)

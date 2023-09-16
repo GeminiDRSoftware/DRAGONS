@@ -143,6 +143,8 @@ def gwcs_to_fits(ndd, hdr=None):
         hdr = {}
 
     wcs = ndd.wcs
+    # Don't need to "copy" because any changes to transform use
+    # replace_submodel, which creates a new instance
     transform = wcs.forward_transform
     world_axes = list(wcs.output_frame.axes_names)
     nworld_axes = len(world_axes)
@@ -155,6 +157,8 @@ def gwcs_to_fits(ndd, hdr=None):
                      for i in range(nworld_axes)})
     pix_center = [0.5 * (length - 1) for length in ndd.shape[::-1]]
     wcs_center = transform(*pix_center)
+    if nworld_axes == 1:
+        wcs_center = (wcs_center,)
 
     # Find and process the sky projection first
     if {'lon', 'lat'}.issubset(world_axes):
@@ -197,13 +201,27 @@ def gwcs_to_fits(ndd, hdr=None):
             transform = transform.replace_submodel('pix2sky', models.Identity(2))
             transform = transform.replace_submodel('nat2cel', models.Identity(2))
 
+    # Replace a log-linear axis with a linear axis representing the log
+    # to ensure the affinity check is passed
+    if isinstance(transform, models.Exponential1D):
+        transform = (models.Scale(1. / transform.tau) |
+                     models.Shift(np.log(transform.amplitude)))
+    else:
+        for i in reversed(range(transform.n_submodels)):
+            if isinstance(transform[i], models.Exponential1D):
+                m_exp = transform[i]
+                m_exp.name = "UNIQUE_NAME"
+                m_new = (models.Scale(1. / m_exp.tau) |
+                         models.Shift(np.log(m_exp.amplitude)))
+                transform = transform.replace_submodel("UNIQUE_NAME", m_new)
+
     # Deal with other axes
     # TODO: AD should refactor to allow the descriptor to be used here
     for i, axis_type in enumerate(wcs.output_frame.axes_type, start=1):
         if f'CRVAL{i}' in wcs_dict:
             continue
         if axis_type == "SPECTRAL":
-            wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1] if nworld_axes > 1 else wcs_center)
+            wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1])
             wcs_dict[f'CTYPE{i}'] = wcs.output_frame.axes_names[i-1]  # AWAV/WAVE
         else:  # Just something
             wcs_dict[f'CRVAL{i}'] = wcs_center[i-1]
@@ -226,6 +244,18 @@ def gwcs_to_fits(ndd, hdr=None):
 
     crval = [wcs_dict[f'CRVAL{i+1}'] for i, _ in enumerate(world_axes)]
     crpix = np.array(wcs.backward_transform(*crval)) + 1
+
+    # Find any world axes that we previous logarithmed and fix the CDij
+    # matrix -- we follow FITS-III (Greisen et al. 2006; A&A 446, 747)
+    modified_wcs_center = transform(*pix_center)
+    if nworld_axes == 1:
+        modified_wcs_center = (modified_wcs_center,)
+    for world_axis, (wcs_val, modified_wcs_val) in enumerate(
+            zip(wcs_center, modified_wcs_center), start=1):
+        if np.isclose(np.exp(modified_wcs_val), wcs_val):
+            for j, _ in enumerate(ndd.shape, start=1):
+                wcs_dict[f'CD{world_axis}_{j}'] *= crval[world_axis-1]
+                wcs_dict[f'CTYPE{world_axis}'] = wcs_dict[f'CTYPE{world_axis}'][:4] + "-LOG"
 
     # Cope with a situation where the sky projection center is not in the slit
     # We may be able to fix this in future, but FITS doesn't handle it well.
@@ -533,8 +563,8 @@ def make_fitswcs_transform(header):
 
     # The tricky stuff!
     sky_model = fitswcs_image(wcs_info)
-    linear_models = fitswcs_linear(wcs_info)
-    all_models = linear_models
+    other_models = fitswcs_other(wcs_info)
+    all_models = other_models
     if sky_model:
         all_models.append(sky_model)
 
@@ -622,7 +652,7 @@ def fitswcs_image(header):
     return sky_model
 
 
-def fitswcs_linear(header):
+def fitswcs_other(header):
     """
     Create WCS linear transforms for any axes not associated with
     celestial coordinates. We require that each world axis aligns
@@ -653,31 +683,36 @@ def fitswcs_linear(header):
     #if not sky_axes and len(unknown) == 2:
     #    unknown = []
 
-    linear_models = []
+    other_models = []
     for ax in spec_axes + unknown:
         pixel_axes = _get_contributing_axes(wcs_info, ax)
         if len(pixel_axes) == 1:
+            ctype = wcs_info['CTYPE'][ax].upper()
             pixel_axis = pixel_axes[0]
-            linear_model = (models.Shift(1 - crpix[pixel_axis],
-                                            name='crpix' + str(pixel_axis + 1)) |
-                            models.Scale(cd[ax, pixel_axis]) |
-                            models.Shift(crval[ax]))
-            ctype = wcs_info['CTYPE'][ax][:4].upper()
-            linear_model.name = model_name_mapping.get(ctype, ctype)
-            linear_model.outputs = (wcs_info['CTYPE'][ax],)
-            linear_model.meta.update({'input_axes': pixel_axes,
-                                      'output_axes': [ax]})
+            m1 = models.Shift(1 - crpix[pixel_axis],
+                              name='crpix' + str(pixel_axis + 1))
+            if ctype.endswith("-LOG"):
+                other_model = (m1 | models.Exponential1D(
+                    amplitude=crval[ax], tau=crval[ax] / cd[ax, pixel_axis]))
+                ctype = ctype[:4]
+            else:
+                other_model = (m1 | models.Scale(cd[ax, pixel_axis]) |
+                               models.Shift(crval[ax]))
+            other_model.name = model_name_mapping.get(ctype, ctype)
+            other_model.outputs = (ctype,)
+            other_model.meta.update({'input_axes': pixel_axes,
+                                     'output_axes': [ax]})
         elif len(pixel_axes) > 1:
             raise ValueError(f"Axis {ax} depends on more than one input axis")
         else:
-            linear_model = models.Const1D(crval[ax])
-            linear_model.inverse = models.Identity(1)
-            linear_model.meta.update({'input_axes': [-1],
-                                      'output_axes': [ax]})
+            other_model = models.Const1D(crval[ax])
+            other_model.inverse = models.Identity(1)
+            other_model.meta.update({'input_axes': [-1],
+                                     'output_axes': [ax]})
 
-        linear_models.append(linear_model)
+        other_models.append(other_model)
 
-    return linear_models
+    return other_models
 
 
 def remove_axis_from_frame(frame, axis):
