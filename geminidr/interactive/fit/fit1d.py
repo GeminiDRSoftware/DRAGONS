@@ -549,7 +549,7 @@ class FittingParametersUI:
                     "margin-top": "5px",
                 },
                 width_policy="max",
-                stylesheets=dragons_styles,
+                stylesheets=dragons_styles(),
             )
 
         self.description = self.build_description()
@@ -605,7 +605,7 @@ class FittingParametersUI:
         self.sigma_button = bm.CheckboxGroup(
             labels=["Sigma clip"],
             active=[0] if self.fit.sigma_clip else [],
-            stylesheets=dragons_styles,
+            stylesheets=dragons_styles(),
         )
 
         self.sigma_button.on_change("active", self.sigma_button_handler)
@@ -657,7 +657,7 @@ class FittingParametersUI:
                 "margin-top": "10px",
             },
             width_policy="max",
-            stylesheets=dragons_styles,
+            stylesheets=dragons_styles(),
         )
 
         if self.function:
@@ -686,7 +686,7 @@ class FittingParametersUI:
                     "margin-top": "5px",
                 },
                 width_policy="max",
-                stylesheets=dragons_styles,
+                stylesheets=dragons_styles(),
             )
 
             column_list = [
@@ -729,7 +729,7 @@ class FittingParametersUI:
                 "margin-top": "10px",
             },
             width_policy="min",
-            stylesheets=dragons_styles,
+            stylesheets=dragons_styles(),
         )
 
     def reset_ui(self):
@@ -815,7 +815,7 @@ class InfoPanel:
         extra_masks : bool
             If True, will show the extra masks as provided to the visualizer
         """
-        self.component = Div(text="", stylesheets=dragons_styles)
+        self.component = Div(text="", stylesheets=dragons_styles())
         self.enable_regions = enable_regions
         self.enable_user_masking = enable_user_masking
         self.extra_masks = extra_masks
@@ -987,7 +987,7 @@ class Fit1DPanel:
             align="center",
             button_type="warning",
             width_policy="max",
-            stylesheets=dragons_styles,
+            stylesheets=dragons_styles(),
         )
 
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
@@ -1525,7 +1525,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                         label=modal_button_label
                         if modal_button_label
                         else "Reconstruct points",
-                        stylesheets=dragons_styles,
+                        stylesheets=dragons_styles(),
                     )
 
                     self.reinit_button.on_click(self.reconstruct_points)
@@ -1604,7 +1604,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             width_policy="max",
             tabs=[],
             name="tabs",
-            stylesheets=dragons_styles,
+            stylesheets=dragons_styles(),
         )
 
         self.tabs.sizing_mode = "scale_width"
@@ -1696,16 +1696,16 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.submit_button.align = "end"
             layout_ls.append(
                 row(
-                    Spacer(width=250, stylesheets=dragons_styles),
+                    Spacer(width=250, stylesheets=dragons_styles()),
                     column(
                         self.get_filename_div(),
                         row(self.abort_button, self.submit_button),
-                        stylesheets=dragons_styles,
+                        stylesheets=dragons_styles(),
                     ),
-                    Spacer(width=10, stylesheets=dragons_styles),
+                    Spacer(width=10, stylesheets=dragons_styles()),
                     align="end",
                     css_classes=["top-row"],
-                    stylesheets=dragons_styles,
+                    stylesheets=dragons_styles(),
                 )
             )
 
@@ -1714,7 +1714,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 row(
                     self.abort_button,
                     self.submit_button,
-                    stylesheets=dragons_styles
+                    stylesheets=dragons_styles()
                 ),
                 align="end",
                 css_classes=["top-row"],
@@ -1725,7 +1725,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         elif len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
             layout_ls.append(row(self.reinit_panel))
-            layout_ls.append(Spacer(height=10, stylesheets=dragons_styles))
+            layout_ls.append(Spacer(height=10, stylesheets=dragons_styles()))
             layout_ls.append(col)
 
         else:
@@ -1733,7 +1733,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 row(
                     self.reinit_panel,
                     col,
-                    stylesheets=dragons_styles
+                    stylesheets=dragons_styles()
                 )
             )
 
@@ -2024,7 +2024,7 @@ def fit1d_figure(
         tabs = bm.Tabs(
             tabs=[],
             sizing_mode="stretch_width",
-            stylesheets=dragons_styles
+            stylesheets=dragons_styles()
         )
 
         tabs.tabs.append(bm.TabPanel(child=p_resid, title="Residuals"))
