@@ -22,8 +22,10 @@ from bokeh.models import (
     ColumnDataSource,
     Whisker,
 )
+from click import style
 
 from geminidr.interactive import server
+from geminidr.interactive.styles import dragons_styles
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import (
@@ -147,7 +149,11 @@ class PrimitiveVisualizer(ABC):
         legend_html = (
             'Plot Tools<br/><img src="dragons/static/bokehlegend.png" />'
         )
-        self.bokeh_legend = Div(text=legend_html)
+
+        self.bokeh_legend = Div(
+            text=legend_html,
+            stylesheets=dragons_styles
+        )
 
         self.submit_button = Button(
             align="center",
@@ -156,6 +162,7 @@ class PrimitiveVisualizer(ABC):
             # id="_submit_btn",
             label="Accept",
             name="submit_btn",
+            stylesheets=dragons_styles,
         )
 
         self.abort_button = Button(
@@ -278,6 +285,7 @@ class PrimitiveVisualizer(ABC):
             # id='reset-reinit-pars',
             label="Reset",
             width=202,
+            stylesheets=dragons_styles,
         )
 
         def reset_dialog_handler(result):
@@ -515,7 +523,12 @@ class PrimitiveVisualizer(ABC):
         # This is a workaround, since CustomJS calls can only
         # respond to DOM events.  We'll be able to trigger
         # a Custom JS callback by modifying this widget
-        self._message_holder = PreText(text="", css_classes=["hidden"])
+        self._message_holder = PreText(
+            text="",
+            css_classes=["hidden"],
+            stylesheets=dragons_styles
+        )
+
         callback = CustomJS(args={}, code="alert(cb_obj.text);")
         self._message_holder.js_on_change("text", callback)
 
@@ -581,7 +594,12 @@ class PrimitiveVisualizer(ABC):
         # This is a workaround, since CustomJS calls can only
         # respond to DOM events.  We'll be able to trigger
         # a Custom JS callback by modifying this widget
-        self._ok_cancel_holder = PreText(text="", css_classes=["hidden"])
+        self._ok_cancel_holder = PreText(
+            text="",
+            css_classes=["hidden"],
+            stylesheets=dragons_styles
+        )
+
         self._ok_cancel_holder.js_on_change("text", ok_cancel_callback)
 
         # Add the invisible PreText element to drive message dialogs off
@@ -811,6 +829,7 @@ class PrimitiveVisualizer(ABC):
                         labels=[" "],
                         active=[0] if params.values[key] else [],
                         width_policy="min",
+                        stylesheets=dragons_styles,
                     )
 
                     def _cb_handler(attr, old, new):
@@ -823,9 +842,14 @@ class PrimitiveVisualizer(ABC):
                     widgets.append(
                         row(
                             [
-                                Div(text=params.titles[key], align="start"),
+                                Div(
+                                    text=params.titles[key],
+                                    align="start",
+                                    stylesheets=dragons_styles
+                                ),
                                 widget,
-                            ]
+                            ],
+                            stylesheets=dragons_styles,
                         )
                     )
 
@@ -1068,7 +1092,7 @@ def build_text_slider(
         if add_spacer:
             component = row(
                 slider,
-                Spacer(width_policy="max"),
+                Spacer(width_policy="max", stylesheets=dragons_styles),
                 text_input,
                 css_classes=[
                     "text_slider_%s" % attr,
@@ -1872,7 +1896,12 @@ class RegionEditor(GIRegionListener):
         )
 
         self.error_message.visible = False
-        self.widget = column(self.text_input, self.error_message)
+        self.widget = column(
+            self.text_input,
+            self.error_message,
+            stylesheets=dragons_styles
+        )
+
         self.handling = False
 
     def adjust_region(self, region_id, start, stop):
