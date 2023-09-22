@@ -1963,16 +1963,16 @@ def fit1d_figure(
         width=width,
         height=height,
         min_width=200,
-        max_width=800,
         title="Fit",
         x_axis_label=xlabel,
         y_axis_label=ylabel,
         tools=tools,
         output_backend="webgl",
         min_border_left=80,
+        stylesheets=dragons_styles(),
+        sizing_mode="stretch_width",
     )
 
-    p_main.sizing_mode = "stretch_width"
     p_main.scatter(
         x=xpoint,
         y=ypoint,
@@ -1981,6 +1981,7 @@ def fit1d_figure(
         legend_field="mask",
         **model.mask_rendering_kwargs(),
     )
+
     p_main.line(
         x=xline,
         y=yline,
@@ -2003,12 +2004,14 @@ def fit1d_figure(
             output_backend="webgl",
             x_range=p_main.x_range,  # y_range=None,
             min_border_left=80,
+            sizing_mode="stretch_width",
+            stylesheets=dragons_styles(),
         )
 
-        p_resid.sizing_mode = "stretch_width"
         connect_region_model(p_resid, model.band_model)
         # Initalizing this will cause the residuals to be calculated
         model.data.data["residuals"] = np.zeros_like(model.x)
+
         p_resid.scatter(
             x=xpoint,
             y="residuals",
@@ -2030,9 +2033,12 @@ def fit1d_figure(
             output_backend="webgl",
             x_range=p_main.x_range,  # y_range=None,
             min_border_left=80,
+            sizing_mode="stretch_width",
+            stylesheets=dragons_styles(),
         )
-        p_ratios.sizing_mode = "stretch_width"
+
         connect_region_model(p_ratios, model.band_model)
+
         # Initalizing this will cause the ratios to be calculated
         model.data.data["ratio"] = np.ones_like(model.x)
         p_ratios.scatter(
