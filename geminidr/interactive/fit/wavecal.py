@@ -1,4 +1,5 @@
 import uuid
+from click import style
 
 import numpy as np
 from bokeh.models import CustomJS
@@ -10,6 +11,7 @@ from bokeh.layouts import row, column
 from bokeh.plotting import figure
 
 from geminidr.interactive.controls import Controller, Handler
+from geminidr.interactive.styles import dragons_styles
 from .help import DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
 from gempy.library.matching import match_sources
 from gempy.library.tracing import cwt_ricker, pinpoint_peaks
@@ -36,21 +38,45 @@ def disable_when_identifying(fn):
         if self.currently_identifying:
             beep()
             return
+
         fn(self, *args, **kwargs)
+
     return gn
 
 
 class WavelengthSolutionPanel(Fit1DPanel):
-    def __init__(self, visualizer, fitting_parameters, domain=None,
-                 x=None, y=None, weights=None, meta=None, **kwargs):
-        # No need to compute wavelengths here as the model_change_handler() does it
-        self.spectrum = bm.ColumnDataSource({'wavelengths': np.zeros_like(meta["spectrum"]),
-                                             'spectrum': meta["spectrum"]})
+    def __init__(
+            self,
+            visualizer,
+            fitting_parameters,
+            domain=None,
+            x=None,
+            y=None,
+            weights=None,
+            meta=None,
+            **kwargs
+    ):
+        # No need to compute wavelengths here as the model_change_handler()
+        # does it
+        spectrum_data_dict = {
+            'wavelengths': np.zeros_like(meta["spectrum"]),
+            'spectrum': meta["spectrum"]
+        }
+
+        self.spectrum = bm.ColumnDataSource(spectrum_data_dict)
+
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
 
-        super().__init__(visualizer, fitting_parameters, domain, x, y,
-                         weights=weights, **kwargs)
+        super().__init__(
+            visualizer,
+            fitting_parameters,
+            domain,
+            x,
+            y,
+            weights=weights,
+            **kwargs
+        )
 
         # This has to go on the model (and not this TabPanel instance) since
         # the models are returned by the Visualizer, not the TabPanel
@@ -59,20 +85,32 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.model.allow_poor_fits = False
 
         self.new_line_marker = bm.ColumnDataSource(
-            {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]})
-        self.p_spectrum.line("x", "y", source=self.new_line_marker,
-                             color="red", name="new_line_marker",
-                             line_width=3, visible=False)
+            {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]}
+        )
+
+        self.p_spectrum.line(
+            "x",
+            "y",
+            source=self.new_line_marker,
+            color="red",
+            name="new_line_marker",
+            line_width=3,
+            visible=False
+        )
+
         self.set_currently_identifying(False)
 
     def set_currently_identifying(self, peak):
         status = bool(peak)
-        self.p_spectrum.select_one({"name": "new_line_marker"}).visible = status
+
+        spectrum = self.p_spectrum.select_one({"name": "spectrum"})
+        spectrum.visible = status
 
         def recursively_set_status(parent, disabled):
             for c in parent.children:
                 if hasattr(c, "children"):
                     recursively_set_status(c, disabled)
+
                 else:
                     c.disabled = disabled
 
@@ -80,74 +118,164 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.identify_button.disabled = status
         self.currently_identifying = peak
 
-    def build_figures(self, domain=None, controller_div=None,
-                      plot_residuals=True, plot_ratios=True,
-                      extra_masks=True):
+    def build_figures(
+        self,
+        domain=None,
+        controller_div=None,
+        plot_residuals=True,  # TODO: This is not used, is it needed?
+        plot_ratios=True,     # TODO: This is not used
+        extra_masks=True      # TODO: This is not used
+    ):
 
         self.xpoint = 'fitted'
         self.ypoint = 'nonlinear'
-        p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
-                                      xpoint=self.xpoint, ypoint=self.ypoint,
-                                      xline='model', yline='nonlinear',
-                                      xlabel=self.xlabel, ylabel=self.ylabel,
-                                      model=self.model, plot_ratios=False,
-                                      enable_user_masking=True)
-        mask_handlers = (self.mask_button_handler, self.unmask_button_handler)
-        Controller(p_main, None, self.model.band_model if self.enable_regions else None, controller_div,
-                   mask_handlers=mask_handlers, domain=domain)
 
-        p_spectrum = figure(width=self.width, height=self.height,
-                            min_width=400, title='Spectrum',
-                            x_axis_label=self.xlabel, y_axis_label="Signal",
-                            tools = "pan,wheel_zoom,box_zoom,reset",
-                            output_backend="webgl",
-                            x_range=p_main.x_range, #y_range=None,
-                            min_border_left=80)
+        p_main, p_supp = fit1d_figure(
+            width=self.width,
+            height=self.height,
+            xpoint=self.xpoint,
+            ypoint=self.ypoint,
+            xline='model',
+            yline='nonlinear',
+            xlabel=self.xlabel,
+            ylabel=self.ylabel,
+            model=self.model,
+            plot_ratios=False,
+            enable_user_masking=True
+        )
+
+        mask_handlers = (self.mask_button_handler, self.unmask_button_handler)
+
+        Controller(
+            p_main,
+            None,
+            self.model.band_model if self.enable_regions else None,
+            controller_div,
+            mask_handlers=mask_handlers,
+            domain=domain
+        )
+
+        p_spectrum = figure(
+            width=self.width,
+            height=self.height,
+            min_width=400,
+            title='Spectrum',
+            x_axis_label=self.xlabel,
+            y_axis_label="Signal",
+            tools="pan,wheel_zoom,box_zoom,reset",
+            output_backend="webgl",
+            x_range=p_main.x_range,
+            min_border_left=80
+        )
+
+        # TODO: Update *_policy handling below
         p_spectrum.height_policy = 'fixed'
         p_spectrum.width_policy = 'fit'
         p_spectrum.sizing_mode = 'stretch_width'
-        p_spectrum.step(x='wavelengths', y='spectrum', source=self.spectrum,
-                        line_width=1, color="blue", mode="center")
-        p_spectrum.text(x='fitted', y='heights', text='lines',
-                        source=self.model.data, angle=0.5 * np.pi,
-                        text_color=self.model.mask_rendering_kwargs()['color'],
-                        text_baseline='middle', text_align='right',
-                        text_font_size='10pt')
-        delete_line_handler = Handler('d', "Delete arc line",
-                                      self.delete_line)
-        identify_line_handler = Handler('i', "Identify arc line",
-                                        self.identify_line)
-        c = Controller(p_spectrum, None, self.model.band_model if self.enable_regions else None, controller_div,
-                   mask_handlers=None, domain=domain,
-                   handlers=[delete_line_handler, identify_line_handler])
-        c.helpmaskingtext += ("After selecting a line to identify, select its "
-                              "wavelength (in nm) from the drop-down menu or "
-                              "enter a value in the text box, then click 'OK'.")
+
+        p_spectrum.step(
+            x='wavelengths',
+            y='spectrum',
+            source=self.spectrum,
+            line_width=1,
+            color="blue",
+            mode="center"
+        )
+
+        p_spectrum.text(
+            x='fitted',
+            y='heights',
+            text='lines',
+            source=self.model.data,
+            angle=0.5 * np.pi,
+            text_color=self.model.mask_rendering_kwargs()['color'],
+            text_baseline='middle',
+            text_align='right',
+            text_font_size='10pt')
+
+        delete_line_handler = Handler(
+            'd',
+            "Delete arc line",
+            self.delete_line
+        )
+
+        identify_line_handler = Handler(
+            'i',
+            "Identify arc line",
+            self.identify_line
+        )
+
+        c = Controller(
+            p_spectrum,
+            None,
+            self.model.band_model if self.enable_regions else None,
+            controller_div,
+            mask_handlers=None,
+            domain=domain,
+            handlers=[delete_line_handler, identify_line_handler]
+        )
+
+        c.helpmaskingtext += (
+            "After selecting a line to identify, select its "
+            "wavelength (in nm) from the drop-down menu or "
+            "enter a value in the text box, then click 'OK'."
+        )
+
         c.set_help_text()
-        p_spectrum.y_range.on_change("start", lambda attr, old, new:
-                                     self.update_label_heights())
-        p_spectrum.y_range.on_change("end", lambda attr, old, new:
-                                     self.update_label_heights())
+
+        p_spectrum.y_range.on_change(
+            "start",
+            lambda attr, old, new: self.update_label_heights()
+        )
+
+        p_spectrum.y_range.on_change(
+            "end",
+            lambda attr, old, new: self.update_label_heights()
+        )
+
         self.p_spectrum = p_spectrum
 
-        self.identify_button = bm.Button(label="Identify lines", width=200,
-                                         button_type="primary", width_policy="fit",
-                                         height_policy="max")
+        self.identify_button = bm.Button(
+            label="Identify lines",
+            width=200,
+            button_type="primary",
+            width_policy="fit",
+            height_policy="max",
+            stylesheets=dragons_styles(),
+        )
+
         self.identify_button.on_click(self.identify_lines)
 
-        self.new_line_prompt = bm.Div(text="", styles={"font-size": "16px",},
-                                      width_policy="max")
-        self.new_line_dropdown = bm.Select(options=[], width=100,
-                                           width_policy="fixed")
+        self.new_line_prompt = bm.Div(
+            text="",
+            styles={"font-size": "16px"},
+            width_policy="max",
+            stylesheets=dragons_styles(),
+        )
 
-        # Make a unique ID for our callback to find the HTML input widget
-        # Note that even with the cb_obj reference, it's easier to find the real input widget this way
+        self.new_line_dropdown = bm.Select(
+            options=[],
+            width=100,
+            width_policy="fixed",
+            stylesheets=dragons_styles(),
+        )
+
+        # Make a unique ID for our callback to find the HTML input widget Note
+        # that even with the cb_obj reference, it's easier to find the real
+        # input widget this way
         focus_id = str(uuid.uuid4())
-        self.new_line_textbox = bm.NumericInput(width=100, mode='float',
-                                                width_policy="fixed", name=focus_id)
 
-        # JS side listener to perform the focus.  We have to do it async via setTimeout
-        # because bokeh triggers the disabled change before the html widget is ready for focus
+        self.new_line_textbox = bm.NumericInput(
+            width=100,
+            mode='float',
+            width_policy="fixed",
+            name=focus_id,
+            stylesheets=dragons_styles(),
+            )
+
+        # JS side listener to perform the focus.  We have to do it async via
+        # setTimeout because bokeh triggers the disabled change before the html
+        # widget is ready for focus
         cb = CustomJS(code="""
                         if (cb_obj.disabled == false) {
                           setTimeout(function() {
@@ -155,29 +283,70 @@ class WavelengthSolutionPanel(Fit1DPanel):
                           });
                         }
                       """ % focus_id)
+
         self.new_line_textbox.js_on_change('disabled', cb)
 
-        self.new_line_dropdown.on_change("value", self.set_new_line_textbox_value)
-        self.new_line_textbox.on_change("value", self.handle_line_wavelength)
-        new_line_ok_button = bm.Button(label="OK", width=120, width_policy="fit",
-                                       button_type="success")
-        new_line_ok_button.on_click(self.add_new_line)
-        new_line_cancel_button = bm.Button(label="Cancel", width=120, width_policy="fit",
-                                           button_type="danger")
-        new_line_cancel_button.on_click(self.cancel_new_line)
-        #self.new_line_div = row(bm.Spacer(sizing_mode="stretch_width"),
-        #                        self.new_line_prompt, self.new_line_dropdown,
-        #                        self.new_line_textbox,
-        #                        new_line_ok_button, new_line_cancel_button,
-        #                        sizing_mode="stretch_both")
-        self.new_line_div = row(column(row(self.new_line_prompt, self.new_line_dropdown,
-                                self.new_line_textbox),
-                                row(bm.Spacer(sizing_mode="stretch_width"), new_line_ok_button, new_line_cancel_button),
-                                width_policy="max"))
+        self.new_line_dropdown.on_change(
+            "value",
+            self.set_new_line_textbox_value
+        )
 
-        identify_panel = row(self.identify_button, self.new_line_div)
+        self.new_line_textbox.on_change("value", self.handle_line_wavelength)
+
+        new_line_ok_button = bm.Button(
+            label="OK",
+            width=120,
+            width_policy="fit",
+            button_type="success",
+            stylesheets=dragons_styles()
+        )
+
+        new_line_ok_button.on_click(self.add_new_line)
+
+        new_line_cancel_button = bm.Button(
+            label="Cancel",
+            width=120,
+            width_policy="fit",
+            button_type="danger",
+            stylesheets=dragons_styles()
+        )
+
+        new_line_cancel_button.on_click(self.cancel_new_line)
+
+        # TODO: This needs to be refactored into variables. There are too many
+        #       objects declared in this single statement (6?), and it's too
+        #       long.
+        self.new_line_div = row(
+            column(
+                row(
+                    self.new_line_prompt,
+                    self.new_line_dropdown,
+                    self.new_line_textbox,
+                    stylesheets=dragons_styles(),
+                ),
+                row(
+                    bm.Spacer(
+                        sizing_mode="stretch_width",
+                        stylesheets=dragons_styles()
+                    ),
+                    new_line_ok_button,
+                    new_line_cancel_button,
+                    stylesheets=dragons_styles(),
+                ),
+                width_policy="max",
+                stylesheets=dragons_styles(),
+            ),
+            stylesheets=dragons_styles(),
+        )
+
+        identify_panel = row(
+            self.identify_button, 
+            self.new_line_div,
+            stylesheets=dragons_styles()
+        )
 
         info_panel = InfoPanel(self.enable_regions, self.enable_user_masking)
+
         self.model.add_listener(info_panel.model_change_handler)
 
         return [p_spectrum, identify_panel, info_panel.component,
@@ -454,14 +623,26 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     A Visualizer specific to determineWavelengthSolution
     """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
-                         help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT)
-        #self.widgets["in_vacuo"] = bm.RadioButtonGroup(
-        #    labels=["Air", "Vacuum"], active=0)
-        #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
+        super().__init__(
+            *args,
+            **kwargs,
+            panel_class=WavelengthSolutionPanel,
+            help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
+        )
+
+        calibration_type = "vacuo" if self.ui_params.in_vacuo else "air"
+
+        text = (
+            f"<b>Calibrating to wavelengths in {calibration_type}"
+            f"</b>"
+        )
+
         self.reinit_panel.children[-3] = bm.Div(
-            text="<b>Calibrating to wavelengths in {}</b>".format(
-                "vacuo" if self.ui_params.in_vacuo else "air"), align="center")
+            text=text,
+            align="center",
+            stylesheets=dragons_styles()
+        )
+
         self.widgets["in_vacuo"].disabled = True
 
     @property

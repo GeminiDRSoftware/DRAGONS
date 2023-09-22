@@ -22,8 +22,10 @@ from bokeh.models import (
     ColumnDataSource,
     Whisker,
 )
+from click import style
 
 from geminidr.interactive import server
+from geminidr.interactive.styles import dragons_styles
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import (
@@ -147,7 +149,11 @@ class PrimitiveVisualizer(ABC):
         legend_html = (
             'Plot Tools<br/><img src="dragons/static/bokehlegend.png" />'
         )
-        self.bokeh_legend = Div(text=legend_html)
+
+        self.bokeh_legend = Div(
+            text=legend_html,
+            stylesheets=dragons_styles()
+        )
 
         self.submit_button = Button(
             align="center",
@@ -156,6 +162,7 @@ class PrimitiveVisualizer(ABC):
             # id="_submit_btn",
             label="Accept",
             name="submit_btn",
+            stylesheets=dragons_styles(),
         )
 
         self.abort_button = Button(
@@ -165,6 +172,7 @@ class PrimitiveVisualizer(ABC):
             # id="_warning_btn",
             label="Abort",
             name="abort_btn",
+            stylesheets=dragons_styles(),
         )
 
         # The submit_button_handler is only needed to flip the user_accepted
@@ -278,6 +286,7 @@ class PrimitiveVisualizer(ABC):
             # id='reset-reinit-pars',
             label="Reset",
             width=202,
+            stylesheets=dragons_styles(),
         )
 
         def reset_dialog_handler(result):
@@ -458,6 +467,7 @@ class PrimitiveVisualizer(ABC):
                 "float": "right",
             },
             align="end",
+            stylesheets=dragons_styles(),
         )
         return div
 
@@ -515,7 +525,12 @@ class PrimitiveVisualizer(ABC):
         # This is a workaround, since CustomJS calls can only
         # respond to DOM events.  We'll be able to trigger
         # a Custom JS callback by modifying this widget
-        self._message_holder = PreText(text="", css_classes=["hidden"])
+        self._message_holder = PreText(
+            text="",
+            css_classes=["hidden"],
+            stylesheets=dragons_styles()
+        )
+
         callback = CustomJS(args={}, code="alert(cb_obj.text);")
         self._message_holder.js_on_change("text", callback)
 
@@ -527,6 +542,7 @@ class PrimitiveVisualizer(ABC):
             lambda: doc.add_root(
                 row(
                     self._message_holder,
+                    stylesheets=dragons_styles()
                 )
             )
         )
@@ -581,7 +597,12 @@ class PrimitiveVisualizer(ABC):
         # This is a workaround, since CustomJS calls can only
         # respond to DOM events.  We'll be able to trigger
         # a Custom JS callback by modifying this widget
-        self._ok_cancel_holder = PreText(text="", css_classes=["hidden"])
+        self._ok_cancel_holder = PreText(
+            text="",
+            css_classes=["hidden"],
+            stylesheets=dragons_styles()
+        )
+
         self._ok_cancel_holder.js_on_change("text", ok_cancel_callback)
 
         # Add the invisible PreText element to drive message dialogs off
@@ -592,6 +613,7 @@ class PrimitiveVisualizer(ABC):
             lambda: doc.add_root(
                 row(
                     self._ok_cancel_holder,
+                    stylesheets=dragons_styles()
                 )
             )
         )
@@ -793,6 +815,7 @@ class PrimitiveVisualizer(ABC):
                         width=96,
                         value=params.values[key],
                         options=list(field.allowed.keys()),
+                        stylesheets=dragons_styles(),
                     )
 
                     def _select_handler(attr, old, new):
@@ -803,7 +826,17 @@ class PrimitiveVisualizer(ABC):
                     widget.on_change("value", _select_handler)
                     self.widgets[key] = widget
                     widgets.append(
-                        row([Div(text=title, align="center"), widget])
+                        row(
+                            [
+                                Div(
+                                    text=title,
+                                    align="center",
+                                    stylesheets=dragons_styles()
+                                ),
+                                widget
+                            ],
+                            stylesheets=dragons_styles(),
+                        )
                     )
 
                 elif field.dtype is bool:
@@ -811,6 +844,7 @@ class PrimitiveVisualizer(ABC):
                         labels=[" "],
                         active=[0] if params.values[key] else [],
                         width_policy="min",
+                        stylesheets=dragons_styles(),
                     )
 
                     def _cb_handler(attr, old, new):
@@ -823,9 +857,14 @@ class PrimitiveVisualizer(ABC):
                     widgets.append(
                         row(
                             [
-                                Div(text=params.titles[key], align="start"),
+                                Div(
+                                    text=params.titles[key],
+                                    align="start",
+                                    stylesheets=dragons_styles()
+                                ),
                                 widget,
-                            ]
+                            ],
+                            stylesheets=dragons_styles(),
                         )
                     )
 
@@ -833,8 +872,10 @@ class PrimitiveVisualizer(ABC):
                     # Anything else
                     if key in params.titles:
                         title = params.titles[key]
+
                     else:
                         title = _title_from_field(field)
+
                     widget = TextInput(
                         title=title,
                         min_width=100,
@@ -843,7 +884,9 @@ class PrimitiveVisualizer(ABC):
                         placeholder=params.placeholders[key]
                         if key in params.placeholders
                         else None,
+                        stylesheets=dragons_styles(),
                     )
+
                     self.widgets[key] = widget
                     widgets.append(widget)
 
@@ -1001,17 +1044,25 @@ def build_text_slider(
     fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format="0,0")
+
         slider = Slider(
             start=start,
             end=end,
             step=step,
             title=title,
             format=fmt,
+            stylesheets=dragons_styles(),
             **slider_kwargs,
         )
+
     else:
         slider = Slider(
-            start=start, end=end, step=step, title=title, **slider_kwargs
+            start=start,
+            end=end,
+            step=step,
+            title=title,
+            stylesheets=dragons_styles(),
+            **slider_kwargs
         )
 
     slider.width = slider_width
@@ -1022,7 +1073,10 @@ def build_text_slider(
     # below to enforce the range limits, if any.
     if not hide_textbox:
         text_input = NumericInput(
-            width=64, value=value, mode="float" if is_float else "int"
+            width=64,
+            value=value,
+            mode="float" if is_float else "int",
+            stylesheets=dragons_styles(),
         )
 
         # Custom range enforcement with alert messages
@@ -1068,7 +1122,7 @@ def build_text_slider(
         if add_spacer:
             component = row(
                 slider,
-                Spacer(width_policy="max"),
+                Spacer(width_policy="max", stylesheets=dragons_styles()),
                 text_input,
                 css_classes=[
                     "text_slider_%s" % attr,
@@ -1082,6 +1136,7 @@ def build_text_slider(
                 css_classes=[
                     "text_slider_%s" % attr,
                 ],
+                stylesheets=dragons_styles(),
             )
 
     else:
@@ -1091,6 +1146,7 @@ def build_text_slider(
             css_classes=[
                 "text_slider_%s" % attr,
             ],
+            stylesheets=dragons_styles(),
         )
 
     def _input_check(val):
@@ -1739,6 +1795,7 @@ class GIRegionView(GIRegionListener):
                     fill_alpha=0.1,
                     fill_color=fill_color,
                 )
+
                 self.fig.add_layout(region)
                 whisker_id = len(self.whisker_data.data["base"])
                 self.whisker_data.stream(
@@ -1856,6 +1913,7 @@ class RegionEditor(GIRegionListener):
             max_width=600,
             sizing_mode="stretch_width",
             width_policy="max",
+            stylesheets=dragons_styles(),
         )
 
         self.text_input.value = region_model.build_regions()
@@ -1868,11 +1926,17 @@ class RegionEditor(GIRegionListener):
             "  Please use comma separated : delimited "
             "  values (i.e. 101:500,511:900,951:). "
             " Negative values are not allowed."
-            "</span></b>"
+            "</span></b>",
+            stylesheets=dragons_styles(),
         )
 
         self.error_message.visible = False
-        self.widget = column(self.text_input, self.error_message)
+        self.widget = column(
+            self.text_input,
+            self.error_message,
+            stylesheets=dragons_styles()
+        )
+
         self.handling = False
 
     def adjust_region(self, region_id, start, stop):
@@ -1994,7 +2058,7 @@ class TabsTurboInjector:
         for i, tab in enumerate(tabs.tabs):
             self.tabs.append(tab)
             self.tab_children.append(tab.child)
-            self.tab_dummy_children.append(row())
+            self.tab_dummy_children.append(row(stylesheets=dragons_styles()))
 
             if i != tabs.active:
                 tab.child = self.tab_dummy_children[i]
@@ -2016,7 +2080,8 @@ class TabsTurboInjector:
             Title for the new tab
         """
         tab_dummy = row(
-            Div(),
+            Div(stylesheets=dragons_styles()),
+            stylesheets=dragons_styles()
         )
         tab_child = child
 
@@ -2028,6 +2093,7 @@ class TabsTurboInjector:
                 bm.TabPanel(
                     child=row(
                         tab_dummy,
+                        stylesheets=dragons_styles()
                     ),
                     title=title,
                 )
@@ -2038,6 +2104,7 @@ class TabsTurboInjector:
                 bm.TabPanel(
                     child=row(
                         tab_child,
+                        stylesheets=dragons_styles()
                     ),
                     title=title,
                 )

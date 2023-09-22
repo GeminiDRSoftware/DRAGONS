@@ -9,6 +9,7 @@ from bokeh.plotting import figure
 from bokeh import events
 
 from geminidr.interactive import interactive
+from geminidr.interactive.styles import dragons_styles
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.interactive import (
     GIRegionModel,
@@ -523,6 +524,7 @@ class FittingParametersUI:
                 value=fn,
                 options=fn_allowed,
                 width=200,
+                stylesheets=dragons_styles(),
             )
 
             def fn_select_change(attr, old, new):
@@ -548,6 +550,7 @@ class FittingParametersUI:
                     "margin-top": "5px",
                 },
                 width_policy="max",
+                stylesheets=dragons_styles(),
             )
 
         self.description = self.build_description()
@@ -601,8 +604,11 @@ class FittingParametersUI:
             self.grow_slider = builder(vis.ui_params, "grow", "Grow")
 
         self.sigma_button = bm.CheckboxGroup(
-            labels=["Sigma clip"], active=[0] if self.fit.sigma_clip else []
+            labels=["Sigma clip"],
+            active=[0] if self.fit.sigma_clip else [],
+            stylesheets=dragons_styles(),
         )
+
         self.sigma_button.on_change("active", self.sigma_button_handler)
 
         self.enable_disable_sigma_inputs()
@@ -652,6 +658,7 @@ class FittingParametersUI:
                 "margin-top": "10px",
             },
             width_policy="max",
+            stylesheets=dragons_styles(),
         )
 
         if self.function:
@@ -680,7 +687,9 @@ class FittingParametersUI:
                     "margin-top": "5px",
                 },
                 width_policy="max",
+                stylesheets=dragons_styles(),
             )
+
             column_list = [
                 column_title,
                 self.order_slider,
@@ -721,6 +730,7 @@ class FittingParametersUI:
                 "margin-top": "10px",
             },
             width_policy="min",
+            stylesheets=dragons_styles(),
         )
 
     def reset_ui(self):
@@ -806,7 +816,7 @@ class InfoPanel:
         extra_masks : bool
             If True, will show the extra masks as provided to the visualizer
         """
-        self.component = Div(text="")
+        self.component = Div(text="", stylesheets=dragons_styles())
         self.enable_regions = enable_regions
         self.enable_user_masking = enable_user_masking
         self.extra_masks = extra_masks
@@ -978,6 +988,7 @@ class Fit1DPanel:
             align="center",
             button_type="warning",
             width_policy="max",
+            stylesheets=dragons_styles(),
         )
 
         self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
@@ -991,9 +1002,15 @@ class Fit1DPanel:
             margin=(20, 0, 0, 0),
             width=220,
             styles={"color": "gray", "padding": "5px"},
+            stylesheets=dragons_styles(),
         )
+
         controls = column(
-            *controls_column, reset_button, controller_div, width=220
+            *controls_column,
+            reset_button,
+            controller_div,
+            width=220,
+            stylesheets=dragons_styles(),
         )
 
         fig_column = self.build_figures(
@@ -1026,12 +1043,15 @@ class Fit1DPanel:
             region_editor = RegionEditor(band_model)
             fig_column.append(region_editor.get_widget())
 
-        col = column(*fig_column)
+        col = column(*fig_column, stylesheets=dragons_styles())
         col.sizing_mode = "scale_width"
 
         col_order = [col, controls] if central_plot else [controls, col]
         self.component = row(
-            *col_order, css_classes=["tab-content"], spacing=10
+            *col_order,
+            css_classes=["tab-content"],
+            spacing=10,
+            stylesheets=dragons_styles(),
         )
 
     def build_figures(
@@ -1514,6 +1534,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                         label=modal_button_label
                         if modal_button_label
                         else "Reconstruct points",
+                        stylesheets=dragons_styles(),
                     )
 
                     self.reinit_button.on_click(self.reconstruct_points)
@@ -1538,12 +1559,21 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     reinit_widgets[0].children[1].on_change(
                         "value", kickoff_modal
                     )
+
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
+
             if recalc_inputs_above:
-                self.reinit_panel = row(*reinit_widgets)
+                self.reinit_panel = row(
+                    *reinit_widgets,
+                    stylesheets=dragons_styles()
+                )
+
             else:
-                self.reinit_panel = column(*reinit_widgets)
+                self.reinit_panel = column(
+                    *reinit_widgets,
+                    stylesheets=dragons_styles()
+                )
         else:
             # left panel with just the function selector (Chebyshev, etc.)
             self.reinit_panel = None  # column()
@@ -1592,6 +1622,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             width_policy="max",
             tabs=[],
             name="tabs",
+            stylesheets=dragons_styles(),
         )
 
         self.tabs.sizing_mode = "scale_width"
@@ -1658,6 +1689,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         col = column(
             self.tabs,
+            stylesheets=dragons_styles(),
         )
 
         col.sizing_mode = "scale_width"
@@ -1683,20 +1715,26 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.submit_button.align = "end"
             layout_ls.append(
                 row(
-                    Spacer(width=250),
+                    Spacer(width=250, stylesheets=dragons_styles()),
                     column(
                         self.get_filename_div(),
                         row(self.abort_button, self.submit_button),
+                        stylesheets=dragons_styles(),
                     ),
-                    Spacer(width=10),
+                    Spacer(width=10, stylesheets=dragons_styles()),
                     align="end",
                     css_classes=["top-row"],
+                    stylesheets=dragons_styles(),
                 )
             )
 
         else:
             layout_ls.append(
-                row(self.abort_button, self.submit_button),
+                row(
+                    self.abort_button,
+                    self.submit_button,
+                    stylesheets=dragons_styles()
+                ),
                 align="end",
                 css_classes=["top-row"],
             )
@@ -1706,13 +1744,24 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         elif len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
             layout_ls.append(row(self.reinit_panel))
-            layout_ls.append(Spacer(height=10))
+            layout_ls.append(Spacer(height=10, stylesheets=dragons_styles()))
             layout_ls.append(col)
 
         else:
-            layout_ls.append(row(self.reinit_panel, col))
+            layout_ls.append(
+                row(
+                    self.reinit_panel,
+                    col,
+                    stylesheets=dragons_styles()
+                )
+            )
 
-        self.layout = column(*layout_ls, sizing_mode="stretch_width")
+        self.layout = column(
+            *layout_ls,
+            sizing_mode="stretch_width",
+            stylesheets=dragons_styles()
+        )
+
         doc.add_root(self.layout)
 
     def reconstruct_points_additional_work(self, data):
@@ -1914,16 +1963,16 @@ def fit1d_figure(
         width=width,
         height=height,
         min_width=200,
-        max_width=800,
         title="Fit",
         x_axis_label=xlabel,
         y_axis_label=ylabel,
         tools=tools,
         output_backend="webgl",
         min_border_left=80,
+        stylesheets=dragons_styles(),
+        sizing_mode="stretch_width",
     )
 
-    p_main.sizing_mode = "stretch_width"
     p_main.scatter(
         x=xpoint,
         y=ypoint,
@@ -1932,6 +1981,7 @@ def fit1d_figure(
         legend_field="mask",
         **model.mask_rendering_kwargs(),
     )
+
     p_main.line(
         x=xline,
         y=yline,
@@ -1954,12 +2004,14 @@ def fit1d_figure(
             output_backend="webgl",
             x_range=p_main.x_range,  # y_range=None,
             min_border_left=80,
+            sizing_mode="stretch_width",
+            stylesheets=dragons_styles(),
         )
 
-        p_resid.sizing_mode = "stretch_width"
         connect_region_model(p_resid, model.band_model)
         # Initalizing this will cause the residuals to be calculated
         model.data.data["residuals"] = np.zeros_like(model.x)
+
         p_resid.scatter(
             x=xpoint,
             y="residuals",
@@ -1981,9 +2033,12 @@ def fit1d_figure(
             output_backend="webgl",
             x_range=p_main.x_range,  # y_range=None,
             min_border_left=80,
+            sizing_mode="stretch_width",
+            stylesheets=dragons_styles(),
         )
-        p_ratios.sizing_mode = "stretch_width"
+
         connect_region_model(p_ratios, model.band_model)
+
         # Initalizing this will cause the ratios to be calculated
         model.data.data["ratio"] = np.ones_like(model.x)
         p_ratios.scatter(
@@ -1996,7 +2051,12 @@ def fit1d_figure(
         )
 
     if plot_residuals and plot_ratios:
-        tabs = bm.Tabs(tabs=[], sizing_mode="scale_width")
+        tabs = bm.Tabs(
+            tabs=[],
+            sizing_mode="stretch_width",
+            stylesheets=dragons_styles()
+        )
+
         tabs.tabs.append(bm.TabPanel(child=p_resid, title="Residuals"))
         tabs.tabs.append(bm.TabPanel(child=p_ratios, title="Ratios"))
         return p_main, tabs

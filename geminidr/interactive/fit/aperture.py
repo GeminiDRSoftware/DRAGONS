@@ -1,5 +1,6 @@
 import math
 from functools import partial, cmp_to_key
+from click import style
 
 import holoviews as hv
 import numpy as np
@@ -9,8 +10,11 @@ from bokeh.models import (Button, CheckboxGroup, ColumnDataSource,
                           Div, LabelSet, NumeralTickFormatter, Select, Slider,
                           Spacer, Span, Spinner, TextInput, Whisker)
 from holoviews.streams import Stream
+from scipy.__config__ import show
 
 from geminidr.interactive import server
+from geminidr.interactive import styles
+from geminidr.interactive.styles import dragons_styles
 from geminidr.interactive.controls import Controller
 from geminidr.interactive.fit.help import PLOT_TOOLS_HELP_SUBTEXT
 from geminidr.interactive.interactive import PrimitiveVisualizer, build_text_slider
@@ -409,9 +413,14 @@ class AperturePlotView:
         fig = self.fig
         source = self.model.source
 
-        self.location = Span(location=source.data['location'][0],
-                             dimension='height', line_color='green',
-                             line_dash='dashed', line_width=1)
+        self.location = Span(
+            location=source.data['location'][0],
+            dimension='height',
+            line_color='green',
+            line_dash='dashed',
+            line_width=1,
+        )
+
         fig.add_layout(self.location)
 
     def update(self):
@@ -447,24 +456,53 @@ class SelectedApertureLineView:
         self.model = None
 
         options = self._build_select_options()
-        self.select = Select(options=options, width=64)
+
+        self.select = Select(
+            options=options,
+            width=64,
+            stylesheets=dragons_styles()
+        )
+
         self.select.on_change('value', self._handle_select_change)
 
-        self.button = Button(label="Del", width=48)
+        self.button = Button(
+            label="Del",
+            width=48,
+            stylesheets=dragons_styles()
+        )
 
         def _del():
             if self.model:
                 self.model.delete()
+
         self.button.on_click(_del)
 
         # source = model.source
         fmt = NumeralTickFormatter(format='0.00')
-        self.start_input = Spinner(width=80, low=0, format=fmt,
-                                   value=0)
-        self.location_input = Spinner(width=80, low=0, format=fmt,
-                                      value=0)
-        self.end_input = Spinner(width=80, low=0, format=fmt,
-                                 value=0)
+
+        self.start_input = Spinner(
+            width=80,
+            low=0,
+            format=fmt,
+            value=0,
+            stylesheets=dragons_styles()
+        )
+
+        self.location_input = Spinner(
+            width=80,
+            low=0,
+            format=fmt,
+            value=0,
+            stylesheets=dragons_styles()
+        )
+
+        self.end_input = Spinner(
+            width=80,
+            low=0,
+            format=fmt,
+            value=0,
+            stylesheets=dragons_styles()
+        )
 
         self.in_update = False
 
@@ -472,19 +510,43 @@ class SelectedApertureLineView:
         self.location_input.on_change("value", self._location_handler)
         self.end_input.on_change("value", self._end_handler)
 
+        # TODO: This is hardcoded to align the values, but I think
+        # it should be possible to do this with bokeh.
         self.component = column(
             row(
-                Div(text="<b>Aperture</b>", width=64),
-                Div(text="<b>Lower</b>", width=80),
-                Div(text="<b>Location</b>", width=80),
-                Div(text="<b>Upper</b>", width=80),
+                Div(
+                    text="<b>Aperture</b>",
+                    width=64,
+                    stylesheets=dragons_styles()
+                ),
+                Div(
+                    text="<b>Lower</b>",
+                    width=80,
+                    stylesheets=dragons_styles()
+                ),
+                Div(
+                    text="<b>Location</b>",
+                    width=80,
+                    stylesheets=dragons_styles()
+                ),
+                Div(
+                    text="<b>Upper</b>",
+                    width=80,
+                    stylesheets=dragons_styles()
+                ),
+                stylesheets=dragons_styles()
             ),
             row(
-                [self.select,
-                 self.start_input,
-                 self.location_input,
-                 self.end_input,
-                 self.button]),
+                [
+                    self.select,
+                    self.start_input,
+                    self.location_input,
+                    self.end_input,
+                    self.button
+                ],
+                stylesheets=dragons_styles()
+            ),
+            stylesheets=dragons_styles()
         )
 
     def _build_select_options(self):
@@ -602,9 +664,18 @@ class SelectedApertureEditor:
     def __init__(self, model):
         self.model = model
         model.add_listener(self)
-        self.div = Div(text="<b>Selected Aperture</b>")
+
+        self.div = Div(
+            text="<b>Selected Aperture</b>",
+            stylesheets=dragons_styles()
+        )
+
         self.salv = SelectedApertureLineView(model)
-        self.component = column(self.div, self.salv.component)
+        self.component = column(
+            self.div,
+            self.salv.component,
+            stylesheets=dragons_styles()
+        )
 
     def select_aperture(self, aperture_id):
         pass
@@ -689,7 +760,7 @@ class ApertureView:
             upper="end",
             dimension='width',
             base_units="screen",
-            line_color="purple"
+            line_color="purple",
         )
 
         self.fig.add_layout(self.whisker)
@@ -857,23 +928,27 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         reset_button = Button(
             label="Reset",
             button_type='warning',
-            width=200
+            width=200,
+            stylesheets=dragons_styles()
         )
 
         def _reset_handler(result):
             if result:
                 reset_button.disabled = True
+
                 def fn():
                     model.reset()
                     self.reset_reinit_panel()
                     self.model.recalc_apertures()
                     reset_button.disabled = False
+
                 self.do_later(fn)
 
         find_button = Button(
             label="Find apertures",
             button_type='primary',
-            width=200
+            width=200,
+            stylesheets=dragons_styles()
         )
 
         def _find_handler(result):
@@ -901,15 +976,27 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         self.make_modal(find_button, 'Recalculating Apertures...')
         self.make_modal(reset_button, 'Recalculating Apertures...')
 
+        # TODO: This needs to be refactored into specific variables, there are
+        #       3 objects instantiated here.
         return column(
-            Div(text="Parameters to compute the profile:",
-                css_classes=['param_section']),
+            Div(
+                text="Parameters to compute the profile:",
+                css_classes=['param_section'],
+                stylesheets=dragons_styles()
+            ),
             *widgets[0:5],
-            Div(text="Parameters to find peaks:",
-                css_classes=['param_section']),
+            Div(
+                text="Parameters to find peaks:",
+                css_classes=['param_section'],
+                stylesheets=dragons_styles()
+            ),
             *widgets[5:],
-            row([reset_button, find_button]),
+            row(
+                [reset_button, find_button],
+                stylesheets=dragons_styles()
+            ),
             width_policy="min",
+            stylesheets=dragons_styles()
         )
 
     def visualize(self, doc):
@@ -940,7 +1027,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             add_button = Button(
                 label="Add",
                 button_type='primary',
-                width=200
+                width=200,
+                stylesheets=dragons_styles()
             )
 
             add_button.on_click(self.add_aperture)
@@ -951,7 +1039,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         renumber_button = Button(
             label=renumber_label,
             button_type='primary',
-            width=200
+            width=200,
+            stylesheets=dragons_styles()
         )
 
         renumber_button.on_click(self.model.renumber_apertures)
@@ -959,28 +1048,56 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         clear_button = Button(
             label=clear_label,
             button_type='warning',
-            width=200
+            width=200,
+            stylesheets=dragons_styles()
         )
 
         def do_clear_apertures():
             def handle_clear(okc):
                 if okc:
                     self.model.clear_apertures()
+
             self.show_ok_cancel('Clear All Apertures?', handle_clear)
+
         clear_button.on_click(do_clear_apertures)
 
-        helptext = Div(margin=(20, 0, 0, 35), sizing_mode='scale_width')
-        controls = column(children=[
-            params,
-            aperture_view.controls,
-            row(clear_button, renumber_button, add_button) if show_add_aperture_button
-                else row(clear_button, renumber_button),
-        ])
+        helptext = Div(
+            margin=(20, 0, 0, 35),
+            sizing_mode='scale_width',
+            stylesheets=dragons_styles()
+        )
+
+        if show_add_aperture_button:
+            button_row = row(
+                clear_button,
+                renumber_button,
+                add_button,
+                stylesheets=dragons_styles()
+            )
+        
+        else:
+            button_row = row(
+                clear_button,
+                renumber_button,
+                stylesheets=dragons_styles()
+            )
+
+        controls = column(
+            children=[
+                params,
+                aperture_view.controls,
+                button_row
+            ],
+            stylesheets=dragons_styles()
+        )
 
         self.model.recalc_apertures()
 
-        col = column(children=[aperture_view.fig, helptext],
-                     sizing_mode='scale_width')
+        col = column(
+            children=[aperture_view.fig, helptext],
+            sizing_mode='scale_width',
+            stylesheets=dragons_styles()
+        )
 
         for btn in (self.submit_button, self.abort_button):
             btn.align = 'end'
@@ -990,12 +1107,29 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             btn.width = 212
             btn.width_policy = "fixed"
 
-        toolbar = row(Spacer(width=250),
-                      column(self.get_filename_div(), row(self.abort_button, self.submit_button)),
-                      Spacer(width=10),
-                      align="end", css_classes=['top-row'])
+        toolbar = row(
+            Spacer(width=250, stylesheets=dragons_styles()),
+            column(
+                self.get_filename_div(),
+                row(
+                    self.abort_button,
+                    self.submit_button,
+                    stylesheets=dragons_styles()
+                ),
+                stylesheets=dragons_styles(),
+            ),
+            Spacer(width=10, stylesheets=dragons_styles()),
+            align="end",
+            css_classes=['top-row'],
+            stylesheets=dragons_styles()
+        )
 
-        layout = column(toolbar, row(controls, col))
+        layout = column(
+            toolbar, 
+            row(controls, col, stylesheets=dragons_styles()),
+            stylesheets=dragons_styles()
+        )
+
         layout.sizing_mode = 'scale_width'
 
         Controller(aperture_view.fig, self.model, None, helptext)
