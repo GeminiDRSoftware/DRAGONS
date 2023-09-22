@@ -524,6 +524,7 @@ class FittingParametersUI:
                 value=fn,
                 options=fn_allowed,
                 width=200,
+                stylesheets=dragons_styles(),
             )
 
             def fn_select_change(attr, old, new):
@@ -1001,10 +1002,15 @@ class Fit1DPanel:
             margin=(20, 0, 0, 0),
             width=220,
             styles={"color": "gray", "padding": "5px"},
+            stylesheets=dragons_styles(),
         )
 
         controls = column(
-            *controls_column, reset_button, controller_div, width=220
+            *controls_column,
+            reset_button,
+            controller_div,
+            width=220,
+            stylesheets=dragons_styles(),
         )
 
         fig_column = self.build_figures(
@@ -1037,12 +1043,15 @@ class Fit1DPanel:
             region_editor = RegionEditor(band_model)
             fig_column.append(region_editor.get_widget())
 
-        col = column(*fig_column)
+        col = column(*fig_column, stylesheets=dragons_styles())
         col.sizing_mode = "scale_width"
 
         col_order = [col, controls] if central_plot else [controls, col]
         self.component = row(
-            *col_order, css_classes=["tab-content"], spacing=10
+            *col_order,
+            css_classes=["tab-content"],
+            spacing=10,
+            stylesheets=dragons_styles(),
         )
 
     def build_figures(
@@ -1550,12 +1559,21 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     reinit_widgets[0].children[1].on_change(
                         "value", kickoff_modal
                     )
+
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
+
             if recalc_inputs_above:
-                self.reinit_panel = row(*reinit_widgets)
+                self.reinit_panel = row(
+                    *reinit_widgets,
+                    stylesheets=dragons_styles()
+                )
+
             else:
-                self.reinit_panel = column(*reinit_widgets)
+                self.reinit_panel = column(
+                    *reinit_widgets,
+                    stylesheets=dragons_styles()
+                )
         else:
             # left panel with just the function selector (Chebyshev, etc.)
             self.reinit_panel = None  # column()
@@ -1671,6 +1689,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         super().visualize(doc)
         col = column(
             self.tabs,
+            stylesheets=dragons_styles(),
         )
 
         col.sizing_mode = "scale_width"
@@ -1737,7 +1756,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 )
             )
 
-        self.layout = column(*layout_ls, sizing_mode="stretch_width")
+        self.layout = column(
+            *layout_ls,
+            sizing_mode="stretch_width",
+            stylesheets=dragons_styles()
+        )
+
         doc.add_root(self.layout)
 
     def reconstruct_points_additional_work(self, data):

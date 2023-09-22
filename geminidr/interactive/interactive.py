@@ -172,6 +172,7 @@ class PrimitiveVisualizer(ABC):
             # id="_warning_btn",
             label="Abort",
             name="abort_btn",
+            stylesheets=dragons_styles(),
         )
 
         # The submit_button_handler is only needed to flip the user_accepted
@@ -466,6 +467,7 @@ class PrimitiveVisualizer(ABC):
                 "float": "right",
             },
             align="end",
+            stylesheets=dragons_styles(),
         )
         return div
 
@@ -540,6 +542,7 @@ class PrimitiveVisualizer(ABC):
             lambda: doc.add_root(
                 row(
                     self._message_holder,
+                    stylesheets=dragons_styles()
                 )
             )
         )
@@ -610,6 +613,7 @@ class PrimitiveVisualizer(ABC):
             lambda: doc.add_root(
                 row(
                     self._ok_cancel_holder,
+                    stylesheets=dragons_styles()
                 )
             )
         )
@@ -811,6 +815,7 @@ class PrimitiveVisualizer(ABC):
                         width=96,
                         value=params.values[key],
                         options=list(field.allowed.keys()),
+                        stylesheets=dragons_styles(),
                     )
 
                     def _select_handler(attr, old, new):
@@ -821,7 +826,17 @@ class PrimitiveVisualizer(ABC):
                     widget.on_change("value", _select_handler)
                     self.widgets[key] = widget
                     widgets.append(
-                        row([Div(text=title, align="center"), widget])
+                        row(
+                            [
+                                Div(
+                                    text=title,
+                                    align="center",
+                                    stylesheets=dragons_styles()
+                                ),
+                                widget
+                            ],
+                            stylesheets=dragons_styles(),
+                        )
                     )
 
                 elif field.dtype is bool:
@@ -857,8 +872,10 @@ class PrimitiveVisualizer(ABC):
                     # Anything else
                     if key in params.titles:
                         title = params.titles[key]
+
                     else:
                         title = _title_from_field(field)
+
                     widget = TextInput(
                         title=title,
                         min_width=100,
@@ -867,7 +884,9 @@ class PrimitiveVisualizer(ABC):
                         placeholder=params.placeholders[key]
                         if key in params.placeholders
                         else None,
+                        stylesheets=dragons_styles(),
                     )
+
                     self.widgets[key] = widget
                     widgets.append(widget)
 
@@ -1025,17 +1044,25 @@ def build_text_slider(
     fmt = None
     if not is_float:
         fmt = NumeralTickFormatter(format="0,0")
+
         slider = Slider(
             start=start,
             end=end,
             step=step,
             title=title,
             format=fmt,
+            stylesheets=dragons_styles(),
             **slider_kwargs,
         )
+
     else:
         slider = Slider(
-            start=start, end=end, step=step, title=title, **slider_kwargs
+            start=start,
+            end=end,
+            step=step,
+            title=title,
+            stylesheets=dragons_styles(),
+            **slider_kwargs
         )
 
     slider.width = slider_width
@@ -1046,7 +1073,10 @@ def build_text_slider(
     # below to enforce the range limits, if any.
     if not hide_textbox:
         text_input = NumericInput(
-            width=64, value=value, mode="float" if is_float else "int"
+            width=64,
+            value=value,
+            mode="float" if is_float else "int",
+            stylesheets=dragons_styles(),
         )
 
         # Custom range enforcement with alert messages
@@ -1106,6 +1136,7 @@ def build_text_slider(
                 css_classes=[
                     "text_slider_%s" % attr,
                 ],
+                stylesheets=dragons_styles(),
             )
 
     else:
@@ -1115,6 +1146,7 @@ def build_text_slider(
             css_classes=[
                 "text_slider_%s" % attr,
             ],
+            stylesheets=dragons_styles(),
         )
 
     def _input_check(val):
@@ -1763,6 +1795,7 @@ class GIRegionView(GIRegionListener):
                     fill_alpha=0.1,
                     fill_color=fill_color,
                 )
+
                 self.fig.add_layout(region)
                 whisker_id = len(self.whisker_data.data["base"])
                 self.whisker_data.stream(
@@ -1880,6 +1913,7 @@ class RegionEditor(GIRegionListener):
             max_width=600,
             sizing_mode="stretch_width",
             width_policy="max",
+            stylesheets=dragons_styles(),
         )
 
         self.text_input.value = region_model.build_regions()
@@ -1892,7 +1926,8 @@ class RegionEditor(GIRegionListener):
             "  Please use comma separated : delimited "
             "  values (i.e. 101:500,511:900,951:). "
             " Negative values are not allowed."
-            "</span></b>"
+            "</span></b>",
+            stylesheets=dragons_styles(),
         )
 
         self.error_message.visible = False
@@ -2023,7 +2058,7 @@ class TabsTurboInjector:
         for i, tab in enumerate(tabs.tabs):
             self.tabs.append(tab)
             self.tab_children.append(tab.child)
-            self.tab_dummy_children.append(row())
+            self.tab_dummy_children.append(row(stylesheets=dragons_styles()))
 
             if i != tabs.active:
                 tab.child = self.tab_dummy_children[i]
@@ -2045,7 +2080,8 @@ class TabsTurboInjector:
             Title for the new tab
         """
         tab_dummy = row(
-            Div(),
+            Div(stylesheets=dragons_styles()),
+            stylesheets=dragons_styles()
         )
         tab_child = child
 
@@ -2057,6 +2093,7 @@ class TabsTurboInjector:
                 bm.TabPanel(
                     child=row(
                         tab_dummy,
+                        stylesheets=dragons_styles()
                     ),
                     title=title,
                 )
@@ -2067,6 +2104,7 @@ class TabsTurboInjector:
                 bm.TabPanel(
                     child=row(
                         tab_child,
+                        stylesheets=dragons_styles()
                     ),
                     title=title,
                 )
