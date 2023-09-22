@@ -1,5 +1,4 @@
 import uuid
-from click import style
 
 import numpy as np
 from bokeh.models import CustomJS
@@ -103,7 +102,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
     def set_currently_identifying(self, peak):
         status = bool(peak)
 
-        spectrum = self.p_spectrum.select_one({"name": "spectrum"})
+        spectrum = self.p_spectrum.select_one({"name": "new_line_marker"})
         spectrum.visible = status
 
         def recursively_set_status(parent, disabled):
