@@ -39,6 +39,7 @@ import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
 from astrodata.utils import Section
+from geminidr.core.primitives_preprocess import _attach_rectification_model
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
@@ -55,6 +56,7 @@ from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter, match_sources, fit_model
 from gempy.library.spectral import Spek1D
+from gwcs.utils import CoordinateFrameError
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
@@ -426,6 +428,68 @@ class Spect(Resample):
                 ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
+
+    def attachPinholeModel(self, adinputs=None, **params):
+        """
+        Attach slit rectification models from a processed pinhole file.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Data as 2D spectral images.
+        suffix : str
+            Suffix to be added to output files.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
+        pinhole = params["pinhole"]
+
+        # Get a suitable pinhole frame (with slit rectification model) for each
+        # science AD
+        if pinhole is None:
+            pinhole_list = self.caldb.get_processed_pinhole(adinputs)
+        else:
+            pinhole_list = (pinhole, None)
+
+        fail = False
+
+        adoutputs = []
+        # Provide a pinhole AD object for every science frame, and an origin.
+        for ad, pinhole, origin in zip(*gt.make_lists(adinputs, *pinhole_list,
+                                             force_ad=(1,))):
+            # We don't check for a timestamp since this will generally be
+            # replacing a previous rectification model from the slit edges.
+            if pinhole is None:
+                log.warning(f"{ad.filename}: no pinhole was specified")
+                if 'sq' in self.mode:
+                    fail = True
+                adoutputs.append(ad)
+                continue
+
+            # Attach the model here.
+            ad = _attach_rectification_model(ad, pinhole, log=self.log)
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad)
+            if pinhole.path:
+                add_provenance(ad, pinhole.filename, md5sum(pinhole.path) or "",
+                               self.myself())
+
+        if fail:
+            raise OSError("No suitable pinhole file for one or more input(s)")
+
+        return adoutputs
+
 
     def attachWavelengthSolution(self, adinputs=None, **params):
         """
@@ -2336,7 +2400,7 @@ class Spect(Resample):
                         bad_bits=DQ.not_signal)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found "
-                                    f"for {ext.id}")
+                                    f"for extension {ext.id}")
 
                     wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                     wavecal.save_fit_as_pdf(input_data["spectrum"], fit1d.points[~fit1d.mask],
@@ -4426,6 +4490,103 @@ class Spect(Resample):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
+    def tracePinholeApertures(self, adinputs=None, **params):
+        """
+        Trace pinhole apertures and create a rectification model.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images.
+        suffix : str, optional
+            Suffix to be added to output files. Default: "_pinholesTraced".
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The input file with a slit rectification model attached.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params['suffix']
+        step = params['step']
+        max_missed = params['max_missed']
+        max_shift = params['max_shift']
+        min_snr = params['min_snr']
+        nsum = params['nsum']
+        min_line_length = params['min_line_length']
+        order = params['order']
+        spect_ord = params['spectral_order']
+
+        fwidth = 2  # ? Just guessing.
+        rwidth = 0.42466 * fwidth
+        fit1d_params = fit_1D.translate_params({"function": "chebyshev",
+                                                "order": order})
+
+        for ad in adinputs:
+
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            tot_in_coords, tot_ref_coords = [], []
+            for i, ext in enumerate(ad):
+
+                dispaxis = 2 - ext.dispersion_axis() # Python sense
+                in_traces, ref_traces = [], []
+                start = ext.shape[dispaxis] // 2
+                x_ord, y_ord = (1, spect_ord) if dispaxis == 0 else (spect_ord, 1)
+
+                data = ext.data[start, :]
+                mask = ext.mask[start, :]
+                variance = ext.variance[start, :]
+                # Find peaks; convert width FWHM to sigma
+                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
+                initial_peaks, _ = tracing.find_wavelet_peaks(
+                    data, widths=widths, mask=mask & DQ.not_signal,
+                    variance=variance, min_snr=min_snr,
+                    reject_bad=False)
+                log.stdinfo(f"Found {len(initial_peaks)} peaks")
+
+                peak_slice = slice(None, 4)
+
+                for peak in initial_peaks[peak_slice]:
+                    ref_coords, in_coords = tracing.trace_lines(
+                        # Only need a single `start` value for all lines.
+                        ext, axis=dispaxis,
+                        start=start, initial=[peak],
+                        rwidth=rwidth, cwidth=max(int(fwidth), 5),
+                        step=step, nsum=nsum, max_missed=max_missed,
+                        max_shift=max_shift * ybin / xbin,
+                        min_line_length=min_line_length,
+                        initial_tolerance=2.0)
+
+                    in_traces.append(in_coords)
+                    ref_traces.append(ref_coords)
+
+                tot_in_coords = np.concatenate(in_traces, axis=1)
+                tot_ref_coords = np.concatenate(ref_traces, axis=1)
+
+                # Create the 2D slit rectification model:
+                m_init_2d = models.Chebyshev2D(
+                    x_degree=x_ord, y_degree=y_ord,
+                    x_domain=[0, ext.shape[1]-1],
+                    y_domain=[0, ext.shape[0]-1])
+                log.stdinfo("Creating distortion model for slit "
+                            f"rectification for slit {i}")
+                # The `fixed_linear` parameter is False because we should
+                # have both edges for each slit.
+                model, m_final_2d, m_inverse_2d = create_distortion_model(
+                    m_init_2d, dispaxis, tot_in_coords, tot_ref_coords, False)
+                model.name = "PNHLRECT"
+
+                try:
+                    ext.wcs.set_transform('pixels', 'rectified', model)
+                except CoordinateFrameError:
+                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                           cf.Frame2D(name='rectified'))
+
+        return adinputs
+
     def write1DSpectra(self, adinputs=None, **params):
         """
         Write 1D spectra to files listing the wavelength and data (and
@@ -4608,16 +4769,21 @@ class Spect(Resample):
                     model2 = am.table_to_model(slit[1])
 
                     # Get the coordinates of the bounding box surrounding
-                    # the slit.
+                    # the slit. Add a few pixels of padding, since the edge
+                    # detection doesn't quite happen at the outermost edges of
+                    # the slits.
+                    pad = 2
                     if dispaxis == 0: # vertical
-                        y1, y2 = 0, ext.data.shape[dispaxis]
-                        x1 = int(np.floor(model1(y1)))
-                        x2 = int(np.ceil(model2(y2)))
+                        y1, y2 = 0, ext.data.shape[1 - dispaxis]
+                        x1 = max(int(np.floor(model1(y1))) - pad, 0)
+                        x2 = min(int(np.ceil(model2(y2))) + pad,
+                                 ext.data.shape[dispaxis])
 
-                    if dispaxis == 1: # horizontal
+                    elif dispaxis == 1: # horizontal
                         x1, x2 = 0, ext.data.shape[dispaxis]
-                        y1 = int(np.floor(model1(x1)))
-                        y2 = int(np.ceil(model2(x2)))
+                        y1 = max(int(np.floor(model1(x1))) - pad, 0)
+                        y2 = min(int(np.ceil(model2(x2))) + pad,
+                                 ext.data.shape[1 - dispaxis])
 
                     # Create a Section to cut out, and append that section as
                     # the new data plane of the new `adout`.
@@ -4672,14 +4838,10 @@ class Spect(Resample):
                     if dispaxis == 0:
                         in_coords = [in_coords_temp, eval_coords_temp]
                         ref_coords = [ref_coords_temp, eval_coords_temp]
+                        x_ord, y_ord = 1, model1.degree
                     else:
                         in_coords = [eval_coords_temp, in_coords_temp]
                         ref_coords = [eval_coords_temp, ref_coords_temp]
-
-                    # Create the 2D slit rectification model:
-                    if dispaxis == 0:
-                        x_ord, y_ord = 1, model1.degree
-                    else:
                         x_ord, y_ord = model1.degree, 1
 
                     m_init_2d = models.Chebyshev2D(

@@ -825,25 +825,10 @@ class Preprocess(PrimitivesBASE):
                          f"{flat.filename}{origin_str}")
             ad.divide(flat)
 
-            # Try to get a slit rectification model from the flat, and if one
-            # exists insert it before the pixels-to-world transform. Print a
+            # Try to get a slit rectification model from the flat, and, if one
+            # exists, insert it before the pixels-to-world transform. Print a
             # warning if one doesn't exist, but allow it to pass.
-            try:
-                flat[0].wcs.get_transform('pixels', 'rectified')
-                rectified = True
-            except CoordinateFrameError:
-                log.warning(f"No rectification model found in {flat.filename}")
-                rectified = False
-
-            if rectified:
-                for ext, ext_f in zip(ad, flat):
-                    log.stdinfo("    Adding slit rectification model "
-                                f"from {flat.filename} (ext {ext.id}) to "
-                                f"WCS of ext {ext_f.id}")
-                    ext.wcs.insert_frame(
-                        ext.wcs.input_frame,
-                        ext_f.wcs.get_transform("pixels", "rectified"),
-                        cf.Frame2D(name='rectified'))
+            ad = _attach_rectification_model(ad, flat, log=self.log)
 
             # Update the header and filename, copying QECORR keyword from flat
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
@@ -1815,6 +1800,62 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
+
+# -----------------------------------------------------------------------------
+def _attach_rectification_model(target, source, log=None):
+    """
+    Copy a slit rectification model from source to target file.
+
+    Copies the transform step in an Astropy gWCS object corresponding to a
+    slit rectification model from the given source file to a given target
+    file. The source file must have either one extenstion, or the same
+    number of extensions as the target, in which case the model in each
+    extension in the source will be copied to the corresponding extension
+    in the target. This function will either add a rectification model if
+    one is not present in the target, or replaces an existing one. If no
+    rectification model is found in the source, logs a warning and returns
+    the target file unmodified.
+
+    Parameters
+    ----------
+    target : `Astrodata object`
+        The file to copy the rectification model to.
+    source : `Astrodata object`
+        The file to get the rectification model from.
+    log : logger instance
+        An optional logger instance to write log messages to.
+
+    Returns
+    -------
+    `Astrodata object`
+        The target file; either modified with the new rectification model
+        in each extenstion, or unmodified if no model was found in `source`.
+
+    """
+    if len(target) != len(source):
+        raise ValueError("Target image and source image have different "
+                         f"number of extensions, {len(target)} vs. "
+                         f"{len(source)}, {target.filename} not modified.")
+
+    log.fullinfo("    Adding slit rectification model")
+
+    for ext_t, ext_s in zip(target, source):
+        # Check that a transform exists, else return `target` unmodified.
+        try:
+            new_transform = ext_s.wcs.get_transform("pixels", "rectified")
+        except CoordinateFrameError:
+            log.warning(f"No rectification model found in {source.filename}, "
+                        f"{target.filename} not modified.")
+            return target
+
+        # If a 'rectified' frame exists, just replace the transform.
+        # Otherwise add a new frame with the transform.
+        try:
+            ext_t.wcs.set_transform('pixels', 'rectified', new_transform)
+        except CoordinateFrameError:
+            ext_t.wcs.insert_frame(ext_t.wcs.input_frame, new_transform,
+                                   cf.Frame2D(name='rectified'))
+    return target
 
 
 # Helper functions for scaleCountsToReference() follow
