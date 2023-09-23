@@ -60,6 +60,12 @@ class adjustWCSToReferenceConfig(config.Config):
     debug_block_resampling = config.Field("Block resampling in the spatial direction?", bool, False)
 
 
+class attachPinholeModelConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_pinholeModelAdded", optional=True)
+    pinhole = config.Field("Pinhole frame", (str, AstroData), None, optional=True)
+
+
+
 class attachWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionAttached", optional=True)
     arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
@@ -463,7 +469,7 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
                                       int, None, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
-                                  float, 0.01, min=0.01, max=1.0)
+                                  float, 0.01, min=0.0001, max=1.0)
     interactive = config.Field("Interactive fitting?", bool, False)
 
     def setDefaults(self):
@@ -531,6 +537,29 @@ class traceAperturesConfig(config.core_1Dfitting_config):
     def setDefaults(self):
         del self.function
         self.order = 2
+
+
+class tracePinholeAperturesConfig(config.core_1Dfitting_config):
+    """
+    Configuration for the tracePinholeApertures() primitive.
+    """
+    suffix = config.Field("Filename suffix",
+                          str, "_pinholeAperturesTraced", optional=True)
+    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
+                                   int, 4, min=0)
+    max_shift = config.RangeField("Maximum shift per pixel in line position",
+                                  float, 0.4, min=0.001, max=0.5, inclusiveMax=True)
+    min_line_length = config.RangeField("Minimum line length as a fraction of array",
+                                        float, 0, min=0, max=1, inclusiveMin=True,
+                                        inclusiveMax=True)
+    min_snr = config.RangeField("Minimum SNR for apertures",
+                                float, 10., min=0.)
+    nsum = config.RangeField("Number of lines to sum",
+                             int, 6, min=1)
+    step = config.RangeField("Step in rows/columns for tracing",
+                             int, 6, min=1)
+    spectral_order = config.RangeField("Order of fit in spectral direction",
+                                       int, 3, min=1)
 
 
 def wavelength_units_check(value):

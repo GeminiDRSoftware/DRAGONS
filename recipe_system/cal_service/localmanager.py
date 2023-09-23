@@ -58,6 +58,7 @@ args_for_cals = {
     'processed_bias': ('bias', {'processed': True}),
     'processed_dark': ('dark', {'processed': True}),
     'processed_flat': ('flat', {'processed': True}),
+    'processed_pinhole': ('pinhole', {'processed': True}),
     'processed_standard': ('standard', {'processed': True}),
     'processed_slitillum': ('slitillum', {'processed': True}),
     'processed_bpm': ('bpm', {'processed': True})
