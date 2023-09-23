@@ -38,6 +38,7 @@ class CrossDispersed(Spect, Preprocess):
             Data as 2D spectral images with slits defined in a SLITEDGE table.
         suffix :  str
             Suffix to be added to output files.
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -80,8 +81,9 @@ class CrossDispersed(Spect, Preprocess):
                         step.transform[5].offset = row['central_wavelength']
                         # Dispersion (nm/pixel)
                         step.transform[4].factor = row['dispersion']
-                        # Offset of center of slit (pixels) - The order is
-                        # independent of dispersion axis, so the Shift model
+                        # Offset of center of slit (pixels) - The order of sub-
+                        # models in the WCS transform is independent of
+                        # dispersion axis, so the Shift model
                         # index changes depending on orientation.
                         crpix_index = 7 if dispaxis == 0 else 3
                         step.transform[crpix_index].offset = row['center_offset']
@@ -115,11 +117,15 @@ class CrossDispersed(Spect, Preprocess):
         Parameters
         ----------
         suffix: str
-            suffix to be added to output files
+            Suffix to be added to output files.
         flat: str
-            name of flatfield to use
+            Name of flatfield to use.
         do_flat: bool
-            perform flatfield correction?
+            Perform flatfield correction?
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -153,7 +159,7 @@ class CrossDispersed(Spect, Preprocess):
             for i in range(len(cut_ads[-1])):
                 init_wave_model = flat[i].wcs.get_transform('rectified',
                                                             'world')
-                # The ad being corrected doesn't yet have a 'rectified' frame,
+                # The AD being corrected doesn't yet have a 'rectified' frame,
                 # just 'pixels' and 'world', so insert this transform between them.
                 cut_ads[-1][i].wcs.set_transform('pixels', 'world',
                                                  init_wave_model)
