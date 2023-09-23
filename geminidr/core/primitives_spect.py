@@ -4491,16 +4491,15 @@ class Spect(Resample):
 
         Returns
         -------
-        array_like
-            arc line wavelengths
-
-        array_like or None
-            arc line weights
+        tuple:
+            A Linelist object, and a refplot dictionary (see _make_refplot_data)
+            or None (whenever the linelist gets calculated on the fly,
+            e.g. ATRAN linelist)
         """
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir, 'linelist.dat')
-        return wavecal.LineList(filename)
+        return wavecal.LineList(filename), None
 
 
     def _get_slit_edge_estimates(self, ad):
@@ -5009,7 +5008,7 @@ class Spect(Resample):
         """
         Generate data for the reference plot (reference spectrum, reference plot name, and
         the label for the y-axis), depending on the type of spectrum used for wavelength calibration,
-        using the supplied line list. Save the data to a tempfile.
+        using the supplied line list.
 
         Parameters
         ----------
@@ -5036,7 +5035,7 @@ class Spect(Resample):
 
         Returns
         -------
-        dict : all the information needed to construct the reference spectrum plot:
+        dict : all the information needed to construct reference spectrum plot:
         "refplot_spec" : two-column nd.array containing reference spectrum wavelengths
                         (nm) and intensities
         "refplot_linelist" : two-column nd.array containing line wavelengths (nm) and
@@ -5050,6 +5049,7 @@ class Spect(Resample):
             return None
 
         else:
+            # Display reference plots when doing wavecal from skylines
             if absorption or ext.central_wavelength(asMicrometers=True) >= 2.8:
                 site, alt, start_wvl, end_wvl, _, wv_content = \
                 self._get_atran_model_params(ext, user_wv_band=wv_band, cenwave=cenwave)
@@ -5088,8 +5088,8 @@ class Spect(Resample):
 
                     dispersion_axis = 2 - ext.dispersion_axis()
                     # The next bit estimates the spectral range that wasn't masked
-                    # by the default illumination mask (which mask off second order
-                    # in some modes of GNIRS and F2).
+                    # by the default illumination mask (that mask off second order
+                    # in some GNIRS and F2 modes).
                     mask = at.transpose_if_needed(ext.mask, transpose=(dispersion_axis == 0))[0]
                     center = ext.shape[dispersion_axis]//2
                     center_col = mask[center][:]

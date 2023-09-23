@@ -573,7 +573,7 @@ class GMOSSpect(Spect, GMOS):
                                                    self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir,
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
-        return wavecal.LineList(filename)
+        return wavecal.LineList(filename), None
 
     def _get_cenwave_accuracy(self, ext=None):
         # Assumed accuracy of central wavelength in nm for a given instrument/setup.

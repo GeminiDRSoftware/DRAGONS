@@ -382,7 +382,7 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
                 else config["central_wavelength"]
             refplot_data = p._make_refplot_data(ext=ext, refplot_linelist=input_data["linelist"],
                             wv_band=config["wv_band"], resolution=resolution,
-                            cenwave=cenwave, absorption=config["absorption"], in_vacuo=config["in_vacuo"])
+                            cenwave=cenwave, absorption=config.get("absorption"), in_vacuo=config["in_vacuo"])
             if refplot_data is not None:
                 input_data.update(refplot_data)
 
@@ -520,7 +520,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     # pixel-to-pixel variations, as done in `tracing.find_wavelet_peaks`.
     # The variance estimations coming from `tracing.average_along_slit` don't
     # provide sensible values in this particular case.
-    if config["absorption"]:
+    if config.get("absorption") is True:
         variance = None
     peaks, weights = find_line_peaks(
         data, mask=mask, variance=variance,
@@ -554,6 +554,11 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     # (i.e., first time through the loop)
     refplot_dict = None
     if linelist is None:
+        # If the linelist is an ATRAN linelist calculated on the fly, the reference
+        # plot data is created as a by-product, so we return it here to avoid repeating the same
+        # calculations later.
+        # Otherwise refplot_dict is expected to be returned as None, and is populated in
+        # create_interactive_inputs
         linelist, refplot_dict= p._get_arc_linelist(waves=m_init(np.arange(data.size)), ext=ext, config=config)
     # This wants to be logged even in interactive mode
     sky_or_arc = 'reference sky' if skylines else 'arc'
