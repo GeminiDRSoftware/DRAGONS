@@ -902,12 +902,16 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         self.ui_params = ui_params
         self.ui_params.fields["max_separation"].min = 5
         self.ui_params.fields["max_separation"].max = self.model.max_width
+
         if self.ui_params.fields["max_separation"].default is None:
             self.ui_params.fields["max_separation"].default = self.model.max_separation
+
         if self.ui_params.values['max_separation'] is None:
             self.ui_params.values['max_separation'] = self.model.max_separation
+
         if self._reinit_params['max_separation'] is None:
             self._reinit_params['max_separation'] = self.model.max_separation
+
         # Not necessary since the TextBox is disabled and so the user cannot set to None
         self.ui_params.fields["max_separation"].optional = False
 
@@ -1023,6 +1027,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # making button configurable so we can add it conditionally for notebooks in future
         renumber_label = "Renumber Apertures"
         clear_label = "Clear Apertures"
+
         if show_add_aperture_button:
             add_button = Button(
                 label="Add",
@@ -1063,7 +1068,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         helptext = Div(
             margin=(20, 0, 0, 35),
-            sizing_mode='scale_width',
+            sizing_mode='stretch_width',
             stylesheets=dragons_styles()
         )
 
@@ -1074,7 +1079,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 add_button,
                 stylesheets=dragons_styles()
             )
-        
+
         else:
             button_row = row(
                 clear_button,
@@ -1095,7 +1100,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         col = column(
             children=[aperture_view.fig, helptext],
-            sizing_mode='scale_width',
+            sizing_mode="stretch_width",
             stylesheets=dragons_styles()
         )
 
@@ -1107,6 +1112,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             btn.width = 212
             btn.width_policy = "fixed"
 
+        # TODO: Need to factor this into variables.
         toolbar = row(
             Spacer(width=250, stylesheets=dragons_styles()),
             column(
@@ -1124,13 +1130,18 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             stylesheets=dragons_styles()
         )
 
+        # TODO: Need to factor this into variables.
         layout = column(
-            toolbar, 
-            row(controls, col, stylesheets=dragons_styles()),
+            toolbar,
+            row(
+                controls,
+                col,
+                stylesheets=dragons_styles(),
+                sizing_mode="stretch_width"
+            ),
+            sizing_mode='stretch_width',
             stylesheets=dragons_styles()
         )
-
-        layout.sizing_mode = 'scale_width'
 
         Controller(aperture_view.fig, self.model, None, helptext)
 
