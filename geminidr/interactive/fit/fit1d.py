@@ -1043,8 +1043,12 @@ class Fit1DPanel:
             region_editor = RegionEditor(band_model)
             fig_column.append(region_editor.get_widget())
 
-        col = column(*fig_column, stylesheets=dragons_styles())
-        col.sizing_mode = "scale_width"
+        col = column(
+            *fig_column,
+            stylesheets=dragons_styles(),
+            width_policy="max",
+            sizing_mode="stretch_width"
+        )
 
         col_order = [col, controls] if central_plot else [controls, col]
         self.component = row(
@@ -1052,6 +1056,7 @@ class Fit1DPanel:
             css_classes=["tab-content"],
             spacing=10,
             stylesheets=dragons_styles(),
+            sizing_mode="stretch_width"
         )
 
     def build_figures(
