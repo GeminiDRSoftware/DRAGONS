@@ -986,7 +986,7 @@ class Fit1DPanel:
             label="Reset",
             align="center",
             button_type="warning",
-            width_policy="max",
+            sizing_mode="stretch_width",
             stylesheets=dragons_styles(),
         )
 
@@ -1621,14 +1621,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         self.tabs = bm.Tabs(
             css_classes=["tabs"],
-            height_policy="max",
-            width_policy="max",
+            sizing_mode="stretch_width",
             tabs=[],
             name="tabs",
             stylesheets=dragons_styles(),
         )
-
-        self.tabs.sizing_mode = "stretch_width"
 
         if self.nfits == 1:
             turbo_tabs = False
@@ -1753,6 +1750,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 row(
                     self.reinit_panel,
                     col,
+                    sizing_mode="stretch_width",
                     stylesheets=dragons_styles()
                 )
             )

@@ -35,26 +35,35 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
     for i in range(len(ap_table)):
         fit_par_list.append({x: y for x, y in fit1d_params.items()})
 
-    domain_list = [[ap_table.meta["header"][kw]
-                    for kw in ("DOMAIN_START", "DOMAIN_END")]
-                   for ap in ap_table]
+    domain_list = [
+        [
+            ap_table.meta["header"][kw]
+            for kw in ("DOMAIN_START", "DOMAIN_END")
+        ]
+        for ap in ap_table
+    ]
 
     if (2 - ext.dispersion_axis()) == 1:
         xlabel = "x / columns [px]"
         ylabel = "y / rows [px]"
+
     else:
         xlabel = "y / rows [px]"
         ylabel = "x / columns [px]"
+
+    help_text = (
+        help.DEFAULT_HELP
+        + help.TRACE_APERTURES
+        + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
+        + help.REGION_EDITING_HELP_SUBTEXT
+    )
 
     visualizer = Fit1DVisualizer(
         lambda ui_params: trace_apertures_data_provider(ext, ui_params),
         domains=domain_list,
         filename_info=ext.filename,
         fitting_parameters=fit_par_list,
-        help_text=(help.DEFAULT_HELP
-                   + help.TRACE_APERTURES
-                   + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
-                   + help.REGION_EDITING_HELP_SUBTEXT),
+        help_text=help_text,
         primitive_name="traceApertures",
         tab_name_fmt="Aperture {}",
         title="Interactive Trace Apertures",
