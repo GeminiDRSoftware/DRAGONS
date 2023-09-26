@@ -549,7 +549,6 @@ class FittingParametersUI:
                     "font-size": "115%",
                     "margin-top": "5px",
                 },
-                width_policy="max",
                 stylesheets=dragons_styles(),
             )
 
@@ -657,7 +656,6 @@ class FittingParametersUI:
                 "font-size": "115%",
                 "margin-top": "10px",
             },
-            width_policy="max",
             stylesheets=dragons_styles(),
         )
 
@@ -671,6 +669,7 @@ class FittingParametersUI:
                 self.sigma_lower_slider,
                 self.sigma_upper_slider,
             ]
+
         else:
             column_title_text = (
                 f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>"
@@ -686,7 +685,6 @@ class FittingParametersUI:
                     "font-size": "115%",
                     "margin-top": "5px",
                 },
-                width_policy="max",
                 stylesheets=dragons_styles(),
             )
 
@@ -699,6 +697,7 @@ class FittingParametersUI:
                 self.sigma_lower_slider,
                 self.sigma_upper_slider,
             ]
+
         if hasattr(self, "grow_slider"):
             column_list.append(self.grow_slider)
 
@@ -1046,7 +1045,6 @@ class Fit1DPanel:
         col = column(
             *fig_column,
             stylesheets=dragons_styles(),
-            width_policy="max",
             sizing_mode="stretch_width"
         )
 
@@ -1630,7 +1628,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             stylesheets=dragons_styles(),
         )
 
-        self.tabs.sizing_mode = "scale_width"
+        self.tabs.sizing_mode = "stretch_width"
 
         if self.nfits == 1:
             turbo_tabs = False
@@ -1695,10 +1693,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col = column(
             self.tabs,
             stylesheets=dragons_styles(),
+            sizing_mode="stretch_width"
         )
-
-        col.sizing_mode = "scale_width"
-        col.width_policy = "max"
 
         # TODO: This creates a new column that doesn't play nice with the
         # extant columns in the visualizer. That's why the abort/submit buttons
@@ -1999,7 +1995,6 @@ def fit1d_figure(
         # x_range is linked to the main plot so that zooming tracks between
         # them
         p_resid = figure(
-            width=width,
             height=height // 2,
             min_width=400,
             title="Fit Residuals",
@@ -2028,7 +2023,6 @@ def fit1d_figure(
 
     if plot_ratios:
         p_ratios = figure(
-            width=width,
             height=height // 2,
             min_width=400,
             title="Fit Ratios",

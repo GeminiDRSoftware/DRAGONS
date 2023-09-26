@@ -1,6 +1,5 @@
 import math
 from functools import partial, cmp_to_key
-from click import style
 
 import holoviews as hv
 import numpy as np
@@ -567,6 +566,7 @@ class SelectedApertureLineView:
 
     def set_model(self, model):
         self.model = None
+
         if model:
             sid = "%s" % model.source.data['id'][0]
             self._add_select_option(model.source.data['id'][0])
@@ -580,6 +580,7 @@ class SelectedApertureLineView:
             self.button.disabled = False
             self.model = model
             self.apertures_model.selected = model.source.data['id'][0]
+
         else:
             self.select.value = "None"
             self.start_input.value = None
@@ -1139,8 +1140,8 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
                 stylesheets=dragons_styles(),
                 sizing_mode="stretch_width"
             ),
+            stylesheets=dragons_styles(),
             sizing_mode='stretch_width',
-            stylesheets=dragons_styles()
         )
 
         Controller(aperture_view.fig, self.model, None, helptext)

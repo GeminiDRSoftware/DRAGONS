@@ -155,7 +155,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
         )
 
         p_spectrum = figure(
-            width=self.width,
             height=self.height,
             min_width=400,
             title='Spectrum',
@@ -164,13 +163,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
             tools="pan,wheel_zoom,box_zoom,reset",
             output_backend="webgl",
             x_range=p_main.x_range,
-            min_border_left=80
+            min_border_left=80,
+            sizing_mode="stretch_width",
+            stylesheets=dragons_styles()
         )
 
         # TODO: Update *_policy handling below
-        p_spectrum.height_policy = 'fixed'
-        p_spectrum.width_policy = 'fit'
-        p_spectrum.sizing_mode = 'stretch_width'
+        # p_spectrum.height_policy = 'fixed'
+        # p_spectrum.width_policy = 'fit'
+        # p_spectrum.sizing_mode = 'stretch_width'
 
         p_spectrum.step(
             x='wavelengths',
@@ -237,6 +238,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.identify_button = bm.Button(
             label="Identify lines",
             width=200,
+            max_width=250,
             button_type="primary",
             width_policy="fit",
             height_policy="max",
@@ -248,6 +250,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.new_line_prompt = bm.Div(
             text="",
             styles={"font-size": "16px"},
+            max_width=400,
             width_policy="max",
             stylesheets=dragons_styles(),
         )
@@ -255,7 +258,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.new_line_dropdown = bm.Select(
             options=[],
             width=100,
-            width_policy="fixed",
+            sizing_mode="stretch_width",
             stylesheets=dragons_styles(),
         )
 
@@ -267,7 +270,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.new_line_textbox = bm.NumericInput(
             width=100,
             mode='float',
-            width_policy="fixed",
+            sizing_mode="stretch_width",
             name=focus_id,
             stylesheets=dragons_styles(),
             )
@@ -294,7 +297,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         new_line_ok_button = bm.Button(
             label="OK",
-            width=120,
+            min_width=120,
             width_policy="fit",
             button_type="success",
             stylesheets=dragons_styles()
@@ -304,7 +307,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         new_line_cancel_button = bm.Button(
             label="Cancel",
-            width=120,
+            min_width=120,
             width_policy="fit",
             button_type="danger",
             stylesheets=dragons_styles()
@@ -332,15 +335,17 @@ class WavelengthSolutionPanel(Fit1DPanel):
                     new_line_cancel_button,
                     stylesheets=dragons_styles(),
                 ),
-                width_policy="max",
+                sizing_mode="stretch_width",
                 stylesheets=dragons_styles(),
             ),
             stylesheets=dragons_styles(),
+            sizing_mode="stretch_width"
         )
 
         identify_panel = row(
-            self.identify_button, 
+            self.identify_button,
             self.new_line_div,
+            sizing_mode="stretch_width",
             stylesheets=dragons_styles()
         )
 
@@ -639,7 +644,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         self.reinit_panel.children[-3] = bm.Div(
             text=text,
             align="center",
-            stylesheets=dragons_styles()
+            stylesheets=dragons_styles(),
+            sizing_mode="stretch_width"
         )
 
         self.widgets["in_vacuo"].disabled = True
