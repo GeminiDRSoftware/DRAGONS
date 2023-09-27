@@ -4519,8 +4519,10 @@ class Spect(Resample):
         min_line_length = params['min_line_length']
         order = params['order']
         spect_ord = params['spectral_order']
+        min_trace_pos = params['debug_min_trace_pos']
+        max_trace_pos = params['debug_max_trace_pos']
 
-        fwidth = 2  # ? Just guessing.
+        fwidth = 2  # An educated guess for pinholes.
         rwidth = 0.42466 * fwidth
         fit1d_params = fit_1D.translate_params({"function": "chebyshev",
                                                 "order": order})
@@ -4532,24 +4534,41 @@ class Spect(Resample):
             for i, ext in enumerate(ad):
 
                 dispaxis = 2 - ext.dispersion_axis() # Python sense
-                in_traces, ref_traces = [], []
                 start = ext.shape[dispaxis] // 2
-                x_ord, y_ord = (1, spect_ord) if dispaxis == 0 else (spect_ord, 1)
+                data, mask, variance = ext.data, ext.mask, ext.variance
 
-                data = ext.data[start, :]
-                mask = ext.mask[start, :]
-                variance = ext.variance[start, :]
-                # Find peaks; convert width FWHM to sigma
+                # Make life easier for the poor coder by transposing data if
+                # needed, so that we're always tracing along columns
+                if dispaxis == 0:
+                    ext_data = data
+                    ext_mask = None if mask is None else mask & DQ.not_signal
+                    ext_variance = variance
+                    x_ord, y_ord = 1, spect_ord
+                    direction = "row"
+                else:
+                    ext_data = data.T
+                    ext_mask = None if mask is None else mask.T & DQ.not_signal
+                    ext_variance = variance.T
+                    x_ord, y_ord = spect_ord, 1
+                    direction = "column"
+
+                data = ext_data[start, :]
+                mask = ext_mask[start, :]
+                variance = ext_variance[start, :]
+                # Find peaks; convert width FWHM to sigma. Copied from
+                # determineDistortion
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                 initial_peaks, _ = tracing.find_wavelet_peaks(
                     data, widths=widths, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)
-                log.stdinfo(f"Found {len(initial_peaks)} peaks")
+                log.fullinfo(f"Found {len(initial_peaks)} peaks")
 
-                peak_slice = slice(None, 4)
-
-                for peak in initial_peaks[peak_slice]:
+                in_traces, ref_traces = [], []
+                log.fullinfo(f"Starting trace at {direction} {start}")
+                log.debug(f"tracing from {min_trace_pos} to "
+                          f"{max_trace_pos}")
+                for peak in initial_peaks[min_trace_pos:max_trace_pos]:
                     ref_coords, in_coords = tracing.trace_lines(
                         # Only need a single `start` value for all lines.
                         ext, axis=dispaxis,

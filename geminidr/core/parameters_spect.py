@@ -14,7 +14,6 @@ def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
     return True
 
-
 def table_writing_formats():
     t = registry.get_formats(table.Table, readwrite="Write")
     return {fmt: "" for fmt, dep in t["Format", "Deprecated"] if dep != "Yes"}
@@ -542,24 +541,34 @@ class traceAperturesConfig(config.core_1Dfitting_config):
 class tracePinholeAperturesConfig(config.core_1Dfitting_config):
     """
     Configuration for the tracePinholeApertures() primitive.
+
+    While the primitive itself should be useable with various modes, it has
+    only been tested with cross-dispersed so far (September 2023). Parameters
+    thoughtare therefore left unspecified here, and should be defined in parameter
+    files more specific to the mode.
     """
     suffix = config.Field("Filename suffix",
                           str, "_pinholeAperturesTraced", optional=True)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
-                                   int, 4, min=0)
+                                   int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.4, min=0.001, max=0.5, inclusiveMax=True)
+                                  float, 0.05, min=0.001, max=0.5,
+                                  inclusiveMax=True)
     min_line_length = config.RangeField("Minimum line length as a fraction of array",
                                         float, 0, min=0, max=1, inclusiveMin=True,
                                         inclusiveMax=True)
-    min_snr = config.RangeField("Minimum SNR for apertures",
-                                float, 10., min=0.)
-    nsum = config.RangeField("Number of lines to sum",
-                             int, 6, min=1)
-    step = config.RangeField("Step in rows/columns for tracing",
-                             int, 6, min=1)
+    min_snr = config.RangeField("Minimum SNR for apertures", float, 10., min=0.)
+    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
     spectral_order = config.RangeField("Order of fit in spectral direction",
                                        int, 3, min=1)
+    # These exist in case excluding some of the pinhole traces is desired. This
+    # is important for GNIRS but may not be the case for other instruments/
+    # modes, so the defaults here are to use all traces found.
+    debug_min_trace_pos = config.Field("Use traces above this number",
+                                       dtype=int, default=None, optional=True)
+    debug_max_trace_pos = config.Field("Use traces below this number",
+                                       dtype=int, default=None, optional=True)
 
 
 def wavelength_units_check(value):
