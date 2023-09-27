@@ -4,7 +4,7 @@ from functools import partial, cmp_to_key
 import holoviews as hv
 import numpy as np
 from bokeh.io import curdoc
-from bokeh.layouts import column, row
+from bokeh.layouts import column, row, grid
 from bokeh.models import (Button, CheckboxGroup, ColumnDataSource,
                           Div, LabelSet, NumeralTickFormatter, Select, Slider,
                           Spacer, Span, Spinner, TextInput, Whisker)
@@ -509,44 +509,43 @@ class SelectedApertureLineView:
         self.location_input.on_change("value", self._location_handler)
         self.end_input.on_change("value", self._end_handler)
 
-        # TODO: This is hardcoded to align the values, but I think
-        # it should be possible to do this with bokeh.
-        self.component = column(
-            row(
-                Div(
-                    text="<b>Aperture</b>",
-                    width=64,
-                    stylesheets=dragons_styles()
-                ),
-                Div(
-                    text="<b>Lower</b>",
-                    width=80,
-                    stylesheets=dragons_styles()
-                ),
-                Div(
-                    text="<b>Location</b>",
-                    width=80,
-                    stylesheets=dragons_styles()
-                ),
-                Div(
-                    text="<b>Upper</b>",
-                    width=80,
-                    stylesheets=dragons_styles()
-                ),
-                stylesheets=dragons_styles()
-            ),
-            row(
-                [
-                    self.select,
-                    self.start_input,
-                    self.location_input,
-                    self.end_input,
-                    self.button
-                ],
-                stylesheets=dragons_styles()
-            ),
-            stylesheets=dragons_styles()
+        # Controls for selecting the apertures.
+        aperture_name = Div(text="<b>Aperture</b>", align="start")
+        lower_bound_div = Div(text="<b>Lower</b>", align="start")
+        upper_bound_div = Div(text="<b>Upper</b>", align="start")
+        location_div = Div(text="<b>Location</b>", align="start")
+
+        # Labels for the controls
+        top_row = [
+            aperture_name,
+            lower_bound_div,
+            location_div,
+            upper_bound_div,
+            None  # spacer
+        ]
+
+        # Controls for the aperture + a button to delete it
+        bottom_row = [
+            self.select,
+            self.start_input,
+            self.location_input,
+            self.end_input,
+            self.button
+        ]
+
+        for child in top_row + bottom_row:
+            try:
+                child.align = "start"
+                child.sizing_mode = None
+            
+            except AttributeError:
+                continue
+
+        aperture_controls_grid = grid(
+            [top_row, bottom_row]
         )
+
+        self.component = aperture_controls_grid
 
     def _build_select_options(self):
         options = list()
@@ -1021,8 +1020,14 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         ymax = 100  # we will update this when we have a profile
         aperture_view = ApertureView(self.model, self.model.profile_shape, ymax)
-        aperture_view.fig.step(x='x', y='y', source=self.model.profile_source,
-                               color=bokeh_data_color, mode="center")
+
+        aperture_view.fig.step(
+            x='x',
+            y='y',
+            source=self.model.profile_source,
+            color=bokeh_data_color, mode="center"
+        )
+
         self.fig = aperture_view.fig  # figure now comes from holoviews, need to pull it out here
 
         # making button configurable so we can add it conditionally for notebooks in future
