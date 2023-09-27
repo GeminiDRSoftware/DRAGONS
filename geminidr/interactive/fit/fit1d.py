@@ -1701,17 +1701,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             sizing_mode="stretch_width"
         )
 
-        # TODO: This creates a new column that doesn't play nice with the
-        # extant columns in the visualizer. That's why the abort/submit buttons
-        # will overflow into the tabs and not scale properly as they should
-        # with the rest of the content.
-        #
-        # To fix this, need to refactor this code to include the abort/submit
-        # buttons and file name in the same column as the tabs. There's enough
-        # space for it.
         for btn in (self.submit_button, self.abort_button):
             btn.align = "end"
-            btn.height = 90
             btn.margin = (0, 5, 0, 0)
             btn.width = 212
             btn.sizing_mode = "scale_both"
@@ -1720,33 +1711,32 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if self.filename_info:
             self.submit_button.align = "end"
 
-            # TODO: Factor this into variables for readability.
-            layout_ls.append(
-                column(
-                    Spacer(width=250, stylesheets=dragons_styles()),
-                    column(
-                        self.get_filename_div(),
-                        row(self.abort_button, self.submit_button, align="end"),
-                        stylesheets=dragons_styles(),
-                        align="end"
-                    ),
-                    Spacer(width=10, stylesheets=dragons_styles()),
-                    align="end",
-                    css_classes=["top-row"],
-                    stylesheets=dragons_styles(),
-                )
+            abort_submit_buttons = row(
+                self.abort_button,
+                self.submit_button,
+                align="end",
+                stylesheets=dragons_styles(),
+            )
+
+            top_row = column(
+                self.get_filename_div(),
+                abort_submit_buttons,
+                align="end",
+                stylesheets=dragons_styles(),
+                margin=(0, 0, 0, 10),
+                css_classes=["top-row"],
             )
 
         else:
-            layout_ls.append(
-                column(
-                    self.abort_button,
-                    self.submit_button,
-                    stylesheets=dragons_styles(),
-                    align="end",
-                    css_classes=["top-row"],
-                ),
+            top_row = column(
+                self.abort_button,
+                self.submit_button,
+                align="end",
+                stylesheets=dragons_styles(),
+                css_classes=["top-row"],
             )
+
+        layout_ls.append(top_row)
 
         if self.reinit_panel is None:
             layout_ls.append(col)
@@ -1758,6 +1748,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 sizing_mode="stretch_both",
             )
 
+            # This overrides the "top_row" above. Using same variable since
+            # it's decribing the same area, even with new functionality.
             top_row = row(
                 panel_col,
                 layout_ls.pop(0),
