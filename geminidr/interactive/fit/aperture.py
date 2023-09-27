@@ -980,28 +980,38 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         self.make_modal(find_button, 'Recalculating Apertures...')
         self.make_modal(reset_button, 'Recalculating Apertures...')
 
-        # TODO: This needs to be refactored into specific variables, there are
-        #       3 objects instantiated here.
-        return column(
-            Div(
-                text="Parameters to compute the profile:",
-                css_classes=['param_section'],
-                stylesheets=dragons_styles()
-            ),
-            *widgets[0:5],
-            Div(
-                text="Parameters to find peaks:",
-                css_classes=['param_section'],
-                stylesheets=dragons_styles()
-            ),
-            *widgets[5:],
-            row(
-                [reset_button, find_button],
-                stylesheets=dragons_styles()
-            ),
-            width_policy="min",
+        # Create the layout for the widgets
+        profile_controls_label = Div(
+            text="Parameters to compute the profile:",
+            css_classes=['param_section'],
             stylesheets=dragons_styles()
         )
+
+        profile_controls = [profile_controls_label] + widgets[0:5]
+
+        peak_controls_label = Div(
+            text="Parameters to find peaks:",
+            css_classes=['param_section'],
+            stylesheets=dragons_styles()
+        )
+
+        peak_controls = [peak_controls_label] + widgets[5:]
+
+        reset_find_buttons = row(
+            reset_button,
+            find_button,
+            stylesheets=dragons_styles()
+        )
+
+        controls_column = column(
+            *profile_controls,
+            *peak_controls,
+            reset_find_buttons,
+            sizing_mode="fixed",
+            stylesheets=dragons_styles()
+        )
+
+        return controls_column
 
     def visualize(self, doc):
         """
