@@ -378,32 +378,47 @@ class WavelengthSolutionPanel(Fit1DPanel):
         float/list : appropriate y value(s) for writing a label
         """
         try:
-            height = self.p_spectrum.y_range.end - self.p_spectrum.y_range.start
+            height = (
+                self.p_spectrum.y_range.end - self.p_spectrum.y_range.start
+            )
+
         except TypeError:  # range is None, plot being initialized
             # This is calculated on the basis that bokeh pads by 5% of the
             # data range on each side
-            #height = (44 / 29 * self.spectrum.data['spectrum'].max() -
+            # height = (44 / 29 * self.spectrum.data['spectrum'].max() -
             #          1.1 * self.spectrum.data['spectrum'].min())
             height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
+
         padding = 0.25 * height
+
         try:
-            return [self.spectrum.data["spectrum"][int(xx + 0.5)] + padding for xx in x]
+            return [
+                self.spectrum.data["spectrum"][int(xx + 0.5)] + padding
+                for xx in x
+            ]
+
         except TypeError:
             return self.spectrum.data["spectrum"][int(x + 0.5)] + padding
 
     def update_label_heights(self):
-        """Simple callback to move the labels if the spectrum panel is resized"""
+        """Simple callback to move the labels if the spectrum panel is
+        resized.
+        """
         self.model.data.data['heights'] = self.label_height(self.model.x)
+
         if self.currently_identifying:
-            lheight = 0.05 * (self.p_spectrum.y_range.end -
-                              self.p_spectrum.y_range.start)
-            self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
+            start = self.p_spectrum.y_range.start
+            end = self.p_spectrum.y_range.end
+            lheight = 0.05 * (end - start)
+            self.new_line_marker.data["y"][1] = (
+                self.new_line_marker.data["y"][0] + lheight
+            )
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
     def model_change_handler(self, model):
-        """
-        If the `~fit` changes, this gets called to evaluate the fit and save the results.
+        """If the `~fit` changes, this gets called to evaluate the fit and save
+        the results.
         """
         super().model_change_handler(model)
         x, y = model.x, model.y
@@ -465,20 +480,31 @@ class WavelengthSolutionPanel(Fit1DPanel):
         print(f"Adding {wavelength} nm at pixel {peak}")
         if self.model.x.size > 1:
             lower_limit, upper_limit = get_closest(
-                self.model.y, self.model.evaluate(peak)[0])
+                self.model.y, self.model.evaluate(peak)[0]
+            )
+
             lower_limit, upper_limit = sorted([lower_limit, upper_limit])
+
             if not (lower_limit < wavelength < upper_limit):
                 self.visualizer.show_user_message(
                     f"The value {wavelength} nm does not preserve a monotonic"
-                     " sequence of identified line wavelengths")
+                    f" sequence of identified line wavelengths"
+                )
+
                 raise ValueError
+
         # Dummy values should be close to true values to avoid plot resizing
-        new_data = {'x': [peak], 'y': [wavelength], 'mask': ['good'],
-                    'fitted': [wavelength], 'nonlinear': [0],
-                    'heights': [self.label_height(peak)],
-                    'residuals': [0],
-                    'lines': [wavestr(wavelength)],
-                   }
+        new_data = {
+            'x': [peak],
+            'y': [wavelength],
+            'mask': ['good'],
+            'fitted': [wavelength],
+            'nonlinear': [0],
+            'heights': [self.label_height(peak)],
+            'residuals': [0],
+            'lines': [wavestr(wavelength)],
+        }
+
         self.model.data.stream(new_data)
         self.model.perform_fit()
 
@@ -491,63 +517,105 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if peak is None:
             x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
             fwidth = self.model.meta["fwidth"]
-            pixel = interp1d(self.spectrum.data["wavelengths"],
-                             range(len(self.spectrum.data["wavelengths"])))(x)
-            new_peaks = np.setdiff1d(self.model.meta["peaks"],
-                                     self.model.x, assume_unique=True)
-            # This will fail if no line was deleted before user attempts to identify a line,
-            # so do it only if there are new_peaks
+
+            interp_pixel = interp1d(
+                self.spectrum.data["wavelengths"],
+                range(len(self.spectrum.data["wavelengths"]))
+            )
+
+            pixel = interp_pixel(x)
+
+            new_peaks = np.setdiff1d(
+                self.model.meta["peaks"],
+                self.model.x,
+                assume_unique=True
+            )
+
+            # This will fail if no line was deleted before user attempts to
+            # identify a line, so do it only if there are new_peaks
             if len(new_peaks) > 0:
                 index = np.argmin(abs(new_peaks - pixel))
 
             # If we've clicked "close" to a real peak (based on viewport size),
             # then select that
-            if len(new_peaks) > 0 and \
-                    (abs(self.model.evaluate(new_peaks[index]) - x) < 0.025 * (x2 - x1)):
+            n_new_peaks = len(new_peaks)
+            close_to_peak = abs(new_peaks[index] - x) < 0.025 * (x2 - x1)
+            if n_new_peaks and close_to_peak:
                 peak = new_peaks[index]
                 print(f"Retrieved peak from list at {peak}")
+
             else:
                 # TODO: Check this behaves sensibly, and doesn't find
                 # all tiny bumps
-                pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
-                                           [0.42466 * fwidth])[0]
+                pinpoint_data = cwt_ricker(
+                    self.spectrum.data["spectrum"],
+                    [0.42466 * fwidth]
+                )[0]
+
                 eps = np.finfo(np.float32).eps  # Minimum representative data
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
+
                 try:
                     peak = pinpoint_peaks(pinpoint_data, [pixel], None)[0][0]
                     print(f"Found peak at pixel {peak}")
+
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
                     return
+
             est_wave = self.model.evaluate(peak)[0]
             if not (x1 < est_wave < x2):  # peak outside viewport
                 return
+
         else:
-            est_wave = self.model.evaluate(peak)[0]  # evaluate always returns array
+            # Evaluate always returns array.
+            est_wave = self.model.evaluate(peak)[0]
 
         # Find all unidentified arc lines that this could be, maintaining
         # monotonicity
         all_lines = self.model.meta["linelist"].wavelengths(
-            in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm")
+            in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm"
+        )
+
         lower_limit, upper_limit = get_closest(self.model.y, est_wave)
         possible_lines = [line for line in all_lines
                           if lower_limit < line < upper_limit]
         if possible_lines:
-            selectable_lines = sorted(sorted(possible_lines,
-                                             key=lambda x: abs(x - est_wave))[:9])
-            select_index = np.argmin(abs(np.asarray(selectable_lines) - est_wave))
-            self.new_line_dropdown.options = [wavestr(line) for line in selectable_lines]
-            self.new_line_dropdown.value = wavestr(selectable_lines[select_index])
+            selectable_lines = sorted(
+                sorted(possible_lines, key=lambda x: abs(x - est_wave))[:9]
+            )
+
+            select_index = np.argmin(
+                abs(np.asarray(selectable_lines) - est_wave)
+            )
+
+            self.new_line_dropdown.options = [
+                wavestr(line) for line in selectable_lines
+            ]
+
+            self.new_line_dropdown.value = wavestr(
+                selectable_lines[select_index]
+            )
+
             self.new_line_dropdown.disabled = False
+
         else:
             self.new_line_dropdown.options = []
             self.new_line_dropdown.disabled = True
+
         self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
-        lheight = 0.05 * (self.p_spectrum.y_range.end -
-                          self.p_spectrum.y_range.start)
+
+        start = self.p_spectrum.y_range.start
+        end = self.p_spectrum.y_range.end
+        lheight = 0.05 * (end - start)
+
         height = self.spectrum.data["spectrum"][int(peak + 0.5)]
-        self.new_line_marker.data = {"x": [est_wave] * 2,
-                                     "y": [height, height + lheight]}
+
+        self.new_line_marker.data = {
+            "x": [est_wave] * 2,
+            "y": [height, height + lheight]
+        }
+
         self.set_currently_identifying(peak)
 
     @disable_when_identifying
@@ -557,44 +625,67 @@ class WavelengthSolutionPanel(Fit1DPanel):
         operates only on the spectrum panel.
         """
         index = np.argmin(abs(self.model.data.data['fitted'] - x))
-        new_data = {col: list(values)[:index] + list(values)[index+1:]
-                    for col, values in self.model.data.data.items()}
+
+        new_data = {
+            col: list(values)[:index] + list(values)[index+1:]
+            for col, values in self.model.data.data.items()
+        }
+
         self.model.data.data = new_data
         self.model.perform_fit()
 
     def identify_lines(self):
         """
         Called when the user clicks the "Identify Lines" button. This:
-        1) Removes any masked points (user-masked or sigma-clipped) from the fit data
+        1) Removes any masked points (user-masked or sigma-clipped) from the
+           fit data
         2) Gets all the already-identified peaks that aren't in the fit
         3) Calculates the wavelengths of these peaks, based on the fit
-        4) Matches those to unmatched lines in the linelist based on some criteria
+        4) Matches those to unmatched lines in the linelist based on some
+           criteria
         5) Adds new matches to the list
         6) Performs a new fit, triggering a plot update
         """
         linear_model = self.linear_model(self.model)
         dw = linear_model.c1 / np.diff(linear_model.domain)[0]
         matching_distance = abs(self.model.meta["fwidth"] * dw)
+
         all_lines = self.model.meta["linelist"].wavelengths(
-            in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm")
+            in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm"
+        )
 
         good_data = {}
         for k, v in self.model.data.data.items():
-            good_data[k] = [vv for vv, mask in zip(v, self.model.mask)
-                            if mask == 'good']
+            good_data[k] = [
+                vv for vv, mask in zip(v, self.model.mask)
+                if mask == 'good'
+            ]
 
         try:
-            matches = match_sources(all_lines, good_data['y'], radius=0.01 * abs(dw))
+            matches = match_sources(
+                all_lines, good_data['y'], radius=0.01 * abs(dw)
+            )
+
         except ValueError:  # good_data['y'] is empty
             unmatched_lines = all_lines
-        else:
-            unmatched_lines = [l for l, m in zip(all_lines, matches) if m == -1]
 
-        new_peaks = np.setdiff1d(self.model.meta["peaks"],
-                                 good_data['x'], assume_unique=True)
+        else:
+            unmatched_lines = [
+                l for l, m in zip(all_lines, matches) if m == -1
+            ]
+
+        new_peaks = np.setdiff1d(
+            self.model.meta["peaks"],
+            good_data['x'],
+            assume_unique=True
+        )
+
         new_waves = self.model.evaluate(new_peaks)
 
-        matches = match_sources(new_waves, unmatched_lines, radius=matching_distance)
+        matches = match_sources(
+            new_waves, unmatched_lines, radius=matching_distance
+        )
+
         for peak, m in zip(new_peaks, matches):
             if m != -1:
                 good_data['x'].append(peak)
@@ -619,8 +710,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         Handle user pressing Enter in the new line wavelength textbox.
         """
-        if new is not None and wavestr(new) not in self.new_line_dropdown.options:
+        in_dropdown = wavestr(new) in self.new_line_dropdown.options
+
+        if new is not None and not in_dropdown:
             self.add_new_line()
+
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
@@ -671,10 +765,13 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             for i, fit in enumerate(self.fits):
                 if self.returns_list:
                     this_dict = {k: v[i] for k, v in data.items()}
+
                 else:
                     this_dict = data
+
                 # spectrum update
-                self.panels[i].spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
+                spectrum = self.panels[i].spectrum
+                spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
 
 
 def get_closest(arr, value):
@@ -697,4 +794,5 @@ def get_closest(arr, value):
     index = bisect(arr_sorted, value)
     lower_limit = -np.inf if index == 0 else arr_sorted[index - 1]
     upper_limit = np.inf if index == len(arr_sorted) else arr_sorted[index]
+
     return lower_limit, upper_limit
