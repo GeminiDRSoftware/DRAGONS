@@ -879,9 +879,7 @@ class PrimitiveVisualizer(ABC):
                         min_width=100,
                         max_width=256,
                         width_policy="fit",
-                        placeholder=params.placeholders[key]
-                        if key in params.placeholders
-                        else None,
+                        placeholder=params.placeholders.get(key, None),
                         stylesheets=dragons_styles(),
                     )
 
