@@ -266,16 +266,13 @@ class PrimitiveVisualizer(ABC):
             self.widgets[fname].update(**kwargs)
 
             # Update Text Field via callback function
-            if "value" in self.widgets[fname]._callbacks:
-                for callback in self.widgets[fname]._callbacks["value"]:
-                    callback("value", old=old, new=reset_value)
-            if "value_throttled" in self.widgets[fname]._callbacks:
-                for callback in self.widgets[fname]._callbacks[
-                    "value_throttled"
-                ]:
-                    callback(
-                        attrib="value_throttled", old=old, new=reset_value
-                    )
+            values = self.widgets[fname]._callbacks.get("value", [])
+            for callback in values:
+                callback("value", old=old, new=reset_value)
+
+            throttled = self.widgets[fname]._callbacks.get("value_throttled", [])
+            for callback in throttled:
+                callback(attrib="value_throttled", old=old, new=reset_value)
 
     def build_reset_button(self, extra_handler_fn=None):
         reset_reinit_button = bm.Button(
