@@ -1128,26 +1128,29 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             btn.width = 212
             btn.width_policy = "fixed"
 
-        # TODO: Need to factor this into variables.
+        # Build the toolbar with the filename, abort and submit buttons.
+        abort_submit_buttons = row(
+            self.abort_button,
+            self.submit_button,
+            stylesheets=dragons_styles()
+        )
+
+        toolbar_column = column(
+            self.get_filename_div(),
+            abort_submit_buttons,
+            stylesheets=dragons_styles(),
+            margin=(0, 0, 0, 10)
+        )
+
         toolbar = row(
-            Spacer(width=250, stylesheets=dragons_styles()),
-            column(
-                self.get_filename_div(),
-                row(
-                    self.abort_button,
-                    self.submit_button,
-                    stylesheets=dragons_styles()
-                ),
-                stylesheets=dragons_styles(),
-            ),
-            Spacer(width=10, stylesheets=dragons_styles()),
+            toolbar_column,
             align="end",
             css_classes=['top-row'],
             stylesheets=dragons_styles()
         )
 
-        # TODO: Need to factor this into variables.
-        layout = column(
+        # This is the full page layout.
+        main_layout = column(
             toolbar,
             row(
                 controls,
@@ -1161,7 +1164,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         Controller(aperture_view.fig, self.model, None, helptext)
 
-        doc.add_root(layout)
+        doc.add_root(main_layout)
 
     def submit_button_handler(self):
         """
