@@ -22,7 +22,6 @@ from bokeh.models import (
     ColumnDataSource,
     Whisker,
 )
-from click import style
 
 from geminidr.interactive import server
 from geminidr.interactive.styles import dragons_styles
@@ -79,7 +78,6 @@ def _title_from_field(field):
         title = field.name.replace("_", " ").title()
 
     else:
-        # TODO: Should this be a warning?
         raise ValueError(
             "Field has neither title nor name, unable to parse a title"
         )

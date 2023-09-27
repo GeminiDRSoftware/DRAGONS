@@ -299,12 +299,16 @@ class InteractiveModel1D(InteractiveModel):
                 # User mask takes preference
                 if mask[i] not in [USER_MASK_NAME] + INPUT_MASK_NAMES:
                     mask[i] = "good"
+
             elif mask[i] not in [USER_MASK_NAME] + INPUT_MASK_NAMES:
                 mask[i] = BAND_MASK_NAME
+
         bokeh_data = {"x": x, "y": y, "mask": mask}
+
         for extra_column in ("residuals", "ratio"):
             if extra_column in self.data.data:
                 bokeh_data[extra_column] = np.zeros_like(y)
+
         self.data.data = bokeh_data
 
         self.weights = weights
@@ -322,13 +326,16 @@ class InteractiveModel1D(InteractiveModel):
         """
         x_data = self.data.data["x"]
         mask = self.data.data["mask"].copy()
+
         for i in np.arange(len(x_data)):
             if self.band_model.contains(x_data[i]):
                 # User mask takes preference
                 if mask[i] not in [USER_MASK_NAME] + INPUT_MASK_NAMES:
                     mask[i] = "good"
+
             elif mask[i] not in [USER_MASK_NAME] + INPUT_MASK_NAMES:
                 mask[i] = BAND_MASK_NAME
+
         self.data.data["mask"] = mask
         # Band operations can come in through the keypress URL
         # so we defer the fit back onto the Bokeh IO event loop
@@ -1035,6 +1042,7 @@ class Fit1DPanel:
             BAND_MASK_NAME if not band_model.contains(x) and m == "good" else m
             for x, m in zip(self.model.x, self.model.mask)
         ]
+
         self.model.data.data["mask"] = mask
         self.model.perform_fit()
 
