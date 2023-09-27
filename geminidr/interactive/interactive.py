@@ -157,9 +157,9 @@ class PrimitiveVisualizer(ABC):
             align="center",
             button_type="success",
             css_classes=["submit_btn"],
-            # id="_submit_btn",
             label="Accept",
             name="submit_btn",
+            height=55,
             stylesheets=dragons_styles(),
         )
 
@@ -167,9 +167,9 @@ class PrimitiveVisualizer(ABC):
             align="center",
             button_type="warning",
             css_classes=["submit_btn"],
-            # id="_warning_btn",
             label="Abort",
             name="abort_btn",
+            height=55,
             stylesheets=dragons_styles(),
         )
 
