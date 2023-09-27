@@ -1711,13 +1711,16 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         layout_ls = list()
         if self.filename_info:
             self.submit_button.align = "end"
+
+            # TODO: Factor this into variables for readability.
             layout_ls.append(
-                row(
+                column(
                     Spacer(width=250, stylesheets=dragons_styles()),
                     column(
                         self.get_filename_div(),
-                        row(self.abort_button, self.submit_button),
+                        row(self.abort_button, self.submit_button, align="end"),
                         stylesheets=dragons_styles(),
+                        align="end"
                     ),
                     Spacer(width=10, stylesheets=dragons_styles()),
                     align="end",
@@ -1728,21 +1731,34 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         else:
             layout_ls.append(
-                row(
+                column(
                     self.abort_button,
                     self.submit_button,
-                    stylesheets=dragons_styles()
+                    stylesheets=dragons_styles(),
+                    align="end",
+                    css_classes=["top-row"],
                 ),
-                align="end",
-                css_classes=["top-row"],
             )
 
         if self.reinit_panel is None:
             layout_ls.append(col)
 
         elif len(self.reinit_panel.children) <= 1 or self.recalc_inputs_above:
-            layout_ls.append(row(self.reinit_panel))
-            layout_ls.append(Spacer(height=10, stylesheets=dragons_styles()))
+            panel_col = column(
+                Spacer(sizing_mode="stretch_height", min_height=0),
+                self.reinit_panel,
+                sizing_mode="stretch_both",
+            )
+
+            top_row = row(
+                panel_col,
+                layout_ls.pop(0),
+                sizing_mode="stretch_width",
+                stylesheets=dragons_styles(),
+                min_width=0,
+            )
+
+            layout_ls.append(top_row)
             layout_ls.append(col)
 
         else:
