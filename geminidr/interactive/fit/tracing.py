@@ -96,14 +96,13 @@ def trace_apertures_data_provider(ext, ui_params):
 
     Returns
     -------
-    dict : dictionary of x and y coordinates.  Each is an array with a list of values for each aperture center.
-        The x coordinates have the spectral position of the knots, and y is the spacial position of the knots.
+    dict : dictionary of x and y coordinates.
+        Each is an array with a list of values for each aperture center.  The x
+        coordinates have the spectral position of the knots, and y is the
+        spacial position of the knots.
     """
     data = {"x": [], "y": []}
     dispaxis = 2 - ext.dispersion_axis()  # python sense
-
-    # Convert configuration object into dictionary for easy access to its values
-    # conf_as_dict = {key: val for key, val in conf.items()}
 
     for i, loc in enumerate(ext.APERTURE['c0'].data):
         c0 = int(loc + 0.5)
