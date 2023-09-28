@@ -281,7 +281,6 @@ class PrimitiveVisualizer(ABC):
         reset_reinit_button = bm.Button(
             button_type="warning",
             height=35,
-            id='reset-reinit-pars',
             label="Reset",
             width=202,
             stylesheets=dragons_styles(),
