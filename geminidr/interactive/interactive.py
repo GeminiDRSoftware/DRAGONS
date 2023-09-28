@@ -130,6 +130,9 @@ class PrimitiveVisualizer(ABC):
         # their properties if the default setup isn't great
         self.widgets = {}
 
+        # Placeholders for attrs that will be set by subclasses.
+        self.tabs = None
+
         # set help to default, subclasses should override this with something
         # specific to them
         self.help_text = help_text if help_text else DEFAULT_HELP
@@ -270,15 +273,15 @@ class PrimitiveVisualizer(ABC):
             for callback in values:
                 callback("value", old=old, new=reset_value)
 
-            throttled = self.widgets[fname]._callbacks.get("value_throttled", [])
-            for callback in throttled:
+            throt = self.widgets[fname]._callbacks.get("value_throttled", [])
+            for callback in throt:
                 callback(attrib="value_throttled", old=old, new=reset_value)
 
     def build_reset_button(self, extra_handler_fn=None):
         reset_reinit_button = bm.Button(
             button_type="warning",
             height=35,
-            # id='reset-reinit-pars',
+            id='reset-reinit-pars',
             label="Reset",
             width=202,
             stylesheets=dragons_styles(),
@@ -454,13 +457,15 @@ class PrimitiveVisualizer(ABC):
             f"<b>Current&nbsp;filename:&nbsp;</b>&nbsp;{self.filename_info}"
         )
 
+        styles = {
+            "color": "dimgray",
+            "font-size": "16px",
+            "float": "right",
+        }
+
         div = Div(
             text=info_html,
-            styles={
-                "color": "dimgray",
-                "font-size": "16px",
-                "float": "right",
-            },
+            styles=styles,
             align="end",
             stylesheets=dragons_styles(),
         )
@@ -514,7 +519,7 @@ class PrimitiveVisualizer(ABC):
 
         if server.test_mode:
             # Simulate a click of the accept button
-            self.do_later(lambda: self.submit_button_handler(None))
+            self.do_later(lambda: self.submit_button_handler())
 
         # Add a widget we can use for triggering a message
         # This is a workaround, since CustomJS calls can only
@@ -640,6 +645,7 @@ class PrimitiveVisualizer(ABC):
         if self._ok_cancel_holder.text == message:
             # needs to be different to trigger the javascript
             self._ok_cancel_holder.text = f"{message} "
+
         else:
             self._ok_cancel_holder.text = message
 
@@ -661,8 +667,10 @@ class PrimitiveVisualizer(ABC):
             arguments)
         """
         if self.doc is None:
-            if hasattr(self, "log") and self.log is not None:
-                self.log.warn(
+            log = getattr(self, "log", None)
+
+            if log is not None:
+                log.warn(
                     "Call to do_later, but no document is set.  "
                     "Does this PrimitiveVisualizer call "
                     "super().visualize(doc)?"
@@ -670,6 +678,7 @@ class PrimitiveVisualizer(ABC):
 
             # no doc, probably ok to just execute
             fn()
+
         else:
             self.doc.add_next_tick_callback(fn)
 
@@ -704,6 +713,7 @@ class PrimitiveVisualizer(ABC):
         """
             % message,
         )
+
         widget.js_on_change("disabled", callback)
 
     def show_user_message(self, message):
@@ -723,6 +733,7 @@ class PrimitiveVisualizer(ABC):
         if self._message_holder.text == message:
             # need to trigger a change...
             self._message_holder.text = f"{message} "
+
         else:
             self._message_holder.text = message
 
@@ -769,10 +780,7 @@ class PrimitiveVisualizer(ABC):
 
                 if hasattr(field, "min"):
                     is_float = field.dtype is not int
-                    if is_float:
-                        step = 0.1
-                    else:
-                        step = 1
+                    step = 0.1 if is_float else 1
 
                     slider_handler = self.slider_handler_factory(
                         key, reinit_live=reinit_live
@@ -930,6 +938,16 @@ class PrimitiveVisualizer(ABC):
                 self.reconstruct_points()
 
         return handler
+
+    def reconstruct_points(self):
+        """Method used by derived classes to reconstruct the points."""
+        # Raise NotImplementedError to make it clear there is no user-defined
+        # method for this.
+        class_name = self.__class__.__name__
+
+        raise NotImplementedError(
+            f"reconstruct_points() not implemented for {class_name}"
+        )
 
 
 def build_text_slider(
