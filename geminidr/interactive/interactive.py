@@ -2103,7 +2103,8 @@ class TabsTurboInjector:
                 bm.TabPanel(
                     child=row(
                         tab_dummy,
-                        stylesheets=dragons_styles()
+                        stylesheets=dragons_styles(),
+                        sizing_mode="stretch_width"
                     ),
                     title=title,
                 )
@@ -2114,7 +2115,8 @@ class TabsTurboInjector:
                 bm.TabPanel(
                     child=row(
                         tab_child,
-                        stylesheets=dragons_styles()
+                        stylesheets=dragons_styles(),
+                        sizing_mode="stretch_width"
                     ),
                     title=title,
                 )

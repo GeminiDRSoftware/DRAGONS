@@ -1053,7 +1053,7 @@ class Fit1DPanel:
         col = column(
             *fig_column,
             stylesheets=dragons_styles(),
-            sizing_mode="stretch_width"
+            sizing_mode="stretch_width",
         )
 
         col_order = [col, controls] if central_plot else [controls, col]
@@ -1585,6 +1585,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     *reinit_widgets,
                     stylesheets=dragons_styles()
                 )
+
         else:
             # left panel with just the function selector (Chebyshev, etc.)
             self.reinit_panel = None  # column()
@@ -1919,6 +1920,7 @@ def prep_fit1d_params_for_fit1d(fit1d_params):
         # sigma clipping turned on is counterintuitive for the user.
         fit1d_params["niter"] = 1
         fit1d_params["sigma"] = False
+
     else:
         fit1d_params["sigma"] = True
 
@@ -1975,7 +1977,6 @@ def fit1d_figure(
         tools += ",lasso_select,box_select,tap"
 
     p_main = figure(
-        width=width,
         height=height,
         min_width=200,
         title="Fit",
