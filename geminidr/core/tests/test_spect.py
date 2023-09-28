@@ -635,6 +635,28 @@ def test_trace_apertures():
     np.testing.assert_allclose(desired, actual, atol=0.18)
 
 
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+def test_trace_pinhole_apertures(change_working_dir, path_to_inputs):
+
+    c0_0_1_values = (89.69, 73.72, 74.15, 83.76, 99.95, 120.51)
+
+    with change_working_dir(path_to_inputs):
+        ad = astrodata.open("S20060507S0125_flatCorrected.fits")
+
+    p = GNIRSCrossDispersed([ad])
+
+    ad_out = p.tracePinholeApertures()[0]
+
+    for ext, c_val in zip(ad_out, c0_0_1_values):
+        model = ext.wcs.get_transform('pixels', 'rectified')
+        assert model.name == 'PNHLRECT'
+        assert len(model._parameters) == 8
+        assert model.c0_0_1 == pytest.approx(c_val, abs=0.15)
+        assert model.inputs == ('x0', 'x1')
+        assert model.outputs == ('z', 'x0')
+
+
 @pytest.mark.parametrize('unit', ("", "electron", "W / (m2 nm)"))
 @pytest.mark.parametrize('flux_calibrated', (False, True))
 @pytest.mark.parametrize('user_conserve', (False, True, None))
