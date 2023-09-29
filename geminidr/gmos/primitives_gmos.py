@@ -227,10 +227,10 @@ class GMOS(Gemini, CCD):
         region be a vertical strip) is determined in one of the following
         ways, according to the *function* and *order* parameters:
 
-        "poly":   a polynomial of degree *order* (1=linear, etc)
-        "spline": using *order* equally-sized cubic spline pieces or, if
+        :"poly":   a polynomial of degree *order* (1=linear, etc)
+        :"spline": using *order* equally-sized cubic spline pieces or, if
                   order=None or 0, a spline that provides a reduced chi^2=1
-        "none":   no function is fit, and the value for each row is determined
+        :"none":   no function is fit, and the value for each row is determined
                   by the overscan pixels in that row
 
         The fitting is done iteratively but, in the first instance, a running
