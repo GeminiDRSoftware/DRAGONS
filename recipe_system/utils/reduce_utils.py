@@ -161,7 +161,7 @@ def buildParser(version):
     parser.add_argument("-c", "--config", dest='config', default=None,
                         nargs="*", action=UnitaryArgumentAction,
                         help="Load a specific config file, overriding the "
-                             "~/.geminidr/rsys.cfg file and the $DRAGONSRC "
+                             "~/.dragons/dragonsrc file and the $DRAGONSRC "
                              "environment variable.")
     return parser
 

@@ -193,8 +193,11 @@ class Visualize(PrimitivesBASE):
                 ext.operate(np.squeeze)
 
                 # Get the data we're going to display. TODO Replace extname with attr?
-                data = getattr(ext, {'SCI':'data', 'DQ':'mask',
-                                    'VAR':'variance'}[extname], None)
+                try:
+                    data = getattr(ext, {'SCI':'data', 'DQ':'mask',
+                                         'VAR':'variance'}[extname])
+                except KeyError:
+                    data = getattr(ext, extname, None)
                 dqdata = ext.mask
                 if data is None:
                     log.warning("No data to display in {}[{}]".format(ext.filename,

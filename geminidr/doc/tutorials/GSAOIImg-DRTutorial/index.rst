@@ -10,6 +10,8 @@ DRAGONS - GSAOI Data Reduction Tutorial
 
    PIPE-USER-118_GSAOIImg-DRTutorial
 
+[Return to the main |DRAGONS| page.]
+
 .. toctree::
    :maxdepth: 1
    :numbered:

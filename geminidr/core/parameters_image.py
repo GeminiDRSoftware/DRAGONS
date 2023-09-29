@@ -37,6 +37,8 @@ class resampleToCommonFrameConfig(config.Config):
     conserve = config.Field("Conserve image flux?", bool, True)
     force_affine = config.Field("Force affine transformation for speed?", bool, True)
     reference = config.Field("Name of reference image (optional)", (str, AstroData), None, optional=True)
+    dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
+                                     float, 0.001, min=0.)
 
 
 class scaleByIntensityConfig(config.Config):

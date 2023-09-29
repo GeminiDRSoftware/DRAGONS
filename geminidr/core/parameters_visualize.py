@@ -13,7 +13,7 @@ class displayConfig(config.Config):
     frame = config.RangeField("Starting frame for display", int, 1, min=1)
     ignore = config.Field("Turn off display?", bool, False)
     debug_overlay = config.Field("Overlays for display", (tuple, str), None, optional=True)
-    threshold = config.Field("Threshold level for indicating saturation. 'None' to turn off.",
+    threshold = config.Field("Threshold level for indicating non-linearity and saturation. 'None' to turn off.",
                              (str, float), "auto", optional=True, check=threshold_check)
     tile = config.Field("Tile multiple extensions into single display frame?", bool, True)
     zscale = config.Field("Use zscale algorithm?", bool, True)

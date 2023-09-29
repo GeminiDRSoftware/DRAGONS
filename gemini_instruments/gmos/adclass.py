@@ -207,7 +207,8 @@ class AstroDataGmos(AstroDataGemini):
         return self.hdr.get('AMPNAME')
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    def central_wavelength(self, asMicrometers=False, asNanometers=False,
+                           asAngstroms=False, pretty=False):
         """
         Returns the central wavelength in meters or specified units
 
@@ -219,6 +220,8 @@ class AstroDataGmos(AstroDataGemini):
             If True, return the wavelength in nanometers
         asAngstroms : bool
             If True, return the wavelength in Angstroms
+        pretty : bool
+            If True, return a round up value to the nearest Angstrom.
 
         Returns
         -------
@@ -249,8 +252,17 @@ class AstroDataGmos(AstroDataGemini):
         if central_wavelength <= 0.0:
             return None
         else:
-            return gmu.convert_units('nanometers', central_wavelength,
+            converted_central_wavelength = \
+                gmu.convert_units('nanometers', central_wavelength,
                                      output_units)
+            if pretty:
+                # round it up to the nearest Angstrom.
+                power = gmu.unitDict[output_units] - gmu.unitDict['angstroms']
+                factor = math.pow(10, power)
+                converted_central_wavelength = round(converted_central_wavelength*factor)/factor
+
+            return converted_central_wavelength
+
 
     @astro_data_descriptor
     def detector_name(self, pretty=False):
@@ -703,7 +715,7 @@ class AstroDataGmos(AstroDataGemini):
             unique_id_descriptor_list_all.append('disperser')
 
         # List to format descriptor calls using 'pretty=True' parameter
-        call_pretty_version_list = ['filter_name', 'disperser']
+        call_pretty_version_list = ['filter_name', 'disperser', 'central_wavelength']
 
         # Force this to be a list
         force_list = ['amp_read_area']
@@ -991,6 +1003,8 @@ class AstroDataGmos(AstroDataGemini):
         except KeyError:
             return None
         detector = self.detector_name(pretty=True)
+        if detector is None:
+            return None
         if detector.startswith('Hamamatsu'):
             return 'slow' if ampinteg > 8000 else 'fast'
         else:

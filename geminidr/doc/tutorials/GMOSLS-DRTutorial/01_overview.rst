@@ -16,7 +16,7 @@ reduction of GMOS imaging data, see |GMOSImgTut|.
 
 Here is a tutorial that you, the reader, can run and experiment with.  This
 document comes with a downloadable data package that contains all the data
-you need to run the example presented.  Instructions on where to get that
+you need to run the examples presented.  Instructions on where to get that
 package and how to set things up are given in :ref:`datasetup`.
 
 The GMOS longslit tutorial series contains several scientific examples

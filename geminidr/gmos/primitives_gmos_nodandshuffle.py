@@ -1,7 +1,7 @@
 #
 #                                                                  gemini_python
 #
-#                                                primtives_gmos_nodandshuffle.py
+#                                               primitives_gmos_nodandshuffle.py
 #
 # NB This is a pure mixin and should not be instantiated as a primitives class!
 # ------------------------------------------------------------------------------
@@ -67,6 +67,9 @@ class GMOSNodAndShuffle(GMOS):
             order of polynomial for resampling
         subsample: int
             output pixel subsampling when resampling
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -77,6 +80,7 @@ class GMOSNodAndShuffle(GMOS):
         tolerance = params["tolerance"]
         order = params["order"]
         subsample = params["subsample"]
+        dq_threshold = params["dq_threshold"]
 
         for ad in adinputs:
             nod_arcsec = np.diff(ad.nod_offsets())[0]
@@ -134,7 +138,8 @@ class GMOSNodAndShuffle(GMOS):
                                          aligned_frame)
                     ad_out = transform.resample_from_wcs(
                         ext, 'nod_aligned', order=order, subsample=subsample,
-                        parallel=False, output_shape=ext.shape, origin=(0,0))
+                        parallel=False, output_shape=ext.shape, origin=(0,0),
+                        threshold=dq_threshold)
                     ext.subtract(ad_out[0])
                     ext.wcs = orig_wcs
             else:

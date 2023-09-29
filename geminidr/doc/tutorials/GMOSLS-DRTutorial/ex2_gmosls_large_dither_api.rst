@@ -691,7 +691,7 @@ respective variance and data quality (or mask) arrays.
         Other Extensions
                        Type        Dimensions
         .PROVENANCE    Table       (10, 4)
-        .PROVHISTORY   Table       (24, 4)
+        .HISTORY       Table       (24, 4)
 
 
 This is what the 2-D spectrum image looks like.
@@ -704,6 +704,11 @@ This is what the 2-D spectrum image looks like.
     display.files = ['S20220611S0716_2D.fits']
     display.recipename = 'display'
     display.runr()
+
+.. note::
+
+    ``ds9`` must be launched by the user ahead of running the display primitive.
+    (``ds9&`` on the terminal prompt.)
 
 .. image:: _graphics/LS_ldred_sci_2D.png
    :width: 600
