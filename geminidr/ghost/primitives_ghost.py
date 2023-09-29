@@ -43,7 +43,7 @@ class GHOST(Gemini, CCD, CalibDBGHOST):
     tagset = set()  # Cannot be assigned as a class
 
     def _initialize(self, adinputs, **kwargs):
-        self.inst_lookups = 'ghostdr.ghost.lookups'
+        self.inst_lookups = 'geminidr.ghost.lookups'
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_ghost)
         # Add GHOST-specific timestamp keywords

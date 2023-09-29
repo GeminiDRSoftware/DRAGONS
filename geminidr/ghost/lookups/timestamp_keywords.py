@@ -8,6 +8,7 @@ timestamp_keys = {
     "applyFlatBPM": "APFLTBPM",
     "barycentricCorrect": "BARYCORR",
     "clipSigmaBPM": "CLIPSIGB",
+    "combineOrders": "CMBORDER",
     "CRCorrect": "FXSLITCR",
     "extractProfile": "EXTRPROF",
     "interpolateAndCombine": "INTERCOM",

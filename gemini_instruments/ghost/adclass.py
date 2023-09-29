@@ -278,9 +278,14 @@ class AstroDataGhost(AstroDataGemini):
         Define the 'processed data' tag set for GHOST data.
         """
         kwords = set(['PRSLITIM', 'PRSLITBI', 'PRSLITDA', 'PRSLITFL',
-                      'PRWAVLFT', 'PRPOLYFT'])
+                      'PRWAVLFT', 'PRPOLYFT', 'PROCSTND'])
         if set(self.phu) & kwords:
             return TagSet(['PROCESSED'])
+
+    @astro_data_tag
+    def _tag_processed_standard(self):
+        if 'PROCSTND' in self.phu:
+            return TagSet(['STANDARD'])
 
     #@astro_data_tag
     #def _tag_binning_mode(self):

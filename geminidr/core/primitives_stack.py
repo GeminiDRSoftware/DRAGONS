@@ -178,11 +178,11 @@ class Stack(PrimitivesBASE):
         if memory is not None:
             memory = int(memory * 1000000000)
 
-        zero = params["zero"]
-        scale = params["scale"]
+        zero = params.get("zero", False)
+        scale = params.get("scale", False)
         apply_dq = params["apply_dq"]
-        separate_ext = params["separate_ext"]
-        statsec = params["statsec"]
+        separate_ext = params.get("separate_ext", False)
+        statsec = params.get("statsec", None)
         reject_method = params["reject_method"]
         save_rejection_map = params["save_rejection_map"]
 

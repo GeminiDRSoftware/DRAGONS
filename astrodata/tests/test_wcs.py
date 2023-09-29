@@ -203,14 +203,14 @@ def test_adding_longslit_wcs(GMOS_LONGSLIT):
 
 
 @pytest.mark.dragons_remote_data
-def test_loglinear_axis(NIRI_IMAGE, change_working_dir):
+def test_loglinear_axis(NIRI_IMAGE):
     """Test that we can add a log-linear axis and write and read it"""
     ad = astrodata.open(NIRI_IMAGE)
     coords = ad[0].wcs(200, 300)
     ad[0].data = np.repeat(ad[0].data[np.newaxis], 5, axis=0)
     new_input_frame = adwcs.pixel_frame(3)
     loglinear_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
-                                 axes_names=("Wavelength",), name="WAVE")
+                                 axes_names=("AWAV",), name="Wavelength in air")
     celestial_frame = ad[0].wcs.output_frame
     celestial_frame._axes_order = (1, 2)
     new_output_frame = cf.CompositeFrame([loglinear_frame, celestial_frame],
@@ -221,7 +221,7 @@ def test_loglinear_axis(NIRI_IMAGE, change_working_dir):
     new_coords = ad[0].wcs(2, 200, 300)
     assert_allclose(coords, new_coords[1:])
 
-    with change_working_dir():
-        ad.write("test.fits", overwrite=True)
-        ad2 = astrodata.open("test.fits")
-        assert_allclose(ad2[0].wcs(2, 200, 300), new_coords)
+    #with change_working_dir():
+    ad.write("test.fits", overwrite=True)
+    ad2 = astrodata.open("test.fits")
+    assert_allclose(ad2[0].wcs(2, 200, 300), new_coords)

@@ -241,7 +241,8 @@ def _write_newfile(extns, suffix, base, log):
     n.phu['OBSID'] = base.phu.get('OBSID', '')
 
     # Remove some keywords that are only relevant to the bundle
-    for kw in ['NEXTEND', 'NREDEXP', 'NBLUEEXP', 'NSLITEXP', 'UT']:
+    for kw in ['NEXTEND', 'NREDEXP', 'NBLUEEXP', 'NSLITEXP', 'UT',
+               'EXTNAME', 'EXTVER']:
         try:
             del n.phu[kw]
         except KeyError:

@@ -21,12 +21,12 @@ class storeCalibrationConfig(parameters_calibdb.storeCalibrationConfig):
     caltype = config.ChoiceField("Type of calibration", str,
                                  allowed={"processed_arc": "processed ARC",
                                           "processed_bias": "procsessed BIAS",
+                                          "processed_bpm": "processed BPM",
                                           "processed_dark": "processed DARK",
                                           "processed_flat": "processed FLAT",
-                                          "processed_fringe": "processed fringe",
                                           "processed_slitflat": "processed slit-viewer flat",
                                           "processed_slit": "processed slit-viewer",
-                                          "bpm": "bad pixel mask"},
+                                          "processed_standard": "processed standard"},
                                  optional=False)
 
 

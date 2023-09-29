@@ -43,6 +43,19 @@ class barycentricCorrectConfig(config.Config):
                             None, optional=True)
 
 
+class calculateSensitivityConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
+    filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
+    order = config.RangeField("Order of polynomial fit to each echelle order", int,
+                              1, min=1, max=5)
+    in_vacuo = config.Field("Are spectrophotometric data wavelengths measured "
+                            "in vacuo?", bool, None, optional=True)
+    debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
+                                  bool, False)
+    debug_plots = config.Field("Show response-fitting plots for each order?",
+                               bool, False)
+
+
 class clipSigmaBPMConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sigmaBPMClipped",
                           optional=True)
@@ -102,15 +115,15 @@ class extractProfileConfig(config.Config):
     debug_timing = config.Field("Output time per order?", bool, False)
 
 
-class interpolateAndCombineConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_interpdAndCombined",
+class combineOrdersConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_ordersCombined",
                           optional=True)
     scale = config.ChoiceField("Output wavelength scale", str, {
-        'linear': 'Linear wavelength scale',
+        #'linear': 'Linear wavelength scale',
         'loglinear': 'Log-linear wavelength scale'
     }, default='loglinear')
-    oversample = config.Field("(Approx.) oversampling of output wavelength "
-                              "scale", float, 1.0)
+    oversample = config.RangeField("Oversampling of output wavelength scale",
+                                   float, 1.0, min=0.5, max=10, inclusiveMax=True)
 
 
 class findAperturesConfig(config.Config):
@@ -156,6 +169,9 @@ class flatCorrectConfig(config.Config):
                                 optional=True)
 
 
+fluxCalibrateConfig = parameters_spect.fluxCalibrateConfig
+
+
 class formatOutputConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_formattedOutput",
                           optional=True)
@@ -189,8 +205,13 @@ class removeScatteredLightConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_scatteredLightRemoved",
                           optional=True)
     skip = config.Field("Skip removal of scattered light?", bool, True)
+    xsampling = config.RangeField("Sampling in x direction (unbinned)", int, 32, min=1)
     debug_spline_smoothness = config.RangeField(
-        "Scaling factor for spline smoothness", float, default=1, min=0.5)
+        "Scaling factor for spline smoothness", float, default=30, min=1)
+    debug_percentile = config.RangeField("Percentile for statistics of inter-order light",
+                                         float, default=20, min=1, max=50, inclusiveMax=True)
+    debug_avoidance = config.RangeField(
+        "Number of (unbinned) pixels to avoid at edges of orders", int, 2, min=1)
     debug_save_model = config.Field("Attach scattered light model to output?",
                                     bool, False)
 
@@ -199,9 +220,9 @@ class responseCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_responseCorrected",
                           optional=True)
     standard = config.Field("Standard star (observed)", (str, ad), None,
-                       optional=True)
-    specphot_file = config.Field("Filename containing spectrophotometry", str, None,
                             optional=True)
+    filename = config.Field("Name of spectrophotometric data file", str,
+                            None, optional=True)
     units = config.Field("Units for output spectrum", str, "W m-2 nm-1",
                          check=parameters_spect.flux_units_check)
     write_result = config.Field("Write primitive output to disk?", bool, False)
@@ -209,6 +230,12 @@ class responseCorrectConfig(config.Config):
                               1, min=1, max=5)
     debug_plots = config.Field("Show response-fitting plots for each order?",
                                bool, False)
+
+
+class scaleCountsToReference(config.Config):
+    suffix = config.Field("Filename suffix", str, "_countsScaled", optional=True)
+    tolerance = config.RangeField("Tolerance for scaling compared to exposure time",
+                                  float, 0, min=0, max=1, inclusiveMax=True)
 
 
 class stackArcsConfig(parameters_stack.core_stacking_config):
@@ -225,6 +252,11 @@ class stackArcsConfig(parameters_stack.core_stacking_config):
 class standardizeSpectralFormatConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_dragons",
                           optional=True)
+
+
+class stackFramesConfig(parameters_stack.core_stacking_config):
+    def setDefaults(self):
+        self.reject_method = "none"
 
 
 write1DSpectraConfig = parameters_spect.write1DSpectraConfig

@@ -27,16 +27,15 @@ def reduceScience(p):
     p.removeScatteredLight()
     p.writeOutputs()
     p.extractProfile()
-    #p.flatCorrect(skip=True)  # Need to write our own, NOT USE GMOS - extract the flat
-    #                 # profile, then simple division
     p.addWavelengthSolution()  # should be able to accept multiple input
                                # arcs, e.g. from start and end of night,
                                # and interpolate in time
     p.barycentricCorrect()  # trivial - multiply wavelength scale
-    p.responseCorrect()
-    p.writeOutputs(suffix="_calibrated", strip=True)  # output this data product
-    p.interpolateAndCombine()
-    p.standardizeSpectralFormat()
+    p.fluxCalibrate()  # correct for atmospheric extinction before combining
+    #p.scaleCountsToReference()  # can be no-op'd with tolerance=0
+    p.writeOutputs(suffix="_calibrated", strip=True)  # output these data products
+    p.combineOrders()
+    p.writeOutputs(suffix="_dragons", strip=True)
 
 
 def reduceStandard(p):
@@ -58,11 +57,14 @@ def reduceStandard(p):
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
     p.tileArrays()
+    p.removeScatteredLight()
     p.writeOutputs()
     p.extractProfile()
-    #p.flatCorrect() # Need to write our own, NOT USE GMOS - extract the flat profile,
-    #                # then simple division
-    p.addWavelengthSolution(suffix="_standard")
+    p.addWavelengthSolution()
+    p.scaleCountsToReference()
+    p.stackFrames()
+    p.calculateSensitivity()
+    p.storeProcessedStandard()
 
 
 _default = reduceScience

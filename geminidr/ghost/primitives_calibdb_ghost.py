@@ -23,7 +23,7 @@ class CalibDBGHOST(CalibDB):
 
     def __init__(self, adinputs, **kwargs):
         super(CalibDBGHOST, self).__init__(adinputs, **kwargs)
-        self.inst_lookups = 'ghostdr.ghost.lookups'
+        self.inst_lookups = 'geminidr.ghost.lookups'
         self._param_update(parameters_calibdb_ghost)
 
     #def getProcessedArc(self, adinputs=None, **params):
@@ -60,3 +60,12 @@ class CalibDBGHOST(CalibDB):
                                     primname=self.myself(), keyword="PRSLITFL")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
+
+    def storeProcessedStandard(self, adinputs=None, suffix=None):
+        caltype = 'processed_standard'
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adinputs = self._markAsCalibration(
+            adinputs, suffix=suffix, primname=self.myself(), keyword="PROCSTND")
+        self.storeCalibration(adinputs, caltype=caltype)
+        return adinputs
+
