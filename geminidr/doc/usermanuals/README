@@ -1,0 +1,44 @@
+Generating the primitive documentation.
+---------------------------------------
+There are two steps:
+
+1) run the script to generate the docs from the docstrings and the parameter
+   files.
+     utility_scripts/generate_primdoc.py -d primitives/generated-doc
+
+2) use the template to write the primitive_name.rst file that will load the
+   generated subsections.   The template is "primmitive_createExample.rst" in
+   "examples".   This is a manual, human-driven task.
+
+
+
+
+
+Generating the recipe documentation.
+------------------------------------
+There are two steps:
+
+1) run the script to generate the automated part.
+      The generated file should have:
+        * name of the recipe (as heading with ====)
+        * module and name of recipe library
+        * recipe tags
+        * docstring which should include the type of inputs (tags) required.
+        * the recipe
+
+2) Then manually create the .rst that put them all together and adds additional
+   comments.
+   The
+
+
+Development
+-----------
+
+Dev and test for primitives
+* To try it out:
+   utility_scripts/generate_primdoc.py core gmos -d testdoc
+
+Dev and test for recipes
+
+* ./generate_recipedoc.py gmos -d testdoc
+
