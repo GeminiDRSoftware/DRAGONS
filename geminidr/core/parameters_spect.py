@@ -182,6 +182,8 @@ class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
     order = config.RangeField("Interpolation order", int, 3, min=0, max=5, inclusiveMax=True)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
+    dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
+                                     float, 0.001, min=0.)
 
 
 class extractSpectraConfig(config.Config):
@@ -486,6 +488,8 @@ class resampleToCommonFrameConfig(config.Config):
     trim_spatial = config.Field("Trim spatial range to fully-covered region?", bool, True)
     trim_spectral = config.Field("Trim wavelength range to fully-covered region?", bool, False)
     force_linear = config.Field("Force linear wavelength solution?", bool, True)
+    dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
+                                     float, 0.001, min=0.)
 
     def validate(self):
         config.Config.validate(self)

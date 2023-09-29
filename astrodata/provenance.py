@@ -9,9 +9,8 @@ def add_provenance(ad, filename, md5, primitive, timestamp=None):
     Add the given provenance entry to the full set of provenance records on
     this object.
 
-    Provenance is not added if the incoming md5 is None or ''.  These indicate
-    source data for the provenance that are not on disk, so not useful as
-    provenance.
+    Provenance is added even if the incoming md5 is None or ''.  This indicates
+    source data for the provenance that are not on disk.
 
     Parameters
     ----------
@@ -22,9 +21,9 @@ def add_provenance(ad, filename, md5, primitive, timestamp=None):
     timestamp : `datetime.datetime`
 
     """
-    if md5 is None or md5 == '':
-        # not a real input, we can ignore this one
-        return
+    # Handle data where the md5 is None. It will need to be a string type to
+    # store in the FITS table.
+    md5 = '' if md5 is None else md5
 
     if timestamp is None:
         timestamp = datetime.utcnow().isoformat()
@@ -52,10 +51,10 @@ def add_provenance(ad, filename, md5, primitive, timestamp=None):
         provenance.add_row((timestamp, filename, md5, primitive))
 
 
-def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args):
+def add_history(ad, timestamp_start, timestamp_stop, primitive, args):
     """
-    Add the given ProvenanceHistory entry to the full set of history records
-    on this object.
+    Add the given History entry to the full set of history records on this
+    object.
 
     Parameters
     ----------
@@ -71,14 +70,22 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
         Arguments used for the primitive call.
 
     """
-    # I modified these indices, so making this method adaptive to existing histories
-    # with the old ordering.  This also makes modifying the order in future easier
-    primitive_col_idx, args_col_idx, timestamp_start_col_idx, timestamp_stop_col_idx = \
-        find_provenance_history_column_indices(ad)
+    # If the ad instance has the old 'PROVHISTORY' extenstion name, rename it
+    # now to 'HISTORY'
+    if hasattr(ad, 'PROVHISTORY'):
+        ad.HISTORY = ad.PROVHISTORY
+        del ad.PROVHISTORY
 
-    if hasattr(ad, 'PROVHISTORY') and None not in (primitive_col_idx, args_col_idx,
-                                                   timestamp_stop_col_idx, timestamp_start_col_idx):
-        for row in ad.PROVHISTORY:
+    # I modified these indices, so making this method adaptive to existing
+    # histories with the old ordering.  This also makes modifying the order
+    # in future easier
+    primitive_col_idx, args_col_idx, timestamp_start_col_idx, \
+        timestamp_stop_col_idx = find_history_column_indices(ad)
+
+    if hasattr(ad, 'HISTORY') and None not in (primitive_col_idx, args_col_idx,
+                                               timestamp_stop_col_idx,
+                                               timestamp_start_col_idx):
+        for row in ad.HISTORY:
             if timestamp_start == row[timestamp_start_col_idx] and \
                     timestamp_stop == row[timestamp_stop_col_idx] and \
                     primitive == row[primitive_col_idx] and \
@@ -87,18 +94,22 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
                 return
 
     colsize = len(args)+1
-    if hasattr(ad, 'PROVHISTORY'):
-        colsize = max(colsize, (max(len(ph[args_col_idx]) for ph in ad.PROVHISTORY) + 1) \
-            if args_col_idx is not None else 16)
+    if hasattr(ad, 'HISTORY'):
+        colsize = max(colsize, (max(len(ph[args_col_idx])
+                                    for ph in ad.HISTORY) + 1)
+        if args_col_idx is not None else 16)
 
-        timestamp_start_arr = [ph[timestamp_start_col_idx] if timestamp_start_col_idx is not None else ''
-                               for ph in ad.PROVHISTORY]
-        timestamp_stop_arr = [ph[timestamp_stop_col_idx] if timestamp_stop_col_idx is not None else ''
-                              for ph in ad.PROVHISTORY]
-        primitive_arr = [ph[primitive_col_idx] if primitive_col_idx is not None else ''
-                         for ph in ad.PROVHISTORY]
+        timestamp_start_arr = [ph[timestamp_start_col_idx]
+                               if timestamp_start_col_idx is not None else ''
+                               for ph in ad.HISTORY]
+        timestamp_stop_arr = [ph[timestamp_stop_col_idx]
+                              if timestamp_stop_col_idx is not None else ''
+                              for ph in ad.HISTORY]
+        primitive_arr = [ph[primitive_col_idx]
+                         if primitive_col_idx is not None else ''
+                         for ph in ad.HISTORY]
         args_arr = [ph[args_col_idx] if args_col_idx is not None else ''
-                    for ph in ad.PROVHISTORY]
+                    for ph in ad.HISTORY]
     else:
         timestamp_start_arr = []
         timestamp_stop_arr = []
@@ -111,9 +122,11 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
     args_arr.append(args)
 
     dtype = ("S128", "S%d" % colsize, "S28", "S28")
-    ad.PROVHISTORY = Table([primitive_arr, args_arr, timestamp_start_arr, timestamp_stop_arr],
-                    names=('primitive', 'args', 'timestamp_start', 'timestamp_stop'),
-                    dtype=dtype)
+    ad.HISTORY = Table([primitive_arr, args_arr, timestamp_start_arr,
+                        timestamp_stop_arr],
+                       names=('primitive', 'args', 'timestamp_start',
+                              'timestamp_stop'),
+                       dtype=dtype)
 
 
 def clone_provenance(provenance_data, ad):
@@ -121,8 +134,8 @@ def clone_provenance(provenance_data, ad):
     For a single input's provenance, copy it into the output
     `AstroData` object as appropriate.
 
-    This takes a dictionary with a source filename, md5 and both it's
-    original provenance and provenance_history information.  It duplicates
+    This takes a dictionary with a source filename, md5 and both its
+    original provenance and history information.  It duplicates
     the provenance data into the outgoing `AstroData` ad object.
 
     Parameters
@@ -141,42 +154,42 @@ def clone_provenance(provenance_data, ad):
         add_provenance(ad, p[0], p[1], p[2], timestamp=p[3])
 
 
-def clone_provenance_history(provenance_history_data, ad):
+def clone_history(history_data, ad):
     """
-    For a single input's provenance history, copy it into the output
+    For a single input's history, copy it into the output
     `AstroData` object as appropriate.
 
-    This takes a dictionary with a source filename, md5 and both it's
-    original provenance and provenance_history information.  It duplicates
-    the provenance data into the outgoing `AstroData` ad object.
+    This takes a dictionary with a source filename, md5 and both its
+    original provenance and history information.  It duplicates
+    the history data into the outgoing `AstroData` ad object.
 
     Parameters
     ----------
-    provenance_history_data :
+    history_data :
         pointer to the `AstroData` table with the history information.
         *Note* this may be the output `~astrodata.AstroData` as well, so we
         need to handle that.
     ad : `astrodata.AstroData`
-        Outgoing `~astrodata.AstroData` object to add provenance history data
+        Outgoing `~astrodata.AstroData` object to add history data
         to.
 
     """
-    primitive_col_idx, args_col_idx, timestamp_start_col_idx, timestamp_stop_col_idx = \
-        find_provenance_history_column_indices(ad)
-    phd = [(prov_hist[timestamp_start_col_idx], prov_hist[timestamp_stop_col_idx],
-            prov_hist[primitive_col_idx], prov_hist[args_col_idx])
-           for prov_hist in provenance_history_data]
-    for ph in phd:
-        add_provenance_history(ad, ph[0], ph[1], ph[2], ph[3])
+    primitive_col_idx, args_col_idx, timestamp_start_col_idx, \
+        timestamp_stop_col_idx = find_history_column_indices(ad)
+    hd = [(hist[timestamp_start_col_idx], hist[timestamp_stop_col_idx],
+            hist[primitive_col_idx], hist[args_col_idx])
+           for hist in history_data]
+    for h in hd:
+        add_history(ad, h[0], h[1], h[2], h[3])
 
 
-def find_provenance_history_column_indices(ad):
-    if hasattr(ad, 'PROVHISTORY'):
+def find_history_column_indices(ad):
+    if hasattr(ad, 'HISTORY'):
         primitive_col_idx = None
         args_col_idx = None
         timestamp_start_col_idx = None
         timestamp_stop_col_idx = None
-        for idx, colname in enumerate(ad.PROVHISTORY.colnames):
+        for idx, colname in enumerate(ad.HISTORY.colnames):
             if colname == 'primitive':
                 primitive_col_idx = idx
             elif colname == 'args':
@@ -192,16 +205,19 @@ def find_provenance_history_column_indices(ad):
         timestamp_start_col_idx = 2
         timestamp_stop_col_idx = 3
 
-    return primitive_col_idx, args_col_idx, timestamp_start_col_idx, timestamp_stop_col_idx
+    return primitive_col_idx, args_col_idx, timestamp_start_col_idx, \
+        timestamp_stop_col_idx
 
 
-def provenance_summary(ad, provenance=True, provenance_history=True):
+def provenance_summary(ad, provenance=True, history=True):
     """
-    Generate a pretty text display of the provenance information for an `~astrodata.core.AstroData`.
+    Generate a pretty text display of the provenance information for an
+    `~astrodata.core.AstroData`.
 
-    This pulls the provenance and history information from a `~astrodata.core.AstroData` object
-    and formats it for readability.  The primitive arguments in the history are wrapped across
-    multiple lines to keep the overall width manageable.
+    This pulls the provenance and history information from a
+    `~astrodata.core.AstroData` object and formats it for readability.  The
+    primitive arguments in the history are wrapped across multiple lines to
+    keep the overall width manageable.
 
     Parameters
     ----------
@@ -209,12 +225,12 @@ def provenance_summary(ad, provenance=True, provenance_history=True):
         Input data to read provenance from
     provenance : bool
         True to show provenance
-    provenance_history : bool
-        True to show the provenance history with associated parameters and timestamps
+    history : bool
+        True to show the history with associated parameters and timestamps
 
     Returns
     -------
-        str representation of the provenance
+        str representation of the provenance and history
     """
     retval = ""
     if provenance:
@@ -222,13 +238,17 @@ def provenance_summary(ad, provenance=True, provenance_history=True):
             retval = f"Provenance\n----------\n{ad.PROVENANCE}\n"
         else:
             retval = "No Provenance found\n"
-    if provenance_history:
+    if history:
         if provenance:
             retval += "\n"  # extra blank line between
         if hasattr(ad, 'PROVHISTORY'):
-            retval += "Provenance History\n------------------\n"
-            primitive_col_idx, args_col_idx, timestamp_start_col_idx, timestamp_stop_col_idx = \
-                find_provenance_history_column_indices(ad)
+            retval += "Warning: File uses old PROVHISTORY extname."
+            ad.HISTORY = ad.PROVHISTORY
+        if hasattr(ad, 'HISTORY'):
+            retval += "History\n-------\n"
+
+            primitive_col_idx, args_col_idx, timestamp_start_col_idx, \
+                timestamp_stop_col_idx = find_history_column_indices(ad)
 
             primitive_col_size = 9
             timestamp_start_col_size = 28
@@ -236,23 +256,27 @@ def provenance_summary(ad, provenance=True, provenance_history=True):
             args_col_size = 16
 
             # infer args size by finding the max for the folded json values
-            for row in ad.PROVHISTORY:
+            for row in ad.HISTORY:
                 argsstr = row[args_col_idx]
                 args = json.loads(argsstr)
                 argspp = json.dumps(args, indent=4)
                 for line in argspp.split('\n'):
                     args_col_size = max(args_col_size, len(line))
-                primitive_col_size = max(primitive_col_size, len(row[primitive_col_idx]))
+                primitive_col_size = max(primitive_col_size,
+                                         len(row[primitive_col_idx]))
 
             # Titles
-            retval += f'{"Primitive":<{primitive_col_size}} {"Args":<{args_col_size}} ' + \
+            retval += f'{"Primitive":<{primitive_col_size}} ' \
+                      f'{"Args":<{args_col_size}} ' \
                       f'{"Start":<{timestamp_start_col_size}} {"Stop"}\n'
             # now the lines
-            retval += f'{"":{"-"}<{primitive_col_size}} {"":{"-"}<{args_col_size}} ' + \
-                      f'{"":{"-"}<{timestamp_start_col_size}} {"":{"-"}<{timestamp_stop_col_size}}\n'
+            retval += f'{"":{"-"}<{primitive_col_size}} ' \
+                      f'{"":{"-"}<{args_col_size}} ' \
+                      f'{"":{"-"}<{timestamp_start_col_size}} ' \
+                      f'{"":{"-"}<{timestamp_stop_col_size}}\n'
 
             # Rows, looping over args lines
-            for row in ad.PROVHISTORY:
+            for row in ad.HISTORY:
                 primitive = row[primitive_col_idx]
                 args = row[args_col_idx]
                 start = row[timestamp_start_col_idx]
@@ -261,15 +285,18 @@ def provenance_summary(ad, provenance=True, provenance_history=True):
                 try:
                     parseargs = json.loads(args)
                     args = json.dumps(parseargs, indent=4)
-                except:
+                except Exception:
                     pass  # ok, just use whatever non-json was in there
                 for argrow in args.split('\n'):
                     if first:
-                        retval += f'{primitive:<{primitive_col_size}} {argrow:<{args_col_size}} ' + \
-                                  f'{start:<{timestamp_start_col_size}} {stop}\n'
+                        retval += f'{primitive:<{primitive_col_size}} ' \
+                                  f'{argrow:<{args_col_size}} ' \
+                                  f'{start:<{timestamp_start_col_size}} ' \
+                                  f'{stop}\n'
                     else:
                         retval += f'{"":<{primitive_col_size}} {argrow}\n'
-                    # prep for additional arg rows without duplicating the other values
+                    # prep for additional arg rows without duplicating the
+                    # other values
                     first = False
         else:
             retval += "No Provenance History found.\n"

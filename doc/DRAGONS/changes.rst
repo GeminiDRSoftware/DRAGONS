@@ -12,6 +12,11 @@ Change Logs
 Improvements
 ------------
 
+**astrodata.provenance**
+
+* Renamed the ``PROVHISTORY`` table to ``HISTORY``, and changed wording in the
+code from "provenance history" to simply "history".
+
 **geminidr.core**
 
 * Allow input files to ``shiftImages`` to recognize tabs or multiple

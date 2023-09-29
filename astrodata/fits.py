@@ -194,7 +194,7 @@ def add_header_to_table(table):
 
 
 def _process_table(table, name=None, header=None):
-    if isinstance(table, BinTableHDU):
+    if isinstance(table, (BinTableHDU, TableHDU)):
         obj = Table(table.data, meta={'header': header or table.header})
         for i, col in enumerate(obj.columns, start=1):
             try:

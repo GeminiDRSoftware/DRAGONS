@@ -453,10 +453,10 @@ def test_from_hdulist3():
         ),
     ])
 
-    with pytest.warns(UserWarning, match='Discarding ASCIITAB'):
-        ad = astrodata.open(hdul)
+    ad = astrodata.open(hdul)
 
-    assert len(ad) == 1
+    assert hasattr(ad, 'ASCIITAB')
+    assert len(ad.ASCIITAB) == 2
 
 
 def test_can_make_and_write_ad_object(tmpdir):

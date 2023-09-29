@@ -2072,6 +2072,9 @@ class Spect(Resample):
             Order of interpolation when resampling.
         subsample : int
             Pixel subsampling factor.
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
 
         Returns
         -------
@@ -2086,6 +2089,7 @@ class Spect(Resample):
         order = params["order"]
         subsample = params["subsample"]
         do_cal = params["do_cal"]
+        dq_threshold = params["dq_threshold"]
 
         if do_cal == 'skip':
             log.warning('Distortion correction has been turned off.')
@@ -2188,14 +2192,16 @@ class Spect(Resample):
             if mosaic:
                 ad_out = transform.resample_from_wcs(
                     ad, 'distortion_corrected', order=order,
-                    subsample=subsample, parallel=False
+                    subsample=subsample, parallel=False,
+                    threshold=dq_threshold
                 )
             else:
                 for i, ext in enumerate(ad):
                     if i == 0:
                         ad_out = transform.resample_from_wcs(
                             ext, 'distortion_corrected', order=order,
-                            subsample=subsample, parallel=False
+                            subsample=subsample, parallel=False,
+                            threshold=dq_threshold
                         )
                     else:
                         ad_out.append(
@@ -2203,7 +2209,8 @@ class Spect(Resample):
                                                         'distortion_corrected',
                                                         order=order,
                                                         subsample=subsample,
-                                                        parallel=False)[0]
+                                                        parallel=False,
+                                                        threshold=dq_threshold)[0]
                         )
 
             # The WCS gets updated by resample_from_wcs. We should also make it
@@ -3726,6 +3733,9 @@ class Spect(Resample):
             the inputs' wavelength coverage?
         force_linear : bool
             Force a linear output wavelength solution?
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
 
         Notes
         -----
@@ -3752,6 +3762,7 @@ class Spect(Resample):
         trim_spatial = params["trim_spatial"]
         trim_spectral = params["trim_spectral"]
         force_linear = params["force_linear"]
+        dq_threshold = params["dq_threshold"]
 
         # Check that all ad objects are either 1D or 2D
         ndim = {len(ext.shape) for ad in adinputs for ext in ad}
@@ -3958,7 +3969,8 @@ class Spect(Resample):
                 new_ext = transform.resample_from_wcs(
                     ext, 'resampled', subsample=subsample,
                     attributes=attributes, conserve=this_conserve,
-                    origin=origin, output_shape=output_shape)
+                    origin=origin, output_shape=output_shape,
+                    threshold=dq_threshold)
                 if iext == 0:
                     ad_out = new_ext
                 else:
