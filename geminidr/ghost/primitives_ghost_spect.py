@@ -712,7 +712,7 @@ class GHOSTSpect(GHOST):
                 all_var[i, j] = var
             output = astrodata.NDAstroData(
                 data=all_data[i, -1], mask=all_mask[i, -1],
-                ariance=all_var[i, -1], meta = {'header': deepcopy(ext.hdr)})
+                variance=all_var[i, -1], meta = {'header': deepcopy(ext.hdr)})
             adout.append(output)
             adout[i].wcs = gWCS([(adwcs.pixel_frame(1), wcs),
                                  (ext.wcs.output_frame, None)])
@@ -1372,12 +1372,12 @@ class GHOSTSpect(GHOST):
             arm = GhostArm(arm=ad.arm(), mode=ad.res_mode())
 
             # Find locations of all significant peaks in all orders
-            nm, ny, _ = ad[0].data.shape
+            nm, ny = ad[0].data.shape
             all_peaks = []
             pixels = np.arange(ny)
-            for m_ix, flux in enumerate(ad[0].data[:, :, 0]):
+            for m_ix, flux in enumerate(ad[0].data):
                 try:
-                    variance = ad[0].variance[m_ix, :, 0]
+                    variance = ad[0].variance[m_ix]
                 except TypeError:  # variance is None
                     nmad = median_filter(
                         abs(flux - median_filter(flux, size=2*radius+1)),
@@ -1524,7 +1524,7 @@ class GHOSTSpect(GHOST):
 
             if std is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed stndard listed for "
+                    raise OSError("No processed standard listed for "
                                   f"{ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
