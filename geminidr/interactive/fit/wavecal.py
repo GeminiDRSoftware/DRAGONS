@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 import numpy as np
@@ -15,8 +16,13 @@ from .help import DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
 from gempy.library.matching import match_sources
 from gempy.library.tracing import cwt_ricker, pinpoint_peaks
 
-from .fit1d import (Fit1DPanel, Fit1DVisualizer, InfoPanel,
-                    fit1d_figure, USER_MASK_NAME)
+from .fit1d import (
+    Fit1DPanel,
+    Fit1DVisualizer,
+    InfoPanel,
+    fit1d_figure,
+    USER_MASK_NAME,
+)
 
 
 def wavestr(line):
@@ -33,6 +39,7 @@ def beep():
 def disable_when_identifying(fn):
     """A decorator that prevents methods from being executed when the
     WavelengthSolutionPanel is currently identifying an arc line"""
+
     def gn(self, *args, **kwargs):
         if self.currently_identifying:
             beep()
@@ -45,21 +52,21 @@ def disable_when_identifying(fn):
 
 class WavelengthSolutionPanel(Fit1DPanel):
     def __init__(
-            self,
-            visualizer,
-            fitting_parameters,
-            domain=None,
-            x=None,
-            y=None,
-            weights=None,
-            meta=None,
-            **kwargs
+        self,
+        visualizer,
+        fitting_parameters,
+        domain=None,
+        x=None,
+        y=None,
+        weights=None,
+        meta=None,
+        **kwargs,
     ):
         # No need to compute wavelengths here as the model_change_handler()
         # does it
         spectrum_data_dict = {
-            'wavelengths': np.zeros_like(meta["spectrum"]),
-            'spectrum': meta["spectrum"]
+            "wavelengths": np.zeros_like(meta["spectrum"]),
+            "spectrum": meta["spectrum"],
         }
 
         self.spectrum = bm.ColumnDataSource(spectrum_data_dict)
@@ -74,7 +81,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             x,
             y,
             weights=weights,
-            **kwargs
+            **kwargs,
         )
 
         # This has to go on the model (and not this TabPanel instance) since
@@ -84,7 +91,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.model.allow_poor_fits = False
 
         self.new_line_marker = bm.ColumnDataSource(
-            {"x": [min(self.spectrum.data['wavelengths'])] * 2, "y": [0, 0]}
+            {"x": [min(self.spectrum.data["wavelengths"])] * 2, "y": [0, 0]}
         )
 
         self.p_spectrum.line(
@@ -94,7 +101,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             color="red",
             name="new_line_marker",
             line_width=3,
-            visible=False
+            visible=False,
         )
 
         self.set_currently_identifying(False)
@@ -122,25 +129,24 @@ class WavelengthSolutionPanel(Fit1DPanel):
         domain=None,
         controller_div=None,
         plot_residuals=True,  # TODO: This is not used, is it needed?
-        plot_ratios=True,     # TODO: This is not used
-        extra_masks=True      # TODO: This is not used
+        plot_ratios=True,  # TODO: This is not used
+        extra_masks=True,  # TODO: This is not used
     ):
-
-        self.xpoint = 'fitted'
-        self.ypoint = 'nonlinear'
+        self.xpoint = "fitted"
+        self.ypoint = "nonlinear"
 
         p_main, p_supp = fit1d_figure(
             width=self.width,
             height=self.height,
             xpoint=self.xpoint,
             ypoint=self.ypoint,
-            xline='model',
-            yline='nonlinear',
+            xline="model",
+            yline="nonlinear",
             xlabel=self.xlabel,
             ylabel=self.ylabel,
             model=self.model,
             plot_ratios=False,
-            enable_user_masking=True
+            enable_user_masking=True,
         )
 
         mask_handlers = (self.mask_button_handler, self.unmask_button_handler)
@@ -151,13 +157,13 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.model.band_model if self.enable_regions else None,
             controller_div,
             mask_handlers=mask_handlers,
-            domain=domain
+            domain=domain,
         )
 
         p_spectrum = figure(
             height=self.height,
             min_width=400,
-            title='Spectrum',
+            title="Spectrum",
             x_axis_label=self.xlabel,
             y_axis_label="Signal",
             tools="pan,wheel_zoom,box_zoom,reset",
@@ -165,7 +171,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             x_range=p_main.x_range,
             min_border_left=80,
             sizing_mode="stretch_width",
-            stylesheets=dragons_styles()
+            stylesheets=dragons_styles(),
         )
 
         # TODO: Update *_policy handling below
@@ -174,35 +180,30 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # p_spectrum.sizing_mode = 'stretch_width'
 
         p_spectrum.step(
-            x='wavelengths',
-            y='spectrum',
+            x="wavelengths",
+            y="spectrum",
             source=self.spectrum,
             line_width=1,
             color="blue",
-            mode="center"
+            mode="center",
         )
 
         p_spectrum.text(
-            x='fitted',
-            y='heights',
-            text='lines',
+            x="fitted",
+            y="heights",
+            text="lines",
             source=self.model.data,
             angle=0.5 * np.pi,
-            text_color=self.model.mask_rendering_kwargs()['color'],
-            text_baseline='middle',
-            text_align='right',
-            text_font_size='10pt')
-
-        delete_line_handler = Handler(
-            'd',
-            "Delete arc line",
-            self.delete_line
+            text_color=self.model.mask_rendering_kwargs()["color"],
+            text_baseline="middle",
+            text_align="right",
+            text_font_size="10pt",
         )
 
+        delete_line_handler = Handler("d", "Delete arc line", self.delete_line)
+
         identify_line_handler = Handler(
-            'i',
-            "Identify arc line",
-            self.identify_line
+            "i", "Identify arc line", self.identify_line
         )
 
         c = Controller(
@@ -212,7 +213,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             controller_div,
             mask_handlers=None,
             domain=domain,
-            handlers=[delete_line_handler, identify_line_handler]
+            handlers=[delete_line_handler, identify_line_handler],
         )
 
         c.helpmaskingtext += (
@@ -224,13 +225,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
         c.set_help_text()
 
         p_spectrum.y_range.on_change(
-            "start",
-            lambda attr, old, new: self.update_label_heights()
+            "start", lambda attr, old, new: self.update_label_heights()
         )
 
         p_spectrum.y_range.on_change(
-            "end",
-            lambda attr, old, new: self.update_label_heights()
+            "end", lambda attr, old, new: self.update_label_heights()
         )
 
         self.p_spectrum = p_spectrum
@@ -269,28 +268,30 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.new_line_textbox = bm.NumericInput(
             width=100,
-            mode='float',
+            mode="float",
             sizing_mode="stretch_width",
             name=focus_id,
             stylesheets=dragons_styles(),
-            )
+        )
 
         # JS side listener to perform the focus.  We have to do it async via
         # setTimeout because bokeh triggers the disabled change before the html
         # widget is ready for focus
-        cb = CustomJS(code="""
+        cb = CustomJS(
+            code="""
                         if (cb_obj.disabled == false) {
                           setTimeout(function() {
                             document.getElementsByName('%s')[0].focus();
                           });
                         }
-                      """ % focus_id)
+                      """
+            % focus_id
+        )
 
-        self.new_line_textbox.js_on_change('disabled', cb)
+        self.new_line_textbox.js_on_change("disabled", cb)
 
         self.new_line_dropdown.on_change(
-            "value",
-            self.set_new_line_textbox_value
+            "value", self.set_new_line_textbox_value
         )
 
         self.new_line_textbox.on_change("value", self.handle_line_wavelength)
@@ -300,7 +301,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             min_width=120,
             width_policy="fit",
             button_type="success",
-            stylesheets=dragons_styles()
+            stylesheets=dragons_styles(),
         )
 
         new_line_ok_button.on_click(self.add_new_line)
@@ -310,7 +311,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             min_width=120,
             width_policy="fit",
             button_type="danger",
-            stylesheets=dragons_styles()
+            stylesheets=dragons_styles(),
         )
 
         new_line_cancel_button.on_click(self.cancel_new_line)
@@ -329,7 +330,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 row(
                     bm.Spacer(
                         sizing_mode="stretch_width",
-                        stylesheets=dragons_styles()
+                        stylesheets=dragons_styles(),
                     ),
                     new_line_ok_button,
                     new_line_cancel_button,
@@ -339,30 +340,38 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 stylesheets=dragons_styles(),
             ),
             stylesheets=dragons_styles(),
-            sizing_mode="stretch_width"
+            sizing_mode="stretch_width",
         )
 
         identify_panel = row(
             self.identify_button,
             self.new_line_div,
             sizing_mode="stretch_width",
-            stylesheets=dragons_styles()
+            stylesheets=dragons_styles(),
         )
 
         info_panel = InfoPanel(self.enable_regions, self.enable_user_masking)
 
         self.model.add_listener(info_panel.model_change_handler)
 
-        return [p_spectrum, identify_panel, info_panel.component,
-                p_main, p_supp]
+        return [
+            p_spectrum,
+            identify_panel,
+            info_panel.component,
+            p_main,
+            p_supp,
+        ]
 
     @staticmethod
     def linear_model(model):
         """Return only the linear part of a model. It doesn't work for
         splines, which is why it's not in the InteractiveModel1D class"""
         model = model.fit._models
-        return model.__class__(degree=1, c0=model.c0, c1=model.c1,
-                               domain=model.domain)
+        new_model = model.__class__(
+            degree=1, c0=model.c0, c1=model.c1, domain=model.domain
+        )
+
+        return new_model
 
     def label_height(self, x):
         """
@@ -387,7 +396,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             # data range on each side
             # height = (44 / 29 * self.spectrum.data['spectrum'].max() -
             #          1.1 * self.spectrum.data['spectrum'].min())
-            height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
+            height = 44 / 29 * np.nanmax(self.spectrum.data["spectrum"])
 
         padding = 0.25 * height
 
@@ -404,7 +413,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """Simple callback to move the labels if the spectrum panel is
         resized.
         """
-        self.model.data.data['heights'] = self.label_height(self.model.x)
+        self.model.data.data["heights"] = self.label_height(self.model.x)
 
         if self.currently_identifying:
             start = self.p_spectrum.y_range.start
@@ -424,39 +433,45 @@ class WavelengthSolutionPanel(Fit1DPanel):
         x, y = model.x, model.y
         linear_model = self.linear_model(model)
 
-        self.model.data.data['fitted'] = model.evaluate(x)
-        self.model.data.data['nonlinear'] = y - linear_model(x)
-        self.model.data.data['heights'] = self.label_height(x)
-        self.model.data.data['lines'] = [wavestr(yy) for yy in y]
+        self.model.data.data["fitted"] = model.evaluate(x)
+        self.model.data.data["nonlinear"] = y - linear_model(x)
+        self.model.data.data["heights"] = self.label_height(x)
+        self.model.data.data["lines"] = [wavestr(yy) for yy in y]
 
-        self.model.evaluation.data['nonlinear'] = (
-                model.evaluation.data['model'] -
-                linear_model(model.evaluation.data['xlinspace']))
+        self.model.evaluation.data["nonlinear"] = model.evaluation.data[
+            "model"
+        ] - linear_model(model.evaluation.data["xlinspace"])
 
         domain = model.domain
-        self.spectrum.data['wavelengths'] = model.evaluate(
-            np.arange(domain[0], domain[1]+1))
+        self.spectrum.data["wavelengths"] = model.evaluate(
+            np.arange(domain[0], domain[1] + 1)
+        )
 
         # If we recalculated the model while in the middle of identifying a
         # peak, keep the peak location but update the line choices
         if self.currently_identifying:
             peak = self.currently_identifying
             self.currently_identifying = False
-            self.identify_line('i', 0, 0, peak=peak)
+            self.identify_line("i", 0, 0, peak=peak)
 
     def add_new_line(self, *args):
         """Handler for the 'OK' button in the line identifier"""
         if self.currently_identifying:
             try:
                 wavelength = float(self.new_line_textbox.value)
+
             except TypeError:
                 beep()
                 return
+
             peak = self.currently_identifying
             self.cancel_new_line(*args)
+
             try:
                 self.add_line_to_data(peak, wavelength)
+
             except ValueError:
+                logging.warning("Could not add line to data %s" % wavelength)
                 return
 
     def cancel_new_line(self, *args):
@@ -495,14 +510,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # Dummy values should be close to true values to avoid plot resizing
         new_data = {
-            'x': [peak],
-            'y': [wavelength],
-            'mask': ['good'],
-            'fitted': [wavelength],
-            'nonlinear': [0],
-            'heights': [self.label_height(peak)],
-            'residuals': [0],
-            'lines': [wavestr(wavelength)],
+            "x": [peak],
+            "y": [wavelength],
+            "mask": ["good"],
+            "fitted": [wavelength],
+            "nonlinear": [0],
+            "heights": [self.label_height(peak)],
+            "residuals": [0],
+            "lines": [wavestr(wavelength)],
         }
 
         self.model.data.stream(new_data)
@@ -520,15 +535,13 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
             interp_pixel = interp1d(
                 self.spectrum.data["wavelengths"],
-                range(len(self.spectrum.data["wavelengths"]))
+                range(len(self.spectrum.data["wavelengths"])),
             )
 
             pixel = interp_pixel(x)
 
             new_peaks = np.setdiff1d(
-                self.model.meta["peaks"],
-                self.model.x,
-                assume_unique=True
+                self.model.meta["peaks"], self.model.x, assume_unique=True
             )
 
             # This will fail if no line was deleted before user attempts to
@@ -548,8 +561,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 # TODO: Check this behaves sensibly, and doesn't find
                 # all tiny bumps
                 pinpoint_data = cwt_ricker(
-                    self.spectrum.data["spectrum"],
-                    [0.42466 * fwidth]
+                    self.spectrum.data["spectrum"], [0.42466 * fwidth]
                 )[0]
 
                 eps = np.finfo(np.float32).eps  # Minimum representative data
@@ -578,8 +590,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         )
 
         lower_limit, upper_limit = get_closest(self.model.y, est_wave)
-        possible_lines = [line for line in all_lines
-                          if lower_limit < line < upper_limit]
+        possible_lines = [
+            line for line in all_lines if lower_limit < line < upper_limit
+        ]
+
         if possible_lines:
             selectable_lines = sorted(
                 sorted(possible_lines, key=lambda x: abs(x - est_wave))[:9]
@@ -613,7 +627,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.new_line_marker.data = {
             "x": [est_wave] * 2,
-            "y": [height, height + lheight]
+            "y": [height, height + lheight],
         }
 
         self.set_currently_identifying(peak)
@@ -624,10 +638,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         Delete (not mask) from the fit the line nearest the cursor. This
         operates only on the spectrum panel.
         """
-        index = np.argmin(abs(self.model.data.data['fitted'] - x))
+        index = np.argmin(abs(self.model.data.data["fitted"] - x))
 
         new_data = {
-            col: list(values)[:index] + list(values)[index+1:]
+            col: list(values)[:index] + list(values)[index + 1 :]
             for col, values in self.model.data.data.items()
         }
 
@@ -657,13 +671,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
         good_data = {}
         for k, v in self.model.data.data.items():
             good_data[k] = [
-                vv for vv, mask in zip(v, self.model.mask)
-                if mask == 'good'
+                vv for vv, mask in zip(v, self.model.mask) if mask == "good"
             ]
 
         try:
             matches = match_sources(
-                all_lines, good_data['y'], radius=0.01 * abs(dw)
+                all_lines, good_data["y"], radius=0.01 * abs(dw)
             )
 
         except ValueError:  # good_data['y'] is empty
@@ -675,9 +688,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             ]
 
         new_peaks = np.setdiff1d(
-            self.model.meta["peaks"],
-            good_data['x'],
-            assume_unique=True
+            self.model.meta["peaks"], good_data["x"], assume_unique=True
         )
 
         new_waves = self.model.evaluate(new_peaks)
@@ -688,14 +699,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         for peak, m in zip(new_peaks, matches):
             if m != -1:
-                good_data['x'].append(peak)
-                good_data['y'].append(unmatched_lines[m])
-                good_data['mask'].append('good')
-                good_data['fitted'].append(unmatched_lines[m])
-                good_data['nonlinear'].append(0)
-                good_data['heights'].append(self.label_height(peak))
-                good_data['residuals'].append(0)
-                good_data['lines'].append(wavestr(unmatched_lines[m]))
+                good_data["x"].append(peak)
+                good_data["y"].append(unmatched_lines[m])
+                good_data["mask"].append("good")
+                good_data["fitted"].append(unmatched_lines[m])
+                good_data["nonlinear"].append(0)
+                good_data["heights"].append(self.label_height(peak))
+                good_data["residuals"].append(0)
+                good_data["lines"].append(wavestr(unmatched_lines[m]))
                 print("NEW LINE", peak, unmatched_lines[m])
 
         self.model.data.data = good_data
@@ -720,26 +731,24 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
     A Visualizer specific to determineWavelengthSolution
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(
             *args,
             **kwargs,
             panel_class=WavelengthSolutionPanel,
-            help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
+            help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
         )
 
         calibration_type = "vacuo" if self.ui_params.in_vacuo else "air"
 
-        text = (
-            f"<b>Calibrating to wavelengths in {calibration_type}"
-            f"</b>"
-        )
+        text = f"<b>Calibrating to wavelengths in {calibration_type}" f"</b>"
 
         self.reinit_panel.children[-3] = bm.Div(
             text=text,
             align="center",
             stylesheets=dragons_styles(),
-            sizing_mode="stretch_width"
+            sizing_mode="stretch_width",
         )
 
         self.widgets["in_vacuo"].disabled = True
@@ -771,7 +780,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
 
                 # spectrum update
                 spectrum = self.panels[i].spectrum
-                spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
+                spectrum.data["spectrum"] = this_dict["meta"]["spectrum"]
 
 
 def get_closest(arr, value):
