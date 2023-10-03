@@ -523,6 +523,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends to be too high).
     if config["fwidth"] is None:
         fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
+        log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
@@ -801,13 +802,14 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         except ValueError:
             pass
         else:
-            if p_lo < p0 <= pixel_start:
-                arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
-                fits_to_do.append((p_lo, arc_line, dw))
-            p_hi = peaks[matches > -1].max()
-            if p_hi > p0 >= pixel_start:
-                arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
-                fits_to_do.append((p_hi, arc_line, dw))
+            if min(len(arc_lines), len(peaks)) > min_lines_per_fit:
+                if p_lo < p0 <= pixel_start:
+                    arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
+                    fits_to_do.append((p_lo, arc_line, dw))
+                p_hi = peaks[matches > -1].max()
+                if p_hi > p0 >= pixel_start:
+                    arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
+                    fits_to_do.append((p_hi, arc_line, dw))
         dc0 = 5 * abs(dw)
     return matches
 
