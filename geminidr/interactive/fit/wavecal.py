@@ -630,13 +630,19 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def _close_to_peak(self, x, x1, x2, new_peaks, index):
         """Checks if the click is close to a peak and if so returns True."""
-        if not len(new_peaks):
-            return False
+        # Handle numpy arrays and lists.
+        try:
+            if not new_peaks.shape[0]:
+                return False
+
+        except AttributeError:
+            if len(new_peaks) == 0:
+                return False
 
         eval_peaks = self.model.evaluate(new_peaks[index])
         close_to_peak = abs(eval_peaks - x) < (0.025 * (x2 - x1))
 
-        return close_to_peak[0]
+        return close_to_peak
 
     @disable_when_identifying
     def delete_line(self, key, x, y):
