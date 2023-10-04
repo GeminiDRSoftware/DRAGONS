@@ -256,3 +256,21 @@ module uses the `on_change` method to add callbacks to components. The
 changes, and a callback function. The callback function is called with three
 arguments: the model that triggered the callback, the attribute that changed,
 and the old value of the attribute.
+
+
+Visualizer guide
+================
+
+All visualizers used by the DRAGONS interactive module are subclasses of the
+|PrimitiveVisualizer| class. The |PrimitiveVisualizer| class is an abstract
+base class that defines the interface for all visualizers, including some
+"optional" methods that must be implemented by subclasses to be used.
+
+..
+    Docstrings from the PrimitiveVisualizer class should be rendered by sphinx here
+
+.. autoclass:: PrimitiveVisualizer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members: __init__
