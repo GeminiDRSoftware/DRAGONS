@@ -174,11 +174,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
             stylesheets=dragons_styles(),
         )
 
-        # TODO: Update *_policy handling below
-        # p_spectrum.height_policy = 'fixed'
-        # p_spectrum.width_policy = 'fit'
-        # p_spectrum.sizing_mode = 'stretch_width'
-
         p_spectrum.step(
             x="wavelengths",
             y="spectrum",
@@ -546,14 +541,13 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
             # This will fail if no line was deleted before user attempts to
             # identify a line, so do it only if there are new_peaks
-            if len(new_peaks) > 0:
+            if len(new_peaks):
                 index = np.argmin(abs(new_peaks - pixel))
 
             # If we've clicked "close" to a real peak (based on viewport size),
             # then select that
-            n_new_peaks = len(new_peaks)
-            close_to_peak = abs(new_peaks[index] - x) < 0.025 * (x2 - x1)
-            if n_new_peaks and close_to_peak:
+            close_to_peak = self._close_to_peak(x, x1, x2, new_peaks, index)
+            if close_to_peak:
                 peak = new_peaks[index]
                 print(f"Retrieved peak from list at {peak}")
 
@@ -632,6 +626,16 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.set_currently_identifying(peak)
 
+    def _close_to_peak(self, x, x1, x2, new_peaks, index):
+        """Checks if the click is close to a peak and if so returns True."""
+        if not len(new_peaks):
+            return False
+
+        eval_peaks = self.model.evaluate(new_peaks[index])
+        close_to_peak = abs(eval_peaks - x) < (0.025 * (x2 - x1))
+
+        return close_to_peak[0]
+
     @disable_when_identifying
     def delete_line(self, key, x, y):
         """
@@ -641,7 +645,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         index = np.argmin(abs(self.model.data.data["fitted"] - x))
 
         new_data = {
-            col: list(values)[:index] + list(values)[index + 1 :]
+            col: list(values)[:index] + list(values)[index + 1:]
             for col, values in self.model.data.data.items()
         }
 
@@ -684,7 +688,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         else:
             unmatched_lines = [
-                l for l, m in zip(all_lines, matches) if m == -1
+                line for line, m in zip(all_lines, matches) if m == -1
             ]
 
         new_peaks = np.setdiff1d(
@@ -721,9 +725,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         Handle user pressing Enter in the new line wavelength textbox.
         """
-        in_dropdown = wavestr(new) in self.new_line_dropdown.options
+        if new is None:
+            return
 
-        if new is not None and not in_dropdown:
+        in_dropdown = wavestr(new) in self.new_line_dropdown.options
+        if not in_dropdown:
             self.add_new_line()
 
 
