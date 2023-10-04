@@ -428,14 +428,17 @@ class WavelengthSolutionPanel(Fit1DPanel):
         x, y = model.x, model.y
         linear_model = self.linear_model(model)
 
-        self.model.data.data["fitted"] = model.evaluate(x)
-        self.model.data.data["nonlinear"] = y - linear_model(x)
-        self.model.data.data["heights"] = self.label_height(x)
-        self.model.data.data["lines"] = [wavestr(yy) for yy in y]
+        model_data = self.model.data.data
 
-        self.model.evaluation.data["nonlinear"] = model.evaluation.data[
-            "model"
-        ] - linear_model(model.evaluation.data["xlinspace"])
+        model_data["fitted"] = model.evaluate(x)
+        model_data["nonlinear"] = y - linear_model(x)
+        model_data["heights"] = self.label_height(x)
+        model_data["lines"] = [wavestr(yy) for yy in y]
+
+        eval_data = self.model.evaluation.data
+        eval_data["nonlinear"] = (
+            eval_data["model"] - linear_model(eval_data["xlinspace"])
+        )
 
         domain = model.domain
         self.spectrum.data["wavelengths"] = model.evaluate(
@@ -520,8 +523,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     @disable_when_identifying
     def identify_line(self, key, x, y, peak=None):
-        """
-        Identifies a peak near the cursor location and allows the user to
+        """Identifies a peak near the cursor location and allows the user to
         provide a wavelength.
         """
         if peak is None:
