@@ -24,7 +24,10 @@ from .fit1d import (
     USER_MASK_NAME,
 )
 
+from functools import lru_cache
 
+
+@lru_cache(maxsize=1000)
 def wavestr(line):
     """Convert a line wavelength to a string, rounding the internal
     representation of the floating-point value"""
@@ -38,7 +41,8 @@ def beep():
 
 def disable_when_identifying(fn):
     """A decorator that prevents methods from being executed when the
-    WavelengthSolutionPanel is currently identifying an arc line"""
+    WavelengthSolutionPanel is currently identifying an arc line.
+    """
 
     def gn(self, *args, **kwargs):
         if self.currently_identifying:
