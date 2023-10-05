@@ -34,12 +34,20 @@ INPUT_MASK_NAMES = ["aperture"]
 
 
 class InteractiveModel(ABC):
+    """Base class for all interactive models, containing:
+        (a) the parameters of the model
+        (b) the parameters that control the fitting (e.g., sigma-clipping)
+        (c) the way the fitting is performed
+        (d) the input and output coordinates, mask, and weights
+    """
+
     MASK_TYPE = [
         BAND_MASK_NAME,
         USER_MASK_NAME,
         "good",
         SIGMA_MASK_NAME,
     ] + INPUT_MASK_NAMES
+
     MARKERS = [
         "triangle",
         "inverted_triangle",
@@ -47,6 +55,7 @@ class InteractiveModel(ABC):
         "square",
         "inverted_triangle",
     ]
+
     PALETTE = [
         "lightsteelblue",
         "lightskyblue",
@@ -54,15 +63,9 @@ class InteractiveModel(ABC):
         "darksalmon",
         "lightgray",
     ]  # Category10[4]
-    """
-    Base class for all interactive models, containing:
-        (a) the parameters of the model
-        (b) the parameters that control the fitting (e.g., sigma-clipping)
-        (c) the way the fitting is performed
-        (d) the input and output coordinates, mask, and weights
-    """
 
     def __init__(self):
+        """Initializes the model with default values."""
         bokeh_data_color = interactive_conf().bokeh_data_color
         InteractiveModel.PALETTE[2] = bokeh_data_color
 
@@ -83,6 +86,7 @@ class InteractiveModel(ABC):
         """
         if not callable(listener):
             raise ValueError("Listeners must be callables")
+
         self.listeners.append(listener)
 
     def notify_listeners(self):
@@ -98,18 +102,19 @@ class InteractiveModel(ABC):
     @abstractmethod
     def perform_fit(self):
         """
-        Perform the fit (Base method, override)
+        Perform the fit (abstract method, must override).
         """
         pass
 
     @abstractmethod
     def evaluate(self, x):
         """
-        Evaluate X
+        Evaluate X. This is an abstract method that must be overridden.
 
         Parameters
         ----------
-        x
+        x : :class:`~numpy.ndarray`
+            X coordinate values
         """
         pass
 
@@ -128,9 +133,7 @@ class InteractiveModel(ABC):
 
 
 class InteractiveModel1D(InteractiveModel):
-    """
-    Subclass for 1D models
-    """
+    """InteractiveModel subclass for 1D models."""
 
     def __init__(
         self,
@@ -145,30 +148,37 @@ class InteractiveModel1D(InteractiveModel):
         band_model=None,
         extra_masks=None,
     ):
-        """
-        Create base class with given parameters as initial model inputs.
+        """Create base class with given parameters as initial model inputs.
 
         Parameters
         ----------
         x : :class:`~numpy.ndarray`
             list of x coordinate values
+
         y : :class:`~numpy.ndarray`
             list of y coordinate values
+
         mask : array of str
             array of mask names for each point
+
         section :
             Section based user mask
-        listeners :
-            Listeners to updates in the model
+
+        listeners : list of functions
+            Listeners for responding to updates in the model.
+
         band_model : :class:`~geminidr.interactive.interactive.BandModel
             Model for band selections
+
         extra_masks : dict of boolean arrays
             points to display but not use in fit
         """
         super().__init__()
 
+        # TODO: Make this the default instead of None
         if not listeners:
             listeners = []
+
         self.band_model = band_model
         if band_model:
             band_model.add_listener(
@@ -260,12 +270,16 @@ class InteractiveModel1D(InteractiveModel):
             try:  # Handle y as masked array
                 if any(y.mask):
                     init_mask = y.mask
+
                 else:
                     init_mask = np.array(np.zeros_like(x, dtype=bool))
+
             except AttributeError:
                 init_mask = np.array(np.zeros_like(x, dtype=bool))
+
             else:
                 y = y.data
+
         else:
             init_mask = mask
 
@@ -278,10 +292,13 @@ class InteractiveModel1D(InteractiveModel):
         # i.e., points not in this region(s) are user-masked
         if self.section is None:
             mask = ["good"] * len(x)
+
         else:
             user_mask = np.array(np.ones_like(x, dtype=bool))
+
             for slice_ in self.section:
                 user_mask[slice_.start < x < slice_.stop] = False
+
             mask = list(np.where(user_mask, USER_MASK_NAME, "good"))
 
         # TODO rewrite in a concise way
@@ -314,15 +331,12 @@ class InteractiveModel1D(InteractiveModel):
         self.weights = weights
 
     def band_model_handler(self):
-        """
-        Respond when the band model changes.
+        """Respond when the band model changes.
 
-        When the band model has changed, we
-        brute force a new band mask by checking
-        each x coordinate against the band model
-        for inclusion.  The band model handles
-        the case where there are no bands by
-        marking all points as included.
+        When the band model has changed, we brute force a new band mask by
+        checking each x coordinate against the band model for inclusion.  The
+        band model handles the case where there are no bands by marking all
+        points as included.
         """
         x_data = self.data.data["x"]
         mask = self.data.data["mask"].copy()
@@ -344,50 +358,51 @@ class InteractiveModel1D(InteractiveModel):
 
     @property
     def x(self):
-        """
-        maps x attribute internally to bokeh structures
+        """Maps x attribute internally to bokeh structures.
 
         Returns
         -------
-        array of double : x coordinates
+        x_coords : `~numpy.ndarray`
+            x coordinates as a numpy array of doubles.
         """
         return np.asarray(self.data.data["x"])
 
     @property
     def y(self):
-        """
-        maps y attribute internally to bokeh structures
+        """Maps y attribute internally to bokeh structures.
 
         Returns
         -------
-        array of double : y coordinates
+        y_coords : `~numpy.ndarray`
+            y coordinates as a numpy array of doubles.
         """
         return np.asarray(self.data.data["y"])
 
     @property
     def mask(self):
-        """
-        maps mask attribute internally to bokeh structures
+        """Maps mask attribute internally to bokeh structures.
 
         Returns
         -------
         list of str : mask values
         """
+        # TODO: Is this a list of str still?
         return self.data.data["mask"]
 
     @property
     def sigma(self):
-        """
-        Maps sigma attribute to
+        """Maps sigma attribute to
         :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.lsigma` and
         :attr:`~geminidr.interactive.fit.fit1d.InteractiveModel1D.hsigma`
 
         Returns
         -------
-        double : average of the two sigmae
+        sigma: float
+            sigma value
         """
         if self.lsigma == self.hsigma:
             return self.lsigma
+
         return 0.5 * (self.lsigma + self.hsigma)  # do something better?
 
     @sigma.setter
@@ -404,9 +419,9 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.lsigma = self.hsigma = float(value)
 
+    # TODO: args is unnused
     def perform_fit(self, *args):
-        """
-        Perform the fit.
+        """Perform the fit.
 
         This performs the fit in the contained model, updates the mask,
         and recalculates the plots for residuals and ratio, if present.
@@ -422,6 +437,7 @@ class InteractiveModel1D(InteractiveModel):
                 for x, y in self.fitting_parameters.items()
                 if x not in ["sigma"]
             }
+
         else:
             fitparms = {
                 x: y
@@ -452,8 +468,10 @@ class InteractiveModel1D(InteractiveModel):
             if rank > 0:
                 if "params" in new_fit.fit_info:  # it's a polynomial
                     rank -= 1
+
                 if rank >= fitparms["order"]:
                     self.quality = FitQuality.GOOD
+
                 elif self.allow_poor_fits:
                     self.quality = FitQuality.POOR  # else stay BAD
 
@@ -461,27 +479,34 @@ class InteractiveModel1D(InteractiveModel):
             self.fit = new_fit
             if "residuals" in self.data.data:
                 self.data.data["residuals"] = self.y - self.evaluate(self.x)
+
             if "ratio" in self.data.data:
                 with np.errstate(invalid="ignore", divide="ignore"):
                     self.data.data["ratio"] = self.y / self.evaluate(self.x)
+
             self.update_mask()
 
         self.notify_listeners()
 
     def update_mask(self):
+        """Update the mask based on the current fit."""
         goodpix = np.array(
             [m not in [USER_MASK_NAME] + INPUT_MASK_NAMES for m in self.mask]
         )
+
         mask = self.mask.copy()
         fit_mask = np.zeros_like(self.x, dtype=bool)
         if self.sigma_clip:
             # Now pull in the sigma mask
             fit_mask[goodpix] = self.fit.mask
+
         for i in range(fit_mask.size):
             if fit_mask[i] and mask[i] == "good":
                 mask[i] = SIGMA_MASK_NAME
+
             elif not fit_mask[i] and mask[i] == SIGMA_MASK_NAME:
                 mask[i] = "good"
+
         self.data.data["mask"] = mask
 
     def evaluate(self, x):
@@ -489,9 +514,11 @@ class InteractiveModel1D(InteractiveModel):
 
 
 class FittingParametersUI:
+    """Manager for the UI controls and their interactions with the fitting
+    model.
+    """
     def __init__(self, vis, fit, fitting_parameters):
-        """
-        Class to manage the set of UI controls for the inputs to the fitting
+        """Class to manage the set of UI controls for the inputs to the fitting
         model.
 
         This sets up the controls for sigma rejection, iterations, etc., and
@@ -567,24 +594,31 @@ class FittingParametersUI:
             if pkey not in ui_params.fields and key in alt_keys:
                 pkey = alt_keys[key]
             field = ui_params.fields[pkey]
+
+            # TODO: Condense if/else blocks.
             if isinstance(field.default, int):
                 step = 1
             else:
                 step = 0.1
+
             if hasattr(field, "min"):
                 min = field.min
             else:
                 min = None
+                
             if min and step > min > 0:
                 step = min
+
             if hasattr(field, "max"):
                 max = field.max
             else:
                 max = None
+
             if key == "niter":
                 # override this, min should be 1 as it is only used when sigma
                 # is checked
                 min = 1
+
             return interactive.build_text_slider(
                 title=title,
                 value=fitting_parameters[key],
@@ -599,13 +633,17 @@ class FittingParametersUI:
             )
 
         self.order_slider = builder(vis.ui_params, "order", "Order")
+
         self.sigma_upper_slider = builder(
             vis.ui_params, "sigma_upper", "Sigma (Upper)"
         )
+
         self.sigma_lower_slider = builder(
             vis.ui_params, "sigma_lower", "Sigma (Lower)"
         )
+
         self.niter_slider = builder(vis.ui_params, "niter", "Max Iterations")
+
         if "grow" in fitting_parameters:  # not all have them
             self.grow_slider = builder(vis.ui_params, "grow", "Grow")
 
@@ -622,18 +660,20 @@ class FittingParametersUI:
         self.controls_column = self.build_column()
 
     def enable_disable_sigma_inputs(self):
-        """
-        This updates the state of the sliders depending on whether the sigma
+        """This updates the state of the sliders depending on whether the sigma
         clipping checkbox is enabled or not.
         """
         # enable/disable sliders
         disabled = not self.fit.sigma_clip
         for c in self.niter_slider.children:
             c.disabled = disabled
+
         for c in self.sigma_upper_slider.children:
             c.disabled = disabled
+
         for c in self.sigma_lower_slider.children:
             c.disabled = disabled
+
         if hasattr(self, "grow_slider"):
             for c in self.grow_slider.children:
                 c.disabled = disabled
@@ -653,16 +693,18 @@ class FittingParametersUI:
         # refactor this so that it accepts widgets as a list of tuples, for
         # example, so that adding in individual elements is not a fight with
         # the source.
+        rejection_styles = {
+            "color": "black",
+            "font-size": "115%",
+            "margin-top": "10px",
+        }
+
         rejection_title = bm.Div(
             text="Rejection Parameters",
             min_width=100,
             max_width=202,
             sizing_mode="stretch_width",
-            styles={
-                "color": "black",
-                "font-size": "115%",
-                "margin-top": "10px",
-            },
+            styles=rejection_styles,
             stylesheets=dragons_styles(),
         )
 
@@ -682,16 +724,18 @@ class FittingParametersUI:
                 f"Fit Function: <b>{self.vis.function_name.capitalize()}</b>"
             )
 
+            col_div_styles = {
+                "color": "black",
+                "font-size": "115%",
+                "margin-top": "5px",
+            }
+
             column_title = bm.Div(
                 text=column_title_text,
                 min_width=100,
                 max_width=202,
                 sizing_mode="stretch_width",
-                styles={
-                    "color": "black",
-                    "font-size": "115%",
-                    "margin-top": "5px",
-                },
+                styles=col_div_styles,
                 stylesheets=dragons_styles(),
             )
 
@@ -725,16 +769,18 @@ class FittingParametersUI:
             :class:`~bokeh.models.Div` component containing the short
             description.
         """
+        description_styles ={
+            "color": "black",
+            "font-size": "115%",
+            "margin-top": "10px",
+        } 
+
         return bm.Div(
             text=text,
             min_width=100,
             max_width=202,
             sizing_mode="stretch_width",
-            styles={
-                "color": "black",
-                "font-size": "115%",
-                "margin-top": "10px",
-            },
+            styles=description_styles,
             width_policy="min",
             stylesheets=dragons_styles(),
         )
@@ -747,17 +793,23 @@ class FittingParametersUI:
         self.fitting_parameters = {
             x: y for x, y in self.fitting_parameters_for_reset.items()
         }
+
         for key in ("order", "sigma_upper", "sigma_lower", "niter", "grow"):
             try:
                 slider = getattr(self, f"{key}_slider")
+
+            # TODO: Add logging here.
             except AttributeError:
                 pass
+
             else:
                 slider.children[0].value = self.fitting_parameters[key]
                 slider.children[1].value = self.fitting_parameters[key]
+
         if self.function and hasattr(self.function, "value"):
             # if it's a selector and not a div...
             self.function.value = self.fitting_parameters["function"]
+
         self.sigma_button.active = [0] if self.saved_sigma_clip else []
         self.fit.perform_fit()
 
@@ -806,6 +858,8 @@ class FittingParametersUI:
 
 
 class InfoPanel:
+    """Panel class for displaying information about the fit."""
+
     def __init__(self, enable_regions, enable_user_masking, extra_masks=None):
         """
         Build an informational panel to hold statistics about the fit.
@@ -830,8 +884,7 @@ class InfoPanel:
             self.extra_masks = list()
 
     def model_change_handler(self, model):
-        """
-        Respond to a model change by updating the displayed statistics.
+        """Respond to a model change by updating the displayed statistics.
 
         Parameters
         ----------
@@ -893,6 +946,12 @@ class InfoPanel:
 
 
 class Fit1DPanel:
+    """Panel class for visualizing a 1-D fit. This includes the fit itself,
+    and the data being fit, as a figure.
+
+    This class is typically used in tabs within the interactive module. It
+    is meant to handle one set of data being fit at a time.
+    """
     def __init__(
         self,
         visualizer,
@@ -913,8 +972,7 @@ class Fit1DPanel:
         central_plot=True,
         extra_masks=None,
     ):
-        """
-        Panel for visualizing a 1-D fit, perhaps in a tab
+        """Panel for visualizing a 1-D fit, perhaps in a tab.
 
         Parameters
         ----------
@@ -982,11 +1040,13 @@ class Fit1DPanel:
             band_model=band_model,
             extra_masks=extra_masks,
         )
+
         self.model.add_listener(self.model_change_handler)
 
         self.fitting_parameters_ui = FittingParametersUI(
             visualizer, self.model, fitting_parameters
         )
+
         controls_column = self.fitting_parameters_ui.get_bokeh_components()
 
         reset_button = bm.Button(
@@ -1033,6 +1093,7 @@ class Fit1DPanel:
             region_tuples = cartesian_regions_to_slices(
                 fitting_parameters["regions"]
             )
+
             band_model.load_from_tuples(region_tuples)
 
         # TODO refactor? this is dupe from band_model_handler hacking it in
@@ -1106,10 +1167,12 @@ class Fit1DPanel:
             model=self.model,
             enable_user_masking=self.enable_user_masking,
         )
+
         if self.enable_regions:
             self.model.band_model.add_listener(
                 Fit1DRegionListener(self.update_regions)
             )
+
             connect_region_model(p_main, self.model.band_model)
 
         if self.enable_user_masking:
@@ -1117,6 +1180,7 @@ class Fit1DPanel:
                 self.mask_button_handler,
                 self.unmask_button_handler,
             )
+
         else:
             mask_handlers = None
 
@@ -1136,6 +1200,7 @@ class Fit1DPanel:
             self.enable_user_masking,
             extra_masks=extra_masks,
         )
+
         self.model.add_listener(info_panel.model_change_handler)
 
         # self.add_custom_cursor_behavior(p_main)
@@ -1151,8 +1216,7 @@ class Fit1DPanel:
         return fig_column
 
     def reset_view(self):
-        """
-        This calculates the x and y ranges for the figure with some custom
+        """This calculates the x and y ranges for the figure with some custom
         padding.
 
         This is used when we initially build the figure, but also as a listener
@@ -1198,8 +1262,7 @@ class Fit1DPanel:
             self.p_main.y_range = y_range
 
     def reset_dialog_handler(self, result):
-        """
-        Reset fit parameter values.
+        """Reset fit parameter values.
 
         Parameters
         ----------
@@ -1215,8 +1278,7 @@ class Fit1DPanel:
         self.model.regions = self.model.band_model.build_regions()
 
     def model_change_handler(self, model):
-        """
-        If the model changes, this gets called to evaluate the fit and save the
+        """If the model changes, this gets called to evaluate the fit and save the
         results.
 
         Parameters
@@ -1229,12 +1291,10 @@ class Fit1DPanel:
         )
 
     def mask_button_handler(self, x, y, mult):
-        """
-        Handler for the mask button.
+        """Handler for the mask button.
 
-        When the mask button is clicked, this method
-        will find the selected data points and set the
-        user mask for them.
+        When the mask button is clicked, this method will find the selected
+        data points and set the user mask for them.
 
         Parameters
         ----------
@@ -1249,11 +1309,13 @@ class Fit1DPanel:
         indices = self.model.data.selected.indices
         if not indices:
             self._point_mask_handler(x, y, mult, "mask")
+
         else:
             self.model.data.selected.update(indices=[])
             mask = self.model.mask.copy()
             for i in indices:
                 mask[i] = USER_MASK_NAME
+
             self.model.data.data["mask"] = mask
             self.model.perform_fit()
 
@@ -1261,9 +1323,8 @@ class Fit1DPanel:
         """
         Handler for the unmask button.
 
-        When the unmask button is clicked, this method
-        will find the selected data points and unset the
-        user mask for them.
+        When the unmask button is clicked, this method will find the selected
+        data points and unset the user mask for them.
 
         Parameters
         ----------
@@ -1282,6 +1343,7 @@ class Fit1DPanel:
             x_data = self.model.x
             self.model.data.selected.update(indices=[])
             mask = self.model.mask.copy()
+
             for i in indices:
                 if mask[i] == USER_MASK_NAME:
                     mask[i] = (
@@ -1289,6 +1351,7 @@ class Fit1DPanel:
                         if self.model.band_model.contains(x_data[i])
                         else BAND_MASK_NAME
                     )
+
             self.model.data.data["mask"] = mask
             self.model.perform_fit()
 
@@ -1317,25 +1380,29 @@ class Fit1DPanel:
         xarr = self.model.data.data[self.xpoint]
         yarr = self.model.data.data[self.ypoint]
         mask = self.model.mask
+
         if action not in ("mask", "unmask"):
             action = None
+
         for i, (xd, yd) in enumerate(zip(xarr, yarr)):
-            if action is None or (
-                (action == "mask") ^ (mask[i] == USER_MASK_NAME)
-            ):
+            is_masked = (action == "mask") ^ (mask[i] == USER_MASK_NAME)
+
+            if action is None or is_masked:
                 if xd is not None and yd is not None:
                     ddist = (x - xd) ** 2 + ((y - yd) * mult) ** 2
                     if dist is None or ddist < dist:
                         dist = ddist
                         sel = i
+
         if sel is not None:
             # we have a closest point, toggle the user mask
             if mask[sel] == USER_MASK_NAME:
-                mask[sel] = (
-                    "good"
-                    if self.model.band_model.contains(xarr[sel])
-                    else BAND_MASK_NAME
-                )
+                if self.model.band_model.contains(xarr[sel]):
+                    mask[sel] = "good"
+
+                else:
+                    mask[sel] = BAND_MASK_NAME
+
             else:
                 mask[sel] = USER_MASK_NAME
 
@@ -1378,18 +1445,24 @@ class Fit1DPanel:
 
 
 class Fit1DRegionListener(GIRegionListener):
-    """
-    Wrapper class so we can just detect when a bands are finished. We don't
+    """Wrapper class so we can just detect when a band is finished. We don't
     want to do an expensive recalc as a user is dragging a band around. It
     creates a band listener that just updates on `finished`.
 
-    Parameters
+    Attributes
     ----------
     fn : function
         function to call when band is finished.
     """
 
     def __init__(self, fn):
+        """Initializes the Fit1DRegionListener.
+        
+        Parameters
+        ----------
+        fn : function
+            function to call when band is finished.
+        """
         self.fn = fn
 
     def adjust_region(self, region_id, start, stop):
@@ -1403,10 +1476,10 @@ class Fit1DRegionListener(GIRegionListener):
 
 
 class Fit1DVisualizer(interactive.PrimitiveVisualizer):
-    """
-    The generic class for interactive fitting of one or more 1D functions
+    """The generic class for interactive fitting of one or more 1D functions
 
-    Attributes:
+    Attributes
+    ----------
         reinit_panel:
             layout containing widgets that control the parameters affecting the
             initialization of the (x,y) array(s)
@@ -1448,7 +1521,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         pad_buttons=False,
         **kwargs,
     ):
-        """
+        """Initializes the Fit1DVisualizer and its parent class.
+
         Parameters
         ----------
         data_source : dict or dict-returning function
@@ -1684,11 +1758,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.panels.append(tui)
 
     def visualize(self, doc):
-        """
-        Start the bokeh document using this visualizer.
+        """Start the bokeh document using this visualizer.
 
-        This call is responsible for filling in the bokeh document with
-        the user interface.
+        This call is responsible for filling in the bokeh document with the
+        user interface.
 
         Parameters
         ----------
@@ -1781,31 +1854,24 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         doc.add_root(self.layout)
 
     def reconstruct_points_additional_work(self, data):
-        """
-        This method may contain any additional work the UI wants
-        to do when reconstructing points.
+        """This method may contain any additional work the UI wants to do when
+        reconstructing points.
 
-        This is a no-op by default, but if we have subclasses, they are
-        able to override this to add additional functionality with full
-        access to the reconstructed dictionary of input data.  For
-        example, wavecal can update the spectra being displayed based
-        on the selected row.
-
-        :return:
+        This is a no-op by default, but if we have subclasses, they are able to
+        override this to add additional functionality with full access to the
+        reconstructed dictionary of input data.  For example, wavecal can
+        update the spectra being displayed based on the selected row.
         """
         pass
 
     def reconstruct_points(self):
-        """
-        Reconstruct the initial points to work with.
+        """Reconstruct the initial points to work with.
 
-        This is expected to be expensive.  The core inputs
-        are separated out in the UI as they are too slow to
-        be interactive.  When a user is ready and submits
-        updated core config parameters, this is what gets
-        executed.  The configuration is updated with the
-        new values form the user.  The UI is disabled and the
-        expensive function is wrapped in the bokeh Tornado
+        This is expected to be expensive.  The core inputs are separated out in
+        the UI as they are too slow to be interactive.  When a user is ready
+        and submits updated core config parameters, this is what gets executed.
+        The configuration is updated with the new values form the user.  The UI
+        is disabled and the expensive function is wrapped in the bokeh Tornado
         event look so the modal dialog can display.
         """
         if self.modal_widget:
@@ -1879,8 +1945,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.do_later(rfn)
 
     def results(self):
-        """
-        Get the results of the interactive fit.
+        """Get the results of the interactive fit.
 
         This gets the list of `~gempy.library.fitting.fit_1D` fits of the data
         to be used by the caller.
@@ -1893,9 +1958,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
 
 def prep_fit1d_params_for_fit1d(fit1d_params):
-    """
-    In the UI, which relies on `fit1d_params`, we constrain `niter` to 1 at the
-    low end and separately have a `sigma` boolean checkbox.
+    """In the UI, which relies on `fit1d_params`, we constrain `niter` to 1 at
+    the low end and separately have a `sigma` boolean checkbox.
 
     To support the `sigma` checkbox, here we remap the inputs based on the
     value of `niter`.  If `niter` is 0, this tells us no `sigma` rejection is
@@ -1939,8 +2003,7 @@ def fit1d_figure(
     plot_residuals=True,
     enable_user_masking=True,
 ):
-    """
-    Fairly generic function to produce bokeh objects for the main scatter/fit
+    """Generic function to produce bokeh objects for the main scatter/fit
     plot and the residuals and/or ratios plot. Listeners are not added here.
 
     Parameters
@@ -2024,7 +2087,8 @@ def fit1d_figure(
         )
 
         connect_region_model(p_resid, model.band_model)
-        # Initalizing this will cause the residuals to be calculated
+
+        # Initializing this will trigger the residuals to be calculated.
         model.data.data["residuals"] = np.zeros_like(model.x)
 
         p_resid.scatter(
@@ -2045,7 +2109,7 @@ def fit1d_figure(
             y_axis_label="Ratio",
             tools="pan,box_zoom,reset",
             output_backend="webgl",
-            x_range=p_main.x_range,  # y_range=None,
+            x_range=p_main.x_range,
             min_border_left=80,
             sizing_mode="stretch_width",
             stylesheets=dragons_styles(),
@@ -2053,8 +2117,9 @@ def fit1d_figure(
 
         connect_region_model(p_ratios, model.band_model)
 
-        # Initalizing this will cause the ratios to be calculated
+        # Initializing this will trigger the ratios to be calculated
         model.data.data["ratio"] = np.ones_like(model.x)
+
         p_ratios.scatter(
             x=xpoint,
             y="ratio",
