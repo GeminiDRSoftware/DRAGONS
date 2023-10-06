@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import logging
 
 import numpy as np
 
@@ -90,8 +91,7 @@ class InteractiveModel(ABC):
         self.listeners.append(listener)
 
     def notify_listeners(self):
-        """
-        Notify all the registered listeners of a change.
+        """Notify all the registered listeners of a change.
 
         This calls all our registered listener functions to let them know we
         have changed.
@@ -101,26 +101,20 @@ class InteractiveModel(ABC):
 
     @abstractmethod
     def perform_fit(self):
-        """
-        Perform the fit (abstract method, must override).
-        """
-        pass
+        """Perform the fit (abstract method, must override)."""
 
     @abstractmethod
     def evaluate(self, x):
-        """
-        Evaluate X. This is an abstract method that must be overridden.
+        """Evaluate X. This is an abstract method that must be overridden.
 
         Parameters
         ----------
         x : :class:`~numpy.ndarray`
             X coordinate values
         """
-        pass
 
     def mask_rendering_kwargs(self):
-        """
-        Get the marks and colors to use for the various point masks
+        """Get the marks and colors to use for the various point masks
 
         Returns
         -------
@@ -425,6 +419,8 @@ class InteractiveModel1D(InteractiveModel):
         It then notifies all listeners that the data and model have
         changed so they can respond.
         """
+        logging.debug("perform_fit: %s", args)
+
         # Note that band_mask is now handled by passing a region string to
         # fit_1D but we still use the band_mask for highlighting the affected
         # points.
@@ -558,6 +554,7 @@ class FittingParametersUI:
                 stylesheets=dragons_styles(),
             )
 
+            # pylint: disable=unused-argument
             def fn_select_change(attr, old, new):
                 self.fit.set_function(new)
                 self.fit.perform_fit()
@@ -592,36 +589,26 @@ class FittingParametersUI:
                 pkey = alt_keys[key]
             field = ui_params.fields[pkey]
 
-            # TODO: Condense if/else blocks.
-            if isinstance(field.default, int):
-                step = 1
-            else:
-                step = 0.1
+            step = 1 if isinstance(field.default, int) else 0.1
 
-            if hasattr(field, "min"):
-                min = field.min
-            else:
-                min = None
-                
-            if min and step > min > 0:
-                step = min
+            field_min = field.min if hasattr(field, "min") else None
 
-            if hasattr(field, "max"):
-                max = field.max
-            else:
-                max = None
+            if field_min and step > field_min > 0:
+                step = field_min
+
+            field_max = field.max if hasattr(field, "max") else None
 
             if key == "niter":
                 # override this, min should be 1 as it is only used when sigma
                 # is checked
-                min = 1
+                field_min = 1
 
             return interactive.build_text_slider(
                 title=title,
                 value=fitting_parameters[key],
                 step=step,
-                min_value=min,
-                max_value=max,
+                min_value=field_min,
+                max_value=field_max,
                 obj=fitting_parameters,
                 attr=key,
                 handler=fit.perform_fit,
