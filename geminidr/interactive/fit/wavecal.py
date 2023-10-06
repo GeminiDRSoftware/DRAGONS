@@ -1,18 +1,17 @@
 import logging
 import uuid
 
-import numpy as np
-from bokeh.models import CustomJS
-from scipy.interpolate import interp1d
 from bisect import bisect
 
 from bokeh import models as bm
 from bokeh.layouts import row, column
 from bokeh.plotting import figure
+from bokeh.models import CustomJS
 
 from geminidr.interactive.controls import Controller, Handler
 from geminidr.interactive.styles import dragons_styles
-from .help import DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
+
+
 from gempy.library.matching import match_sources
 from gempy.library.tracing import cwt_ricker, pinpoint_peaks
 
@@ -24,7 +23,13 @@ from .fit1d import (
     USER_MASK_NAME,
 )
 
+from .help import DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
+
 from functools import lru_cache
+
+import numpy as np
+
+from scipy.interpolate import interp1d
 
 
 @lru_cache(maxsize=1000)
@@ -132,10 +137,42 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self,
         domain=None,
         controller_div=None,
-        plot_residuals=True,  # TODO: This is not used, is it needed?
-        plot_ratios=True,  # TODO: This is not used
-        extra_masks=True,  # TODO: This is not used
+        plot_residuals=True,
+        plot_ratios=True,
+        extra_masks=True,
     ):
+        """
+        Build the figures for the panel.
+
+        Parameters
+        ----------
+        domain : 2-tuple
+            The domain of the fit
+
+        controller_div : bokeh.models.Div
+            The div to hold the controller
+
+        plot_residuals : bool
+            Whether to plot the residuals. This is only included to match the
+            build_figures method in Fit1DPanel.
+
+        plot_ratios : bool
+            Whether to plot the ratios. This is only included to match the
+            build_figures method in Fit1DPanel.
+
+        extra_masks : bool
+            Whether to plot the extra masks. This is only included to match the
+            build_figures method in Fit1DPanel.
+        
+        Notes
+        -----
+        This method is overridden to add the spectrum panel and the line
+        identifier.
+
+        The last three kwargs---plot_residuals, plot_ratios, and
+        extra_masks---are not used in this function, and are only included to
+        match the signature of Fit1DPanel.build_figures.
+        """
         self.xpoint = "fitted"
         self.ypoint = "nonlinear"
 
@@ -238,8 +275,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             width=200,
             max_width=250,
             button_type="primary",
-            width_policy="fit",
-            height_policy="max",
+            sizing_mode="stretch_both",
             stylesheets=dragons_styles(),
         )
 
@@ -248,8 +284,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.new_line_prompt = bm.Div(
             text="",
             styles={"font-size": "16px"},
-            max_width=400,
-            width_policy="max",
+            max_width=600,
+            sizing_mode="stretch_width",
             stylesheets=dragons_styles(),
         )
 
@@ -473,7 +509,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 self.add_line_to_data(peak, wavelength)
 
             except ValueError:
-                logging.warning("Could not add line to data %s" % wavelength)
+                logging.warning("Could not add line to data %s", wavelength)
                 return
 
     def cancel_new_line(self, *args):
