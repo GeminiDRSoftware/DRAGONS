@@ -32,7 +32,7 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
     """
     ap_table = ext.APERTURE
     fit_par_list = list()
-    for i in range(len(ap_table)):
+    for _ in range(len(ap_table)):
         fit_par_list.append({x: y for x, y in fit1d_params.items()})
 
     domain_list = [
@@ -40,7 +40,7 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
             ap_table.meta["header"][kw]
             for kw in ("DOMAIN_START", "DOMAIN_END")
         ]
-        for ap in ap_table
+        for _ in ap_table
     ]
 
     if (2 - ext.dispersion_axis()) == 1:
@@ -109,7 +109,7 @@ def trace_apertures_data_provider(ext, ui_params):
         start = np.argmax(at.boxcar(spectrum, size=20))
 
         # The coordinates are always returned as (x-coords, y-coords)
-        ref_coords, in_coords = tracing.trace_lines(
+        _, in_coords = tracing.trace_lines(
             ext,
             axis=dispaxis,
             cwidth=5,
