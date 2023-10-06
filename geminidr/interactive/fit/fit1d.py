@@ -13,6 +13,7 @@ This is also used across modules such as
 """
 from abc import ABC, abstractmethod
 import logging
+import warnings
 
 import numpy as np
 
@@ -1524,7 +1525,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         ui_params=None,
         turbo_tabs=False,
         panel_class=Fit1DPanel,
-        pad_buttons=False,
         **kwargs,
     ):
         """Initializes the Fit1DVisualizer and its parent class.
@@ -1582,9 +1582,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             The class of Panel to use in each tab. This allows specific
             operability for each primitive since most of the functions that do
             the work are methods of this class.
-        pad_buttons : bool
-            If True, pad the abort/accept buttons so the tabs can flow under
-            them
         """
         super().__init__(
             title=title,
@@ -1596,6 +1593,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         )
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
+
+        if 'pad_buttons' in kwargs:
+            # Deprecation warning
+            warnings.warn(
+                "pad_buttons is no longer supported",
+                DeprecationWarning,
+            )
 
         # Keep a list of panels for access later
         self.panels = []
