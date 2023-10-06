@@ -42,12 +42,12 @@ from .help import DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
 def wavestr(line):
     """Convert a line wavelength to a string, rounding the internal
     representation of the floating-point value
-    
+
     Parameters
     ----------
     line : float
         Wavelength of the line.
-        
+
     Notes
     -----
     This function is lru cached to avoid unnecessary calls/conversions. It has
@@ -595,6 +595,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def cancel_new_line(self, *args):
         """Handler for the 'Cancel' button in the line identifier"""
+        logging.debug("cancel_new_line: %s", args)
+
         self.new_line_prompt.text = ""
         self.new_line_dropdown.options = []
         self.new_line_textbox.value = None
