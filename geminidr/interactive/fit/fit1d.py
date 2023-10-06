@@ -385,7 +385,6 @@ class InteractiveModel1D(InteractiveModel):
         -------
         list of str : mask values
         """
-        # TODO: Is this a list of str still?
         return self.data.data["mask"]
 
     @property
@@ -418,7 +417,6 @@ class InteractiveModel1D(InteractiveModel):
         """
         self.lsigma = self.hsigma = float(value)
 
-    # TODO: args is unnused
     def perform_fit(self, *args):
         """Perform the fit.
 
