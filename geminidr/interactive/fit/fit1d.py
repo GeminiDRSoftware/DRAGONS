@@ -1451,6 +1451,7 @@ class Fit1DPanel:
         pointer.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
 
 
+# pylint: disable=invalid-name
 class Fit1DRegionListener(GIRegionListener):
     """Wrapper class so we can just detect when a band is finished. We don't
     want to do an expensive recalc as a user is dragging a band around. It
@@ -1905,6 +1906,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 try:
                     data = self.reconstruct_points_fn(ui_params=self.ui_params)
 
+                # pylint: disable-next=broad-except
                 except Exception as err:
                     # something went wrong, let's revert the inputs handling
                     # immediately to specifically trap the
