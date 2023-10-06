@@ -1,3 +1,16 @@
+"""Module for 1-D fitting.
+
+This module contains the classes and functions for performing 1-D fitting
+of data.  This is used in the interactive module to allow the user to
+interactively fit data and mask points that are not well fit.
+
+The main class is :class:`~geminidr.interactive.fit.fit1d.Fit1DVisualizer`
+which is a subclass of
+:class:`~geminidr.interactive.interactive.PrimitiveVisualizer`.
+
+This is also used across modules such as
+:mod:`~geminidr.interactive.fit.wavecal` to manage specific fitting tasks.
+"""
 from abc import ABC, abstractmethod
 import logging
 
@@ -200,7 +213,7 @@ class InteractiveModel1D(InteractiveModel):
             {"xlinspace": xlinspace, "model": self.evaluate(xlinspace)}
         )
 
-    def set_function(self, fn):
+    def set_function(self, function):
         """
         Set the fit function to use.
 
@@ -213,7 +226,7 @@ class InteractiveModel1D(InteractiveModel):
         fn : str
             Which fitter to use
         """
-        self.fitting_parameters["function"] = fn
+        self.fitting_parameters["function"] = function
 
     @property
     def regions(self):
@@ -540,7 +553,7 @@ class FittingParametersUI:
         }
 
         if "function" in vis.ui_params.fields:
-            fn = fitting_parameters["function"]
+            function = fitting_parameters["function"]
             fn_allowed = [
                 k for k in vis.ui_params.fields["function"].allowed.keys()
             ]
@@ -548,7 +561,7 @@ class FittingParametersUI:
             # Dropdown for selecting fit_1D function
             self.function = Select(
                 title="Fitting Function:",
-                value=fn,
+                value=function,
                 options=fn_allowed,
                 width=200,
                 stylesheets=dragons_styles(),
@@ -560,6 +573,7 @@ class FittingParametersUI:
                 self.fit.perform_fit()
 
             self.function.on_change("value", fn_select_change)
+
         else:
             # If the function is fixed
             function_text = (
@@ -649,18 +663,18 @@ class FittingParametersUI:
         """
         # enable/disable sliders
         disabled = not self.fit.sigma_clip
-        for c in self.niter_slider.children:
-            c.disabled = disabled
+        for child in self.niter_slider.children:
+            child.disabled = disabled
 
-        for c in self.sigma_upper_slider.children:
-            c.disabled = disabled
+        for child in self.sigma_upper_slider.children:
+            child.disabled = disabled
 
-        for c in self.sigma_lower_slider.children:
-            c.disabled = disabled
+        for child in self.sigma_lower_slider.children:
+            child.disabled = disabled
 
         if hasattr(self, "grow_slider"):
-            for c in self.grow_slider.children:
-                c.disabled = disabled
+            for child in self.grow_slider.children:
+                child.disabled = disabled
 
     def build_column(self):
         """
@@ -757,7 +771,7 @@ class FittingParametersUI:
             "color": "black",
             "font-size": "115%",
             "margin-top": "10px",
-        } 
+        }
 
         return bm.Div(
             text=text,
@@ -782,9 +796,8 @@ class FittingParametersUI:
             try:
                 slider = getattr(self, f"{key}_slider")
 
-            # TODO: Add logging here.
-            except AttributeError:
-                pass
+            except AttributeError as err:
+                logging.debug("AttributeError in reset_ui: %s", err)
 
             else:
                 slider.children[0].value = self.fitting_parameters[key]
@@ -824,6 +837,8 @@ class FittingParametersUI:
         new : str
             new value of the toggle button
         """
+        logging.debug("sigma_button_handler: %s %s %s", attr, old, new)
+
         self.fit.sigma_clip = bool(new)
         self.enable_disable_sigma_inputs()
         self.fit.perform_fit()
@@ -835,6 +850,8 @@ class FittingParametersUI:
         This will trigger a fit since the result may
         change.
         """
+        logging.debug("sigma_slider_handler: %s", val)
+
         # If we're not sigma-clipping, we don't need to refit the model if
         # sigma changes
         if self.fit.sigma_clip:
@@ -888,8 +905,9 @@ class InfoPanel:
         fit_count = model.mask.count(SIGMA_MASK_NAME)
 
         extra_counts = dict()
-        for em in self.extra_masks:
-            extra_counts[em] = model.mask.count(em)
+        for extra_mask in self.extra_masks:
+            extra_counts[extra_mask] = model.mask.count(extra_mask)
+
         total_count = model.x.size
 
         total = (
@@ -1110,6 +1128,7 @@ class Fit1DPanel:
             sizing_mode="stretch_width"
         )
 
+    # pylint: disable=unused-argument
     def build_figures(
         self,
         domain=None,
@@ -1224,9 +1243,9 @@ class Fit1DPanel:
             def min_max_pad(data, default_min, default_max):
                 if data is None or len(data) == 0:
                     return default_min, default_max, 0.0
-                mx = max(data)
-                mn = min(data)
-                return mn, mx, 0.1 * (mx - mn)
+                data_max = max(data)
+                data_min = min(data)
+                return data_min, data_max, 0.1 * (data_max - data_min)
 
             # if xdata or ydata are empty, we set some arbitrary values so the
             # UI is ok
@@ -1295,6 +1314,7 @@ class Fit1DPanel:
             self._point_mask_handler(x, y, mult, "mask")
 
         else:
+            # pylint: disable-next=no-member
             self.model.data.selected.update(indices=[])
             mask = self.model.mask.copy()
             for i in indices:
@@ -1323,8 +1343,10 @@ class Fit1DPanel:
         indices = self.model.data.selected.indices
         if not indices:
             self._point_mask_handler(x, y, mult, "unmask")
+
         else:
             x_data = self.model.x
+            # pylint: disable-next=no-member
             self.model.data.selected.update(indices=[])
             mask = self.model.mask.copy()
 
@@ -1368,12 +1390,12 @@ class Fit1DPanel:
         if action not in ("mask", "unmask"):
             action = None
 
-        for i, (xd, yd) in enumerate(zip(xarr, yarr)):
+        for i, (xdata, ydata) in enumerate(zip(xarr, yarr)):
             is_masked = (action == "mask") ^ (mask[i] == USER_MASK_NAME)
 
             if action is None or is_masked:
-                if xd is not None and yd is not None:
-                    ddist = (x - xd) ** 2 + ((y - yd) * mult) ** 2
+                if xdata is not None and ydata is not None:
+                    ddist = (x - xdata) ** 2 + ((y - ydata) * mult) ** 2
                     if dist is None or ddist < dist:
                         dist = ddist
                         sel = i
@@ -1395,7 +1417,7 @@ class Fit1DPanel:
     # TODO refactored this down from tracing, but it breaks
     # x/y tracking when the mouse moves in the figure for calculateSensitivity
     @staticmethod
-    def add_custom_cursor_behavior(p):
+    def add_custom_cursor_behavior(pointer):
         """
         Customize cursor behavior depending on which tool is active.
         """
@@ -1423,9 +1445,9 @@ class Fit1DPanel:
             elm.style.cursor = Bokeh.cursor;
         """
 
-        p.js_on_event(events.MouseMove, bm.CustomJS(code=mouse_move))
-        p.js_on_event(events.PanStart, bm.CustomJS(code=pan_start))
-        p.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
+        pointer.js_on_event(events.MouseMove, bm.CustomJS(code=mouse_move))
+        pointer.js_on_event(events.PanStart, bm.CustomJS(code=pan_start))
+        pointer.js_on_event(events.PanEnd, bm.CustomJS(code=pan_end))
 
 
 class Fit1DRegionListener(GIRegionListener):
@@ -1439,15 +1461,15 @@ class Fit1DRegionListener(GIRegionListener):
         function to call when band is finished.
     """
 
-    def __init__(self, fn):
+    def __init__(self, function):
         """Initializes the Fit1DRegionListener.
-        
+
         Parameters
         ----------
         fn : function
             function to call when band is finished.
         """
-        self.fn = fn
+        self.fn = function
 
     def adjust_region(self, region_id, start, stop):
         pass
@@ -1621,7 +1643,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     reinit_widgets.append(reset_reinit_button)
 
                 elif len(reinit_widgets) == 1:
-
+                    # pylint: disable=unused-argument
                     def kickoff_modal(attr, old, new):
                         self.reconstruct_points()
 
@@ -1846,7 +1868,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         reconstructed dictionary of input data.  For example, wavecal can
         update the spectra being displayed based on the selected row.
         """
-        pass
 
     def reconstruct_points(self):
         """Reconstruct the initial points to work with.
@@ -1863,7 +1884,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         rollback_config = self.ui_params.values.copy()
 
-        def fn():
+        def function():
             """Top-level code to update the Config with the values from the
             widgets.
             """
@@ -1875,7 +1896,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             }
             self.ui_params.update_values(**config_update)
 
-        self.do_later(fn)
+        self.do_later(function)
 
         if self.reconstruct_points_fn is not None:
             def rfn():
@@ -1883,14 +1904,19 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 try:
                     data = self.reconstruct_points_fn(ui_params=self.ui_params)
 
-                except Exception as e:
+                except Exception as err:
                     # something went wrong, let's revert the inputs handling
                     # immediately to specifically trap the
                     # reconstruct_points_fn call
                     self.ui_params.update_values(**rollback_config)
                     self.show_user_message(
                         f"Unable to build data from inputs due to exception "
-                        f"({e.__class__.__name__})\nreverting"
+                        f"({err.__class__.__name__})\nreverting"
+                    )
+                    logging.error(
+                        "Unable to build data from inputs, got Exception %s",
+                        err,
+                        exc_info=True
                     )
 
                 if data is not None:
@@ -1973,6 +1999,7 @@ def prep_fit1d_params_for_fit1d(fit1d_params):
         fit1d_params["sigma"] = True
 
 
+# pylint: disable=unused-argument
 def fit1d_figure(
     width=None,
     height=None,
