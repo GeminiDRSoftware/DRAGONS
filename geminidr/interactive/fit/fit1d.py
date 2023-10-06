@@ -1597,11 +1597,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
-        # TODO: This may no longer be supported. Leaving it in for now.
-        self.pad_buttons = pad_buttons
-
         # Keep a list of panels for access later
-        self.panels = list()
+        self.panels = []
 
         # If we have a widget driving the modal dialog via it's enable/disable
         # state, store it in this so the recalc knows to re-enable the widget
