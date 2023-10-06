@@ -173,6 +173,23 @@ class WavelengthSolutionPanel(Fit1DPanel):
         extra_masks---are not used in this function, and are only included to
         match the signature of Fit1DPanel.build_figures.
         """
+        # Catch user attempting to use plot_residuals, plot_ratios, or
+        # extra_masks, and print a warning.
+        if not plot_residuals:
+            logging.warning(
+                "plot_residuals is always enabled in WavelengthSolutionPanel."
+            )
+        
+        if not plot_ratios:
+            logging.warning(
+                "plot_ratios is always enabled in WavelengthSolutionPanel."
+            )
+
+        if not extra_masks:
+            logging.warning(
+                "extra_masks is always enabled in WavelengthSolutionPanel."
+            )
+
         self.xpoint = "fitted"
         self.ypoint = "nonlinear"
 
