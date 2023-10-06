@@ -843,7 +843,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         """
         super().reconstruct_points_additional_work(data)
         if data is not None:
-            for i, fit in enumerate(self.fits):
+            for i, _ in enumerate(self.fits):
                 if self.returns_list:
                     this_dict = {k: v[i] for k, v in data.items()}
 
