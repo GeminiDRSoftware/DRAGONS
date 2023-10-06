@@ -1,12 +1,24 @@
+"""Wavelength calibration interactive fitting panel and visualizer.
+
+This module contains the WavelengthSolutionPanel and
+WavelengthSolutionVisualizer classes, which are used to interactively fit a
+wavelength solution to a spectrum.
+"""
 import logging
 import uuid
 
 from bisect import bisect
 
+from functools import lru_cache
+
 from bokeh import models as bm
 from bokeh.layouts import row, column
 from bokeh.plotting import figure
 from bokeh.models import CustomJS
+
+import numpy as np
+
+from scipy.interpolate import interp1d
 
 from geminidr.interactive.controls import Controller, Handler
 from geminidr.interactive.styles import dragons_styles
@@ -25,17 +37,22 @@ from .fit1d import (
 
 from .help import DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
 
-from functools import lru_cache
-
-import numpy as np
-
-from scipy.interpolate import interp1d
-
 
 @lru_cache(maxsize=1000)
 def wavestr(line):
     """Convert a line wavelength to a string, rounding the internal
-    representation of the floating-point value"""
+    representation of the floating-point value
+    
+    Parameters
+    ----------
+    line : float
+        Wavelength of the line.
+        
+    Notes
+    -----
+    This function is lru cached to avoid unnecessary calls/conversions. It has
+    a maximum cache size of 1000, which should be enough for most use cases.
+    """
     return str(np.round(line, decimals=6))
 
 
@@ -44,22 +61,28 @@ def beep():
     print("\a", end="")
 
 
-def disable_when_identifying(fn):
+def disable_when_identifying(func):
     """A decorator that prevents methods from being executed when the
     WavelengthSolutionPanel is currently identifying an arc line.
     """
 
-    def gn(self, *args, **kwargs):
+    def wrapper(self, *args, **kwargs):
         if self.currently_identifying:
             beep()
             return
 
-        fn(self, *args, **kwargs)
+        func(self, *args, **kwargs)
 
-    return gn
+    return wrapper
 
 
 class WavelengthSolutionPanel(Fit1DPanel):
+    """Wavelenth solution fitting panel.
+
+    This class is used to manage the interactive fitting of a peak to a
+    specific wavelength in a spectrum. This is usually handled within a bokeh
+    Tab, and this class manages the contents of that tab.
+    """
     def __init__(
         self,
         visualizer,
@@ -71,6 +94,38 @@ class WavelengthSolutionPanel(Fit1DPanel):
         meta=None,
         **kwargs,
     ):
+        """Initializes the WavelengthSolutionPanel.
+
+        Parameters
+        ----------
+        visualizer : WavelengthSolutionVisualizer
+            The visualizer that is managing this panel.
+
+        fitting_parameters : dict
+            A dictionary of fitting parameters.
+
+        domain : 2-tuple
+            The domain of the fit.
+
+        x : array-like
+            The x values of the fit.
+
+        y : array-like
+            The y values of the fit.
+
+        weights : array-like
+            The weights of the fit.
+
+        meta : dict
+            A dictionary of metadata.
+
+        kwargs : dict
+            Any additional keyword arguments.
+
+        Notes
+        -----
+        This class is a subclass of |Fit1DPanel| and so inherits all of its
+        """
         # No need to compute wavelengths here as the model_change_handler()
         # does it
         spectrum_data_dict = {
@@ -116,18 +171,26 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.set_currently_identifying(False)
 
     def set_currently_identifying(self, peak):
+        """Specify whether the panel is currently identifying a peak, and set
+        the panel state accordingly.
+
+        Parameters
+        ----------
+        peak : bool or Number
+            Whether the panel is currently identifying a peak.
+        """
         status = bool(peak)
 
         spectrum = self.p_spectrum.select_one({"name": "new_line_marker"})
         spectrum.visible = status
 
         def recursively_set_status(parent, disabled):
-            for c in parent.children:
-                if hasattr(c, "children"):
-                    recursively_set_status(c, disabled)
+            for child in parent.children:
+                if hasattr(child, "children"):
+                    recursively_set_status(child, disabled)
 
                 else:
-                    c.disabled = disabled
+                    child.disabled = disabled
 
         recursively_set_status(self.new_line_row, not status)
         self.identify_button.disabled = status
@@ -138,31 +201,30 @@ class WavelengthSolutionPanel(Fit1DPanel):
         domain=None,
         controller_div=None,
         plot_residuals=True,
-        plot_ratios=True,
-        extra_masks=True,
+        plot_ratios=False,
+        extra_masks=False,
     ):
-        """
-        Build the figures for the panel.
+        """Build the figures for the panel.
 
         Parameters
         ----------
         domain : 2-tuple
-            The domain of the fit
+            The domain of the fit. Default none.
 
         controller_div : bokeh.models.Div
-            The div to hold the controller
+            The div to hold the controller. Default None.
 
         plot_residuals : bool
             Whether to plot the residuals. This is only included to match the
-            build_figures method in Fit1DPanel.
+            build_figures method in Fit1DPanel. Default True
 
         plot_ratios : bool
             Whether to plot the ratios. This is only included to match the
-            build_figures method in Fit1DPanel.
+            build_figures method in Fit1DPanel. Default False
 
         extra_masks : bool
             Whether to plot the extra masks. This is only included to match the
-            build_figures method in Fit1DPanel.
+            build_figures method in Fit1DPanel. Default False
 
         Notes
         -----
@@ -180,14 +242,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 "plot_residuals is always enabled in WavelengthSolutionPanel."
             )
 
-        if not plot_ratios:
+        # Plot ratios is not used
+        if plot_ratios:
             logging.warning(
-                "plot_ratios is always enabled in WavelengthSolutionPanel."
+                "plot_ratios is always disabled in WavelengthSolutionPanel."
             )
 
-        if not extra_masks:
+        if extra_masks:
             logging.warning(
-                "extra_masks is always enabled in WavelengthSolutionPanel."
+                "extra_masks is always disabled in WavelengthSolutionPanel."
             )
 
         self.xpoint = "fitted"
@@ -259,7 +322,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             "i", "Identify arc line", self.identify_line
         )
 
-        c = Controller(
+        controls = Controller(
             p_spectrum,
             None,
             self.model.band_model if self.enable_regions else None,
@@ -269,13 +332,13 @@ class WavelengthSolutionPanel(Fit1DPanel):
             handlers=[delete_line_handler, identify_line_handler],
         )
 
-        c.helpmaskingtext += (
+        controls.helpmaskingtext += (
             "After selecting a line to identify, select its "
             "wavelength (in nm) from the drop-down menu or "
             "enter a value in the text box, then click 'OK'."
         )
 
-        c.set_help_text()
+        controls.set_help_text()
 
         p_spectrum.y_range.on_change(
             "start", lambda attr, old, new: self.update_label_heights()
@@ -329,7 +392,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # JS side listener to perform the focus.  We have to do it async via
         # setTimeout because bokeh triggers the disabled change before the html
         # widget is ready for focus
-        cb = CustomJS(
+        callback = CustomJS(
             code="""
                         if (cb_obj.disabled == false) {
                           setTimeout(function() {
@@ -340,7 +403,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             % focus_id
         )
 
-        self.new_line_textbox.js_on_change("disabled", cb)
+        self.new_line_textbox.js_on_change("disabled", callback)
 
         self.new_line_dropdown.on_change(
             "value", self.set_new_line_textbox_value
@@ -418,7 +481,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
     @staticmethod
     def linear_model(model):
         """Return only the linear part of a model. It doesn't work for
-        splines, which is why it's not in the InteractiveModel1D class"""
+        splines, which is why it's not in the InteractiveModel1D class
+        """
         model = model.fit._models
         new_model = model.__class__(
             degree=1, c0=model.c0, c1=model.c1, domain=model.domain
@@ -427,8 +491,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         return new_model
 
     def label_height(self, x):
-        """
-        Provide a location for a wavelength label identifying a line
+        """Provide a location for a wavelength label identifying a line
 
         Parameters
         ----------
@@ -538,8 +601,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.set_currently_identifying(False)
 
     def add_line_to_data(self, peak, wavelength):
-        """
-        Add a new line to the ColumnDataSource and performs a new fit.
+        """Add a new line to the ColumnDataSource and performs a new fit.
 
         Parameters
         ----------
@@ -556,7 +618,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
             lower_limit, upper_limit = sorted([lower_limit, upper_limit])
 
-            if not (lower_limit < wavelength < upper_limit):
+            if not lower_limit < wavelength < upper_limit:
                 self.visualizer.show_user_message(
                     f"The value {wavelength} nm does not preserve a monotonic"
                     f" sequence of identified line wavelengths"
@@ -584,6 +646,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """Identifies a peak near the cursor location and allows the user to
         provide a wavelength.
         """
+        logging.debug("Identifying line: %s %s %s", key, x, y)
+
         if peak is None:
             x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
             fwidth = self.model.meta["fwidth"]
@@ -630,7 +694,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
                     return
 
             est_wave = self.model.evaluate(peak)[0]
-            if not (x1 < est_wave < x2):  # peak outside viewport
+
+            # Peak outside viewport.
+            if not x1 < est_wave < x2:
                 return
 
         else:
@@ -644,6 +710,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         )
 
         lower_limit, upper_limit = get_closest(self.model.y, est_wave)
+
         possible_lines = [
             line for line in all_lines if lower_limit < line < upper_limit
         ]
@@ -704,10 +771,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     @disable_when_identifying
     def delete_line(self, key, x, y):
-        """
-        Delete (not mask) from the fit the line nearest the cursor. This
+        """Delete (not mask) from the fit the line nearest the cursor. This
         operates only on the spectrum panel.
         """
+        logging.debug("delete_line: %s %s %s", key, x, y)
+
         index = np.argmin(abs(self.model.data.data["fitted"] - x))
 
         new_data = {
@@ -719,8 +787,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.model.perform_fit()
 
     def identify_lines(self):
-        """
-        Called when the user clicks the "Identify Lines" button. This:
+        """Called when the user clicks the "Identify Lines" button. This:
         1) Removes any masked points (user-masked or sigma-clipped) from the
            fit data
         2) Gets all the already-identified peaks that aren't in the fit
@@ -739,9 +806,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         )
 
         good_data = {}
-        for k, v in self.model.data.data.items():
+        for k, values in self.model.data.data.items():
             good_data[k] = [
-                vv for vv, mask in zip(v, self.model.mask) if mask == "good"
+                vv for vv, mask in zip(values, self.model.mask)
+                if mask == "good"
             ]
 
         try:
@@ -749,7 +817,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 all_lines, good_data["y"], radius=0.01 * abs(dw)
             )
 
-        except ValueError:  # good_data['y'] is empty
+        except ValueError as err:  # good_data['y'] is empty
+            logging.warning(
+                "No lines identified, recieved ValueError: %s",
+                err
+            )
+
             unmatched_lines = all_lines
 
         else:
@@ -767,30 +840,32 @@ class WavelengthSolutionPanel(Fit1DPanel):
             new_waves, unmatched_lines, radius=matching_distance
         )
 
-        for peak, m in zip(new_peaks, matches):
-            if m != -1:
+        for peak, match in zip(new_peaks, matches):
+            if match != -1:
                 good_data["x"].append(peak)
-                good_data["y"].append(unmatched_lines[m])
+                good_data["y"].append(unmatched_lines[match])
                 good_data["mask"].append("good")
-                good_data["fitted"].append(unmatched_lines[m])
+                good_data["fitted"].append(unmatched_lines[match])
                 good_data["nonlinear"].append(0)
                 good_data["heights"].append(self.label_height(peak))
                 good_data["residuals"].append(0)
-                good_data["lines"].append(wavestr(unmatched_lines[m]))
-                print("NEW LINE", peak, unmatched_lines[m])
+                good_data["lines"].append(wavestr(unmatched_lines[match]))
+                print("NEW LINE", peak, unmatched_lines[match])
 
         self.model.data.data = good_data
         self.model.perform_fit()
 
     def set_new_line_textbox_value(self, attrib, old, new):
         """Update the value of the textbox related to the new line ID"""
+        logging.debug("set_new_line_textbox_value: %s %s %s", attrib, old, new)
+
         if new != old:
             self.new_line_textbox.value = float(new)
 
     def handle_line_wavelength(self, attrib, old, new):
-        """
-        Handle user pressing Enter in the new line wavelength textbox.
-        """
+        """Handle user pressing Enter in the new line wavelength textbox."""
+        logging.debug("handle_line_wavelength: %s %s %s", attrib, old, new)
+
         if new is None:
             return
 
@@ -827,10 +902,12 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
 
     @property
     def meta(self):
+        """The metadata for each fit as a list."""
         return [fit.meta for fit in self.fits]
 
     @property
     def image(self):
+        """The image for each fit as a list."""
         image = []
         for model in self.fits:
             goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
@@ -838,10 +915,9 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         return image
 
     def reconstruct_points_additional_work(self, data):
-        """
-        Reconstruct the initial points to work with.
-        """
+        """Reconstruct the initial points to work with."""
         super().reconstruct_points_additional_work(data)
+
         if data is not None:
             for i, _ in enumerate(self.fits):
                 if self.returns_list:
