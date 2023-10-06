@@ -300,11 +300,11 @@ class InteractiveModel1D(InteractiveModel):
 
             mask = list(np.where(user_mask, USER_MASK_NAME, "good"))
 
-        # TODO rewrite in a concise way
         # If we are showing masked points as user-masked, set that up here
-        if extra_masks is not None:
-            for k, v in extra_masks.items():
-                mask = [k if vv else m for m, vv in zip(mask, v[~init_mask])]
+        if extra_masks:
+            for key, emask in extra_masks.items():
+                mask_iter = zip(mask, emask[~init_mask])
+                mask = [key if em else m for m, em in mask_iter]
 
         # Might put the variance in here for errorbars, but it's not needed
         # at the moment
