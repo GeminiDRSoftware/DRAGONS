@@ -175,7 +175,6 @@ class InteractiveModel1D(InteractiveModel):
         """
         super().__init__()
 
-        # TODO: Make this the default instead of None
         if not listeners:
             listeners = []
 
@@ -769,7 +768,7 @@ class FittingParametersUI:
             :class:`~bokeh.models.Div` component containing the short
             description.
         """
-        description_styles ={
+        description_styles = {
             "color": "black",
             "font-size": "115%",
             "margin-top": "10px",
@@ -1278,8 +1277,8 @@ class Fit1DPanel:
         self.model.regions = self.model.band_model.build_regions()
 
     def model_change_handler(self, model):
-        """If the model changes, this gets called to evaluate the fit and save the
-        results.
+        """If the model changes, this gets called to evaluate the fit and save
+        the results.
 
         Parameters
         ----------
