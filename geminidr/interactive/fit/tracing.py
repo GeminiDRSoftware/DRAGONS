@@ -103,7 +103,7 @@ def trace_apertures_data_provider(ext, ui_params):
     data = {"x": [], "y": []}
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-    for i, loc in enumerate(ext.APERTURE['c0'].data):
+    for loc in ext.APERTURE['c0'].data:
         c0 = int(loc + 0.5)
         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
         start = np.argmax(at.boxcar(spectrum, size=20))
