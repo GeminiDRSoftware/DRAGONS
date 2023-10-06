@@ -3,7 +3,7 @@ Interactive function and helper functions used to trace apertures.
 """
 import numpy as np
 
-from geminidr.interactive.fit import help
+from geminidr.interactive.fit import help as fit_help
 from geminidr.interactive.interactive import UIParameters
 from gempy.library import astrotools as at, tracing
 from .fit1d import Fit1DVisualizer
@@ -52,10 +52,10 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
         ylabel = "x / columns [px]"
 
     help_text = (
-        help.DEFAULT_HELP
-        + help.TRACE_APERTURES
-        + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
-        + help.REGION_EDITING_HELP_SUBTEXT
+        fit_help.DEFAULT_HELP
+        + fit_help.TRACE_APERTURES
+        + fit_help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
+        + fit_help.REGION_EDITING_HELP_SUBTEXT
     )
 
     visualizer = Fit1DVisualizer(
