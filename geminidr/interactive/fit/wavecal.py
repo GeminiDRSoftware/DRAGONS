@@ -129,7 +129,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 else:
                     c.disabled = disabled
 
-        recursively_set_status(self.new_line_div, not status)
+        recursively_set_status(self.new_line_row, not status)
         self.identify_button.disabled = status
         self.currently_identifying = peak
 
@@ -163,7 +163,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         extra_masks : bool
             Whether to plot the extra masks. This is only included to match the
             build_figures method in Fit1DPanel.
-        
+
         Notes
         -----
         This method is overridden to add the spectrum panel and the line
@@ -179,7 +179,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             logging.warning(
                 "plot_residuals is always enabled in WavelengthSolutionPanel."
             )
-        
+
         if not plot_ratios:
             logging.warning(
                 "plot_ratios is always enabled in WavelengthSolutionPanel."
@@ -368,26 +368,27 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         new_line_cancel_button.on_click(self.cancel_new_line)
 
-        # TODO: This needs to be refactored into variables. There are too many
-        #       objects declared in this single statement (6?), and it's too
-        #       long.
-        self.new_line_div = row(
+        line_selection_row = row(
+            self.new_line_prompt,
+            self.new_line_dropdown,
+            self.new_line_textbox,
+            stylesheets=dragons_styles(),
+        )
+
+        confirm_cancel_row = row(
+            bm.Spacer(
+                sizing_mode="stretch_width",
+                stylesheets=dragons_styles(),
+            ),
+            new_line_ok_button,
+            new_line_cancel_button,
+            stylesheets=dragons_styles(),
+        )
+
+        self.new_line_row = row(
             column(
-                row(
-                    self.new_line_prompt,
-                    self.new_line_dropdown,
-                    self.new_line_textbox,
-                    stylesheets=dragons_styles(),
-                ),
-                row(
-                    bm.Spacer(
-                        sizing_mode="stretch_width",
-                        stylesheets=dragons_styles(),
-                    ),
-                    new_line_ok_button,
-                    new_line_cancel_button,
-                    stylesheets=dragons_styles(),
-                ),
+                line_selection_row,
+                confirm_cancel_row,
                 sizing_mode="stretch_width",
                 stylesheets=dragons_styles(),
             ),
@@ -397,7 +398,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         identify_panel = row(
             self.identify_button,
-            self.new_line_div,
+            self.new_line_row,
             sizing_mode="stretch_width",
             stylesheets=dragons_styles(),
         )
