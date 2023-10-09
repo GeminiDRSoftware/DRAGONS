@@ -280,9 +280,8 @@ class FindSourceAperturesModel:
 
         # initial parameters are set as attributes
         self.reset()
-        del self._aper_params[
-            "direction"
-        ]  # no longer passed to find_apertures()
+        # no longer passed to find_apertures()
+        del self._aper_params["direction"]  
 
     @property
     def aper_params(self):
@@ -313,6 +312,7 @@ class FindSourceAperturesModel:
             func = getattr(listener, method, None)
             if func:
                 func(*args, **kwargs)
+
             if update_view and hasattr(listener, "update_view"):
                 listener.update_view()
 
@@ -386,12 +386,16 @@ class FindSourceAperturesModel:
             return 1 if b[1] < a[1] else -1
 
         # find the closest aperture in the visible range
+        def get_aperture_info(aperture):
+            # This should probably be a static method.
+            pos = aperture.source.data["location"][0]
+            dist = abs(pos - x)
+            ap_id = aperture.source.data["id"][0]
+
+            return dist, ap_id, pos
+
         nearby_apertures = [
-            (
-                abs(ap.source.data["location"][0] - x),
-                ap.source.data["id"][0],
-                ap.source.data["location"][0],
-            )
+            get_aperture_info(ap)
             for ap in self.aperture_models.values()
             if x_start <= ap.source.data["location"][0] < x_end
         ]
@@ -414,9 +418,10 @@ class FindSourceAperturesModel:
         if peaks.size:
             initx = peaks[np.argmin(abs(peaks - x))]
             if abs(initx - x) <= 20:
-                peaks = pinpoint_peaks(
+                peaks, _ = pinpoint_peaks(
                     data=self.profile, mask=self.prof_mask, peaks=[initx]
-                )[0]
+                )
+
                 limits = get_limits(
                     np.nan_to_num(self.profile),
                     self.prof_mask,
@@ -424,9 +429,11 @@ class FindSourceAperturesModel:
                     threshold=self.threshold,
                     min_snr=self.min_snr,
                 )
+
                 log.stdinfo(
                     f"Found source at {self.direction}: {peaks[0]:.1f}"
                 )
+
                 self.add_aperture(peaks[0], *limits[0])
 
     def update(self, extras):
