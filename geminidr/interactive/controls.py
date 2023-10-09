@@ -217,8 +217,9 @@ class Controller(object):
         handler : :class:`~geminidr.interactive.controls.Handler`
             Handler to add to the controller
         """
-        if handler.key in self.handlers.keys():
+        if handler.key in self.handlers:
             raise ValueError(f"Key {handler.key} already registered")
+
         self.handlers[handler.key] = handler
 
     def update_helpmaskingtext(self):
@@ -226,7 +227,7 @@ class Controller(object):
         Update the help preamble text for keys that are
         always available, starting with the masking.
         """
-        if "m" in self.handlers.keys():
+        if "m" in self.handlers:
             self.helpmaskingtext = (
                 "<b>Masking</b> <br/> "
                 'To mark or unmark one point at a time, select "Tap" on the '
@@ -236,16 +237,19 @@ class Controller(object):
                 "<b>U</b> - Unmask selected/closest<br/></br>"
             )
 
-        if self.handlers.keys() - ["m", "u"]:
-            if "m" in self.handlers.keys():
+        if self.handlers - ["m", "u"]:
+            if "m" in self.handlers:
                 self.helpmaskingtext += "<b>Other Commands</b><br/>"
+
             else:
                 self.helpmaskingtext += "<b>Commands</b><br/>"
+
             for k, v in self.handlers.items():
                 if k not in ["u", "m"]:
                     self.helpmaskingtext += (
                         f"<b>{k.upper()}</b> - {v.description}<br/>"
                     )
+
             self.helpmaskingtext += "<br/>"
 
     def set_help_text(self, text=None):
@@ -370,7 +374,7 @@ class Controller(object):
         """
 
         def _ui_loop_handle_key(_key):
-            if _key in self.handlers.keys():
+            if _key in self.handlers:
                 self.handlers[_key].handle(_key, self.x, self.y)
 
             elif self.task:
