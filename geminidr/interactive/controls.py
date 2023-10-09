@@ -244,10 +244,10 @@ class Controller(object):
             else:
                 self.helpmaskingtext += "<b>Commands</b><br/>"
 
-            for k, v in self.handlers.items():
-                if k not in ["u", "m"]:
+            for key, value in self.handlers.items():
+                if key not in ["u", "m"]:
                     self.helpmaskingtext += (
-                        f"<b>{k.upper()}</b> - {v.description}<br/>"
+                        f"<b>{key.upper()}</b> - {value.description}<br/>"
                     )
 
             self.helpmaskingtext += "<br/>"
@@ -266,23 +266,25 @@ class Controller(object):
             html to display in the div
         """
         if text is not None:
-            ht = self.helpintrotext + self.helpmaskingtext + text
+            helptext = self.helpintrotext + self.helpmaskingtext + text
+
         else:
             if self.tasks or self.handlers or self.enable_user_masking:
                 # TODO somewhat editor-inheritance vs on enter function below,
                 # refactor accordingly
-                ht = self.helpintrotext + self.helpmaskingtext
+                helptext = self.helpintrotext + self.helpmaskingtext
+
                 if len(self.tasks) == 1:
                     task = next(iter(self.tasks.values()))
-                    ht = ht + task.helptext()
+                    helptext = helptext + task.helptext()
+
                 else:
                     for key, task in sorted(self.tasks.items()):
-                        ht = ht + "<b>%s</b> - %s<br/>\n" % (
-                            key,
-                            task.description(),
-                        )
+                        description = task.description()
+
+                        helptext += f"<b>{key}</b> - {description}<br/>\n"
             else:
-                ht = ""
+                helptext = ""
 
         # This has to be done via a callback.  During the key press, we are
         # outside the context of the widget's bokeh document
@@ -290,11 +292,12 @@ class Controller(object):
             # we now have an associated document, need to do this inside that
             # context
             self.helptext.document.add_next_tick_callback(
-                lambda: self.helptext.update(text=ht)
+                lambda: self.helptext.update(text=helptext)
             )
+
         else:
             # no document, we can update directly
-            self.helptext.update(text=ht)
+            self.helptext.update(text=helptext)
 
     # pylint: disable=unused-argument
     def on_mouse_enter(self, event):
@@ -309,13 +312,15 @@ class Controller(object):
         """
         global CONTROLLER
         CONTROLLER = self
+
         if len(self.tasks) == 1:
             # for k, v in self.tasks.items():
             #     self.task = v
             self.task = next(iter(self.tasks.values()))
-            ht = self.task.helptext()
-            self.set_help_text(ht)
+            helptext = self.task.helptext()
+            self.set_help_text(helptext)
             self.task.start(self.x, self.y)
+
         else:
             # show selection of available tasks
             self.set_help_text(None)
@@ -427,8 +432,10 @@ class Controller(object):
                 self.handle_mouse_callback()
 
     def handle_mouse_callback(self):
+        """Use mouse location to display help text."""
         global _PENDING_HANDLE_MOUSE
         _PENDING_HANDLE_MOUSE = False
+
         if self.task:
             if self.task.handle_mouse(self.x, self.y):
                 self.task = None
@@ -936,7 +943,7 @@ class RegionTask(Task):
         -------
             str HTML help text for the task
         """
-        s = (
+        help_string = (
             """<b> Edit Regions </b> <br/>\n
             <b>R</b> to start a new region or set the edge if editing<br/>\n
             <b>E</b> to edit nearest region<br/>\n
@@ -944,7 +951,7 @@ class RegionTask(Task):
             """
         )
 
-        return s
+        return help_string
 
 
 class Handler:
@@ -966,10 +973,32 @@ class Handler:
         Function to call with the key
     """
 
-    def __init__(self, key, description, fn):
+    def __init__(self, key, description, function):
+        """Iitializes the handler with the given key, description and function.
+
+        Parameters
+        ----------
+        key : str
+            Key this handler listens for
+
+        description : str
+            Description of handler effect for the help text
+
+        function : callable
+            Function to call with the key.
+
+        Notes
+        -----
+        The function should take three positional arguments: the key, and the x
+        and y coordinates of the mouse cursor.
+
+        These are only passed positionally, and not as keyword arguments, so
+        the order matters here.
+        """
         self.key = key.lower()
         self.description = description
-        self.fn = fn
+        self.function = function
 
     def handle(self, key, x, y):
-        self.fn(key, x, y)
+        """Call the function with the given key and x/y coordinates."""
+        self.function(key, x, y)
