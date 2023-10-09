@@ -56,8 +56,8 @@ def _handle_key(doc):
     none
     """
     key = doc.session_context.request.arguments["key"][0].decode("utf-8")
-    if controls.controller:
-        controls.controller.handle_key(key)
+    if controls.CONTROLLER:
+        controls.CONTROLLER.handle_key(key)
 
 
 # to store the mapping from ID to callable for the registered web callbacks

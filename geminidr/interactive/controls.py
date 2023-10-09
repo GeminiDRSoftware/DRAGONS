@@ -22,31 +22,26 @@ from bokeh.events import (
     MouseLeave,
 )
 
-__all__ = ["controller", "Controller", "Handler"]
+__all__ = ["CONTROLLER", "Controller", "Handler"]
 
 from bokeh.models import CustomJS
 
-"""
-This is the active controller.  It is activated when it's attached figure
-sees the mouse enter it's view.
+# This is the active controller.  It is activated when it's attached figure
+# sees the mouse enter it's view.
 
-Controller instances will set this to listen to key presses.  The bokeh server
-will use this to send keys it recieves from the clients.  Everyone else should
-leave it alone!
-"""
-controller = None
+# Controller instances will set this to listen to key presses.  The bokeh
+# server will use this to send keys it recieves from the clients.  Everyone
+# else should leave it alone!
+CONTROLLER = None
 
 
-# This is used to track if we already have a pending
-# action to update the mouse position.  This is used
-# to effect throttling.  When there is a mouse move,
-# an action to respond to the mouse position is triggered
-# in the future and this is set True.  Subsequent mouse
-# moves will see we already have the action pending and
-# do nothing.  Then when the action triggers it takes
-# the current (future) mouse position and sets this back
-# to False.
-_pending_handle_mouse = False
+# This is used to track if we already have a pending action to update the mouse
+# position.  This is used to effect throttling.  When there is a mouse move, an
+# action to respond to the mouse position is triggered in the future and this
+# is set True.  Subsequent mouse moves will see we already have the action
+# pending and do nothing.  Then when the action triggers it takes the current
+# (future) mouse position and sets this back to False.
+_PENDING_HANDLE_MOUSE = False
 
 
 class Controller(object):
@@ -144,6 +139,7 @@ class Controller(object):
                     "argument of Controller"
                 )
 
+            # pylint: disable=unused-argument
             def _mask(key, x, y):
                 handler = mask_handlers[0]
                 dx = (
@@ -162,6 +158,7 @@ class Controller(object):
                 Handler("m", "Mask selected/closest", _mask)
             )
 
+            # pylint: disable=unused-argument
             def _unmask(key, x, y):
                 handler = mask_handlers[1]
                 dx = (
@@ -295,6 +292,7 @@ class Controller(object):
             # no document, we can update directly
             self.helptext.update(text=ht)
 
+    # pylint: disable=unused-argument
     def on_mouse_enter(self, event):
         """
         Handle the mouse entering our related figure by activating this
@@ -305,8 +303,8 @@ class Controller(object):
         event
             the mouse event from bokeh, unused
         """
-        global controller
-        controller = self
+        global CONTROLLER
+        CONTROLLER = self
         if len(self.tasks) == 1:
             # for k, v in self.tasks.items():
             #     self.task = v
@@ -331,13 +329,13 @@ class Controller(object):
         event
             the mouse event from bokeh, unused
         """
-        global controller
-        if self == controller:
+        global CONTROLLER
+        if self == CONTROLLER:
             self.set_help_text(None)
             if self.task:
                 self.task.stop()
                 self.task = None
-            controller = None
+            CONTROLLER = None
 
     def on_mouse_move(self, event: PointEvent):
         """
@@ -414,9 +412,9 @@ class Controller(object):
         """
         self.x = x
         self.y = y
-        global _pending_handle_mouse
-        if not _pending_handle_mouse:
-            _pending_handle_mouse = True
+        global _PENDING_HANDLE_MOUSE
+        if not _PENDING_HANDLE_MOUSE:
+            _PENDING_HANDLE_MOUSE = True
             if self.fig.document is not None:
                 self.fig.document.add_timeout_callback(
                     self.handle_mouse_callback, 100
@@ -425,8 +423,8 @@ class Controller(object):
                 self.handle_mouse_callback()
 
     def handle_mouse_callback(self):
-        global _pending_handle_mouse
-        _pending_handle_mouse = False
+        global _PENDING_HANDLE_MOUSE
+        _PENDING_HANDLE_MOUSE = False
         if self.task:
             if self.task.handle_mouse(self.x, self.y):
                 self.task = None
@@ -434,8 +432,7 @@ class Controller(object):
 
 
 class Task(ABC):
-    """
-    A Task is a general concept of some interactive behavior where we
+    """A Task is a general concept of some interactive behavior where we
     also want keyboard support.
 
     A task may be connected to a top-level Controller by a key command.
@@ -448,15 +445,11 @@ class Task(ABC):
 
     @abstractmethod
     def handle_key(self, key):
-        """
-        Called when the task is active and we have a key press.
-        """
-        pass
+        """Called when the task is active and we have a key press."""
 
     @abstractmethod
     def handle_mouse(self, x, y):
-        """
-        Called when we have a mouse move and the task is active.
+        """Called when we have a mouse move and the task is active.
 
         Parameters
         ----------
@@ -466,11 +459,10 @@ class Task(ABC):
             y coordinate of mouse in data space
 
         """
-        pass
 
     def helptext(self):
-        """
-        Override to provide HTML help text to display when this task is active.
+        """Override to provide HTML help text to display when this task is
+        active.
 
         Returns
         -------
@@ -531,6 +523,7 @@ class ApertureTask(Task):
         """
         self.stop_aperture()
 
+    # pylint: disable=unused-argument
     def start_aperture(self, x, y):
         """
         Create a new aperture at this x coordinate.
@@ -914,7 +907,7 @@ class RegionTask(Task):
         or not.
         """
         if self.region_id is not None:
-            controller.set_help_text(
+            CONTROLLER.set_help_text(
                 """Drag to desired region width.<br/>\n
                   <b>R</b> to set the region<br/>\n
                   <b>D</b> to delete/cancel the current region<br/>
@@ -923,7 +916,7 @@ class RegionTask(Task):
             )
 
         else:
-            controller.set_help_text(
+            CONTROLLER.set_help_text(
                 """<b> Edit Regions: </b><br/>\n
                   <b>R</b> to start a new region<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
