@@ -237,7 +237,8 @@ class Controller(object):
                 "<b>U</b> - Unmask selected/closest<br/></br>"
             )
 
-        if self.handlers - ["m", "u"]:
+        # Check for other handlers.
+        if self.handlers.keys() - ["m", "u"]:
             if "m" in self.handlers:
                 self.helpmaskingtext += "<b>Other Commands</b><br/>"
 
