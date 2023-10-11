@@ -1142,6 +1142,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                  domains=None, title=None, primitive_name=None, filename_info=None,
                  template="fit1d.html", help_text=None, recalc_inputs_above=False,
                  ui_params=None, turbo_tabs=False, panel_class=Fit1DPanel, pad_buttons=False,
+                 reinit_live=False,
                  **kwargs):
         """
         Parameters
@@ -1195,9 +1196,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             the work are methods of this class.
         pad_buttons : bool
             If True, pad the abort/accept buttons so the tabs can flow under them
+        reinit_live : bool
+            If True, the reinit inputs will be recalculated live as the user
+            changes them. If False, a 'recalculate' button will be shown below
+            the reinit inputs instead.
         """
         super().__init__(title=title, primitive_name=primitive_name, filename_info=filename_info,
-                         template=template, help_text=help_text, ui_params=ui_params)
+                         template=template, help_text=help_text, ui_params=ui_params,
+                         reinit_live=reinit_live)
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
         self.pad_buttons = pad_buttons
@@ -1212,7 +1218,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # Make the panel with widgets to control the creation of (x, y) arrays
 
         # Create left panel
-        reinit_widgets = self.make_widgets_from_parameters(ui_params, reinit_live=modal_message is None)
+        reinit_widgets = self.make_widgets_from_parameters(ui_params)
         if reinit_widgets:
             # This should really go in the parent class, like submit_button
             if modal_message:

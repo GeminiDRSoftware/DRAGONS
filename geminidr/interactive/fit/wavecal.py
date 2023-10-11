@@ -591,7 +591,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             image.append(model.y[goodpix])
         return image
 
-    def make_widgets_from_parameters(self, params, reinit_live: bool = False,
+    def make_widgets_from_parameters(self, params,
                                      slider_width: int = 256, add_spacer=False,
                                      hide_textbox=None):
         linelist_reinit_params = None

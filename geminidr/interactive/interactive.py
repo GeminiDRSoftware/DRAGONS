@@ -61,7 +61,8 @@ class FitQuality(Enum):
 
 class PrimitiveVisualizer(ABC):
     def __init__(self, title='', primitive_name='',
-                 filename_info='', template=None, help_text=None, ui_params=None):
+                 filename_info='', template=None, help_text=None, ui_params=None,
+                 reinit_live=False):
         """
         Initialize a visualizer.
 
@@ -81,9 +82,16 @@ class PrimitiveVisualizer(ABC):
             Information about the file being operated on
         template : str
             Optional path to an html template to render against, if customization is desired
+        reinit_live : bool
+            If True, recalculate points on any change (default False). This is set in
+            __init__ to PrimitiveVisualizer.reinit_live, but can be overridden by
+            subclasses.
         """
         global _visualizer
         _visualizer = self
+
+        # Reinitialization attr
+        self.reinit_live = reinit_live
 
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
@@ -210,10 +218,14 @@ class PrimitiveVisualizer(ABC):
             width=202)
 
         def reset_dialog_handler(result):
+            reinit_live = self.reinit_live
+            self.reinit_live = False
             if result:
                 self.reset_reinit_panel()
                 if extra_handler_fn:
                     extra_handler_fn()
+
+            self.reinit_live = reinit_live
 
         self.make_ok_cancel_dialog(
             btn=reset_reinit_button,
@@ -582,6 +594,8 @@ class PrimitiveVisualizer(ABC):
         -------
         list : Returns a list of widgets to display in the UI.
         """
+        self.reinit_live = reinit_live
+
         widgets = []
         if hide_textbox is None:
             hide_textbox = []
@@ -598,7 +612,7 @@ class PrimitiveVisualizer(ABC):
                         params.titles[key], params.values[key], step, field.min, field.max, obj=params.values,
                         attr=key, slider_width=slider_width, allow_none=field.optional, throttled=True,
                         is_float=is_float,
-                        handler=self.slider_handler_factory(key, reinit_live=reinit_live),
+                        handler=self.slider_handler_factory(key),
                         add_spacer=add_spacer, hide_textbox=key in hide_textbox)
 
                     self.widgets[key] = widget.children[0]
@@ -613,7 +627,7 @@ class PrimitiveVisualizer(ABC):
                                     value=params.values[key], options=list(field.allowed.keys()))
                     def _select_handler(attr, old, new):
                         self.extras[key] = new
-                        if reinit_live:
+                        if self.reinit_live:
                             self.reconstruct_points()
                     widget.on_change('value', _select_handler)
                     self.widgets[key] = widget
@@ -625,7 +639,7 @@ class PrimitiveVisualizer(ABC):
                     cb_key = key
                     def _cb_handler(cbkey, val):
                         self.extras[cbkey] = True if len(val) else False
-                        if reinit_live:
+                        if self.reinit_live:
                             self.reconstruct_points()
                     widget.on_click(lambda v: _cb_handler(cb_key, v))
                     self.widgets[key] = widget
@@ -657,7 +671,7 @@ class PrimitiveVisualizer(ABC):
 
                             def handler(self, name, old, new):
                                 self.extras[self.key] = new
-                                if reinit_live and self.fn is not None:
+                                if self.reinit_live and self.fn is not None:
                                     self.fn()
 
                         widget.on_change("value", TextHandler(key, self.extras, lambda: self.reconstruct_points()).handler)
@@ -666,7 +680,7 @@ class PrimitiveVisualizer(ABC):
                         widgets.append(widget)
         return widgets
 
-    def slider_handler_factory(self, key, reinit_live=False):
+    def slider_handler_factory(self, key):
         """
         Returns a function that updates the `extras` attribute.
 
@@ -674,8 +688,6 @@ class PrimitiveVisualizer(ABC):
         ----------
         key : str
             The parameter name to be updated.
-        reinit_live : bool, optional
-            Update the reconstructed points on "real time".
 
         Returns
         -------
@@ -684,12 +696,12 @@ class PrimitiveVisualizer(ABC):
 
         def handler(val):
             self.extras[key] = val
-            if reinit_live:
+            if self.reinit_live:
                 self.reconstruct_points()
 
         return handler
 
-    def select_handler_factory(self, key, reinit_live=False):
+    def select_handler_factory(self, key):
         """
         Returns a function that updates the `extras` attribute.
 
@@ -697,8 +709,6 @@ class PrimitiveVisualizer(ABC):
         ----------
         key : str
             The parameter name to be updated.
-        reinit_live : bool, optional
-            Update the reconstructed points on "real time".
 
         Returns
         -------
@@ -707,7 +717,7 @@ class PrimitiveVisualizer(ABC):
 
         def handler(val):
             self.extras[key] = val
-            if reinit_live:
+            if self.reinit_live:
                 self.reconstruct_points()
 
         return handler
