@@ -416,7 +416,7 @@ class PrimitiveVisualizer(ABC):
         def cb(accepted):
             if accepted:
                 # Trigger the exit/fit, otherwise we do nothing
-                _log.warn("Aborting reduction on user request")
+                _log.warning("Aborting reduction on user request")
                 self.abort_button.disabled = True
 
         self.show_ok_cancel(
@@ -425,6 +425,7 @@ class PrimitiveVisualizer(ABC):
             cb,
         )
 
+    # pylint: disable=unused-argument
     def session_ended(self, sess_context, user_satisfied):
         """
         Handle the end of the session by stopping the bokeh server, which
@@ -669,7 +670,7 @@ class PrimitiveVisualizer(ABC):
             log = getattr(self, "log", None)
 
             if log is not None:
-                log.warn(
+                log.warning(
                     "Call to do_later, but no document is set.  "
                     "Does this PrimitiveVisualizer call "
                     "super().visualize(doc)?"
@@ -1021,7 +1022,7 @@ def build_text_slider(
     # Check that max_value is None or greater than 0.
     if max_value is not None and max_value <= 0:
         max_value = None
-        _log.warn(
+        _log.warning(
             msg="max_value must be greater than 0 or None. Setting to None."
         )
 
