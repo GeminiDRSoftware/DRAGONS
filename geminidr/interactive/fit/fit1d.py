@@ -1541,7 +1541,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         ui_params=None,
         turbo_tabs=False,
         panel_class=Fit1DPanel,
-        
         **kwargs,
     ):
         """Initializes the Fit1DVisualizer and its parent class.
