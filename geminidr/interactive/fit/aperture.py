@@ -1292,7 +1292,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
 
         widgets = self.make_widgets_from_parameters(
             self.ui_params,
-            reinit_live=False,
             slider_width=256,
             add_spacer=True,
             hide_textbox=["max_separation"],

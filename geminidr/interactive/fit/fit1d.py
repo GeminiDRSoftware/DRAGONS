@@ -1541,6 +1541,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         ui_params=None,
         turbo_tabs=False,
         panel_class=Fit1DPanel,
+        
         **kwargs,
     ):
         """Initializes the Fit1DVisualizer and its parent class.
@@ -1642,9 +1643,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         # Make the panel with widgets to control the creation of (x, y) arrays
 
         # Create left panel
-        reinit_widgets = self.make_widgets_from_parameters(
-            ui_params, reinit_live=modal_message is None
-        )
+        reinit_widgets = self.make_widgets_from_parameters(ui_params)
 
         if reinit_widgets:
             # This should really go in the parent class, like submit_button

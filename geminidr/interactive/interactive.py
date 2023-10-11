@@ -100,6 +100,7 @@ class PrimitiveVisualizer(ABC):
         template=None,
         help_text=None,
         ui_params=None,
+        reinit_live=False,
     ):
         """
         Initialize a visualizer.
@@ -114,14 +115,22 @@ class PrimitiveVisualizer(ABC):
         ----------
         title : str
             Title fo the primitive for display, currently not used
+
         primitive_name : str
             Name of the primitive function related to this UI, used in the
             title bar
+
         filename_info : str
             Information about the file being operated on
+
         template : str
             Optional path to an html template to render against, if
             customization is desired
+
+        reinit_live : bool
+            If True, recalculate points on any change (default False). This is
+            set in __init__ to PrimitiveVisualizer.reinit_live, but can be
+            overridden by subclasses.
         """
         global _visualizer
         _visualizer = self
@@ -132,6 +141,9 @@ class PrimitiveVisualizer(ABC):
 
         # Placeholders for attrs that will be set by subclasses.
         self.tabs = None
+
+        # Live Reinitialization attr
+        self.reinit_live = reinit_live
 
         # set help to default, subclasses should override this with something
         # specific to them
@@ -287,10 +299,20 @@ class PrimitiveVisualizer(ABC):
         )
 
         def reset_dialog_handler(result):
-            if result:
-                self.reset_reinit_panel()
-                if extra_handler_fn:
-                    extra_handler_fn()
+            # Turning off reinitialization so the calculation does not occur
+            # many times. The handler restores the value of the flag after
+            # recalculation has finished.
+            reinit_live = self.reinit_live
+            self.reinit_live = False
+
+            try:
+                if result:
+                    self.reset_reinit_panel()
+                    if extra_handler_fn:
+                        extra_handler_fn()
+
+            finally:
+                self.reinit_live = reinit_live
 
         self.make_ok_cancel_dialog(
             btn=reset_reinit_button,
@@ -740,7 +762,6 @@ class PrimitiveVisualizer(ABC):
     def make_widgets_from_parameters(
         self,
         params,
-        reinit_live: bool = True,
         slider_width: int = 256,
         add_spacer=False,
         hide_textbox=None,
@@ -754,14 +775,13 @@ class PrimitiveVisualizer(ABC):
         ----------
         params : :class:`UIParameters`
             Parameters to make widgets for
-        reinit_live : bool
-            True if recalcuating points is cheap, in which case we don't need a
-            button and do it on any change.  Currently only viable for
-            text-slider style inputs.
+
         slider_width : int
             Width of the sliders
+
         add_spacer : bool
             If True, add a spacer between sliders and their text-boxes
+
         hide_textbox : list
             If set, a list of range field names for which we don't want a
             textbox
@@ -782,9 +802,7 @@ class PrimitiveVisualizer(ABC):
                     is_float = field.dtype is not int
                     step = 0.1 if is_float else 1
 
-                    slider_handler = self.slider_handler_factory(
-                        key, reinit_live=reinit_live
-                    )
+                    slider_handler = self.slider_handler_factory(key)
 
                     widget = build_text_slider(
                         params.titles[key],
@@ -823,7 +841,7 @@ class PrimitiveVisualizer(ABC):
 
                     def _select_handler(attr, old, new):
                         self.extras[key] = new
-                        if reinit_live:
+                        if self.reinit_live:
                             self.reconstruct_points()
 
                     widget.on_change("value", _select_handler)
@@ -852,7 +870,7 @@ class PrimitiveVisualizer(ABC):
 
                     def _cb_handler(attr, old, new):
                         self.extras[key] = True if len(new) else False
-                        if reinit_live:
+                        if self.reinit_live:
                             self.reconstruct_points()
 
                     widget.on_change("active", _cb_handler)
@@ -893,7 +911,7 @@ class PrimitiveVisualizer(ABC):
 
         return widgets
 
-    def slider_handler_factory(self, key, reinit_live=False):
+    def slider_handler_factory(self, key):
         """
         Returns a function that updates the `extras` attribute.
 
@@ -901,8 +919,6 @@ class PrimitiveVisualizer(ABC):
         ----------
         key : str
             The parameter name to be updated.
-        reinit_live : bool, optional
-            Update the reconstructed points on "real time".
 
         Returns
         -------
@@ -911,12 +927,12 @@ class PrimitiveVisualizer(ABC):
 
         def handler(val):
             self.extras[key] = val
-            if reinit_live:
+            if self.reinit_live:
                 self.reconstruct_points()
 
         return handler
 
-    def select_handler_factory(self, key, reinit_live=False):
+    def select_handler_factory(self, key):
         """
         Returns a function that updates the `extras` attribute.
 
@@ -924,8 +940,6 @@ class PrimitiveVisualizer(ABC):
         ----------
         key : str
             The parameter name to be updated.
-        reinit_live : bool, optional
-            Update the reconstructed points on "real time".
 
         Returns
         -------
@@ -934,7 +948,7 @@ class PrimitiveVisualizer(ABC):
 
         def handler(val):
             self.extras[key] = val
-            if reinit_live:
+            if self.reinit_live:
                 self.reconstruct_points()
 
         return handler
