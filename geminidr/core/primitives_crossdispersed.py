@@ -8,6 +8,7 @@ from importlib import import_module
 
 from astropy.modeling import models
 from astropy.table import Table
+from gwcs import coordinate_frames as cf
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
 
@@ -155,5 +156,10 @@ class CrossDispersed(Spect, Preprocess):
             cut_ads.append(gt.cut_to_match_auxiliary_data(adinput=ad, aux=flat))
 
         adoutputs = super().flatCorrect(adinputs=cut_ads, **params)
+        for ad in adoutputs:
+            try:
+                ad[0].wcs.get_transform("pixels", "rectified")
+            except:
+                log.warning(f"No rectification model found for {ad.filename}")
 
         return adoutputs

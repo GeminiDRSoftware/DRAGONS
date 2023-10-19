@@ -826,10 +826,8 @@ class Preprocess(PrimitivesBASE):
             ad.divide(flat)
 
             # Try to get a slit rectification model from the flat, and, if one
-            # exists, insert it before the pixels-to-world transform. Print a
-            # warning if one doesn't exist, but allow it to pass.
+            # exists, insert it before the pixels-to-world transform.
             ad = _attach_rectification_model(ad, flat, log=self.log)
-
             # Update the header and filename, copying QECORR keyword from flat
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
             try:
@@ -1837,15 +1835,16 @@ def _attach_rectification_model(target, source, log=None):
                          f"number of extensions, {len(target)} vs. "
                          f"{len(source)}, {target.filename} not modified.")
 
-    log.fullinfo("    Adding slit rectification model")
-
     for ext_t, ext_s in zip(target, source):
         # Check that a transform exists, else return `target` unmodified.
         try:
             new_transform = ext_s.wcs.get_transform("pixels", "rectified")
         except CoordinateFrameError:
-            log.warning(f"No rectification model found in {source.filename}, "
-                        f"{target.filename} not modified.")
+            # Silently no-op. If it's important to know if a model has been
+            # attached, run this same check on the output where this function
+            # is called, since the severity of it happening varies by context.
+            # (For longslit, it's not a big deal; for e.g. cross-dispersed it's
+            # a major problem.)
             return target
 
         # If a 'rectified' frame exists, just replace the transform.
@@ -1855,6 +1854,9 @@ def _attach_rectification_model(target, source, log=None):
         except CoordinateFrameError:
             ext_t.wcs.insert_frame(ext_t.wcs.input_frame, new_transform,
                                    cf.Frame2D(name='rectified'))
+        log.fullinfo(f"Rectification model found in {source.filename}. "
+                     f"Attaching to {target.filename}")
+
     return target
 
 

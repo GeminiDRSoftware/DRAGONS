@@ -476,6 +476,11 @@ class Spect(Resample):
 
             # Attach the model here.
             ad = _attach_rectification_model(ad, pinhole, log=self.log)
+            try:
+                ad[0].wcs.get_transform("pixels", "rectified")
+            except:
+                log.fullinfo("No rectification model from pinhole found "
+                             f"for {ad.filename}")
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
