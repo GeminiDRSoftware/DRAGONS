@@ -154,16 +154,6 @@ class CrossDispersed(Spect, Preprocess):
             # been cut in the flat reduction.
             cut_ads.append(gt.cut_to_match_auxiliary_data(adinput=ad, aux=flat))
 
-            # Copy the WCS from each extension in the flat to the corresponding
-            # extension in the file:
-            for i in range(len(cut_ads[-1])):
-                init_wave_model = flat[i].wcs.get_transform('rectified',
-                                                            'world')
-                # The AD being corrected doesn't yet have a 'rectified' frame,
-                # just 'pixels' and 'world', so insert this transform between them.
-                cut_ads[-1][i].wcs.set_transform('pixels', 'world',
-                                                 init_wave_model)
-
         adoutputs = super().flatCorrect(adinputs=cut_ads, **params)
 
         return adoutputs
