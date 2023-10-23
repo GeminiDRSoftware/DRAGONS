@@ -74,8 +74,9 @@ instance/
 
 # Sphinx documentation
 _build/
-docs/_build/
-**/_build/
+doc/DRAGONS/_build*/
+doc/DRAGONS/generated/
+**/_build*/
 **/doc/**/api
 
 # PyBuilder
