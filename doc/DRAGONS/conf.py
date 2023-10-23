@@ -33,8 +33,14 @@ extensions = [
     'sphinx.ext.imgmath',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'sphinx.ext.autosummary',
+    # 'sphinx.ext.inheritance_diagram',
+    'autoapi.extension'
     #    'sphinx.ext.githubpages',
 ]
+
+# Turn on autosummary
+autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -79,7 +85,7 @@ today = 'April 2023'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '*test*/', '*/generated/']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -112,11 +118,12 @@ pygments_style = 'sphinx'
 #html_theme = 'alabaster'
 html_theme = 'sphinx_rtd_theme'
 
-
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {
+    'logo_url' : 'https://dragons.readthedocs.io/',
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -187,7 +194,6 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'DRAGONS'
 
-
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
@@ -209,8 +215,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'DRAGONS.tex', 'DRAGONS',
-   'Gemini Observatory', 'manual'),
+    ('index', 'DRAGONS.tex', 'DRAGONS',
+     'Gemini Observatory', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -232,8 +238,6 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 
 # If false, no module index is generated.
 #latex_domain_indices = True
-
-
 # -- Options for manual page output --------------------------------------------
 
 # One entry per manual page. List of tuples
@@ -245,17 +249,15 @@ man_pages = [
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
-
-
-# -- Options for Texinfo output ------------------------------------------------
+    # -- Options for Texinfo output ------------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'DRAGONS', 'DRAGONS',
-   'Gemini Observatory', 'DRAGONS', 'One line description of project.',
-   'Miscellaneous'),
+    ('index', 'DRAGONS', 'DRAGONS',
+    'Gemini Observatory', 'DRAGONS', 'One line description of project.',
+    'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -266,29 +268,24 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
-
-
-# Example configuration for intersphinx: refer to the Python standard library.
+    # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
 
 # Activate the todos
 todo_include_todos = True
 
 # Adding style in order to have the todos show up in a red box.
-
-
 def setup(app):
-   app.add_css_file('todo-styles.css')
-   app.add_css_file('rtd_theme_overrides.css')
-   app.add_css_file('css/rtd_theme_overrides_references.css')
-   app.add_css_file('fonts.css')
-
+    app.add_css_file('todo-styles.css')
+    app.add_css_file('rtd_theme_overrides.css')
+    app.add_css_file('css/rtd_theme_overrides_references.css')
+    app.add_css_file('fonts.css')
 
 rst_epilog = """
 .. role:: raw-html(raw)
-   :format: html
+    :format: html
 
-.. |GMOSImgTut| replace:: :raw-html:`<a href="http://GMOSImg-DRTutorial.readthedocs.io/en/{v}">GMOS Imaging Data Reduction Tutorial</a>`
+.. |GMOSImgTut| replace:: :raw-html:`<a href="./projects/gmosimg-drtutorial/{v}">GMOS Imaging Data Reduction Tutorial</a>`
 .. |NIRIImgTut| replace:: :raw-html:`<a href="http://NIRIImg-DRTutorial.readthedocs.io/en/{v}">NIRI Imaging Data Reduction Tutorial</a>`
 .. |F2ImgTut| replace:: :raw-html:`<a href="http://F2Img-DRTutorial.readthedocs.io/en/{v}">Flamingos-2 Imaging Data Reduction Tutorial</a>`
 .. |GSAOIImgTut| replace:: :raw-html:`<a href="http://GSAOIImg-DRTutorial.readthedocs.io/en/{v}">GSAOI Imaging Data Reduction Tutorial</a>`
@@ -309,3 +306,29 @@ rst_epilog = """
 .. |RSUserShow|  replace:: http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/
 
 """.format(v = rtdurl)
+
+# autoapi
+autoapi_dirs = [
+    '../../astrodata/',
+    '../../gemini_instruments/',
+    '../../geminidr/',
+    '../../gempy/',
+    '../../recipe_system/'
+]
+
+autoapi_ignore = [
+    '*test*',
+    '*/doc/*',
+    '*conf.py',
+    '*sscripts/*'
+]
+
+autoapi_options = [
+    'members',
+    'undoc-members',
+    'show-inheritance',
+    # 'show-module-summary',
+    # 'show-inheritance-diagram',
+]
+
+autoapi_member_order = 'groupwise'
