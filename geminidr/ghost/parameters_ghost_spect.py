@@ -124,6 +124,11 @@ class combineOrdersConfig(config.Config):
     }, default='loglinear')
     oversample = config.RangeField("Oversampling of output wavelength scale",
                                    float, 1.0, min=0.5, max=10, inclusiveMax=True)
+    stacking_mode = config.ChoiceField("Method of stacking spectra", str,
+                                       allowed={"none": "No stacking",
+                                                "scaled": "Scale spectra before stacking",
+                                                "unscaled": "Stack spectra without scaling"},
+                                                default="scaled", optional=True)
 
 
 class findAperturesConfig(config.Config):
