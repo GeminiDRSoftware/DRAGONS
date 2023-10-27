@@ -29,37 +29,27 @@ def return_dict_for_bundle(desc_fn):
     Its behaviour on multi-extension slices is unclear.
     """
     def wrapper(self, *args, **kwargs):
-        def confirm_single_valued(_list):
-            try:
-                return _list[0] if _list == _list[::-1] else None
-            except IndexError:
-                return None
-
         if not self.is_single and 'BUNDLE' in self.tags:
-            ret_dict = {k: confirm_single_valued(
-                [desc_fn(self[i+1:i+1+ext.hdr['NAMPS']], *args, **kwargs)
-                 for i, ext in enumerate(self)
-                 if ext.arm() == k and not ext.shape])
-                for k in ('blue', 'red')}
-            ret_dict['slitv'] = confirm_single_valued(
-                [desc_fn(self[i:i+1], *args, **kwargs)
-                 for i, ext in enumerate(self) if ext.arm() == 'slitv'])
+            ret_dict = dict()
+            cameras = self.hdr.get('CAMERA', '')
+            namps = self.hdr.get('NAMPS')
+            i = 0
+            while i < len(namps):
+                camera = cameras[i].lower()
+                # We've found the nascent PHU of an arm exposure
+                if namps[i] > 1:
+                    ret_value = desc_fn(self[i+1:i+namps[i]+1], *args, **kwargs)
+                    i += namps[i] + 1
+                else:  # it's a slitviewer
+                    ret_value = desc_fn(self[i], *args, **kwargs)
+                    i += 1
+                # Check for single-valuedness of all returns from this camera
+                try:
+                    if ret_dict[camera] != ret_value:
+                        ret_dict[camera] = None
+                except KeyError:
+                    ret_dict[camera] = ret_value
             return ret_dict
-            # This is the debugging version of the above code
-            #final_return = {}
-            #for k in ('BLUE', 'RED'):
-            #    print(f"Looking for {k}")
-            #    ret_values = []
-            #    for i, ext in enumerate(self):
-            #        if ext.hdr.get('CAMERA') == k and not ext.shape:
-            #            print("BLAH", i)
-            #            tmp = self[i+1:i+1+ext.hdr['NAMPS']]
-            #            print("created tmp", len(tmp), tmp.tags)
-            #            ret_value = desc_fn(tmp, *args, **kwargs)
-            #            print("return_dict", i, ret_value, tmp.detector_name())
-            #            ret_values.append(ret_value)
-            #    final_return[k.lower()] = confirm_single_valued(ret_values)
-            #return final_return
         return desc_fn(self, *args, **kwargs)
     return wrapper
 
@@ -71,7 +61,8 @@ def use_nascent_phu_for_bundle(desc_fn):
     """
     def wrapper(self, *args, **kwargs):
         if 'BUNDLE' in self.tags:
-            phu_index = min(i for i, camera in enumerate(self.hdr['CAMERA']) if camera in ('BLUE', 'RED'))
+            phu_index = min(i for i, camera in enumerate(self.hdr['CAMERA'])
+                            if camera in ('BLUE', 'RED'))
             nascent_phu = self[phu_index]
             return desc_fn(nascent_phu, *args, **kwargs)
         return desc_fn(self, *args, **kwargs)
@@ -106,7 +97,6 @@ class AstroDataGhost(AstroDataGemini):
         2) Prevent creation of a new "Frankenstein" AD with data from more
            than one camera, as only original bundles should have this.
         """
-        #print("Entering getitem()", type(self._dataprov), len(self), idx)
         obj = super().__getitem__(idx)
         if 'BUNDLE' in self.tags:
             #print("BUNDLE", idx, obj._mapping)
@@ -124,9 +114,7 @@ class AstroDataGhost(AstroDataGemini):
                 phu['EXPTIME'] = objhdr['EXPTIME']
                 obj.phu = phu
                 return obj
-            #print("Tested", type(self._dataprov), obj._mapping)
             for i in range(min(obj.indices), -1, -1):
-                #print("***", i, obj._mapping, len(self._dataprov.nddata))
                 ndd = self._all_nddatas[i]
                 if not ndd.shape:
                     phu = ndd.meta['header']
@@ -140,7 +128,6 @@ class AstroDataGhost(AstroDataGemini):
             if len(set(ext.shape for ext in obj)) > 1:
                 raise ValueError("Bundles must be sliced from the same camera")
             #print("RETURNING", len(obj))
-        #print("Returning", type(obj), obj._dataprov)
         return obj
 
     @astro_data_descriptor
@@ -270,7 +257,7 @@ class AstroDataGhost(AstroDataGemini):
         """
         camera = self.phu.get('CAMERA')
         if camera in ('BLUE', 'RED'):
-            return TagSet(['SPECT'], blocks=['BUNDLE'])
+            return TagSet(['SPECT', 'XD'], blocks=['BUNDLE'])
 
     @astro_data_tag
     def _status_processed_ghost_cals(self):
@@ -623,9 +610,14 @@ class AstroDataGhost(AstroDataGemini):
         """
         if 'BUNDLE' not in self.tags:
             return len(self) if 'SLITV' in self.tags else 1  # probably
-        ret_value = {k.lower(): sum(ext.hdr.get('CAMERA') == k and not ext.shape
-                                    for ext in self) for k in ('BLUE', 'RED')}
-        ret_value['slitv'] = sum(ext.hdr.get('CAMERA') == 'SLITV' for ext in self)
+        if self.is_single:
+            return 1
+        cameras = self.hdr.get('CAMERA')
+        namps = self.hdr.get('NAMPS')
+        ret_value = {'blue': 0, 'red': 0, 'slitv': 0}
+        for camera, namp in zip(cameras, namps):
+            if namp is not None:
+                ret_value[camera.lower()] += 1
         return ret_value
 
     @astro_data_descriptor
@@ -696,7 +688,7 @@ class AstroDataGhost(AstroDataGemini):
             return retval
         if self.is_single and retval == 0:
             return 65535
-        return [v if v > 0 else 65535 for v in retval]
+        return [None if v is None else v if v > 0 else 65535 for v in retval]
 
     @astro_data_descriptor
     @use_nascent_phu_for_bundle
