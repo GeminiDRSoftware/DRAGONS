@@ -14,8 +14,12 @@ from scipy.interpolate import CubicSpline
 from datetime import datetime
 
 from gempy.library import astrotools, matching
+from gempy.utils import logutils
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from .extractum import Extractum
+
+
+log = logutils.get_logger(__name__)
 
 
 class Extractor(object):
@@ -345,8 +349,8 @@ class Extractor(object):
         good = ~np.isinf(self.vararray) & ((self.badpixmask & DQ.not_signal) == 0)
         m_noise, _ = fit_it(m_init, data[good].ravel(), self.vararray[good].ravel())
         if m_noise.c0 <= 0:
-            print("Problem with read noise estimate!")
-            print(m_noise)
+            log.warning("Problem with read noise estimate!")
+            log.warning(m_noise)
             m_noise.c0 = 4  # just something for now
             m_noise.c1 = 1
         noise_model = lambda x: m_noise.c0 + m_noise.c1 * abs(x)
@@ -395,15 +399,17 @@ class Extractor(object):
                         print(self.badpixmask[_slice])
                     if (not saturation_warning and
                             np.any(self.badpixmask[_slice] &
-                                   (DQ.cosmic_ray | DQ.saturated | DQ.bad_pixel) == DQ.saturated)):
-                        print("WARNING: There are saturated pixels that have "
-                              "not been flagged as cosmic rays")
-                        print(x_ix)
+                                   (DQ.cosmic_ray | DQ.saturated |
+                                    DQ.bad_pixel) == DQ.saturated)):
+                        log.warning("WARNING: There are saturated pixels that "
+                                    "have not been flagged as cosmic rays in "
+                                    f"order {self.arm.m_min+i} pixel {j} ({x_ix})")
                         saturation_warning = True
-            print(f"\n{(self.badpixmask & DQ.cosmic_ray).astype(bool).sum()} CRs found")
+            print("\n")
+            log.stdinfo(f"{(self.badpixmask & DQ.cosmic_ray).astype(bool).sum()} CRs found")
             if self.arm.mode == 'high':
-                print("(due to scattered light, the topmost pixel in HR is "
-                      "often incorrectly flagged)")
+                log.stdinfo("(due to scattered light, the topmost pixel in HR"
+                            " is often incorrectly flagged)")
 
         # Now do the extraction. First determine *where* to extract
         extracted_flux = np.zeros((nm, ny, no), dtype=np.float32)
@@ -470,12 +476,12 @@ class Extractor(object):
             if debug_pixel[0] == self.arm.m_min+i:
                 yy = debug_pixel[1]
                 x1, phi = all_phi[yy]
-                print(f"Data and badpix around ({x1+xmin}:{x1+xmin+phi.shape[1]}, {yy})")
+                log.debug(f"Data and badpix around ({x1+xmin}:{x1+xmin+phi.shape[1]}, {yy})")
                 for xx in range(x1+xmin, x1+xmin+phi.shape[1]):
-                    print(xx, data[xx, yy-1:yy+2], self.badpixmask[xx, yy-1:yy+2])
+                    log.debug(xx, data[xx, yy-1:yy+2], self.badpixmask[xx, yy-1:yy+2])
                 if correction is not None:
-                    print("Correction factors (multiplicative)")
-                    print(correction[i, yy-1:yy+2])
+                    log.debug("Correction factors (multiplicative)")
+                    log.debug(correction[i, yy-1:yy+2])
 
             # Do the interpolation for all wavelengths in this order
             # Save memory by overwriting the array of pixel locations with values
@@ -494,7 +500,7 @@ class Extractor(object):
 
             if debug_pixel[0] == self.arm.m_min+i:
                 for ix, y in enumerate(y_locations):
-                    print(ix+x1+xmin, y,  pixel_array[yy, ix+x1], mask_array[yy, ix+x1])
+                    log.debug(ix+x1+xmin, y,  pixel_array[yy, ix+x1], mask_array[yy, ix+x1])
 
             for j, (x_ix_min, phi) in enumerate(all_phi):  # range(ny)
                 debug_this_pixel = debug_pixel in [(self.arm.m_min+i, j)]
@@ -503,7 +509,7 @@ class Extractor(object):
                         extracted_flux[i, j] = 0
                         extracted_var[i, j] = 0
                         if debug_this_pixel:
-                            print("FLATFIELD CORRECTION IS ZERO")
+                            log.debug("FLATFIELD CORRECTION IS ZERO")
                         continue
                     c0, c1 = correction[i, j] ** 2 * m_noise.parameters
                     noise_model = lambda x: c0 + c1 * abs(x)
@@ -538,8 +544,8 @@ class Extractor(object):
                     extracted_var[i, j] = np.dot(frac, col_var) * object_scaling ** 2
 
                 if debug_this_pixel:
-                    print("EXTRACTED FLUXES", extracted_flux[i, j])
-                    print("EXTRACTED VAR", extracted_var[i, j])
+                    log.debug("EXTRACTED FLUXES", extracted_flux[i, j])
+                    log.debug("EXTRACTED VAR", extracted_var[i, j])
             if timing:
                 print(datetime.now() - start)
         print("\n")
@@ -590,9 +596,9 @@ class Extractor(object):
 
         print("\n")
         if np.any(extracted_mask & DQ.saturated):
-            print("WARNING: some pixels are saturated")
+            log.warning("Some pixels are saturated")
         elif np.any(extracted_mask & DQ.non_linear):
-            print("WARNING: some pixels are in the non-linear regime")
+            log.warning("Some pixels are in the non-linear regime")
 
         return extracted_flux, extracted_var, extracted_mask
 
@@ -600,6 +606,8 @@ class Extractor(object):
                    arcfile=None, # Now dead-letter - always overridden
                    inspect=False, plots=False):
         """
+        THIS FUNCTION IS NO LONGER USED!
+
         Find lines near the locations of input arc lines.
         
         This is done with Gaussian fits near the location of where lines are
@@ -668,7 +676,7 @@ class Extractor(object):
             ww = np.where((w_ix >= hw) & (w_ix < ny - hw))[0]
             w_ix = w_ix[ww]
             arclines_to_fit = filtered_arclines[ww]
-            print('order ', m_ix)
+            log.stdinfo('order ', m_ix)
             for i, ix in enumerate(w_ix):
                 # This ensures that lines too close together are not used in the
                 # fit, whilst avoiding looking at indeces that don't exist.
@@ -687,7 +695,7 @@ class Extractor(object):
                 # Any line with peak S/N under a value is not considered.
                 # e.g. 20 is considered.
                 if (np.max(y) < 20 * noise_level):
-                    print("Rejecting due to low SNR!")
+                    log.warning("Rejecting due to low SNR!")
                     continue
 
                 g_init = models.Gaussian1D(amplitude=np.max(y), mean=x[
