@@ -64,3 +64,23 @@ the reduction of data from the appropriate instrument.
 Software developers should start with the Astrodata and Recipe System
 manuals.
 
+---
+
+# Citing DRAGONS
+
+If you are using DRAGONS for your project, we ask that you please cite the 
+following paper:
+
+* [K. Labrie et al 2023 Res. Notes AAS 7 214](https://iopscience.iop.org/article/10.3847/2515-5172/ad0044) ([BibTex](https://iopscience.iop.org/export?type=article&doi=10.3847/2515-5172/ad0044&exportFormat=iopexport_bib&exportType=abs&navsubmit=Export+abstract))
+
+The DOI for DRAGONS version 3.1.0 is:
+
+* [10.5281/zenodo.7776065](https://zenodo.org/record/7776065) ([BibTex](https://zenodo.org/record/7776065/export/hx))
+
+If you are using AASTeX and plan to submit an article to one of the AAS journals,
+we recommend adding a `\software` tag to your manuscript that cites DRAGONS and
+the specific version you have used. For example:
+
+```
+\software{DRAGONS \citep{dragonsRNAAS_2023}, \cite[Version 3.1.0]{dragons3.1.0}
+```
