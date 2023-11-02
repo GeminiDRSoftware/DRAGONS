@@ -197,6 +197,8 @@ class Spect(Resample):
                         "weighting": "local",
                         "nbright": 0,
                         "dispersion": None,
+                        "combine_method": "mean",
+                        "absorption": False,
                         "debug_min_lines": 15,
                         "debug_alternative_centers": False,
                     }
