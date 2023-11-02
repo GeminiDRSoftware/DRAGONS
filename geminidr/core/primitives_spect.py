@@ -2329,7 +2329,8 @@ class Spect(Resample):
             ad_spec.filename = ad.filename
             ad_spec.orig_filename = ad.orig_filename
             skysub_needed = (subtract_sky and
-                             self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu)
+                             (self.timestamp_keys['subtractSky'] not in ad.phu and
+                              self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu))
             if skysub_needed:
                 log.stdinfo(f"Sky subtraction has not been performed on {ad.filename}"
                             " - extracting sky from separate apertures")
