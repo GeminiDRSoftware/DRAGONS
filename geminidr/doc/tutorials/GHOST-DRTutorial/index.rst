@@ -17,7 +17,6 @@ Tutorial Series - GHOST Data Reduction with DRAGONS
    :caption: Contents:
 
    overview
-   sv_installation
    datasets
    cal_service
    ex1_ghost_stdonetarget

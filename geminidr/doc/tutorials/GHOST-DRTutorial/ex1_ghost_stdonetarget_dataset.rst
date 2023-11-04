@@ -25,8 +25,14 @@ The calibrations we use for this example are:
 * Flats.  The flats must match the read mode of the science.  The binning
   must be 1x1.  They will be binned in software to match the science. The
   matches must cover both the red and blue arms.
-* Arcs.  The binning for the arcs must be 1x1.  The read mode does not matter.
+* Arcs.  The binning for the arcs must be 1x1.  The read mode does not matter,
+  but they require their own biases and flats and it is therefore simpler if
+  they have the same read mode as the science data.
 * Spectrophotometric standard.  The binning must match the science.
+* BPMs. The bad pixel masks are found in the Gemini Science Archive
+  instead of being packaged with the software. They are associated like the
+  other calibrations. Separate BPMs are required for the blue and red arms.
+  There is no BPM for the slit-viewer camera.
 
 Here is the breakdown of the files.  All the files are included in the tutorial data
 package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
@@ -38,7 +44,7 @@ package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 +-----------------+-------------------------------------------------+
 | Science Flats   || S20230416S0047 (1x1; blue:slow; red:medium)    |
 +-----------------+-------------------------------------------------+
-| Science Arcs    || S20230416S0049-51 (1x1)                        |
+| Science Arcs    || S20230416S0049-51 (1x1; blue:slow; red:medium) |
 +-----------------+-------------------------------------------------+
 | Flats Biases    || S20230417S0036-40 (1x1; blue:slow; red:medium) |
 +-----------------+                                                 |
@@ -57,7 +63,9 @@ package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 +-----------------+                                                 |
 | Std arc biases  ||                                                |
 +-----------------+-------------------------------------------------+
-
++ BPMs            || bpm_20220601_ghost_blue_11_full_4amp.fits      |
+|                 || bpm_20220601_ghost_red_11_full_4amp.fits       |
++-----------------+-------------------------------------------------+
 
 
 

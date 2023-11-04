@@ -23,32 +23,32 @@ System User Manual.
 The Configuration File
 ======================
 
-The database is configured in the DRAGONS configuration file under the
+The database is configure in the DRAGONS configuration file under the
 ``[calibs]`` section.
 
-In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
+In ``~/.dragons/``, create or edit the configuration file ``dragonsrc`` as
 follow:
 
 .. code-block:: none
 
     [calibs]
-    standalone = True
-    database_dir = <path_to_my_data>/ghost_tutorial/playground
+    databases = ${path_to_my_data}/ghost_tutorial/playground/cal_manager.db get store
 
-The ``[calibs]`` section tells the system where to put the calibration database.
-The database file name is ``cal_manager.db``.  In
-DRAGONS 3.0, you can only set the path to the database not the name.  As for
-the ``standalone`` setting, just make sure it is set to True.  This setting
-is used at Gemini by internal systems.
+The ``[calibs]`` section tells the system where to put the calibration database
+and how to name it.  Here we use ``cal_manager.db`` to match what was used in
+the pre-v3.1 version of DRAGONS, but you can now set the name of the database
+to what suits your needs and preferences.
 
-The database will keep track of the processed calibrations that we are going to
-send to it.  The database will be used
-by DRAGONS to automatically *get* matching calibrations. You will have to
-``caldb add`` (command line) or ``caldb.add_cal()`` (API)
-your calibration products yourself however.
+That database will keep track of the processed calibrations that we are going to
+send to it.  With the "get" and "store" options, the database will be used
+by DRAGONS to automatically *get* matching calibrations and to automatically
+*store* master calibrations that you produce.  If you remove the "store" option
+you will have to ``caldb add`` (command line) or ``caldb.add_cal()`` (API)
+your calibration product yourself (like what needed to be done in DRAGONS
+v3.0).
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
-   Also, mind the dot in ``.geminidr``.
+   Also, mind the dot in ``.dragons``.
 
 .. _cal_service_cmdline:
 
@@ -80,11 +80,11 @@ From the API, the calibration database is initialized as follows:
 
 .. code-block:: python
 
-    caldb = cal_service.CalibrationService()
-    caldb.config()
+    from recipe_system import cal_service
+
+    caldb = cal_service.set_local_database()
     caldb.init()
 
-    cal_service.set_calservice()
 
 The calibration service is now ready to use.
 

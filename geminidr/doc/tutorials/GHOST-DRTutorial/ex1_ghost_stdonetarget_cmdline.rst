@@ -49,20 +49,9 @@ Here is a copy of the table for quick reference.
 +-----------------+                                                 |
 | Std arc biases  ||                                                |
 +-----------------+-------------------------------------------------+
-
-Special Step for Engineering Data
-=================================
-Because the data in this tutorial was obtained during commissioning, they
-are identified as "engineering" data.  DRAGONS refuses to use such data, as
-a safeguard.  To use the data anyway, we need to modify the program ID and
-make the data look non-engineering.  We run the following script to do that.
-
-It is unclear at this time if this will be applicable to the SV data.
-
-::
-
-  cd <path>/ghost_tutorial
-  python fixprogid.py playdata/example1/*.fits
++ BPMs            || bpm_20220601_ghost_blue_11_full_4amp.fits      |
+|                 || bpm_20220601_ghost_red_11_full_4amp.fits       |
++-----------------+-------------------------------------------------+
 
 
 Set up the Local Calibration Manager
@@ -74,18 +63,6 @@ Set up the Local Calibration Manager
     :ref:`cal_service`, specifically the these sections:
     :ref:`cal_service_config` and :ref:`cal_service_cmdline`.
 
-Save some typing
-================
-Because the GHOST data reduction package is not yet fully integrated into
-DRAGONS, the tools need to be told to use it.  This can be done with options
-to the tools.   To save some typing, we can create aliases.
-
-::
-
-   alias gdataselect="dataselect --adpkg=ghost_instruments"
-   alias gshowd="showd --adpkg=ghost_instruments"
-   alias greduce="reduce --adpkg=ghost_instruments --drpkg=ghostdr"
-   alias gshowpars="showpars --adpkg=ghost_instruments --drpkg=ghostdr"
 
 The Files
 =========
@@ -106,29 +83,50 @@ large.)
 ::
 
   cd <path>/ghost_tutorial/playground
-  gshowd ../playdata/example1/*.fits -d object,detector_x_bin,detector_y_bin,read_mode
+  showd ../playdata/example1/*.fits -d object,detector_x_bin,detector_y_bin,read_mode
 
 ::
 
     ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     filename                                        object                      detector_x_bin                      detector_y_bin                                                read_mode
     ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    ../playdata/example1/S20230416S0047.fits      GCALflat   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230416S0049.fits          ThAr   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230416S0050.fits          ThAr   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230416S0051.fits          ThAr   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230416S0073.fits   CD -32 9927   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230416S0079.fits        XX Oph   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0011.fits          Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0012.fits          Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0013.fits          Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0014.fits          Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0015.fits          Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0036.fits          Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0037.fits          Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0038.fits          Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0039.fits          Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/S20230417S0040.fits          Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230416S0047.fits                            GCALflat   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230416S0049.fits                                ThAr   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230416S0050.fits                                ThAr   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230416S0051.fits                                ThAr   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230416S0073.fits                         CD -32 9927   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230416S0079.fits                              XX Oph   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0011.fits                                Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0012.fits                                Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0013.fits                                Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0014.fits                                Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0015.fits                                Bias   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 2, 'red': 2, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0036.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0037.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0038.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0039.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/S20230417S0040.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+    ../playdata/example1/bpm_20220601_ghost_blue_11_full_4amp.fits           BPM                                   1                                   1                                                     slow
+    ../playdata/example1/bpm_20220601_ghost_red_11_full_4amp.fits            BPM                                   1                                   1                                                     slow
+
+
+Bad Pixel Mask
+==============
+Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
+calibrations.  They are downloadable from the archive instead of being
+packaged with the software. They are automatically associated like any other
+calibrations.  This means that the user now must download the BPMs along with
+the other calibrations and add the BPMs to the local calibration manager.
+
+See :ref:`getBPM` in :ref:`tips_and_tricks` to learn about the various ways
+to get the BPMs from the archive.
+
+To add the static BPM included in the data package to the local calibration
+database:
+
+::
+
+    caldb add ../playdata/example1/bpm*.fits
 
 Master Biases
 =============
@@ -154,22 +152,9 @@ Debundle the biases
 
 ::
 
-  gdataselect ../playdata/example1/*.fits --tags BIAS -o biasbundles.lis
+  dataselect ../playdata/example1/*.fits --tags BIAS -o biasbundles.lis
 
-  greduce @biasbundles.lis
-
-.. note::  The GHOST data reduction software currently depends on `pysynphot`.
-    That package issues an annoying but completely harmless `UserWarning`.
-    What it complains about is not used in the GHOST software.
-    Just ignore it until we have time to clean it up.
-
-    ::
-
-        /Users/klabrie/condaenvs/ghost3.0.4/lib/python3.7/site-packages/pysynphot/locations.py:46: UserWarning: PYSYN_CDBS is undefined; functionality will be SEVERELY crippled.
-          warnings.warn("PYSYN_CDBS is undefined; functionality will be SEVERELY "
-        /Users/klabrie/condaenvs/ghost3.0.4/lib/python3.7/site-packages/pysynphot/locations.py:345: UserWarning: Extinction files not found in extinction
-          warnings.warn('Extinction files not found in %s' % (extdir, ))
-
+  reduce @biasbundles.lis
 
 Reduce the slit biases
 ----------------------
@@ -178,28 +163,26 @@ channels, are identical.  Then can all be stacked together to reduce noise.
 
 ::
 
-  gdataselect *.fits --tags BIAS,SLIT -o biasslit.lis
+  dataselect *.fits --tags BIAS,SLIT -o biasslit.lis
 
-  greduce @biasslit.lis
+  reduce @biasslit.lis
 
 Reduce the science biases
 -------------------------
 
 ::
 
-  gdataselect *.fits --tags BIAS,RED \
-    --expr="detector_x_bin==2 and detector_y_bin==2" -o biasredsci.lis
-  gdataselect *.fits --tags BIAS,BLUE \
-    --expr="detector_x_bin==2 and detector_y_bin==2" -o biasbluesci.lis
+  dataselect *.fits --tags BIAS,RED --expr="binning=='2x2'" -o biasredsci.lis
+  dataselect *.fits --tags BIAS,BLUE --expr="binning=='2x2'" -o biasbluesci.lis
 
-  greduce @biasredsci.lis
-  greduce @biasbluesci.lis
+  reduce @biasredsci.lis
+  reduce @biasbluesci.lis
 
 All the data was obtained with the same read modes.  If this is not the case
 for your data and you need to select on read mode, use an expression like
 this one::
 
-  --expr="detector_x_bin==2 and detector_y_bin==2 and read_mode=='slow'"
+  --expr="binning=='2x2' and read_mode=='slow'"
 
 
 Reduce the flat/arc biases
@@ -211,13 +194,11 @@ set for the arcs.  Fortunately, not the case here, one set for both.
 
 ::
 
-  gdataselect *.fits --tags BIAS,RED \
-    --expr="detector_x_bin==1 and detector_y_bin==1" -o biasredflatarc.lis
-  gdataselect *.fits --tags BIAS,BLUE \
-    --expr="detector_x_bin==1 and detector_y_bin==1" -o biasblueflatarc.lis
+  dataselect *.fits --tags BIAS,RED --expr="binning=='1x1'" -o biasredflatarc.lis
+  dataselect *.fits --tags BIAS,BLUE --expr="binning=='1x1'" -o biasblueflatarc.lis
 
-  greduce @biasredflatarc.lis
-  greduce @biasblueflatarc.lis
+  reduce @biasredflatarc.lis
+  reduce @biasblueflatarc.lis
 
 
 Master biases to Calibration Database
@@ -230,17 +211,18 @@ subdirectory representing the type of calibrations.  For the biases,
 
 This is a safe copy of the calibrations that will be needed later allowing
 us the freedom to clean the work directory between steps, which is
-particularly helpful in the case of GHOST.
+particularly helpful in the case of GHOST.  Because the database
+was given the "store" option in the ``dragonsrc`` file, the processed biases
+will be automatically added to the database at the end of the recipe and no
+additional commands are required.
 
-Since we will indeed clean up the work directory, we will add the safe files in
-``calibrations`` to the calibration manager database instead of the files in the
-work directory.  A reminder that the files are not added to the database, only
-the information about them and their location on disk; if you delete the file
-on disk it is gone even if information about it remains in the database.
 
-::
+.. note:: If you wish to inspect the processed calibrations before adding them
+    to the calibration database, remove the "store" option attached to the
+    database in the ``dragonsrc`` configuration file.  You will then have to
+    add the calibrations manually following your inspection, eg.
 
-  caldb add calibrations/processed_bias/*.fits
+    ``caldb add calibrations/processed_bias/*.fits``
 
 Clean up
 --------
@@ -262,43 +244,44 @@ Debundle Flats
 
 ::
 
-  gdataselect ../playdata/example1/*.fits --tags FLAT -o flatbundles.lis
+  dataselect ../playdata/example1/*.fits --tags FLAT -o flatbundles.lis
 
-  greduce @flatbundles.lis
+  reduce @flatbundles.lis
 
 Reduce the Slit-flat
 --------------------
 The slit-flat is required to reduce the red and blue channel flats, so it is
-important to reduce it first and add it to the calibration database.
+important to reduce it first. Again, you will need to manually add it to the
+calibration database if your ``dragonsrc`` file is not set up to auto-store
+the calibrations as they are created.
 
 ::
 
-  gdataselect *.fits --tags SLITFLAT -o slitflat.lis
+  dataselect *.fits --tags SLITFLAT -o slitflat.lis
 
-  greduce @slitflat.lis
-  caldb add calibrations/processed_slitflat/*.fits
+  reduce @slitflat.lis
 
 .. note::  You will see this message in the logs::
 
        ERROR - Inputs have different numbers of SCI extensions.
 
     You can safely ignore it.  It is expected and the wording is misleading.
-    This is not an real error.
+    This is not a real error.
 
 Reduce the Flats
 ----------------
 The flats have a 1x1 binning and must match the read mode of the science
 data.  If the science data is binned, the software will bin the 1x1 flats
-to match.
+to match. Reducing the flats takes a little time because of the step to
+trace each of the echelle orders.
 
 ::
 
-  gdataselect *.fits --tags FLAT,RED -o flatred.lis
-  gdataselect *.fits --tags FLAT,BLUE -o flatblue.lis
+  dataselect *.fits --tags FLAT,RED -o flatred.lis
+  dataselect *.fits --tags FLAT,BLUE -o flatblue.lis
 
-  greduce @flatred.lis
-  greduce @flatblue.lis
-  caldb add calibrations/processed_flat/*.fits
+  reduce @flatred.lis
+  reduce @flatblue.lis
 
 Clean up
 --------
@@ -312,45 +295,51 @@ the work directory
 Arcs
 ====
 The arcs have a 1x1 binning, the read mode does not matter.  It does save
-processing if they are of the same read mode as the flats as different biases
-for the specific read mode are in such case not needed.  If the science data is binned,
-the software will bin the 1x1 arcs to match.
+processing if they are of the same read mode as the flats as otherwise they will need
+their own flats with a matching read mode as well as their own biases.  If the science
+data is binned, the software will bin the 1x1 arcs to match.
+
+A minimum of three arc exposures are required in each arm to eliminate cosmic rays
+(which can look very similar to arc lines). At the time these data were taken,
+each arc bundle only contained a single exposure in each of the red and blue arms,
+so three separate files are needed. Now each GHOST arc observation (and hence each
+raw bundle) contains three exposures in each arm so only one file should be needed.
 
 Debundle the Arcs
 -----------------
 
 ::
 
-  gdataselect ../playdata/example1/*.fits --tags ARC -o arcbundles.lis
+  dataselect ../playdata/example1/*.fits --tags ARC -o arcbundles.lis
 
-  greduce @arcbundles.lis
+  reduce @arcbundles.lis
 
-Reduce the slit-view data
--------------------------
-We have 3 slit images for the arc but we really just need one.  We grab
-the first one.
+Reduce the slit-viewer data
+---------------------------
+We have 3 slit images for the arc because there are 3 arc bundles but we really
+just need one because the illumination of the slit by the arc lamp is stable.
+We grab the first one.
 
 ::
 
-  gdataselect *.fits --tags ARC,SLIT | head -n 1 > arcslit.lis
+  dataselect *.fits --tags ARC,SLIT | head -n 1 > arcslit.lis
 
-  greduce @arcslit.lis
-  caldb add calibrations/processed_slit/*.fits
+  reduce @arcslit.lis
 
 Reduce the arcs
 ---------------
 
 ::
 
-  gdataselect *.fits --tags ARC,RED -o arcred.lis
-  gdataselect *.fits --tags ARC,BLUE -o arcblue.lis
+  dataselect *.fits --tags ARC,RED -o arcred.lis
+  dataselect *.fits --tags ARC,BLUE -o arcblue.lis
 
-  greduce @arcred.lis
-  greduce @arcblue.lis
+  reduce @arcred.lis
+  reduce @arcblue.lis
   caldb add calibrations/processed_arc/*.fits
 
 .. note::  If you want to save a plot of the wavelength fits,
-    add ``-p fitWavelength:plot1d=True`` to the ``greduce`` call.
+    add ``-p fitWavelength:plot1d=True`` to the ``reduce`` call.
     A PDF will be created.
 
 Clean up
@@ -373,22 +362,45 @@ Debundle the Standard
 
 ::
 
-  gdataselect ../playdata/example1/*.fits --expr="object=='CD -32 9927'" -o stdbundles.lis
+  dataselect ../playdata/example1/*.fits --expr="object=='CD -32 9927'" -o stdbundles.lis
 
-  greduce @stdbundles.lis
+  reduce @stdbundles.lis
 
-Reduce the slit-view data
--------------------------
+Reduce the slit-viewer data
+---------------------------
 Since we have cleaned up all the intermediate files as we went along, we
 are able to just select on the tag SLIT.  If we had not cleaned up, we would
 need to use the object name like we did above.
 
 ::
 
-  gdataselect *.fits --tags SLIT -o stdslit.lis
+  dataselect *.fits --tags SLIT -o stdslit.lis
 
-  greduce @stdslit.lis
-  caldb add calibrations/processed_slit/S20230416S0073_slit_*.fits
+  reduce @stdslit.lis
+
+Note that four separate files are produced by this reduction and stored in
+the database. This is because the bundle contains four separate exposures in
+the red and blue spectrographs that cover different periods of time, and each
+needs its own slit-viewer image produced from the slit-viewer camera data taken
+at the same time. In general, as many calibration files will be produced as
+there are spectrograph exposures, unless the red and blue exposure times are
+the same, in which case the first exposures in each cover exactly the same
+period of time and so a single reduced slit-viewer image can be used for both.
+
+During the reduction of on-sky slit-viewer images, a plot is produced of the
+total flux (summed from both the red and blue slit images) as a function of
+time, with the durations of each of the spectrograph exposures also plotted.
+By default, this is written to the working directory as a pdf file with a
+like ``S20230416S0073_slit_slitflux.pdf``. You can change the format with
+the ``-p plotSlitFlux:format=png`` or ``-p plotSlitFlux:format=screen``
+where the latter option will display a plot on the screen without saving it
+to disk. A scatter of ~10% appears to be fairly typical, and the lower count
+rate in the early exposures can be traced to poorer seeing conditions, which
+are reported during the reduction of the spectrograph images.
+
+.. image:: _graphics/slitflux.png
+   :width: 325
+   :alt: plot of the slit-viewer flux variations
 
 Reduce the standard star
 ------------------------
@@ -396,132 +408,152 @@ Since we have cleaned up all the intermediate files as we went along, we
 are able to just select on the tag RED and BLUE.  If we had not cleaned up,
 we would need to use the object name like we did above for the bundle.
 
-This step takes a while.
+This step takes a while, with the extraction of each spectrum needing
+about 3 minutes. As each image is processed, the estimated seeing is
+reported, together with the fraction of light collected by the IFU. Here
+the seeing improves significantly from the first to the second red exposure,
+which explains the increase in the counts from the slit-viewer camera seen
+in the previous plot.
 
 ::
 
-  gdataselect *.fits --tags RED -o stdred.lis
-  gdataselect *.fits --tags BLUE -o stdblue.lis
+  dataselect *.fits --tags RED -o stdred.lis
+  dataselect *.fits --tags BLUE -o stdblue.lis
 
-  greduce -r reduceStandard @stdred.lis
-  greduce -r reduceStandard @stdblue.lis
+  reduce -r reduceStandard @stdred.lis -p scaleCountsToReference:tolerance=1
+  reduce -r reduceStandard @stdblue.lis -p scaleCountsToReference:tolerance=1
 
 The reduced spectrophotometric standard observations are the ``_standard``
 files.
 
-The ``_flatBPMApplied`` files are the last 2D images of the spectra
-before it gets extracted to 1D.  They are saved just in case you want to
+The ``_arraysTiled`` files are the last 2D images of the spectra
+before they gets extracted to 1D.  They are saved just in case you want to
 inspect them.  They are not used for further reduction.
 
 For the wavelength calibration, the pipeline will try to find an arc taken
 before the observation and one taken after.  If it finds two, it will use them
-both, however, one is enough.  This is what happens here: the software finds
+both and interpolate between them to obtain a wavelength solution, but one is
+enough provided it is taken close enough in time (the stability of the
+instrument has not yet been sufficiently well quantified to say what "close
+enough" means, but here the arcs are taken on the same night so that is
+definitely OK).  This is what happens here: the software finds
 a "before" arc, but no "after" arc.  So, do not be alarmed by the messages
 saying that it failed to find an arc, it's okay, it got one, it's enough.
 
-This standard observation has three red arm exposures.  They are not stacked.
-They possibly should but the software was delivered without a final stacking
-capability.  So for now, no stacking.  In this case, one exposure is bright
-enough, and there's no problem at all using only one of the red exposures.
-Pick one, anyone if the conditions were stable, they should all look the same.
-If you suspect that the conditions were highly variable, you can inspect the
-``_flatBPMApplied`` files and see which one is the brightest and use that one.
-To display such a file, launch ``ds9`` and type::
+This standard observation has three red arm exposures whose counts can be
+scaled to match the level of the first frame and then stacked.  By default,
+the ``scaleCountsToReference`` primitive only scales by the exposure time
+(which is the same for all these exposures), so no scaling will occur.
+This choice of default is to prevent erroneous scaling factors being calculated
+when the signal-to-noise ratio in the data is low, but that is not the case
+here so we can trust the ratios calculated by the software.  Setting a tolerance
+of 1 indicates that the calculated ratios should be used whatever they are,
+whereas a value of, for example, 0.1 means that the ratio should only be used
+if it is within 10% of that expected from the relative exposure times.  If the
+calculated ratio is outside this range, then the relative exposure times will
+be used to scale the data.  In this case the second and third exposures are
+brighter by about 15%, which is consistent with the improvement in the image
+quality reported during the reduction.  Since the first exposure is the
+reference to which the others are scaled, the flux scale produced from this
+red-arm calibration will be based on the poorer image quality of that
+exposure.
 
-   greduce -r display -p zscale=False S20230416S0073_red001_flatBPMApplied.fits
-
-Since here it doesn't matter which file we use, we pick ``red001``.
+There is only a single blue exposure so there aren't multiple frames to stack
+and the ``tolerance`` parameter is irrelevant. It is included in this tutorial
+to make clear that it can be specified for both arms.
 
 Clean up
 --------
-Because the processed standard files are not recognized as such they are **NOT**
-copied to the ``calibrations`` directory.  So you have to be very careful here
-with your clean up.
-
-You want to keep the `_standard` files for sure, those are the
-calibration files that will be used to reduce the standard.  You might want to
-keep the `_flatBPMApplied` files for visualization purposes.
-
-The selective clean-up looks like this.
+With the calibrations safely in the ``calibrations`` directory, we can clean
+the work directory
 
 ::
 
-  rm *_slit.fits
-  rm *_red???.fits
-  rm *_blue???.fits
+    rm *.fits
 
 Science Frames
 ==============
-As explained above, unlike for GMOS, the standards are not automatically
-recognized as such. They are just like any other science observation.
-Therefore to select the science, we will need to use the object's name.
 
 Debundle the Science Frames
 ---------------------------
 
 ::
 
-  gdataselect ../playdata/example1/*.fits --expr="object=='XX Oph'" -o scibundles.lis
+  dataselect ../playdata/example1/*.fits --expr="object=='XX Oph'" -o scibundles.lis
 
-  greduce @scibundles.lis
+  reduce @scibundles.lis
 
-Reduce the slit-view data
--------------------------
+Reduce the slit-viewer data
+---------------------------
 
 ::
 
-  gdataselect *.fits --tags SLIT -o scislit.lis
+  dataselect *.fits --tags SLIT -o scislit.lis
 
-  greduce @scislit.lis
-  caldb add calibrations/processed_slit/S20230416S0079*.fits
+  reduce @scislit.lis
+
+Again, there will be four "processed slit" calibration files produced, one for
+each spectrograph exposure in the bundle.
 
 Reduce the Science Frames
 -------------------------
-The processed standards are not associated automatically for GHOST.
-They need to be specified on the command line with the ``-p`` flag.
-
-The standard we are using is "CD -32 9927".  This is one of the baseline
-standards Gemini uses.  The flux profile of that star is available in
-DRAGONS and the name will be recognized and the file automatically retrieved.
-
-If you were to use a spectrophotometric standard not on the Gemini list, you
-would need to provide that flux standard file with the
-``-p specphot_file=path/name_of_file``.  The accepted format are the "IRAF
-format" and the HST calspec format.
+The spectrophotometric standard used in this tutorial is in the Gemini list and
+so the file containging the table of spectrophotometric data will be found
+automatically. If you were to use a spectrophotometric standard not on the
+Gemini list, you would need to provide that flux standard file with the
+``-p filename=path/name_of_file``.  The accepted format are the "IRAF
+format" and any FITS table which properly describes its columns (files in the HST
+calspec and ESO X-Shooter libraries fulfil this criterion).
 
 .. note::  Possible customizations.
 
    * The sky subtraction can be turned off with ``-p extractProfile:sky_subtract=False``
-     if it is found to add noise.
+     if it is found to add noise (of course, the sky emission lines will still be
+     present in your data).
    * If you expected IFU-2 to be on-sky but there's an accidental source, tell
      the software that there is a source and it isn't sky with
      ``-p extractProfile:ifu2=object``.
    * If you do not want the barycentric correction, turn is off with
-     ``-p barycentricCorrect:correction_factor=1``.
-
-.. warning:: The reduction of the red channel is very slow.  Launch
-  and go get a coffee or something.  Make sure that you got the name for the
-  standard star file correct or it will crash after having done most of the
-  work and you will have to start again.  Not fun.  The blue channel in this
-  example reduces rather quickly.
+     ``-p barycentricCorrect:velocity=0``.
+   * If you don't have a spectrophotometric standard and are happy to have your output
+     spectra in units of electrons, make sure to add
+     ``-p responseCorrect:do_cal=skip``
 
 ::
 
-  gdataselect *.fits --tags RED --expr="object=='XX Oph'" -o scired.lis
-  gdataselect *.fits --tags BLUE --expr="object=='XX Oph'" -o sciblue.lis
+  dataselect *.fits --tags RED --expr="object=='XX Oph'" -o scired.lis
+  dataselect *.fits --tags BLUE --expr="object=='XX Oph'" -o sciblue.lis
 
-  greduce @scired.lis -p standard=S20230416S0073_red001_standard.fits
-  greduce @sciblue.lis -p standard=S20230416S0073_blue001_standard.fits
+  reduce @scired.lis
+  reduce @sciblue.lis
+
+Note that during the ``extractProfile`` step (which takes a few minutes for
+each expoure), a warning appears that "There are saturated pixels that have
+not been flagged as cosmic rays" with pixel coordinates. The pixel coordinates
+are different for each exposure and in all cases only the first instance is
+reported so the data could be severely affected. You can investigate further
+by displaying the DQ plane of the ``_arraysTiled`` frame, e.g.,
+
+::
+
+  reduce -r display S20230416S0079_red001_arraysTiled.fits -p extname=DQ
+
+(make sure you have ``ds9`` running first) and saturated pixels will appear
+as white (they have the value 4, which is the maximum value in the DQ plane
+at this point in the reduction).
+
+::
 
   dgsplot S20230416S0079_red001_dragons.fits 1 --bokeh
 
-The final products are the ``_dragons`` files.  In those files, all the orders
-have been stitched together with the wavelength on a log-linear scale,
+The final product from each arm are the ``_dragons`` files.  In those files,
+all the orders have been stitched together with the wavelength on a log-linear scale,
 calibrated to in-air wavelengths and corrected for barycentric motion (unless
-that correction is turned off.)
+that correction is turned off.) Individual exposures will also be stacked after
+being scaled.
 
-The first extension (the "1" in the call to ``dgsplot`` above) is the spectrum.
-The second extension is the spectrum of the sky.  This is for an observation
+The first "aperture" (the "1" in the call to ``dgsplot`` above) is the spectrum.
+The second aperture is the spectrum of the sky.  This is for an observation
 with one object and sky subtraction turned on (default).  Here's the list of
 possible configurations:
 
@@ -537,34 +569,71 @@ possible configurations:
 It is possible to write the spectra to a text file with ``write1DSpectrum``,
 for example::
 
-  greduce -r write1DSpectra S20230416S0079_red001_dragons.fits
+  reduce -r write1DSpectra S20230416S0079_red001_dragons.fits
 
 The primitive outputs in various formats offered by ``astropy.Table``.  To see
 the list, use |showpars|.
 
 ::
 
-  gshowpars S20230416S0079_red001_dragons.fits write1DSpectra
+  showpars S20230416S0079_red001_dragons.fits write1DSpectra
 
 The ``_dragons`` files are probably what most people will want to use for
 making their measurements.
 
-The files ``_calibrated`` are the reduced spectra *before* the stitching
-the orders and the format of the file is more complex and somewhat less
-accessible.  But if you need it, you have it.  The flux pixels are in a
-3D array with the first axis of size 2, one for target, one for sky, then a
-second axis being the wavelength direction, and finally a third axis of
-30-something orders.  The ``WAVL`` extension contains the wavelength at each
-of the pixels in the wavelength-order array.
+The files ``_calibrated`` are the reduced spectra *before* stitching
+the orders and stacking the files and the format of the file is more complex
+and somewhat less accessible.  But if you need it, you have it. These files
+can also be plotted with the ``dgsplot`` command, and each order will appear
+in a different color.  The flux pixels are in a
+2D array for each aperture with the first axis being the wavelength direction
+and the second axis going through each of the 30-something orders.  The
+wavelengths of each pixel are stored as an image in the ``AWAV`` extension
+(following the FITS naming convention for in-air wavelengths).
 
-While we have three red exposures, the software does not stack them.  The
-software was delivered without stacking.  If the sky conditions (cloud, seeing)
-were stable and the individual spectra do not have large numbers of cosmic
-rays, it is possible to use DRAGONS' ``stackFrames`` with no rejection, no
-scaling to create a stacked spectrum.  Please use your best judgement.
+The software automatically stacks the three red exposures during the
+``combineOrders`` step after scaling them (there is no ``tolerance``
+parameter here) so there is only one ``_dragons`` file for each arm,
+but there are 3 ``_calibrated`` files for the red arm and 1 for the blue arm,
+one for each exposure.
+
+Alternative data products
+-------------------------
+
+If you don't wish to stack the individual order-combined spectra, you can
+adjust the parameters to ``combineOrders`` to get the result you desire.
+You can turn off stacking with ``-p combineOrders:stacking_mode=none``
+nd you will obtain one ``_dragons``
+file for each exposure. These can be combined later if you wish by running
+the following command:
 
 ::
 
-    greduce -r stackFrames -p reject_method=none *red???_dragons.fits
+  reduce -r combineOrders S20230416S0079_red00?_calibrated.fits
 
+It is also possible to stack the individual spectra without scaling them with
+``-p combineOrders:stacking_mode=unscaled``.
 
+The ``combineOrders`` primitive will also combine spectra from *both* arms
+so you can obtain a single spectrum covering the full wavelength range of
+GHOST. Simply send the ``_calibrated`` files from both arms to the primitive.
+By default, the output will have the ``_dragons`` suffix and so may overwrite
+an existing file (depending on the first file in the input list) and so you
+may wish to specify an alternative output suffix.
+
+::
+
+  reduce -r combineOrders S20230416S0079*calibrated.fits -p suffix=_full
+
+If you wish to turn your reduced spectrum into a ``specutils.Spectrum1D``
+object, you can do this within a python session as follows:
+
+::
+
+  import astrodata, gemini_instruments
+  from gempy.library.spectral import Spek1D
+  ad = astrodata.open("S20230416S0079_blue001_full.fits")
+  spectrum1d = Spek1D(ad[0]).asSpectrum1D()
+
+Note that you need to specify ``ad[0]`` to obtain the first aperture
+(the target).
