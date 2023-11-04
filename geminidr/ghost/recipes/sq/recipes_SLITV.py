@@ -22,6 +22,7 @@ def makeProcessedSlit(p):
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
     p.CRCorrect()
+    p.plotSlitFlux()
     p.processSlits()
     p.stackFrames()
     p.storeProcessedSlit()

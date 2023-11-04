@@ -41,6 +41,7 @@ class standardizeWCSConfig(config.Config):
 
 class validateDataConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_dataValidated", optional=True)
+    require_wcs = config.Field("Must all extensions have a WCS?", bool, True)
 
 class prepareConfig(standardizeHeadersConfig, standardizeStructureConfig, validateDataConfig):
     def setDefaults(self):

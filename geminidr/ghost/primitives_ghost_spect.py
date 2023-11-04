@@ -678,23 +678,6 @@ class GHOSTSpect(GHOST):
                 # spectrum
                 for order in range(ext.data.shape[0]):
                     log.debug(f'Re-gridding order {order:2d}')
-                    #flux_for_adding = np.interp(
-                    #    wavl_grid, waves[order], ext.data[order],
-                    #    left=0, right=0)
-                    # again, float64 to avoid VAR underflows
-                    #ivar_for_adding = np.interp(
-                    #    wavl_grid, waves[order],
-                    #    at.divide0(1.0, ext.variance[order].astype(np.float64)),
-                    #    left=0, right=0)
-                    # Ensure we don't interpolate masked pixels
-                    #try:
-                    #    mask_for_adding = np.interp(
-                    #        wavl_grid, waves[order], ext.mask[order] & DQ.not_signal,
-                    #        left=0, right=0)
-                    #except TypeError:  # ext.mask is None
-                    #    pass
-                    #else:
-                    #    ivar_for_adding[mask_for_adding > 0] = 0
 
                     t = transform.Transform(models.Tabular1D(lookup_table=waves[order],
                                                              bounds_error=False) | wcs.inverse)
@@ -766,7 +749,7 @@ class GHOSTSpect(GHOST):
                     data, mask, var = NDStacker.wtmean(
                         data=all_data[i, j-1:j+1], mask=all_mask[i, j-1:j+1],
                         variance=all_var[i, j-1:j+1])
-                    all_data[i, j] = data
+                    all_data[i, j] = np.nan_to_num(data)  # all bad pixels
                     all_mask[i, j] = mask
                     all_var[i, j] = var
                 output = astrodata.NDAstroData(

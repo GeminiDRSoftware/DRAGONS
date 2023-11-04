@@ -401,9 +401,11 @@ class Extractor(object):
                             np.any(self.badpixmask[_slice] &
                                    (DQ.cosmic_ray | DQ.saturated |
                                     DQ.bad_pixel) == DQ.saturated)):
-                        log.warning("WARNING: There are saturated pixels that "
-                                    "have not been flagged as cosmic rays in "
-                                    f"order {self.arm.m_min+i} pixel {j} ({x_ix})")
+                        print("\n")
+                        log.warning("There are saturated pixels that have not "
+                                    "been flagged as cosmic rays in order "
+                                    f"{self.arm.m_min+i} pixel {j} "
+                                    f"({x_ix[0]}-{x_ix[-1]})")
                         saturation_warning = True
             print("\n")
             log.stdinfo(f"{(self.badpixmask & DQ.cosmic_ray).astype(bool).sum()} CRs found")

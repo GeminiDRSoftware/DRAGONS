@@ -20,6 +20,15 @@ class CRCorrectConfig(config.Config):
     max_iters = config.RangeField("Maximum number of iterations", int, 1, min=0)
 
 
+class plotSlitFluxConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitflux")
+    format = config.ChoiceField("Output format", str,
+                                allowed={"pdf": "PDF format",
+                                         "png": "PNG format",
+                                         "screen": "on-screen (not saved)"},
+                                default="pdf", optional=False)
+
+
 class processSlitsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitsProcessed",
                           optional=True)

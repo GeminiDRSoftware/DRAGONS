@@ -3,9 +3,12 @@
 #
 #                                                       primitives_ghost_slit.py
 # ------------------------------------------------------------------------------
+
+import os
 import numpy as np
 from datetime import datetime, timedelta
 import dateutil
+from matplotlib import pyplot as plt
 
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -179,13 +182,81 @@ class GHOSTSlit(GHOST):
                     break
 
             # Record total number of replacements
-            for ext in ad:
+            for ext, flux in zip(ad, fluxes):
                 ext.hdr['CRPIXREJ'] = ((ext.mask & DQ.cosmic_ray).astype(bool).sum(),
                                        '# of CR pixels replaced by median')
+                ext.hdr['SLITFLUX'] = (flux, 'Signal in slitviewer image')
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+
+    def plotSlitFlux(self, adinputs=None, **params):
+        """
+        Create a plot showing the flux in the slitviewer camera as a function
+        of time, with the periods of the spectrograph exposures marked. The
+        slitviewer images themselves are not modified by this primitive.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output plot (if saved to disk)
+        format: str
+            format of plot ("pdf"|"png"|"screen")
+        """
+        log = self.log
+        sfx = params["suffix"]
+        format = params["format"]
+
+        for ad in adinputs:
+            try:
+                fluxes = ad.hdr['SLITFLUX']
+            except KeyError:
+                log.warning(f"Cannot find SLITFLUX keyword in {ad.filename} "
+                            "so cannot plot a time series")
+                continue
+
+            sv_duration = ad.exposure_time()
+            sci_starts = [dateutil.parser.parse(utstart)
+                          for utstart in ad.SCIEXP['UTSTART']]
+            tzero = min(sci_starts)
+            sci_starts = np.asarray([(start - tzero).total_seconds()
+                                     for start in sci_starts])
+            sv_starts = np.asarray([(dateutil.parser.parse(f"{d}T{t}") -
+                                     tzero).total_seconds() for d, t in
+                                    zip(ad.hdr['DATE-OBS'], ad.hdr['UTSTART'])])
+            sci_ends = np.asarray([(dateutil.parser.parse(utstart) -
+                                    tzero).total_seconds()
+                                   for utstart in ad.SCIEXP['UTEND']])
+
+            fig, ax = plt.subplots()
+            ax.errorbar(sv_starts + 0.5 * sv_duration, fluxes,
+                        xerr=0.5 * sv_duration, fmt='none', color="black")
+
+            y1, y2 = ax.get_ylim()
+            yblue = y1 - 0.05 * (y2 - y1)
+            yred = y1
+
+            for sci_img, start, end in zip(ad.SCIEXP['for'],
+                                           sci_starts, sci_ends):
+                if 'blue' in sci_img:
+                    ax.plot([start, end], [yblue, yblue], 'b-')
+                if 'red' in sci_img:
+                    ax.plot([start, end], [yred, yred], 'r-')
+
+            ax.set_title(ad.filename)
+            ax.set_xlabel("Time since start of observation (s)")
+            ax.set_ylabel("Total slitviwer counts")
+
+            if format == "screen":
+                plt.show()
+            else:
+                filename = filename_updater(ad, suffix=sfx, strip=True)
+                filename = os.path.splitext(filename)[0] + "." + format
+                log.stdinfo(f"Saving plot as {filename}")
+                plt.savefig(filename, bbox_inches="tight")
 
         return adinputs
 

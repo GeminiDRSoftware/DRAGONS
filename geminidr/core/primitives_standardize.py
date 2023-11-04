@@ -389,7 +389,7 @@ class Standardize(PrimitivesBASE):
     def standardizeWCS(self, adinputs=None, **params):
         return adinputs
 
-    def validateData(self, adinputs=None, suffix=None):
+    def validateData(self, adinputs=None, suffix=None, require_wcs=True):
         """
         This is the data validation primitive. It checks that the instrument
         matches the primitivesClass and that there are the correct number
@@ -399,6 +399,8 @@ class Standardize(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+        require_wcs: bool
+            do all extensions have to have a defined WCS?
         """
         log = self.log
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -437,9 +439,9 @@ class Standardize(PrimitivesBASE):
                               "number of extensions expected in raw {} "
                               "data.".format(len(ad), ad.filename, inst_name))
 
-            # Check for WCS
-            missing_wcs_list.extend([f"{ad.filename}:{ext.id}"
-                                     for ext in ad if ext.wcs is None])
+            if require_wcs:
+                missing_wcs_list.extend([f"{ad.filename}:{ext.id}"
+                                         for ext in ad if ext.wcs is None])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
