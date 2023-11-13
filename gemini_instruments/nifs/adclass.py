@@ -201,6 +201,6 @@ class AstroDataNifs(AstroDataGemini):
         """
         try:
             return int(self._from_biaspwr("well") *
-                       self._from_biaspwr("gain") * self.coadds() / self.gain())
+                       self._from_biaspwr("gain") * self.coadds() / self.gain()[0])
         except TypeError:
             return None

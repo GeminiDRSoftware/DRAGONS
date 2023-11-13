@@ -694,7 +694,7 @@ respective variance and data quality (or mask) arrays.
         Other Extensions
                        Type        Dimensions
         .PROVENANCE    Table       (10, 4)
-        .PROVHISTORY   Table       (24, 4)
+        .HISTORY       Table       (24, 4)
 
 
 This is what the 2-D spectrum image looks like.

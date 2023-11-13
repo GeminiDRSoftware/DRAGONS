@@ -182,5 +182,70 @@ def test_ifu_fpm(filename, expected_fpm):
     assert(ad.focal_plane_mask(pretty=True) == expected_fpm)
 
 
+def test_prism_string():
+    # These are the values the prism header can take, copied from:
+    # http://internal.gemini.edu/science/instruments/GNIRS/Systems_Reference/mechanisms/gnirsMechanisms
+    # ... and the actual prism value we should end up with
+    things = [
+        {'position': "LB+SXD_G5536", 'value': "SXD_G5536"},
+        {'position': "SB+SXD_G5536", 'value': "SXD_G5536"},
+        {'position': "LR+SXD_G5536", 'value': "SXD_G5536"},
+        {'position': "SR+SXD_G5536", 'value': "SXD_G5536"},
+        {'position': "LB+LXD_G5535", 'value': "LXD_G5535"},
+        {'position': "SB+LXD_G5535", 'value': "LXD_G5535"},
+        {'position': "LR+LXD_G5535", 'value': "LXD_G5535"},
+        {'position': "SR+LXD_G5535", 'value': "LXD_G5535"},
+        {'position': "MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "WOLL_G5509", 'value': "WOLL_G5509"},
+        {'position': "LB32+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "LR32+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "SB32+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "SR32+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "LB10+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "LR10+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "SB10+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "SR10+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "LB111+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "LR111+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "SB111+MIR_G5537", 'value': "MIR_G5537"},
+        {'position': "SR111+MIR_G5537", 'value': "MIR_G5537"},
+    ]
+
+    for d in things:
+        ad = AstroDataGnirs()
+        ad.phu['PRISM'] = d['position']
+        assert ad._prism() == d['value']
+
+def test_grating_string():
+    # These are the values the grating header can take, copied from:
+    # http://internal.gemini.edu/science/instruments/GNIRS/Systems_Reference/mechanisms/gnirsMechanisms
+    # ... and the actual grating value we should end up with
+    things = [
+        {'position': "111/mmSB_G5534", 'value': "111/mm_G5534"},
+        {'position': "111/mmSR_G5534", 'value': "111/mm_G5534"},
+        {'position': "111/mmLB_G5534", 'value': "111/mm_G5534"},
+        {'position': "111/mmLR_G5534", 'value': "111/mm_G5534"},
+        {'position': "10/mmSB_G5532", 'value': "10/mm_G5532"},
+        {'position': "10/mmLB_G5532", 'value': "10/mm_G5532"},
+        {'position': "10/mmLR_G5532", 'value': "10/mm_G5532"},
+        {'position': "10/mmLBLX_G5532", 'value': "10/mm_G5532"},
+        {'position': "10/mmLBSX_G5532", 'value': "10/mm_G5532"},
+        {'position': "32/mmSB_G5533", 'value': "32/mm_G5533"},
+        {'position': "32/mmSR_G5533", 'value': "32/mm_G5533"},
+        {'position': "32/mmLB_G5533", 'value': "32/mm_G5533"},
+        {'position': "32/mmLR_G5533", 'value': "32/mm_G5533"},
+        {'position': "111/mmLBHR_G5534", 'value': "111/mm_G5534"},
+        {'position': "111/mmLRHR_G5534", 'value': "111/mm_G5534"},
+        {'position': "10/mmLBHR_G5532", 'value': "10/mm_G5532"},
+        {'position': "10/mmLRHR_G5532", 'value': "10/mm_G5532"},
+        {'position': "32/mmLBHR_G5533", 'value': "32/mm_G5533"},
+        {'position': "32/mmLRHR_G5533", 'value': "32/mm_G5533"},
+    ]
+
+    for d in things:
+        ad = AstroDataGnirs()
+        ad.phu['GRATING'] = d['position']
+        assert ad._grating() == d['value']
+
 if __name__ == "__main__":
     pytest.main()

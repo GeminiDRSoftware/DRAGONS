@@ -145,7 +145,7 @@ class LocalDB(CalDB):
         walk : bool
             add files from all subdirectories?
         """
-        self._calmgr.ingest_directory(path, walk=walk, log=self.log)
+        self._calmgr.ingest_directory(path, walk=walk, log=None)
 
     def remove_cal(self, calfile):
         """

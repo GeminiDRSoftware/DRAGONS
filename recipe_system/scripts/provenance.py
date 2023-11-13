@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 
 # parsing the command line
 import sys
@@ -9,14 +10,14 @@ from astrodata.provenance import provenance_summary
 
 def parse_args():
     parser = OptionParser()
-    parser.set_description("""'provenance' is a script to view a summary of the provenance in a given FITS file.
+    parser.set_description("""'provenance' is a script to view a summary of the provenance and history in a given FITS file.
     """)
     parser.add_option("-p", "--provenance", dest="provenance", action="store_true",
                       default=True,
-                      help="show the top-level provenance records")
-    parser.add_option("--provenance_history", dest="history", action="store_true",
+                      help="show the provenance records")
+    parser.add_option("--history", dest="history", action="store_true",
                       default=True,
-                      help="show the provenance history records")
+                      help="show the history records")
 
     (options, args) = parser.parse_args()
 
@@ -33,6 +34,6 @@ if __name__ == "__main__":
         try:
             ad = astrodata.open(arg)
             print(f"Reading Provenance for {arg}\n")
-            print(provenance_summary(ad, provenance=options.provenance, provenance_history=options.history))
+            print(provenance_summary(ad, provenance=options.provenance, history=options.history))
         except astrodata.AstroDataError:
             print(f"Unable to open {arg} with DRAGONS\n")

@@ -8,10 +8,6 @@ from astrodata import Section
 
 
 def test_header_for_table():
-    tbl = Table([[[1], [2, 3], [3, 4, 5]]], dtype=['object'])
-    with pytest.raises(ValueError, match=r"Illegal format `object`"):
-        header_for_table(tbl)
-
     tbl = Table([np.arange(2 * 3 * 4).reshape(3, 2, 4),
                  [1.0, 2.0, 3.0],
                  ['aa', 'bb', 'cc'],

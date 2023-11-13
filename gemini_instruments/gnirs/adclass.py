@@ -67,7 +67,8 @@ class AstroDataGnirs(AstroDataGemini):
     def _type_flats(self):
         if self.phu.get('OBSTYPE') == 'FLAT':
             if 'Pinholes' in self.phu.get('SLIT', ''):
-                return TagSet(['PINHOLE', 'CAL'], remove=['GCALFLAT'])
+                return TagSet(['PINHOLE', 'CAL'], remove=['GCALFLAT'],
+                              blocks=['FLAT'])
 
             return TagSet(['FLAT', 'CAL'])
 
@@ -296,6 +297,8 @@ class AstroDataGnirs(AstroDataGemini):
 
         grating = self._grating(stripID=stripID, pretty=pretty)
         prism = self._prism(stripID=stripID, pretty=pretty)
+        if prism is None or grating is None:
+            return None
         if prism.startswith('MIR'):
             return grating
 
@@ -751,7 +754,6 @@ class AstroDataGnirs(AstroDataGemini):
             return gmu.removeComponentID(ret_grating)
         return ret_grating
 
-
     def _prism(self, stripID=False, pretty=False):
         """
         Returns the name of the prism.  The component ID can be removed
@@ -772,7 +774,7 @@ class AstroDataGnirs(AstroDataGemini):
         """
         prism = self.phu.get('PRISM')
         try:
-            match = re.match(r"[LBSR]*\+*([A-Z]*_G\d+)", prism)
+            match = re.match(r"(?:[A-Z0-9]*\+)?([A-Z]*_G\d+)", prism)
             ret_prism = match.group(1)
         except (TypeError, AttributeError):  # prism=None, no match
             return None
