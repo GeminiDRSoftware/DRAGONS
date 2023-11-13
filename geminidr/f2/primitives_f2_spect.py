@@ -214,22 +214,135 @@ class F2Spect(Spect, F2):
         adinputs = super().determineDistortion(adinputs, **params)
         return adinputs
 
-    def _get_arc_linelist(self, ext, waves=None, config=None):
+
+    def determineWavelengthSolution(self, adinputs=None, **params):
+        """
+        This F2-specific primitive sets the default order in case it's None.
+        It then calls the generic version of the primitive.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+             Mosaicked Arc data as 2D spectral images or 1D spectra.
+
+        suffix : str/None
+            Suffix to be added to output files
+
+        order : int
+            Order of Chebyshev fitting function.
+
+        center : None or int
+            Central row/column for 1D extraction (None => use middle).
+
+        nsum : int, optional
+            Number of rows/columns to average.
+
+        min_snr : float
+            Minimum S/N ratio in line peak to be used in fitting.
+
+        weighting : {'natural', 'relative', 'none'}
+            How to weight the detected peaks.
+
+        fwidth : float/None
+            Expected width of arc lines in pixels. It tells how far the
+            KDTreeFitter should look for when matching detected peaks with
+            reference arcs lines. If None, `fwidth` is determined using
+            `tracing.estimate_peak_width`.
+
+        min_sep : float
+            Minimum separation (in pixels) for peaks to be considered distinct
+
+        central_wavelength : float/None
+            central wavelength in nm (if None, use the WCS or descriptor)
+
+        dispersion : float/None
+            dispersion in nm/pixel (if None, use the WCS or descriptor)
+
+        linelist : str/None
+            Name of file containing arc lines. If None, then a default look-up
+            table will be used.
+
+        alternative_centers : bool
+            Identify alternative central wavelengths and try to fit them?
+
+        nbright : int (or may not exist in certain class methods)
+            Number of brightest lines to cull before fitting
+
+        absorption : bool
+            If feature type is absorption (default: "False")
+
+        interactive : bool
+            Use the interactive tool?
+
+        debug : bool
+            Enable plots for debugging.
+
+        num_atran_lines: int/None
+            Number of lines with largest weigths (within a wvl bin) to be used for
+            the generated ATRAN line list.
+
+        wv_band: {'20', '50', '80', '100', 'header'}
+            Water vapour content (as percentile) to be used for ATRAN model
+            selection. If "header", then the value from the header is used.
+
+        resolution: int/None
+            Resolution of the observation (as l/dl), to which ATRAN spectrum should be
+            convolved. If None, the default value for the instrument/mode is used.
+
+        combine_method: {"mean", "median", "optimal"}
+            Method to use for combining rows/columns when extracting 1D-spectrum.
+            Default: "optimal".
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Updated objects with a `.WAVECAL` attribute and improved wcs for
+            each slice
+"""
+        for ad in adinputs:
+            min_snr_isNone = True if params["min_snr"] is None else False
+
+            if "ARC" in ad.tags:
+                if params["min_snr"] is None:
+                    params["min_snr"] = 10
+            else:
+                # Telluric absorption in object spectrum
+                if params["absorption"]:
+                    self.generated_linelist = True
+                    params["lsigma"] = 2
+                    params["hsigma"] = 2
+                    if params["min_snr"] is None:
+                        params["min_snr"] = 1
+                else:
+                    # OH emission
+                    if params["min_snr"] is None:
+                        params["min_snr"] = 10
+
+            if min_snr_isNone:
+                self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+
+        adinputs = super().determineWavelengthSolution(adinputs, **params)
+        return adinputs
+
+    def _get_arc_linelist(self, ext, waves=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
-
+        isHK_JH = ext.disperser(pretty=True) == "HK" and \
+                    ext.filter_name(pretty=True) == "JH"
         if 'ARC' in ext.tags:
             linelist = 'argon.dat'
-            if ext.disperser(pretty=True) == "HK" and \
-                    ext.filter_name(pretty=True) == "JH":
+            # For HK grism + JH filter the second order is preserved by default
+            # (as per IS request), so use the line list with the second order lines
+            # for this mode
+            if isHK_JH:
                 linelist = 'lowresargon_with_2nd_ord.dat'
         else:
+            # In case of wavecal from sky OH emission use this line list:
             linelist = 'nearIRsky.dat'
-            if ext.disperser(pretty=True) == "HK" and \
-                    ext.filter_name(pretty=True) == "JH":
+            if isHK_JH:
                 linelist = 'nearIRsky_with_2nd_order.dat'
 
-        self.log.debug(f"Using linelist '{linelist}'")
+        self.log.stdinfo(f"Using linelist '{linelist}'")
         filename = os.path.join(lookup_dir, linelist)
         return wavecal.LineList(filename)
 

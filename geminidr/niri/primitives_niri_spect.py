@@ -168,6 +168,7 @@ class NIRISpect(Spect, NIRI):
             else:
                 # Telluric absorption and L and M-bands
                 if params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
+                    self.generated_linelist = True
                     params["lsigma"] = 2
                     params["hsigma"] = 2
                     if params["min_snr"] is None:
@@ -190,11 +191,9 @@ class NIRISpect(Spect, NIRI):
         return adinputs
 
     
-    def _get_arc_linelist(self, ext, config, waves=None):
+    def _get_arc_linelist(self, ext, waves=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
-        refplot_dict = None
-
         if 'ARC' in ext.tags:
             if 'Xe' in ext.object():
                 linelist ='Ar_Xe.dat'
@@ -203,20 +202,13 @@ class NIRISpect(Spect, NIRI):
             else:
                 raise ValueError(f"No default line list found for {ext.object()}-type arc. Please provide a line list.")
         else:
-            if config["absorption"] is True or \
-                    ext.central_wavelength(asMicrometers=True) >= 2.8:
-                linelist, refplot_dict = \
-                    super()._get_atran_linelist(ext=ext, config=config)
-                self.log.stdinfo(f"Using linelist {linelist}")
-                return wavecal.LineList(linelist), refplot_dict
             # In case of wavecal from sky OH emission use these line lists:
-            else:
-                linelist = 'nearIRsky.dat'
+            linelist = 'nearIRsky.dat'
 
         self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
 
-        return wavecal.LineList(filename), refplot_dict
+        return wavecal.LineList(filename)
 
 
     def _get_resolution(self, ad):

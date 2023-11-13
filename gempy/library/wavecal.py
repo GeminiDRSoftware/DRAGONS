@@ -371,20 +371,18 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
         data["y"].append(fit1d.image[~fit1d.mask])
 
         # Get the data necessary for the reference spectrum plot, to be displayed
-        # in a separate plot in the interactive mode (so far for non-arc spectra only).
-        if input_data["refplot_data"] is not None:
-            input_data.update(input_data["refplot_data"])
-        else:
-            config=ui_params.toDict()
-            resolution = p._get_resolution(ext) if config["resolution"] is None \
-                else config["resolution"]
-            cenwave = p._get_actual_cenwave(ext) if config["central_wavelength"] is None \
-                else config["central_wavelength"]
-            refplot_data = p._make_refplot_data(ext=ext, refplot_linelist=input_data["linelist"],
-                            wv_band=config["wv_band"], resolution=resolution,
-                            cenwave=cenwave, absorption=config.get("absorption"), in_vacuo=config["in_vacuo"])
-            if refplot_data is not None:
-                input_data.update(refplot_data)
+        # in a separate plot in the interactive mode
+        if p._show_refplot(ext):
+            # If the refplot_data has been generated earlier as a by-product of ATRAN
+            #  line list generation, we don't need to re-generate it:
+            if input_data["refplot_data"] is not None:
+                input_data.update(input_data["refplot_data"])
+            else:
+                config=ui_params.toDict()
+                refplot_data = p._make_refplot_data(ext=ext, refplot_linelist=input_data["linelist"],
+                                config=config, absorption=config.get("absorption"), in_vacuo=config["in_vacuo"])
+                if refplot_data is not None:
+                    input_data.update(refplot_data)
 
         data["meta"].append(input_data)
     return data
@@ -516,8 +514,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         fwidth = config["fwidth"]
 
     # If we are doing wavecal from sky absorption lines in object spectrum,
-    # the most realistic variance estimation comes from the estimation of
-    # pixel-to-pixel variations, as done in `tracing.find_wavelet_peaks`.
+    # the most realistic variance estimation comes from pixel-to-pixel
+    # variations, as done in `tracing.find_wavelet_peaks`.
     # The variance estimations coming from `tracing.average_along_slit` don't
     # provide sensible values in this particular case.
     if config.get("absorption") is True:
@@ -548,18 +546,27 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     logit("Wavelengths at start, middle, end (nm), and dispersion "
           f"(nm/pixel):\n{waves} {dw0:.4f}")
 
-    # Get list of arc lines (probably from a text file dependent on the
-    # input spectrum, so a private method of the primitivesClass). If a
-    # user-defined file, only read it if arc_lines is undefined
-    # (i.e., first time through the loop)
+    # Is ATRAN line list used for this mode?
+    uses_atran_linelist = p._uses_atran_linelist(cenwave=ext.central_wavelength(asMicrometers=True),
+                                                 absorption=config.get("absorption", False))
     refplot_dict = None
+
     if linelist is None:
-        # If the linelist is an ATRAN linelist calculated on the fly, the reference
-        # plot data is created as a by-product, so we return it here to avoid repeating the same
-        # calculations later.
-        # Otherwise refplot_dict is expected to be returned as None, and is populated in
-        # create_interactive_inputs
-        linelist, refplot_dict= p._get_arc_linelist(waves=m_init(np.arange(data.size)), ext=ext, config=config)
+        if uses_atran_linelist:
+            # If the mode is supposed to use ATRAN line list, we generate it
+            # on-the-fly (or use a previously generated one). When the line list is
+            # generated on-the-fly, the reference plot data is created as a by-product,
+            # so we return it here to avoid repeating the same calculations later.
+            # Otherwise (in case of existing pre-calculated ATRAN line list)
+            # refplot_dict is expected to be returned as None, and
+            # can be populated in create_interactive_inputs
+             linelist, refplot_dict= p._get_atran_linelist(ext=ext, config=config)
+        else:
+            # Get list of arc lines (probably from a text file dependent on the
+            # input spectrum, so a private method of the primitivesClass). If a
+            # user-defined file, only read it if arc_lines is undefined
+            # (i.e., first time through the loop)
+            linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ext=ext)
     # This wants to be logged even in interactive mode
     sky_or_arc = 'reference sky' if skylines else 'arc'
     msg = f"Found {len(peaks)} peaks and {len(linelist)} {sky_or_arc} lines"

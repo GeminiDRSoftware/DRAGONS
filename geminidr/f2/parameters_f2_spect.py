@@ -13,8 +13,9 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     def setDefaults(self):
         self.order = 3
         self.in_vacuo = True
-        self.min_snr = 10
         self.debug_min_lines = 100000
+        self.num_atran_lines = 100
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",

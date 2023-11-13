@@ -2203,7 +2203,7 @@ class Spect(Resample):
                                            "fwidth", "central_wavelength", "dispersion",
                                                        "in_vacuo"])
             if self.generated_linelist:
-                # Add some extra parameters to the UI when the linelist gets generated on the fly
+                # Add some extra parameters to the UI when the linelist gets generated on-the-fly
                 linelist_pars = {"atran_linelist_pars": ["num_atran_lines", "resolution", "wv_band"]}
                 uiparams.reinit_params.append(linelist_pars)
 
@@ -4477,7 +4477,7 @@ class Spect(Resample):
 
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ext=None, config=None):
+    def _get_arc_linelist(self, ext, waves=None):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
@@ -4491,15 +4491,16 @@ class Spect(Resample):
 
         Returns
         -------
-        tuple:
-            A Linelist object, and a refplot dictionary (see _make_refplot_data)
-            or None (whenever the linelist gets calculated on the fly,
-            e.g. ATRAN linelist)
+        array_like
+            arc line wavelengths
+
+        array_like or None
+            arc line weights
         """
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir, 'linelist.dat')
-        return wavecal.LineList(filename), None
+        return wavecal.LineList(filename)
 
 
     def _get_slit_edge_estimates(self, ad):
@@ -4775,13 +4776,32 @@ class Spect(Resample):
                 ad1.update_filename(suffix=suffix, strip=True)
         return adinputs
 
+    def _uses_atran_linelist(self, cenwave, absorption):
+        """
+        Returns True if the observation can use ATRAN line list for the wavecal.
+        By default ATRAN line lists are used in two cases:
+            1) wavecal from sky absorption lines in object spectrum (in XJHK-bands);
+            2) wavecal from sky emission lines in L- and M-band.
+        In these cases (unless the user is providing her own linelist) we
+        generate the line list on-the-fly from an ATRAN model with the parameters
+        closest to the frame's observing conditions, and convolve it to the
+        resolution of the observation.
+
+        Parameters
+        ----------
+        cenwave: float
+            central wavelength in um
+        absorption: bool
+            is wavecal done from absorption lines?
+        """
+        return True if (absorption is True) or (cenwave >= 2.8) else False
 
     def _get_atran_linelist(self, ext, config):
         """
         Returns default filename of the line list generated from an ATRAN
         model spectrum with model parameters matching the observing conditions
         and spectral characteristics of the frame (or those, specified by the user).
-        Also a dictionary with the data necessary for the reference plot (so
+        Also returns a dictionary with the data necessary for the reference plot (so
         that we don't have to re-calculate the linelist for making the reference plot).
 
         Parameters
@@ -4801,27 +4821,13 @@ class Spect(Resample):
                                            self.inst_lookups).__file__)
         working_dir = os.getcwd()
 
-        if config["resolution"] is None:
-            resolution = round(self._get_resolution(ext),  -1)
-        else:
-            resolution = config["resolution"]
-
-        if config["central_wavelength"] is None:
-            cenwave = self._get_actual_cenwave(ext, asNanometers=True)
-        else:
-            cenwave = config["central_wavelength"]
-        in_vacuo = config["in_vacuo"]
-        user_wv_band = config["wv_band"]
-        num_atran_lines = config["num_atran_lines"]
-        absorption = config["absorption"]
-
         refplot_dict = None
-
-        site, alt, start_wvl, end_wvl, spec_range, wv_content \
-            = self._get_atran_model_params(ext, user_wv_band=user_wv_band, cenwave=cenwave)
+        model_params = self._get_model_params(ext, config)
 
         atran_linelist = 'atran_linelist_{}_{:.0f}-{:.0f}_wv{:.0f}_r{:.0f}.dat'\
-            .format(site,start_wvl,end_wvl,wv_content*1000,resolution)
+            .format(model_params["site"],model_params["start_wvl"],
+                    model_params["end_wvl"],model_params["wv_content"]*1000,
+                    model_params["resolution"])
 
         atran_filename = os.path.join(lookup_dir, atran_linelist)
         # If there is no pre-calculated ATRAN linelist in the default lookups directory,
@@ -4829,13 +4835,12 @@ class Spect(Resample):
         if not os.path.exists(atran_filename):
             atran_filename = os.path.join(working_dir, atran_linelist)
             self.log.stdinfo(f"Generating a linelist from ATRAN synthetic spectrum")
-            _, refplot_dict = self._make_atran_linelist(ext, filename=atran_filename, wv_band=user_wv_band,
-                                resolution=resolution, cenwave=cenwave, absorption=absorption, nlines=num_atran_lines,
-                                                        in_vacuo=in_vacuo)
-        return atran_filename, refplot_dict
+            _, refplot_dict = self._make_atran_linelist(ext, filename=atran_filename,
+                                                        model_params=model_params)
+        self.log.stdinfo(f"Using linelist {atran_filename}")
+        return wavecal.LineList(atran_filename), refplot_dict
 
-    def _make_atran_linelist(self, ext, filename, wv_band, resolution, cenwave,
-                             absorption, in_vacuo, nlines=50):
+    def _make_atran_linelist(self, ext, filename, model_params):
         """
         Generates line list from a convolved ATRAN spectrum: finds peaks,
         assings weights, divides spectrum into 10 wavelength bins,
@@ -4849,19 +4854,8 @@ class Spect(Resample):
             the extension
         filename: str
             full name of the linelist
-        wv_band: str
-            water vapour band (as percentile), or "header" (for header value)
-        resolution: int
-            resolution to which ATRAN model spectrum should be convolved
-        cenwave: float
-             *actual* central wavelength of the observation
-        absorption: bool
-            is it wavecal from absorption features?
-        in_vacuo: bool
-            calibrating to wavelengths in vacuum?
-        nlines: int
-            maximum number of highest-weight lines in the ATRAN spectrum to
-            be included in the generated linelist
+        model_params: dict
+         A dictionary of observation parameters generated by _get_model_params() function.
 
         Returns
         -------
@@ -4871,13 +4865,10 @@ class Spect(Resample):
             a dictionary containing data for the reference plot
         """
 
-        atran_spec, sampling = self._get_convolved_atran(ext, wv_band=wv_band,
-                                                         resolution=resolution, cenwave=cenwave)
-        site, alt, start_wvl, end_wvl, _, wv_content = \
-            self._get_atran_model_params(ext, user_wv_band=wv_band, cenwave=cenwave)
+        atran_spec, sampling = self._get_convolved_atran(ext, model_params=model_params)
 
         inverse_atran_spec = 1 - atran_spec[:,1]
-        fwhm = (cenwave / resolution) * (1 / sampling)
+        fwhm = (model_params["cenwave"] / model_params["resolution"]) * (1 / sampling)
         peaks, properties = find_peaks(inverse_atran_spec, prominence=0.001, width=(None,5*fwhm))
         weights = properties["prominences"] / properties["widths"]
         peaks_with_weights = np.vstack([peaks,weights]).T
@@ -4925,7 +4916,7 @@ class Spect(Resample):
         # within each of 10 wavelenght bins.
         nbins = 10
         best_peaks = trim_peaks(peaks_with_weights, inverse_atran_spec.shape[0], nbins=nbins,
-                                nlargest=nlines//nbins, sort=True)
+                                nlargest=model_params["nlines"]//nbins, sort=True)
         # Pinpoint peak positions
         final_peaks, peak_values = pinpoint_peaks(inverse_atran_spec, peaks=best_peaks[:,0],
                                                   halfwidth=1, keep_bad=True)
@@ -4943,14 +4934,14 @@ class Spect(Resample):
                               [p%1 * sampling for p in atran_linelist[:,0]]
         atran_linelist = atran_linelist[np.argsort(atran_linelist[:,0])]
 
-        if absorption:
+        if model_params["absorption"]:
             atran_linelist[:,1] = 1 - atran_linelist[:,1]
 
-        header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm   \n"
+        header = (f"Sky emission line list: {model_params['start_wvl']:.0f}-{model_params['end_wvl']:.0f}nm   \n"
             "Generated from ATRAN synthetic spectrum (Lord, S. D., 1992, NASA Technical Memorandum 103957) \n"
             "Model parameters: \n"
-            f"Obs altitude: {alt}, Obs latitude: 39 degrees,\n"
-            f"Water vapor overburden: {wv_content*1000:.0f} microns, Number of atm. layers: 2,\n"
+            f"Obs altitude: {model_params['alt']}, Obs latitude: 39 degrees,\n"
+            f"Water vapor overburden: {model_params['wv_content']*1000:.0f} microns, Number of atm. layers: 2,\n"
             "Zenith angle: 48 deg, Wavelength range: 1.0 - 6.0 microns, Smoothing R:0 \n"
             "units nanometer\n"
             "wavelengths IN VACUUM")
@@ -4959,15 +4950,20 @@ class Spect(Resample):
         # Create data for reference plot using the convolved spectrum and the line
         # list generated here
         refplot_dict = self._make_refplot_data(ext=ext, refplot_spec=atran_spec,
-                                refplot_linelist=atran_linelist[:,[0,1]], wv_band=wv_band,
-                                resolution=resolution, cenwave=cenwave, absorption=absorption,
-                                               in_vacuo=in_vacuo)
+                                refplot_linelist=atran_linelist[:,[0,1]], model_params=model_params)
         return atran_linelist[:,0], refplot_dict
 
-    def _get_convolved_atran(self, ext, wv_band, resolution, cenwave):
+    def _get_convolved_atran(self, ext, model_params):
         """
         Reads a section of an appropriate ATRAN model spectrum file,
         convolves the spectrum to the resolution of the observation.
+
+        Parameters
+        ----------
+        ext: single-slice AstroData
+            the extension
+        model_params: dict
+         A dictionary of observation parameters generated by _get_model_params() function.
 
         Returns
         -------
@@ -4978,23 +4974,22 @@ class Spect(Resample):
         """
         path = list(atran_models.__path__).pop()
 
-        site, alt, start_wvl, end_wvl, spec_range, wv_content = \
-            self._get_atran_model_params(ext, user_wv_band=wv_band, cenwave=cenwave)
         atran_model_filename = os.path.join(path,
                     'atran_{}_850-6000nm_wv{:.0f}_za48_r0.dat'
-                                            .format(site,wv_content*1000))
+                                            .format(model_params["site"],
+                                                    model_params["wv_content"]*1000))
         # sampling of the ATRAN model spectra (nm)
         sampling = 0.01
         # Starting wavelength of the ATRAN spectrum (nm)
         spec_start_wvl = 850
-        start_row = int((start_wvl - spec_start_wvl) / sampling)
-        nrows = int(spec_range / sampling)
+        start_row = int((model_params["start_wvl"] - spec_start_wvl) / sampling)
+        nrows = int(model_params["spec_range"] / sampling)
         # Read the model spectrum within observation's spec. range
         atran_spec = np.loadtxt(atran_model_filename, skiprows=start_row,
                                       max_rows=nrows+1)
         # Smooth the atran spectrum with a Gaussian with a constant FWHM value,
         # where FWHM = cenwave / resolution
-        fwhm = (cenwave/ resolution) * (1 / sampling)
+        fwhm = (model_params["cenwave"]/ model_params["resolution"]) * (1 / sampling)
         gauss_kernel = Gaussian1DKernel(fwhm / 2.35) # std = FWHM / 2.35
         atran_spec[:,1] = convolve(atran_spec[:,1], gauss_kernel,
                                      boundary='extend')
@@ -5002,9 +4997,14 @@ class Spect(Resample):
         return atran_spec, sampling
 
 
-    def _make_refplot_data(self, ext, wv_band, resolution, cenwave, absorption, in_vacuo,
-                           refplot_linelist, refplot_spec=None, refplot_name=None,
-                           refplot_y_axis_label=None):
+    def _show_refplot(self, ext):
+        """
+        Reference plots are implemented for the wavecal from sky lines
+        """
+        return False if 'ARC' in ext.tags else True
+
+    def _make_refplot_data(self, ext, refplot_linelist, config=None, model_params=None,
+                           refplot_spec=None, refplot_name=None, refplot_y_axis_label=None):
         """
         Generate data for the reference plot (reference spectrum, reference plot name, and
         the label for the y-axis), depending on the type of spectrum used for wavelength calibration,
@@ -5014,16 +5014,11 @@ class Spect(Resample):
         ----------
         ext: single-slice AstroData
             the extension
-        wv_band: str
-            water vapour band (as percentile), or "header" (for header value)
-        resolution: int
-            resolution to which ATRAN model spectrum should be convolved
-        cenwave: float
-             *actual* central wavelength of the observation
-        absorption: bool
-            is it wavecal from absorption features?
-        in_vacuo: bool
-            calibrating to wavelengths in vacuum?
+        model_params: dict or None
+         A dictionary of observation parameters generated by _get_model_params() function.
+         Either model_params or config must be not None
+        config: Config-like object containing parameters or None
+            Either model_params or config must be not None
         refplot_linelist: LineList object or a 2-column nd-array with wavelengths
                 (nm) and line intensities
         refplot_spec: 2d-array or None
@@ -5044,20 +5039,20 @@ class Spect(Resample):
         "refplot_y_axis_label" : reference plot y-axis label string
         """
 
-        if 'ARC' in ext.tags:
-            # Reference plots for arc spectra are not implemented
-            return None
+        if config is None and model_params is None:
+            raise ValueError('Either "config" or "model_params" must be not None')
+        if model_params is None:
+            model_params = self._get_model_params(ext, config)
+        resolution = model_params["resolution"]
+        absorption = model_params["absorption"]
 
-        else:
-            # Display reference plots when doing wavecal from skylines
-            if absorption or ext.central_wavelength(asMicrometers=True) >= 2.8:
-                site, alt, start_wvl, end_wvl, _, wv_content = \
-                self._get_atran_model_params(ext, user_wv_band=wv_band, cenwave=cenwave)
-                # Use ATRAN models for generating reference plots for wavecal from
-                # sky absorption in science spectrum, or from sky emission in L and M
+        if self._show_refplot(ext):
+            # Use ATRAN models for generating reference plots
+            # for wavecal from sky absorption lines in science spectrum,
+            # and for wavecal from sky emission lines in L- and M-bands
+            if self._uses_atran_linelist(absorption=absorption, cenwave=ext.central_wavelength(asMicrometers=True)):
                 if refplot_spec is None:
-                    refplot_spec, _ = self._get_convolved_atran(ext, wv_band=wv_band,
-                                                    resolution=resolution, cenwave=cenwave )
+                    refplot_spec, _ = self._get_convolved_atran(ext, model_params)
                 if refplot_y_axis_label is None:
                     if absorption:
                         refplot_y_axis_label = "Atmospheric transmission"
@@ -5066,10 +5061,10 @@ class Spect(Resample):
                         refplot_spec[:,1] = 1 - refplot_spec[:,1]
                 if refplot_name is None:
                     refplot_name = 'ATRAN spectrum (Alt={}, WV={:.1f}mm, AM=1.5, R={:.0f})'\
-                        .format(alt,wv_content,resolution)
+                        .format(model_params["alt"],model_params["wv_content"],resolution)
             else:
-                # In case of wavecal from the OH emission sky lines, we use
-                # a set of pre-calculated synthetic spectra for the reference plots
+                # Use a set of pre-calculated synthetic spectra for the reference plots
+                # for wavecal from the OH emission sky lines
                 if refplot_spec is None:
                     path = list(oh_synthetic_spectra.__path__).pop()
 
@@ -5103,7 +5098,7 @@ class Spect(Resample):
                     spec_range = 2 * self._get_cenwave_accuracy(ext) +\
                                  abs(ext.dispersion(asNanometers=True)) * npix
                     center_shift = (center - (npix//2 + first_non_zero_index)) * ext.dispersion(asNanometers=True)
-                    start_wvl = cenwave - (0.5 * spec_range) - center_shift
+                    start_wvl = model_params["cenwave"] - (0.5 * spec_range) - center_shift
                     end_wvl = start_wvl + spec_range
 
                     refplot_spec = refplot_spec[np.logical_and(refplot_spec[:,0] >= start_wvl,
@@ -5114,12 +5109,13 @@ class Spect(Resample):
                         refplot_name = 'Synthetic spectrum of night-sky OH emission (R={:.0f})'.format(R)
 
         if isinstance(refplot_linelist, wavecal.LineList):
-            # If the provided linelist is a LineList-type object, then it wasn't generated in this run.
+            # If the provided linelist is a LineList-type object, then it wasn't
+            # generated on-the-fly and its format has to be adjusted.
             # For the refplot use only line wavelengths, and determine
             # reference spectrum intensities at the positions of lines in the linelist
             # (this is needed to determine the line label positions).
             line_intens = []
-            line_wvls = refplot_linelist.wavelengths(in_vacuo=in_vacuo, units="nm")
+            line_wvls = refplot_linelist.wavelengths(in_vacuo=model_params["in_vacuo"], units="nm")
             for n, line in enumerate(line_wvls):
                 subtracted = refplot_spec[:,0] - line
                 min_index = np.argmin(np.abs(subtracted))
@@ -5132,10 +5128,55 @@ class Spect(Resample):
                 "refplot_name": refplot_name, "refplot_y_axis_label": refplot_y_axis_label}
 
 
-    def _get_atran_model_params(self, ext, user_wv_band, cenwave):
+    def _get_model_params(self, ext, config):
         """
-        Get the observation parameters needed to select the appropriate ATRAN model.
+        Get the observation parameters needed to select the appropriate
+        ATRAN (or other) model.
+
+        Parameters
+        ----------
+        ext: single-slice AstroData
+            the extension
+        config: Config-like object containing parameters
+
+        Returns
+        ----------
+        dict : all the parameters needed for ATRAN model selection and line
+        list generation:
+        "resolution" : resolution to which ATRAN model spectrum should be convolved (int)
+        "cenwave" : *actual* central wavelength of the observation (float)
+        "in_vacuo" : config["in_vacuo"]
+        "nlines" : maximum number of highest-weight lines in the ATRAN spectrum to
+            be included in the generated linelist (int)
+        "absorption" : are absorption features used for wavecal? (bool)
+        wv_content: float
+            WV band constraints (in mm of precipitable H2O at zenith)
+        site: str
+            observation site
+        alt: str
+            observatory altitude
+        start_wvl: float
+             start wavelength of the spectrum (nm) with a small buffer
+        end_wvl: float
+            start wavelength of the spectrum (nm) with a small buffer
+        spec_range: float
+            spectral range with buffer (nm)
         """
+
+        if config.get("resolution", None) is None:
+            resolution = round(self._get_resolution(ext),  -1)
+        else:
+            resolution = config["resolution"]
+
+        if config["central_wavelength"] is None:
+            cenwave = self._get_actual_cenwave(ext, asNanometers=True)
+        else:
+            cenwave = config["central_wavelength"]
+
+        in_vacuo = config["in_vacuo"]
+        num_atran_lines = config.get("num_atran_lines", 50)
+        absorption = config.get("absorption", False)
+
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         npix = ext.shape[dispaxis]
         dcenwave = self._get_cenwave_accuracy(ext)
@@ -5144,25 +5185,26 @@ class Spect(Resample):
         start_wvl = cenwave - (0.5 * spec_range)
         end_wvl = start_wvl + spec_range
         observatory = ext.phu['OBSERVAT']
-        if user_wv_band == "header":
-            raw_wv = ext.raw_wv()
+        param_wv_band = config.get("wv_band", "header")
+        if param_wv_band == "header":
+            wv_band = ext.raw_wv()
         else:
-            raw_wv = int(user_wv_band)
-        req_wv = ext.requested_wv()
+            wv_band = int(param_wv_band)
 
-        if raw_wv == 100:
+        if wv_band is None:
+            req_wv = ext.requested_wv()
+            self.log.stdinfo(f"Unknown RAWWV for this observation; \n"
+                f" using the constraint value for the requested WV band: '{req_wv}'-percentile")
+            wv_band = req_wv
+
+        if wv_band == 100:
             # a WV value to use for the case of RAWWV='Any'
             if observatory == 'Gemini-North':
-                wv_content = 5
+                wv_content = 5.
             elif observatory == 'Gemini-South':
-                wv_content = 10
+                wv_content = 10.
         else:
-            wv_content = qa_constraints.wvBands.get(observatory).get(str(raw_wv))
-
-        if wv_content is None:
-            self.log.stdinfo(f"Unknown RAWWV for this observation; \n"
-                             f" using the constraint value for the requested WV band: '{req_wv}'-percentile")
-            wv_content = qa_constraints.wvBands.get(observatory, {}).get(req_wv)
+            wv_content = qa_constraints.wvBands.get(observatory).get(str(wv_band))
 
         if observatory == 'Gemini-North':
             site = 'mk'
@@ -5170,7 +5212,10 @@ class Spect(Resample):
         elif observatory == 'Gemini-South':
             site = 'cp'
             alt = "8980ft"
-        return site, alt, start_wvl, end_wvl, spec_range, wv_content
+        return {"site": site, "alt": alt, "start_wvl": start_wvl, "end_wvl": end_wvl,
+                "spec_range": spec_range, "wv_content": wv_content,
+                "resolution": resolution, "cenwave": cenwave, "in_vacuo": in_vacuo,
+                "absorption": absorption, "nlines": num_atran_lines}
 
 
     def _get_resolution(self, ext):
@@ -5218,7 +5263,7 @@ class Spect(Resample):
         return actual_cenwave
 
 
-    def _get_cenwave_accuracy(self, ext=None):
+    def _get_cenwave_accuracy(self, ext):
         # Accuracy of central wavelength (nm) for a given instrument/setup.
         return 10
 

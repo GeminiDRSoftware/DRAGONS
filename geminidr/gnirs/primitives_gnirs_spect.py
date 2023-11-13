@@ -395,14 +395,13 @@ class GNIRSSpect(Spect, GNIRS):
         adinputs = super().determineDistortion(adinputs, **params)
         return adinputs
 
-    def _get_arc_linelist(self, ext, config, waves=None):
+    def _get_arc_linelist(self, ext, waves=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
 
         is_lowres = ext.disperser(pretty=True).startswith('10') or \
                     (ext.disperser(pretty=True).startswith('32') and
                         ext.camera(pretty=True).startswith('Short'))
-        refplot_dict = None
 
         if 'ARC' in ext.tags:
             if 'Xe' in ext.object():
@@ -416,23 +415,14 @@ class GNIRSSpect(Spect, GNIRS):
                 raise ValueError(f"No default line list found for {ext.object()}-type arc. Please provide a line list.")
 
         else:
-            # In case of 1) wavecal from sky absorption lines in object spectrum,
-            # or 2) wavecal from sky emission lines in L- and M-band, the line list is
-            # generated on the fly using the ATRAN model with the params closest to the
-            # frame's observing conditions, and convolved to the resolution of the observation.
-            if config["absorption"] is True or \
-                    ext.central_wavelength(asMicrometers=True) >= 2.8:
-                linelist, refplot_dict = super()._get_atran_linelist(ext=ext, config=config)
-                self.log.stdinfo(f"Using linelist {linelist}")
-                return wavecal.LineList(linelist), refplot_dict
             # In case of wavecal from sky OH emission use this line list:
-            else:
-                linelist = 'nearIRsky.dat'
+            linelist = 'nearIRsky.dat'
 
         self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
 
-        return wavecal.LineList(filename), refplot_dict
+        return wavecal.LineList(filename)
+
 
     def _get_cenwave_accuracy(self, ext):
         # Accuracy of central wavelength (nm) for a given instrument/setup.

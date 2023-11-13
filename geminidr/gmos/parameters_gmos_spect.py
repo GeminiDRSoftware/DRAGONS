@@ -41,3 +41,6 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         self.order = 3
         self._fields["central_wavelength"].max = 1200
         del self.absorption
+        del self.wv_band
+        del self.resolution
+        del self.num_atran_lines
