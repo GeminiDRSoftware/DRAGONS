@@ -380,7 +380,7 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
             else:
                 config=ui_params.toDict()
                 refplot_data = p._make_refplot_data(ext=ext, refplot_linelist=input_data["linelist"],
-                                config=config, absorption=config.get("absorption"), in_vacuo=config["in_vacuo"])
+                                config=config)
                 if refplot_data is not None:
                     input_data.update(refplot_data)
 

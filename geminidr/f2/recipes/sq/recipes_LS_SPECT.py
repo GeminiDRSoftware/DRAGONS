@@ -56,6 +56,7 @@ def  makeWavecalFromSkyEmission(p):
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
     p.flatCorrect()
+    p.stackFrames()
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
     p.determineDistortion(debug=True)

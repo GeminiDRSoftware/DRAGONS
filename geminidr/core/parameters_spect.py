@@ -169,13 +169,13 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                             "80": "80%-ile",
                                             "100": "Any",
                                             "header": "header value"},
-                                   default="header")
+                                   default="header", optional=False)
     resolution = config.RangeField("Resolution of the observation", int, None, min=10, max=100000,
                                          optional=True)
     combine_method = config.ChoiceField("Combine method to use in 1D spectrum extraction", str,
                                    allowed={"mean": "mean",
                                             "median": "median"},
-                                   default="mean")
+                                   default="mean", optional=False)
     def setDefaults(self):
         del self.function
         del self.grow
