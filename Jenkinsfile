@@ -10,7 +10,7 @@
  * - Warnings NG
  */
 
-@Library('dragons_ci@master') _
+// @Library('dragons_ci@master') _
 
 // Change these to automatically skip steps
 def runtests_gmosls  = 1  // 1 to enable
