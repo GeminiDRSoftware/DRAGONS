@@ -10,7 +10,7 @@
  * - Warnings NG
  */
 
-@Library('dragons_ci@master') _
+// @Library('dragons_ci@master') _
 
 pipeline {
 
@@ -37,7 +37,8 @@ pipeline {
 
         stage ("Prepare"){
             steps{
-                sendNotifications 'STARTED'
+                echo "Step would notify STARTED when dragons_ci is available"
+                // sendNotifications 'STARTED'
             }
         }
 
@@ -249,11 +250,13 @@ pipeline {
     }
     post {
         success {
-            sendNotifications 'SUCCESSFUL'
+            echo "Step would notify SUCCESSFUL when dragons_ci is available"
+            // sendNotifications 'SUCCESSFUL'
 //            deleteDir() /* clean up our workspace */
         }
         failure {
-            sendNotifications 'FAILED'
+            echo "Step would notify FAILED when dragons_ci is available"
+            // sendNotifications 'FAILED'
 //            deleteDir() /* clean up our workspace */
         }
         always {
