@@ -33,12 +33,13 @@ fi
 echo ${PATH}
 which conda
 conda clean -i -t -y  # in case of corrupt package cache from previous run
-conda update --quiet conda
 # These 2 channels need removing if testing old branches has reinstated them:
 conda config --remove channels http://ssb.stsci.edu/astroconda || :
 conda config --remove channels http://astroconda.gemini.edu/public/noarch || :
+conda config --remove channels http://astroconda.gemini.edu/public || :
 conda config --add channels conda-forge
-conda config --add channels http://astroconda.gemini.edu/public
+conda config --add channels http://jastro.org/astroconda/public
 conda config --set channel_priority true
 conda config --set restore_free_channel false
+conda update --quiet conda
 conda env list
