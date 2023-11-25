@@ -279,7 +279,7 @@ class Spect(Resample):
 
     def adjustWCSToReference(self, adinputs=None, **params):
         """
-        Compute offsets along the slit by cross-correlation, or use offset
+        Compute offsets along the slit using the WCS, or use offset
         from the headers (QOFFSET). The computed offset is stored in the
         SLITOFF keyword.
 
@@ -289,10 +289,13 @@ class Spect(Resample):
             Wavelength calibrated 1D or 2D spectra.
         suffix : str
             Suffix to be added to output files
-        method : str ['correlation' | 'offsets']
-            Method to use to compute offsets. 'correlation' uses a
-            correlation of the slit profiles (the 2d images stacked
-            on the dispersion axis), 'offsets' uses the QOFFSET keyword.
+        method : str ['sources_wcs' | 'sources_offsets' | 'offsets']
+            Method to use to compute offsets.
+               - 'sources_wcs' matches sources using the WCS
+               - 'sources_offset' matches sources using the telescope offset
+               - 'offsets' uses the telescope offsets only (QOFFSET keyword).
+        fallback : str ['sources_offsets' | 'offsets']
+            Fallback method for computing offsets; same as for `method` above.
         region: str / None
             pixel region for determining slit profile for cross-correlation
         tolerance : float
@@ -314,118 +317,131 @@ class Spect(Resample):
                         "input images are required")
             return adinputs
 
-        if not all(len(ad) == 1 for ad in adinputs):
-            raise OSError("All input images must have only one extension")
+        if len(set([len(ad) for ad in adinputs])) != 1:
+            raise ValueError("All inputs must have the same number of extensions")
 
         if {len(ad[0].shape) for ad in adinputs} != {2}:
-            raise OSError("All inputs must be two dimensional")
+            raise ValueError("All inputs must be two dimensional")
 
         # Use first image in list as reference
         refad = adinputs[0]
-        ref_sky_model = am.get_named_submodel(refad[0].wcs.forward_transform, 'SKY').copy()
-        ref_sky_model.name = None
+        ref_sky_model_dict = {i: am.get_named_submodel(
+                              refad[i].wcs.forward_transform, 'SKY').copy()
+                              for i in range(len(refad))}
+        for model in ref_sky_model_dict.values():
+            model.name = None
         log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
         if any('sources' in m for m in methods):
-            ref_profile = tracing.stack_slit(refad[0], section=region)
+            ref_profile_dict = {i: tracing.stack_slit(refad[i], section=region)
+                                for i in range(len(refad))}
         if 'sources_wcs' in methods:
+            # World coords are the same for each slit.
             world_coords = (refad[0].central_wavelength(asNanometers=True),
                             refad.target_ra(), refad.target_dec())
-            ref_coords = refad[0].wcs.backward_transform(*world_coords)
+            # Reference coords are not, though.
+            ref_coords_dict = {k: refad[k].wcs.backward_transform(
+                               *world_coords)
+                               for k in range(len(refad))}
 
         # The reference doesn't go through the loop so update it now
         gt.mark_history(adinputs[0], primname=self.myself(), keyword=timestamp_key)
         adinputs[0].update_filename(suffix=params["suffix"], strip=True)
 
         for ad in adinputs[1:]:
-            for method in methods:
-                if method is None:
-                    break
+            for iext, ext in enumerate(ad):
+                for method in methods:
+                    if method is None:
+                        break
 
-                adjust = False
-                dispaxis = 2 - ad[0].dispersion_axis()  # python sense
+                    adjust = False
+                    dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
-                # Calculate offset determined by header (WCS or offsets)
-                if method == 'sources_wcs':
-                    coords = ad[0].wcs.backward_transform(*world_coords)
-                    hdr_offset = ref_coords[dispaxis] - coords[dispaxis]
-                elif dispaxis == 1:
-                    hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
-                else:
-                    hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
-
-                # Cross-correlate to find real offset and compare. Only look
-                # for a peak in the range defined by "tolerance".
-                if 'sources' in method:
-                    profile = tracing.stack_slit(ad[0], section=region)
-                    corr = np.correlate(ref_profile, profile, mode='full')
-                    expected_peak = corr.size // 2 + hdr_offset
-                    peaks, snrs = tracing.find_wavelet_peaks(corr, widths=np.arange(3, 20),
-                                                             reject_bad=False, pinpoint_index=0)
-                    if peaks.size:
-                        if tolerance is None:
-                            found_peak = peaks[snrs.argmax()]
-                        else:
-                            # Go down the peaks in order of decreasing SNR
-                            # until we find one within "tolerance"
-                            found_peak = None
-                            for peak, snr in sorted(zip(peaks, snrs),
-                                                    key=lambda pair: pair[1],
-                                                    reverse=True):
-                                if (abs(peak - expected_peak) <=
-                                        tolerance / ad.pixel_scale()):
-                                    found_peak = peak
-                                    break
-                        if found_peak:
-                            # found_peak = tracing.pinpoint_peaks(corr, None, found_peak)[0]
-                            offset = found_peak - ref_profile.shape[0] + 1
-                            adjust = True
-                        else:
-                            log.warning("No cross-correlation peak found for "
-                                        f"{ad.filename} within tolerance")
+                    # Calculate offset determined by header (WCS or offsets)
+                    if method == 'sources_wcs':
+                        coords = ad[iext].wcs.backward_transform(
+                            *world_coords)
+                        hdr_offset = ref_coords_dict[iext][dispaxis] - coords[dispaxis]
+                    elif dispaxis == 1:
+                        hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
                     else:
-                        log.warning(f"{ad.filename}: Cross-correlation failed")
+                        hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
 
-                elif method == 'offsets':
-                    offset = hdr_offset
-                    adjust = True
-
-                if adjust:
-                    wcs = ad[0].wcs
-                    frames = wcs.available_frames
-                    if integer_offsets:
-                        offset = np.round(offset)
-                    for input_frame, output_frame in zip(frames[:-1], frames[1:]):
-                        t = wcs.get_transform(input_frame, output_frame)
-                        try:
-                            sky_model = am.get_named_submodel(t, 'SKY')
-                        except IndexError:
-                            pass
+                    # Cross-correlate to find real offset and compare. Only look
+                    # for a peak in the range defined by "tolerance".
+                    if 'sources' in method:
+                        profile = tracing.stack_slit(ad[iext], section=region)
+                        corr = np.correlate(ref_profile_dict[iext],
+                                            profile, mode='full')
+                        expected_peak = corr.size // 2 + hdr_offset
+                        peaks, snrs = tracing.find_wavelet_peaks(
+                            corr, widths=np.arange(3, 20),
+                            reject_bad=False, pinpoint_index=0)
+                        if peaks.size:
+                            if tolerance is None:
+                                found_peak = peaks[snrs.argmax()]
+                            else:
+                                # Go down the peaks in order of decreasing SNR
+                                # until we find one within "tolerance"
+                                found_peak = None
+                                for peak, snr in sorted(zip(peaks, snrs),
+                                                        key=lambda pair: pair[1],
+                                                        reverse=True):
+                                    if (abs(peak - expected_peak) <=
+                                            tolerance / ad.pixel_scale()):
+                                        found_peak = peak
+                                        break
+                            if found_peak:
+                                # found_peak = tracing.pinpoint_peaks(corr, None, found_peak)[0]
+                                offset = found_peak - ref_profile_dict[iext].shape[0] + 1
+                                adjust = True
+                            else:
+                                log.warning("No cross-correlation peak found for "
+                                            f"{ad.filename} within tolerance")
                         else:
-                            new_sky_model = models.Shift(offset) | ref_sky_model
-                            new_sky_model.name = 'SKY'
-                            ad[0].wcs.set_transform(input_frame, output_frame,
-                                                    t.replace_submodel('SKY', new_sky_model))
-                            break
+                            log.warning(f"{ad.filename}: Cross-correlation failed")
+
+                    elif method == 'offsets':
+                        offset = hdr_offset
+                        adjust = True
+
+                    if adjust:
+                        wcs = ad[iext].wcs
+                        frames = wcs.available_frames
+                        if integer_offsets:
+                            offset = np.round(offset)
+                        for input_frame, output_frame in zip(frames[:-1], frames[1:]):
+                            t = wcs.get_transform(input_frame, output_frame)
+                            try:
+                                sky_model = am.get_named_submodel(t, 'SKY')
+                            except IndexError:
+                                pass
+                            else:
+                                new_sky_model = models.Shift(offset) | ref_sky_model_dict[iext]
+                                new_sky_model.name = 'SKY'
+                                ad[iext].wcs.set_transform(
+                                    input_frame, output_frame, t.replace_submodel(
+                                        'SKY', new_sky_model))
+                                break
+                        else:
+                            raise OSError("Cannot find 'SKY' model in WCS for "
+                                          f"{ad.filename}")
+
+                        log.stdinfo("Offset for image {} (ext {}) : {:.2f} pixels"
+                                    .format(ad.filename, ext.id, offset))
+                        ad.phu['SLITOFF'] = offset
+                        break
+
+                if not adjust:
+                    no_offset_msg = f"Cannot determine offset for {ad.filename}"
+                    if 'sq' in self.mode:
+                        raise OSError(no_offset_msg)
                     else:
-                        raise OSError("Cannot find 'SKY' model in WCS for "
-                                      f"{ad.filename}")
-
-                    log.stdinfo("Offset for image {} : {:.2f} pixels"
-                                .format(ad.filename, offset))
-                    ad.phu['SLITOFF'] = offset
-                    break
-
-            if not adjust:
-                no_offset_msg = f"Cannot determine offset for {ad.filename}"
-                if 'sq' in self.mode:
-                    raise OSError(no_offset_msg)
+                        log.warning(no_offset_msg)
                 else:
-                    log.warning(no_offset_msg)
-            else:
-                # Timestamp and update filename
-                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-                ad.update_filename(suffix=params["suffix"], strip=True)
+                    # Timestamp and update filename
+                    gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                    ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
 
