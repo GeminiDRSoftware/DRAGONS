@@ -163,3 +163,67 @@ class CrossDispersed(Spect, Preprocess):
                 log.warning(f"No rectification model found for {ad.filename}")
 
         return adoutputs
+
+    def resampleToCommonFrame(self, adinputs=None, **params):
+        """
+        Resample 1D or 2D spectra on a common frame, and optionally transform
+        them so that the relationship between them and their respective
+        wavelength calibration is linear.
+
+        For cross-dispersed spectra, it isn't obvious what value the parameter
+        `force_linear=False` brings. It's easy to create a linear scale for the
+        entire wavelength range from any of the individual orders (picking the
+        one with the smallest dispersion to avoid undersampling the bluer orders),
+        but it isn't clear that we can A) create a non-linear scale from any
+        arbitrary order or B) come up with a good inverse for it. There's also
+        no particular time saving with `force_linear=False`, as it still requires
+        interpolating all but one of the orders. For these reason, the decision
+        was made to remove the choice of `force_linear` for cross-dispersed data.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Wavelength calibrated 1D or 2D spectra.
+        suffix : str
+            Suffix to be added to output files.
+        w1 : float
+            Wavelength of first pixel (nm). See Notes below.
+        w2 : float
+            Wavelength of last pixel (nm). See Notes below.
+        dw : float
+            Dispersion (nm/pixel). See Notes below.
+        npix : int
+            Number of pixels in output spectrum. See Notes below.
+        conserve : bool
+            Conserve flux (rather than interpolate)?
+        order : int
+            order of interpolation during the resampling
+        trim_spatial : bool
+            Output data will cover the intersection (rather than union) of
+            the inputs' spatial coverage?
+        trim_spectral: bool
+            Output data will cover the intersection (rather than union) of
+            the inputs' wavelength coverage?
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
+
+        Notes
+        -----
+        If ``w1`` or ``w2`` are not specified, they are computed from the
+        individual spectra: if ``trim_data`` is True, this is the intersection
+        of the spectra ranges, otherwise this is the union of all ranges,
+
+        If ``dw`` or ``npix`` are specified, the spectra are linearized.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Linearized 1D spectra.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        return super().resampleToCommonFrame(adinputs=adinputs, **params)

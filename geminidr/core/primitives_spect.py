@@ -3783,7 +3783,7 @@ class Spect(Resample):
         conserve = params["conserve"]
         trim_spatial = params["trim_spatial"]
         trim_spectral = params["trim_spectral"]
-        force_linear = params["force_linear"]
+        force_linear = params.get("force_linear", True)
         dq_threshold = params["dq_threshold"]
 
         # Check that all ad objects are either 1D or 2D
@@ -3795,7 +3795,6 @@ class Spect(Resample):
             raise ValueError('inputs must have the same dimension')
         ndim = ndim.pop()
 
-        # For the 2D case check that all ad objects have only 1 extension
         if ndim > 1:
             adjust_key = self.timestamp_keys['adjustWCSToReference']
             if len(adinputs) > 1 and not all(adjust_key in ad.phu
@@ -3803,8 +3802,6 @@ class Spect(Resample):
                 log.warning("2D spectral images should be processed by "
                             "adjustWCSToReference if accurate spatial "
                             "alignment is required.")
-            if not all(len(ad) == 1 for ad in adinputs):
-                raise ValueError('inputs must have only 1 extension')
             dispaxis = {ad[0].dispersion_axis() for ad in adinputs}
             if len(dispaxis) > 1:  # this shouldn't happen!
                 raise ValueError('Not all inputs have the same dispersion axis')
@@ -3812,14 +3809,21 @@ class Spect(Resample):
             dispaxis = ndim - 1 - dispaxis_wcs  # python sense
             # Store these values for later!
             refad = adinputs[0]
-            ref_coords = refad[0].wcs(*((dim-1)/2 for dim in refad[0].shape))
-            ref_pixels = [np.asarray(ad[0].wcs.invert(*ref_coords)[::-1])
-                          for ad in adinputs]
+            ref_coords_dict = {i: refad[i].wcs(*((dim-1)/2
+                                for dim in refad[i].shape))
+                                for i in range(len(refad))}
+            ref_pixels_dict = {}
+            all_corners_dict = {}
+            for i in range(len(refad)):
+                ref_pixels_dict[i] = [np.asarray(ad[i].wcs.invert(
+                    *ref_coords_dict[i])[::-1]) for ad in adinputs]
             # Locations in frame of reference AD. The spectral axis is
             # unimportant here.
-            all_corners = [(np.array(at.get_corners(ad[0].shape)) -
-                            r + ref_pixels[0]).T.astype(int)
-                           for ad, r in zip(adinputs, ref_pixels)]
+            for j in range(len(refad)):
+                all_corners_dict[j] = [(np.array(at.get_corners(ad[j].shape)) -
+                                       r + ref_pixels_dict[j][0]).T.astype(int)
+                                       for ad, r in zip(adinputs,
+                                                        ref_pixels_dict[j])]
 
         # If only one variable is missing we compute it from the others
         nparams = 4 - [w1, w2, dw, npix].count(None)
@@ -3836,56 +3840,75 @@ class Spect(Resample):
 
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix), and compute the final bounds (w1out, w2out)
-        # if there are not provided
+        # if they are not provided
         info = []
         w1out, w2out, dwout, npixout = w1, w2, dw, npix
-        for ad in adinputs:
+        # Create empty arrays to hold the minimum/maximum wavelengths for each
+        # extension in each ad
+        w1_arr = np.empty((len(adinputs), len(adinputs[0])))
+        w2_arr = np.empty_like(w1_arr)
+        for i, ad in enumerate(adinputs):
             adinfo = []
-            for ext in ad:
+            for iext, ext in enumerate(ad):
                 try:
                     model_info = _extract_model_info(ext)
                 except ValueError:
                     raise ValueError("Cannot determine wavelength solution "
                                      f"for {ad.filename} extension {ext.id}.")
                 adinfo.append(model_info)
+                w1_arr[i, iext] = model_info['w1']
+                w2_arr[i, iext] = model_info['w2']
 
-                if w1 is None:
-                    if w1out is None:
-                        w1out = model_info['w1']
-                    elif trim_spectral:
-                        w1out = max(w1out, model_info['w1'])
-                    else:
-                        w1out = min(w1out, model_info['w1'])
-
-                if w2 is None:
-                    if w2out is None:
-                        w2out = model_info['w2']
-                    elif trim_spectral:
-                        w2out = min(w2out, model_info['w2'])
-                    else:
-                        w2out = max(w2out, model_info['w2'])
             info.append(adinfo)
+
+        # The outer min()/max() works to find the lowest/highest value from all
+        # extensions, after the inner .max()/.min() has found the appropriate
+        # value for each array across all input ad objects
+        if trim_spectral:
+            # Go for the shortest interval in each extension
+            if w1 is None:
+                w1out = min(w1_arr.max(axis=0))
+            if w1 is None:
+                w2out = max(w2_arr.min(axis=0))
+        else:
+            # Go for the longest interval
+            if w1 is None:
+                w1out = min(w1_arr.min(axis=0))
+            if w2 is None:
+                w2out = max(w2_arr.max(axis=0))
 
         if trim_spectral:
             if w1 is None:
-                w1out = info[0][0]['w1']
+                w1out = min(w1_arr[0])
             if w2 is None:
-                w2out = info[0][0]['w2']
+                w2out  = max(w2_arr[0])
             if w1 is None or w2 is None:
                 log.fullinfo("Trimming data to size of reference spectra")
+
+        # If more than one extension, find the one with the wavelength model
+        # with the smallest dispersion. If linearizing the wavelength scale,
+        # using the smallest dispersion stops undersampling the blue orders
+        if len(info[0]) > 1:
+            dispersions = np.array([info[0][i]['dw'] for i in range(len(refad))])
+            small_disp_index = dispersions.argmin()
 
         # linearize spectra only if the grid parameters are specified
         linearize = force_linear or npix is not None or dw is not None
         if linearize:
             if npixout is None and dwout is None:
                 # if both are missing, use the reference spectrum
-                dwout = info[0][0]['dw']
-
+                index = small_disp_index if len(info[0]) > 1 else 0
+                dwout = info[0][index]['dw']
             if npixout is None:
                 npixout = int(np.ceil((w2out - w1out) / dwout)) + 1
             elif dwout is None:
                 dwout = (w2out - w1out) / (npixout - 1)
 
+        # For cross-dispersed spectra, there is no gaurantee than a non-linear
+        # wavelength scale for a single order will cover the range of the entire
+        # observation, or that its inverse will be good. Therefore, when calling
+        # this primitive for cross-dispersed spectra, it is forced to use a
+        # linear model.
         if linearize:
             new_wave_model = models.Scale(dwout) | models.Shift(w1out)
         else:
@@ -3893,48 +3916,65 @@ class Spect(Resample):
             # spectrum grid. Due to imperfections in the Chebyshev inverse
             # we check whether the wavelength limits are the same as the
             # reference spectrum.
-            wave_model_ref = info[0][0]['wave_model'].copy()
+            index = small_disp_index if len(info[0]) > 1 else 0
+            wave_model_ref = info[0][-1]['wave_model'].copy()
             wave_model_ref.name = None
             limits = wave_model_ref.inverse([w1out, w2out])
-            if info[0][0]['w1'] == w1out:
+            if info[0][index]['w1'] == w1out:
                 limits[0] = round(limits[0])
-            if info[0][0]['w2'] == w2out:
+            if info[0][index]['w2'] == w2out:
                 limits[1] = round(limits[1])
+                npixout = info[0][index]['npix']
             pixel_shift = int(np.ceil(limits.min()))
             new_wave_model = models.Shift(pixel_shift) | wave_model_ref
-            if info[0][0]['w2'] == w2out:
-                npixout = info[0][0]['npix']
+            if info[0][index]['w2'] == w2out:
+                npixout = info[0][index]['npix']
             else:
-               npixout = int(np.floor(new_wave_model.inverse([w1out, w2out]).max()) + 1)
+               npixout = int(np.floor(new_wave_model.inverse([w1out,
+                                                              w2out]).max()) + 1)
             dwout = (w2out - w1out) / (npixout - 1)
 
         new_wave_model.name = 'WAVE'
         if ndim == 1:
             new_wcs_model = new_wave_model
         else:
-            new_wcs_model = refad[0].wcs.forward_transform.replace_submodel('WAVE', new_wave_model)
+            new_wcs_model = refad[0].wcs.forward_transform.replace_submodel(
+                'WAVE', new_wave_model)
 
         # Now let's think about the spatial direction
         if ndim > 1:
+            origin_dict, output_shape_dict = {}, {}
             if trim_spatial:
+                mins_dict, maxs_dict = {}, {}
                 if ndim == 2:
-                    mins = [min(ac[dispaxis_wcs]) for ac in all_corners]
-                    maxs = [max(ac[dispaxis_wcs]) for ac in all_corners]
-                    origin = [max(mins)] * 2
-                    output_shape = [min(maxs) - max(mins) + 1] * 2
+                    for i in range(len(refad)):
+                        mins_dict[i] = [min(ac[dispaxis_wcs])
+                                        for ac in all_corners_dict[i]]
+                        maxs_dict[i] = [max(ac[dispaxis_wcs])
+                                        for ac in all_corners_dict[i]]
+                    for j in range(len(refad)):
+                        origin_dict[j] = [max(mins_dict[j])] * 2
+                        output_shape_dict[j] = [min(maxs_dict[j]) -
+                                                 max(mins_dict[j]) + 1] * 2
                 else:  # TODO: revisit!
                     # for cubes, treat the imaging plane like the Image version
                     # and trim to the reference, not the intersection
                     origin = [0] * ndim
                     output_shape = list(refad[0].shape)
             else:
-                origin = np.concatenate(all_corners, axis=1).min(axis=1)
-                output_shape = list(np.concatenate(all_corners, axis=1).max(axis=1) - origin + 1)
-            output_shape[dispaxis] = npixout
-            origin[dispaxis] = 0
+                for i in range(len(refad)):
+                    origin_dict[i] = list(np.concatenate(all_corners_dict[i],
+                                                    axis=1).min(axis=1))
+                    output_shape_dict[i] = list(np.concatenate(
+                        all_corners_dict[i], axis=1).max(axis=1) -
+                        origin_dict[i] + 1)
+
+            for i in range(len(refad)):
+                output_shape_dict[i][dispaxis] = npixout
+                origin_dict[i][dispaxis] = 0
         else:
-            origin = (0,)
-            output_shape = (npixout,)
+            origin_dict = {i: (0,) for i in range(len(adinputs[0]))}
+            output_shape_dict = {i: (npixout,) for i in range(len(adinputs[0]))}
 
         adoutputs = []
         for i, ad in enumerate(adinputs):
@@ -3956,8 +3996,8 @@ class Spect(Resample):
                     resampling_model = wave_resample
                 else:
                     spatial_offset = reduce(
-                        Model.__and__, [models.Shift(r0 - ref_pixels[i][j])
-                                        for j, r0 in enumerate(ref_pixels[0]) if j != dispaxis])
+                        Model.__and__, [models.Shift(r0 - ref_pixels_dict[iext][i][j])
+                                        for j, r0 in enumerate(ref_pixels_dict[iext][0]) if j != dispaxis])
                     if dispaxis == 0:
                         resampling_model = spatial_offset & wave_resample
                     else:
@@ -3991,7 +4031,8 @@ class Spect(Resample):
                 new_ext = transform.resample_from_wcs(
                     ext, 'resampled', subsample=subsample,
                     attributes=attributes, conserve=this_conserve,
-                    origin=origin, output_shape=output_shape,
+                    origin=origin_dict[iext],
+                    output_shape=output_shape_dict[iext],
                     threshold=dq_threshold)
                 if iext == 0:
                     ad_out = new_ext
@@ -4810,6 +4851,7 @@ class Spect(Resample):
                     continue
 
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
+                in_coords_ph, ref_coords_ph = get_pinhole_traces()
 
                 # Create pairs of slit edge models by zipping consecutive
                 # pairs of entries from the table.
