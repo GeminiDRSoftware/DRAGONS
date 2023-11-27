@@ -234,9 +234,8 @@ class GNIRSSpect(Spect, GNIRS):
                             # Use a lower min_snr for the regions with large illumination gradient,
                             # and for the region of "comb"-like lines beyond 3.8 um
                             if (disp.startswith('111') and 3.50 <= cenwave) or \
-                                    (((disp.startswith('111') and cam.startswith('Short')) or
-                                    (disp.startswith('32') and cam.startswith('Long')))
-                                    and 3.80 <= cenwave):
+                                (disp.startswith('111') and cam.startswith('Short') and 3.80 <= cenwave) or \
+                                (disp.startswith('32') and cam.startswith('Long') and 3.65 <= cenwave):
                                 params["min_snr"] = 1
                             else:
                                 params["min_snr"] = 10

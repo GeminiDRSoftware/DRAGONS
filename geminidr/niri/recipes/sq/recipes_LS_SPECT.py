@@ -51,9 +51,8 @@ def  makeWavecalFromSkyEmission(p):
 
     p.prepare()
     p.addDQ()
-    p.addVAR(read_noise=True)
     p.ADUToElectrons()
-    p.addVAR(poisson_noise=True)
+    p.addVAR(poisson_noise=True, read_noise=True)
     p.nonlinearityCorrect()
     p.flatCorrect()
     p.stackFrames()
@@ -76,9 +75,9 @@ def  makeWavecalFromSkyAbsorption(p):
     """
     p.prepare()
     p.addDQ()
-    p.nonlinearityCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
     p.copyInputs(instream="main", outstream="with_distortion_model")

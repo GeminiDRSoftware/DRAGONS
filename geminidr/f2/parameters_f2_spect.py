@@ -14,7 +14,9 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         self.order = 3
         self.in_vacuo = True
         self.debug_min_lines = 100000
-        self.num_atran_lines = 100
+        del self.absorption
+        del self.wv_band
+        del self.num_atran_lines
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):

@@ -307,7 +307,7 @@ class F2Spect(Spect, F2):
                     params["min_snr"] = 10
             else:
                 # Telluric absorption in object spectrum
-                if params["absorption"]:
+                if params.get("absorption", False):
                     self.generated_linelist = True
                     params["lsigma"] = 2
                     params["hsigma"] = 2

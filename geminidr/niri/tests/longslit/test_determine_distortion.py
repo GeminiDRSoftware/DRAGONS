@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Tests related to F2 Long-slit Spectroscopy Arc primitives.
+Tests related to NIRI Long-slit Spectroscopy Arc primitives.
 
 Notes
 -----
@@ -17,170 +17,49 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy import ndimage
 
 import astrodata
+
 import geminidr
 from astropy.modeling import models
-from geminidr.f2.primitives_f2_longslit import F2Longslit
+from geminidr.niri.primitives_niri_longslit import NIRILongslit
 from gempy.library import transform, astromodels as am
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
 
-from geminidr.f2.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
+from geminidr.niri.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
 
 
 # Test parameters --------------------------------------------------------------
 fixed_parameters_for_determine_distortion = {
     "fwidth": None,
     "id_only": False,
-    "max_missed": None,
+    "max_missed": 5,
     "max_shift": 0.05,
-    "min_snr": 7.,
+    "min_snr": 10,
     "nsum": 10,
     "spatial_order": 3,
     "spectral_order": 3,
-    "min_line_length": 0.3,
+    "min_line_length": 0.,
     "debug_reject_bad": False
 }
 
 input_pars = [
-    # Process Arcs: F2 ---
+    # Process Arcs: NIRI ---
     # (Input File, params)
-    # grism: JH, filter: JH (1.400um)
-    ("S20211216S0177_flatCorrected.fits", dict()), # 2-pix slit
-    # grism: HK, filter: HK (1.870um)
-    ("S20220319S0060_flatCorrected.fits", dict()), # 3-pix slit, new HK filter
-    # grism: HK, filter: JH (1.100um)
-    ("S20220101S0044_flatCorrected.fits", dict()), # 3-pix slit
-    # grism: R3K, filter: J-low (1.100um)
-    ("S20131018S0230_flatCorrected.fits", dict()), # 6-pix slit
-    # grism: R3K, filter: J (1.250um)
-    ("S20170715S0121_flatCorrected.fits", dict()), # 1-pix slit
-    # grism: R3K, filter: H (1.650um)
-    ("S20210903S0053_flatCorrected.fits", dict()), # 6-pix slit
-    # grism: R3K, filter: Ks (2.200um)
-    ("S20220515S0026_flatCorrected.fits", dict()), # 3-pix slit
-    # grism: R3K, filter: K-long (2.200um)
-    ("S20150624S0023_flatCorrected.fits", dict()), # 1-pix slit
-    # from OH emission sky lines in science:
-    ("S20180114S0104_flatCorrected.fits", dict())
+    ("N20090504S0212_flatCorrected.fits", dict()), # H_order_sort	f6-6pixBl	Hgrism
+    ("N20080530S0292_flatCorrected.fits", dict()), # K_order_sort	f32-9pix	Kgrismf32
+    ("N20090706S0706_flatCorrected.fits", dict()), # science, from OH sky emission
 ]
 
 associated_calibrations = {
-    "S20211216S0177.fits": {
-        'arc_darks': ["S20211218S0462.fits",
-                 "S20211218S0463.fits",
-                 "S20211218S0464.fits",
-                 "S20211218S0465.fits",
-                 "S20211218S0466.fits"],
-        'flat': ["S20211216S0176.fits"], # ND2.0
-        'flat_darks': ["S20211218S0434.fits",
-                 "S20211218S0435.fits",
-                 "S20211218S0436.fits",
-                 "S20211218S0437.fits",
-                 "S20211218S0438.fits"],
+    "N20090504S0212.fits": {
+        'flat': ["N20090504S0213.fits"],
     },
-    "S20220319S0060.fits": {
-        'arc_darks': ["S20220322S0099.fits",
-                 "S20220322S0100.fits",
-                 "S20220322S0101.fits",
-                 "S20220322S0102.fits",
-                 "S20220322S0103.fits"],
-        'flat': ["S20220319S0059.fits"], # ND2.0
-        'flat_darks': ["S20220203S0025.fits",
-                 "S20220203S0037.fits",
-                 "S20220203S0055.fits",
-                 "S20220203S0058.fits"],
+    "N20080530S0292.fits": {
+        'flat': ["N20080530S0291.fits"],
     },
-    "S20220101S0044.fits": {
-        'arc_darks': ["S20220101S0108.fits",
-                 "S20220101S0109.fits",
-                 "S20220101S0111.fits",
-                 "S20220101S0112.fits",
-                 "S20220101S0114.fits"],
-        'flat': ["S20220101S0043.fits"], # ND2.0
-        'flat_darks': ["S20220101S0086.fits",
-                 "S20220101S0087.fits",
-                 "S20220101S0088.fits",
-                 "S20220101S0090.fits",
-                 "S20220101S0091.fits"],
-    },
-    "S20131018S0230.fits": {
-        'arc_darks': ["S20131023S0025.fits",
-                 "S20131023S0026.fits",
-                 "S20131023S0027.fits",
-                 "S20131023S0028.fits",
-                 "S20131023S0029.fits"],
-        'flat': ["S20131018S0229.fits"], # Clear
-        'flat_darks': ["S20131019S0270.fits",
-                 "S20131019S0271.fits",
-                 "S20131019S0272.fits",
-                 "S20131019S0273.fits",
-                 "S20131019S0274.fits"],
-    },
-    "S20170715S0121.fits": {
-        'arc_darks': ["S20170715S0325.fits",
-                 "S20170715S0326.fits",
-                 "S20170715S0327.fits",
-                 "S20170715S0328.fits",
-                 "S20170715S0329.fits"],
-        'flat': ["S20170715S0133.fits"], # Clear
-        'flat_darks': ["S20170722S0219.fits",
-                 "S20170722S0220.fits",
-                 "S20170722S0221.fits",
-                 "S20170722S0222.fits",
-                 "S20170722S0223.fits"],
-    },
-    "S20210903S0053.fits": {
-        'arc_darks': ["S20210905S0413.fits",
-                 "S20210905S0414.fits",
-                 "S20210905S0415.fits",
-                 "S20210905S0416.fits",
-                 "S20210905S0417.fits"],
-        'flat': ["S20210903S0052.fits"], # ND2.0
-        'flat_darks': ["S20210905S0392.fits",
-                 "S20210905S0393.fits",
-                 "S20210905S0394.fits",
-                 "S20210905S0395.fits",
-                 "S20210905S0396.fits"],
-    },
-    "S20220515S0026.fits": {
-        'arc_darks': ["S20220521S0129.fits",
-                 "S20220521S0130.fits",
-                 "S20220521S0131.fits",
-                 "S20220521S0132.fits",
-                 "S20220521S0133.fits"],
-        'flat': ["S20220515S0025.fits"], # ND2.0
-        'flat_darks': ["S20220514S0281.fits",
-                 "S20220514S0279.fits",
-                 "S20220514S0277.fits",
-                 "S20220514S0275.fits",
-                 "S20220514S0274.fits"],
-    },
-    "S20150624S0023.fits": {
-        'arc_darks': ["S20150523S0292.fits",
-                 "S20150523S0291.fits",
-                 "S20150523S0290.fits",
-                 "S20150523S0289.fits",
-                 "S20150523S0288.fits"],
-        'flat': ["S20150624S0028.fits"], # ND2.0
-        'flat_darks': ["S20150627S0337.fits",
-                 "S20150627S0338.fits",
-                 "S20150627S0339.fits",
-                 "S20150627S0340.fits",
-                 "S20150627S0341.fits"],
-    },
-    "S20180114S0104.fits": {
-        'flat_darks': ["S20180120S0222.fits",
-                 "S20180120S0223.fits",
-                 "S20180120S0224.fits",
-                 "S20180120S0225.fits",
-                 "S20180120S0226.fits"],
-        'flat': ["S20180114S0118.fits"], # ND2.0
-        'arc_darks': ["S20180117S0033.fits",
-                 "S20180117S0034.fits",
-                 "S20180117S0035.fits",
-                 "S20180117S0036.fits",
-                 "S20180117S0037.fits"],
-    },
+    "N20090706S0706.fits": {
+        'flat': ["N20090706S0676.fits"],
+    }
 }
 
 # Tests Definitions ------------------------------------------------------------
@@ -209,15 +88,16 @@ def test_regression_for_determine_distortion_using_wcs(
     """
     with change_working_dir():
         logutils.config(file_name='log_fitcoord_{:s}.txt'.format(ad.data_label()))
-        p = F2Longslit([ad])
+        p = NIRILongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
-        p.determineDistortion(**fixed_parameters_for_determine_distortion)
+        p.determineDistortion(**{**fixed_parameters_for_determine_distortion,
+                                         **params})
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
     model = distortion_determined_ad[0].wcs.get_transform(
-        "pixels", "distortion_corrected")[2]
-    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[2]
+        "pixels", "distortion_corrected")[1]
+    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[1]
 
     # Otherwise we're doing something wrong!
     assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
@@ -246,9 +126,10 @@ def test_fitcoord_table_and_gwcs_match(ad, params, change_working_dir):
     """
     with change_working_dir():
         logutils.config(file_name='log_match_{:s}.txt'.format(ad.data_label()))
-        p = F2Longslit([ad])
+        p = NIRILongslit([ad])
         p.viewer = geminidr.dormantViewer(p, None)
-        p.determineDistortion(**fixed_parameters_for_determine_distortion)
+        p.determineDistortion(**{**fixed_parameters_for_determine_distortion,
+                                         **params})
         distortion_determined_ad = p.writeOutputs().pop()
 
     model = distortion_determined_ad[0].wcs.get_transform(
@@ -258,8 +139,8 @@ def test_fitcoord_table_and_gwcs_match(ad, params, change_working_dir):
     fitcoord_model = am.table_to_model(fitcoord[0])
     fitcoord_inv = am.table_to_model(fitcoord[1])
 
-    np.testing.assert_allclose(model[2].parameters, fitcoord_model.parameters)
-    np.testing.assert_allclose(model.inverse[2].parameters, fitcoord_inv.parameters)
+    np.testing.assert_allclose(model[1].parameters, fitcoord_model.parameters)
+    np.testing.assert_allclose(model.inverse[1].parameters, fitcoord_inv.parameters)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
@@ -306,11 +187,12 @@ def do_plots(ad, ad_ref):
     n_hlines = 25
     n_vlines = 25
 
-    output_dir = "./plots/geminidr/f2/test_f2_spect_ls_determine_wavelength_solution"
+    output_dir = "./plots/geminidr/niri/test_niri_spect_ls_determine_wavelength_solution"
     os.makedirs(output_dir, exist_ok=True)
 
     name, _ = os.path.splitext(ad.filename)
-    grism = ad.disperser(pretty=True)
+    grating = ad.disperser(pretty=True)
+    camera = ad.camera(pretty=True)
     filter = ad.filter_name(pretty=True)
     central_wavelength = ad.central_wavelength(asNanometers=True)  # in nanometers
 
@@ -342,8 +224,8 @@ def do_plots(ad, ad_ref):
         ax.set_xlabel("X [px]")
         ax.set_ylabel("Y [px]")
         ax.set_title(
-            "Distortion Map\n{:s}_{:s}_{:s}".format(
-                fname, grism, filter))
+            "Distortion Map\n{:s}_{:s}_{:s}_{:s}_{:.0f}".format(
+                fname, grating, camera, filter, central_wavelength))
 
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -353,8 +235,8 @@ def do_plots(ad, ad_ref):
 
         fig.tight_layout()
         fig_name = os.path.join(
-            output_dir, "{:s}_{:s}_{:s}_distMap.png".format(
-                fname, grism, filter))
+            output_dir, "{:s}_{:s}_{:s}_{:s}_{:.0f}_distMap.png".format(
+                fname, grating, camera, filter, central_wavelength))
 
         fig.savefig(fig_name)
         del fig, ax
@@ -395,7 +277,8 @@ def do_plots(ad, ad_ref):
         cbar.set_label("Distortion [px]")
 
         fig_name = os.path.join(
-            output_dir, "{:s}_{:s}_{:s}_distDiff.png".format(name, grism, filter))
+            output_dir, "{:s}_{:s}_{:s}_{:s}_{:.0f}_distDiff.png".format(
+                fname, grating, camera, filter, central_wavelength))
 
         fig.savefig(fig_name)
 
@@ -481,7 +364,7 @@ def create_inputs_recipe():
     """
     import os
     from astrodata.testing import download_from_archive
-    from geminidr.f2.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
+    from geminidr.niri.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system.utils.reduce_utils import normalize_ucals, set_btypes
 
@@ -496,49 +379,29 @@ def create_inputs_recipe():
         print(filename)
 
         arc_path = download_from_archive(filename)
-        arc_darks_paths = [download_from_archive(f) for f in cals['arc_darks']]
-        flat_darks_paths = [download_from_archive(f) for f in cals['flat_darks']]
         flat_path = [download_from_archive(f) for f in cals['flat']]
 
         arc_ad = astrodata.open(arc_path)
         data_label = arc_ad.data_label()
 
-        logutils.config(file_name='log_arc_darks_{}.txt'.format(data_label))
-        arc_darks_reduce = Reduce()
-        arc_darks_reduce.files.extend(arc_darks_paths)
-        arc_darks_reduce.runr()
-        arc_darks_master = arc_darks_reduce.output_filenames.pop()
-        del arc_darks_reduce
-
-        logutils.config(file_name='log_flat_darks_{}.txt'.format(data_label))
-        flat_darks_reduce = Reduce()
-        flat_darks_reduce.files.extend(flat_darks_paths)
-        flat_darks_reduce.runr()
-        flat_darks_master = flat_darks_reduce.output_filenames.pop()
-        calibration_files = ['processed_dark:{}'.format(flat_darks_master)]
-        del flat_darks_reduce
-
         logutils.config(file_name='log_flat_{}.txt'.format(data_label))
         flat_reduce = Reduce()
         flat_reduce.files.extend(flat_path)
-        flat_reduce.ucals = normalize_ucals(calibration_files)
         flat_reduce.uparms = [('normalizeFlat:threshold','0.01')]
         flat_reduce.runr()
         processed_flat = flat_reduce.output_filenames.pop()
         del flat_reduce
 
-        print('Reducing pre-processed data:')
-        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
 
-        p = F2Longslit([arc_ad])
+        print('Reducing pre-processed data:')
+        logutils.config(file_name='log_{}.txt'.format(data_label))
+        p = NIRILongslit([arc_ad])
         p.prepare()
         p.addDQ()
         p.addVAR(read_noise=True)
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
-        p.darkCorrect(dark=arc_darks_master)
         p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
-        p.makeIRAFCompatible()
 
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()
@@ -556,7 +419,7 @@ def create_refs_recipe():
 
     for filename, params in input_pars:
         ad = astrodata.open(os.path.join('inputs', filename))
-        p = F2Longslit([ad])
+        p = NIRILongslit([ad])
         p.determineDistortion(**{**fixed_parameters_for_determine_distortion,
                                          **params})
         os.chdir('refs/')

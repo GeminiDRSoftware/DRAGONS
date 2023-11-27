@@ -33,7 +33,11 @@ determine_wavelength_solution_parameters = {
     'order': None,
     'min_snr': None,
     'debug_min_lines': None,
-    'in_vacuo': True
+    'in_vacuo': True,
+    'num_atran_lines': None,
+    "combine_method": "optimal",
+    "wv_band": "header",
+    "resolution": None
 }
 
 input_pars = [
@@ -119,7 +123,7 @@ input_pars = [
     #("N20111017S0101_varAdded.fits", dict()), # 3348nm, 9nm, R=12666, 0.15arcsec. Large dw
     #("N20200827S0024_varAdded.fits", dict()), #	3360nm, 4.9nm, R=19000, 0.10arcsec
     ("N20130113S0134_varAdded.fits", dict()), #	3360nm, 0nm, R=19000, 0.10arcsec
-    ("N20170519S0188_varAdded.fits", dict()), #	3425nm, 4.9nm, R=19000, 0.10arcsec
+    #("N20170519S0188_varAdded.fits", dict()), #	3425nm, 4.9nm, R=19000, 0.10arcsec. Unstable
     ("N20130629S0193_varAdded.fits", dict()), #	3530nm, 2nm, R=19000, 0.10arcsec
     ("N20130709S0165_varAdded.fits", dict()), #	3690nm, 0.1nm, R=19000, 0.10arcsec
     #("N20130815S0354_varAdded.fits", dict()), #	3695nm, 2.8nm,	R=19000, 0.10arcsec
@@ -147,18 +151,18 @@ input_pars = [
     ("N20121211S0367_varAdded.fits", dict()), #	3700nm,	15nm, R=5400, 0.10arcsec
     #("N20121217S0176_varAdded.fits", dict()), #	3700nm,	16nm, R=5400, 0.10arcsec
     #("N20100820S0180_varAdded.fits", dict()), # 3700nm, 38nm, R=540, 1.0arcsec. Large dw, SV data
-    ("N20131206S0129_varAdded.fits", dict()), #	3900nm,	11nm, R=5400, 0.10arcsec
+    #("N20131206S0129_varAdded.fits", dict()), #	3900nm,	11nm, R=5400, 0.10arcsec. Unstable ("comb" region)
     # L-band, 32 l/mm, ShortCam
-    ("N20100821S0263_varAdded.fits", dict()), #	3300nm,	59nm, R=540, 1.0arcsec
+    #("N20100821S0263_varAdded.fits", dict()), #	3300nm,	59nm, R=540, 1.0arcsec. Unstable
     ("N20101207S0295_varAdded.fits", dict()), #	3300nm,	62nm, R=794, 0.68arcsec
     ("N20111007S0439_varAdded.fits", dict()), #	3350nm,	31nm, R=1200, 0.45arcsec
     ("S20051113S0085_varAdded.fits", dict()), #	3400nm,	18nm, R=1200, 0.45arcsec
     #("S20070325S0115_varAdded.fits", dict()), #	3400nm,	8nm, R=1200, 0.45arcsec
     ("N20110601S0327_varAdded.fits", dict()), #	3500nm,	5nm, R=1800, 0.30arcsec
-    ("N20100722S0225_varAdded.fits", dict()), #	3600nm,	42nm, R=1800, 0.30arcsec
+   # ("N20100722S0225_varAdded.fits", dict()), #	3600nm,	42nm, R=1800, 0.30arcsec. Unstable
     ("N20101205S0202_varAdded.fits", dict()), #	3400nm,	61nm, R=540, 1.0arcsec, SV
     ("N20110326S0346_varAdded.fits", dict()), #	3400nm,	3nm, R=794, 0.68arcsec
-    ("N20101203S0315_varAdded.fits", dict()), #	3700nm,	68nm, R=1800, 0.30arcsec
+    #("N20101203S0315_varAdded.fits", dict()), #	3700nm,	68nm, R=1800, 0.30arcsec. Unstable
     #("N20100915S0155_varAdded.fits", dict(min_snr=5)), # 3770nm, 63nm, R=1800, 0.30arcsec, crazy gradient, unstable
     # L-band, 10 l/mm, LongCam
     ("N20160321S0222_varAdded.fits", dict()), #	3100nm,	35nm, R=264, 0.68arcsec
@@ -166,7 +170,7 @@ input_pars = [
     ("N20130516S0183_varAdded.fits", dict()), #	3400nm,	25nm, R=400, 0.45arcsec
     ("N20161115S0402_varAdded.fits", dict()), #	3400nm,	46nm, R=1200, 0.15arcsec
     ("N20170620S0138_varAdded.fits", dict()), #	3400nm,	35nm, R=264, 0.68arcsec, no solution (too low res)
-    ("N20121201S0126_varAdded.fits", dict()), #	3500nm,	8nm, R=600, 0.30arcsec
+   # ("N20121201S0126_varAdded.fits", dict()), #	3500nm,	8nm, R=600, 0.30arcsec. Unstable
     ("N20180817S0152_varAdded.fits", dict()), #	3500nm,	21nm, R=1200, 0.15arcsec
     ("N20160810S0300_varAdded.fits", dict()), #	3500nm,	29nm, R=400, 0.45arcsec
     ("N20200704S0207_varAdded.fits", dict()), #	3530nm,	41nm, R=265, 0.68arcsec
@@ -196,6 +200,12 @@ input_pars = [
     ("N20100821S0270_varAdded.fits", dict()), # 4850nm, 86nm, R=372, 1.0arcsec
     # M-band, 10 l/mm, LongtCam
     ("N20100820S0160_varAdded.fits", dict()), # 4850nm, ?nm, R=120, 1.0arcsec # no solution
+
+    # Create inputs and refs manually:
+    # wavecal from OH emission sky lines
+    ("N20181102S0023_flatCorrected.fits", dict()), # 32 l/mm, 1.650um. Flat=N20181102S0031.fits
+    # wavecal from sky absorption
+    ("N20121216S0120_aperturesFound.fits", dict(absorption=True)), # 111l/mm, 2.362um. Flat=N20121216S0106.fits, arc=N20121216S0105.fits
 
 ]
 
