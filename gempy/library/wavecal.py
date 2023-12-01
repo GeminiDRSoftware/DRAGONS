@@ -526,10 +526,11 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         reject_bad=False, nbright=config.get("nbright", 0))
     if len(peaks) == 0:
         raise ValueError(f"No peaks were found; perhaps try a lower min_snr value?")
-    # Do the second iteration of fwidth estimation and peak finding in order to get more accurate
-    # line widths (this step is mostly necessary when doing wavecal from sky lines, as for those
+    # Do the second iteration of fwidth estimation and peak finding, this time using the number of peaks
+    # found after the first fwidth estimation, in order to get more accurate
+    # line widths. This step is mostly necessary when doing wavecal from sky lines, as for those
     # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends
-    # to be too high).
+    # to be too high.
     if config["fwidth"] is None:
         fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
         peaks, weights = find_line_peaks(
