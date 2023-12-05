@@ -152,48 +152,55 @@ class GNIRSSpect(Spect, GNIRS):
         :class:`~geminidr.core.primitives_visualize.Visualize.mosaicDetectors`,
         :class:`~gempy.library.matching.KDTreeFitter`,
         """
+        adoutputs = []
         for ad in adinputs:
+            these_params = params.copy()
             disp = ad.disperser(pretty=True)
             filt = ad.filter_name(pretty=True)
             cam = ad.camera(pretty=True)
             cenwave = ad.central_wavelength(asMicrometers=True)
 
             if 'ARC' in ad.tags:
-                if params["min_snr"] is None:
-                    params["min_snr"] = 20
-                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
-                if params["debug_min_lines"] is None:
-                    params["debug_min_lines"] = 100000
+                if these_params["min_snr"] is None:
+                    these_params["min_snr"] = 20
+                    self.log.stdinfo('Parameter "min_snr" is set to None. '
+                                     f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
+                if these_params["debug_min_lines"] is None:
+                    these_params["debug_min_lines"] = 100000
 
-                if params["order"] is None:
+                if these_params["order"] is None:
                     if ((filt == "H" and cenwave >= 1.75) or (filt == "K" and cenwave >= 2.2)) \
                             and ((cam.startswith('Long') and disp.startswith('32')) or
                                  (cam.startswith('Short') and disp.startswith('111'))):
-                            params["order"] = 1
+                            these_params["order"] = 1
                     elif disp.startswith('111') and cam.startswith('Long'):
-                            params["order"] = 1
+                            these_params["order"] = 1
                     else:
-                        params["order"] = 3
-                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
+                        these_params["order"] = 3
+                    self.log.stdinfo('Parameter "order" is set to None. '
+                                     f'Using order={these_params["order"]} for {ad.filename}')
             else:
-                params["lsigma"] = 2
-                params["hsigma"] = 2
+                these_params["lsigma"] = 2
+                these_params["hsigma"] = 2
 
-                if params["debug_min_lines"] is None:
-                    params["debug_min_lines"] = 15
+                if these_params["debug_min_lines"] is None:
+                    these_params["debug_min_lines"] = 15
 
-                if params["order"] is None:
+                if these_params["order"] is None:
                     if ad.camera(pretty=True).startswith('Long') and \
                             ad.disperser(pretty=True).startswith('111') and \
                             3.65 <= cenwave <= 3.75:
-                            params["order"] = 1
+                            these_params["order"] = 1
                     else:
-                     params["order"] = 3
-                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
-                if params["min_snr"] is None:
-                    params["min_snr"] = 10
-                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
-        adinputs = super().determineWavelengthSolution(adinputs, **params)
+                        these_params["order"] = 3
+                    self.log.stdinfo('Parameter "order" is set to None. '
+                                     f'Using order={these_params["order"]} for {ad.filename}')
+                if these_params["min_snr"] is None:
+                    these_params["min_snr"] = 10
+                    self.log.stdinfo('Parameter "min_snr" is set to None. '
+                                     f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
+            adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
+        #adinputs = super().determineWavelengthSolution(adinputs, **params)
         return adinputs
 
     def determineDistortion(self, adinputs=None, **params):
