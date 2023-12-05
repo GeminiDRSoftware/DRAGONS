@@ -121,24 +121,24 @@ input_pars = [
     #("N20101209S0184_varAdded.fits", dict()), # 3330nm, 18nm, R=12666, 0.15arcsec. Large dw, SV data
     #("N20101209S0174_varAdded.fits", dict()), # 3345nm, 18nm, R=12666, 0.15arcsec. Large dw, SV data
     #("N20111017S0101_varAdded.fits", dict()), # 3348nm, 9nm, R=12666, 0.15arcsec. Large dw
-    #("N20200827S0024_varAdded.fits", dict()), #	3360nm, 4.9nm, R=19000, 0.10arcsec
+    ("N20200827S0024_varAdded.fits", dict()), #	3360nm, 4.9nm, R=19000, 0.10arcsec
     ("N20130113S0134_varAdded.fits", dict()), #	3360nm, 0nm, R=19000, 0.10arcsec
-    #("N20170519S0188_varAdded.fits", dict()), #	3425nm, 4.9nm, R=19000, 0.10arcsec. Unstable
+    #("N20170519S0188_varAdded.fits", dict()), #	3425nm, 4.9nm, R=19000, 0.10arcsec. Unstable (might pick diff lines for solution). The stack is stable
     ("N20130629S0193_varAdded.fits", dict()), #	3530nm, 2nm, R=19000, 0.10arcsec
     ("N20130709S0165_varAdded.fits", dict()), #	3690nm, 0.1nm, R=19000, 0.10arcsec
-    #("N20130815S0354_varAdded.fits", dict()), #	3695nm, 2.8nm,	R=19000, 0.10arcsec
+    ("N20130815S0354_varAdded.fits", dict()), #	3695nm, 2.8nm,	R=19000, 0.10arcsec
     #("N20100820S0188_varAdded.fits", dict()), # 3700nm, 11nm, R=1900, 1.0arcsec. Large dw
-    # the automatic solution is wrong/unstable beyond 3850nm due to regular line pattern and/or low signal
+    # # the automatic solution is wrong/unstable beyond 3850nm due to regular line pattern and/or low signal
     #("N20160126S0091_varAdded.fits", dict()), # 3900nm, 5.8nm, R=19000, 0.10arcsec
     #("N20170519S0315_varAdded.fits", dict()), # 3953nm, 3nm, R=19000, 0.10arcsec
     #("N20150530S0202_varAdded.fits", dict()), # 3970nm, ?nm, R=19000, 0.10arcsec
     #("N20190419S0144_varAdded.fits", dict()), # 4110nm, ?nm, R=19000, 0.10arcsec
     # L-band, 111 l/mm, ShortCam
-    #("N20100820S0214_varAdded.fits", dict()), #	3200nm,	11nm, R=1920, 1.0arcsec. Unstable solution
-    #("N20100820S0218_varAdded.fits", dict()), #	3400nm,	12nm, R=1920, 1.0arcsec. Unstable solution
+    ("N20100820S0214_varAdded.fits", dict()), #	3200nm,	11nm, R=1920, 1.0arcsec.
+    ("N20100820S0218_varAdded.fits", dict()), #	3400nm,	12nm, R=1920, 1.0arcsec.
     ("S20060214S0266_varAdded.fits", dict()), #	3400nm,	3nm, R=6400, 0.3arcsec
     ("N20100821S0281_varAdded.fits", dict()), #	3500nm,	11nm, R=4266, 0.45arcsec
-    #("N20100821S0242_varAdded.fits", dict()), #	3600nm,	9nm, R=1920, 1.0arcsec. Unstable solution
+    ("N20100821S0242_varAdded.fits", dict()), #	3600nm,	9nm, R=1920, 1.0arcsec.
     ("N20110724S0207_varAdded.fits", dict()), #	3640nm,	2nm, R=4266, 0.45arcsec
     ("S20060811S0056_varAdded.fits", dict()), #	3680nm,	6nm, R=4266, 0.45arcsec
     ("N20110106S0296_varAdded.fits", dict()), #	3700nm,	3nm, R=6400, 0.30arcsec
@@ -149,20 +149,20 @@ input_pars = [
     ("N20130822S0258_varAdded.fits", dict()), #	3400nm,	13nm, R=5400, 0.10arcsec
     ("N20130122S0184_varAdded.fits", dict()), #	3500nm,	3nm, R=5400, 0.10arcsec
     ("N20121211S0367_varAdded.fits", dict()), #	3700nm,	15nm, R=5400, 0.10arcsec
-    #("N20121217S0176_varAdded.fits", dict()), #	3700nm,	16nm, R=5400, 0.10arcsec
+    ("N20121217S0176_varAdded.fits", dict()), #	3700nm,	16nm, R=5400, 0.10arcsec
     #("N20100820S0180_varAdded.fits", dict()), # 3700nm, 38nm, R=540, 1.0arcsec. Large dw, SV data
     #("N20131206S0129_varAdded.fits", dict()), #	3900nm,	11nm, R=5400, 0.10arcsec. Unstable ("comb" region)
     # L-band, 32 l/mm, ShortCam
-    #("N20100821S0263_varAdded.fits", dict()), #	3300nm,	59nm, R=540, 1.0arcsec. Unstable
+    #("N20100821S0263_varAdded.fits", dict()), #	3300nm,	59nm, R=540, 1.0arcsec. Unstable (but all solutions are right). Stack is stable.
     ("N20101207S0295_varAdded.fits", dict()), #	3300nm,	62nm, R=794, 0.68arcsec
     ("N20111007S0439_varAdded.fits", dict()), #	3350nm,	31nm, R=1200, 0.45arcsec
     ("S20051113S0085_varAdded.fits", dict()), #	3400nm,	18nm, R=1200, 0.45arcsec
-    #("S20070325S0115_varAdded.fits", dict()), #	3400nm,	8nm, R=1200, 0.45arcsec
+    ("S20070325S0115_varAdded.fits", dict()), #	3400nm,	8nm, R=1200, 0.45arcsec
     ("N20110601S0327_varAdded.fits", dict()), #	3500nm,	5nm, R=1800, 0.30arcsec
-   # ("N20100722S0225_varAdded.fits", dict()), #	3600nm,	42nm, R=1800, 0.30arcsec. Unstable
+   # ("N20100722S0225_varAdded.fits", dict()), #	3600nm,	42nm, R=1800, 0.30arcsec. Unstable. Probably ok with a stack.
     ("N20101205S0202_varAdded.fits", dict()), #	3400nm,	61nm, R=540, 1.0arcsec, SV
     ("N20110326S0346_varAdded.fits", dict()), #	3400nm,	3nm, R=794, 0.68arcsec
-    #("N20101203S0315_varAdded.fits", dict()), #	3700nm,	68nm, R=1800, 0.30arcsec. Unstable
+    #("N20101203S0315_varAdded.fits", dict()), #	3700nm,	68nm, R=1800, 0.30arcsec. Unstable, gradient.
     #("N20100915S0155_varAdded.fits", dict(min_snr=5)), # 3770nm, 63nm, R=1800, 0.30arcsec, crazy gradient, unstable
     # L-band, 10 l/mm, LongCam
     ("N20160321S0222_varAdded.fits", dict()), #	3100nm,	35nm, R=264, 0.68arcsec
@@ -170,7 +170,7 @@ input_pars = [
     ("N20130516S0183_varAdded.fits", dict()), #	3400nm,	25nm, R=400, 0.45arcsec
     ("N20161115S0402_varAdded.fits", dict()), #	3400nm,	46nm, R=1200, 0.15arcsec
     ("N20170620S0138_varAdded.fits", dict()), #	3400nm,	35nm, R=264, 0.68arcsec, no solution (too low res)
-   # ("N20121201S0126_varAdded.fits", dict()), #	3500nm,	8nm, R=600, 0.30arcsec. Unstable
+   # ("N20121201S0126_varAdded.fits", dict()), #	3500nm,	8nm, R=600, 0.30arcsec. Unstable. Stacking doesn't help, the solution might be wrong.
     ("N20180817S0152_varAdded.fits", dict()), #	3500nm,	21nm, R=1200, 0.15arcsec
     ("N20160810S0300_varAdded.fits", dict()), #	3500nm,	29nm, R=400, 0.45arcsec
     ("N20200704S0207_varAdded.fits", dict()), #	3530nm,	41nm, R=265, 0.68arcsec
@@ -180,17 +180,17 @@ input_pars = [
     # M-band, 111 l/mm, LongCam
     ("N20110331S0183_varAdded.fits", dict()), #	4634nm,	8nm, R=12800, 0.10arcsec
     ("N20220724S0152_varAdded.fits", dict()), #	4670nm,	1nm, R=6400, 0.20arcsec
-    #("N20160321S0242_varAdded.fits", dict()), #	4670nm,	11nm, R=1882, 0.68arcsec. Unsable solution
+    ("N20160321S0242_varAdded.fits", dict()), #	4670nm,	11nm, R=1882, 0.68arcsec.
     ("N20180813S0029_varAdded.fits", dict()), #	4672nm,	11nm, R=2844, 0.45arcsec
     ("N20151229S0288_varAdded.fits", dict()), #	4690nm,	49nm, R=12800, 0.10arcsec
     ("N20151229S0221_varAdded.fits", dict()), #	4690nm,	9nm, R=12800, 0.10arcsec
-    #("N20100820S0195_varAdded.fits", dict()), # 4850nm, 17nm, R=1280, 1.0arcsec. Wrong solution, SV data
+    #("N20100820S0195_varAdded.fits", dict()), # 4850nm, 17nm, R=1280, 1.0arcsec. Wrong solution, SV data. Very low res
     # M-band, 111 l/mm, ShortCam
     ("N20100821S0255_varAdded.fits", dict()), #	4700nm,	23nm, R=1290, 1.0arcsec
     ("S20040412S0071_varAdded.fits", dict()), #	4750nm,	6nm, R=4300, 0.30arcsec
     ("N20101205S0275_varAdded.fits", dict()), #	4800nm,	41nm, R=2866, 0.45arcsec
     ("S20040413S0097_varAdded.fits", dict()), #	4850nm,	9nm, R=4300, 0.30arcsec
-    #("S20050223S0092_varAdded.fits", dict()), #	4850nm,	5nm, R=4300, 0.30arcsec
+    ("S20050223S0092_varAdded.fits", dict()), #	4850nm,	5nm, R=4300, 0.30arcsec
     ("N20100821S0260_varAdded.fits", dict()), #	5100nm,	25nm, R=1290, 1.0arcsec
     # M-band, 32 l/mm, LongtCam
     ("S20040308S0034_varAdded.fits", dict()), # 4749nm, 0nm, R=1850, 0.20arcsec
