@@ -200,8 +200,7 @@ class GNIRSSpect(Spect, GNIRS):
                     self.log.stdinfo('Parameter "min_snr" is set to None. '
                                      f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
-        #adinputs = super().determineWavelengthSolution(adinputs, **params)
-        return adinputs
+        return adoutputs
 
     def determineDistortion(self, adinputs=None, **params):
         """
