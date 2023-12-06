@@ -612,8 +612,7 @@ def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
     i = 0
     while i < len(extrema) - 1:
         if extrema[i][2] == extrema[i+1][2]:
-            # All minima have -ve the minimum value
-            if extrema[i][1] > extrema[i+1][1]:
+            if (extrema[i][1] > extrema[i+1][1]) == extrema[i][2]:
                 del extrema[i+1]
             else:
                 del extrema[i]
