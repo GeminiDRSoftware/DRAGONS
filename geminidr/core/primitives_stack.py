@@ -207,7 +207,7 @@ class Stack(PrimitivesBASE):
         # Check that the shapes of all extensions match across the input files
         # (they needn't match within files)
         for i in range(len(adinputs[0])):
-            if len({ad[i].nddata.shape for ad in adinputs[1:]}) > 1:
+            if len({ad[i].nddata.shape for ad in adinputs}) > 1:
                 raise RuntimeError("Not all inputs images have the same shape")
 
         # We will determine the average gain from the input AstroData
