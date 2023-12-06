@@ -49,10 +49,11 @@ from .lookups import polyfit_lookup, line_list
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
-GEMINI_SOUTH_LOC = astrocoord.EarthLocation.from_geodetic((-70, 44, 12.096),
-                                                          (-30, 14, 26.700),
-                                                          height=2722.,
-                                                          ellipsoid='WGS84')
+GEMINI_SOUTH_LOC = astrocoord.EarthLocation.from_geodetic(
+    '-70:44:12.096 degrees', '-30:14:26.700 degrees',
+    height=2722., ellipsoid='WGS84'
+)
+
 BAD_FLAT_FLAG = 16
 
 # FIXME: This should go somewhere else, but where?
