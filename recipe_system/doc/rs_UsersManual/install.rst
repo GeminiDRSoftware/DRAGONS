@@ -118,6 +118,7 @@ that we will need.
 
     $ conda config --add channels conda-forge
     $ conda config --add channels http://astroconda.gemini.edu/public
+    $ conda config --set channel_priority disabled
 
 The next step is to create a virtual environment and install the DRAGONS
 software and its dependencies in it.  The name of the environment can be

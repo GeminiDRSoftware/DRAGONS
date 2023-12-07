@@ -1485,7 +1485,7 @@ def add_longslit_wcs(ad, central_wavelength=None):
 
 
 def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
-                      threshold=0.01, conserve=False, parallel=False,
+                      threshold=0.001, conserve=False, parallel=False,
                       process_objcat=False, output_shape=None, origin=None):
     """
     This takes a single AstroData object with WCS objects attached to the
