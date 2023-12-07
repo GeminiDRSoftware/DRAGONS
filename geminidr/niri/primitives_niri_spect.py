@@ -151,44 +151,47 @@ class NIRISpect(Spect, NIRI):
         list of :class:`~astrodata.AstroData`
             Updated objects with a `.WAVECAL` attribute and improved wcs for
             each slice
-"""
+        """
+        adoutputs = []
         for ad in adinputs:
-            min_snr_isNone = True if params["min_snr"] is None else False
-            combine_method_isNone = True if params["combine_method"] == "optimal" else False
+            these_params = params.copy()
+            min_snr_isNone = True if these_params["min_snr"] is None else False
+            combine_method_isNone = True if these_params["combine_method"] == "optimal" else False
 
-            if params["combine_method"] == "optimal":
-                if ("ARC" not in ad.tags) and (params["absorption"] is False):
-                     params["combine_method"] = "median"
+            if these_params["combine_method"] == "optimal":
+                if ("ARC" not in ad.tags) and (these_params["absorption"] is False):
+                     these_params["combine_method"] = "median"
                 else:
-                    params["combine_method"] = "mean"
+                    these_params["combine_method"] = "mean"
 
             if "ARC" in ad.tags:
-                if params["min_snr"] is None:
-                    params["min_snr"] = 20
+                if these_params["min_snr"] is None:
+                    these_params["min_snr"] = 20
             else:
                 # Telluric absorption and L and M-bands
-                if params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
+                if these_params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
                     self.generated_linelist = True
-                    params["lsigma"] = 2
-                    params["hsigma"] = 2
-                    if params["min_snr"] is None:
+                    these_params["lsigma"] = 2
+                    these_params["hsigma"] = 2
+                    if these_params["min_snr"] is None:
                         if ad.filter_name(pretty=True).startswith('M'):
-                            params["min_snr"] = 10
+                            these_params["min_snr"] = 10
                         else:
-                            params["min_snr"] = 1
+                            these_params["min_snr"] = 1
                 else:
                     # OH emission
-                    if params["min_snr"] is None:
-                        params["min_snr"] = 1
+                    if these_params["min_snr"] is None:
+                        these_params["min_snr"] = 1
 
             if min_snr_isNone:
-                self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
+                self.log.stdinfo(f'Parameter "min_snr" is set to None. '
+                                 f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
             if combine_method_isNone:
                 self.log.stdinfo(f'Parameter "combine_method" is set to "optimal"".'
-                                 f' Using "combine_method"={params["combine_method"]}')
+                                 f' Using "combine_method"={these_params["combine_method"]} for {ad.filename}')
 
-        adinputs = super().determineWavelengthSolution(adinputs, **params)
-        return adinputs
+            adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
+        return adoutputs
 
     
     def _get_arc_linelist(self, ext, waves=None):

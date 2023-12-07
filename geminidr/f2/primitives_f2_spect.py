@@ -198,21 +198,23 @@ class F2Spect(Spect, F2):
             appropriate `nddata.wcs` defined for each of its extensions. This
             provides details of the 2D Chebyshev fit which maps the distortion.
         """
+        adoutputs = []
         for ad in adinputs:
-            if params["max_missed"] is None:
+            these_params = params.copy()
+            if these_params["max_missed"] is None:
                 if "ARC" in ad.tags:
                     # In arcs with few lines tracing strong horizontal noise pattern can
                     # affect distortion model.Using a lower max_missed value helps to
                     # filter out horizontal noise.
-                    params["max_missed"] = 2
+                    these_params["max_missed"] = 2
                 else:
                     # In science frames we want this parameter be set to a higher value, since
                     # otherwise the line might be abandoned when crossing a bright object spectrum.
-                    params["max_missed"] = 5
+                    these_params["max_missed"] = 5
                 self.log.stdinfo(f'Parameter "max_missed" is set to None. '
-                f'Using max_missed={params["max_missed"]}')
-        adinputs = super().determineDistortion(adinputs, **params)
-        return adinputs
+                f'Using max_missed={these_params["max_missed"]} for {ad.filename}')
+            adoutputs.extend(super().determineDistortion([ad], **these_params))
+        return adoutputs
 
 
     def determineWavelengthSolution(self, adinputs=None, **params):
@@ -298,31 +300,34 @@ class F2Spect(Spect, F2):
         list of :class:`~astrodata.AstroData`
             Updated objects with a `.WAVECAL` attribute and improved wcs for
             each slice
-"""
+        """
+        adoutputs = []
         for ad in adinputs:
-            min_snr_isNone = True if params["min_snr"] is None else False
+            these_params = params.copy()
+            min_snr_isNone = True if these_params["min_snr"] is None else False
 
             if "ARC" in ad.tags:
-                if params["min_snr"] is None:
-                    params["min_snr"] = 10
+                if these_params["min_snr"] is None:
+                    these_params["min_snr"] = 10
             else:
                 # Telluric absorption in object spectrum
-                if params.get("absorption", False):
+                if these_params.get("absorption", False):
                     self.generated_linelist = True
-                    params["lsigma"] = 2
-                    params["hsigma"] = 2
-                    if params["min_snr"] is None:
-                        params["min_snr"] = 1
+                    these_params["lsigma"] = 2
+                    these_params["hsigma"] = 2
+                    if these_params["min_snr"] is None:
+                        these_params["min_snr"] = 1
                 else:
                     # OH emission
-                    if params["min_snr"] is None:
-                        params["min_snr"] = 10
+                    if these_params["min_snr"] is None:
+                        these_params["min_snr"] = 10
 
             if min_snr_isNone:
-                self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
-
-        adinputs = super().determineWavelengthSolution(adinputs, **params)
-        return adinputs
+                self.log.stdinfo(f'Parameter "min_snr" is set to None. '
+                                 f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
+            
+            adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
+        return adoutputs
 
     def _get_arc_linelist(self, ext, waves=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
