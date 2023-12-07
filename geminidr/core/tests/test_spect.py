@@ -45,6 +45,7 @@ from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
+from geminidr.gnirs.primitives_gnirs_crosssdispersed import GNIRSCrossDispersed
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
 
