@@ -4851,7 +4851,6 @@ class Spect(Resample):
                     continue
 
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
-                in_coords_ph, ref_coords_ph = get_pinhole_traces()
 
                 # Create pairs of slit edge models by zipping consecutive
                 # pairs of entries from the table.
