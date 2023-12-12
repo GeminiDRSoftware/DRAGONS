@@ -3,6 +3,9 @@
 Tests related to NIRI Long-slit Spectroscopy Arc primitives.
 
 """
+# import multiprocessing as mp
+# mp.set_start_method('fork')
+
 import glob
 import tarfile
 import logging
@@ -64,7 +67,7 @@ input_pars = [
     # camera: f6, grism: M
     ("N20091022S0369_flatCorrected.fits", dict(min_snr=20)), # f6-2pix, science, linelists created on-the fly. With default min_snr the solution is unstable due to faint lines
     # absorption test
-    ("N20090706S0727_aperturesFound.fits", dict(absorption=True)), # science, linelists created on-the fly
+    #("N20090706S0727_aperturesFound.fits", dict(absorption=True)), # science, linelists created on-the fly. Unstable solution without stacking
     # OH emission test
     ("N20090706S0706_flatCorrected.fits", dict()) # science, linelists created on-the fly
 ]
@@ -109,17 +112,19 @@ associated_calibrations = {
     "N20091022S0369.fits": {
         'flat': ["N20091022S0371.fits"], # doesn't find flat, no rect model in flat
     },
-    # "N20090706S0727.fits": {
-    #     'flat': ["N20090706S0676.fits"],
-    #     'arc': ["N20090706S0666.fits"], # make reference manually
-    # },
     "N20090706S0706.fits": {
         'flat': ["N20090706S0676.fits"],
     }
 }
+    
+associated_calibrations_absorp = {
+    "N20090706S0727.fits": {
+        'flat': ["N20090706S0676.fits"],
+        'arc': ["N20090706S0666.fits"], 
+    }
+}
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
@@ -454,13 +459,69 @@ def create_inputs_recipe():
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
 
         p = NIRILongslit([arc_ad])
-        p.prepare()
+        p.prepare(bad_wcs="fix")
         p.addDQ()
         p.ADUToElectrons()
         p.addVAR(read_noise=True, poisson_noise=True)
         p.nonlinearityCorrect()
         p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
         p.makeIRAFCompatible()
+
+        os.chdir("inputs/")
+        processed_ad = p.writeOutputs().pop()
+        os.chdir("../")
+        print('Wrote pre-processed file to:\n'
+              '    {:s}'.format(processed_ad.filename))
+        
+    for filename, cals in associated_calibrations_absorp.items():
+        print(filename)
+
+        arc_path = download_from_archive(filename)
+        flat_path = [download_from_archive(f) for f in cals['flat']]
+        arc_arc_path = [download_from_archive(f) for f in cals['arc']]
+
+        arc_ad = astrodata.open(arc_path)
+        data_label = arc_ad.data_label()
+
+        logutils.config(file_name='log_flat_{}.txt'.format(data_label))
+        flat_reduce = Reduce()
+        flat_reduce.files.extend(flat_path)
+        flat_reduce.uparms = [('normalizeFlat:threshold','0.01')]
+        flat_reduce.runr()
+        processed_flat = flat_reduce.output_filenames.pop()
+        calibration_files = ['processed_flat:{}'.format(processed_flat)]
+        del flat_reduce
+
+        logutils.config(file_name='log_arc_arc_{}.txt'.format(data_label))
+        arc_arc_reduce = Reduce()
+        arc_arc_reduce.files.extend(arc_arc_path)
+        arc_arc_reduce.ucals = normalize_ucals(calibration_files)
+        arc_arc_reduce.runr()
+        processed_arc_arc = arc_arc_reduce.output_filenames.pop()
+        del arc_arc_reduce
+
+        print('Reducing pre-processed data:')
+        logutils.config(file_name='log_arc_{}.txt'.format(data_label))
+
+        p = NIRILongslit([arc_ad])
+        p.prepare(bad_wcs="fix")
+        p.addDQ()
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True, read_noise=True)
+        p.nonlinearityCorrect()
+        p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
+        p.attachWavelengthSolution(arc=processed_arc_arc, suffix="_wavelengthSolutionAttached")
+        p.copyInputs(instream="main", outstream="with_distortion_model")
+        p.separateSky()
+        p.associateSky()
+        p.skyCorrect()
+        p.cleanReadout()
+        p.distortionCorrect()
+        p.adjustWCSToReference()
+        p.resampleToCommonFrame(force_linear=False)
+        p.scaleCountsToReference()
+        p.stackFrames()
+        p.findApertures()
 
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()

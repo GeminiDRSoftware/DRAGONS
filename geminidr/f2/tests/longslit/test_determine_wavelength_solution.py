@@ -3,6 +3,9 @@
 Tests related to F2 Long-slit Spectroscopy Arc primitives.
 
 """
+# import multiprocessing as mp
+# mp.set_start_method('fork')
+
 import glob
 import tarfile
 import logging
@@ -319,7 +322,6 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
