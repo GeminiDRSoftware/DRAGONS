@@ -185,97 +185,116 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
         return adinputs
 
 
-    def determineDistortion(self, adinputs=None, **params):
-        """
-        Maps the distortion on a detector by tracing lines perpendicular to the
-        dispersion direction. Then it fits a 2D Chebyshev polynomial to the
-        fitted coordinates in the dispersion direction. The distortion map does
-        not change the coordinates in the spatial direction.
+     def determineDistortion(self, adinputs=None, **params):
+         """
+         Maps the distortion on a detector by tracing lines perpendicular to the
+         dispersion direction. Then it fits a 2D Chebyshev polynomial to the
+         fitted coordinates in the dispersion direction. The distortion map does
+         not change the coordinates in the spatial direction.
 
-        The Chebyshev2D model is stored as part of a gWCS object in each
-        `nddata.wcs` attribute, which gets mapped to a FITS table extension
-        named `WCS` on disk.
+         The Chebyshev2D model is stored as part of a gWCS object in each
+         `nddata.wcs` attribute, which gets mapped to a FITS table extension
+         named `WCS` on disk.
 
-        This GNIRS-specific primitive sets default spectral order in case it's None
-        (since there are only few lines available in H and K-bands in high-res mode, which
-        requires setting order to 1), and minimum length of traced feature to be considered
-        as a useful line for each pixel scale.
-        It then calls the generic version of the primitive.
+         This GNIRS-specific primitive sets default spectral order in case it's None
+         (since there are only few lines available in H and K-bands in high-res mode, which
+         requires setting order to 1), and minimum length of traced feature to be considered
+         as a useful line for each pixel scale.
+         It then calls the generic version of the primitive.
 
 
-        Parameters
-        ----------
-        adinputs : list of :class:`~astrodata.AstroData`
-            Arc data as 2D spectral images with the distortion and wavelength
-            solutions encoded in the WCS.
+         Parameters
+         ----------
+         adinputs : list of :class:`~astrodata.AstroData`
+             Arc data as 2D spectral images with the distortion and wavelength
+             solutions encoded in the WCS.
 
-        suffix :  str
-            Suffix to be added to output files.
+         suffix :  str
+             Suffix to be added to output files.
 
-        spatial_order : int
-            Order of fit in spatial direction.
+         spatial_order : int
+             Order of fit in spatial direction.
 
-        spectral_order : int
-            Order of fit in spectral direction.
+         spectral_order : int
+             Order of fit in spectral direction.
 
-        id_only : bool
-            Trace using only those lines identified for wavelength calibration?
+         id_only : bool
+             Trace using only those lines identified for wavelength calibration?
 
-        min_snr : float
-            Minimum signal-to-noise ratio for identifying lines (if
-            id_only=False).
+         min_snr : float
+             Minimum signal-to-noise ratio for identifying lines (if
+             id_only=False).
 
-        nsum : int
-            Number of rows/columns to sum at each step.
+         nsum : int
+             Number of rows/columns to sum at each step.
 
-        step : int
-            Size of step in pixels when tracing.
+         step : int
+             Size of step in pixels when tracing.
 
-        max_shift : float
-            Maximum orthogonal shift (per pixel) for line-tracing (unbinned).
+         max_shift : float
+             Maximum orthogonal shift (per pixel) for line-tracing (unbinned).
 
-        max_missed : int
-            Maximum number of steps to miss before a line is lost.
+         max_missed : int
+             Maximum number of steps to miss before a line is lost.
 
-        min_line_length: float
-            Minimum length of traced feature (as a fraction of the tracing dimension
-            length) to be considered as a useful line.
+         min_line_length: float
+             Minimum length of traced feature (as a fraction of the tracing dimension
+             length) to be considered as a useful line.
 
-        debug_reject_bad: bool
-            Reject lines with suspiciously high SNR (e.g. bad columns)? (Default: True)
+         debug_reject_bad: bool
+             Reject lines with suspiciously high SNR (e.g. bad columns)? (Default: True)
 
-        debug: bool
-            plot arc line traces on image display window?
+         debug: bool
+             plot arc line traces on image display window?
 
-        Returns
-        -------
-        list of :class:`~astrodata.AstroData`
-            The same input list is used as output but each object now has the
-            appropriate `nddata.wcs` defined for each of its extensions. This
-            provides details of the 2D Chebyshev fit which maps the distortion.
-        """
-        for ad in adinputs:
-            disp = ad.disperser(pretty=True)
-            cam = ad.camera(pretty=True)
-            cenwave = ad.central_wavelength(asMicrometers=True)
-            if params["spectral_order"] is None:
-                if disp.startswith('111') and cam.startswith('Long') and \
-                        cenwave >= 1.65:
-                        params["spectral_order"] = 1
-                else:
-                    params["spectral_order"] = 2
-                self.log.stdinfo(f'Parameter "spectral_order" is set to None. '
-                                 f'Using spectral_order={params["spectral_order"]}')
+         Returns
+         -------
+         list of :class:`~astrodata.AstroData`
+             The same input list is used as output but each object now has the
+             appropriate `nddata.wcs` defined for each of its extensions. This
+             provides details of the 2D Chebyshev fit which maps the distortion.
+         """
+         adoutputs = []
+         for ad in adinputs:
+             these_params = params.copy()
+             disp = ad.disperser(pretty=True)
+             cam = ad.camera(pretty=True)
+             cenwave = ad.central_wavelength(asMicrometers=True)
+             if these_params["spectral_order"] is None:
+                 if 'ARC' in ad.tags:
+                     if disp.startswith('111') and cam.startswith('Long') and \
+                             cenwave >= 1.65:
+                             these_params["spectral_order"] = 1
+                     else:
+                         these_params["spectral_order"] = 2
+                 else:
+                 # sky line case
+                     these_params["spectral_order"] = 3
+                 self.log.stdinfo(f'Parameter "spectral_order" is set to None. '
+                                  f'Using spectral_order={these_params["spectral_order"]} for {ad.filename}')
 
-            if params["min_line_length"] is None:
-                if cam.startswith('Long'):
-                    params["min_line_length"] = 0.8
-                else:
-                    params["min_line_length"] = 0.6
-                self.log.stdinfo(f'Parameter "min_line_length" is set to None. '
-                 f'Using min_line_length={params["min_line_length"]}')
-        adinputs = super().determineDistortion(adinputs, **params)
-        return adinputs
+             if these_params["min_line_length"] is None:
+                 if cam.startswith('Long'):
+                     these_params["min_line_length"] = 0.8
+                 else:
+                     these_params["min_line_length"] = 0.6
+                 self.log.stdinfo(f'Parameter "min_line_length" is set to None. '
+                  f'Using min_line_length={these_params["min_line_length"]} for {ad.filename}')
+
+             if these_params["max_missed"] is None:
+                 if "ARC" in ad.tags:
+                     # In arcs with few lines tracing strong horizontal noise pattern can
+                     # affect distortion model.Using a lower max_missed value helps to
+                     # filter out horizontal noise.
+                     these_params["max_missed"] = 2
+                 else:
+                     # In science frames we want this parameter be set to a higher value, since
+                     # otherwise the line might be abandoned when crossing a bright object spectrum.
+                     these_params["max_missed"] = 5
+                 self.log.stdinfo(f'Parameter "max_missed" is set to None. '
+                  f'Using max_missed={these_params["max_missed"]} for {ad.filename}')
+             adoutputs.extend(super().determineDistortion([ad], **these_params))
+         return adoutputs
 
 
     def determineWavelengthSolution(self, adinputs=None, **params):
@@ -299,7 +318,9 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
         (1-indexed) position of the lines that were matched to the catalogue,
         and the `wavelengths` column contains the matched wavelengths.
 
-        This GNIRS-specific primitive sets the default order in case it's None.
+        This GNIRS-specific primitive sets debug_min_lines, order, min_snr,
+        num_atran_lines and average values depending on the
+        observing mode, as the default value for these parameters is None.
         It then calls the generic version of the primitive.
 
         Parameters
@@ -359,6 +380,22 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
         debug : bool
             Enable plots for debugging.
 
+        num_atran_lines: int/None
+            Number of lines with largest weigths (within a wvl bin) to be used for
+            the generated ATRAN line list.
+
+        wv_band: {'20', '50', '80', '100', 'header'}
+            Water vapour content (as percentile) to be used for ATRAN model
+            selection. If "header", then the value from the header is used.
+
+        resolution: int/None
+            Resolution of the observation (as l/dl), to which ATRAN spectrum should be
+            convolved. If None, the default value for the instrument/mode is used.
+
+        debug_combiner: {"mean", "median", "none"}
+            Method to use for combining rows/columns when extracting 1D-spectrum.
+            Default: "mean".
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -370,46 +407,121 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
         :class:`~geminidr.core.primitives_visualize.Visualize.mosaicDetectors`,
         :class:`~gempy.library.matching.KDTreeFitter`,
         """
+        adoutputs = []
         for ad in adinputs:
+            these_params = params.copy()
+            min_snr_isNone = True if these_params["min_snr"] is None else False
+            order_isNone = True if these_params["order"] is None else False
+            combine_method_isNone = True if these_params["combine_method"] == "optimal" else False
+
             disp = ad.disperser(pretty=True)
             filt = ad.filter_name(pretty=True)
             cam = ad.camera(pretty=True)
             cenwave = ad.central_wavelength(asMicrometers=True)
+            log = self.log
 
             if 'ARC' in ad.tags:
-                if params["min_snr"] is None:
-                    params["min_snr"] = 20
-                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
-                if params["debug_min_lines"] is None:
-                    params["debug_min_lines"] = 100000
+                if these_params["min_snr"] is None:
+                    these_params["min_snr"] = 20
+                if these_params["debug_min_lines"] is None:
+                    these_params["debug_min_lines"] = 100000
 
-                if params["order"] is None:
+                if these_params["order"] is None:
                     if ((filt == "H" and cenwave >= 1.75) or (filt == "K" and cenwave >= 2.2)) \
                             and ((cam.startswith('Long') and disp.startswith('32')) or
                                  (cam.startswith('Short') and disp.startswith('111'))):
-                            params["order"] = 1
+                            these_params["order"] = 1
                     elif disp.startswith('111') and cam.startswith('Long'):
-                            params["order"] = 1
+                            these_params["order"] = 1
                     else:
-                        params["order"] = 3
-                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
+                        these_params["order"] = 3
+
+            elif these_params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
+                # The case of wavecal from absorption, or wavecal from telluric
+                # emission in L- and M-bands, both done using ATRAN lines
+                self.generated_linelist = True
+                # sigma=2 works better with ATRAN line lists
+                these_params["lsigma"] = 2
+                these_params["hsigma"] = 2
+
+                if these_params["absorption"]:
+                    # Telluric absorption case
+                    if these_params["order"] is None:
+                        these_params["order"] = 1
+
+                    if these_params["min_snr"] is None:
+                        these_params["min_snr"] = 1
+
+                    if these_params["center"] is None:
+                        try:
+                            aptable = ad[0].APERTURE
+                            these_params["center"] = int(aptable['c0'].data[0])
+                        except (AttributeError, KeyError):
+                            log.error("Could not find aperture locations in "
+                                        f"{ad.filename} - continuing")
+                            continue
+
+                else:
+                    # Telluric emission in L and M-bands
+                    if these_params["order"] is None:
+                        these_params["order"] = 3
+
+                    if these_params["center"] is None:
+                        these_params["center"] = 650
+
+                    if these_params["min_snr"] is None:
+                        if filt.startswith('L'):
+                            # Use a lower min_snr for the regions with large illumination gradient,
+                            # and for the region of "comb"-like lines beyond 3.8 um
+                            if (disp.startswith('111') and 3.50 <= cenwave) or \
+                                (disp.startswith('111') and cam.startswith('Short') and 3.80 <= cenwave) or \
+                                (disp.startswith('32') and cam.startswith('Long') and 3.65 <= cenwave):
+                                these_params["min_snr"] = 1
+                            else:
+                                these_params["min_snr"] = 10
+                        else:
+                            these_params["min_snr"] = 10
+
+                    if these_params["num_atran_lines"] is None:
+                        if filt.startswith('M'):
+                            these_params["num_atran_lines"] = 150
+                        elif filt.startswith('L'):
+                            these_params["num_atran_lines"] = 100
+                            if ((disp.startswith('111') and cam.startswith('Short')) or
+                                (disp.startswith('32') and cam.startswith('Long'))) and \
+                                    3.80 <= cenwave:
+                                these_params["num_atran_lines"] = 300
+
+                    if these_params["combine_method"] == "optimal":
+                        # this is to reduce the impact of hot pixels
+                        if filt.startswith('L') and cenwave >= 3.8:
+                            these_params["combine_method"] = "median"
+                        else:
+                            these_params["combine_method"] = "mean"
             else:
-                params["lsigma"] = 2
-                params["hsigma"] = 2
+                # OH emission
+                if these_params["min_snr"] is None:
+                    these_params["min_snr"] = 10
+                if these_params["order"] is None:
+                    these_params["order"] = 3
+                if these_params["center"] is None:
+                    these_params["center"] = 650
 
-                if params["debug_min_lines"] is None:
-                    params["debug_min_lines"] = 15
+            if these_params["debug_min_lines"] is None:
+                these_params["debug_min_lines"] = 15
+            if these_params["num_atran_lines"] is None:
+                these_params["num_atran_lines"] = 50
+            if these_params["combine_method"] == "optimal":
+                these_params["combine_method"] = "mean"
 
-                if params["order"] is None:
-                    if ad.camera(pretty=True).startswith('Long') and \
-                            ad.disperser(pretty=True).startswith('111') and \
-                            3.65 <= cenwave <= 3.75:
-                            params["order"] = 1
-                    else:
-                     params["order"] = 3
-                    self.log.stdinfo(f'Parameter "order" is set to None. Using order={params["order"]}')
-                if params["min_snr"] is None:
-                    params["min_snr"] = 10
-                    self.log.stdinfo(f'Parameter "min_snr" is set to None. Using min_snr={params["min_snr"]}')
-        adinputs = super().determineWavelengthSolution(adinputs, **params)
-        return adinputs
+            if min_snr_isNone:
+                self.log.stdinfo(f'Parameter "min_snr" is set to None. '
+                                 f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
+            if order_isNone:
+                self.log.stdinfo(f'Parameter "order" is set to None. '
+                                 f'Using order={these_params["order"]} for {ad.filename}')
+            if combine_method_isNone:
+                self.log.stdinfo(f'Parameter "combine_method" is set to "optimal"".'
+                                 f' Using "combine_method"={these_params["combine_method"]} for {ad.filename}')
+            adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
+        return adoutputs
