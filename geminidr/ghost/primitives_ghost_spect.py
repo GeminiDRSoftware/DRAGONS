@@ -960,6 +960,12 @@ class GHOSTSpect(GHOST):
             number of standard deviations for identifying discrepant pixels
         weighting: str ("uniform"/"optimal")
             weighting scheme for extraction
+        ftol: float
+            fractional tolerance for convergence of optimal extraction flux
+        apply_centroids: bool
+            measure deviations from linearity of the slit profile and use
+            these to apply positional offsets for lines of constant wavelength
+            in the echellograms? This may simply introduce noise.
         writeResult: bool
             Denotes whether or not to write out the result of profile
             extraction to disk. This is useful for both debugging, and data
@@ -977,7 +983,7 @@ class GHOSTSpect(GHOST):
         debug_pixel = (params["debug_order"], params["debug_pixel"])
         add_cr_map = params["debug_cr_map"]
         optimal_extraction = params["weighting"] == "optimal"
-        ftol = params["tolerance"]
+        ftol = params["ftol"]
         apply_centroids = params["apply_centroids"]
         timing = params["debug_timing"]
 

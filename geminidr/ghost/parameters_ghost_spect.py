@@ -101,7 +101,7 @@ class extractProfileConfig(config.Config):
                                    allowed={"uniform": "uniform weighting",
                                             "optimal": "optimal extraction"},
                                    default="optimal")
-    tolerance = config.RangeField("Fractional tolerance for convergence",
+    ftol = config.RangeField("Fractional tolerance for convergence",
                                   float, 0.001, min=1e-8, max=0.05)
     apply_centroids = config.Field("Apply slit center-of-light offsets?", bool, False)
     seeing = config.RangeField("FWHM of seeing disc if no processed_slit is "
