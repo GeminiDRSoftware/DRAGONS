@@ -107,12 +107,6 @@ class AstroDataGnirs(AstroDataGemini):
             The dispersion(s)
         """
 
-        telescope = self.telescope()
-        if telescope == "Gemini-South":
-            other_telescope = "Gemini-North"
-        else:
-            other_telescope = "Gemini-South"
-
         grating = self._grating(pretty=True, stripID=True)
 
         if self.pixel_scale() == pixel_scale_shrt:
@@ -123,17 +117,11 @@ class AstroDataGnirs(AstroDataGemini):
             camera = None
 
         filter = str(self.filter_name(pretty=True))[0]
-        config = f"{telescope}, {grating}, {camera}"
-        config_other_site = f"{other_telescope}, {grating}, {camera}"
+        config = f"{grating}, {camera}"
+        dispersion = dispersion_by_config.get(config, {}).get(filter)
 
-        def get_dispersion_by_config(_config, _filter):
-            return dispersion_by_config.get(_config, {}).get(_filter)
-
-        dispersion = get_dispersion_by_config(config, filter)
         if dispersion is None:
-            dispersion = get_dispersion_by_config(config_other_site, filter)
-            if dispersion is None:
-                return None
+            return None
 
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         output_units = "meters" # By default

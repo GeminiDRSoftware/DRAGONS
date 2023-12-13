@@ -32,7 +32,7 @@ from geminidr.gnirs.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
 fixed_parameters_for_determine_distortion = {
     "fwidth": None,
     "id_only": False,
-    "max_missed": 2,
+    "max_missed": None,
     "max_shift": 0.05,
     "min_snr": 10.,
     "nsum": 10,
@@ -46,19 +46,42 @@ input_pars = [
     # Process Arcs: GNIRS ---
     # (Input File, params)
     # 10 l/mm, LongCam, GN
-    ("N20210810S0833_varAdded.fits", dict()), # X, 1.100um, 0.1" slit
+    ("N20210613S0419_flatCorrected.fits", dict()), # X, 1.100um, 0.1" slit. Flat=N20210613S0418.fits
     # 32 l/mm, ShortCam, GN
-    ("N20140413S0124_varAdded.fits", dict()), # X, 1.100um, 1" slit
+    ("N20140413S0124_flatCorrected.fits", dict()), # X, 1.100um, 1" slit. Flat=N20140413S0125.fits
     # 32 l/mm, LongCam, GN
-    ("N20191221S0157_varAdded.fits", dict()), # K, 2.350um, 0.1" slit
+    ("N20191221S0157_flatCorrected.fits", dict()), # K, 2.350um, 0.1" slit. Flat=N20191221S0155.fits
     # 111 l/mm, ShortCam, GN
-    ("N20130808S0131_varAdded.fits", dict()), # J, 1.180um, 0.3" slit
+    ("N20130808S0131_flatCorrected.fits", dict()), # J, 1.180um, 0.3" slit. Flat=N20130808S0132.fits
     # 111 l/mm, LongCam, GN
-    ("N20200914S0035_varAdded.fits", dict()), # J, 1.300um, 0.15" slit
-    ("N20141218S0289_varAdded.fits", dict(min_snr=20)), # H, 1.710um, 0.1" slit
-    ("N20110618S0031_varAdded.fits", dict()), # K, 2.208um, 0.3" slit
-    ("N20161217S0001_varAdded.fits", dict(min_snr=7)), # K, 2.500um, 0.1" slit
+    ("N20200914S0035_flatCorrected.fits", dict()), # J, 1.300um, 0.15" slit. Flat=N20200914S0033.fits
+    ("N20141218S0289_flatCorrected.fits", dict(min_snr=20)), # H, 1.710um, 0.1" slit, Flat=N20141218S0290.fits
+    ("N20161217S0001_flatCorrected.fits", dict(min_snr=7)), # K, 2.500um, 0.1" slit, Flat=N20161217S0002.fits
 ]
+
+associated_calibrations = {
+    "N20210613S0419.fits": {
+        'flat': ["N20210613S0418.fits"],
+    },
+    "N20140413S0124.fits": {
+        'flat': ["N20140413S0125.fits"],
+    },
+    "N20191221S0157.fits": {
+        'flat': ["N20191221S0155.fits"],
+    },
+    "N20130808S0131.fits": {
+        'flat': ["N20130808S0132.fits"],
+    },
+    "N20200914S0035.fits": {
+        'flat': ["N20200914S0033.fits"],
+    },
+    "N20141218S0289.fits": {
+        'flat': ["N20141218S0290.fits"],
+    },
+    "N20161217S0001.fits": {
+        'flat': ["N20161217S0002.fits"],
+    }
+}
 
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.slow
@@ -102,7 +125,6 @@ def test_regression_for_determine_distortion_using_wcs(
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
     np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
-
 
 @pytest.mark.slow
 @pytest.mark.preprocessed_data
@@ -372,22 +394,33 @@ def create_inputs_recipe():
     os.makedirs("inputs/", exist_ok=True)
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
-    for filename, _ in input_pars:
-        print('Downloading files...')
-        basename = filename.split("_")[0] + ".fits"
-        sci_path = download_from_archive(basename)
-        sci_ad = astrodata.open(sci_path)
-        data_label = sci_ad.data_label()
+    for filename, cals in associated_calibrations.items():
+        print(filename)
+
+        arc_path = download_from_archive(filename)
+        flat_path = [download_from_archive(f) for f in cals['flat']]
+
+        arc_ad = astrodata.open(arc_path)
+        data_label = arc_ad.data_label()
+
+        logutils.config(file_name='log_flat_{}.txt'.format(data_label))
+        flat_reduce = Reduce()
+        flat_reduce.files.extend(flat_path)
+        flat_reduce.uparms = [('normalizeFlat:threshold','0.01')]
+        flat_reduce.runr()
+        processed_flat = flat_reduce.output_filenames.pop()
+        del flat_reduce
+
 
         print('Reducing pre-processed data:')
         logutils.config(file_name='log_{}.txt'.format(data_label))
-        p = GNIRSLongslit([sci_ad])
+        p = GNIRSLongslit([arc_ad])
         p.prepare()
         p.addDQ()
         p.addVAR(read_noise=True)
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
-        p.makeIRAFCompatible()
+        p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
 
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()

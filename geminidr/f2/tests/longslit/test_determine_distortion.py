@@ -31,7 +31,7 @@ from geminidr.f2.tests.longslit import CREATED_INPUTS_PATH_FOR_TESTS
 fixed_parameters_for_determine_distortion = {
     "fwidth": None,
     "id_only": False,
-    "max_missed": 2,
+    "max_missed": None,
     "max_shift": 0.05,
     "min_snr": 7.,
     "nsum": 10,
@@ -60,6 +60,8 @@ input_pars = [
     ("S20220515S0026_flatCorrected.fits", dict()), # 3-pix slit
     # grism: R3K, filter: K-long (2.200um)
     ("S20150624S0023_flatCorrected.fits", dict()), # 1-pix slit
+    # from OH emission sky lines in science:
+    ("S20180114S0104_flatCorrected.fits", dict())
 ]
 
 associated_calibrations = {
@@ -166,6 +168,19 @@ associated_calibrations = {
                  "S20150627S0340.fits",
                  "S20150627S0341.fits"],
     },
+    "S20180114S0104.fits": {
+        'flat_darks': ["S20180120S0222.fits",
+                 "S20180120S0223.fits",
+                 "S20180120S0224.fits",
+                 "S20180120S0225.fits",
+                 "S20180120S0226.fits"],
+        'flat': ["S20180114S0118.fits"], # ND2.0
+        'arc_darks': ["S20180117S0033.fits",
+                 "S20180117S0034.fits",
+                 "S20180117S0035.fits",
+                 "S20180117S0036.fits",
+                 "S20180117S0037.fits"],
+    },
 }
 
 # Tests Definitions ------------------------------------------------------------
@@ -209,7 +224,6 @@ def test_regression_for_determine_distortion_using_wcs(
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
     np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
-
 
 @pytest.mark.slow
 @pytest.mark.preprocessed_data

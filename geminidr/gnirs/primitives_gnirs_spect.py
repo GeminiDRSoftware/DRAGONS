@@ -5,7 +5,6 @@
 # ------------------------------------------------------------------------------
 import os
 
-
 from importlib import import_module
 
 from geminidr.core import Spect
@@ -60,89 +59,48 @@ class GNIRSSpect(Spect, GNIRS):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ad=None):
+    def _get_arc_linelist(self, ext, waves=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
 
-        is_lowres = ad.disperser(pretty=True).startswith('10') or \
-                    (ad.disperser(pretty=True).startswith('32') and
-                        ad.camera(pretty=True).startswith('Short'))
+        is_lowres = ext.disperser(pretty=True).startswith('10') or \
+                    (ext.disperser(pretty=True).startswith('32') and
+                        ext.camera(pretty=True).startswith('Short'))
 
-        if 'ARC' in ad.tags:
-            if 'Xe' in ad.object():
+        if 'ARC' in ext.tags:
+            if 'Xe' in ext.object():
                 linelist ='Ar_Xe.dat'
-            elif "Ar" in ad.object():
+            elif "Ar" in ext.object():
                 if is_lowres:
                     linelist = 'lowresargon.dat'
                 else:
                     linelist = 'argon.dat'
             else:
-                raise ValueError(f"No default line list found for {ad.object()}-type arc. Please provide a line list.")
+                raise ValueError(f"No default line list found for {ext.object()}-type arc. Please provide a line list.")
 
         else:
-            if ad.filter_name(pretty=True).startswith('M'):
-                resolution = self._get_resolution(ad)
-                if resolution >= 5000:
-                    linelist = 'sky_M_band_high_res.dat'
-                elif (2000 <= resolution < 5000):
-                    linelist = 'sky_M_band_med_res.dat'
-                elif (500 <= resolution < 2000):
-                    linelist = 'sky_M_band_low_res.dat'
-                elif resolution < 500:
-                    linelist = 'sky_M_band_very_low_res.dat'
-            elif ad.filter_name(pretty=True).startswith('L'):
-                resolution = self._get_resolution(ad)
-                if resolution >=10000:
-                    linelist = 'sky_L_band_high_res.dat'
-                elif (3000 <= resolution < 10000):
-                    linelist = 'sky_L_band_med_res.dat'
-                elif (1000 <= resolution < 3000):
-                    linelist = 'sky_L_band_low_res.dat'
-                elif resolution < 1000:
-                    linelist = 'sky_L_band_very_low_res.dat'
+            # In case of wavecal from sky OH emission use this line list:
+            linelist = 'nearIRsky.dat'
 
-            else:
-                linelist = 'nearIRsky.dat'
-
-        self.log.debug(f"Using linelist '{linelist}'")
+        self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
 
         return wavecal.LineList(filename)
 
 
-    def _get_resolution(self, ad=None):
-        resolution_2pix_slit = {('M, 10/mm, 0.05'): 1200,
-                                ('M, 32/mm, 0.15'): 1240,
-                                ('M, 32/mm, 0.05'): 3700,
-                                ('M, 111/mm, 0.15'): 4300,
-                                ('M, 111/mm, 0.05'): 12800,
-                                ('L, 10/mm, 0.05'): 1800,
-                                ('L, 32/mm, 0.15'): 1800,
-                                ('L, 32/mm, 0.05'): 5400,
-                                ('L, 111/mm, 0.15'): 6400,
-                                ('L, 111/mm, 0.05'): 19000}
-
-        filter = str(ad.filter_name(pretty=True))[0]
-        grating = ad._grating(pretty=True, stripID=True)
-        pix_scale = ad.pixel_scale()
-        config = f"{filter}, {grating}, {pix_scale}"
-
-        resolution_2pix = resolution_2pix_slit.get(config)
-        slit_width_pix = ad.slit_width()/pix_scale
-
-        return resolution_2pix * 2 / slit_width_pix
-
-    def _get_cenwave_accuracy(self, ad=None):
+    def _get_cenwave_accuracy(self, ext):
         # Accuracy of central wavelength (nm) for a given instrument/setup.
         # According to GNIRS instrument pages "wavelength settings are accurate
         # to better than 5 percent of the wavelength coverage".
         # However using 7% covers more cases. For the arcs dc0=10 works just fine for all modes.
 
-        mband = ad.filter_name(pretty=True).startswith('M')
-        lband = ad.filter_name(pretty=True).startswith('L')
+        mband = ext.filter_name(pretty=True).startswith('M')
+        lband = ext.filter_name(pretty=True).startswith('L')
+        dispaxis = 2 - ext.dispersion_axis()  # python sense
+        npix = ext.shape[dispaxis]
 
-        if 'ARC' in ad.tags or not (mband or lband):
+        if 'ARC' in ext.tags or not (mband or lband):
             dcenwave = 10
         else:
-            dcenwave = abs(ad.dispersion(asNanometers=True)) * 1024 * 0.07
+            dcenwave = abs(ext.dispersion(asNanometers=True)) * npix * 0.07
         return dcenwave

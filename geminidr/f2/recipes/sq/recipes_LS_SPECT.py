@@ -38,7 +38,7 @@ def reduceScience(p):
     p.storeProcessedScience(suffix="_1D")
 
 
-def  makeWavelengthSolution(p):
+def  makeWavecalFromSkyEmission(p):
     """
     Process F2 longslist science in order to create wavelength and distortion
     solutions using sky emission lines.
@@ -48,16 +48,18 @@ def  makeWavelengthSolution(p):
           * procdark with matching exptime
           * procflat
     """
+
     p.prepare()
     p.addDQ()
     p.addVAR(read_noise=True)
     p.ADUToElectrons()
-    p.addVAR(poisson_noise=True)
+    p.addVAR(poisson_noise=True, read_noise=True)
     p.darkCorrect()
-    #p.flatCorrect()
+    p.flatCorrect()
+    p.stackFrames()
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
-    p.determineDistortion(debug=True)
+    p.determineDistortion()
     p.storeProcessedArc(force=True)
     p.writeOutputs()
 

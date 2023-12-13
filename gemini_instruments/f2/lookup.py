@@ -75,24 +75,37 @@ dispersion_offset_mask = {
     # illum_mask cut-on wvl (nm), illum_mask cut-off wvl (nm) )
     # All values were refined using the archive F2 ARC images.
 
-    # The offset values for JH and HK filters are the same for old and new filters, since WAVELENG was not updated.
-    # If WAVELENG gets eventually updated, offsets for the setups with new filters need to be updated too.
-
-    ("JH", "JH_G0809"): DispersionOffsetMask(-0.651, -35, 888, 1774),   # old filter. (cut-on, cut-off) wvl at filter T=(1%, 50%) - to avoid order overlap
-    ("JH", "JH_G0816"): DispersionOffsetMask(-0.651, -35, 857, 1782),   # new filter. If WAVELENG gets updated to 1.3385 um, new offset = 44 px
-    ("HK", "HK_G0806"): DispersionOffsetMask(-0.757, 6, 1245, 2540),    # old filter. T=(1%, 1%)
-    ("HK", "HK_G0817"): DispersionOffsetMask(-0.757, 6, 1273, 2534),    # new filter. If WAVELENG gets updated to 1.900 um, new offset = -32 px
-    ("HK", "JH_G0809"): DispersionOffsetMask(-0.760, 644, 888, 2700),   # old filter. T=(1%, :) - to keep both orders
-    ("HK", "JH_G0816"): DispersionOffsetMask(-0.760, 644, 857, 2700),   # new filter. If WAVELENG gets updated to 1.3385 um, new offset = ?
-    ("R3K", "J-lo"):  DispersionOffsetMask(-0.168, -173, 1027, 1204),   # T=(1%, 1%)
-    ("R3K", "J"):     DispersionOffsetMask(-0.202, 418, 1159, 1349),    # T=(1%, 1%)
-    ("R3K", "H"):     DispersionOffsetMask(-0.260, 22, 1467, 1804),     # T=(1%, 1%)
-    ("R3K", "Ks"):    DispersionOffsetMask(-0.349, 128, 1966, 2350),    # T=(1%, 1%)
-    ("R3K", "K-long"):DispersionOffsetMask(-0.351, -14, 1865, 2520)     # T=(1%, X%) - cut-off value selected at inter-order min
+    ("JH", "JH_G0809"):     DispersionOffsetMask(-0.651, -35, 888, 1774),   # old filter. (cut-on, cut-off) wvl at filter T=(1%, 50%) - to avoid order overlap
+    ("JH", "JH_G0816"):     DispersionOffsetMask(-0.651, 44, 857, 1782),    # new filter. T=(1%, 50%)
+    ("HK", "HK_G0806"):     DispersionOffsetMask(-0.757, 6, 1245, 2540),    # old filter. T=(1%, 1%)
+    ("HK", "HK_G0817"):     DispersionOffsetMask(-0.757, -30, 1273, 2534),  # new filter. T=(1%, 1%)
+    ("HK", "JH_G0809"):     DispersionOffsetMask(-0.760, 635, 888, 2700),   # old filter. T=(1%, :) - to keep both orders as per IS request
+    ("HK", "JH_G0816"):     DispersionOffsetMask(-0.760, 710, 857, 2700),   # new filter. T=(1%, :)
+    ("R3K", "J-lo_G0801"):  DispersionOffsetMask(-0.168, -173, 1027, 1204), # T=(1%, 1%)
+    ("R3K", "J_G0802"):     DispersionOffsetMask(-0.202, 418, 1159, 1349),  # T=(1%, 1%)
+    ("R3K", "H_G0803"):     DispersionOffsetMask(-0.260, 22, 1467, 1804),   # T=(1%, 1%)
+    ("R3K", "Ks_G0804"):    DispersionOffsetMask(-0.349, 128, 1966, 2350),  # T=(1%, 1%)
+    ("R3K", "K-long_G0812"):DispersionOffsetMask(-0.351, -14, 1865, 2520)   # T=(1%, X%) - cut-off value selected at inter-order min
     # Consider adding the following modes:
     #"HK, Ks": # SV data only
     #"HK, K-long": # CAL data only
     #"HK, J": # SV data only
     #"HK, H": # SV data only
     #"R3K, Y": # ENG data only
+}
+
+resolving_power = {
+    # Average (within 70% of wvl ranges) F2 resolutions for various grism/slit combinations.
+    # The values from the F2 instrument web pages.
+    # Note that average resolutions are significantly lower than peak resolutions.
+    # Dictionary keys:
+    # "slit width in pixels"
+    # Dictionary values:
+    # "Grism": average resolution
+    "1": {"JH": 1300, "HK": 1300, "R3K": 3600},
+    "2": {"JH": 900, "HK": 900, "R3K": 2800},
+    "3": {"JH": 600, "HK": 600, "R3K": 1600},
+    "4": {"JH": 350, "HK": 350, "R3K": 1300},
+    "6": {"JH": 130, "HK": 130, "R3K": 1000},
+    "8": {"JH": 100, "HK": 100, "R3K": 750}
 }

@@ -35,12 +35,14 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
+from copy import deepcopy
 
 from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata, gemini_instruments
 from astrodata.testing import ad_compare
 from gempy.library import astromodels as am
+from gempy.library.wavecal import LineList
 from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
@@ -48,6 +50,8 @@ from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from geminidr.gnirs.primitives_gnirs_crosssdispersed import GNIRSCrossDispersed
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
+from geminidr.gnirs import primitives_gnirs_longslit
+from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 
 # -- Tests --------------------------------------------------------------------
 
@@ -389,8 +393,8 @@ def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
                                                  change_working_dir,
                                                  path_to_inputs):
     # Dictionary of shift values (in pixels) for each file.
-    results = {'N20220706S0337': -0.0119375, # GNIRS 111/mm 0.10" LongBlue
-               'N20110331S0400': 0.1669375,  # GNIRS 111/mm 0.30" ShortBlue
+    results = {'N20220706S0337': 0.0005, # GNIRS 111/mm 0.10" LongBlue
+               'N20110331S0400': 0.1696875,  # GNIRS 111/mm 0.30" ShortBlue
                'N20150511S0123': -0.0273750, # GNIRS 32/mm  0.45" ShortBlue
                'N20220718S0140': 2.083875,   # GNIRS 32/mm  0.10" LongBlue
                'N20130827S0128': -3.2903125, # GNIRS 10/mm  0.10" LongBlue
@@ -715,6 +719,110 @@ def test_resample_spec_table():
     assert all([bw.to(u.nm).value == 0.1 if i % 10 else 5
                for i, bw in enumerate(t['WIDTH'].quantity)])
     np.testing.assert_allclose(t['FLUX'].data, 1.0)
+
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+def test_make_atran_linelist(change_working_dir, path_to_inputs, path_to_refs):
+    # GNIRS L-band, sky emission
+    ad_em = astrodata.open(os.path.join(path_to_inputs, 'N20100820S0214_varAdded.fits'))
+    model_params_em = {"site": 'mk', "alt": "13825ft", "start_wvl": 3040.96658,
+                          "end_wvl": 3359.0334199999998, "spec_range": 318.06684,
+                           "wv_content": 5.0, "resolution": 1760.0, "cenwave": 3200.0,
+                           "in_vacuo": True, "absorption": False, "nlines": 100}
+    # GNIRS J-band, sky absorption in object spectrum
+    ad_abs = astrodata.open(os.path.join(path_to_inputs, 'N20121221S0199_aperturesFound.fits'))
+    model_params_abs = {"site": 'mk', "alt": "13825ft", "start_wvl": 1057.2100999999998,
+                          "end_wvl": 1108.7898999999998, "spec_range": 51.5798,
+                           "wv_content": 1.0, "resolution": 17520.0, "cenwave": 1082.9999999999998,
+                           "in_vacuo": True, "absorption": True, "nlines": 50}
+    p = primitives_spect.Spect([])
+    linelist_em,_ = p._make_atran_linelist(ext=ad_em[0], filename=None, model_params=model_params_em)
+    linelist_abs,_ = p._make_atran_linelist(ext=ad_abs[0], filename=None, model_params=model_params_abs)
+    with change_working_dir(path_to_refs):
+        ref_linelist_em = np.loadtxt("N20100820S0214_atran_linelist.dat")
+        ref_linelist_abs = np.loadtxt("N20121221S0199_atran_linelist.dat")
+
+    np.testing.assert_allclose(linelist_em, ref_linelist_em, atol=1e-3)
+    np.testing.assert_allclose(linelist_abs, ref_linelist_abs, atol=1e-3)
+
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+def test_make_refplot_data(change_working_dir, path_to_inputs, path_to_refs):
+    # F2 OH-emission sky lines
+    ad_f2 = astrodata.open(os.path.join(path_to_inputs, 'S20180114S0104_varAdded.fits'))
+    model_params_f2 = {"site": 'cp', "alt": "8980ft", "start_wvl": 1090.3740000000003,
+                          "end_wvl": 2660.71, "spec_range": 1570.336,
+                           "wv_content": 10.0, "resolution": 350, "cenwave": 1875.5420000000001,
+                           "in_vacuo": True, "absorption": False, "nlines": 50}
+
+    p = primitives_spect.Spect([])
+    refplot_data_f2 = p._make_refplot_data(ext=ad_f2[0], model_params=model_params_f2,
+                                    refplot_linelist=LineList(os.path.join(path_to_inputs, "nearIRsky.dat")))
+    with change_working_dir(path_to_refs):
+        ref_refplot_spec_f2 = np.loadtxt("S20180114S0104_refplot_spec.dat")
+        ref_refplot_linelist_f2 = np.loadtxt("S20180114S0104_refplot_linelist.dat")
+
+    np.testing.assert_allclose(ref_refplot_spec_f2, refplot_data_f2["refplot_spec"], atol=1e-3)
+    np.testing.assert_allclose(ref_refplot_linelist_f2, refplot_data_f2["refplot_linelist"], atol=1e-3)
+
+def compare_frames(frame1, frame2):
+    """Compare the important stuff of two CoordinateFrame instances"""
+    for attr in ("naxes", "axes_type", "axes_order", "unit", "axes_names"):
+        assert getattr(frame1, attr) == getattr(frame2, attr)
+
+#@pytest.mark.skip
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+def test_transfer_distortion_model(change_working_dir, path_to_inputs, path_to_refs):
+    """
+    The input files are created using makeWavecalFromSkyAbsorption recipe,
+    run up until p.transferDistortionModel():
+        p.prepare()
+        p.addDQ()
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True, read_noise=True)
+        p.flatCorrect()
+        p.attachWavelengthSolution()
+        p.copyInputs(instream="main", outstream="with_distortion_model")
+        p.separateSky()
+        p.associateSky()
+        p.skyCorrect()
+        p.cleanReadout()
+        p.distortionCorrect()
+        p.adjustWCSToReference()
+        p.resampleToCommonFrame(force_linear=False)
+        p.stackFrames()
+        p.findApertures()
+        p.determineWavelengthSolution(absorption=True)
+    """
+    ad_no_dist_model = astrodata.open(os.path.join(path_to_inputs, 'N20121221S0199_wavelengthSolutionDetermined.fits'))
+    ad_with_dist_model = astrodata.open(os.path.join(path_to_inputs, 'N20121221S0199_wavelengthSolutionAttached.fits'))
+    p = primitives_gnirs_longslit.GNIRSLongslit([ad_no_dist_model])
+    p.streams["with_distortion_model"] = ad_with_dist_model
+    ad_with_dist_model_transferred = p.transferDistortionModel(source="with_distortion_model")
+    p.writeOutputs()
+    with change_working_dir(path_to_refs):
+        ref_with_dist_model_transferred = \
+        astrodata.open(os.path.join(path_to_refs, "N20121221S0199_distortionModelTransferred.fits"))
+
+    # Compare output WCS as well as pixel values (by evaluating it at the
+    # ends of the ranges, since there are multiple ways of constructing an
+    # equivalent WCS, eg. depending on the order of various Shift models):
+    ad_wcs = ad_with_dist_model_transferred[0][0].wcs
+    ref_wcs = ref_with_dist_model_transferred[0].wcs
+    for f in ref_wcs.available_frames:
+        compare_frames(getattr(ref_wcs, f), getattr(ad_wcs, f))
+    corner1, corner2 = (0, 0), tuple(v-1 for v in ref_with_dist_model_transferred[0].shape[::-1])
+    world1, world2 = ref_wcs(*corner1), ref_wcs(*corner2)
+    np.testing.assert_allclose(ad_wcs(*corner1), world1, rtol=1e-6)
+    np.testing.assert_allclose(ad_wcs(*corner2), world2, rtol=1e-6)
+    # The inverse is not highly accurate and transforming back & forth can
+    # just exceed even a tolerance of 0.01 pix, but it's best to compare
+    # with the true corner values rather than the same results from the
+    # reference, otherwise it would be too easy to overlook a problem with
+    # the inverse when someone checks the reference file.
+    np.testing.assert_allclose(ad_wcs.invert(*world1), corner1, atol=0.02)
+    np.testing.assert_allclose(ad_wcs.invert(*world2), corner2, atol=0.02)
 
 
 # --- Fixtures and helper functions -------------------------------------------

@@ -559,7 +559,7 @@ class GMOSSpect(Spect, GMOS):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None, ad=None):
+    def _get_arc_linelist(self, waves=None, ext=None):
         # There aren't many lines in the very red, so one way to improve the
         # wavecal might have been to take out any blocking filter to get all the
         # lines from ~500 nm at twice the wavelength. The GMOS team doesn't do
@@ -575,6 +575,6 @@ class GMOSSpect(Spect, GMOS):
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
         return wavecal.LineList(filename)
 
-    def _get_cenwave_accuracy(self, ad=None):
-        # Accuracy of central wavelength (nm) for a given instrument/setup.
+    def _get_cenwave_accuracy(self, ext=None):
+        # Assumed accuracy of central wavelength in nm for a given instrument/setup.
         return 10

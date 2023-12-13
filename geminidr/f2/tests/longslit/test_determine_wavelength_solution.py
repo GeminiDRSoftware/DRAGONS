@@ -3,6 +3,9 @@
 Tests related to F2 Long-slit Spectroscopy Arc primitives.
 
 """
+# import multiprocessing as mp
+# mp.set_start_method('fork')
+
 import glob
 import tarfile
 import logging
@@ -64,6 +67,9 @@ input_pars = [
     # grism: R3K, filter: K-long (2.200um)
     ("S20150624S0023_flatCorrected.fits", dict()), # 1-pix slit
     ("S20211018S0011_flatCorrected.fits", dict()), # 6-pix slit
+    # wavecal from OH emission sky lines
+    ("S20180114S0104_flatCorrected.fits", dict()), # HK, science
+    ("S20140216S0079_flatCorrected.fits", dict()), # R3K, science
 ]
 
 associated_calibrations = {
@@ -287,6 +293,32 @@ associated_calibrations = {
                  "S20210905S0353.fits",
                  "S20210905S0354.fits"],
     },
+    "S20180114S0104.fits": {
+        'arc_darks': ["S20180117S0033.fits",
+                      "S20180117S0034.fits",
+                      "S20180117S0035.fits",
+                      "S20180117S0036.fits",
+                      "S20180117S0037.fits"],
+        'flat': ["S20180114S0118.fits"], # ND2.0
+        'flat_darks': ["S20180120S0222.fits",
+                 "S20180120S0223.fits",
+                 "S20180120S0224.fits",
+                 "S20180120S0225.fits",
+                 "S20180120S0226.fits"],
+    },
+    "S20140216S0079.fits": {
+        'arc_darks': ["S20140216S0326.fits",
+                      "S20140216S0327.fits",
+                      "S20140216S0328.fits",
+                      "S20140216S0329.fits",
+                      "S20140216S0330.fits"],
+        'flat': ["S20140216S0089.fits"], # ND2.0
+        'flat_darks': ["S20140218S0043.fits",
+                 "S20140218S0044.fits",
+                 "S20140218S0045.fits",
+                 "S20140218S0046.fits",
+                 "S20140218S0047.fits"],
+    },
 }
 
 # Tests Definitions ------------------------------------------------------------
@@ -382,13 +414,16 @@ def ad(path_to_inputs, request):
     return ad
 
 def get_linelist(ad):
+    isHK_JH = ad.disperser(pretty=True) == "HK" and \
+                ad.filter_name(pretty=True) == "JH"
     if 'ARC' in ad.tags:
         linelist = 'argon.dat'
-        if ad.disperser(pretty=True) == "HK" and \
-                ad.filter_name(pretty=True) == "JH":
+        if isHK_JH:
             linelist = 'lowresargon_with_2nd_ord.dat'
     else:
         linelist = 'nearIRsky.dat'
+        if isHK_JH:
+            linelist = 'nearIRsky_with_2nd_order.dat'
 
     return linelist
 
@@ -640,7 +675,7 @@ def create_inputs_recipe():
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
 
         p = F2Longslit([arc_ad])
-        p.prepare()
+        p.prepare(bad_wcs="fix")
         p.addDQ()
         p.addVAR(read_noise=True)
         p.ADUToElectrons()

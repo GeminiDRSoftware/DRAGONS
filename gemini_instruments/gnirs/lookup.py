@@ -230,22 +230,15 @@ filter_wavelengths = {
 
 dispersion_by_config = {
     # Dictionary keys are in the following order:
-    # "telescope, grating, camera".
+    # "grating, camera".
     # Dictionary values are in the following order:
-    # X, J, H, K, L, M.
-    # Dispersion is in A/pix
-    # This is a concise version of gnirs$data/nsappwave.fits table
-    ("Gemini-South, 10/mm, Short")  : {"M": -19.39},
-    ("Gemini-South, 10/mm, Long")   : {},
-    ("Gemini-South, 32/mm, Short")  : {"X": -3.23, "J": -3.88, "H": -4.85, "K": -6.47},
-    ("Gemini-South, 32/mm, Long")   : {},
-    ("Gemini-South, 111/mm, Short") : {"X": -0.93, "J": -1.115, "H": -1.395, "K": -1.85, "L": -2.77,  "M": -5.61},
-    ("Gemini-South, 111/mm, Long")  : {"J": -0.371, "H": -0.463, "K": -0.6175},
-
-    ("Gemini-North, 10/mm, Short")  : {},
-    ("Gemini-North, 10/mm, Long")   : {"X":-3.2383, "J": -3.8867, "H": -4.8536, "K": -6.4743, "L": -9.755,  "M": -19.455},
-    ("Gemini-North, 32/mm, Short")  : {"X":-3.2356, "J": -3.876, "H": -4.8455, "K": -6.4541, "L": -9.7,  "M": -19.35},
-    ("Gemini-North, 32/mm, Long")   : {"X":-1.078, "J": -1.2925, "H": -1.6182, "K": -2.1572, "L": -3.247,  "M": -6.4467},
-    ("Gemini-North, 111/mm, Short") : {"X":-0.9225, "J": -1.1099, "H": -1.3869, "K": -1.8503, "L": -2.76,  "M": -5.625},
-    ("Gemini-North, 111/mm, Long")  : {"X":-0.3089, "J": -0.3712, "H": -0.4644, "K": -0.6186, "L": -0.92,  "M": -1.875}
+    # "Filter": dispersion
+    # Dispersion values are in A/pix.
+    # The dispersion values are based on wvl. coverages for each filter/mode listed in GNIRS instrument pages.
+    ("10/mm, Short")  : {"M": -19.39},
+    ("10/mm, Long")   : {"X": -3.24,  "J": -3.89,   "H": -4.85, "K": -6.47, "L": -9.72, "M": -19.43},
+    ("32/mm, Short")  : {"X": -3.23,  "J": -3.88,   "H": -4.84, "K": -6.46, "L": -9.69, "M": -19.34},
+    ("32/mm, Long")   : {"X": -1.07,  "J": -1.29,   "H": -1.62, "K": -2.16, "L": -3.24, "M": -6.45},
+    ("111/mm, Short") : {"X": -0.92,  "J": -1.10,   "H": -1.39, "K": -1.85, "L": -2.73, "M": -5.62},
+    ("111/mm, Long")  : {"X": -0.309, "J": -0.371,  "H": -0.464,"K": -0.618,"L": -0.922,"M": -1.875}
 }

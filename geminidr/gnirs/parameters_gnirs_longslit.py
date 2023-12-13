@@ -10,10 +10,6 @@ def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
     return True
 
-class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
-    def setDefaults(self):
-        self.add_illum_mask = True
-
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     spectral_order = config.RangeField("Fitting order in spectral direction", int, None, min=1, optional=True)
     min_line_length = config.RangeField("Exclude line traces shorter than this fraction of spatial dimension",
@@ -31,3 +27,11 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
                                    check=list_of_ints_check, optional=True)
     def setDefaults(self):
         self.in_vacuo = True
+
+class addDQConfig(parameters_standardize.addDQConfig):
+    keep_second_order = config.Field("Don't apply second order light mask?", bool, False)
+    def setDefaults(self):
+        self.add_illum_mask = True
+
+class addIllumMaskToDQConfig(parameters_standardize.addIllumMaskToDQConfig):
+    keep_second_order = config.Field("Don't apply second order light mask?", bool, False)

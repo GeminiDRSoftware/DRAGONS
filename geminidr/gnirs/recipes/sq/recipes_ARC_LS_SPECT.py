@@ -12,17 +12,20 @@ def makeProcessedArc(p):
     solutions.  Arcs get stacked if more than one is given.
 
     Inputs are:
-      * raw arc - no other calibrations required.
+      * raw arc
+      * processed flat
     """
+
     p.prepare()
     p.addDQ()
     p.addVAR(read_noise=True)
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
+    p.flatCorrect()
     p.stackFrames()
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
-    p.determineDistortion(debug=True)
+    p.determineDistortion()
     p.storeProcessedArc()
     p.writeOutputs()
 

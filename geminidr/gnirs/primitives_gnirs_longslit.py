@@ -44,7 +44,8 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
             slit_width=slit_width,
             max_perpendicular_offset=max_perpendicular_offset)
 
-    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
+    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
+                         keep_second_order=False):
         """
         Adds an illumination mask to each AD object. The default illumination mask
         masks off extra orders and/or unilluminated areas outside the order blocking filter range.
@@ -55,6 +56,8 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
             suffix to be added to output files
         illum_mask : str/None
             name of illumination mask mask (None -> use default)
+        keep_second_order : bool
+            don't apply second order mask? (default is False)
 
         """
         # Cut-on and cut-off wavelengths (um) of GNIRS order-blocking filters, based on conservative transmissivity (1%),
@@ -87,7 +90,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
                                         0).astype(DQ.datatype)
                         ext.mask |= iext
 
-            else:
+            elif keep_second_order is False:
                 dispaxis = 2 - ad[0].dispersion_axis()
                 dispaxis_center = ad[0].shape[dispaxis] // 2
                 cenwave = ad.central_wavelength(asMicrometers=True)

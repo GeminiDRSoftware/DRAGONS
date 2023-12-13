@@ -83,7 +83,8 @@ class F2Longslit(F2Spect, Longslit):
 
         return adinputs
 
-    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
+    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,
+                         keep_second_order=False):
         """
         Adds an illumination mask to each AD object. The default illumination mask
         masks off extra orders and/or unilluminated areas outside order blocking filter
@@ -95,6 +96,8 @@ class F2Longslit(F2Spect, Longslit):
             suffix to be added to output files
         illum_mask : str/None
             name of illumination mask mask (None -> use default)
+        keep_second_order : bool
+            don't apply second order mask? (default is False)
 
         """
         log = self.log
@@ -119,23 +122,22 @@ class F2Longslit(F2Spect, Longslit):
                                         0).astype(DQ.datatype)
                         ext.mask |= iext
 
-            else:
+            elif keep_second_order is False:
+                # Second order mask
                 dispaxis = 2 - ad[0].dispersion_axis()
                 dispaxis_center = ad[0].shape[dispaxis] // 2
                 cenwave = ad.central_wavelength(asNanometers=True)
                 dispersion = ad.dispersion(asNanometers=True)[0]
-                filter = ad.filter_name(pretty=True)
-                if filter in {"HK", "JH"}:
-                        filter = ad.filter_name(keepID=True)
-                cenwave_offset = self._get_cenwave_offset(ad)
-                index = (ad.disperser(pretty=True), filter)
+                index = (ad.disperser(pretty=True), ad.filter_name(keepID=True))
                 mask = dispersion_offset_mask.get(index, None)
-
+                cenwave_offset = mask.cenwaveoffset if mask else None
                 filter_cuton_wvl = mask.cutonwvl if mask else None
                 filter_cutoff_wvl = mask.cutoffwvl if mask else None
                 cenwave_pix = dispaxis_center + cenwave_offset
-                filter_cuton_pix = min(int(cenwave_pix - (cenwave - filter_cuton_wvl) / dispersion), ad[0].shape[dispaxis] - 1)
-                filter_cutoff_pix = max(int(cenwave_pix + (filter_cutoff_wvl - cenwave) / dispersion), 0)
+                filter_cuton_pix = min(int(cenwave_pix - (cenwave - filter_cuton_wvl)
+                                           / dispersion), ad[0].shape[dispaxis] - 1)
+                filter_cutoff_pix = max(int(cenwave_pix + (filter_cutoff_wvl - cenwave)
+                                            / dispersion), 0)
 
                 for ext in ad:
                     ext.mask[:filter_cutoff_pix] |= DQ.unilluminated

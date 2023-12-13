@@ -16,16 +16,19 @@ def makeProcessedArc(p):
     one is given.
 
     Inputs are:
-      * raw arc - no other calibrations required.
+      * raw arc
+      * processed flat
     """
+
     p.prepare()
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
     p.nonlinearityCorrect()
+    p.flatCorrect()
     p.makeIRAFCompatible()
     p.determineWavelengthSolution()
-    p.determineDistortion(debug=True)
+    p.determineDistortion()
     p.storeProcessedArc()
     p.writeOutputs()
 

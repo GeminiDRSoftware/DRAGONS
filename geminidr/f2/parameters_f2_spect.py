@@ -13,15 +13,19 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     def setDefaults(self):
         self.order = 3
         self.in_vacuo = True
-        self.min_snr = 10
         self.debug_min_lines = 100000
+        del self.absorption
+        del self.wv_band
+        del self.num_atran_lines
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
+    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
+                                   int, None, min=0, optional=True)
     def setDefaults(self):
         self.spectral_order = 3
         self.min_snr = 7.
         self.min_line_length = 0.3
-        self.max_missed = 2
         self.debug_reject_bad = False
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
@@ -30,3 +34,4 @@ class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
         self.offset_sky = False
         self.mask_objects = False
         self.dilation = 0.
+

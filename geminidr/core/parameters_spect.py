@@ -160,7 +160,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    default="global")
     fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
-                                           min=300., max=5000., optional=True)
+                                           min=300., max=6000., optional=True)
     dispersion = config.RangeField("Estimated dispersion (nm/pixel)", float, None,
                                    min=-2, max=2, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
@@ -170,8 +170,21 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     interactive = config.Field("Display interactive fitter?", bool, False)
-    verbose = config.Field("Print additional fitting information?", bool, False)
-
+    num_atran_lines = config.RangeField("Number of lines in ATRAN line list", int, 50.,
+                                              min=10, max=300, inclusiveMax=True)
+    wv_band = config.ChoiceField("Water Vapor constraint", str,
+                                   allowed={"20": "20%-ile",
+                                            "50": "50%-ile",
+                                            "80": "80%-ile",
+                                            "100": "Any",
+                                            "header": "header value"},
+                                   default="header", optional=False)
+    resolution = config.RangeField("Resolution of the observation", int, None, min=10, max=100000,
+                                         optional=True)
+    combine_method = config.ChoiceField("Combine method to use in 1D spectrum extraction", str,
+                                   allowed={"mean": "mean",
+                                            "median": "median"},
+                                   default="mean", optional=False)
     def setDefaults(self):
         del self.function
         del self.grow
@@ -244,6 +257,9 @@ class findAperturesConfig(config.Config):
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
                                        int, None, min=1, inclusiveMax=True, optional=True)
 
+class transferDistortionModelConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_distortionModelTransferred", optional=True)
+    source = config.Field("Stream to transfer from", str, None)
 
 class flagCosmicRaysConfig(config.Config):
     suffix = config.Field(
@@ -465,10 +481,10 @@ class maskBeyondSlitConfig(config.Config):
 
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
-    center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
+    center = config.RangeField("Central (spatial axis) row/column for 1D extraction (None => use middle)", int, None, min=1, optional=True)
     offset_from_center = config.Field("Offset in pixels from center of slit",
                                       int, None, optional=True)
-    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    nsum = config.RangeField('Number of rows/columns to average (about "center")', int, 10, min=1)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
                                   float, 0.01, min=0.0001, max=1.0)
     interactive = config.Field("Interactive fitting?", bool, False)
