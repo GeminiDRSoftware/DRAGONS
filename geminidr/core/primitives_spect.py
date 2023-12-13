@@ -5,6 +5,7 @@
 #
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
+from copy import copy, deepcopy
 import tempfile
 from itertools import islice
 import os
