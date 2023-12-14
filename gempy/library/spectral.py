@@ -247,6 +247,8 @@ class Spek1D(AstroDataMixin, NDDataRef):
             else:
                 included_pixels = (self.mask[ix1:ix2+1] & interpolate) == DQ.good
                 mask |= np.bitwise_or.reduce(self.mask[ix1:ix2+1][included_pixels])
+            if widths[included_pixels].sum() == 0:
+                included_pixels = None  # avoid 0/0 division
             flux += ((widths * self.flux[ix1:ix2+1])[included_pixels].sum() *
                      widths.sum() / widths[included_pixels].sum())
 
