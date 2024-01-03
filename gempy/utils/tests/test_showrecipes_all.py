@@ -3,15 +3,15 @@ import pytest
 from astrodata.testing import download_from_archive
 from gempy.utils.showrecipes import showrecipes
 
-GNIRS = "N20180101S0028.fits"
 GNIRS_SPECT = "N20190206S0279.fits"
+GNIRS = 'N20180101S0028.fits'
 GMOS = 'S20180223S0227.fits'
 GMOS_NS = 'S20171116S0078.fits'
 GMOS_SPECT = "N20110826S0336.fits"
-NIRI = "N20190120S0287.fits"
-F2 = "S20190213S0084.fits"
 # NIFS = 'N20160727S0077.fits'
 # GRACES = 'N20190116G0054i.fits'
+NIRI = 'N20190120S0287.fits'
+NIRI_LS = 'N20050918S0134.fits'
 GSAOI_DARK = 'S20150609S0023.fits'
 GSAOI_IMAGE = 'S20170505S0095.fits'
 GSAOI_FLAT = 'S20170505S0031.fits'
@@ -25,11 +25,11 @@ def test_showrecipes_on_gnirs():
         "Input file: {}".format(file_location),
         "Input tags: ",
         "Recipes available for the input file:",
-        "geminidr.gnirs.recipes.sq.recipes_IMAGE::alignAndStack",
-        "geminidr.gnirs.recipes.sq.recipes_IMAGE::reduce",
-        "geminidr.gnirs.recipes.qa.recipes_IMAGE::reduce",
-        "geminidr.gnirs.recipes.sq.recipes_IMAGE::alignAndStack",
-        "geminidr.gnirs.recipes.sq.recipes_IMAGE::reduce",
+        "   geminidr.gnirs.recipes.sq.recipes_IMAGE::alignAndStack",
+        "   geminidr.gnirs.recipes.sq.recipes_IMAGE::reduce",
+        "   geminidr.gnirs.recipes.qa.recipes_IMAGE::reduce",
+        "   geminidr.gnirs.recipes.sq.recipes_IMAGE::alignAndStack",
+        "   geminidr.gnirs.recipes.sq.recipes_IMAGE::reduce",
     ]
 
     answer = showrecipes(file_location)
