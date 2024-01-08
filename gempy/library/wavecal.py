@@ -643,7 +643,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     arc_weights = linelist.weights
     # This allows suppression of the terminal log output by calling the function
     # with loglevel='debug'.
-    loglevel = "stdinfo" if config["verbose"] else "fullinfo"
+    loglevel = "stdinfo" if "verbose" in config else "fullinfo"
     logit = getattr(log, loglevel)
 
     # Create an initial fit_1D object using the initial wavelength model
