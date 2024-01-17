@@ -434,7 +434,8 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         # of S/N than the VAR plane
         # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
         #  Use "variance=None" to make them pass again.
-        data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+        data, mask, variance = NDStacker.combine(data, mask=mask, variance=None,
+                                                 combiner=combiner)
 
         return data, mask, variance, extract_slice
 
@@ -467,6 +468,8 @@ def average_along_slit(ext, center=None, offset_from_center=None,
             data_out[i], mask_out[i], variance_out[i] = sum1d(nddata, n1, n2)
 
         # Divide by number of pixels summed to get the mean.
+        # FIXME: This should ideally respect the "combiner" argument, and handle
+        # all the combine methods NDStacker does. (mean, median, wtmean, lmedian)
         data_out /= nsum
         variance_out /= nsum ** 2
 
