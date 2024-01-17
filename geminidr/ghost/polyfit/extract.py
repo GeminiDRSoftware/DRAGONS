@@ -514,7 +514,10 @@ class Extractor(object):
                             log.debug("FLATFIELD CORRECTION IS ZERO")
                         continue
                     c0, c1 = correction[i, j] ** 2 * m_noise.parameters
-                    noise_model = lambda x: c0 + c1 * abs(x)
+                    # Linear term only needs to be multiplied by a single
+                    # factor of the blaze correction because the data have
+                    # already been multiplied by a factor 20 lines above.
+                    noise_model = lambda x: c0 + c1 * abs(x) / correction[i, j]
 
                 _slice = (j, slice(x_ix_min, x_ix_min+phi.shape[1]))
                 xtr = Extractum(phi, pixel_array[_slice],
