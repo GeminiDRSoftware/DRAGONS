@@ -844,7 +844,9 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         except ValueError:
             pass
         else:
-            if min(len(arc_lines), len(peaks)) > min_lines_per_fit:
+            # The commented-out line below speeds up fitting in some situations,
+            # but also breaks regression tests. More investigation needed. DB
+            # if min(len(arc_lines), len(peaks)) > min_lines_per_fit:
                 if p_lo < p0 <= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
                     fits_to_do.append((p_lo, arc_line, dw))
