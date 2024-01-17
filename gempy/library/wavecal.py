@@ -491,7 +491,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         direction = "row" if dispaxis == 1 else "column"
         const_slit = 'LS' in ext.tags
         data, mask, variance, extract_info = tracing.average_along_slit(
-            ext, center=config["center"], nsum=config["nsum"])
+            ext, center=config["center"], nsum=config["nsum"],
+            combiner=config["combine_method"])
         if const_slit:
             logit("Extracting 1D spectrum from {}s {} to {}".
                   format(direction, extract_info.start + 1, extract_info.stop))
