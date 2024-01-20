@@ -122,8 +122,10 @@ def _get_bias_level_estimate(adinput=None):
     # otherwise use the LUT value. To avoid slow slicing later, get the LUT
     # values now, even if we're not going to need them
     ut_date = adinput.ut_date()
-    if ut_date >= date(2017, 2, 24):
+    if ut_date >= date(2023, 12, 14):
         bias_dict = lookup.gmosampsBias
+    elif ut_date >= date(2017, 2, 24):
+        bias_dict = lookup.gmosampsBiasBefore20231214
     elif ut_date >= date(2015, 8, 26):
         bias_dict = lookup.gmosampsBiasBefore20170224
     elif ut_date >= date(2006, 8, 31):
