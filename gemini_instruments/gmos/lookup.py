@@ -76,7 +76,7 @@ gmosampsGain = {
     ("fast", "low", "BI13-18-4k-2, 4"): 1.95,
 
     # GMOS-S New Hamamatsu CCDs + swap (2023)
-    # Values from German Gimeno on Jan 18, 2024
+    # Values from German Gimeno on Jan 22, 2024
     # Valid from 20231214
 
     # AMPS 1-4 (CCD1)
@@ -116,19 +116,19 @@ gmosampsGain = {
     # AMPS 9-12 (CCD3)
     ("slow", "low",  "BI12-34-4k-1, 1"): 1.594,
     ("slow", "high", "BI12-34-4k-1, 1"): 1.000,
-    ("fast", "high", "BI12-34-4k-1, 1"): 4.828,
+    ("fast", "high", "BI12-34-4k-1, 1"): 4.581,
     ("fast", "low",  "BI12-34-4k-1, 1"): 1.445,
     ("slow", "low",  "BI12-34-4k-1, 2"): 1.699,
     ("slow", "high", "BI12-34-4k-1, 2"): 1.000,
-    ("fast", "high", "BI12-34-4k-1, 2"): 5.129,
+    ("fast", "high", "BI12-34-4k-1, 2"): 4.893,
     ("fast", "low",  "BI12-34-4k-1, 2"): 1.545,
     ("slow", "low",  "BI12-34-4k-1, 3"): 1.681,
     ("slow", "high", "BI12-34-4k-1, 3"): 1.000,
-    ("fast", "high", "BI12-34-4k-1, 3"): 4.894,
+    ("fast", "high", "BI12-34-4k-1, 3"): 4.825,
     ("fast", "low",  "BI12-34-4k-1, 3"): 1.478,
     ("slow", "low",  "BI12-34-4k-1, 4"): 1.770,
     ("slow", "high", "BI12-34-4k-1, 4"): 1.000,
-    ("fast", "high", "BI12-34-4k-1, 4"): 5.120,
+    ("fast", "high", "BI12-34-4k-1, 4"): 5.082,
     ("fast", "low",  "BI12-34-4k-1, 4"): 1.549
 }
 
@@ -627,7 +627,7 @@ gmosampsRdnoise = {
     ("fast", "low", "BI13-18-4k-2, 4"): 6.10,
 
     # GMOS-S New Hamamatsu CCDs + swap (2023)
-    # Values from German Gimeno on Jan 18, 2024
+    # Values from German Gimeno on Jan 22, 2024
     # Valid from 20231214
 
     # AMPS 4-1 (CCD1)
@@ -655,7 +655,7 @@ gmosampsRdnoise = {
     ("slow", "low",  "BI13-19-4k-3, 2"): 3.68,
     ("slow", "high", "BI13-19-4k-3, 2"): 0.00,
     ("fast", "high", "BI13-19-4k-3, 2"): 9.46,
-    ("fast", "low",  "BI13-19-4k-3, 2"): 5.24,
+    ("fast", "low",  "BI13-19-4k-3, 2"): 5.82,
     ("slow", "low",  "BI13-19-4k-3, 3"): 3.59,
     ("slow", "high", "BI13-19-4k-3, 3"): 0.00,
     ("fast", "high", "BI13-19-4k-3, 3"): 7.99,
@@ -667,19 +667,19 @@ gmosampsRdnoise = {
     # AMPS 12-9 (CCD3)
     ("slow", "low",  "BI12-34-4k-1, 1"): 3.39,
     ("slow", "high", "BI12-34-4k-1, 1"): 0.00,
-    ("fast", "high", "BI12-34-4k-1, 1"): 7.94,
+    ("fast", "high", "BI12-34-4k-1, 1"): 8.85,
     ("fast", "low",  "BI12-34-4k-1, 1"): 4.66,
     ("slow", "low",  "BI12-34-4k-1, 2"): 3.67,
     ("slow", "high", "BI12-34-4k-1, 2"): 0.00,
-    ("fast", "high", "BI12-34-4k-1, 2"): 8.30,
+    ("fast", "high", "BI12-34-4k-1, 2"): 7.96,
     ("fast", "low",  "BI12-34-4k-1, 2"): 5.10,
     ("slow", "low",  "BI12-34-4k-1, 3"): 3.39,
     ("slow", "high", "BI12-34-4k-1, 3"): 0.00,
-    ("fast", "high", "BI12-34-4k-1, 3"): 7.99,
+    ("fast", "high", "BI12-34-4k-1, 3"): 8.48,
     ("fast", "low",  "BI12-34-4k-1, 3"): 5.39,
     ("slow", "low",  "BI12-34-4k-1, 4"): 3.53,
     ("slow", "high", "BI12-34-4k-1, 4"): 0.00,
-    ("fast", "high", "BI12-34-4k-1, 4"): 9.34,
+    ("fast", "high", "BI12-34-4k-1, 4"): 7.83,
     ("fast", "low",  "BI12-34-4k-1, 4"): 9.57
 }
 
@@ -1176,7 +1176,7 @@ gmosampsBias = {
     ("fast", "low", "BI13-18-4k-2, 4"): 500.,
 
     # GMOS-S New Hamamatsu CCDs + swap (2023)
-    # Values from German Gimeno on Jan 18, 2024
+    # Values from German Gimeno on Jan 22, 2024
     # Valid from 20231214
 
     #  AMPS 4-1 (CCD1)
@@ -1216,19 +1216,19 @@ gmosampsBias = {
     # AMPS 12-9 (CCD3)
     ("slow", "low",  "BI12-34-4k-1, 1"): 514.,
     ("slow", "high", "BI12-34-4k-1, 1"): 0.,
-    ("fast", "high", "BI12-34-4k-1, 1"): 3078.,
+    ("fast", "high", "BI12-34-4k-1, 1"): 3046.,
     ("fast", "low",  "BI12-34-4k-1, 1"): 1890.,
     ("slow", "low",  "BI12-34-4k-1, 2"): 497.,
     ("slow", "high", "BI12-34-4k-1, 2"): 0.,
-    ("fast", "high", "BI12-34-4k-1, 2"): 3078.,
+    ("fast", "high", "BI12-34-4k-1, 2"): 3037.,
     ("fast", "low",  "BI12-34-4k-1, 2"): 1324.,
     ("slow", "low",  "BI12-34-4k-1, 3"): 525.,
     ("slow", "high", "BI12-34-4k-1, 3"): 0.,
-    ("fast", "high", "BI12-34-4k-1, 3"): 3003.,
+    ("fast", "high", "BI12-34-4k-1, 3"): 2963.,
     ("fast", "low",  "BI12-34-4k-1, 3"): 1449.,
     ("slow", "low",  "BI12-34-4k-1, 4"): 507.,
     ("slow", "high", "BI12-34-4k-1, 4"): 0.,
-    ("fast", "high", "BI12-34-4k-1, 4"): 3058.,
+    ("fast", "high", "BI12-34-4k-1, 4"): 3033.,
     ("fast", "low",  "BI12-34-4k-1, 4"): 920.
 }
 
