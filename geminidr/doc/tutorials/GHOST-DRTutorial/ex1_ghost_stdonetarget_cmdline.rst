@@ -313,7 +313,12 @@ to match.
 
        -p smoothing=6
 
-    when reducing the flats (not the slit-flat).
+    when reducing the flats (not the slit-flat). The value of 6 (the FWHM in
+    pixels of the Gaussian smoothing kernel) applied to the slit-viewer
+    camera images (which are in focus) seems to work well but may not be
+    optimal. The value is stored in the header of the processed flat so it
+    is applied automatically to the reduction of the arc and on-sky frames
+    that use the flat. You are welcome to try other values.
 
 Clean up
 --------

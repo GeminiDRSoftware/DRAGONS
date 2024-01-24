@@ -50,7 +50,7 @@ We do not have conda packages for it yet.
 ::
 
   # Install GHOSTDR
-  pip install git+https://github.com/GeminiDRSoftware/GHOSTDR.git@v1.0.0
+  pip install git+https://github.com/GeminiDRSoftware/GHOSTDR.git@v1.1.0
 
   # Install the GHOST-compatible calibration manager
   curl -O https://raw.githubusercontent.com/GeminiDRSoftware/GHOSTDR/master/.jenkins/local_calibration_manager/GeminiCalMgr-1.0.2-py3-none-any.whl
