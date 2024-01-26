@@ -723,6 +723,10 @@ class GHOSTSpect(GHOST):
 
             # If we're not stacking, append this output
             if stacking_mode == "none":
+                output_frame = ad[0].wcs.output_frame
+                for ext in adout:
+                    ext.wcs = gWCS([(adwcs.pixel_frame(1), wcs),
+                                    (output_frame, None)])
                 adout.hdr['DATADESC'] = ('Interpolated data',
                                          self.keyword_comments['DATADESC'])
                 gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
@@ -764,6 +768,12 @@ class GHOSTSpect(GHOST):
             gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
             adout.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(adout)
+
+        for ad in adoutputs:
+            print(ad.filename)
+            for ext in ad:
+                print(ext.wcs)
+                print(ext.wcs.forward_transform)
 
         return adoutputs
 
@@ -1060,7 +1070,7 @@ class GHOSTSpect(GHOST):
             slit_origin_str = f" (obtained from {slit_origin})" if slit_origin else ""
             slitflat_origin_str = f" (obtained from {slitflat_origin})" if slitflat_origin else ""
             flat_origin_str = f" (obtained from {flat_origin})" if flat_origin else ""
-            log.stdinfo("Slit parameters: ")
+            log.stdinfo(f"Slit parameters for {ad.filename}:")
             log.stdinfo(f"   processed_slit: {slit_filename}{slit_origin_str}")
             log.stdinfo(f"   processed_slitflat: {slitflat_filename}{slitflat_origin_str}")
             log.stdinfo(f"   processed_flat: {flat.filename}{flat_origin_str}")
@@ -1098,7 +1108,15 @@ class GHOSTSpect(GHOST):
             # we need to make a synthetic slit profile so this has moved up
             if 'ARC' in ad.tags:
                 # Extracts entire slit first, and then the two IFUs separately
-                objs_to_use = [[], list(set([0, 1]) - set(ifu_stowed))]
+                # v3.2.0 change: only extract individual IFUs if explicitly
+                # specified by the user (since the reduction uses the full-slit)
+                objs_to_use = [[]]
+                requested_objects = [ifu for ifu, status in enumerate([params['ifu1'], params['ifu2']])
+                                     if status == "object"]
+                if requested_objects:
+                    objs_to_use.append(requested_objects)
+                # Since zip works off the shortest list, we can have 2-element
+                # lists here even if objs_to_use has 1 element
                 use_sky = [True, False]
                 find_crs = [False, False]
                 sky_correct_profiles = False
@@ -1203,13 +1221,16 @@ class GHOSTSpect(GHOST):
                     min_flux_frac=min_flux_frac, timing=timing
                 )
 
+                # Flag pixels with VAR=0 that don't already have a flag
+                extracted_mask |= (extracted_var == 0) & (extracted_mask == 0)
+
                 # Append the extraction as a new extension... we don't
                 # replace ad[0] since that will still be needed if we have
                 # another iteration of the extraction loop
                 nobj = extracted_flux.shape[-1]
                 for obj in range(nobj):
                     ad.append(extracted_flux[:, :, obj])
-                    ad[-1].mask = (extracted_var[:, :, obj] == 0).astype(DQ.datatype)| extracted_mask
+                    ad[-1].mask = extracted_mask[:, :, obj]
                     ad[-1].variance = extracted_var[:, :, obj]
                     ad[-1].nddata.meta['header'] = ad[0].hdr.copy()
                     if add_cr_map and extractor.badpixmask is not None and obj == 0:
