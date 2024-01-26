@@ -100,7 +100,7 @@ class separateSkyConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skySeparated", optional=True)
     ref_obj = config.Field("Manually-assigned object files", str, None, optional=True)
     ref_sky = config.Field("Manually-assigned sky files", str, None, optional=True)
-    frac_FOV = config.RangeField("Field of view scaling for coaddition", float, 0.9, min=0.5, max=1)
+    frac_FOV = config.RangeField("Field of view scaling for coaddition", float, 0.9, min=0.3, max=1)
 
 
 class makeSkyConfig(associateSkyConfig, separateSkyConfig):

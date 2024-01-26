@@ -66,10 +66,10 @@ PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT = """
 """
 </div></div>
 Data points in the upper plot may be selected in order to mask or
-unmask them from consideration.  To select, choose the <i>Box Select</i>, 
-<i>Point Select</i>, or <i>Free-Select</i> tool to the right of the figure.  
-Selections may be additive if you hold down the shift key.  Once you have a 
-selection, you may <b>mask</b> or <b>unmask</b> the selection by hitting 
+unmask them from consideration.  To select, choose the <i>Box Select</i>,
+<i>Point Select</i>, or <i>Free-Select</i> tool to the right of the figure. 
+Selections may be additive if you hold down the shift key.  Once you have a
+selection, you may <b>mask</b> or <b>unmask</b> the selection by hitting
 the <b>M</b> or <b>U</b> key respectively.
 </p>
 <dl>""" + \
@@ -105,7 +105,7 @@ one edge of the region and hit <b>R</b>.  Then move to the other end of the
 desired region and hit <b>R</b> again.  To edit an existing region, hit <b>E</b>
 while the mouse is near the edge you wish to adjust.  To delete a region, hit
 <b>D</b> while close to the region you want removed.  The <i>Regions</i>
-text entry will also update with these changes and you may fine tune the 
+text entry will also update with these changes and you may fine tune the
 results there as well.
 </p>
 """
@@ -253,56 +253,56 @@ to your liking and click the <b>Accept</b> button to continue.</p>
 TRACE_APERTURES = """
 <h2>Help</h2>
 
-<p> Traces the spectrum in 2D spectral images for each aperture center 
-    stored in the APERTURE on each extension. The tracing starts at the 
-    brightest region, instead of one of the edges of the detector. This 
-    allows overcoming issues with sources with (almost) no flux in the 
-    blue/red extremes. </p> 
+<p> Traces the spectrum in 2D spectral images for each aperture center
+    stored in the APERTURE on each extension. The tracing starts at the
+    brightest region, instead of one of the edges of the detector. This
+    allows overcoming issues with sources with (almost) no flux in the
+    blue/red extremes. </p>
 
-<p> The leftmost panel, named Tracing Parameters, in the Web User Interface 
-    contains parameters used to perform the tracing, i.e., to follow how the 
-    position in the spatial direction of our target changes along the 
-    spectral direction. The Tracing Parameters are applied to all 
+<p> The leftmost panel, named Tracing Parameters, in the Web User Interface
+    contains parameters used to perform the tracing, i.e., to follow how the
+    position in the spatial direction of our target changes along the
+    spectral direction. The Tracing Parameters are applied to all
     appertures. </p>
 
-<p> You can find the traced data in the top plot where X represents the 
-    pixels in the spectral direction and Y the pixels in the spatial 
+<p> You can find the traced data in the top plot where X represents the
+    pixels in the spectral direction and Y the pixels in the spatial
     direction. Each traced data is represented by a black circle. </p>
 
-<p> You can perform a new tracing by changing the Tracing Parameters and 
-    by clicking on the Trace Apertures button. Tracing can take a few 
-    seconds deppending on your input parameters. If tracing fails, your will 
-    receive an error message and the Web UI will return to the previous 
+<p> You can perform a new tracing by changing the Tracing Parameters and
+    by clicking on the Trace Apertures button. Tracing can take a few
+    seconds deppending on your input parameters. If tracing fails, your will
+    receive an error message and the Web UI will return to the previous
     working state. </p>
 
-<p> The red line in the top plot shows the function that better represents 
-    how our target's spatial position varies continuously along the 
-    dispersion direction, following the traced data using a Chebyshev 
-    function. <p>  
+<p> The red line in the top plot shows the function that better represents
+    how our target's spatial position varies continuously along the
+    dispersion direction, following the traced data using a Chebyshev
+    function. <p> 
 
-<p> You can change the parameters in the rightmost column within each tab, 
-    which contains the Fitting Parameters for each APERTURE. If you change 
-    a parameter, this primitive will fit again using the most recent parameters 
+<p> You can change the parameters in the rightmost column within each tab,
+    which contains the Fitting Parameters for each APERTURE. If you change
+    a parameter, this primitive will fit again using the most recent parameters
     and update the line in the plot area. </p>
 
-<p> For both Tracing Parameters and Fitting Parameters, you will find a 
-    reset button. Each reset button only resets the parameters in the same 
-    column it belongs. </p>        
+<p> For both Tracing Parameters and Fitting Parameters, you will find a
+    reset button. Each reset button only resets the parameters in the same
+    column it belongs. </p>       
 
-<p> Once you are satisfied with the tracing and the fit, press the Accept 
-    button at the top right to continue your data reduction using the 
+<p> Once you are satisfied with the tracing and the fit, press the Accept
+    button at the top right to continue your data reduction using the
     parameters on screen. </p>
 
 <h3> Tracing Parameters </h3>
 <dl>
     <dt> Max Missed </dt>
-    <dd> Maximum number of steps to miss before a line is lost. </dd> 
+    <dd> Maximum number of steps to miss before a line is lost. </dd>
 
     <dt> Max Shifted </dt>
     <dd> Maximum shift per pixel in line position. </dd>
 
     <dt> Number of Lines to Sum </dt>
-    <dd> Number of lines to sum. </dd> 
+    <dd> Number of lines to sum. </dd>
 
     <dt> Tracing Step </dt>
     <dd> Step in rows/columns for tracing. </dd>

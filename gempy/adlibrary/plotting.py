@@ -31,7 +31,7 @@ def dgsplot_bokeh(ad, aperture):
     output_file('dgsplot.html')
 
     p = figure(title=plot_data['title'], x_axis_label=plot_data['xaxis'],
-               y_axis_label=plot_data['yaxis'], plot_width=1000, plot_height=600)
+               y_axis_label=plot_data['yaxis'], width=1000, height=600)
     p.title.text_font_size = '15pt'
     p.title.align = 'center'
     p.xaxis.axis_label_text_font_size = '12pt'
