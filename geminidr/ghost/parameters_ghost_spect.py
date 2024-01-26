@@ -101,6 +101,8 @@ class extractProfileConfig(config.Config):
                                    allowed={"uniform": "uniform weighting",
                                             "optimal": "optimal extraction"},
                                    default="optimal")
+    min_flux_frac = config.RangeField("Minimum fraction of object flux to not flag extracted pixel",
+                                      float, 0., min=0, max=1, inclusiveMax=True)
     ftol = config.RangeField("Fractional tolerance for convergence",
                                   float, 0.001, min=1e-8, max=0.05)
     apply_centroids = config.Field("Apply slit center-of-light offsets?", bool, False)
@@ -141,6 +143,8 @@ class findAperturesConfig(config.Config):
                             optional=True, single=True)
     make_pixel_model = config.Field('Add a pixel model to the flat field?',
                                     bool, False)
+    smoothing = config.RangeField("Gaussian smoothing of slit profile (unbinned pixels)",
+                                  float, 0, min=0, optional=False)
 
 
 class fitWavelengthConfig(config.Config):

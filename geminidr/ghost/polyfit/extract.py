@@ -253,7 +253,7 @@ class Extractor(object):
                     optimal=False, find_crs=True, snoise=0.1, sigma=6,
                     used_objects=[0, 1], debug_pixel=None,
                     apply_centroids=False, correction=None, ftol=0.001,
-                    timing=False):
+                    min_flux_frac=0, timing=False):
         """
         Do a complete extraction of all objects from the echellogram.
 
@@ -293,6 +293,11 @@ class Extractor(object):
             blaze correction factor to apply to each pixel in each order
         ftol: float
             fractional tolerance for convergence
+        min_flux_frac: float
+            an output pixel will be flagged if the fraction of flux in the
+            unmasked pixels (based on the profile) is less than this
+        timing: bool
+            output timing information?
 
         Returns
         -------
@@ -382,7 +387,7 @@ class Extractor(object):
                     col_data = data[_slice]
                     col_inv_var = pixel_inv_var[_slice]
                     badpix = self.badpixmask[_slice].astype(bool)
-                    badpix[ww] = True
+                    badpix[ww] = DQ.no_data
                     xtr = Extractum(phi, col_data, col_inv_var, badpix,
                                     noise_model=noise_model,
                                     pixel=(self.arm.m_min+i, j))
@@ -415,7 +420,9 @@ class Extractor(object):
 
         # Now do the extraction. First determine *where* to extract
         extracted_flux = np.zeros((nm, ny, no), dtype=np.float32)
-        extracted_var = np.zeros((nm, ny, no), dtype=np.float32)
+        extracted_var = np.zeros_like(extracted_flux)
+        extracted_mask = np.zeros_like(extracted_flux, dtype=DQ.datatype)
+        DQnbits = extracted_mask.itemsize * 8
         start = datetime.now()
         profiles = profiles[:no]
         print("\n\n    Extracting order ", end="")
@@ -440,7 +447,7 @@ class Extractor(object):
             # xmin can be <0, xmax can be >= nx
             nrows = xmax - xmin + 1
             pixel_array = np.zeros((ny, nrows))
-            mask_array = np.zeros_like(pixel_array, dtype=bool)
+            mask_array = np.zeros_like(pixel_array, dtype=DQ.datatype)
             all_phi = []
             if debug_pixel != (None, None):
                 print(f"ROW LIMITS: {xmin} {xmax}")
@@ -472,7 +479,7 @@ class Extractor(object):
                     y_locations = y_ix
                     print("\nY LOCATIONS",
                           [(xx, yy) for xx, yy in zip(x_ix, y_locations)])
-                mask_array[j, x_ix.min()-xmin:x_ix.max()-xmin+1] |= ~on_array
+                mask_array[j, x_ix.min()-xmin:x_ix.max()-xmin+1] |= ((~on_array) * DQ.no_data)
                 all_phi.append((x_ix.min()-xmin, phi))
 
             if debug_pixel[0] == self.arm.m_min+i:
@@ -487,11 +494,13 @@ class Extractor(object):
 
             # Do the interpolation for all wavelengths in this order
             # Save memory by overwriting the array of pixel locations with values
-            mask_array |= np.logical_or(pixel_array < 0, pixel_array >= ny)
+            mask_array |= (np.logical_or(pixel_array < 0, pixel_array >= ny) * DQ.no_data)
             for ix in range(max(xmin, 0), min(xmax+1, nx)):
-                # Flag any virtual pixel that is partly off the edge of the array
-                mask_array[:, ix-xmin] |= np.interp(
-                    pixel_array[:, ix-xmin], np.arange(ny), self.badpixmask[ix]) > 0
+                # Flag any virtual pixel that is partly flagged in the mask
+                for bit in 2 ** (np.arange(DQnbits, dtype=DQ.datatype)):
+                    mask_array[:, ix-xmin] |= (np.interp(
+                        pixel_array[:, ix-xmin], np.arange(ny),
+                        (self.badpixmask[ix] & bit).astype(float)) > 0) * bit
                 if correction is None:
                     pixel_array[:, ix-xmin] = np.interp(
                         pixel_array[:, ix-xmin], np.arange(ny), data[ix])
@@ -521,7 +530,8 @@ class Extractor(object):
 
                 _slice = (j, slice(x_ix_min, x_ix_min+phi.shape[1]))
                 xtr = Extractum(phi, pixel_array[_slice],
-                                mask=mask_array[_slice], noise_model=noise_model,
+                                mask=mask_array[_slice].astype(bool),
+                                noise_model=noise_model,
                                 pixel=(self.arm.m_min+i, j))
                 model_amps = xtr.fit(debug=debug_this_pixel, c0=c0,
                                      c1=c1, ftol=ftol)
@@ -548,14 +558,21 @@ class Extractor(object):
                     extracted_flux[i, j] = np.dot(frac, xtr.data) * object_scaling
                     extracted_var[i, j] = np.dot(frac, col_var) * object_scaling ** 2
 
+                bad_frac = phi[:, ~xtr.mask].sum(axis=1) < min_flux_frac
+                mask_per_object = np.bitwise_or.reduce(mask_array[_slice] &
+                                                       ((phi > 0) * DQ.max), axis=1)
+                extracted_mask[i, j, bad_frac] = mask_per_object[bad_frac]
+
                 if debug_this_pixel:
                     log.debug("EXTRACTED FLUXES", extracted_flux[i, j])
+                    log.debug("EXTRACTED MASK", extracted_mask[i, j])
                     log.debug("EXTRACTED VAR", extracted_var[i, j])
+                    log.debug("GOOD FRACTIONS", phi[:, ~xtr.mask].sum(axis=1))
             if timing:
                 print(datetime.now() - start)
         print("\n")
 
-        return extracted_flux, extracted_var
+        return extracted_flux, extracted_mask, extracted_var
 
     def quick_extract(self, data=None):
         """

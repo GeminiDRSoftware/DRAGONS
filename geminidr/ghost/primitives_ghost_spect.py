@@ -960,6 +960,9 @@ class GHOSTSpect(GHOST):
             number of standard deviations for identifying discrepant pixels
         weighting: str ("uniform"/"optimal")
             weighting scheme for extraction
+        min_flux_frac: float (0-1)
+            flag the output pixel if the unmasked flux of an object falls
+            below this fractional threshold
         ftol: float
             fractional tolerance for convergence of optimal extraction flux
         apply_centroids: bool
@@ -981,6 +984,7 @@ class GHOSTSpect(GHOST):
         snoise = params["snoise"]
         sigma = params["sigma"]
         debug_pixel = (params["debug_order"], params["debug_pixel"])
+        min_flux_frac = params["min_flux_frac"]
         add_cr_map = params["debug_cr_map"]
         optimal_extraction = params["weighting"] == "optimal"
         ftol = params["ftol"]
@@ -1060,6 +1064,9 @@ class GHOSTSpect(GHOST):
             log.stdinfo(f"   processed_slit: {slit_filename}{slit_origin_str}")
             log.stdinfo(f"   processed_slitflat: {slitflat_filename}{slitflat_origin_str}")
             log.stdinfo(f"   processed_flat: {flat.filename}{flat_origin_str}")
+            smoothing = flat.phu.get('SMOOTH', 0)
+            if smoothing:
+                log.stdinfo(f"      Flat was smoothed by {smoothing} pixels")
 
             res_mode = ad.res_mode()
             arm = GhostArm(arm=ad.arm(), mode=res_mode,
@@ -1130,7 +1137,8 @@ class GHOSTSpect(GHOST):
             sview = SlitView(slit_data, slitflat_data,
                              slitvpars.TABLE[0], mode=res_mode,
                              microns_pix=4.54 * 180 / 50,
-                             stowed=ifu_stowed, **sview_kwargs)
+                             stowed=ifu_stowed, smoothing=smoothing,
+                             **sview_kwargs)
 
             # There's no point in creating a fake slitflat first, since that
             # will case the code to use it to determine the fibre positions,
@@ -1184,7 +1192,7 @@ class GHOSTSpect(GHOST):
                 else:
                     raise RuntimeError("No objects for extraction and use_sky=False")
 
-                extracted_flux, extracted_var = extractor.new_extract(
+                extracted_flux, extracted_mask, extracted_var = extractor.new_extract(
                     data=ad[0].data.copy(),
                     correct_for_sky=sky_correct_profiles,
                     use_sky=s, used_objects=o, find_crs=cr,
@@ -1192,7 +1200,7 @@ class GHOSTSpect(GHOST):
                     debug_pixel=debug_pixel,
                     correction=correction, optimal=optimal_extraction,
                     apply_centroids=apply_centroids, ftol=ftol,
-                    timing=timing
+                    min_flux_frac=min_flux_frac, timing=timing
                 )
 
                 # Append the extraction as a new extension... we don't
@@ -1201,7 +1209,7 @@ class GHOSTSpect(GHOST):
                 nobj = extracted_flux.shape[-1]
                 for obj in range(nobj):
                     ad.append(extracted_flux[:, :, obj])
-                    ad[-1].mask = (extracted_var[:, :, obj] == 0).astype(DQ.datatype)
+                    ad[-1].mask = (extracted_var[:, :, obj] == 0).astype(DQ.datatype)| extracted_mask
                     ad[-1].variance = extracted_var[:, :, obj]
                     ad[-1].nddata.meta['header'] = ad[0].hdr.copy()
                     if add_cr_map and extractor.badpixmask is not None and obj == 0:
@@ -1243,6 +1251,7 @@ class GHOSTSpect(GHOST):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         make_pixel_model = params.get('make_pixel_model', False)
+        smoothing = params["smoothing"]
 
         # Make no attempt to check if primitive has already been run - may
         # have new calibrators we wish to apply.
@@ -1289,7 +1298,8 @@ class GHOSTSpect(GHOST):
             slitview = SlitView(slit_flat[0].data, slit_flat[0].data,
                                 slitvpars.TABLE[0], mode=res_mode,
                                 microns_pix=4.54*180/50,
-                                binning=slit_flat.detector_x_bin())
+                                binning=slit_flat.detector_x_bin(),
+                                smoothing=smoothing)
 
             # Convolve the flat field with the slit profile
             flat_conv = ghost_arm.slit_flat_convolve(
@@ -1337,6 +1347,8 @@ class GHOSTSpect(GHOST):
                 pixel_model = extractor.make_pixel_model()
                 ad[0].PIXELMODEL = pixel_model
 
+            if smoothing:
+                ad.phu['SMOOTH'] = (smoothing, "Pixel FWHM of SVC smoothing kernel")
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
         return adinputs
@@ -1707,12 +1719,14 @@ class GHOSTSpect(GHOST):
                 raise RuntimeError("Cannot open required initial model files; "
                                    "skipping")
 
+            smoothing = ad.phu.get('SMOOTH', 0)
             arm.spectral_format_with_matrix(ad[0].XMOD, wpars[0].data,
                         spatpars[0].data, specpars[0].data, rotpars[0].data)
             sview = SlitView(slitflat[0].data, slitflat[0].data,
                              slitvpars.TABLE[0], mode=res_mode,
                              microns_pix=4.54 * 180 / 50,
-                             binning=slitflat.detector_x_bin())
+                             binning=slitflat.detector_x_bin(),
+                             smoothing=smoothing)
             extractor = Extractor(arm, sview, badpixmask=ad[0].mask,
                                   vararray=ad[0].variance)
             extracted_flux, extracted_var, extracted_mask = extractor.quick_extract(ad[0].data)
