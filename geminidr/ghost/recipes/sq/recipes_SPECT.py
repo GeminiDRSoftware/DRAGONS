@@ -27,7 +27,7 @@ def reduceScience(p):
     p.removeScatteredLight()
     p.writeOutputs()
     p.extractProfile()
-    p.addWavelengthSolution()  # should be able to accept multiple input
+    p.attachWavelengthSolution()  # should be able to accept multiple input
                                # arcs, e.g. from start and end of night,
                                # and interpolate in time
     p.barycentricCorrect()  # trivial - multiply wavelength scale
@@ -60,7 +60,7 @@ def reduceStandard(p):
     p.removeScatteredLight()
     p.writeOutputs()
     p.extractProfile()
-    p.addWavelengthSolution()
+    p.attachWavelengthSolution()
     p.scaleCountsToReference()
     p.stackFrames()
     p.calculateSensitivity()

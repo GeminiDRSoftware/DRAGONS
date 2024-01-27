@@ -10,7 +10,7 @@ from geminidr.core import (
 from astrodata import AstroData as ad
 
 
-class addWavelengthSolutionConfig(config.Config):
+class attachWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthAdded",
                           optional=True)
     arc_before = config.ListField("Before arc to use for wavelength solution",

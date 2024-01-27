@@ -99,7 +99,7 @@ class GHOSTSpect(GHOST):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_ghost_spect)
 
-    def addWavelengthSolution(self, adinputs=None, **params):
+    def attachWavelengthSolution(self, adinputs=None, **params):
         """
         Compute and append a wavelength solution for the data.
 

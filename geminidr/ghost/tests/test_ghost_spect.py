@@ -54,7 +54,7 @@ class TestGhost:
 
     @pytest.mark.skip(reason='Requires calibrators & polyfit-ing - do '
                              'in all-up testing')
-    def test_addWavelengthSolution(self, data_addWavelengthSolution):
+    def test_attachWavelengthSolution(self, data_attachWavelengthSolution):
         """
         Checks to make:
 
