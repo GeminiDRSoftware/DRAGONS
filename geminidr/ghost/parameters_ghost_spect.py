@@ -64,7 +64,7 @@ class determineWavelengthSolutionConfig(config.Config):
     debug_plot2d = config.Field("Produce 2D plot to inspect fit?", bool, False)
 
 
-class extractProfileConfig(config.Config):
+class extractSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted",
                           optional=True)
     slit = config.ListField("Slit viewer exposure", (str, ad), None,

@@ -26,7 +26,7 @@ def reduceScience(p):
     p.tileArrays()
     p.removeScatteredLight()
     p.writeOutputs()
-    p.extractProfile()
+    p.extractSpectra()
     p.attachWavelengthSolution()  # should be able to accept multiple input
                                # arcs, e.g. from start and end of night,
                                # and interpolate in time
@@ -59,7 +59,7 @@ def reduceStandard(p):
     p.tileArrays()
     p.removeScatteredLight()
     p.writeOutputs()
-    p.extractProfile()
+    p.extractSpectra()
     p.attachWavelengthSolution()
     p.scaleCountsToReference()
     p.stackFrames()

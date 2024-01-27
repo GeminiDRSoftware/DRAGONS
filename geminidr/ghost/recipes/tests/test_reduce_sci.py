@@ -70,7 +70,7 @@ def test_reduce_science(input_filename, caldict, arm, skysub, path_to_inputs,
              "processed_slit": processed_slit,
              "processed_slitflat": processed_slitflat,
              "processed_bpm": processed_bpm}
-    uparms = {"extractProfile:sky_subtract": skysub}
+    uparms = {"extractSpectra:sky_subtract": skysub}
     standard = caldict.get('standard')
     if standard:
         standard = standard.replace(".fits", f"_{arm}001_standard.fits")

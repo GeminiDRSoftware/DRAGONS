@@ -29,7 +29,7 @@ def makeProcessedArc(p):
     p.darkCorrect()
     p.tileArrays()
     p.stackArcs()
-    p.extractProfile(flat_correct=False, write_result=True)
+    p.extractSpectra(flat_correct=False, write_result=True)
     p.determineWavelengthSolution()
     p.storeProcessedArc()
     return

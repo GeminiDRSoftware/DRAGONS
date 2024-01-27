@@ -198,7 +198,7 @@ class TestGhost:
 
     @pytest.mark.skip(reason='Requires calibrators & polyfit-ing - save for '
                              'all-up testing')
-    def test_extractProfile(self):
+    def test_extractSpectra(self):
         """
         Checks to make
 

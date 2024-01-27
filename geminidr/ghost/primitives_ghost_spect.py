@@ -448,7 +448,7 @@ class GHOSTSpect(GHOST):
                     log.stdinfo(f"{ad.filename}: Using spectrophotometric "
                                 f"data file {datafile} as supplied by user")
 
-            target = 0  # according to new extractProfile() behaviour
+            target = 0  # according to new extractSpectra() behaviour
             ext = ad[target]
             if ext.hdr.get('BUNIT') != "electron":
                 raise ValueError(f"{ad.filename} is not in units of electron")
@@ -957,8 +957,8 @@ class GHOSTSpect(GHOST):
 
         for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
                                                    force_ad=(1,))):
-            if self.timestamp_keys["extractProfile"] not in ad.phu:
-                log.warning(f"extractProfile has not been run on {ad.filename}; "
+            if self.timestamp_keys["extractSpectra"] not in ad.phu:
+                log.warning(f"extractSpectra has not been run on {ad.filename}; "
                             "skipping")
                 continue
 
@@ -1100,9 +1100,9 @@ class GHOSTSpect(GHOST):
 
         return adinputs
 
-    def extractProfile(self, adinputs=None, **params):
+    def extractSpectra(self, adinputs=None, **params):
         """
-        Extract the object profile from a slit or flat image.
+        Extract the object spectra from the echellogram.
 
         This is a primtive wrapper for a collection of :any:`polyfit <polyfit>`
         calls. For each AstroData input, this primitive:
@@ -1111,9 +1111,8 @@ class GHOSTSpect(GHOST):
           executes :meth:`polyfit.GhostArm.spectral_format_with_matrix`;
         - Instantiate :class:`polyfit.SlitView` and :class:`polyfit.Extractor`
           objects for the input
-        - Extract the profile from the input AstroData, using calls to
-          :meth:`polyfit.Extractor.one_d_extract` and
-          :meth:`polyfit.Extractor.two_d_extract`.
+        - Extract the spectra from the input AstroData, using calls to
+          :meth:`polyfit.Extractor.new_extract`.
         
         Parameters
         ----------
@@ -1463,7 +1462,7 @@ class GHOSTSpect(GHOST):
         # Make no attempt to check if primitive has already been run - may
         # have new calibrators we wish to apply.
 
-        # CJS: See comment in extractProfile() for handling of calibrations
+        # CJS: See comment in extractSpectra() for handling of calibrations
         slitflat = params["slitflat"]
         if slitflat is None:
             flat_list = self.caldb.get_processed_slitflat(adinputs)
@@ -1532,7 +1531,6 @@ class GHOSTSpect(GHOST):
             #MJI: Compute a pixel-by-pixel model of the flat field from the new XMOD and
             #the slit image.
             if make_pixel_model:
-                # FIXME: MJI Copied directly from extractProfile. Is this compliant?
                 try:
                     poly_wave = self._get_polyfit_filename(ad, 'wavemod')
                     poly_spec = self._get_polyfit_filename(ad, 'specmod')
