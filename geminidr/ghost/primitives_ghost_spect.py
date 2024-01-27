@@ -1227,7 +1227,7 @@ class GHOSTSpect(GHOST):
                 raise RuntimeError(f"No processed flat listed for {ad.filename}")
 
             if slitflat is None:
-                # TBD: can we use a synthetic slitflat (findApertures in
+                # TBD: can we use a synthetic slitflat (traceFibers in
                 # makeProcessedFlat would need one too)
                 raise RuntimeError(f"No processed slitflat listed for {ad.filename}")
                 if slit is None:
@@ -1436,125 +1436,6 @@ class GHOSTSpect(GHOST):
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
             if params["write_result"]:
                 ad.write(overwrite=True)
-
-        return adinputs
-
-    def findApertures(self, adinputs=None, **params):
-        """
-        Locate the slit aperture, parametrized by an :any:`polyfit` model.
-
-        The primitive locates the slit apertures within a GHOST frame,
-        and inserts a :any:`polyfit` model into a new extension on each data
-        frame. This model is placed into a new ``.XMOD`` attribute on the
-        extension.
-        
-        Parameters
-        ----------
-        slitflat: str or :class:`astrodata.AstroData` or None
-            slit flat to use; if None, the calibration system is invoked
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        make_pixel_model = params.get('make_pixel_model', False)
-        smoothing = params["smoothing"]
-
-        # Make no attempt to check if primitive has already been run - may
-        # have new calibrators we wish to apply.
-
-        # CJS: See comment in extractSpectra() for handling of calibrations
-        slitflat = params["slitflat"]
-        if slitflat is None:
-            flat_list = self.caldb.get_processed_slitflat(adinputs)
-        else:
-            flat_list = (slitflat, None)
-
-        for ad, slit_flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
-                                                force_ad=(1,))):
-            if not {'PREPARED', 'GHOST', 'FLAT'}.issubset(ad.tags):
-                log.warning("findApertures is only run on prepared flats: "
-                            f"{ad.filename} will not be processed")
-                continue
-
-            origin_str = f" (obtained from {origin})" if origin else ""
-            log.stdinfo(f"{ad.filename}: using slitflat "
-                        f"{slit_flat.filename}{origin_str}")
-            try:
-                poly_xmod = self._get_polyfit_filename(ad, 'xmod')
-                log.stdinfo(f'Found xmod: {poly_xmod}')
-                poly_spat = self._get_polyfit_filename(ad, 'spatmod')
-                log.stdinfo(f'Found spatmod: {poly_spat}')
-                slitv_fn = self._get_slitv_polyfit_filename(ad)
-                log.stdinfo(f'Found slitvmod: {slitv_fn}')
-                xpars = astrodata.open(poly_xmod)
-                spatpars = astrodata.open(poly_spat)
-                slitvpars = astrodata.open(slitv_fn)
-            except IOError:
-                log.warning("Cannot open required initial model files; "
-                            "skipping")
-                continue
-
-            arm = ad.arm()
-            res_mode = ad.res_mode()
-            ghost_arm = GhostArm(arm=arm, mode=res_mode)
-
-            # Create an initial model of the spectrograph
-            xx, wave, blaze = ghost_arm.spectral_format(xparams=xpars[0].data)
-
-            slitview = SlitView(slit_flat[0].data, slit_flat[0].data,
-                                slitvpars.TABLE[0], mode=res_mode,
-                                microns_pix=4.54*180/50,
-                                binning=slit_flat.detector_x_bin(),
-                                smoothing=smoothing)
-
-            # Convolve the flat field with the slit profile
-            flat_conv = ghost_arm.slit_flat_convolve(
-                ad[0].data,
-                slit_profile=slitview.slit_profile(arm=arm),
-                spatpars=spatpars[0].data, microns_pix=slitview.microns_pix,
-                xpars=xpars[0].data
-            )
-
-            # Fit the initial model to the data being considered
-            fitted_params = ghost_arm.fit_x_to_image(flat_conv,
-                                                     xparams=xpars[0].data,
-                                                     decrease_dim=8,
-                                                     sampling=2,
-                                                     inspect=False)
-
-            # CJS: Append the XMOD as an extension. It will inherit the
-            # header from the science plane (including irrelevant/wrong
-            # keywords like DATASEC) but that's not really a big deal.
-            # (The header can be modified/started afresh if needed.)
-            ad[0].XMOD = fitted_params
-
-            #MJI: Compute a pixel-by-pixel model of the flat field from the new XMOD and
-            #the slit image.
-            if make_pixel_model:
-                try:
-                    poly_wave = self._get_polyfit_filename(ad, 'wavemod')
-                    poly_spec = self._get_polyfit_filename(ad, 'specmod')
-                    poly_rot = self._get_polyfit_filename(ad, 'rotmod')
-                    wpars = astrodata.open(poly_wave)
-                    specpars = astrodata.open(poly_spec)
-                    rotpars = astrodata.open(poly_rot)
-                except IOError:
-                    log.warning("Cannot open required initial model files "
-                                "for PIXELMODEL; skipping")
-                    continue
-
-                #Create an extractor instance, so that we can add the pixel model to the 
-                #data.
-                ghost_arm.spectral_format_with_matrix(ad[0].XMOD, wpars[0].data,
-                            spatpars[0].data, specpars[0].data, rotpars[0].data)
-                extractor = Extractor(ghost_arm, slitview, badpixmask=ad[0].mask,
-                                      vararray=ad[0].variance)
-                pixel_model = extractor.make_pixel_model()
-                ad[0].PIXELMODEL = pixel_model
-
-            if smoothing:
-                ad.phu['SMOOTH'] = (smoothing, "Pixel FWHM of SVC smoothing kernel")
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
         return adinputs
 
@@ -2226,6 +2107,125 @@ class GHOSTSpect(GHOST):
             adoutputs.append(adout)
 
         return adoutputs
+
+    def traceFibers(self, adinputs=None, **params):
+        """
+        Locate the fiber traces, parametrized by an :any:`polyfit` model.
+
+        The primitive locates the slit apertures within a GHOST frame,
+        and inserts a :any:`polyfit` model into a new extension on each data
+        frame. This model is placed into a new ``.XMOD`` attribute on the
+        extension.
+
+        Parameters
+        ----------
+        slitflat: str or :class:`astrodata.AstroData` or None
+            slit flat to use; if None, the calibration system is invoked
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        make_pixel_model = params.get('make_pixel_model', False)
+        smoothing = params["smoothing"]
+
+        # Make no attempt to check if primitive has already been run - may
+        # have new calibrators we wish to apply.
+
+        # CJS: See comment in extractSpectra() for handling of calibrations
+        slitflat = params["slitflat"]
+        if slitflat is None:
+            flat_list = self.caldb.get_processed_slitflat(adinputs)
+        else:
+            flat_list = (slitflat, None)
+
+        for ad, slit_flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                                        force_ad=(1,))):
+            if not {'PREPARED', 'GHOST', 'FLAT'}.issubset(ad.tags):
+                log.warning(f"{self.myself()} is only run on prepared flats: "
+                            f"{ad.filename} will not be processed")
+                continue
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using slitflat "
+                        f"{slit_flat.filename}{origin_str}")
+            try:
+                poly_xmod = self._get_polyfit_filename(ad, 'xmod')
+                log.stdinfo(f'Found xmod: {poly_xmod}')
+                poly_spat = self._get_polyfit_filename(ad, 'spatmod')
+                log.stdinfo(f'Found spatmod: {poly_spat}')
+                slitv_fn = self._get_slitv_polyfit_filename(ad)
+                log.stdinfo(f'Found slitvmod: {slitv_fn}')
+                xpars = astrodata.open(poly_xmod)
+                spatpars = astrodata.open(poly_spat)
+                slitvpars = astrodata.open(slitv_fn)
+            except IOError:
+                log.warning("Cannot open required initial model files; "
+                            "skipping")
+                continue
+
+            arm = ad.arm()
+            res_mode = ad.res_mode()
+            ghost_arm = GhostArm(arm=arm, mode=res_mode)
+
+            # Create an initial model of the spectrograph
+            xx, wave, blaze = ghost_arm.spectral_format(xparams=xpars[0].data)
+
+            slitview = SlitView(slit_flat[0].data, slit_flat[0].data,
+                                slitvpars.TABLE[0], mode=res_mode,
+                                microns_pix=4.54 * 180 / 50,
+                                binning=slit_flat.detector_x_bin(),
+                                smoothing=smoothing)
+
+            # Convolve the flat field with the slit profile
+            flat_conv = ghost_arm.slit_flat_convolve(
+                ad[0].data,
+                slit_profile=slitview.slit_profile(arm=arm),
+                spatpars=spatpars[0].data, microns_pix=slitview.microns_pix,
+                xpars=xpars[0].data
+            )
+
+            # Fit the initial model to the data being considered
+            fitted_params = ghost_arm.fit_x_to_image(flat_conv,
+                                                     xparams=xpars[0].data,
+                                                     decrease_dim=8,
+                                                     sampling=2,
+                                                     inspect=False)
+
+            # CJS: Append the XMOD as an extension. It will inherit the
+            # header from the science plane (including irrelevant/wrong
+            # keywords like DATASEC) but that's not really a big deal.
+            # (The header can be modified/started afresh if needed.)
+            ad[0].XMOD = fitted_params
+
+            # MJI: Compute a pixel-by-pixel model of the flat field from the new XMOD and
+            # the slit image.
+            if make_pixel_model:
+                try:
+                    poly_wave = self._get_polyfit_filename(ad, 'wavemod')
+                    poly_spec = self._get_polyfit_filename(ad, 'specmod')
+                    poly_rot = self._get_polyfit_filename(ad, 'rotmod')
+                    wpars = astrodata.open(poly_wave)
+                    specpars = astrodata.open(poly_spec)
+                    rotpars = astrodata.open(poly_rot)
+                except IOError:
+                    log.warning("Cannot open required initial model files "
+                                "for PIXELMODEL; skipping")
+                    continue
+
+                # Create an extractor instance, so that we can add the pixel model to the
+                # data.
+                ghost_arm.spectral_format_with_matrix(ad[0].XMOD, wpars[0].data,
+                                                      spatpars[0].data, specpars[0].data, rotpars[0].data)
+                extractor = Extractor(ghost_arm, slitview, badpixmask=ad[0].mask,
+                                      vararray=ad[0].variance)
+                pixel_model = extractor.make_pixel_model()
+                ad[0].PIXELMODEL = pixel_model
+
+            if smoothing:
+                ad.phu['SMOOTH'] = (smoothing, "Pixel FWHM of SVC smoothing kernel")
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+
+        return adinputs
 
     def write1DSpectra(self, adinputs=None, **params):
         """

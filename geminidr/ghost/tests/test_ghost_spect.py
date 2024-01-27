@@ -234,7 +234,7 @@ class TestGhost:
 
     @pytest.mark.skip(reason='Requires calibrators & polyfit-ing - save for '
                              'all-up testing')
-    def test_findApertures(self):
+    def test_traceFibers(self):
         """
         Checks to make:
 

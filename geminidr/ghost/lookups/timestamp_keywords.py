@@ -7,7 +7,7 @@ timestamp_keys = {
     "barycentricCorrect": "BARYCORR",
     "combineOrders": "CMBORDER",
     "CRCorrect": "FXSLITCR",
-    "findApertures": "FINDAPER",
+    "traceFibers": "TRCFIBER",
     "flatCorrect": "FLATCORR",
     "measureBlaze": "MEASBLZE",
     "processSlits": "PROCSLIT",

@@ -125,20 +125,6 @@ class combineOrdersConfig(config.Config):
                                                 default="scaled", optional=True)
 
 
-class findAperturesConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_aperturesFound",
-                          optional=True)
-    slitflat = config.Field("Slit viewer flat field",
-                            (str, ad),
-                            None, optional=True)
-    flat = config.ListField("Flat field", (str, ad), None,
-                            optional=True, single=True)
-    make_pixel_model = config.Field('Add a pixel model to the flat field?',
-                                    bool, False)
-    smoothing = config.RangeField("Gaussian smoothing of slit profile (unbinned pixels)",
-                                  float, 0, min=0, optional=False)
-
-
 class flatCorrectConfig(config.Config):
     skip = config.Field("No-op this primitive?", bool, False, optional=True)
     suffix = config.Field("Filename suffix", str, "_flatCorrected",
@@ -240,6 +226,20 @@ class standardizeSpectralFormatConfig(config.Config):
 class stackFramesConfig(parameters_stack.core_stacking_config):
     def setDefaults(self):
         self.reject_method = "none"
+
+
+class traceFibersConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_aperturesFound",
+                          optional=True)
+    slitflat = config.Field("Slit viewer flat field",
+                            (str, ad),
+                            None, optional=True)
+    flat = config.ListField("Flat field", (str, ad), None,
+                            optional=True, single=True)
+    make_pixel_model = config.Field('Add a pixel model to the flat field?',
+                                    bool, False)
+    smoothing = config.RangeField("Gaussian smoothing of slit profile (unbinned pixels)",
+                                  float, 0, min=0, optional=False)
 
 
 write1DSpectraConfig = parameters_spect.write1DSpectraConfig

@@ -195,7 +195,7 @@ class GhostArm(Polyspect):
 
         Function that takes a flat field image and a slit profile and
         convolves them in two dimensions. Returns result of the convolution,
-        which should be used for tramline fitting in findApertures.
+        which should be used for tramline fitting in traceFibers.
 
         This function is a first step in finding the centre of each order.
         Given the potentially overlapping nature of fiber images in flat field
