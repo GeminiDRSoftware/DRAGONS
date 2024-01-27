@@ -8,7 +8,6 @@ timestamp_keys = {
     "combineOrders": "CMBORDER",
     "CRCorrect": "FXSLITCR",
     "traceFibers": "TRCFIBER",
-    "flatCorrect": "FLATCORR",
     "measureBlaze": "MEASBLZE",
     "weightSlitExposures": "WGTSLITS",
     "splitBundle": "SPLTBNDL",

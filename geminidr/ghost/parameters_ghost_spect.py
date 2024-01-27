@@ -125,19 +125,6 @@ class combineOrdersConfig(config.Config):
                                                 default="scaled", optional=True)
 
 
-class flatCorrectConfig(config.Config):
-    skip = config.Field("No-op this primitive?", bool, False, optional=True)
-    suffix = config.Field("Filename suffix", str, "_flatCorrected",
-                          optional=True)
-    slit = config.Field("Slit viewer exposure", (str, ad), None, optional=True)
-    slitflat = config.ListField("Slit viewer flat field", (str, ad), None,
-                                optional=True, single=True)
-    flat = config.ListField("Processed flat field exposure", (str, ad), None,
-                            optional=True, single=True)
-    write_result = config.Field("Write primitive output to disk?", bool, True,
-                                optional=True)
-
-
 fluxCalibrateConfig = parameters_spect.fluxCalibrateConfig
 
 
