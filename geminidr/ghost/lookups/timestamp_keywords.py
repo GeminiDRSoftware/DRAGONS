@@ -9,7 +9,6 @@ timestamp_keys = {
     "CRCorrect": "FXSLITCR",
     "extractProfile": "EXTRPROF",
     "findApertures": "FINDAPER",
-    "fitWavelength": "FITWAVLN",
     "flatCorrect": "FLATCORR",
     "measureBlaze": "MEASBLZE",
     "processSlits": "PROCSLIT",

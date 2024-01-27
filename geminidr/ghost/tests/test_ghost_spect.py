@@ -246,7 +246,7 @@ class TestGhost:
 
     @pytest.mark.skip(reason='Requires calibrators & polyfit-ing - save for '
                              'all-up testing')
-    def test_fitWavelength(self):
+    def test_determineWavelengthSolution(self):
         """
         Checks to make:
 

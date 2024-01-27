@@ -46,6 +46,24 @@ class darkCorrectConfig(parameters_preprocess.darkCorrectConfig):
         self.do_cal = "skip"
 
 
+class determineWavelengthSolutionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthFitted",
+                          optional=True)
+    flat = config.ListField("Flat field", (str, ad), None,
+                            optional=True, single=True)
+    min_snr = config.RangeField("Minimum S/N for peak detection",
+                                float, 20, min=10)
+    sigma = config.RangeField("Number of standard deviations for rejecting lines",
+                              float, 3, min=1)
+    max_iters = config.RangeField("Maximum number of iterations", int, 1, min=1)
+    radius = config.RangeField("Matching distance for lines", int, 12, min=2)
+    plot1d = config.Field("Produce 1D plots of each order to inspect fit?",
+                          bool, False)
+    plotrms = config.Field("Produce rms scattergram to inspect fit?",
+                           bool, False)
+    debug_plot2d = config.Field("Produce 2D plot to inspect fit?", bool, False)
+
+
 class extractProfileConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted",
                           optional=True)
@@ -119,24 +137,6 @@ class findAperturesConfig(config.Config):
                                     bool, False)
     smoothing = config.RangeField("Gaussian smoothing of slit profile (unbinned pixels)",
                                   float, 0, min=0, optional=False)
-
-
-class fitWavelengthConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_wavelengthFitted",
-                          optional=True)
-    flat = config.ListField("Flat field", (str, ad), None,
-                            optional=True, single=True)
-    min_snr = config.RangeField("Minimum S/N for peak detection",
-                                float, 20, min=10)
-    sigma = config.RangeField("Number of standard deviations for rejecting lines",
-                              float, 3, min=1)
-    max_iters = config.RangeField("Maximum number of iterations", int, 1, min=1)
-    radius = config.RangeField("Matching distance for lines", int, 12, min=2)
-    plot1d = config.Field("Produce 1D plots of each order to inspect fit?",
-                          bool, False)
-    plotrms = config.Field("Produce rms scattergram to inspect fit?",
-                           bool, False)
-    debug_plot2d = config.Field("Produce 2D plot to inspect fit?", bool, False)
 
 
 class flatCorrectConfig(config.Config):

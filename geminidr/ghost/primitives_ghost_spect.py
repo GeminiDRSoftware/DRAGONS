@@ -914,6 +914,192 @@ class GHOSTSpect(GHOST):
 
         return adinputs_orig
 
+    def determineWavelengthSolution(self, adinputs=None, **params):
+        """
+        Fit wavelength solution to a GHOST ARC frame.
+
+        This primitive should only be applied to a reduce GHOST ARC frame. Any
+        other files passed through this primitive will be skipped.
+
+        This primitive works as follows:
+        - :class:`polyfit.ghost.GhostArm` and `polyfit.extract.Extractor`
+          classes are instantiated and configured for the data;
+        - The ``Extractor`` class is used to find the line locations;
+        - The ``GhostArm`` class is used to fit this line solution to the data.
+
+        The primitive will use the arc line files stored in the same location
+        as the initial :module:`polyfit` models kept in the ``lookups`` system.
+
+        This primitive uses no special parameters.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        min_snr = params["min_snr"]
+        sigma = params["sigma"]
+        max_iters = params["max_iters"]
+        radius = params["radius"]
+        plot1d = params["plot1d"]
+        plotrms = params["plotrms"]
+        plot2d = params["debug_plot2d"]
+
+        # import pdb; pdb.set_trace()
+
+        # Make no attempt to check if primitive has already been run - may
+        # have new calibrators we wish to apply.
+
+        flat = params['flat']
+        if flat is None:
+            flat_list = self.caldb.get_processed_flat(adinputs)
+        else:
+            flat_list = (flat, None)
+
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                                   force_ad=(1,))):
+            if self.timestamp_keys["extractProfile"] not in ad.phu:
+                log.warning(f"extractProfile has not been run on {ad.filename}; "
+                            "skipping")
+                continue
+
+            if flat is None:
+                log.warning("Could not find processed_flat calibration for "
+                            f"{ad.filename}; - skipping")
+                continue
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the XMOD from the "
+                        f"processed_flat {flat.filename}{origin_str}")
+            try:
+                poly_wave = self._get_polyfit_filename(ad, 'wavemod')
+                poly_spat = self._get_polyfit_filename(ad, 'spatmod')
+                poly_spec = self._get_polyfit_filename(ad, 'specmod')
+                poly_rot = self._get_polyfit_filename(ad, 'rotmod')
+                wpars = astrodata.open(poly_wave)
+                spatpars = astrodata.open(poly_spat)
+                specpars = astrodata.open(poly_spec)
+                rotpars = astrodata.open(poly_rot)
+            except IOError:
+                log.warning("Cannot open required initial model files; "
+                            "skipping")
+                continue
+
+            # CJS: line_list location is now in lookups/__init__.py
+            arclinefile = os.path.join(os.path.dirname(polyfit_lookup.__file__),
+                                       line_list)
+            arcwaves, arcfluxes = np.loadtxt(arclinefile, usecols=[1, 2]).T
+
+            arm = GhostArm(arm=ad.arm(), mode=ad.res_mode())
+
+            # Find locations of all significant peaks in all orders
+            nm, ny = ad[0].data.shape
+            all_peaks = []
+            pixels = np.arange(ny)
+            for m_ix, flux in enumerate(ad[0].data):
+                try:
+                    variance = ad[0].variance[m_ix]
+                except TypeError:  # variance is None
+                    nmad = median_filter(
+                        abs(flux - median_filter(flux, size=2*radius+1)),
+                        size=2*radius+1)
+                    variance = nmad * nmad
+                peaks = tracing.find_wavelet_peaks(
+                    flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
+                    variance=variance, min_snr=min_snr, min_sep=5,
+                    pinpoint_index=None, reject_bad=False)
+                fit_g = fitting.LevMarLSQFitter()
+                these_peaks = []
+                for x in peaks[0]:
+                    good = np.zeros_like(flux, dtype=bool)
+                    good[max(int(x - radius), 0):int(x + radius + 1)] = True
+                    g_init = models.Gaussian1D(mean=x, amplitude=flux[good].max(),
+                                               stddev=1.5)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        g = fit_g(g_init, pixels[good], flux[good])
+                    if g.stddev.value < 5:  # avoid clearly bad fits
+                        these_peaks.append(g)
+                all_peaks.append(these_peaks)
+
+            # Find lines based on the extracted flux and the arc wavelengths.
+            # Note that "inspect=True" also requires and input arc file, which has
+            # the non-extracted data. There is also a keyword "plots".
+            #lines_out = extractor.find_lines(ad[0].data, arcwaves,
+            #                                 arcfile=ad[0].data,
+            #                                 plots=params['plot_fit'])
+
+            wmod_shape = wpars[0].data.shape
+            m_init = WaveModel(model=wpars[0].data, arm=arm)
+            arm.spectral_format_with_matrix(
+                flat[0].XMOD, m_init.parameters.reshape(wmod_shape),
+                spatpars[0].data, specpars[0].data, rotpars[0].data)
+            extractor = Extractor(arm, None)  # slitview=None for this usage
+
+            for iter in (0, 1):
+                # Only cross-correlate on the first pass
+                lines_out = extractor.match_lines(all_peaks, arcwaves,
+                                                  hw=radius, xcor=not bool(iter),
+                                                  log=(self.log, None)[iter])
+                #lines_out is now a long vector of many parameters, including the
+                #x and y position on the chip of each line, the order, the expected
+                #wavelength, the measured line strength and the measured line width.
+                #fitted_params, wave_and_resid = arm.read_lines_and_fit(
+                #    wpars[0].data, lines_out)
+                y_values, waves, orders = lines_out[:, 1], lines_out[:, 0], lines_out[:, 3]
+                fit_it = fitting.FittingWithOutlierRemoval(
+                    fitting.LevMarLSQFitter(), sigma_clip, sigma=sigma,
+                    maxiters=max_iters)
+                m_final, mask = fit_it(m_init, y_values, orders, waves)
+                arm.spectral_format_with_matrix(
+                    flat[0].XMOD, m_final.parameters.reshape(wmod_shape),
+                    spatpars[0].data, specpars[0].data, rotpars[0].data)
+                m_init = m_final
+
+            fitted_waves = m_final(y_values, orders)
+            rms = np.std((fitted_waves - waves)[~mask])
+            nlines = y_values.size - mask.sum()
+            log.stdinfo(f"Fit residual RMS (Angstroms): {rms:7.4f} ({nlines} lines)")
+            if np.any(mask):
+                log.stdinfo("The following lines were rejected:")
+                for yval, order, wave, fitted, m in zip(
+                        y_values, orders, waves, fitted_waves, mask):
+                    if m:
+                        log.stdinfo(f"    Order {int(order):2d} pixel {yval:6.1f} "
+                                    f"wave {wave:10.4f} (fitted wave {fitted:10.4f})")
+
+            if plot2d:
+                plt.ioff()
+                fig, ax = plt.subplots()
+                xpos = lambda y, ord: arm.szx // 2 + np.interp(
+                    y, pixels, arm.x_map[ord])
+                for m_ix, peaks in enumerate(all_peaks):
+                    for g in peaks:
+                        ax.plot([g.mean.value] * 2, xpos(g.mean.value, m_ix) +
+                                np.array([-30, 30]), color='darkgrey', linestyle='-')
+                for (wave, yval, xval, order, amp, fwhm) in lines_out:
+                    xval = xpos(yval, int(order) - arm.m_min)
+                    ax.plot([yval, yval],  xval + np.array([-30, 30]), 'r-')
+                    ax.text(yval + 10, xval + 30, str(wave), color='blue', fontsize=10)
+                plt.show()
+                plt.ion()
+
+            if plot1d:
+                plot_extracted_spectra(ad, arm, all_peaks, lines_out, mask, nrows=4)
+
+            if plotrms:
+                m_final.plotit(y_values, orders, waves, mask,
+                               filename=ad.filename.replace('.fits', '_2d.pdf'))
+
+            # CJS: Append the WFIT as an extension. It will inherit the
+            # header from the science plane (including irrelevant/wrong
+            # keywords like DATASEC) but that's not really a big deal.
+            ad[0].WFIT = m_final.parameters.reshape(wpars[0].data.shape)
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
     def extractProfile(self, adinputs=None, **params):
         """
         Extract the object profile from a slit or flat image.
@@ -1371,192 +1557,6 @@ class GHOSTSpect(GHOST):
             if smoothing:
                 ad.phu['SMOOTH'] = (smoothing, "Pixel FWHM of SVC smoothing kernel")
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-
-        return adinputs
-
-    def fitWavelength(self, adinputs=None, **params):
-        """
-        Fit wavelength solution to a GHOST ARC frame.
-
-        This primitive should only be applied to a reduce GHOST ARC frame. Any
-        other files passed through this primitive will be skipped.
-
-        This primitive works as follows:
-        - :class:`polyfit.ghost.GhostArm` and `polyfit.extract.Extractor`
-          classes are instantiated and configured for the data;
-        - The ``Extractor`` class is used to find the line locations;
-        - The ``GhostArm`` class is used to fit this line solution to the data.
-
-        The primitive will use the arc line files stored in the same location
-        as the initial :module:`polyfit` models kept in the ``lookups`` system.
-
-        This primitive uses no special parameters.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-        min_snr = params["min_snr"]
-        sigma = params["sigma"]
-        max_iters = params["max_iters"]
-        radius = params["radius"]
-        plot1d = params["plot1d"]
-        plotrms = params["plotrms"]
-        plot2d = params["debug_plot2d"]
-
-        # import pdb; pdb.set_trace()
-
-        # Make no attempt to check if primitive has already been run - may
-        # have new calibrators we wish to apply.
-
-        flat = params['flat']
-        if flat is None:
-            flat_list = self.caldb.get_processed_flat(adinputs)
-        else:
-            flat_list = (flat, None)
-
-        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
-                                                   force_ad=(1,))):
-            if self.timestamp_keys["extractProfile"] not in ad.phu:
-                log.warning(f"extractProfile has not been run on {ad.filename}; "
-                            "skipping")
-                continue
-
-            if flat is None:
-                log.warning("Could not find processed_flat calibration for "
-                            f"{ad.filename}; - skipping")
-                continue
-
-            origin_str = f" (obtained from {origin})" if origin else ""
-            log.stdinfo(f"{ad.filename}: using the XMOD from the "
-                        f"processed_flat {flat.filename}{origin_str}")
-            try:
-                poly_wave = self._get_polyfit_filename(ad, 'wavemod')
-                poly_spat = self._get_polyfit_filename(ad, 'spatmod')
-                poly_spec = self._get_polyfit_filename(ad, 'specmod')
-                poly_rot = self._get_polyfit_filename(ad, 'rotmod')
-                wpars = astrodata.open(poly_wave)
-                spatpars = astrodata.open(poly_spat)
-                specpars = astrodata.open(poly_spec)
-                rotpars = astrodata.open(poly_rot)
-            except IOError:
-                log.warning("Cannot open required initial model files; "
-                            "skipping")
-                continue
-
-            # CJS: line_list location is now in lookups/__init__.py
-            arclinefile = os.path.join(os.path.dirname(polyfit_lookup.__file__),
-                                       line_list)
-            arcwaves, arcfluxes = np.loadtxt(arclinefile, usecols=[1, 2]).T
-
-            arm = GhostArm(arm=ad.arm(), mode=ad.res_mode())
-
-            # Find locations of all significant peaks in all orders
-            nm, ny = ad[0].data.shape
-            all_peaks = []
-            pixels = np.arange(ny)
-            for m_ix, flux in enumerate(ad[0].data):
-                try:
-                    variance = ad[0].variance[m_ix]
-                except TypeError:  # variance is None
-                    nmad = median_filter(
-                        abs(flux - median_filter(flux, size=2*radius+1)),
-                        size=2*radius+1)
-                    variance = nmad * nmad
-                peaks = tracing.find_wavelet_peaks(
-                    flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
-                    variance=variance, min_snr=min_snr, min_sep=5,
-                    pinpoint_index=None, reject_bad=False)
-                fit_g = fitting.LevMarLSQFitter()
-                these_peaks = []
-                for x in peaks[0]:
-                    good = np.zeros_like(flux, dtype=bool)
-                    good[max(int(x - radius), 0):int(x + radius + 1)] = True
-                    g_init = models.Gaussian1D(mean=x, amplitude=flux[good].max(),
-                                               stddev=1.5)
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore")
-                        g = fit_g(g_init, pixels[good], flux[good])
-                    if g.stddev.value < 5:  # avoid clearly bad fits
-                        these_peaks.append(g)
-                all_peaks.append(these_peaks)
-
-            # Find lines based on the extracted flux and the arc wavelengths.
-            # Note that "inspect=True" also requires and input arc file, which has
-            # the non-extracted data. There is also a keyword "plots".
-            #lines_out = extractor.find_lines(ad[0].data, arcwaves,
-            #                                 arcfile=ad[0].data,
-            #                                 plots=params['plot_fit'])
-
-            wmod_shape = wpars[0].data.shape
-            m_init = WaveModel(model=wpars[0].data, arm=arm)
-            arm.spectral_format_with_matrix(
-                flat[0].XMOD, m_init.parameters.reshape(wmod_shape),
-                spatpars[0].data, specpars[0].data, rotpars[0].data)
-            extractor = Extractor(arm, None)  # slitview=None for this usage
-
-            for iter in (0, 1):
-                # Only cross-correlate on the first pass
-                lines_out = extractor.match_lines(all_peaks, arcwaves,
-                                                  hw=radius, xcor=not bool(iter),
-                                                  log=(self.log, None)[iter])
-                #lines_out is now a long vector of many parameters, including the
-                #x and y position on the chip of each line, the order, the expected
-                #wavelength, the measured line strength and the measured line width.
-                #fitted_params, wave_and_resid = arm.read_lines_and_fit(
-                #    wpars[0].data, lines_out)
-                y_values, waves, orders = lines_out[:, 1], lines_out[:, 0], lines_out[:, 3]
-                fit_it = fitting.FittingWithOutlierRemoval(
-                    fitting.LevMarLSQFitter(), sigma_clip, sigma=sigma,
-                    maxiters=max_iters)
-                m_final, mask = fit_it(m_init, y_values, orders, waves)
-                arm.spectral_format_with_matrix(
-                    flat[0].XMOD, m_final.parameters.reshape(wmod_shape),
-                    spatpars[0].data, specpars[0].data, rotpars[0].data)
-                m_init = m_final
-
-            fitted_waves = m_final(y_values, orders)
-            rms = np.std((fitted_waves - waves)[~mask])
-            nlines = y_values.size - mask.sum()
-            log.stdinfo(f"Fit residual RMS (Angstroms): {rms:7.4f} ({nlines} lines)")
-            if np.any(mask):
-                log.stdinfo("The following lines were rejected:")
-                for yval, order, wave, fitted, m in zip(
-                        y_values, orders, waves, fitted_waves, mask):
-                    if m:
-                        log.stdinfo(f"    Order {int(order):2d} pixel {yval:6.1f} "
-                                    f"wave {wave:10.4f} (fitted wave {fitted:10.4f})")
-
-            if plot2d:
-                plt.ioff()
-                fig, ax = plt.subplots()
-                xpos = lambda y, ord: arm.szx // 2 + np.interp(
-                    y, pixels, arm.x_map[ord])
-                for m_ix, peaks in enumerate(all_peaks):
-                    for g in peaks:
-                        ax.plot([g.mean.value] * 2, xpos(g.mean.value, m_ix) +
-                                np.array([-30, 30]), color='darkgrey', linestyle='-')
-                for (wave, yval, xval, order, amp, fwhm) in lines_out:
-                    xval = xpos(yval, int(order) - arm.m_min)
-                    ax.plot([yval, yval],  xval + np.array([-30, 30]), 'r-')
-                    ax.text(yval + 10, xval + 30, str(wave), color='blue', fontsize=10)
-                plt.show()
-                plt.ion()
-
-            if plot1d:
-                plot_extracted_spectra(ad, arm, all_peaks, lines_out, mask, nrows=4)
-
-            if plotrms:
-                m_final.plotit(y_values, orders, waves, mask,
-                               filename=ad.filename.replace('.fits', '_2d.pdf'))
-
-            # CJS: Append the WFIT as an extension. It will inherit the
-            # header from the science plane (including irrelevant/wrong
-            # keywords like DATASEC) but that's not really a big deal.
-            ad[0].WFIT = m_final.parameters.reshape(wpars[0].data.shape)
-
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
