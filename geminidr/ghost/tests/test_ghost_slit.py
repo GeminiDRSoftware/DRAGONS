@@ -134,7 +134,7 @@ class TestGhostSlit:
 
     @pytest.mark.skip(reason='Needs to be tested with a reduced slit flat - '
                              'full reduction test required')
-    def test_processSlits(self, create_slit_image):
+    def test_weightSlitExposuress(self, create_slit_image):
         """
         Checks to make:
 
@@ -147,7 +147,7 @@ class TestGhostSlit:
         ad = deepcopy(create_slit_image)
 
         p = GHOSTSlit([ad])
-        p.processSlits()
+        p.weightSlitExposures()
         assert ad.phu.get('AVGEPOCH') is not None
 
     def test_stackFrames_outputs(self, create_slit_image):

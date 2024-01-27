@@ -23,7 +23,7 @@ def makeProcessedSlit(p):
     p.darkCorrect()
     p.CRCorrect()
     p.plotSlitFlux()
-    p.processSlits()
+    p.weightSlitExposures()
     p.stackFrames()
     p.storeProcessedSlit()
     return

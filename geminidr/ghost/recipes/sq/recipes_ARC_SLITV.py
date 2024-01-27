@@ -23,7 +23,7 @@ def makeProcessedSlitArc(p):
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
     p.CRCorrect()
-    p.processSlits()
+    p.weightSlitExposures()
     p.stackFrames()
     p.storeProcessedSlit()
     return

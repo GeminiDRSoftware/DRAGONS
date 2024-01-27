@@ -10,7 +10,7 @@ timestamp_keys = {
     "traceFibers": "TRCFIBER",
     "flatCorrect": "FLATCORR",
     "measureBlaze": "MEASBLZE",
-    "processSlits": "PROCSLIT",
+    "weightSlitExposures": "WGTSLITS",
     "splitBundle": "SPLTBNDL",
     "removeScatteredLight": "SCATCORR",
     }

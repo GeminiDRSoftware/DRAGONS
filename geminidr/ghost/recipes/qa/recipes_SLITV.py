@@ -21,7 +21,7 @@ def makeProcessedSlit(p):
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
     p.CRCorrect()
-    p.processSlits()
+    p.weightSlitExposures()
     p.addToList(purpose="forStack")
     p.getList(purpose="forStack")
     p.stackFrames()

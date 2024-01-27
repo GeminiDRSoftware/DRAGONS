@@ -260,141 +260,6 @@ class GHOSTSlit(GHOST):
 
         return adinputs
 
-    def processSlits(self, adinputs=None, **params):
-        """
-        Compute the appropriate weights for each slit viewer image created
-        from a bundle, so as to provide the best slit profile for each
-        science exposure.
-
-        The 'slit viewer image' for each observation is a sequence of short
-        exposures of the slit viewer camera, over the entire period of the
-        observation. However, only some of these will overlap each science
-        exposure and it is necessary to combine different subsets in order
-        to produce the best processed_slit calibration for each science frame.
-
-        ``processSlits`` determines the appropriate weights to assign to
-        each individual slit exposure, for each science exposure, and adds
-        these to the SCIEXP Table for ``stackFrames`` to interpret. The
-        method is to take the closest slit viewer exposure at every time
-        interval during the science exposure; this is identical mathematically
-        to assuming the exposures are instantaneous at their midpoints at
-        linearly interpolating between them, and so copes with irregular
-        temporal spacing.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        slitflat: str/None
-            name of the slitflat to use (if None, use the calibration
-            system)
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        flat = params.get("slitflat")
-        if flat is None:
-            flat_list = self.caldb.get_processed_slitflat(adinputs)
-        else:
-            flat_list = (flat, None)
-
-        for ad, slitflat, origin in zip(*gt.make_lists(adinputs, *flat_list,
-                                                       force_ad=(1,))):
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by processSlits".
-                            format(ad.filename))
-                continue
-
-            try:
-                sciexp = ad.SCIEXP
-            except AttributeError:
-                on_sky = 'CAL' not in ad.tags or 'STANDARD' in ad.tags
-                if on_sky:
-                    log.warning(f"{ad.filename} has no SCIEXP table so all "
-                                "slit viewer exposures will be combined.")
-                continue
-
-            # check that the binning is equal in x and y
-            if ad.detector_x_bin() != ad.detector_y_bin():
-                raise ValueError("slit viewer images must have equal binning "
-                                 "in x and y directions")
-
-            # We should process even without a slitflat; AVGEPOCH will be wrong
-            # if the flux varies but we'll know which slit images to combine
-            if slitflat is None:
-                msg = f"Unable to find slitflat calibration for {ad.filename}"
-                if self.mode == "sq":
-                    raise RuntimeError(msg)
-                log.warning(f"{msg}; calculations may be in error")
-                sv_flat = None
-            else:
-                sv_flat = slitflat[0].data
-                # Check the inputs have matching binning and SCI shapes.
-                try:
-                    gt.check_inputs_match(adinput1=ad, adinput2=slitflat,
-                                          check_filter=False)
-                except ValueError:
-                    # This is most likely because the science frame has multiple
-                    # extensions and the slitflat needs to be copied
-                    slitflat = gt.clip_auxiliary_data(ad, slitflat, aux_type='cal')
-                    # An Error will be raised if they don't match now
-                    gt.check_inputs_match(ad, slitflat, check_filter=False)
-
-            nslitv = len(ad)
-            res = ad.res_mode()
-            ut_date = ad.ut_date()
-            binning = ad.detector_x_bin() # x and y are equal
-            sv_duration = ad.exposure_time()
-            sv_starts = [dateutil.parser.parse(f"{d}T{t}") for d, t in
-                         zip(ad.hdr['DATE-OBS'], ad.hdr['UTSTART'])]
-            # Relevance start and end times for each slitv image
-            sv_relevant = ([datetime(2001, 1, 1)] +
-                           [sv_starts[i] + 0.5 * (sv_starts[i+1] - sv_starts[i] +
-                                                  timedelta(seconds=sv_duration))
-                            for i in range(nslitv-1)] +
-                           [datetime(3001, 1, 1)])
-
-            fluxes = [_total_obj_flux(log, res, ut_date, ad.filename,
-                                      ext.data, sv_flat, binning=binning)
-                      for ext in ad]
-
-            weights = np.zeros((len(sciexp), nslitv))
-            avg_epochs = []
-            for i, times in enumerate(sciexp['UTSTART', 'UTEND']):
-                sc_start, sc_end = [dateutil.parser.parse(t) for t in times]
-                accum_weighted_time = 0
-                for j, (rel_start, rel_end, flux) in enumerate(
-                        zip(sv_relevant[:-1], sv_relevant[1:], fluxes)):
-                    # compute overlap fraction
-                    latest_start = max(sc_start, rel_start)
-                    earliest_end = min(sc_end, rel_end)
-                    overlap = max((earliest_end - latest_start).total_seconds(), 0)
-
-                    if overlap > 0:
-                        weights[i, j] = overlap
-                        effective_time = latest_start + 0.5 * (earliest_end -
-                                                               latest_start)
-                        offset = (effective_time - sc_start).total_seconds()
-                        accum_weighted_time += weights[i, j] * flux * offset
-
-                sum_of_weights = (weights[i] * fluxes).sum()
-                avg_epochs.append(sc_start + timedelta(
-                    seconds=accum_weighted_time / sum_of_weights))
-                weights[i] /= weights[i].sum()
-
-            sciexp['AVGEPOCH'] = [t.isoformat() for t in avg_epochs]
-            for i, flux in enumerate(fluxes):
-                sciexp[f"ext{i}"] = weights[:, i]
-                # This could be useful for debugging purposes
-                ad[i].hdr['SLITFLUX'] = (flux, "Measured slit viewer flux")
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
-        return adinputs
-
     def stackBiases(self, adinputs=None, **params):
         """
         Stack (possibly) multiple extensions from (possibly) multiple
@@ -519,6 +384,141 @@ class GHOSTSlit(GHOST):
                 if kw in ad[0].hdr:
                     del ad[0].hdr[kw]
         return adoutputs
+
+    def weightSlitExposures(self, adinputs=None, **params):
+        """
+        Compute the appropriate weights for each slit viewer image created
+        from a bundle, so as to provide the best slit profile for each
+        science exposure.
+
+        The 'slit viewer image' for each observation is a sequence of short
+        exposures of the slit viewer camera, over the entire period of the
+        observation. However, only some of these will overlap each science
+        exposure and it is necessary to combine different subsets in order
+        to produce the best processed_slit calibration for each science frame.
+
+        ``weightSlitExposures`` determines the appropriate weights to assign to
+        each individual slit exposure, for each science exposure, and adds
+        these to the SCIEXP Table for ``stackFrames`` to interpret. The
+        method is to take the closest slit viewer exposure at every time
+        interval during the science exposure; this is identical mathematically
+        to assuming the exposures are instantaneous at their midpoints at
+        linearly interpolating between them, and so copes with irregular
+        temporal spacing.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        slitflat: str/None
+            name of the slitflat to use (if None, use the calibration
+            system)
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        flat = params.get("slitflat")
+        if flat is None:
+            flat_list = self.caldb.get_processed_slitflat(adinputs)
+        else:
+            flat_list = (flat, None)
+
+        for ad, slitflat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                                       force_ad=(1,))):
+            if ad.phu.get(timestamp_key):
+                log.warning(f"No changes will be made to {ad.filename}, since "
+                            f"it has already been processed by {self.myself()}")
+                continue
+
+            try:
+                sciexp = ad.SCIEXP
+            except AttributeError:
+                on_sky = 'CAL' not in ad.tags or 'STANDARD' in ad.tags
+                if on_sky:
+                    log.warning(f"{ad.filename} has no SCIEXP table so all "
+                                "slit viewer exposures will be combined.")
+                continue
+
+            # check that the binning is equal in x and y
+            if ad.detector_x_bin() != ad.detector_y_bin():
+                raise ValueError("slit viewer images must have equal binning "
+                                 "in x and y directions")
+
+            # We should process even without a slitflat; AVGEPOCH will be wrong
+            # if the flux varies but we'll know which slit images to combine
+            if slitflat is None:
+                msg = f"Unable to find slitflat calibration for {ad.filename}"
+                if self.mode == "sq":
+                    raise RuntimeError(msg)
+                log.warning(f"{msg}; calculations may be in error")
+                sv_flat = None
+            else:
+                sv_flat = slitflat[0].data
+                # Check the inputs have matching binning and SCI shapes.
+                try:
+                    gt.check_inputs_match(adinput1=ad, adinput2=slitflat,
+                                          check_filter=False)
+                except ValueError:
+                    # This is most likely because the science frame has multiple
+                    # extensions and the slitflat needs to be copied
+                    slitflat = gt.clip_auxiliary_data(ad, slitflat, aux_type='cal')
+                    # An Error will be raised if they don't match now
+                    gt.check_inputs_match(ad, slitflat, check_filter=False)
+
+            nslitv = len(ad)
+            res = ad.res_mode()
+            ut_date = ad.ut_date()
+            binning = ad.detector_x_bin()  # x and y are equal
+            sv_duration = ad.exposure_time()
+            sv_starts = [dateutil.parser.parse(f"{d}T{t}") for d, t in
+                         zip(ad.hdr['DATE-OBS'], ad.hdr['UTSTART'])]
+            # Relevance start and end times for each slitv image
+            sv_relevant = ([datetime(2001, 1, 1)] +
+                           [sv_starts[i] + 0.5 * (sv_starts[i + 1] - sv_starts[i] +
+                                                  timedelta(seconds=sv_duration))
+                            for i in range(nslitv - 1)] +
+                           [datetime(3001, 1, 1)])
+
+            fluxes = [_total_obj_flux(log, res, ut_date, ad.filename,
+                                      ext.data, sv_flat, binning=binning)
+                      for ext in ad]
+
+            weights = np.zeros((len(sciexp), nslitv))
+            avg_epochs = []
+            for i, times in enumerate(sciexp['UTSTART', 'UTEND']):
+                sc_start, sc_end = [dateutil.parser.parse(t) for t in times]
+                accum_weighted_time = 0
+                for j, (rel_start, rel_end, flux) in enumerate(
+                        zip(sv_relevant[:-1], sv_relevant[1:], fluxes)):
+                    # compute overlap fraction
+                    latest_start = max(sc_start, rel_start)
+                    earliest_end = min(sc_end, rel_end)
+                    overlap = max((earliest_end - latest_start).total_seconds(), 0)
+
+                    if overlap > 0:
+                        weights[i, j] = overlap
+                        effective_time = latest_start + 0.5 * (earliest_end -
+                                                               latest_start)
+                        offset = (effective_time - sc_start).total_seconds()
+                        accum_weighted_time += weights[i, j] * flux * offset
+
+                sum_of_weights = (weights[i] * fluxes).sum()
+                avg_epochs.append(sc_start + timedelta(
+                    seconds=accum_weighted_time / sum_of_weights))
+                weights[i] /= weights[i].sum()
+
+            sciexp['AVGEPOCH'] = [t.isoformat() for t in avg_epochs]
+            for i, flux in enumerate(fluxes):
+                sciexp[f"ext{i}"] = weights[:, i]
+                # This could be useful for debugging purposes
+                ad[i].hdr['SLITFLUX'] = (flux, "Measured slit viewer flux")
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+        return adinputs
+
 
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #

@@ -29,13 +29,6 @@ class plotSlitFluxConfig(config.Config):
                                 default="pdf", optional=False)
 
 
-class processSlitsConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_slitsProcessed",
-                          optional=True)
-    slitflat = config.ListField("Slitflat frame", (str, AstroData), None,
-                                optional=True, single=True)
-
-
 class stackBiasesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_stack", optional=True)
 
@@ -48,3 +41,10 @@ class stackFramesConfig(config.Config):
                                    default="mean", optional=False)
     create_multiple_stacks = config.Field(
         "Create a stack for each spectrograph observation? (ignored for calibrations)", bool, True)
+
+
+class weightSlitExposuresConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitsProcessed",
+                          optional=True)
+    slitflat = config.ListField("Slitflat frame", (str, AstroData), None,
+                                optional=True, single=True)
