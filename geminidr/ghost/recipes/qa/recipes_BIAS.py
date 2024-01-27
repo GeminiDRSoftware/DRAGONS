@@ -25,7 +25,6 @@ def makeProcessedBias(p):
     p.addToList(purpose="forStack")
     p.getList(purpose="forStack")
     p.stackFrames(operation="median")
-    p.clipSigmaBPM(bpm_value=1, sigma=7)
     p.storeProcessedBias()
     return
 

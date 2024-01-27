@@ -5,20 +5,15 @@ timestamp_keys = {
     # writing a timestamp keyword to the header once the user level function
     # has completed
     "addWavelengthSolution": "ADDWVSOL",
-    "applyFlatBPM": "APFLTBPM",
     "barycentricCorrect": "BARYCORR",
-    "clipSigmaBPM": "CLIPSIGB",
     "combineOrders": "CMBORDER",
     "CRCorrect": "FXSLITCR",
     "extractProfile": "EXTRPROF",
-    "interpolateAndCombine": "INTERCOM",
     "findApertures": "FINDAPER",
     "fitWavelength": "FITWAVLN",
     "flatCorrect": "FLATCORR",
-    "formatOutput": "FMTOUTPT",
     "measureBlaze": "MEASBLZE",
     "processSlits": "PROCSLIT",
     "splitBundle": "SPLTBNDL",
-    "responseCorrect": "RESPCORR",
     "removeScatteredLight": "SCATCORR",
     }

@@ -9,12 +9,6 @@ from geminidr.core import (
 
 from astrodata import AstroData as ad
 
-def arcs_valueCheck(value):
-    """Validate applyFlatBPMConfig.arcs"""
-    return len(value) == 2 and isinstance(
-        value[0], str) and isinstance(
-        value[1], str)
-
 
 class addWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthAdded",
@@ -23,17 +17,6 @@ class addWavelengthSolutionConfig(config.Config):
                             (str, ad), None, optional=True, single=True)
     arc_after = config.ListField("After arc to use for wavelength solution",
                             (str, ad), None, optional=True, single=True)
-
-
-class applyFlatBPMConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_flatBPMApplied",
-                          optional=True)
-    flat = config.ListField("Flat field to use", (str, ad), None,
-                            optional=True, single=True)
-    flat_stream = config.Field("Stream to obtain flat field from", str, None,
-                               optional=True)
-    write_result = config.Field("Write primitive output to disk?", bool, True,
-                                optional=True)
 
 
 class barycentricCorrectConfig(config.Config):
@@ -54,15 +37,6 @@ class calculateSensitivityConfig(config.Config):
                                   bool, False)
     debug_plots = config.Field("Show response-fitting plots for each order?",
                                bool, False)
-
-
-class clipSigmaBPMConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_sigmaBPMClipped",
-                          optional=True)
-    sigma = config.Field("Sigma value for clipping", float, 3.0)
-    iters = config.Field("Number of clipping iterations", int, None,
-                         optional=True)
-    bpm_value = config.Field("BPM value to give to clipped pixels", int, 1)
 
 
 class darkCorrectConfig(parameters_preprocess.darkCorrectConfig):

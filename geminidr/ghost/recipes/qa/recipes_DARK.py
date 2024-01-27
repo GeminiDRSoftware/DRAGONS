@@ -30,7 +30,6 @@ def makeProcessedDark(p):
     p.stackFrames(operation='median',reject_method='sigclip', mclip=True,
                   # snoise=0.02,   # No longer a valid option
                   lsigma=7., hsigma=7.)
-    p.clipSigmaBPM(sigma=3.0, iters=10)
     p.storeProcessedDark()
     return
 

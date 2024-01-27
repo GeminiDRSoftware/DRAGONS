@@ -125,37 +125,6 @@ class TestGhost:
                                                       "timestamp-mark the " \
                                                       "output file"
 
-    def test_clipSigmaBPM(self):
-        """
-        Checks to make:
-
-        - Send it dummy file with known number of pixels outside range,
-          make sure that many pixels are flagged out
-        """
-        ad = self.generate_minimum_file()
-        ad[0].DQ = np.zeros(ad[0].data.shape, dtype=int)
-        # Insert some very large data points into the otherwise all-1s data
-        xs = list(range(0, 1024))
-        ys = list(range(0, 1024))
-        np.random.shuffle(xs)
-        np.random.shuffle(ys)
-        xs = xs[:10]
-        ys = ys[:10]
-        for i in range(10):
-            ad[0].data[ys[i], xs[i]] = 1000.
-
-        gs = GHOSTSpect([])
-        ad_out = gs.clipSigmaBPM([ad], bpm_value=1)[0]
-
-        assert np.all([ad_out[0].mask[ys[i], xs[i]] == 1
-                       for i in range(10)]), "clipSigmaBPM failed to mask " \
-                                             "out all injected outliers"
-
-        assert ad_out.phu.get(
-            gs.timestamp_keys['clipSigmaBPM']), "clipSigmaBPM did not " \
-                                                "timestamp-mark the " \
-                                                "output file"
-
     @pytest.mark.parametrize('xbin, ybin',
                              list(itertools.product(*[
                                  [1, 2, ],  # x binning

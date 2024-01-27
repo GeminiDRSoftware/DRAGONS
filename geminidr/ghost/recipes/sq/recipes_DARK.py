@@ -30,7 +30,6 @@ def makeProcessedDark(p):
                   mclip=True,
                   # snoise=0.02,  # No longer a valid option
                   lsigma=7., hsigma=7.)
-    p.clipSigmaBPM()
     p.storeProcessedDark()
     return
 
