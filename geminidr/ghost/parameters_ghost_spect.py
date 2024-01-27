@@ -128,17 +128,6 @@ class combineOrdersConfig(config.Config):
 fluxCalibrateConfig = parameters_spect.fluxCalibrateConfig
 
 
-class formatOutputConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_formattedOutput",
-                          optional=True)
-    detail = config.ChoiceField("Level of detail", str, {
-        'default': 'Default output',
-        'processed_image': 'Include processed CCD image',
-        'flat_profile': 'Include flat profile',
-        'sensitivity_curve': 'Include computed sensitivity curve',
-    }, default='default')
-
-
 class measureBlazeConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_blazeMeasured",
                           optional=True)

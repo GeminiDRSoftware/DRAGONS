@@ -258,16 +258,6 @@ class TestGhost:
         """
         pass
 
-    @pytest.mark.skip(reason='Needs a full reduction sequence to test')
-    def test_formatOutput(self):
-        """
-        Checks to make:
-
-        - Validate output of each layer of formatOutput
-        - Ensure data proper is identical between outputs
-        """
-        pass
-
     def test_responseCorrect(self):
         """
         Checks to make:
