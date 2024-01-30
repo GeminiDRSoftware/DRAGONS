@@ -4,9 +4,9 @@ descriptors.
 """
 
 import pytest
-import pytest_dragons
 from pytest_dragons.fixtures import *
 import astrodata, gemini_instruments
+import astrodata.testing
 import os
 
 THIS_DIR = os.path.dirname(__file__)
@@ -21,12 +21,12 @@ from .ghost_lut_descriptors import fixture_data as descriptors_fixture_data
 # Can only run first test (on a bundle) since other tests require non-archived inputs
 @pytest.mark.ghost
 @pytest.mark.parametrize("data, descriptors", descriptors_fixture_data[:1])
-def test_descriptor(data, descriptors, path_to_inputs):
+def test_descriptor(data, descriptors):
     """
     Ensure that the values returned by AstroData descriptors are as expected.
     """
     instrument, filename = data
-    ad = astrodata.open(os.path.join(path_to_inputs, instrument, filename))
+    ad = astrodata.open(astrodata.testing.download_from_archive(filename))
     conflicts = []
     for descriptor, value in descriptors:
         method = getattr(ad, descriptor)
