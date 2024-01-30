@@ -12,15 +12,13 @@ from astropy.io import fits
 
 import numpy as np
 import astrodata, gemini_instruments
-from gempy.utils import logutils
-from six.moves import range
+import pytest_dragons
 
 import copy
 import datetime
 import itertools
 
 from geminidr.ghost.primitives_ghost_spect import GHOSTSpect
-
 
 
 @pytest.mark.ghostspect
