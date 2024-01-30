@@ -186,7 +186,7 @@ class TestGhostSlit:
         for actual, measured in zip(sums, fluxes):
             assert 0.98 < measured / actual < 1.01
 
-@pytest.mark.ghostunit
+
 def test__mad_fullarray():
     """
     Checks to make:
@@ -204,7 +204,6 @@ def test__mad_fullarray():
     )
 
 
-@pytest.mark.ghostunit
 def test__mad_cols():
     """
     Checks to make:
@@ -231,7 +230,6 @@ def test__mad_cols():
     )
 
 
-@pytest.mark.ghostunit
 def test__mad_rows():
     """
     Checks to make:
