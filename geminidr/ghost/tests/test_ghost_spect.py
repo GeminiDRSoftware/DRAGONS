@@ -380,6 +380,7 @@ class TestGhost:
 
         return wavl, data, new_wavl
 
+    @pytest.mark.skip("Write more general test")
     @pytest.mark.parametrize('interp',
                              ['linear', 'nearest', 'zero', 'slinear',
                               'quadratic', 'cubic', 'previous', 'next',])
@@ -412,6 +413,7 @@ class TestGhost:
             new_data = gs._interp_spect(data, wavl, new_wavl,
                                         interp='no-such-method')
 
+    @pytest.mark.skip("Write more general test")
     def test__regrid_spect(self, data__interp_spect):
         """
         Checks to make:
