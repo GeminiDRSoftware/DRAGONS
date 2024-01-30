@@ -1,3 +1,5 @@
+import warnings
+
 import astrodata
 import astropy.units as u
 import numpy as np
@@ -294,7 +296,7 @@ def test_table_with_units(tmp_path):
     ad[0].TABLE1 = Table([[1]])
     ad[0].TABLE1['col0'].unit = 'mag(cm2 electron / erg)'
 
-    with pytest.warns(None) as w:
+    with warnings.catch_warnings(record=True) as w:
         ad.write(testfile)
 
     assert len(w) == 0
