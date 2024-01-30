@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
@@ -93,7 +95,7 @@ def test_uncertainty_negative_numbers():
     arr = np.zeros(5)
 
     # No warning if all 0
-    with pytest.warns(None) as w:
+    with warnings.catch_warnings(record=True) as w:
         ADVarianceUncertainty(arr)
     assert len(w) == 0
 
