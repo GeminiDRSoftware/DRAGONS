@@ -358,7 +358,7 @@ fixture_data = {
         ('detector_x_bin', 1),
         ('detector_y_bin', 1),
         ('disperser', 'MIRROR'),
-        ('dispersion', [-3.876e-10]),
+        ('dispersion', [-3.88e-10]),
         ('dispersion_axis', [2]),
         ('effective_wavelength', 1.25e-06),
         ('elevation', 60.1851833333),
