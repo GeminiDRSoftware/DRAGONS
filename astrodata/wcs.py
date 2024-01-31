@@ -478,11 +478,11 @@ def read_wcs_from_header(header):
 
     # Hack to deal with non-FITS-compliant data where one axis is ignored
     unspecified_pixel_axes = [axis for axis, unused in
-                              enumerate(np.all(cd == 0, axis=1)) if unused]
+                              enumerate(np.all(cd == 0, axis=0)) if unused]
     if unspecified_pixel_axes:
         unused_world_axes = [axis for axis, unused in
-                             enumerate(np.all(cd == 0, axis=0)) if unused]
-        unused_world_axes += list(range(wcsaxes, wcsaxes+len(unspecified_pixel_axes)))
+                             enumerate(np.all(cd == 0, axis=1)) if unused]
+        unused_world_axes += [wcsaxes - 1] * len(unspecified_pixel_axes)
         for pixel_axis, world_axis in zip(unspecified_pixel_axes, unused_world_axes):
             cd[world_axis, pixel_axis] = 1.0
 
