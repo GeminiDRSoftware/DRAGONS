@@ -33,7 +33,7 @@ class FixtureIterator:
                 try:
                     ad = astrodata.open(filepath)
                 except FileNotFoundError:
-                    yield None, None, None
+                    ad = None
             else:
                 ad = astrodata.open(
                     astrodata.testing.download_from_archive(filename))
@@ -42,4 +42,4 @@ class FixtureIterator:
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("fn,ad,tag_set", FixtureIterator(tags_fixture_data))
 def test_descriptor(fn, ad, tag_set):
-    assert fn is None or ad.tags == tag_set
+    assert ad is None or ad.tags == tag_set
