@@ -60,7 +60,6 @@ def fitswcs_to_gwcs(input):
     try:
         transform = make_fitswcs_transform(input)
     except Exception as e:
-        raise e
         return None
     outputs = transform.outputs
     try:
