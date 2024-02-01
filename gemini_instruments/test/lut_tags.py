@@ -187,8 +187,8 @@ fixture_data = {
     ('GNIRS', 'N20160722S0232.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'SIDEREAL',
                                        'UNPREPARED', 'ARC'],
     # tag ARC:  OBSTYPE == 'ARC'
-    ('GNIRS', 'N20160726S0301.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'NON_SIDEREAL',
-                                       'UNPREPARED', 'PINHOLE', 'AZEL_TARGET', 'AT_ZENITH'],
+    ('GNIRS', 'N20160726S0301.fits'): ['LAMPOFF', 'CAL', 'GEMINI', 'AT_ZENITH', 'SPECT', 'UNPREPARED', 'XD', 'GNIRS',
+                                       'NON_SIDEREAL', 'PINHOLE', 'RAW', 'FLAT', 'AZEL_TARGET', 'NORTH', 'GCAL_IR_OFF'],
     # tag PINHOLE: SLIT contains 'Pinholes'
 
     #    GNIRS IFU

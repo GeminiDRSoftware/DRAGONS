@@ -41,5 +41,5 @@ class FixtureIterator:
 
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("fn,ad,tag_set", FixtureIterator(tags_fixture_data))
-def test_descriptor(fn, ad, tag_set):
+def test_tagset(fn, ad, tag_set):
     assert ad is None or ad.tags == tag_set
