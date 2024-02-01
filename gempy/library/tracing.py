@@ -23,6 +23,7 @@ reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 
 trace_lines:         trace lines from a set of supplied starting positions
 """
+from copy import deepcopy
 import warnings
 
 import numpy as np
@@ -671,10 +672,50 @@ def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
             if extrema[i*2+1][1] <= height:
                 apertures[i] = 0
 
-    ### WE NEED TO GET RID OF THEM IN A SMARTER WAY. PERCOLATING?
+    # For all maxima below threshold sort by lowest value and merge as below,
+    # then set value of all minima below threshold to threshold
+    median = sigma_clipped_stats(profile, mask=prof_mask,
+                                 sigma_lower=2, sigma_upper=1.5)[1]  # median
+
+    # This next block was added later to the code, but has to shadow the variable
+    # 'apertures' defined (further) below because of the way the three functions
+    # above were written. This isn't looking for apertures, it's looking for maxima
+    # less than the median value and merging them to get rid of them, before
+    # setting any remaining minima below the median to the median. This removes
+    # any negative apertures resulting from subtracting offset frames in NIR
+    # observations, as the rest of the code isn't equipped to handle negative
+    # values. DB 20240131
     apertures = [0] * (len(extrema) // 2)
     if not apertures:
         return []
+
+    apnext = 1
+    niter = 0
+    while True:
+        # Find highest unassigned peak lower than the threshold
+        order = np.argsort([x[1] for x in extrema if x[2]])
+        for lowest in order:
+            if apertures[lowest] == 0:
+                break
+        l = 0 if lowest == 0 else apertures[lowest-1]
+        r = 0 if lowest == len(apertures)-1 else apertures[lowest+1]
+        if extrema[lowest*2+1][1] < median:
+            merge_with_neighbor(lowest)
+        else:
+            apertures[lowest] = apnext
+            apnext += 1
+        if apertures.count(0) == 0:  # shouldn't happen here, but just in case
+            break
+        niter += 1
+        if niter > 4 * profile.size:
+            raise RuntimeError("Failed to converge in removing negative maxima")
+
+    # Set value of minima < threshold to threshold
+    extrema = [(e[0], median, e[2]) if (not e[2] and e[1] < median) else e
+               for e in extrema]
+
+    ### WE NEED TO GET RID OF THEM IN A SMARTER WAY. PERCOLATING?
+    apertures = [0] * (len(extrema) // 2)
 
     apnext = 1
     niter = 0
@@ -778,7 +819,7 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     else:
         prof_mask = None
 
-    extrema = get_extrema(profile, prof_mask, min_snr=min_snr)
+    extrema = get_extrema(np.nan_to_num(profile), prof_mask, min_snr=min_snr)
 
     # 10 is a good value to capture artifacts
     stddev = at.std_from_pixel_variations(profile if prof_mask is None
@@ -850,7 +891,6 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
         good_apertures = sorted(good_apertures, key=lambda ap: ap[2], reverse=True)
         locations = [ap[0] for ap in good_apertures[:max_apertures]]
         all_limits = [ap[1] for ap in good_apertures[:max_apertures]]
-
     return locations, all_limits, profile, prof_mask
 
 
@@ -899,7 +939,8 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # If no variance is supplied we estimate S/N from pixel-to-pixel variations
     # (do this before any smoothing)
     if variance is None:
-        variance = at.std_from_pixel_variations(data[~mask], separation=int(max_width)) ** 2
+        variance = at.std_from_pixel_variations(data[~mask],
+                                                separation=int(max_width)) ** 2
 
     # For really broad peaks we can do a median filter to remove spikes
     if min(widths) > 10:
@@ -1227,8 +1268,10 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
                 spline = at.fit_spline_to_data(
                     data[_slice], mask=None if mask is None else mask[_slice],
                     variance=0.01 * stddev[_slice]**2, k=min(npts-1, 3))
+
             limit = peak_limit(spline, true_peak-_slice.start,
-                               0 if _slice.start==i1 else npts-1, target) + _slice.start
+                               0 if _slice.start==i1 else npts-1,
+                               target) + _slice.start
             limits.append(limit)
 
         limit1, limit2 = min(limits[0], peak), max(limits[1], peak)
