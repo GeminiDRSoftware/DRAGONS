@@ -77,6 +77,13 @@ def rebin_data(adinput, xbin=1, ybin=1, patch_binning_descriptors=True):
     if patch_binning_descriptors:
         setattr(adinput, 'detector_x_bin', lambda: xbin)
         setattr(adinput, 'detector_y_bin', lambda: ybin)
+        # gt.check_inputs_match() calls the binning descriptors on slices
+        # and we can't fix that here, so patch CCDSUM (if it exists).
+        # Another solution will need to be found for other ways of getting
+        # the binning
+        for ext in adinput:
+            if 'CCDSUM' in ext.hdr:
+                ext.hdr['CCDSUM'] = f"{xbin} {ybin}"
 
     return adinput
 
