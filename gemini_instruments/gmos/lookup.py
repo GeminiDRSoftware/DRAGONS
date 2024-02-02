@@ -1796,47 +1796,49 @@ nominal_zeropoints = {
     ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'z'): 26.718,
 
     # GMOS-S Hamamatsu CCDs
-    # Values on the website based on data taken between Jun 2014 and Dec 2015.
+    #   LAST UPDATED: Feb 2024, following CCD replacement in FYQ1 2023.
+    #       All values provided by German Gimeno on Feb 1, 2024
+    #
+    # Values on the website should match this table.
     # https://www.gemini.edu/instrumentation/gmos/calibrations#PhotStand
     #
-    # Numbers commented out are the color terms. Zeropoint uncertainties are
-    # listed as +/-0.011 mag and color term uncertainties +/- 0.023 mag.
+    # Numbers commented out are the zeropoint uncertainties and the color terms.
     #
     # The combined zeropoint is simply the CCD2 zeropoint, since this will
     # apply to post-flatfielded data, and the flatfield normalization is
     # based solely on the CCD2 level.
     #
-    # CCDr = BI5-36-4k-2
-    # CCDg = BI11-33-4k-1
-    # CCDb = BI12-34-4k-1
-    ('BI5-36-4k-2', 'u'):  24.138,  # 0.025,
-    ('BI11-33-4k-1', 'u'): 24.103,  # 0.045,
-    ('BI12-34-4k-1', 'u'): 24.165,  # 0.015,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'u'): 24.10,
-    ('BI5-36-4k-2', 'g'):  28.002,  # 0.044,
-    ('BI11-33-4k-1', 'g'): 27.985,  # 0.059,
-    ('BI12-34-4k-1', 'g'): 27.984,  # 0.041,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'g'): 27.99,
-    ('BI5-36-4k-2', 'r'):  28.244,  # -0.022,
-    ('BI11-33-4k-1', 'r'): 28.227,  # 0.004,
-    ('BI12-34-4k-1', 'r'): 28.235,  # 0.000,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'r'): 28.23,
-    ('BI5-36-4k-2', 'i'):  28.229,  # -0.020,
-    ('BI11-33-4k-1', 'i'): 28.209,  # -0.012,
-    ('BI12-34-4k-1', 'i'): 28.238,  # -0.024,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'i'): 28.21,
-    ('BI5-36-4k-2', 'z'):  28.035,  # -0.068,
-    ('BI11-33-4k-1', 'z'): 28.020,  # -0.005,
-    ('BI12-34-4k-1', 'z'): 28.018,  # -0.055,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'z'): 28.02,
-    ('BI5-36-4k-2', 'OVI'): 23.1,
-    ('BI11-33-4k-1', 'OVI'): 23.1,
-    ('BI12-34-4k-1', 'OVI'): 23.1,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'OVI'): 23.1,
-    ('BI5-36-4k-2', 'OVIC'): 23.1,
-    ('BI11-33-4k-1', 'OVIC'): 23.1,
-    ('BI12-34-4k-1', 'OVIC'): 23.1,
-    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'OVIC'): 23.1,
+    # CCD1 = BI11-41-4k-2
+    # CCD2 = BI13-19-4k-3
+    # CCD3 = BI12-34-4k-1
+    ('BI11-41-4k-2', 'u'): 24.01,  # +/- 0.06  ct[u-g] = 0.19 +/- 0.04,
+    ('BI13-19-4k-3', 'u'): 24.09,  # +/- 0.09  ct[u-g] = 0.09 +/- 0.06,
+    ('BI12-34-4k-1', 'u'): 24.01,  # +/- 0.11  ct[u-g] = 0.14 +/- 0.07,
+    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'u'): 24.09,
+    ('BI11-41-4k-2', 'g'): 27.87,  # +/- 0.01  ct[g-r] = 0.15 +/- 0.02  ct[g-i] = 0.10 +/- 0.02,
+    ('BI13-19-4k-3', 'g'): 27.84,  # +/- 0.05  ct[g-r] = 0.15 +/- 0.02  ct[g-i] = 0.03 +/- 0.06,
+    ('BI12-34-4k-1', 'g'): 27.88,  # +/- 0.09  ct[g-r] = -0.02 +/- 0.12  ct[g-i] = 0.00 +/- 0.06,
+    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'g'): 27.84,
+    ('BI11-41-4k-2', 'r'): 28.12,  # +/- 0.01  ct[g-r] = 0.07  +/-  0.02,
+    ('BI13-19-4k-3', 'r'): 28.05,  # +/- 0.03  ct[g-r] = 0.14  +/-  0.05,
+    ('BI12-34-4k-1', 'r'): 28.09,  # +/- 0.03  ct[g-r] = 0.09  +/-  0.04,
+    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'r'): 28.05,
+    ('BI11-41-4k-2', 'i'): 28.23,  # +/- 0.01  ct[r-i] = 0.18  +/-  0.05,
+    ('BI13-19-4k-3', 'i'): 28.18,  # +/- 0.02  ct[r-i] = 0.25  +/-  0.11,
+    ('BI12-34-4k-1', 'i'): 28.25,  # -+/- 0.02 ct[r-i] = 0.01  +/-  0.05,
+    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'i'): 28.18,
+    ('BI11-41-4k-2', 'z'): 28.10,  # +/- 0.01  ct[i-z] = 0.30  +/-  0.14,
+    ('BI13-19-4k-3', 'z'): 28.08,  # +/- 0.01  ct[i-z] = 0.31  +/-  0.13,
+    ('BI12-34-4k-1', 'z'): 28.19,  # +/- 0.02  ct[i-z] = -0.34  +/-  0.10,
+    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'z'): 28.08,
+    # ('BI5-36-4k-2', 'OVI'): 23.1,
+    # ('BI11-33-4k-1', 'OVI'): 23.1,
+    # ('BI12-34-4k-1', 'OVI'): 23.1,
+    # ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'OVI'): 23.1,
+    # ('BI5-36-4k-2', 'OVIC'): 23.1,
+    # ('BI11-33-4k-1', 'OVIC'): 23.1,
+    # ('BI12-34-4k-1', 'OVIC'): 23.1,
+    # ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'OVIC'): 23.1,
 }
 
 # Dictionary of the pixel scale for all GMOS sites and detectors
