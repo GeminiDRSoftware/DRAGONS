@@ -89,12 +89,15 @@ def test_fit_spline_to_data():
     np.testing.assert_allclose(spline(x), y, atol=3)
 
 
+# test both old and new behavior, the values are slightly different
+@pytest.mark.parametrize("subtract,limit", ([False, 0.02], [True, 0.2]))
 @pytest.mark.parametrize("separation", [1,2,3,4,5])
-def test_std_from_pixel_variations(separation):
+def test_std_from_pixel_variations(separation, subtract, limit):
     # Test passes with ths seed and number of samples
     rng = np.random.default_rng(1)
     data = rng.normal(size=10000)
-    assert abs(at.std_from_pixel_variations(data, separation=separation) - 1) < 0.02
+    assert abs(at.std_from_pixel_variations(
+        data, separation=separation, subtract_linear_fits=subtract) - 1) < limit
 
 
 def test_get_corners_2d():
