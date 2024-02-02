@@ -769,12 +769,6 @@ class GHOSTSpect(GHOST):
             adout.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(adout)
 
-        for ad in adoutputs:
-            print(ad.filename)
-            for ext in ad:
-                print(ext.wcs)
-                print(ext.wcs.forward_transform)
-
         return adoutputs
 
     def darkCorrect(self, adinputs=None, **params):

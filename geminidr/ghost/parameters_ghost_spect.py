@@ -11,7 +11,7 @@ from astrodata import AstroData as ad
 
 
 class attachWavelengthSolutionConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_wavelengthAdded",
+    suffix = config.Field("Filename suffix", str, "_wavelengthSolutionAttached",
                           optional=True)
     arc_before = config.ListField("Before arc to use for wavelength solution",
                             (str, ad), None, optional=True, single=True)
@@ -47,7 +47,7 @@ class darkCorrectConfig(parameters_preprocess.darkCorrectConfig):
 
 
 class determineWavelengthSolutionConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_wavelengthFitted",
+    suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined",
                           optional=True)
     flat = config.ListField("Flat field", (str, ad), None,
                             optional=True, single=True)
@@ -161,22 +161,6 @@ class removeScatteredLightConfig(config.Config):
                                     bool, False)
 
 
-class responseCorrectConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_responseCorrected",
-                          optional=True)
-    standard = config.Field("Standard star (observed)", (str, ad), None,
-                            optional=True)
-    filename = config.Field("Name of spectrophotometric data file", str,
-                            None, optional=True)
-    units = config.Field("Units for output spectrum", str, "W m-2 nm-1",
-                         check=parameters_spect.flux_units_check)
-    write_result = config.Field("Write primitive output to disk?", bool, False)
-    order = config.RangeField("Order of polynomial fit to each echelle order", int,
-                              1, min=1, max=5)
-    debug_plots = config.Field("Show response-fitting plots for each order?",
-                               bool, False)
-
-
 class scaleCountsToReference(config.Config):
     suffix = config.Field("Filename suffix", str, "_countsScaled", optional=True)
     tolerance = config.RangeField("Tolerance for scaling compared to exposure time",
@@ -194,18 +178,13 @@ class stackArcsConfig(parameters_stack.core_stacking_config):
         self.operation = "lmedian"
 
 
-class standardizeSpectralFormatConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_dragons",
-                          optional=True)
-
-
 class stackFramesConfig(parameters_stack.core_stacking_config):
     def setDefaults(self):
         self.reject_method = "none"
 
 
 class traceFibersConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_aperturesFound",
+    suffix = config.Field("Filename suffix", str, "_fibersTraced",
                           optional=True)
     slitflat = config.Field("Slit viewer flat field",
                             (str, ad),
@@ -219,13 +198,6 @@ class traceFibersConfig(config.Config):
 
 
 write1DSpectraConfig = parameters_spect.write1DSpectraConfig
-
-
-class createFITSWCSConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_wfits",
-                          optional=True)
-    iraf = config.Field("Use IRAF (non-standard) format?", bool, False)
-    angstroms = config.Field("Write wavelength as Angstroms?", bool, False)
 
 
 class tileArraysConfig(parameters_visualize.tileArraysConfig):
