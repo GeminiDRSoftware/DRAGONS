@@ -8,23 +8,32 @@ THIS_DIR = os.path.dirname(__file__)
 
 from .lut_descriptors import fixture_data as descriptors_fixture_data
 
-class FixtureIterator:
-    def __init__(self, data_dict):
-        self._data = data_dict
 
-    def __iter__(self):
-        for (instr, filename) in sorted(self._data.keys()):
-            # ad = astrodata.open(os.path.join(THIS_DIR, 'test_data/{}/{}').format(instr, filename))
-            ad = astrodata.open(astrodata.testing.download_from_archive(filename))
-            for desc, value in self._data[(instr, filename)]:
-                yield filename, ad, desc, value
+@pytest.mark.parametrize("instr,filename,descriptor,value",
+                         ([*k]+[*vv] for k, v in descriptors_fixture_data.items()
+                          for vv in v))
+def test_descriptor(instr, filename, descriptor, value):
+    path_to_test_data = os.getenv("DRAGONS_TEST")
+    if path_to_test_data is None:
+        pytest.skip('Environment variable not set: $DRAGONS_TEST')
 
-@pytest.mark.parametrize("fn,ad,descriptor,value",
-                         FixtureIterator(descriptors_fixture_data))
-def test_descriptor(fn, ad, descriptor, value):
+    path_to_test_data = os.path.expanduser(path_to_test_data).strip()
+    path_to_files = ['gemini_instruments', 'test_astrodata_tags',
+                     'inputs']
+    path_to_test_data = os.path.join(path_to_test_data, *path_to_files)
+
+    if '_' in filename:
+        filepath = os.path.join(path_to_test_data, filename)
+        try:
+            ad = astrodata.open(filepath)
+        except FileNotFoundError:
+            pytest.skip(f"{filename} not found")
+    else:
+        ad = astrodata.open(astrodata.testing.download_from_archive(filename))
+
     method = getattr(ad, descriptor)
     if value is None:
-        assert method() == None
+        assert method() is None
     else:
         mvalue = method()
         if float in (type(value), type(mvalue)):
