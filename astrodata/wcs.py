@@ -203,17 +203,17 @@ def gwcs_to_fits(ndd, hdr=None):
         # Remove projection parts so we can calculate the CD matrix
         if projcode:
             nat2cel.name = 'nat2cel'
-            transform_inverse = transform.inverse.copy()
+            transform_inverse = transform.inverse
             for m in transform_inverse:
                 if isinstance(m, models.RotateCelestial2Native):
                     m.name = 'cel2nat'
                 elif isinstance(m, models.Sky2PixProjection):
                     m.name = 'sky2pix'
-            #transform_inverse = transform_inverse.replace_submodel('cel2nat', models.Identity(2))
-            #transform_inverse = transform_inverse.replace_submodel('sky2pix', models.Identity(2))
+            transform_inverse = transform_inverse.replace_submodel('sky2pix', models.Identity(2))
+            transform_inverse = transform_inverse.replace_submodel('cel2nat', models.Identity(2))
             transform = transform.replace_submodel('pix2sky', models.Identity(2))
             transform = transform.replace_submodel('nat2cel', models.Identity(2))
-            #transform.inverse = transform_inverse
+            transform.inverse = transform_inverse
 
     # Replace a log-linear axis with a linear axis representing the log
     # and a Tabular axis with Identity to ensure the affinity check is passed
@@ -292,15 +292,11 @@ def gwcs_to_fits(ndd, hdr=None):
                      if f'CTYPE{i}' not in wcs_dict})
 
     crval = [wcs_dict[f'CRVAL{i+1}'] for i, _ in enumerate(world_axes)]
-    #try:
-    #    crval[lon_axis] = 0
-    #    crval[lat_axis] = 0
-    #except NameError:
-    #    pass
-
-    # This (commented) line fails for un-invertable Tabular2D
-    crpix = np.array(wcs.backward_transform(*crval)) + 1
-    #crpix = np.array(transform.inverse(*crval)) + 1
+    try:
+        crval[lon_axis] = 0
+        crval[lat_axis] = 0
+    except NameError:
+        pass
 
     # Find any world axes that we previous logarithmed and fix the CDij
     # matrix -- we follow FITS-III (Greisen et al. 2006; A&A 446, 747)
@@ -314,6 +310,10 @@ def gwcs_to_fits(ndd, hdr=None):
                 wcs_dict[f'CD{world_axis}_{j}'] *= crval[world_axis-1]
                 wcs_dict[f'CTYPE{world_axis}'] = wcs_dict[f'CTYPE{world_axis}'][:4] + "-LOG"
             crval[world_axis-1] = np.log(crval[world_axis-1])
+
+    # This (commented) line fails for un-invertable Tabular2D
+    #crpix = np.array(wcs.backward_transform(*crval)) + 1
+    crpix = np.array(transform.inverse(*crval)) + 1
 
     # Cope with a situation where the sky projection center is not in the slit
     # We may be able to fix this in future, but FITS doesn't handle it well.
