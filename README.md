@@ -73,8 +73,8 @@ we are using at this time for the `master` branch and the `release/3.1.x`,
 `release/3.2.x` branches.
 
 ```
-$ conda create -n dgdev3.10_20230731 python=3.10 "astropy=5.3.1" astroquery matplotlib numpy psutil pytest python-dateutil requests scikit-image scipy sextractor sqlalchemy ds9 gwcs specutils sphinx sphinx_rtd_theme "bokeh<3" holoviews cython future astroscrappy=1.1 fitsverify imexam jupyter ipympl
-$ conda activate dgdev3.10_20230731
+$ conda create -n dgdev3.10_20240201 python=3.10 astropy=6 astroquery matplotlib numpy psutil pytest python-dateutil requests scikit-image scipy sextractor sqlalchemy ds9 gwcs specutils sphinx sphinx_rtd_theme bokeh holoviews cython future astroscrappy=1.1 fitsverify imexam jupyter ipympl
+$ conda activate dgdev3.10_20240201
 $ pip install git+https://github.com/GeminiDRSoftware/GeminiObsDB.git@release/1.0.x
 $ pip install git+https://github.com/GeminiDRSoftware/GeminiCalMgr.git@release/1.1.x
 ```
