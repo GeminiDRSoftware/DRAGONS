@@ -69,7 +69,6 @@ seeing_pars = [0.5, 1.0, 1.25]
 position_pars = [500]
 value_pars = [50, 100, 500]
 
-
 @pytest.mark.gmosls
 @pytest.mark.parametrize("peak_position", position_pars)
 @pytest.mark.parametrize("peak_value", value_pars)
@@ -82,10 +81,12 @@ def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrof
     """
     np.random.seed(42)
 
-    gmos_fake_noise = 4  # adu
+    gmos_fake_noise = 4 # adu
+    gmos_fake_noise *= peak_value / 25 # need to scale to avoid creating
+                                       # unrealistically low peak-SNR data
     gmos_plate_scale = 0.0807  # arcsec . px-1
     fwhm_to_stddev = 2 * np.sqrt(2 * np.log(2))
-    
+
     ad = astrofaker.create('GMOS-S', mode='SPECT')
     ad.init_default_extensions()
 
