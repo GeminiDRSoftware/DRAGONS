@@ -23,7 +23,6 @@ reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 
 trace_lines:         trace lines from a set of supplied starting positions
 """
-from copy import deepcopy
 import warnings
 
 import numpy as np
