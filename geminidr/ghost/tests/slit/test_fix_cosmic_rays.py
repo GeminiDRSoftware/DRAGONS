@@ -13,7 +13,7 @@ CRFLUX = 50000
 
 
 @pytest.mark.ghostslit
-def test_CRCorrect(ad_slit):
+def test_fix_cosmic_rays(ad_slit):
     """
     Checks to make:
 
@@ -37,16 +37,16 @@ def test_CRCorrect(ad_slit):
         sums.append(ext.data.sum())
 
     p = GHOSTSlit([ad_slit])
-    p.CRCorrect()
+    p.fixCosmicRays()
     # Check CR replacement. Need a large-ish tolerance because
     # a CR in the slit region will affect the obj_flux and so
     # cause a scaling of the affected image
     np.testing.assert_allclose(sums, [ext.data.sum() + CRFLUX for ext in ad_slit],
-                               atol=20), 'CRCorrect failed to remove all dummy cosmic rays'
+                               atol=20), 'fixCosmicRays failed to remove all dummy cosmic rays'
     # Check for replacement header keyword
     np.testing.assert_array_equal(ad_slit.hdr['CRPIXREJ'], 1), \
-    'Incorrect number of rejected pixels recorded in CRPIXREJ'
+        'Incorrect number of rejected pixels recorded in CRPIXREJ'
     np.testing.assert_array_equal(ad_slit.shape, shapes), \
-    'CRCorrect has mangled data shapes'
+        'fixCosmicRays has mangled data shapes'
 
 

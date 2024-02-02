@@ -6,7 +6,7 @@ timestamp_keys = {
     # has completed
     "barycentricCorrect": "BARYCORR",
     "combineOrders": "CMBORDER",
-    "CRCorrect": "FXSLITCR",
+    "fixCosmicRays": "FIXCR",
     "traceFibers": "TRCFIBER",
     "measureBlaze": "MEASBLZE",
     "weightSlitExposures": "WGTSLITS",

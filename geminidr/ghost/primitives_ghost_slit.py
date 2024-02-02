@@ -98,7 +98,7 @@ class GHOSTSlit(GHOST):
         return adinputs
 
 
-    def CRCorrect(self, adinputs=None, **params):
+    def fixCosmicRays(self, adinputs=None, **params):
         """
         Cosmic-ray correct slit viewer images.
 
@@ -140,7 +140,7 @@ class GHOSTSlit(GHOST):
             filename = ad.filename
             if ad.phu.get(timestamp_key):
                 log.warning(f"No changes will be made to {filename}, since "
-                            "it has already been processed by CRCorrect")
+                            f"it has already been processed by {self.myself()}")
                 continue
 
             res = ad.res_mode()

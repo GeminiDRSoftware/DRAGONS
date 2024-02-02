@@ -20,7 +20,7 @@ def makeProcessedSlit(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
-    p.CRCorrect()
+    p.fixCosmicRays()
     p.weightSlitExposures()
     p.addToList(purpose="forStack")
     p.getList(purpose="forStack")
