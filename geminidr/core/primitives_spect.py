@@ -176,7 +176,7 @@ class Spect(Resample):
                         msg = "    No wavelength shift from sky lines will be "\
                               "performed since shift=0\n"\
                               "    Use '-p adjustWavelengthZeroPoint:shift=None' "\
-                              "to shift automatically usig sky lines."
+                              "to shift automatically using sky lines."
                     else:
                         msg = "    Shifted wavelength scale for extension "\
                               f"{ext.id} by {shift:0.4g} pixels"
