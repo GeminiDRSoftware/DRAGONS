@@ -206,23 +206,54 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
         w = divide0(1.0, np.sqrt(variance))
 
     # TODO: Consider outlier removal
+    iterations = 0
+    sigma_limit = 10 # spline residuals within this limit don't trigger refitting
+    change = 0.90
+    iters_number = 50
     if mask is None:
-        spline = interpolate.UnivariateSpline(np.arange(data.size), data, w=w, k=k)
-        #spline = am.UnivariateSplineWithOutlierRemoval(np.arange(data.size), data, w=w, k=k)
+        x = np.arange(data.size)
+        interp_x = (x[:-1] + x[1:]) / 2 # get values between data point locations
+        interp_data = (data[:-1] + data[1:]) / 2
+        interp_w = (w[:-1] + w[1:]) / 2
+        while iterations < iters_number:
+            spline = interpolate.UnivariateSpline(x, data,  w=w, k=k)
+            residuals = spline(interp_x) - interp_data
+            if not ((residuals - ((1 / interp_w) * sigma_limit)).max() > 0).any():
+                break
+            else:
+                interp_w *= change
+                iterations += 1
     else:
-        spline = interpolate.UnivariateSpline(np.arange(data.size)[mask == 0],
-                                              data[mask == 0], w=w[mask == 0], k=k)
-        #spline = am.UnivariateSplineWithOutlierRemoval(np.arange(data.size)[mask == 0],
-        #                                      data[mask == 0], w=w[mask == 0], k=k)
+        x = np.arange(data.size)[mask == 0]
+        interp_x = (x[:-1] + x[1:]) / 2
+        interp_data = (data[mask == 0][:-1] + data[mask == 0][1:]) / 2
+        interp_w = (w[mask == 0][:-1] + w[mask == 0][1:]) / 2
+        while iterations < iters_number:
+            spline = interpolate.UnivariateSpline(x, data[mask == 0],
+                                                  w=w[mask == 0], k=k)
+            residuals = spline(interp_x) - interp_data
+            if not ((residuals - ((1 / interp_w) * sigma_limit)).max() > 0).any():
+                break
+            else:
+                interp_w *= change
+                iterations += 1
+
     return spline
 
 
-def std_from_pixel_variations(array, separation=5, **kwargs):
+def std_from_pixel_variations(array, separation=5, subtract_linear_fits=True,
+                              **kwargs):
     """
     Estimate the standard deviation of pixels in an array by measuring the
     pixel-to-pixel variations. Since the values might be correlated over small
     scales (e.g., if the data have been smoothed), pixels are compared not
     with their immediate neighbors but with pixels a few locations away.
+
+    Subtracting a linear fit from subgroups of pixels helps recover the standard
+    deviation from pixel arrays that are dominated by signal, where the large-
+    scale correlations would otherwise overwhelm the pixel-to-pixel variation.
+    For arrays without much signal, the differences between both options are
+    generally minor.
 
     Parameters
     ----------
@@ -230,6 +261,8 @@ def std_from_pixel_variations(array, separation=5, **kwargs):
         the data from which the standard deviation is to be estimated
     separation: int
         separation between pixels being compared
+    subtract_linear_fits: bool
+        subtract linear fit from each sub-group of separation+3 pixels
     kwargs: dict
         kwargs to be passed directly to astropy.stats.sigma_clipped_stats
 
@@ -238,7 +271,18 @@ def std_from_pixel_variations(array, separation=5, **kwargs):
     float: the estimated standard deviation
     """
     _array = np.asarray(array).ravel()
-    diffs = _array[separation:] - _array[:-separation]
+    if subtract_linear_fits:
+        # Make mini-arrays of groups of separation+3 pixels
+        data = np.vstack([_array[i:i+separation+3]
+                         for i in range(_array.size-separation-2)]).T
+        # Fit and subtract a least-squares linear function to each mini-array
+        xrange = np.arange(separation+3)
+        A = np.vstack([xrange, np.ones(xrange.size)]).T
+        m, c = np.linalg.lstsq(A, data, rcond=None)[0]
+        corr_data = data - (m * xrange[:, np.newaxis] + c)
+        diffs = (corr_data[1] - corr_data[-2])
+    else:
+        diffs = _array[separation:] - _array[:-separation]
     ok = ~(np.isnan(diffs) | np.isinf(diffs))  # Stops AstropyUserWarning
     return stats.sigma_clipped_stats(diffs[ok], **kwargs)[2] / np.sqrt(2)
 
