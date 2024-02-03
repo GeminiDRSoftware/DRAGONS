@@ -32,10 +32,9 @@ def reduceScience(p):
                                # and interpolate in time
     p.barycentricCorrect()  # trivial - multiply wavelength scale
     p.fluxCalibrate()  # correct for atmospheric extinction before combining
-    #p.scaleCountsToReference()  # can be no-op'd with tolerance=0
-    p.writeOutputs(suffix="_calibrated", strip=True)  # output these data products
+    p.storeProcessedScience(suffix="_calibrated")  # output these data products
     p.combineOrders()
-    p.writeOutputs(suffix="_dragons", strip=True)
+    p.storeProcessedScience(suffix="_dragons")
 
 
 def reduceStandard(p):
