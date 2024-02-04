@@ -30,7 +30,6 @@ def test_descriptor(instr, filename, descriptor, value):
         try:
             ad = astrodata.open(filepath)
         except FileNotFoundError:
-            raise
             pytest.skip(f"{filename} not found")
     else:
         ad = astrodata.open(astrodata.testing.download_from_archive(filename))
