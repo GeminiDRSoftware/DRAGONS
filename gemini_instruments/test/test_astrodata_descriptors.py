@@ -7,10 +7,13 @@ import os
 THIS_DIR = os.path.dirname(__file__)
 
 from .lut_descriptors import fixture_data as descriptors_fixture_data
+# Keep separate because GHOST has non-raw files
+from .ghost_lut_descriptors import fixture_data as ghost_descriptors_fixture_data
 
 
 @pytest.mark.parametrize("instr,filename,descriptor,value",
-                         ([*k]+[*vv] for k, v in descriptors_fixture_data.items()
+                         ([*k]+[*vv] for k, v in (list(descriptors_fixture_data.items()) +
+                                                  list(ghost_descriptors_fixture_data.items()))
                           for vv in v))
 def test_descriptor(instr, filename, descriptor, value):
     path_to_test_data = os.getenv("DRAGONS_TEST")
@@ -27,6 +30,7 @@ def test_descriptor(instr, filename, descriptor, value):
         try:
             ad = astrodata.open(filepath)
         except FileNotFoundError:
+            raise
             pytest.skip(f"{filename} not found")
     else:
         ad = astrodata.open(astrodata.testing.download_from_archive(filename))
