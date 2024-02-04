@@ -9,7 +9,7 @@ from .primitives_calibdb_ghost import CalibDBGHOST
 
 from . import parameters_ghost
 
-from .lookups import keyword_comments, timestamp_keywords as ghost_stamps
+from .lookups import keyword_comments
 
 from recipe_system.utils.decorators import parameter_override
 
@@ -47,7 +47,6 @@ class GHOST(Gemini, CCD, CalibDBGHOST):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_ghost)
         # Add GHOST-specific timestamp keywords
-        self.timestamp_keys.update(ghost_stamps.timestamp_keys)
         self.keyword_comments.update(keyword_comments.keyword_comments)
 
     @staticmethod
