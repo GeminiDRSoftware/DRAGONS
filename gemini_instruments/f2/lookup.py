@@ -66,7 +66,8 @@ nominal_zeropoints = {
     ('Ks', 'f/16'): 24.59+1.62,
 
 }
-
+ # Instruction for making this LUT:
+ # https://docs.google.com/document/d/1LVTUFWkXJygkRUvqjsFm_7VZnqy7I4fy/edit?usp=sharing&ouid=106387637049533476653&rtpof=true&sd=true
 dispersion_offset_mask = {
     # Dictionary keys are in the following order:
     # "grism, filter".
@@ -85,7 +86,7 @@ dispersion_offset_mask = {
     ("R3K", "J_G0802"):     DispersionOffsetMask(-0.202, 418, 1159, 1349),  # T=(1%, 1%)
     ("R3K", "H_G0803"):     DispersionOffsetMask(-0.260, 22, 1467, 1804),   # T=(1%, 1%)
     ("R3K", "Ks_G0804"):    DispersionOffsetMask(-0.349, 128, 1966, 2350),  # T=(1%, 1%)
-    ("R3K", "K-long_G0812"):DispersionOffsetMask(-0.351, -14, 1865, 2520)   # T=(1%, X%) - cut-off value selected at inter-order min
+    ("R3K", "K-long_G0812"):DispersionOffsetMask(-0.351, -14, 1865, 2520)   # T=(1%, 1%)
     # Consider adding the following modes:
     #"HK, Ks": # SV data only
     #"HK, K-long": # CAL data only

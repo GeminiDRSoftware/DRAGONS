@@ -1048,8 +1048,16 @@ class AstroDataGemini(AstroData):
         if f1 is None or f2 is None:
             return None
 
-        if pretty:
+        if pretty or keepID:
             filter_comps = []
+            if keepID:
+                def filter_with_id(fltname, fltid):
+                    return fltname if fltid is None else (fltname + "_" + fltid)
+
+                f1 = filter_with_id(gmu.removeComponentID(f1),
+                                              gmu.getComponentID(f1))
+                f2 = filter_with_id(gmu.removeComponentID(f2),
+                                              gmu.getComponentID(f2))
             for fn in (f1, f2):
                 # Not interested in clear or neutral density filters
                 if not ("open" in fn.lower() or "Clear" in fn or
@@ -1061,6 +1069,7 @@ class AstroDataGemini(AstroData):
             for cal, fn in cals:
                 if cal in f1 or cal in f2:
                     filter_comps.append(fn)
+
         else:
             filter_comps = [f1, f2]
 
