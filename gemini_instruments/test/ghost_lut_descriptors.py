@@ -4,18 +4,18 @@ from gemini_instruments.common import Section
 
 # This has been modified from a dict to a hideous nested list so
 # path_to_inputs can be used
-fixture_data = [
-    [('GHOST', "S20230214S0025.fits"), [  # BUNDLE
+fixture_data = {
+    ('GHOST', "S20230214S0025.fits"): [  # BUNDLE
         ('airmass', 1.0907455772702386),
         ('amp_read_area', {'blue': ["'EEV231-84, E':[1:2048,1:2056]", "'EEV231-84, F':[2049:4096,1:2056]",
                                     "'EEV231-84, G':[2049:4096,2057:4112]", "'EEV231-84, H':[1:2048,2057:4112]"],
                            'red': ["'EEV231-C6, E':[1:3072,1:3080]", "'EEV231-C6, F':[3073:6144,1:3080]",
                                    "'EEV231-C6, G':[3073:6144,3081:6160]", "'EEV231-C6, H':[1:3072,3081:6160]"],
-                           'slitv': ["'Ghost BigEye Sony ICX674, A':[801:1100,681:940]"]}),
+                           'slitv': "'Ghost BigEye Sony ICX674, A':[801:1100,681:940]"}),
         ('arm', None),
         ('array_name', {'blue': ['EEV231-84, E', 'EEV231-84, F', 'EEV231-84, G', 'EEV231-84, H'],
                         'red': ['EEV231-C6, E', 'EEV231-C6, F', 'EEV231-C6, G', 'EEV231-C6, H'],
-                        'slitv': ['Ghost BigEye Sony ICX674, A']}),
+                        'slitv': 'Ghost BigEye Sony ICX674, A'}),
         ('azimuth', 34.61275138888889),
         ('binning', {'blue': '1x4', 'red': '1x4', 'slitv': '2x2'}),
         ('calibration_key', ('GS-ENG-GHOST-COM-3-560-001', None)),
@@ -46,7 +46,7 @@ fixture_data = [
         ('dispersion_axis', None),
         ('effective_wavelength', None),
         ('elevation', 63.87784305555556),
-        ('exposure_time', {'blue': 3600.0, 'red': 1200.0, 'slitv': 3600.0}),
+        ('exposure_time', {'blue': 3600.0, 'red': 1200.0, 'slitv': 240.0}),
         ('filter_name', None),
         ('focal_plane_mask', 'SR'),
         ('gain', [1.0, 1.0, 1.0, 1.0, 1.0,
@@ -56,7 +56,7 @@ fixture_data = [
                   None, 0.51, 0.5, 0.52, 0.55]),
         ('gain_setting', {'blue': 'low', 'red': 'low', 'slitv': 'standard'}),
         ('instrument', 'GHOST'),
-        ('number_of_exposures', {'blue': 1, 'red': 3}),
+        ('number_of_exposures', {'blue': 1, 'red': 3, 'slitv': 5}),
         ('object', 'Gaia-EDR3-3063607731380726272'),
         ('observation_class', 'science'),
         ('observation_id', 'GS-ENG-GHOST-COM-3-560'),
@@ -77,8 +77,7 @@ fixture_data = [
         ('target_dec', -7.88625),
         ('target_ra', 122.3043333333333),
         ],
-    ],
-    [('GHOST', 'S20230214S0025_1x4_blue001.fits'), [
+    ('GHOST', 'S20230214S0025_blue001.fits'): [
         ('airmass', 1.090745577270239),
         ('amp_read_area',
          ["'EEV231-84, E':[1:2048,1:2056]", "'EEV231-84, F':[2049:4096,1:2056]", "'EEV231-84, G':[2049:4096,2057:4112]",
@@ -91,7 +90,7 @@ fixture_data = [
         ('binning', '1x4'),
         ('calibration_key', ('GS-ENG-GHOST-COM-3-560-001-BLUE-001', 'blue')),
         ('camera', 'BLUE'),
-        ('data_label', 'GS-ENG-GHOST-COM-3-560-001-RED-001'),
+        ('data_label', 'GS-ENG-GHOST-COM-3-560-001-BLUE-001'),
         ('data_section', [Section(x1=0, x2=2048, y1=0, y2=514), Section(x1=32, x2=2080, y1=0, y2=514),
                           Section(x1=32, x2=2080, y1=0, y2=514), Section(x1=0, x2=2048, y1=0, y2=514)]),
         ('dec', -7.88625),
@@ -128,8 +127,7 @@ fixture_data = [
         ('target_ra', 122.3043333333333),
         ('ut_datetime', datetime.datetime(2023, 2, 14, 2, 19, 12))
         ],
-    ],
-    [('GHOST', 'S20230214S0025_1x4_red002.fits'), [
+    ('GHOST', 'S20230214S0025_red002.fits'): [
         ('airmass', 1.090745577270239),
         ('amp_read_area',
          ["'EEV231-C6, E':[1:3072,1:3080]", "'EEV231-C6, F':[3073:6144,1:3080]", "'EEV231-C6, G':[3073:6144,3081:6160]",
@@ -179,8 +177,7 @@ fixture_data = [
         ('target_ra', 122.3043333333333),
         ('ut_datetime', datetime.datetime(2023, 2, 14, 2, 39, 27))
         ],
-    ],
-    [('GHOST', 'S20230214S0025_2x2_slit.fits'), [
+    ('GHOST', 'S20230214S0025_slit.fits'): [
         ('airmass', 1.0907455772702386),
         ('amp_read_area', ["'Ghost BigEye Sony ICX674, A':[801:1100,681:940]"]),
         ('ao_seeing', None),
@@ -224,5 +221,4 @@ fixture_data = [
         ('target_ra', 122.3043333333333),
         ('ut_datetime', datetime.datetime(2023, 2, 14, 2, 19, 12))
         ]
-    ],
-]
+}

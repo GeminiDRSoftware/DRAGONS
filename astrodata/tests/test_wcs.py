@@ -207,7 +207,7 @@ def test_loglinear_axis(NIRI_IMAGE):
     """Test that we can add a log-linear axis and write and read it"""
     ad = astrodata.open(NIRI_IMAGE)
     coords = ad[0].wcs(200, 300)
-    ad[0].data = np.repeat(ad[0].data[np.newaxis], 5, axis=0)
+    ad[0].data = np.repeat(ad[0].data[:, :, np.newaxis], 5, axis=2)
     new_input_frame = adwcs.pixel_frame(3)
     loglinear_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
                                  axes_names=("AWAV",), name="Wavelength in air")

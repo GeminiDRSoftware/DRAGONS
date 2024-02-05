@@ -28,7 +28,7 @@ def makeProcessedFlat(p):
     p.darkCorrect()
     p.stackFrames(operation='median')
     p.tileArrays()
-    p.findApertures()
+    p.traceFibers()
     p.removeScatteredLight()
     p.measureBlaze()
     p.storeProcessedFlat()

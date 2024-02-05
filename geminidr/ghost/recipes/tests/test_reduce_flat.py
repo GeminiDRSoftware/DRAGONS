@@ -48,7 +48,7 @@ def test_reduce_flat(input_filename, bias, arm, path_to_inputs, path_to_refs):
     ucals = {"processed_bias": processed_bias,
              "processed_slitflat": processed_slitflat,
              "processed_bpm": processed_bpm}
-    # A slitflat is needed for both findApertures and measureBlaze
+    # A slitflat is needed for both traceFibers and measureBlaze
     # and processed_slitflat not recognized as a user_cal
     p = GHOSTSpect(adinputs, ucals=ucals)
     makeProcessedFlat(p)

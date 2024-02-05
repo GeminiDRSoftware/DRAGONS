@@ -21,9 +21,9 @@ def makeProcessedSlit(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.darkCorrect()
-    p.CRCorrect()
+    p.fixCosmicRays()
     p.plotSlitFlux()
-    p.processSlits()
+    p.weightSlitExposures()
     p.stackFrames()
     p.storeProcessedSlit()
     return

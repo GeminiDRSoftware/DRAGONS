@@ -2,66 +2,19 @@ import math
 import numpy as np
 from skimage import draw, transform, util
 from scipy.optimize import least_squares
+from scipy.ndimage import gaussian_filter
 from astropy.modeling import models, fitting, Parameter, Fittable1DModel
 
 # pylint: disable=maybe-no-member, too-many-instance-attributes
 
-'''
-# Rotation of slit on camera
-ROTANGLE = 90.0-9.04
-
-# Point around which to rotate
-ROT_CENTER = [900.0, 780.0]
-
-SLITVIEW_PARAMETERS = {
-    'std': {
-        'central_pix': {
-            'red': [781, 985],
-            'blue': [771, 946]
-            #'red': [77, 65],    #
-            #'blue': [77, 156]   #
-        },
-        'extract_half_width': 3,
-        'sky_pix_only_boundaries': {
-            'red': [47, 63],
-            'blue': [47, 63]
-        },
-        'object_boundaries': {
-            'red': [[3, 46], [64, 107]],
-            'blue': [[3, 46], [64, 107]]
-        },
-        'sky_pix_boundaries': {
-            'red': [3, 107],
-            'blue': [3, 107]
-        },
-    },
-    'high': {
-        'central_pix': {
-            'red': [770, 857],
-            'blue': [760, 819],
-            #'red': [78, 95], #
-            #'blue': [78, 4]  #
-        },
-        'extract_half_width': 2,
-        'sky_pix_only_boundaries': {
-            'red': [82, 106],
-            'blue': [82, 106]
-        },
-        'object_boundaries': {
-            'red': [[11, 81], [4, 9]],
-            'blue': [[11, 81], [4, 9]]
-        },
-        'sky_pix_boundaries': {
-            'red': [11, 106], 'blue': [11, 106]},
-    }
-}
-'''
 
 S3 = np.sqrt(3)
+
 
 # A quick counterpoint to the existing floordiv (which is just a // b)
 def ceildiv(a, b):
     return -(a // -b)
+
 
 class SlitView(object):
     """
@@ -97,51 +50,64 @@ class SlitView(object):
     stowed: list
         are any IFUs stowed? this is relevant for constructing the object
         slit profiles as it cannot be discerned from the slit_image
+
+    smoothing: float
+        FWHM in unbinned pixels of Gaussian filter to apply to extracted
+        slit profile (needed for December 2023 out-of-focus FT run)
     """
     def __init__(self, slit_image, flat_image, slitvpars, microns_pix=4.54*180/50,
-                 binning=2, mode='std', slit_length=3600., stowed=None):
+                 binning=2, mode='std', slit_length=3600., stowed=None, smoothing=0):
         self.binning = binning
+        self.smoothing = smoothing
+        # extra_pixels is the increase in extraction region for the objects
+        extra_pixels = int(smoothing * 1.5)
+        # center_shift is the number of additional pixels padded onto the
+        # ends of the rotated slit image so the smoothed slit profile can be
+        # large enough
+        center_shift = int(smoothing * 1.5)
+
         self.rota = slitvpars['rota']
         self.center = [slitvpars['rotyc'] // binning, slitvpars['rotxc'] // binning]
         self.central_pix = {
-            'red': [slitvpars['center_y_red'] // binning,
-                    slitvpars['center_x_red'] // binning],
-            'blue': [slitvpars['center_y_blue'] // binning,
-                     slitvpars['center_x_blue'] // binning]
+            'red': [(slitvpars['center_y_red'] + center_shift) // binning,
+                    (slitvpars['center_x_red']) // binning],
+            'blue': [(slitvpars['center_y_blue'] + center_shift) // binning,
+                     (slitvpars['center_x_blue']) // binning]
         }
         self.sky_pix_only_boundaries = {
-            'red': [slitvpars['skypix0'] // binning,
-                    ceildiv(slitvpars['skypix1'], binning)],
-            'blue': [slitvpars['skypix0'] // binning,
-                     ceildiv(slitvpars['skypix1'], binning)]
+            'red': [max(slitvpars['skypix0'] + extra_pixels + center_shift, 0) // binning,
+                    ceildiv(slitvpars['skypix1'] - extra_pixels + center_shift, binning)],
+            'blue': [max(slitvpars['skypix0'] + extra_pixels + center_shift, 0) // binning,
+                     ceildiv(slitvpars['skypix1'] - extra_pixels + center_shift, binning)]
         }
         self.object_boundaries = {
-            'red': [[slitvpars['obj0pix0'] // binning,
-                     ceildiv(slitvpars['obj0pix1'], binning)],
-                    [slitvpars['obj1pix0'] // binning,
-                     ceildiv(slitvpars['obj1pix1'], binning)]],
-            'blue': [[slitvpars['obj0pix0'] // binning,
-                     ceildiv(slitvpars['obj0pix1'], binning)],
-                     [slitvpars['obj1pix0'] // binning,
-                      ceildiv(slitvpars['obj1pix1'], binning)]],
+            'red': [[max(slitvpars['obj0pix0'] - extra_pixels + center_shift, 0) // binning,
+                     ceildiv(slitvpars['obj0pix1'] + extra_pixels + center_shift, binning)],
+                    [max(slitvpars['obj1pix0'] - extra_pixels + center_shift, 0)// binning,
+                     ceildiv(slitvpars['obj1pix1'] + extra_pixels + center_shift, binning)]],
+            'blue': [[max(slitvpars['obj0pix0'] - extra_pixels + center_shift, 0) // binning,
+                     ceildiv(slitvpars['obj0pix1'] + extra_pixels + center_shift, binning)],
+                     [max(slitvpars['obj1pix0'] - extra_pixels + center_shift, 0) // binning,
+                      ceildiv(slitvpars['obj1pix1'] + extra_pixels + center_shift, binning)]],
         }
         if mode == 'std':
             self.sky_pix_boundaries = {
-                'red': [slitvpars['obj0pix0'] // binning,
-                        ceildiv(slitvpars['obj1pix1'], binning)],
-                'blue': [slitvpars['obj0pix0'] // binning,
-                        ceildiv(slitvpars['obj1pix1'], binning)]
+                'red': [max(slitvpars['obj0pix0'] - extra_pixels + center_shift, 0) // binning,
+                        ceildiv(slitvpars['obj1pix1'] + extra_pixels + center_shift, binning)],
+                'blue': [max(slitvpars['obj0pix0'] - extra_pixels + center_shift, 0) // binning,
+                        ceildiv(slitvpars['obj1pix1'] + extra_pixels + center_shift, binning)]
             }
         else:
             self.sky_pix_boundaries = {
-                'red': [slitvpars['obj0pix0'] // binning,
-                        ceildiv(slitvpars['skypix1'], binning)],
-                'blue': [slitvpars['obj0pix0'] // binning,
-                        ceildiv(slitvpars['skypix1'], binning)]
+                'red': [max(slitvpars['obj0pix0'] - extra_pixels + center_shift, 0) // binning,
+                        ceildiv(slitvpars['skypix1'] + extra_pixels + center_shift, binning)],
+                'blue': [max(slitvpars['obj0pix0'] - extra_pixels + center_shift, 0) // binning,
+                        ceildiv(slitvpars['skypix1'] + extra_pixels + center_shift, binning)]
             }
 
         self.mode = mode
-        self.slit_length = slit_length
+        center_shift = center_shift // binning
+        self.slit_length = slit_length + 2 * center_shift * microns_pix
         self.microns_pix = microns_pix * binning
         self.reverse_profile = {'red': False, 'blue': True}
 
@@ -154,6 +120,18 @@ class SlitView(object):
             self.flat_image = flat_image
         else:
             self.flat_image = transform.rotate(util.img_as_float64(flat_image), self.rota, center=self.center)
+
+        if extra_pixels:
+            if self.slit_image is not None:
+                img = np.zeros((self.slit_image.shape[0] + 2 * center_shift, self.slit_image.shape[1]),
+                               dtype=self.slit_image.dtype)
+                img[center_shift:-center_shift] = self.slit_image
+                self.slit_image = img
+            if self.flat_image is not None:
+                img = np.zeros((self.flat_image.shape[0] + 2 * center_shift, self.flat_image.shape[1]),
+                               dtype=self.flat_image.dtype)
+                img[center_shift:-center_shift] = self.flat_image
+                self.flat_image = img
 
         self.stowed = stowed or []
 
@@ -239,6 +217,10 @@ class SlitView(object):
         profile = np.sum(cutout, axis=1)
         if reverse_profile:
             profile = profile[::-1]
+
+        if self.smoothing:
+            print(f"Smoothing with FWHM={self.smoothing} pixels")
+            profile = gaussian_filter(profile, self.smoothing * 0.42466)
 
         if return_centroid:
             xcoord = np.arange(

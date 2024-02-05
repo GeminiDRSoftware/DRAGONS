@@ -9,31 +9,14 @@ from geminidr.core import (
 
 from astrodata import AstroData as ad
 
-def arcs_valueCheck(value):
-    """Validate applyFlatBPMConfig.arcs"""
-    return len(value) == 2 and isinstance(
-        value[0], str) and isinstance(
-        value[1], str)
 
-
-class addWavelengthSolutionConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_wavelengthAdded",
+class attachWavelengthSolutionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthSolutionAttached",
                           optional=True)
     arc_before = config.ListField("Before arc to use for wavelength solution",
                             (str, ad), None, optional=True, single=True)
     arc_after = config.ListField("After arc to use for wavelength solution",
                             (str, ad), None, optional=True, single=True)
-
-
-class applyFlatBPMConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_flatBPMApplied",
-                          optional=True)
-    flat = config.ListField("Flat field to use", (str, ad), None,
-                            optional=True, single=True)
-    flat_stream = config.Field("Stream to obtain flat field from", str, None,
-                               optional=True)
-    write_result = config.Field("Write primitive output to disk?", bool, True,
-                                optional=True)
 
 
 class barycentricCorrectConfig(config.Config):
@@ -56,15 +39,6 @@ class calculateSensitivityConfig(config.Config):
                                bool, False)
 
 
-class clipSigmaBPMConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_sigmaBPMClipped",
-                          optional=True)
-    sigma = config.Field("Sigma value for clipping", float, 3.0)
-    iters = config.Field("Number of clipping iterations", int, None,
-                         optional=True)
-    bpm_value = config.Field("BPM value to give to clipped pixels", int, 1)
-
-
 class darkCorrectConfig(parameters_preprocess.darkCorrectConfig):
     def setDefaults(self):
         self.suffix = "_darkCorrected"
@@ -72,7 +46,25 @@ class darkCorrectConfig(parameters_preprocess.darkCorrectConfig):
         self.do_cal = "skip"
 
 
-class extractProfileConfig(config.Config):
+class determineWavelengthSolutionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined",
+                          optional=True)
+    flat = config.ListField("Flat field", (str, ad), None,
+                            optional=True, single=True)
+    min_snr = config.RangeField("Minimum S/N for peak detection",
+                                float, 20, min=10)
+    sigma = config.RangeField("Number of standard deviations for rejecting lines",
+                              float, 3, min=1)
+    max_iters = config.RangeField("Maximum number of iterations", int, 1, min=1)
+    radius = config.RangeField("Matching distance for lines", int, 12, min=2)
+    plot1d = config.Field("Produce 1D plots of each order to inspect fit?",
+                          bool, False)
+    plotrms = config.Field("Produce rms scattergram to inspect fit?",
+                           bool, False)
+    debug_plot2d = config.Field("Produce 2D plot to inspect fit?", bool, False)
+
+
+class extractSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted",
                           optional=True)
     slit = config.ListField("Slit viewer exposure", (str, ad), None,
@@ -101,6 +93,8 @@ class extractProfileConfig(config.Config):
                                    allowed={"uniform": "uniform weighting",
                                             "optimal": "optimal extraction"},
                                    default="optimal")
+    min_flux_frac = config.RangeField("Minimum fraction of object flux to not flag extracted pixel",
+                                      float, 0., min=0, max=1, inclusiveMax=True)
     ftol = config.RangeField("Fractional tolerance for convergence",
                                   float, 0.001, min=1e-8, max=0.05)
     apply_centroids = config.Field("Apply slit center-of-light offsets?", bool, False)
@@ -131,61 +125,7 @@ class combineOrdersConfig(config.Config):
                                                 default="scaled", optional=True)
 
 
-class findAperturesConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_aperturesFound",
-                          optional=True)
-    slitflat = config.Field("Slit viewer flat field",
-                            (str, ad),
-                            None, optional=True)
-    flat = config.ListField("Flat field", (str, ad), None,
-                            optional=True, single=True)
-    make_pixel_model = config.Field('Add a pixel model to the flat field?',
-                                    bool, False)
-
-
-class fitWavelengthConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_wavelengthFitted",
-                          optional=True)
-    flat = config.ListField("Flat field", (str, ad), None,
-                            optional=True, single=True)
-    min_snr = config.RangeField("Minimum S/N for peak detection",
-                                float, 20, min=10)
-    sigma = config.RangeField("Number of standard deviations for rejecting lines",
-                              float, 3, min=1)
-    max_iters = config.RangeField("Maximum number of iterations", int, 1, min=1)
-    radius = config.RangeField("Matching distance for lines", int, 12, min=2)
-    plot1d = config.Field("Produce 1D plots of each order to inspect fit?",
-                          bool, False)
-    plotrms = config.Field("Produce rms scattergram to inspect fit?",
-                           bool, False)
-    debug_plot2d = config.Field("Produce 2D plot to inspect fit?", bool, False)
-
-
-class flatCorrectConfig(config.Config):
-    skip = config.Field("No-op this primitive?", bool, False, optional=True)
-    suffix = config.Field("Filename suffix", str, "_flatCorrected",
-                          optional=True)
-    slit = config.Field("Slit viewer exposure", (str, ad), None, optional=True)
-    slitflat = config.ListField("Slit viewer flat field", (str, ad), None,
-                                optional=True, single=True)
-    flat = config.ListField("Processed flat field exposure", (str, ad), None,
-                            optional=True, single=True)
-    write_result = config.Field("Write primitive output to disk?", bool, True,
-                                optional=True)
-
-
 fluxCalibrateConfig = parameters_spect.fluxCalibrateConfig
-
-
-class formatOutputConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_formattedOutput",
-                          optional=True)
-    detail = config.ChoiceField("Level of detail", str, {
-        'default': 'Default output',
-        'processed_image': 'Include processed CCD image',
-        'flat_profile': 'Include flat profile',
-        'sensitivity_curve': 'Include computed sensitivity curve',
-    }, default='default')
 
 
 class measureBlazeConfig(config.Config):
@@ -221,22 +161,6 @@ class removeScatteredLightConfig(config.Config):
                                     bool, False)
 
 
-class responseCorrectConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_responseCorrected",
-                          optional=True)
-    standard = config.Field("Standard star (observed)", (str, ad), None,
-                            optional=True)
-    filename = config.Field("Name of spectrophotometric data file", str,
-                            None, optional=True)
-    units = config.Field("Units for output spectrum", str, "W m-2 nm-1",
-                         check=parameters_spect.flux_units_check)
-    write_result = config.Field("Write primitive output to disk?", bool, False)
-    order = config.RangeField("Order of polynomial fit to each echelle order", int,
-                              1, min=1, max=5)
-    debug_plots = config.Field("Show response-fitting plots for each order?",
-                               bool, False)
-
-
 class scaleCountsToReference(config.Config):
     suffix = config.Field("Filename suffix", str, "_countsScaled", optional=True)
     tolerance = config.RangeField("Tolerance for scaling compared to exposure time",
@@ -254,24 +178,26 @@ class stackArcsConfig(parameters_stack.core_stacking_config):
         self.operation = "lmedian"
 
 
-class standardizeSpectralFormatConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_dragons",
-                          optional=True)
-
-
 class stackFramesConfig(parameters_stack.core_stacking_config):
     def setDefaults(self):
         self.reject_method = "none"
 
 
-write1DSpectraConfig = parameters_spect.write1DSpectraConfig
-
-
-class createFITSWCSConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_wfits",
+class traceFibersConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_fibersTraced",
                           optional=True)
-    iraf = config.Field("Use IRAF (non-standard) format?", bool, False)
-    angstroms = config.Field("Write wavelength as Angstroms?", bool, False)
+    slitflat = config.Field("Slit viewer flat field",
+                            (str, ad),
+                            None, optional=True)
+    flat = config.ListField("Flat field", (str, ad), None,
+                            optional=True, single=True)
+    make_pixel_model = config.Field('Add a pixel model to the flat field?',
+                                    bool, False)
+    smoothing = config.RangeField("Gaussian smoothing of slit profile (unbinned pixels)",
+                                  float, 0, min=0, optional=False)
+
+
+write1DSpectraConfig = parameters_spect.write1DSpectraConfig
 
 
 class tileArraysConfig(parameters_visualize.tileArraysConfig):

@@ -18,7 +18,7 @@ def idfn(fixture_value):
     return ','.join([str(_) for _ in fixture_value])
 
 
-@pytest.mark.ghostunit
+@pytest.mark.ghostspect
 class TestExtractor(object):
     """Testing class for polyfit.extract.Extractor"""
 

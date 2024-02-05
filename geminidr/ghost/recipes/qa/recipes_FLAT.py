@@ -30,7 +30,7 @@ def makeProcessedFlat(p):
     p.getList(purpose="forStack")
     p.stackFrames(operation='median')
     p.tileArrays()
-    p.findApertures()
+    p.traceFibers()
     p.storeProcessedFlat()
     return
 

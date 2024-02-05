@@ -242,7 +242,7 @@ div.info_text {
 }
 
 .top-row {
-    z-index: 1;
+    z-index: 1000;
 }
 
 #filename-info {

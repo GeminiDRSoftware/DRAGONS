@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '3.1.0-dev'
+VERSION = '3.2.0'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -83,7 +83,7 @@ setup(name='dragons',
           'astropy>=4.3',
           'astroquery>=0.4',
           'astroscrappy>=1.1',
-          'bokeh>=2.3',
+          'bokeh>=3',
           'bottleneck>=1.2',
           'future>=0.17',
         # 'gemini_calmgr>=1.1',  # these need uploading to PyPI first

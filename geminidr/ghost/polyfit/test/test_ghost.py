@@ -18,7 +18,6 @@ def idfn(fixture_value):
     return ','.join([str(_) for _ in fixture_value])
 
 
-@pytest.mark.ghostunit
 class TestGhostArmBasic():
     @pytest.fixture(scope='class',
                     params=list(itertools.product(*[

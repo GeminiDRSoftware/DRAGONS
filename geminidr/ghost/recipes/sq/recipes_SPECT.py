@@ -26,16 +26,15 @@ def reduceScience(p):
     p.tileArrays()
     p.removeScatteredLight()
     p.writeOutputs()
-    p.extractProfile()
-    p.addWavelengthSolution()  # should be able to accept multiple input
+    p.extractSpectra()
+    p.attachWavelengthSolution()  # should be able to accept multiple input
                                # arcs, e.g. from start and end of night,
                                # and interpolate in time
     p.barycentricCorrect()  # trivial - multiply wavelength scale
     p.fluxCalibrate()  # correct for atmospheric extinction before combining
-    #p.scaleCountsToReference()  # can be no-op'd with tolerance=0
-    p.writeOutputs(suffix="_calibrated", strip=True)  # output these data products
+    p.storeProcessedScience(suffix="_calibrated")  # output these data products
     p.combineOrders()
-    p.writeOutputs(suffix="_dragons", strip=True)
+    p.storeProcessedScience(suffix="_dragons")
 
 
 def reduceStandard(p):
@@ -59,8 +58,8 @@ def reduceStandard(p):
     p.tileArrays()
     p.removeScatteredLight()
     p.writeOutputs()
-    p.extractProfile()
-    p.addWavelengthSolution()
+    p.extractSpectra()
+    p.attachWavelengthSolution()
     p.scaleCountsToReference()
     p.stackFrames()
     p.calculateSensitivity()

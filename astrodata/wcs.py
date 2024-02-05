@@ -203,8 +203,17 @@ def gwcs_to_fits(ndd, hdr=None):
         # Remove projection parts so we can calculate the CD matrix
         if projcode:
             nat2cel.name = 'nat2cel'
+            transform_inverse = transform.inverse
+            for m in transform_inverse:
+                if isinstance(m, models.RotateCelestial2Native):
+                    m.name = 'cel2nat'
+                elif isinstance(m, models.Sky2PixProjection):
+                    m.name = 'sky2pix'
+            transform_inverse = transform_inverse.replace_submodel('sky2pix', models.Identity(2))
+            transform_inverse = transform_inverse.replace_submodel('cel2nat', models.Identity(2))
             transform = transform.replace_submodel('pix2sky', models.Identity(2))
             transform = transform.replace_submodel('nat2cel', models.Identity(2))
+            transform.inverse = transform_inverse
 
     # Replace a log-linear axis with a linear axis representing the log
     # and a Tabular axis with Identity to ensure the affinity check is passed
@@ -478,11 +487,11 @@ def read_wcs_from_header(header):
 
     # Hack to deal with non-FITS-compliant data where one axis is ignored
     unspecified_pixel_axes = [axis for axis, unused in
-                              enumerate(np.all(cd == 0, axis=1)) if unused]
+                              enumerate(np.all(cd == 0, axis=0)) if unused]
     if unspecified_pixel_axes:
         unused_world_axes = [axis for axis, unused in
-                             enumerate(np.all(cd == 0, axis=0)) if unused]
-        unused_world_axes += list(range(wcsaxes, wcsaxes+len(unspecified_pixel_axes)))
+                             enumerate(np.all(cd == 0, axis=1)) if unused]
+        unused_world_axes += [wcsaxes - 1] * len(unspecified_pixel_axes)
         for pixel_axis, world_axis in zip(unspecified_pixel_axes, unused_world_axes):
             cd[world_axis, pixel_axis] = 1.0
 
@@ -685,9 +694,11 @@ def fitswcs_image(header):
     # create a "ghost" orthogonal axis here so an inverse can be defined
     # Modify the CD matrix in case we have to use a backup Matrix Model later
     if len(pixel_axes) == 1:
-        cd[sky_axes[0], -1] = -cd[sky_axes[1], pixel_axes[0]]
-        cd[sky_axes[1], -1] = cd[sky_axes[0], pixel_axes[0]]
-        sky_cd = cd[np.ix_(sky_axes, pixel_axes + [-1])]
+        sky_cd = np.array([[cd[sky_axes[0], pixel_axes[0]], -cd[sky_axes[1], pixel_axes[0]]],
+                           [cd[sky_axes[1], pixel_axes[0]], cd[sky_axes[0], pixel_axes[0]]]])
+        #cd[sky_axes[0], -1] = -cd[sky_axes[1], pixel_axes[0]]
+        #cd[sky_axes[1], -1] = cd[sky_axes[0], pixel_axes[0]]
+        #sky_cd = cd[np.ix_(sky_axes, pixel_axes + [-1])]
         affine = models.AffineTransformation2D(matrix=sky_cd, name='cd_matrix')
         # TODO: replace when PR#10362 is in astropy
         #rotation = models.fix_inputs(affine, {'y': 0})

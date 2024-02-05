@@ -3,12 +3,11 @@ fixture_data = {
     #   Tags: GMOS, BIAS, DARK, FRINGE, FLAT (whether it's GCAL or TWILIGT), GCALFLAT, TWILIGHT, ARC, IMAGE, SPECT, IFU, LS, MOS, NODANDSHUFFLE, BLUE, RED, TWO
     #
     #   GMOS Bias
-    #   I don't know why the North bias don't have the 'AT_ZENITH'
     ('GMOS', 'N20110524S0358.fits'): ['AZEL_TARGET', 'CAL', 'GEMINI', 'NORTH', 'GMOS', 'BIAS', 'CAL', 'NON_SIDEREAL',
-                                      'RAW', 'UNPREPARED'],
+                                      'RAW', 'UNPREPARED', 'AT_ZENITH'],
     ('GMOS', 'N20110524S0358_bias.fits'): ['AZEL_TARGET', 'CAL', 'GEMINI', 'NORTH', 'GMOS', 'BIAS', 'CAL',
                                            'NON_SIDEREAL', 'OVERSCAN_SUBTRACTED', 'OVERSCAN_TRIMMED', 'PREPARED',
-                                           'PROCESSED'],
+                                           'PROCESSED', 'AT_ZENITH'],
     ('GMOS', 'S20110627S0151.fits'): ['AT_ZENITH', 'AZEL_TARGET', 'CAL', 'GEMINI', 'SOUTH', 'GMOS', 'BIAS', 'CAL',
                                       'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
     ('GMOS', 'S20070318S0274_bias.fits'): ['AT_ZENITH', 'AZEL_TARGET', 'CAL', 'GEMINI', 'SOUTH', 'GMOS', 'BIAS',
@@ -17,9 +16,9 @@ fixture_data = {
 
     #   GMOS Dark
     ('GMOS', 'N20160106S0653.fits'): ['AZEL_TARGET', 'GEMINI', 'NORTH', 'GMOS', 'DARK', 'RAW', 'NON_SIDEREAL',
-                                      'UNPREPARED'],
+                                      'UNPREPARED', 'AT_ZENITH', 'CAL', 'MOS'],
     ('GMOS', 'S20160725S0008.fits'): ['GEMINI', 'SOUTH', 'GMOS', 'DARK', 'RAW', 'SIDEREAL', 'UNPREPARED',
-                                      'NODANDSHUFFLE'],
+                                      'NODANDSHUFFLE', 'CAL'],
 
     #   GMOS Arc
     ('GMOS', 'S20160724S0218.fits'): ['CAL', 'GEMINI', 'SOUTH', 'GMOS', 'LS', 'ARC', 'RAW', 'SPECT', 'SIDEREAL',
@@ -39,7 +38,7 @@ fixture_data = {
     # Those will only be recognized as PROCESSED FRINGE.  As raw, they
     # cannot be recognized.
     ('GMOS', 'N20110927S0170_fringe.fits'): ['FRINGE', 'GEMINI', 'NORTH', 'GMOS', 'IMAGE', 'OVERSCAN_SUBTRACTED',
-                                             'OVERSCAN_TRIMMED', 'PREPARED', 'PROCESSED', 'SIDEREAL'],
+                                             'OVERSCAN_TRIMMED', 'PREPARED', 'PROCESSED', 'SIDEREAL', 'CAL'],
 
     #   GMOS Imaging Data
     ('GMOS', 'N20120203S0284.fits'): ['GEMINI', 'NORTH', 'GMOS', 'IMAGE', 'SIDEREAL', 'RAW', 'UNPREPARED'],
@@ -56,17 +55,18 @@ fixture_data = {
                                       'UNPREPARED'],
 
     #   GMOS Longslit Data
-    ('GMOS', 'N20160726S0179.fits'): ['GEMINI', 'NORTH', 'GMOS', 'LS', 'RAW', 'SPECT', 'SIDEREAL', 'UNPREPARED'],
+    ('GMOS', 'N20160726S0179.fits'): ['GEMINI', 'NORTH', 'GMOS', 'LS', 'RAW', 'SPECT', 'SIDEREAL', 'UNPREPARED',
+                                      'STANDARD', 'CAL'],
     ('GMOS', 'S20091217S0032.fits'): ['GEMINI', 'SOUTH', 'GMOS', 'LS', 'NODANDSHUFFLE', 'RAW', 'SPECT', 'SIDEREAL',
                                       'UNPREPARED'],
     ('GMOS', 'N20160726S0180.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'LS', 'FLAT', 'GCALFLAT', 'RAW', 'SPECT',
                                       'SIDEREAL', 'UNPREPARED'],
-    ('GMOS', 'N20160722S0284.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'LS', 'FLAT', 'TWILIGHT', 'RAW', 'SPECT',
+    ('GMOS', 'N20160722S0284.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'LS', 'SLITILLUM', 'TWILIGHT', 'RAW', 'SPECT',
                                       'SIDEREAL', 'UNPREPARED'],
     # This one is not working in the current system.  Doesn't detect
     # it as TWILIGHT, nor FLAT.
     ('GMOS', 'S20160722S0210.fits'): ['ACQUISITION', 'GEMINI', 'SOUTH', 'GMOS', 'IMAGE', 'RAW', 'SIDEREAL',
-                                      'UNPREPARED', 'MASK'],
+                                      'UNPREPARED', 'LS', 'THRUSLIT'],
     # New tag: MASK.  I think that
     # the conditions will be GRATING='MIRROR' and MASKTYP=1.
 
@@ -76,12 +76,12 @@ fixture_data = {
                                       'UNPREPARED'],
     ('GMOS', 'N20160708S0096.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'MOS', 'FLAT', 'GCALFLAT', 'RAW', 'SPECT',
                                       'SIDEREAL', 'UNPREPARED'],
-    ('GMOS', 'N20160605S0099.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'MOS', 'FLAT', 'TWILIGHT', 'RAW', 'SPECT',
+    ('GMOS', 'N20160605S0099.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'MOS', 'SLITILLUM', 'TWILIGHT', 'RAW', 'SPECT',
                                       'SIDEREAL', 'UNPREPARED'],
     # This one is not working in the current system.  Doesn't detect
     # it as TWILIGHT, nor FLAT.
     ('GMOS', 'N20160708S0085.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GMOS', 'IMAGE', 'RAW', 'SIDEREAL',
-                                      'UNPREPARED', 'MASK'],
+                                      'UNPREPARED', 'THRUSLIT', 'MOS'],
     # New tag: MASK.  I think that
     # the conditions will be GRATING == 'MIRROR' and MASKTYP != 0.
 
@@ -99,20 +99,20 @@ fixture_data = {
                                       'SIDEREAL', 'UNPREPARED', 'GCALFLAT'],
     ('GMOS', 'N20160524S0119.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'IFU', 'FLAT', 'TWOSLIT', 'RAW', 'SPECT',
                                       'SIDEREAL', 'UNPREPARED', 'GCALFLAT'],
-    ('GMOS', 'N20160722S0285.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'IFU', 'FLAT', 'TWILIGHT', 'RAW', 'TWOSLIT',
+    ('GMOS', 'N20160722S0285.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'IFU', 'SLITILLUM', 'TWILIGHT', 'RAW', 'TWOSLIT',
                                       'SPECT', 'SIDEREAL', 'UNPREPARED'],
     # This one is not working in the current system.  Doesn't detect
     # it as TWILIGHT, nor FLAT.
-    ('GMOS', 'N20160620S0373.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'IFU', 'FLAT', 'TWILIGHT', 'RAW', 'ONESLIT_RED',
+    ('GMOS', 'N20160620S0373.fits'): ['CAL', 'GEMINI', 'NORTH', 'GMOS', 'IFU', 'SLITILLUM', 'TWILIGHT', 'RAW', 'ONESLIT_RED',
                                       'SPECT', 'SIDEREAL', 'UNPREPARED'],
     # This one is not working in the current system.  Doesn't detect
     # it as TWILIGHT, nor FLAT.
-    ('GMOS', 'S20051226S0033.fits'): ['CAL', 'GEMINI', 'SOUTH', 'GMOS', 'IFU', 'FLAT', 'TWILIGHT', 'RAW',
+    ('GMOS', 'S20051226S0033.fits'): ['CAL', 'GEMINI', 'SOUTH', 'GMOS', 'IFU', 'SLITILLUM', 'TWILIGHT', 'RAW',
                                       'ONESLIT_BLUE', 'SPECT', 'SIDEREAL', 'UNPREPARED'],
     # This one is not working in the current system.  Doesn't detect
     # it as TWILIGHT, nor FLAT.
     ('GMOS', 'N20160620S0317.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GMOS', 'IMAGE', 'RAW', 'SIDEREAL',
-                                      'UNPREPARED', 'MASK'],
+                                      'UNPREPARED', 'ONESLIT_RED', 'IFU', 'THRUSLIT'],
     # For tag MASK: GRATING == 'MIRROR' AND MASKTYP != 0
 
     #   GMOS N&S Data
@@ -121,17 +121,18 @@ fixture_data = {
     # NIRI Data
     #   NIRI Darks
     ('NIRI', 'N20131215S0503.fits'): ['AZEL_TARGET', 'CAL', 'GEMINI', 'NORTH', 'NIRI', 'DARK', 'NON_SIDEREAL', 'RAW',
-                                      'UNPREPARED'],
+                                      'UNPREPARED', 'AT_ZENITH'],
     ('NIRI', 'N20130409S0105_dark.fits'): ['AT_ZENITH', 'AZEL_TARGET', 'CAL', 'GEMINI', 'NORTH', 'NIRI', 'DARK',
                                            'NON_SIDEREAL', 'PREPARED', 'PROCESSED'],
 
     #   NIRI Imaging
-    ('NIRI', 'N20131215S0178_prepared.fits'): ['GEMINI', 'NORTH', 'IMAGE', 'NIRI', 'PREPARED', 'SIDEREAL'],
+    # FIXME: Not found in archive.
+    # ('NIRI', 'N20131215S0178_prepared.fits'): ['GEMINI', 'NORTH', 'IMAGE', 'NIRI', 'PREPARED', 'SIDEREAL'],
     ('NIRI', 'N20131215S0178.fits'): ['GEMINI', 'NORTH', 'IMAGE', 'NIRI', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     ('NIRI', 'N20131215S0427.fits'): ['AZEL_TARGET', 'CAL', 'GCAL_IR_OFF', 'GEMINI', 'NORTH', 'IMAGE', 'NIRI', 'FLAT',
-                                      'GCALFLAT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'LAMPOFF'],
+                                      'GCALFLAT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'LAMPOFF', 'AT_ZENITH'],
     ('NIRI', 'N20131215S0428.fits'): ['AZEL_TARGET', 'CAL', 'GCAL_IR_ON', 'GEMINI', 'NORTH', 'IMAGE', 'NIRI', 'FLAT',
-                                      'GCALFLAT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'LAMPON'],
+                                      'GCALFLAT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'LAMPON', 'AT_ZENITH'],
     ('NIRI', 'N20130404S0470.fits'): ['AT_ZENITH', 'AZEL_TARGET', 'CAL', 'GCAL_IR_OFF', 'GEMINI', 'NORTH', 'IMAGE',
                                       'NIRI', 'FLAT', 'GCALFLAT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'LAMPOFF'],
 
@@ -140,21 +141,21 @@ fixture_data = {
     ('NIRI', 'N20100620S0126.fits'): ['GEMINI', 'NORTH', 'NIRI', 'LS', 'ARC', 'SPECT', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     # Arc is not defined for NIRI in the old system.  (How can that be?)
     ('NIRI', 'N20120505S0564.fits'): ['AZEL_TARGET', 'CAL', 'GCAL_IR_OFF', 'LAMPOFF', 'FLAT', 'GCALFLAT', 'GEMINI',
-                                      'NORTH', 'LS', 'NIRI', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
+                                      'NORTH', 'LS', 'NIRI', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'AT_ZENITH'],
     ('NIRI', 'N20120505S0552.fits'): ['AZEL_TARGET', 'CAL', 'GCAL_IR_ON', 'LAMPON', 'FLAT', 'GCALFLAT', 'GEMINI',
-                                      'NORTH', 'LS', 'NIRI', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
+                                      'NORTH', 'LS', 'NIRI', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'AT_ZENITH'],
 
     # GNIRS Data
     #   GNIRS Darks
     ('GNIRS', 'N20140812S0150.fits'): ['AZEL_TARGET', 'CAL', 'GEMINI', 'NORTH', 'GNIRS', 'DARK', 'NON_SIDEREAL', 'RAW',
-                                       'UNPREPARED'],
+                                       'UNPREPARED', 'AT_ZENITH'],
     ('GNIRS', 'N20140812S0142_dark.fits'): ['AZEL_TARGET', 'CAL', 'GEMINI', 'NORTH', 'GNIRS', 'DARK', 'NON_SIDEREAL',
-                                            'PREPARED', 'PROCESSED'],
+                                            'PREPARED', 'PROCESSED', 'AT_ZENITH'],
 
     #   GNIRS Imaging
     ('GNIRS', 'N20120117S0019.fits'): ['GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     ('GNIRS', 'N20140717S0232.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL',
-                                       'UNPREPARED', 'MASK'],
+                                       'UNPREPARED', 'THRUSLIT'],
     ('GNIRS', 'N20120117S0041.fits'): ['CAL', 'GCAL_IR_ON', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'FLAT', 'GCALFLAT',
                                        'RAW', 'SIDEREAL', 'UNPREPARED', 'LAMPON'],
     ('GNIRS', 'N20120117S0042.fits'): ['CAL', 'GCAL_IR_OFF', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'FLAT', 'GCALFLAT',
@@ -168,8 +169,8 @@ fixture_data = {
     # Apparently GNIRS has no lamp off for spectroscopy.
     ('GNIRS', 'N20130814S0231.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'LS', 'ARC', 'SPECT', 'RAW', 'SIDEREAL',
                                        'UNPREPARED'],
-    ('GNIRS', 'N20160624S0263.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'MASK', 'RAW', 'SIDEREAL',
-                                       'UNPREPARED'],
+    ('GNIRS', 'N20160624S0263.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL',
+                                       'UNPREPARED', 'THRUSLIT'],
     # for MASK: SLIT does not contain "Acq"
     ('GNIRS', 'N20160624S0264.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL',
                                        'UNPREPARED'],
@@ -181,13 +182,13 @@ fixture_data = {
     ('GNIRS', 'N20160726S0260.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'SIDEREAL',
                                        'UNPREPARED', 'FLAT', 'GCALFLAT', 'LAMPON', 'GCAL_IR_ON'],
     ('GNIRS', 'N20160726S0261.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'SIDEREAL',
-                                       'UNPREPARED', 'FLAT', 'GCALFLAT', 'LAMPON'],
+                                       'UNPREPARED', 'FLAT', 'GCALFLAT', 'LAMPOFF', 'GCAL_IR_OFF'],
     # this one is with the QH lamp.  not sure we need a tag for it.
     ('GNIRS', 'N20160722S0232.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'SIDEREAL',
                                        'UNPREPARED', 'ARC'],
     # tag ARC:  OBSTYPE == 'ARC'
-    ('GNIRS', 'N20160726S0301.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'NON_SIDEREAL',
-                                       'UNPREPARED', 'PINHOLE', 'AZEL_TARGET'],
+    ('GNIRS', 'N20160726S0301.fits'): ['LAMPOFF', 'CAL', 'GEMINI', 'AT_ZENITH', 'SPECT', 'UNPREPARED', 'XD', 'GNIRS',
+                                       'NON_SIDEREAL', 'PINHOLE', 'RAW', 'FLAT', 'AZEL_TARGET', 'NORTH', 'GCAL_IR_OFF'],
     # tag PINHOLE: SLIT contains 'Pinholes'
 
     #    GNIRS IFU
@@ -195,19 +196,20 @@ fixture_data = {
     # NIFS Data
     #   NIFS Darks
     ('NIFS', 'N20160727S0077.fits'): ['CAL', 'AZEL_TARGET', 'GEMINI', 'NORTH', 'DARK', 'NIFS', 'NON_SIDEREAL', 'RAW',
-                                      'UNPREPARED'],
+                                      'UNPREPARED', 'AT_ZENITH'],
 
     #   NIFS IFU
     ('NIFS', 'N20110707S0196.fits'): ['GEMINI', 'NORTH', 'IFU', 'NIFS', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
     ('NIFS', 'N20160708S0134.fits'): ['GEMINI', 'NORTH', 'IFU', 'NIFS', 'SPECT', 'SIDEREAL', 'RAW', 'UNPREPARED'],
     ('NIFS', 'N20160727S0078.fits'): ['CAL', 'AZEL_TARGET', 'GEMINI', 'NORTH', 'ARC', 'NIFS', 'IFU', 'SPECT',
-                                      'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
+                                      'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'AT_ZENITH'],
     ('NIFS', 'N20160727S0079.fits'): ['CAL', 'AZEL_TARGET', 'GEMINI', 'NORTH', 'FLAT', 'GCALFLAT', 'LAMPON',
                                       'GCAL_IR_ON', 'IFU', 'NIFS', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
     ('NIFS', 'N20160708S0119.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'IFU', 'NIFS', 'SPECT', 'RAW', 'SIDEREAL',
                                       'SPECT', 'UNPREPARED'],
     ('NIFS', 'N20160705S0221.fits'): ['CAL', 'RONCHI', 'AZEL_TARGET', 'GEMINI', 'NORTH', 'IFU', 'NIFS', 'SPECT',
-                                      'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
+                                      'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'AT_ZENITH', 'GCAL_IR_OFF', 'LAMPOFF',
+                                      'GCALFLAT', 'FLAT'],
 
     # F2 Data
     #   F2 Darks
@@ -223,8 +225,9 @@ fixture_data = {
                                     'GEMINI', 'SOUTH', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'LAMPON'],
     ('F2', 'S20150511S0275.fits'): ['AT_ZENITH', 'AZEL_TARGET', 'CAL', 'F2', 'IMAGE', 'FLAT', 'GCALFLAT', 'GCAL_IR_OFF',
                                     'GEMINI', 'SOUTH', 'NON_SIDEREAL', 'RAW', 'UNPREPARED', 'LAMPOFF'],
-    ('F2', 'S20141107S0062_flat.fits'): ['AT_ZENITH', 'AZEL_TARGET', 'CAL', 'F2', 'IMAGE', 'FLAT', 'GCALFLAT', 'GEMINI',
-                                         'SOUTH', 'NON_SIDEREAL', 'PREPARED', 'PROCESSED'],
+    # FIXME: Crashes when downloading.
+    # ('F2', 'S20141107S0062_flat.fits'): ['AT_ZENITH', 'AZEL_TARGET', 'CAL', 'F2', 'IMAGE', 'FLAT', 'GCALFLAT', 'GEMINI',
+    #                                      'SOUTH', 'NON_SIDEREAL', 'PREPARED', 'PROCESSED'],
 
     #   F2 Longslit
     ('F2', 'S20160724S0128.fits'): ['F2', 'LS', 'SPECT', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
@@ -233,22 +236,21 @@ fixture_data = {
     ('F2', 'S20160724S0129.fits'): ['CAL', 'F2', 'LS', 'ARC', 'SPECT', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL',
                                     'UNPREPARED'],
     ('F2', 'S20160317S0053.fits'): ['ACQUISITION', 'F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
-    ('F2', 'S20160317S0055.fits'): ['ACQUISITION', 'F2', 'IMAGE', 'MASK', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL',
+    ('F2', 'S20160317S0055.fits'): ['ACQUISITION', 'F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL',
                                     'UNPREPARED'],
     # for MASK: MASKNAME != 'None'
 
     #   F2 MOS
     ('F2', 'S20120104S0072.fits'): ['F2', 'MOS', 'SPECT', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
-    ('F2', 'S20120104S0070.fits'): ['CAL', 'F2', 'MOS', 'FLAT', 'GCALFLAT', 'LAMPON', 'SPECT', 'GEMINI', 'SOUTH', 'RAW',
-                                    'SIDEREAL', 'UNPREPARED'],
+    ('F2', 'S20120104S0070.fits'): ['CAL', 'F2', 'MOS', 'FLAT', 'GCALFLAT', 'LAMPOFF', 'SPECT', 'GEMINI', 'SOUTH', 'RAW',
+                                    'SIDEREAL', 'UNPREPARED', 'GCAL_IR_OFF'],
     ('F2', 'S20120104S0068.fits'): ['CAL', 'F2', 'MOS', 'ARC', 'SPECT', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL',
                                     'UNPREPARED'],
-    ('F2', 'S20120104S0053.fits'): ['ACQUISITION', 'F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
+    ('F2', 'S20120104S0053.fits'): ['F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     # But the headers are crap, so OBSCLASS not set to "acq", so
     # won't work.  Needs to be replaced when really data available.
     # Note that old system does not define F2 ACQUISITION
-    ('F2', 'S20120104S0055.fits'): ['ACQUISITION', 'F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED',
-                                    'MASK'],
+    ('F2', 'S20120104S0055.fits'): ['F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     # For MASK, I think that MASKTYPE != 0 will do.
     # Same as above regarding ACQUISITION
 
@@ -256,8 +258,7 @@ fixture_data = {
     # The headers are more likely to match with post-commissioning setup.
     ('F2', 'S20150622S0003.fits'): ['ACQUISITION', 'F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     # Should be able to use OBSCLASS to set ACQUISITION.
-    ('F2', 'S20150622S0004.fits'): ['ACQUISITION', 'F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED',
-                                    'MASK'],
+    ('F2', 'S20150622S0004.fits'): ['ACQUISITION', 'F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     ('F2', 'S20150622S0005.fits'): ['F2', 'MOS', 'SPECT', 'GEMINI', 'SOUTH', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
     ('F2', 'S20150622S0008.fits'): ['CAL', 'F2', 'MOS', 'ARC', 'SPECT', 'GEMINI', 'SOUTH', 'NON_SIDEREAL', 'RAW',
                                     'UNPREPARED'],
@@ -278,6 +279,12 @@ fixture_data = {
     ('GSAOI', 'S20130524S0081_flat.fits'): ['CAL', 'GEMINI', 'SOUTH', 'GSAOI', 'IMAGE', 'FLAT', 'DOMEFLAT',
                                             'NON_SIDEREAL', 'PREPARED', 'PROCESSED', 'LAMPON'],
     # This is a processed image, so we don't care about LAMPON, but it's harmless, and easier to just keep it there
+
+    # GHOST bundle and extracted files
+    ('GHOST', 'S20230214S0025.fits'): ['UNPREPARED', 'SOUTH', 'RAW', 'GHOST', 'GEMINI', 'SIDEREAL', 'BUNDLE'],
+    ('GHOST', 'S20230214S0025_blue001.fits'): ['BLUE', 'GHOST', 'SIDEREAL', 'UNPREPARED', 'SPECT', 'SOUTH', 'RAW', 'GEMINI', 'XD'],
+    ('GHOST', 'S20230214S0025_red002.fits'): ['RED', 'GHOST', 'SIDEREAL', 'UNPREPARED', 'SPECT', 'SOUTH', 'RAW', 'GEMINI', 'XD'],
+    ('GHOST', 'S20230214S0025_slit.fits'): ['SLIT', 'GHOST', 'SIDEREAL', 'SLITV', 'UNPREPARED', 'SOUTH', 'IMAGE', 'RAW', 'GEMINI'],
 
     #    ('bhros', 'S20070131S0030.fits') : ['BHROS', 'SIDEREAL', 'GEMINI_SOUTH', 'SPECT', 'UNPREPARED', 'RAW'],
     #    ('bhros', 'S20070131S0152.fits') : ['AT_ZENITH', 'BHROS', 'AZEL_TARGET', 'NON_SIDEREAL', 'GEMINI_SOUTH', 'SPECT', 'UNPREPARED', 'RAW'],

@@ -1,6 +1,7 @@
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
 import math
+import re
 
 from . import lookup
 from .. import gmu

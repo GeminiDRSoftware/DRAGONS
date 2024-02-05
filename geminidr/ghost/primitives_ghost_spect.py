@@ -99,7 +99,7 @@ class GHOSTSpect(GHOST):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_ghost_spect)
 
-    def addWavelengthSolution(self, adinputs=None, **params):
+    def attachWavelengthSolution(self, adinputs=None, **params):
         """
         Compute and append a wavelength solution for the data.
 
@@ -448,7 +448,7 @@ class GHOSTSpect(GHOST):
                     log.stdinfo(f"{ad.filename}: Using spectrophotometric "
                                 f"data file {datafile} as supplied by user")
 
-            target = 0  # according to new extractProfile() behaviour
+            target = 0  # according to new extractSpectra() behaviour
             ext = ad[target]
             if ext.hdr.get('BUNIT') != "electron":
                 raise ValueError(f"{ad.filename} is not in units of electron")
@@ -723,6 +723,10 @@ class GHOSTSpect(GHOST):
 
             # If we're not stacking, append this output
             if stacking_mode == "none":
+                output_frame = ad[0].wcs.output_frame
+                for ext in adout:
+                    ext.wcs = gWCS([(adwcs.pixel_frame(1), wcs),
+                                    (output_frame, None)])
                 adout.hdr['DATADESC'] = ('Interpolated data',
                                          self.keyword_comments['DATADESC'])
                 gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
@@ -904,444 +908,7 @@ class GHOSTSpect(GHOST):
 
         return adinputs_orig
 
-    def extractProfile(self, adinputs=None, **params):
-        """
-        Extract the object profile from a slit or flat image.
-
-        This is a primtive wrapper for a collection of :any:`polyfit <polyfit>`
-        calls. For each AstroData input, this primitive:
-
-        - Instantiates a :class:`polyfit.GhostArm` class for the input, and
-          executes :meth:`polyfit.GhostArm.spectral_format_with_matrix`;
-        - Instantiate :class:`polyfit.SlitView` and :class:`polyfit.Extractor`
-          objects for the input
-        - Extract the profile from the input AstroData, using calls to
-          :meth:`polyfit.Extractor.one_d_extract` and
-          :meth:`polyfit.Extractor.two_d_extract`.
-        
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        slit: str/None
-            Name of the (processed & stacked) slit image to use for extraction
-            of the profile. If not provided/set to None, the primitive will
-            attempt to pull a processed slit image from the calibrations
-            database (or, if specified, the --user_cal processed_slit
-            command-line option)
-        slitflat: str/None
-            Name of the (processed) slit flat image to use for extraction
-            of the profile. If not provided, set to None, the RecipeSystem
-            will attempt to pull a slit flat from the calibrations system (or,
-            if specified, the --user_cal processed_slitflat command-line
-            option)
-        flat: str/None
-            Name of the (processed) flat image to use for extraction
-            of the profile. If not provided, set to None, the RecipeSystem
-            will attempt to pull a slit flat from the calibrations system (or,
-            if specified, the --user_cal processed_flat command-line
-            option)
-        ifu1: str('object'|'sky'|'stowed')/None
-            Denotes the status of IFU1. If None, the status is read from the
-            header.
-        ifu2: str('object'|'sky'|'stowed')/None
-            Denotes the status of IFU2. If None, the status is read from the
-            header.
-        sky_subtract: bool
-            subtract the sky from the object spectra?
-        seeing: float/None
-            can be used to create a synthetic slitviewer image (and synthetic
-            slitflat image) if, for some reason, one is not available
-        flat_correct: bool
-            remove the reponse function from each order before extraction?
-        snoise: float
-            linear fraction of signal to add to noise estimate for CR flagging
-        sigma: float
-            number of standard deviations for identifying discrepant pixels
-        weighting: str ("uniform"/"optimal")
-            weighting scheme for extraction
-        ftol: float
-            fractional tolerance for convergence of optimal extraction flux
-        apply_centroids: bool
-            measure deviations from linearity of the slit profile and use
-            these to apply positional offsets for lines of constant wavelength
-            in the echellograms? This may simply introduce noise.
-        writeResult: bool
-            Denotes whether or not to write out the result of profile
-            extraction to disk. This is useful for both debugging, and data
-            quality assurance.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        flat_correct = params["flat_correct"]
-        ifu1 = params["ifu1"]
-        ifu2 = params["ifu2"]
-        seeing = params["seeing"]
-        snoise = params["snoise"]
-        sigma = params["sigma"]
-        debug_pixel = (params["debug_order"], params["debug_pixel"])
-        add_cr_map = params["debug_cr_map"]
-        optimal_extraction = params["weighting"] == "optimal"
-        ftol = params["ftol"]
-        apply_centroids = params["apply_centroids"]
-        timing = params["debug_timing"]
-
-        # This check is to head off problems where the same flat is used for
-        # multiple ADs and gets binned but then needs to be rebinned (which
-        # isn't possible because the unbinned flat has been overwritten)
-        binnings = set(ad.binning() for ad in adinputs)
-        if len(binnings) > 1:
-            raise ValueError("Not all input files have the same binning")
-
-        # Interpret/get the necessary calibrations for all input AD objects
-        slit = params["slit"]
-        if slit is None:
-            slit_list = self.caldb.get_processed_slit(adinputs)
-        elif isinstance(slit, list):
-            slit_list = [(s, None) for s in slit]
-        else:
-            slit_list = (slit, None)
-
-        slitflat = params["slitflat"]
-        if slitflat is None:
-            slitflat_list = self.caldb.get_processed_slitflat(adinputs)
-        elif isinstance(slitflat, list):
-            slitflat_list = [(s, None) for s in slitflat]
-        else:
-            slitflat_list = (slitflat, None)
-
-        flat = params['flat']
-        if flat is None:
-            flat_list = self.caldb.get_processed_flat(adinputs)
-        else:
-            flat_list = (flat, None)
-
-        for (ad, slit, slit_origin, slitflat, slitflat_origin, flat,
-             flat_origin) in zip(*gt.make_lists(
-            adinputs, *slit_list, *slitflat_list, *flat_list,
-            force_ad=(1,3,5))):
-            # CJS: failure to find a suitable auxiliary file (either because
-            # there's no calibration, or it's missing) places a None in the
-            # list, allowing a graceful continuation.
-            if flat is None:  # can't do anything as no XMOD
-                raise RuntimeError(f"No processed flat listed for {ad.filename}")
-
-            if slitflat is None:
-                # TBD: can we use a synthetic slitflat (findApertures in
-                # makeProcessedFlat would need one too)
-                raise RuntimeError(f"No processed slitflat listed for {ad.filename}")
-                if slit is None:
-                    slitflat_filename = "synthetic"
-                    slitflat_data = None
-                else:
-                    raise RuntimeError(f"{ad.filename} has a processed slit "
-                                       "but no processed slitflat")
-            else:
-                slitflat_filename = slitflat.filename
-                slitflat_data = slitflat[0].data
-
-            if slit is None:
-                if seeing is None:
-                    raise RuntimeError(f"No processed slit listed for {ad.filename}"
-                                       "and no seeing estimate has been provided")
-                else:
-                    slit_filename = f"synthetic (seeing {seeing})"
-                    slit_data = None
-            else:
-                slit_filename = slit.filename
-                slit_data = slit[0].data
-
-            # CJS: Changed to log.debug() and changed the output
-            slit_origin_str = f" (obtained from {slit_origin})" if slit_origin else ""
-            slitflat_origin_str = f" (obtained from {slitflat_origin})" if slitflat_origin else ""
-            flat_origin_str = f" (obtained from {flat_origin})" if flat_origin else ""
-            log.stdinfo("Slit parameters: ")
-            log.stdinfo(f"   processed_slit: {slit_filename}{slit_origin_str}")
-            log.stdinfo(f"   processed_slitflat: {slitflat_filename}{slitflat_origin_str}")
-            log.stdinfo(f"   processed_flat: {flat.filename}{flat_origin_str}")
-
-            res_mode = ad.res_mode()
-            arm = GhostArm(arm=ad.arm(), mode=res_mode,
-                           detector_x_bin=ad.detector_x_bin(),
-                           detector_y_bin=ad.detector_y_bin())
-
-            ifu_status = ["stowed", "sky", "object"]
-            if ifu1 is None:
-                try:
-                    ifu1 = ifu_status[ad.phu['TARGET1']]
-                except (KeyError, IndexError):
-                    raise RuntimeError(f"{self.myself()}: ifu1 set to 'None' "
-                                       f"but 'TARGET1' keyword missing/incorrect")
-            if ifu2 is None:
-                if res_mode == 'std':
-                    try:
-                        ifu2 = ifu_status[ad.phu['TARGET2']]
-                    except (KeyError, IndexError):
-                        raise RuntimeError(f"{self.myself()}: ifu2 set to 'None' "
-                                           f"but 'TARGET1' keyword missing/incorrect")
-                else:
-                    ifu2 = "object" if ad.phu.get('THXE') == 1 else "stowed"
-
-            log.stdinfo(f"\nIFU status: {ifu1} and {ifu2}")
-            ifu_stowed = [obj for obj, ifu in enumerate([ifu1, ifu2])
-                          if ifu == "stowed"]
-
-            # CJS 20220411: We need to know which IFUs contain an object if
-            # we need to make a synthetic slit profile so this has moved up
-            if 'ARC' in ad.tags:
-                # Extracts entire slit first, and then the two IFUs separately
-                objs_to_use = [[], list(set([0, 1]) - set(ifu_stowed))]
-                use_sky = [True, False]
-                find_crs = [False, False]
-                sky_correct_profiles = False
-            else:
-                ifu_selection = [obj for obj, ifu in enumerate([ifu1, ifu2])
-                                 if ifu == "object"]
-                objs_to_use = [ifu_selection]
-                use_sky = [params["sky_subtract"] if ifu_selection else True]
-                find_crs = [True]
-                sky_correct_profiles = True
-
-            # CJS: Heavy refactor. Return the filename for each calibration
-            # type. Eliminates requirement that everything be updated
-            # simultaneously.
-            # key = self._get_polyfit_key(ad)
-            # log.stdinfo("Polyfit key selected: {}".format(key))
-            try:
-                poly_wave = self._get_polyfit_filename(ad, 'wavemod')
-                poly_spat = self._get_polyfit_filename(ad, 'spatmod')
-                poly_spec = self._get_polyfit_filename(ad, 'specmod')
-                poly_rot = self._get_polyfit_filename(ad, 'rotmod')
-                slitv_fn = self._get_slitv_polyfit_filename(ad)
-                wpars = astrodata.open(poly_wave)
-                spatpars = astrodata.open(poly_spat)
-                specpars = astrodata.open(poly_spec)
-                rotpars = astrodata.open(poly_rot)
-                slitvpars = astrodata.open(slitv_fn)
-            except IOError:
-                log.warning("Cannot open required initial model files for {};"
-                            " skipping".format(ad.filename))
-                continue
-
-            arm.spectral_format_with_matrix(flat[0].XMOD, wpars[0].data,
-                        spatpars[0].data, specpars[0].data, rotpars[0].data)
-            sview_kwargs = {} if slit is None else {"binning": slit.detector_x_bin()}
-            sview = SlitView(slit_data, slitflat_data,
-                             slitvpars.TABLE[0], mode=res_mode,
-                             microns_pix=4.54 * 180 / 50,
-                             stowed=ifu_stowed, **sview_kwargs)
-
-            # There's no point in creating a fake slitflat first, since that
-            # will case the code to use it to determine the fibre positions,
-            # but the fibre positions are just the defaults
-            if slit is None:
-                log.stdinfo(f"Creating synthetic slit image for seeing={seeing}")
-                ifus = []
-                if ifu1 == 'object':
-                    ifus.append('ifu0' if res_mode == 'std' else 'ifu')
-                # "ifu2" is the ThXe cal fiber in HR and has no continuum
-                if ifu2 == 'object' and res_mode == 'std':
-                    ifus.append('ifu1')
-                slit_data = sview.fake_slitimage(
-                    flat_image=slitflat_data, ifus=ifus, seeing=seeing)
-            elif not ad.tags.intersection({'FLAT', 'ARC'}):
-                # TODO? This only models IFU0 in SR mode
-                slit_models = sview.model_profile(slit_data, slitflat_data)
-                log.stdinfo("")
-                for k, model in slit_models.items():
-                    fwhm, apfrac = model.estimate_seeing()
-                    log.stdinfo(f"Estimated seeing in the {k} arm: {fwhm:5.3f}"
-                                f" ({apfrac*100:.1f}% aperture throughput)")
-            if slitflat is None:
-                log.stdinfo("Creating synthetic slitflat image")
-                slitflat_data = sview.fake_slitimage()
-
-            extractor = Extractor(arm, sview, badpixmask=ad[0].mask,
-                                  vararray=ad[0].variance)
-                        
-            # FIXME: This really could be done as part of flat processing!
-            correction = None
-            if flat_correct:
-                try:
-                    blaze = flat[0].BLAZE
-                except AttributeError:
-                    log.warning(f"Flatfield {flat.filename} has no BLAZE, so"
-                                "cannot perform flatfield correction")
-                else:
-                    ny, nx = blaze.shape
-                    xbin = ad.detector_x_bin()
-                    binned_blaze = blaze.reshape(ny, nx // xbin, xbin).mean(axis=-1)
-                    # avoids a divide-by-zero warning
-                    binned_blaze[binned_blaze < 0.0001] = np.inf
-                    correction = 1. / binned_blaze
-
-            for i, (o, s, cr) in enumerate(zip(objs_to_use, use_sky, find_crs)):
-                if o:
-                    log.stdinfo(f"\nExtracting objects {str(o)}; sky subtraction {str(s)}")
-                elif use_sky:
-                    log.stdinfo("\nExtracting entire slit")
-                else:
-                    raise RuntimeError("No objects for extraction and use_sky=False")
-
-                extracted_flux, extracted_var = extractor.new_extract(
-                    data=ad[0].data.copy(),
-                    correct_for_sky=sky_correct_profiles,
-                    use_sky=s, used_objects=o, find_crs=cr,
-                    snoise=snoise, sigma=sigma,
-                    debug_pixel=debug_pixel,
-                    correction=correction, optimal=optimal_extraction,
-                    apply_centroids=apply_centroids, ftol=ftol,
-                    timing=timing
-                )
-
-                # Append the extraction as a new extension... we don't
-                # replace ad[0] since that will still be needed if we have
-                # another iteration of the extraction loop
-                nobj = extracted_flux.shape[-1]
-                for obj in range(nobj):
-                    ad.append(extracted_flux[:, :, obj])
-                    ad[-1].mask = (extracted_var[:, :, obj] == 0).astype(DQ.datatype)
-                    ad[-1].variance = extracted_var[:, :, obj]
-                    ad[-1].nddata.meta['header'] = ad[0].hdr.copy()
-                    if add_cr_map and extractor.badpixmask is not None and obj == 0:
-                        ad[-1].CR = extractor.badpixmask & DQ.cosmic_ray
-                    if o:
-                        desc_str = "sky" if s and obj == nobj-1 else f"IFU{obj+1}"
-                        desc_str += f" (objects {str(o)} skysub {s})"
-                    else:
-                        desc_str = "entire slit"
-                    ad[-1].hdr['DATADESC'] = (
-                        f'Order-by-order data: {desc_str}',
-                        self.keyword_comments['DATADESC'])
-
-            del ad[0]   # Remove original echellogram data
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
-            ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
-            if params["write_result"]:
-                ad.write(overwrite=True)
-
-        return adinputs
-
-    def findApertures(self, adinputs=None, **params):
-        """
-        Locate the slit aperture, parametrized by an :any:`polyfit` model.
-
-        The primitive locates the slit apertures within a GHOST frame,
-        and inserts a :any:`polyfit` model into a new extension on each data
-        frame. This model is placed into a new ``.XMOD`` attribute on the
-        extension.
-        
-        Parameters
-        ----------
-        slitflat: str or :class:`astrodata.AstroData` or None
-            slit flat to use; if None, the calibration system is invoked
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        make_pixel_model = params.get('make_pixel_model', False)
-
-        # Make no attempt to check if primitive has already been run - may
-        # have new calibrators we wish to apply.
-
-        # CJS: See comment in extractProfile() for handling of calibrations
-        slitflat = params["slitflat"]
-        if slitflat is None:
-            flat_list = self.caldb.get_processed_slitflat(adinputs)
-        else:
-            flat_list = (slitflat, None)
-
-        for ad, slit_flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
-                                                force_ad=(1,))):
-            if not {'PREPARED', 'GHOST', 'FLAT'}.issubset(ad.tags):
-                log.warning("findApertures is only run on prepared flats: "
-                            f"{ad.filename} will not be processed")
-                continue
-
-            origin_str = f" (obtained from {origin})" if origin else ""
-            log.stdinfo(f"{ad.filename}: using slitflat "
-                        f"{slit_flat.filename}{origin_str}")
-            try:
-                poly_xmod = self._get_polyfit_filename(ad, 'xmod')
-                log.stdinfo(f'Found xmod: {poly_xmod}')
-                poly_spat = self._get_polyfit_filename(ad, 'spatmod')
-                log.stdinfo(f'Found spatmod: {poly_spat}')
-                slitv_fn = self._get_slitv_polyfit_filename(ad)
-                log.stdinfo(f'Found slitvmod: {slitv_fn}')
-                xpars = astrodata.open(poly_xmod)
-                spatpars = astrodata.open(poly_spat)
-                slitvpars = astrodata.open(slitv_fn)
-            except IOError:
-                log.warning("Cannot open required initial model files; "
-                            "skipping")
-                continue
-
-            arm = ad.arm()
-            res_mode = ad.res_mode()
-            ghost_arm = GhostArm(arm=arm, mode=res_mode)
-
-            # Create an initial model of the spectrograph
-            xx, wave, blaze = ghost_arm.spectral_format(xparams=xpars[0].data)
-
-            slitview = SlitView(slit_flat[0].data, slit_flat[0].data,
-                                slitvpars.TABLE[0], mode=res_mode,
-                                microns_pix=4.54*180/50,
-                                binning=slit_flat.detector_x_bin())
-
-            # Convolve the flat field with the slit profile
-            flat_conv = ghost_arm.slit_flat_convolve(
-                ad[0].data,
-                slit_profile=slitview.slit_profile(arm=arm),
-                spatpars=spatpars[0].data, microns_pix=slitview.microns_pix,
-                xpars=xpars[0].data
-            )
-
-            # Fit the initial model to the data being considered
-            fitted_params = ghost_arm.fit_x_to_image(flat_conv,
-                                                     xparams=xpars[0].data,
-                                                     decrease_dim=8,
-                                                     sampling=2,
-                                                     inspect=False)
-
-            # CJS: Append the XMOD as an extension. It will inherit the
-            # header from the science plane (including irrelevant/wrong
-            # keywords like DATASEC) but that's not really a big deal.
-            # (The header can be modified/started afresh if needed.)
-            ad[0].XMOD = fitted_params
-
-            #MJI: Compute a pixel-by-pixel model of the flat field from the new XMOD and
-            #the slit image.
-            if make_pixel_model:
-                # FIXME: MJI Copied directly from extractProfile. Is this compliant?
-                try:
-                    poly_wave = self._get_polyfit_filename(ad, 'wavemod')
-                    poly_spec = self._get_polyfit_filename(ad, 'specmod')
-                    poly_rot = self._get_polyfit_filename(ad, 'rotmod')
-                    wpars = astrodata.open(poly_wave)
-                    specpars = astrodata.open(poly_spec)
-                    rotpars = astrodata.open(poly_rot)
-                except IOError:
-                    log.warning("Cannot open required initial model files "
-                                "for PIXELMODEL; skipping")
-                    continue
-
-                #Create an extractor instance, so that we can add the pixel model to the 
-                #data.
-                ghost_arm.spectral_format_with_matrix(ad[0].XMOD, wpars[0].data,
-                            spatpars[0].data, specpars[0].data, rotpars[0].data)
-                extractor = Extractor(ghost_arm, slitview, badpixmask=ad[0].mask,
-                                      vararray=ad[0].variance)
-                pixel_model = extractor.make_pixel_model()
-                ad[0].PIXELMODEL = pixel_model
-
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-
-        return adinputs
-
-    def fitWavelength(self, adinputs=None, **params):
+    def determineWavelengthSolution(self, adinputs=None, **params):
         """
         Fit wavelength solution to a GHOST ARC frame.
 
@@ -1384,8 +951,8 @@ class GHOSTSpect(GHOST):
 
         for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
                                                    force_ad=(1,))):
-            if self.timestamp_keys["extractProfile"] not in ad.phu:
-                log.warning(f"extractProfile has not been run on {ad.filename}; "
+            if self.timestamp_keys["extractSpectra"] not in ad.phu:
+                log.warning(f"extractSpectra has not been run on {ad.filename}; "
                             "skipping")
                 continue
 
@@ -1524,6 +1091,345 @@ class GHOSTSpect(GHOST):
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+    def extractSpectra(self, adinputs=None, **params):
+        """
+        Extract the object spectra from the echellogram.
+
+        This is a primtive wrapper for a collection of :any:`polyfit <polyfit>`
+        calls. For each AstroData input, this primitive:
+
+        - Instantiates a :class:`polyfit.GhostArm` class for the input, and
+          executes :meth:`polyfit.GhostArm.spectral_format_with_matrix`;
+        - Instantiate :class:`polyfit.SlitView` and :class:`polyfit.Extractor`
+          objects for the input
+        - Extract the spectra from the input AstroData, using calls to
+          :meth:`polyfit.Extractor.new_extract`.
+        
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        slit: str/None
+            Name of the (processed & stacked) slit image to use for extraction
+            of the profile. If not provided/set to None, the primitive will
+            attempt to pull a processed slit image from the calibrations
+            database (or, if specified, the --user_cal processed_slit
+            command-line option)
+        slitflat: str/None
+            Name of the (processed) slit flat image to use for extraction
+            of the profile. If not provided, set to None, the RecipeSystem
+            will attempt to pull a slit flat from the calibrations system (or,
+            if specified, the --user_cal processed_slitflat command-line
+            option)
+        flat: str/None
+            Name of the (processed) flat image to use for extraction
+            of the profile. If not provided, set to None, the RecipeSystem
+            will attempt to pull a slit flat from the calibrations system (or,
+            if specified, the --user_cal processed_flat command-line
+            option)
+        ifu1: str('object'|'sky'|'stowed')/None
+            Denotes the status of IFU1. If None, the status is read from the
+            header.
+        ifu2: str('object'|'sky'|'stowed')/None
+            Denotes the status of IFU2. If None, the status is read from the
+            header.
+        sky_subtract: bool
+            subtract the sky from the object spectra?
+        seeing: float/None
+            can be used to create a synthetic slitviewer image (and synthetic
+            slitflat image) if, for some reason, one is not available
+        flat_correct: bool
+            remove the reponse function from each order before extraction?
+        snoise: float
+            linear fraction of signal to add to noise estimate for CR flagging
+        sigma: float
+            number of standard deviations for identifying discrepant pixels
+        weighting: str ("uniform"/"optimal")
+            weighting scheme for extraction
+        min_flux_frac: float (0-1)
+            flag the output pixel if the unmasked flux of an object falls
+            below this fractional threshold
+        ftol: float
+            fractional tolerance for convergence of optimal extraction flux
+        apply_centroids: bool
+            measure deviations from linearity of the slit profile and use
+            these to apply positional offsets for lines of constant wavelength
+            in the echellograms? This may simply introduce noise.
+        writeResult: bool
+            Denotes whether or not to write out the result of profile
+            extraction to disk. This is useful for both debugging, and data
+            quality assurance.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        flat_correct = params["flat_correct"]
+        ifu1 = params["ifu1"]
+        ifu2 = params["ifu2"]
+        seeing = params["seeing"]
+        snoise = params["snoise"]
+        sigma = params["sigma"]
+        debug_pixel = (params["debug_order"], params["debug_pixel"])
+        min_flux_frac = params["min_flux_frac"]
+        add_cr_map = params["debug_cr_map"]
+        optimal_extraction = params["weighting"] == "optimal"
+        ftol = params["ftol"]
+        apply_centroids = params["apply_centroids"]
+        timing = params["debug_timing"]
+
+        # This check is to head off problems where the same flat is used for
+        # multiple ADs and gets binned but then needs to be rebinned (which
+        # isn't possible because the unbinned flat has been overwritten)
+        binnings = set(ad.binning() for ad in adinputs)
+        if len(binnings) > 1:
+            raise ValueError("Not all input files have the same binning")
+
+        # Interpret/get the necessary calibrations for all input AD objects
+        slit = params["slit"]
+        if slit is None:
+            slit_list = self.caldb.get_processed_slit(adinputs)
+        elif isinstance(slit, list):
+            slit_list = [(s, None) for s in slit]
+        else:
+            slit_list = (slit, None)
+
+        slitflat = params["slitflat"]
+        if slitflat is None:
+            slitflat_list = self.caldb.get_processed_slitflat(adinputs)
+        elif isinstance(slitflat, list):
+            slitflat_list = [(s, None) for s in slitflat]
+        else:
+            slitflat_list = (slitflat, None)
+
+        flat = params['flat']
+        if flat is None:
+            flat_list = self.caldb.get_processed_flat(adinputs)
+        else:
+            flat_list = (flat, None)
+
+        for (ad, slit, slit_origin, slitflat, slitflat_origin, flat,
+             flat_origin) in zip(*gt.make_lists(
+            adinputs, *slit_list, *slitflat_list, *flat_list,
+            force_ad=(1,3,5))):
+            # CJS: failure to find a suitable auxiliary file (either because
+            # there's no calibration, or it's missing) places a None in the
+            # list, allowing a graceful continuation.
+            if flat is None:  # can't do anything as no XMOD
+                raise RuntimeError(f"No processed flat listed for {ad.filename}")
+
+            if slitflat is None:
+                # TBD: can we use a synthetic slitflat (traceFibers in
+                # makeProcessedFlat would need one too)
+                raise RuntimeError(f"No processed slitflat listed for {ad.filename}")
+                if slit is None:
+                    slitflat_filename = "synthetic"
+                    slitflat_data = None
+                else:
+                    raise RuntimeError(f"{ad.filename} has a processed slit "
+                                       "but no processed slitflat")
+            else:
+                slitflat_filename = slitflat.filename
+                slitflat_data = slitflat[0].data
+
+            if slit is None:
+                if seeing is None:
+                    raise RuntimeError(f"No processed slit listed for {ad.filename}"
+                                       "and no seeing estimate has been provided")
+                else:
+                    slit_filename = f"synthetic (seeing {seeing})"
+                    slit_data = None
+            else:
+                slit_filename = slit.filename
+                slit_data = slit[0].data
+
+            # CJS: Changed to log.debug() and changed the output
+            slit_origin_str = f" (obtained from {slit_origin})" if slit_origin else ""
+            slitflat_origin_str = f" (obtained from {slitflat_origin})" if slitflat_origin else ""
+            flat_origin_str = f" (obtained from {flat_origin})" if flat_origin else ""
+            log.stdinfo(f"Slit parameters for {ad.filename}:")
+            log.stdinfo(f"   processed_slit: {slit_filename}{slit_origin_str}")
+            log.stdinfo(f"   processed_slitflat: {slitflat_filename}{slitflat_origin_str}")
+            log.stdinfo(f"   processed_flat: {flat.filename}{flat_origin_str}")
+            smoothing = flat.phu.get('SMOOTH', 0)
+            if smoothing:
+                log.stdinfo(f"      Flat was smoothed by {smoothing} pixels")
+
+            res_mode = ad.res_mode()
+            arm = GhostArm(arm=ad.arm(), mode=res_mode,
+                           detector_x_bin=ad.detector_x_bin(),
+                           detector_y_bin=ad.detector_y_bin())
+
+            ifu_status = ["stowed", "sky", "object"]
+            if ifu1 is None:
+                try:
+                    ifu1 = ifu_status[ad.phu['TARGET1']]
+                except (KeyError, IndexError):
+                    raise RuntimeError(f"{self.myself()}: ifu1 set to 'None' "
+                                       f"but 'TARGET1' keyword missing/incorrect")
+            if ifu2 is None:
+                if res_mode == 'std':
+                    try:
+                        ifu2 = ifu_status[ad.phu['TARGET2']]
+                    except (KeyError, IndexError):
+                        raise RuntimeError(f"{self.myself()}: ifu2 set to 'None' "
+                                           f"but 'TARGET1' keyword missing/incorrect")
+                else:
+                    ifu2 = "object" if ad.phu.get('THXE') == 1 else "stowed"
+
+            log.stdinfo(f"\nIFU status: {ifu1} and {ifu2}")
+            ifu_stowed = [obj for obj, ifu in enumerate([ifu1, ifu2])
+                          if ifu == "stowed"]
+
+            # CJS 20220411: We need to know which IFUs contain an object if
+            # we need to make a synthetic slit profile so this has moved up
+            if 'ARC' in ad.tags:
+                # Extracts entire slit first, and then the two IFUs separately
+                # v3.2.0 change: only extract individual IFUs if explicitly
+                # specified by the user (since the reduction uses the full-slit)
+                objs_to_use = [[]]
+                requested_objects = [ifu for ifu, status in enumerate([params['ifu1'], params['ifu2']])
+                                     if status == "object"]
+                if requested_objects:
+                    objs_to_use.append(requested_objects)
+                # Since zip works off the shortest list, we can have 2-element
+                # lists here even if objs_to_use has 1 element
+                use_sky = [True, False]
+                find_crs = [False, False]
+                sky_correct_profiles = False
+            else:
+                ifu_selection = [obj for obj, ifu in enumerate([ifu1, ifu2])
+                                 if ifu == "object"]
+                objs_to_use = [ifu_selection]
+                use_sky = [params["sky_subtract"] if ifu_selection else True]
+                find_crs = [True]
+                sky_correct_profiles = True
+
+            # CJS: Heavy refactor. Return the filename for each calibration
+            # type. Eliminates requirement that everything be updated
+            # simultaneously.
+            # key = self._get_polyfit_key(ad)
+            # log.stdinfo("Polyfit key selected: {}".format(key))
+            try:
+                poly_wave = self._get_polyfit_filename(ad, 'wavemod')
+                poly_spat = self._get_polyfit_filename(ad, 'spatmod')
+                poly_spec = self._get_polyfit_filename(ad, 'specmod')
+                poly_rot = self._get_polyfit_filename(ad, 'rotmod')
+                slitv_fn = self._get_slitv_polyfit_filename(ad)
+                wpars = astrodata.open(poly_wave)
+                spatpars = astrodata.open(poly_spat)
+                specpars = astrodata.open(poly_spec)
+                rotpars = astrodata.open(poly_rot)
+                slitvpars = astrodata.open(slitv_fn)
+            except IOError:
+                log.warning("Cannot open required initial model files for {};"
+                            " skipping".format(ad.filename))
+                continue
+
+            arm.spectral_format_with_matrix(flat[0].XMOD, wpars[0].data,
+                        spatpars[0].data, specpars[0].data, rotpars[0].data)
+            sview_kwargs = {} if slit is None else {"binning": slit.detector_x_bin()}
+            sview = SlitView(slit_data, slitflat_data,
+                             slitvpars.TABLE[0], mode=res_mode,
+                             microns_pix=4.54 * 180 / 50,
+                             stowed=ifu_stowed, smoothing=smoothing,
+                             **sview_kwargs)
+
+            # There's no point in creating a fake slitflat first, since that
+            # will case the code to use it to determine the fibre positions,
+            # but the fibre positions are just the defaults
+            if slit is None:
+                log.stdinfo(f"Creating synthetic slit image for seeing={seeing}")
+                ifus = []
+                if ifu1 == 'object':
+                    ifus.append('ifu0' if res_mode == 'std' else 'ifu')
+                # "ifu2" is the ThXe cal fiber in HR and has no continuum
+                if ifu2 == 'object' and res_mode == 'std':
+                    ifus.append('ifu1')
+                slit_data = sview.fake_slitimage(
+                    flat_image=slitflat_data, ifus=ifus, seeing=seeing)
+            elif not ad.tags.intersection({'FLAT', 'ARC'}):
+                # TODO? This only models IFU0 in SR mode
+                slit_models = sview.model_profile(slit_data, slitflat_data)
+                log.stdinfo("")
+                for k, model in slit_models.items():
+                    fwhm, apfrac = model.estimate_seeing()
+                    log.stdinfo(f"Estimated seeing in the {k} arm: {fwhm:5.3f}"
+                                f" ({apfrac*100:.1f}% aperture throughput)")
+            if slitflat is None:
+                log.stdinfo("Creating synthetic slitflat image")
+                slitflat_data = sview.fake_slitimage()
+
+            extractor = Extractor(arm, sview, badpixmask=ad[0].mask,
+                                  vararray=ad[0].variance)
+                        
+            # FIXME: This really could be done as part of flat processing!
+            correction = None
+            if flat_correct:
+                try:
+                    blaze = flat[0].BLAZE
+                except AttributeError:
+                    log.warning(f"Flatfield {flat.filename} has no BLAZE, so"
+                                "cannot perform flatfield correction")
+                else:
+                    ny, nx = blaze.shape
+                    xbin = ad.detector_x_bin()
+                    binned_blaze = blaze.reshape(ny, nx // xbin, xbin).mean(axis=-1)
+                    # avoids a divide-by-zero warning
+                    binned_blaze[binned_blaze < 0.0001] = np.inf
+                    correction = 1. / binned_blaze
+
+            for i, (o, s, cr) in enumerate(zip(objs_to_use, use_sky, find_crs)):
+                if o:
+                    log.stdinfo(f"\nExtracting objects {str(o)}; sky subtraction {str(s)}")
+                elif use_sky:
+                    log.stdinfo("\nExtracting entire slit")
+                else:
+                    raise RuntimeError("No objects for extraction and use_sky=False")
+
+                extracted_flux, extracted_mask, extracted_var = extractor.new_extract(
+                    data=ad[0].data.copy(),
+                    correct_for_sky=sky_correct_profiles,
+                    use_sky=s, used_objects=o, find_crs=cr,
+                    snoise=snoise, sigma=sigma,
+                    debug_pixel=debug_pixel,
+                    correction=correction, optimal=optimal_extraction,
+                    apply_centroids=apply_centroids, ftol=ftol,
+                    min_flux_frac=min_flux_frac, timing=timing
+                )
+
+                # Flag pixels with VAR=0 that don't already have a flag
+                extracted_mask |= (extracted_var == 0) & (extracted_mask == 0)
+
+                # Append the extraction as a new extension... we don't
+                # replace ad[0] since that will still be needed if we have
+                # another iteration of the extraction loop
+                nobj = extracted_flux.shape[-1]
+                for obj in range(nobj):
+                    ad.append(extracted_flux[:, :, obj])
+                    ad[-1].mask = extracted_mask[:, :, obj]
+                    ad[-1].variance = extracted_var[:, :, obj]
+                    ad[-1].nddata.meta['header'] = ad[0].hdr.copy()
+                    if add_cr_map and extractor.badpixmask is not None and obj == 0:
+                        ad[-1].CR = extractor.badpixmask & DQ.cosmic_ray
+                    if o:
+                        desc_str = "sky" if s and obj == nobj-1 else f"IFU{obj+1}"
+                        desc_str += f" (objects {str(o)} skysub {s})"
+                    else:
+                        desc_str = "entire slit"
+                    ad[-1].hdr['DATADESC'] = (
+                        f'Order-by-order data: {desc_str}',
+                        self.keyword_comments['DATADESC'])
+
+            del ad[0]   # Remove original echellogram data
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
+            if params["write_result"]:
+                ad.write(overwrite=True)
 
         return adinputs
 
@@ -1707,12 +1613,14 @@ class GHOSTSpect(GHOST):
                 raise RuntimeError("Cannot open required initial model files; "
                                    "skipping")
 
+            smoothing = ad.phu.get('SMOOTH', 0)
             arm.spectral_format_with_matrix(ad[0].XMOD, wpars[0].data,
                         spatpars[0].data, specpars[0].data, rotpars[0].data)
             sview = SlitView(slitflat[0].data, slitflat[0].data,
                              slitvpars.TABLE[0], mode=res_mode,
                              microns_pix=4.54 * 180 / 50,
-                             binning=slitflat.detector_x_bin())
+                             binning=slitflat.detector_x_bin(),
+                             smoothing=smoothing)
             extractor = Extractor(arm, sview, badpixmask=ad[0].mask,
                                   vararray=ad[0].variance)
             extracted_flux, extracted_var, extracted_mask = extractor.quick_extract(ad[0].data)
@@ -2194,6 +2102,125 @@ class GHOSTSpect(GHOST):
 
         return adoutputs
 
+    def traceFibers(self, adinputs=None, **params):
+        """
+        Locate the fiber traces, parametrized by an :any:`polyfit` model.
+
+        The primitive locates the slit apertures within a GHOST frame,
+        and inserts a :any:`polyfit` model into a new extension on each data
+        frame. This model is placed into a new ``.XMOD`` attribute on the
+        extension.
+
+        Parameters
+        ----------
+        slitflat: str or :class:`astrodata.AstroData` or None
+            slit flat to use; if None, the calibration system is invoked
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        make_pixel_model = params.get('make_pixel_model', False)
+        smoothing = params["smoothing"]
+
+        # Make no attempt to check if primitive has already been run - may
+        # have new calibrators we wish to apply.
+
+        # CJS: See comment in extractSpectra() for handling of calibrations
+        slitflat = params["slitflat"]
+        if slitflat is None:
+            flat_list = self.caldb.get_processed_slitflat(adinputs)
+        else:
+            flat_list = (slitflat, None)
+
+        for ad, slit_flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                                        force_ad=(1,))):
+            if not {'PREPARED', 'GHOST', 'FLAT'}.issubset(ad.tags):
+                log.warning(f"{self.myself()} is only run on prepared flats: "
+                            f"{ad.filename} will not be processed")
+                continue
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using slitflat "
+                        f"{slit_flat.filename}{origin_str}")
+            try:
+                poly_xmod = self._get_polyfit_filename(ad, 'xmod')
+                log.stdinfo(f'Found xmod: {poly_xmod}')
+                poly_spat = self._get_polyfit_filename(ad, 'spatmod')
+                log.stdinfo(f'Found spatmod: {poly_spat}')
+                slitv_fn = self._get_slitv_polyfit_filename(ad)
+                log.stdinfo(f'Found slitvmod: {slitv_fn}')
+                xpars = astrodata.open(poly_xmod)
+                spatpars = astrodata.open(poly_spat)
+                slitvpars = astrodata.open(slitv_fn)
+            except IOError:
+                log.warning("Cannot open required initial model files; "
+                            "skipping")
+                continue
+
+            arm = ad.arm()
+            res_mode = ad.res_mode()
+            ghost_arm = GhostArm(arm=arm, mode=res_mode)
+
+            # Create an initial model of the spectrograph
+            xx, wave, blaze = ghost_arm.spectral_format(xparams=xpars[0].data)
+
+            slitview = SlitView(slit_flat[0].data, slit_flat[0].data,
+                                slitvpars.TABLE[0], mode=res_mode,
+                                microns_pix=4.54 * 180 / 50,
+                                binning=slit_flat.detector_x_bin(),
+                                smoothing=smoothing)
+
+            # Convolve the flat field with the slit profile
+            flat_conv = ghost_arm.slit_flat_convolve(
+                ad[0].data,
+                slit_profile=slitview.slit_profile(arm=arm),
+                spatpars=spatpars[0].data, microns_pix=slitview.microns_pix,
+                xpars=xpars[0].data
+            )
+
+            # Fit the initial model to the data being considered
+            fitted_params = ghost_arm.fit_x_to_image(flat_conv,
+                                                     xparams=xpars[0].data,
+                                                     decrease_dim=8,
+                                                     sampling=2,
+                                                     inspect=False)
+
+            # CJS: Append the XMOD as an extension. It will inherit the
+            # header from the science plane (including irrelevant/wrong
+            # keywords like DATASEC) but that's not really a big deal.
+            # (The header can be modified/started afresh if needed.)
+            ad[0].XMOD = fitted_params
+
+            # MJI: Compute a pixel-by-pixel model of the flat field from the new XMOD and
+            # the slit image.
+            if make_pixel_model:
+                try:
+                    poly_wave = self._get_polyfit_filename(ad, 'wavemod')
+                    poly_spec = self._get_polyfit_filename(ad, 'specmod')
+                    poly_rot = self._get_polyfit_filename(ad, 'rotmod')
+                    wpars = astrodata.open(poly_wave)
+                    specpars = astrodata.open(poly_spec)
+                    rotpars = astrodata.open(poly_rot)
+                except IOError:
+                    log.warning("Cannot open required initial model files "
+                                "for PIXELMODEL; skipping")
+                    continue
+
+                # Create an extractor instance, so that we can add the pixel model to the
+                # data.
+                ghost_arm.spectral_format_with_matrix(ad[0].XMOD, wpars[0].data,
+                                                      spatpars[0].data, specpars[0].data, rotpars[0].data)
+                extractor = Extractor(ghost_arm, slitview, badpixmask=ad[0].mask,
+                                      vararray=ad[0].variance)
+                pixel_model = extractor.make_pixel_model()
+                ad[0].PIXELMODEL = pixel_model
+
+            if smoothing:
+                ad.phu['SMOOTH'] = (smoothing, "Pixel FWHM of SVC smoothing kernel")
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+
+        return adinputs
+
     def write1DSpectra(self, adinputs=None, **params):
         """
         Write 1D spectra to files listing the wavelength and data (and
@@ -2315,99 +2342,6 @@ class GHOSTSpect(GHOST):
         arc_ad = self.caldb.get_processed_arc([ad]).items()[0][0]
         del ad.phu['ARCBEFOR']
         return arc_ad
-
-    @staticmethod
-    def _interp_spect(orig_data, orig_wavl, new_wavl,
-                      interp='linear'):
-        """
-        'Re-grid' a one-dimensional input spectrum by performing simple
-        interpolation on the data.
-
-        This function performs simple linear interpolation between points
-        on the old wavelength grid, moving the data onto the new
-        wavelength grid. It makes no attempt to be, e.g., flux-conserving.
-
-        The interpolation is performed by
-        :any:`scipy.interpolate.interp1d <scipy.interpolate.interp1d>`.
-
-        Parameters
-        ----------
-        orig_data : 1D numpy array or list
-            The original spectrum data
-        orig_wavl : 1D numpy array or list
-            The corresponding wavelength values for the original spectrum data
-        new_wavl : 1D numpy array or list
-            The new wavelength values to re-grid the spectrum data to
-        interp : str
-            The interpolation method to be used. Defaults to 'linear'. Will
-            accept any valid value of the ``kind`` argument to
-            :any:`scipy.interpolate.interp1d`.
-
-        Returns
-        -------
-        regrid_data : 1D numpy array
-            The spectrum re-gridded onto the new_wavl wavelength points.
-            Will have the same shape as new_wavl.
-        """
-        # Input checking
-        orig_data = np.asarray(orig_data, dtype=orig_data.dtype)
-        orig_wavl = np.asarray(orig_wavl, dtype=orig_wavl.dtype)
-        new_wavl = np.asarray(new_wavl, dtype=new_wavl.dtype)
-
-        if orig_data.shape != orig_wavl.shape:
-            raise ValueError('_interp_spect received data and wavelength '
-                             'arrays of different shapes')
-
-        interp_func = interpolate.interp1d(
-            orig_wavl,
-            orig_data,
-            kind=interp,
-            fill_value=np.nan,
-            bounds_error=False,
-        )
-        regrid_data = interp_func(new_wavl)
-        # regrid_data = np.interp(new_wavl, orig_wavl, orig_data, )
-        return regrid_data
-
-    @staticmethod
-    def _regrid_spect(orig_data, orig_wavl, new_wavl,
-                      waveunits='angstrom'):
-        """
-        Re-grid a one-dimensional input spectrum so as to conserve total flux.
-
-        This is a more robust procedure than :meth:`_interp_spect`, and is
-        designed for data with a wavelength dependence in the data units
-        (e.g. erg/cm^2/s/A or similar).
-
-        This function utilises the :any:`pysynphot` package.
-
-        This function has been adapted from:
-        http://www.astrobetter.com/blog/2013/08/12/python-tip-re-sampling-spectra-with-pysynphot/
-
-        Parameters
-        ----------
-        orig_data : 1D numpy array or list
-            The original spectrum data
-        orig_wavl : 1D numpy array or list
-            The corresponding wavelength values for the original spectrum data
-        new_wavl : 1D numpy array or list
-            The new wavelength values to re-grid the spectrum data to
-        waveunits : str
-            The units of the wavelength scale. Defaults to 'angstrom'.
-
-        Returns
-        -------
-        egrid_data : 1D numpy array
-            The spectrum re-gridded onto the new_wavl wavelength points.
-            Will have the same shape as new_wavl.
-        """
-
-        spec = spectrum.ArraySourceSpectrum(wave=orig_wavl, flux=orig_data)
-        f = np.ones(orig_wavl.shape)
-        filt = spectrum.ArraySpectralElement(orig_wavl, f, waveunits=waveunits)
-        obs = observation.Observation(spec, filt, binset=new_wavl,
-                                      force='taper')
-        return obs.binflux
 
 
 def _construct_datetime(hdr):

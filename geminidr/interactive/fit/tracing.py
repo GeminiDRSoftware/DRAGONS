@@ -3,7 +3,7 @@ Interactive function and helper functions used to trace apertures.
 """
 import numpy as np
 
-from geminidr.interactive.fit import help
+from geminidr.interactive.fit import help as fit_help
 from geminidr.interactive.interactive import UIParameters
 from gempy.library import astrotools as at, tracing
 from .fit1d import Fit1DVisualizer
@@ -32,29 +32,38 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
     """
     ap_table = ext.APERTURE
     fit_par_list = list()
-    for i in range(len(ap_table)):
+    for _ in range(len(ap_table)):
         fit_par_list.append({x: y for x, y in fit1d_params.items()})
 
-    domain_list = [[ap_table.meta["header"][kw]
-                    for kw in ("DOMAIN_START", "DOMAIN_END")]
-                   for ap in ap_table]
+    domain_list = [
+        [
+            ap_table.meta["header"][kw]
+            for kw in ("DOMAIN_START", "DOMAIN_END")
+        ]
+        for _ in ap_table
+    ]
 
     if (2 - ext.dispersion_axis()) == 1:
         xlabel = "x / columns [px]"
         ylabel = "y / rows [px]"
+
     else:
         xlabel = "y / rows [px]"
         ylabel = "x / columns [px]"
+
+    help_text = (
+        fit_help.DEFAULT_HELP
+        + fit_help.TRACE_APERTURES
+        + fit_help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
+        + fit_help.REGION_EDITING_HELP_SUBTEXT
+    )
 
     visualizer = Fit1DVisualizer(
         lambda ui_params: trace_apertures_data_provider(ext, ui_params),
         domains=domain_list,
         filename_info=ext.filename,
         fitting_parameters=fit_par_list,
-        help_text=(help.DEFAULT_HELP
-                   + help.TRACE_APERTURES
-                   + help.PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
-                   + help.REGION_EDITING_HELP_SUBTEXT),
+        help_text=help_text,
         primitive_name="traceApertures",
         tab_name_fmt="Aperture {}",
         title="Interactive Trace Apertures",
@@ -63,8 +72,7 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
         modal_button_label="Trace apertures",
         modal_message="Tracing apertures...",
         ui_params=ui_params,
-        turbo_tabs=True,
-        pad_buttons=True
+        turbo_tabs=True
     )
 
     server.interactive_fitter(visualizer)
@@ -87,22 +95,21 @@ def trace_apertures_data_provider(ext, ui_params):
 
     Returns
     -------
-    dict : dictionary of x and y coordinates.  Each is an array with a list of values for each aperture center.
-        The x coordinates have the spectral position of the knots, and y is the spacial position of the knots.
+    dict : dictionary of x and y coordinates.
+        Each is an array with a list of values for each aperture center.  The x
+        coordinates have the spectral position of the knots, and y is the
+        spacial position of the knots.
     """
     data = {"x": [], "y": []}
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-    # Convert configuration object into dictionary for easy access to its values
-    # conf_as_dict = {key: val for key, val in conf.items()}
-
-    for i, loc in enumerate(ext.APERTURE['c0'].data):
+    for loc in ext.APERTURE['c0'].data:
         c0 = int(loc + 0.5)
         spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
         start = np.argmax(at.boxcar(spectrum, size=20))
 
         # The coordinates are always returned as (x-coords, y-coords)
-        ref_coords, in_coords = tracing.trace_lines(
+        _, in_coords = tracing.trace_lines(
             ext,
             axis=dispaxis,
             cwidth=5,
