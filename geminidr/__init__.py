@@ -275,7 +275,10 @@ class PrimitivesBASE:
             if primitive:
                 alternative_primitives = find_similar_names(primitive, self.params.keys())
                 if alternative_primitives is None:  # it's valid
-                    alternative_parameters = find_similar_names(parameter, self.params[primitive])
+                    if parameter in ('skip_primitive', 'write_outputs'):
+                        alternative_parameters = None
+                    else:
+                        alternative_parameters = find_similar_names(parameter, self.params[primitive])
             else:
                 alternative_parameters = find_similar_names(
                     parameter, chain(*[v.keys() for v in self.params.values()]))
