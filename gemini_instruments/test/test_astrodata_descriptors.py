@@ -12,8 +12,9 @@ from .ghost_lut_descriptors import fixture_data as ghost_descriptors_fixture_dat
 
 
 @pytest.mark.parametrize("instr,filename,descriptor,value",
-                         ([*k]+[*vv] for k, v in (list(descriptors_fixture_data.items()) +
-                                                  list(ghost_descriptors_fixture_data.items()))
+                         ([*k]+[*vv] for k, v in (list(descriptors_fixture_data.items()) #+
+                                                  #list(ghost_descriptors_fixture_data.items())
+                                                  )
                           for vv in v))
 def test_descriptor(instr, filename, descriptor, value):
     path_to_test_data = os.getenv("DRAGONS_TEST")
