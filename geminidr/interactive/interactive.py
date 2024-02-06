@@ -100,9 +100,7 @@ class PrimitiveVisualizer(ABC):
         template=None,
         help_text=None,
         ui_params=None,
-        reinit_live=False,
-    ,
-                 reinit_live=False):
+        reinit_live=False):
         """
         Initialize a visualizer.
 
@@ -769,6 +767,7 @@ class PrimitiveVisualizer(ABC):
         slider_width: int = 256,
         add_spacer=False,
         hide_textbox=None,
+        reinit_live=False
     ):
         """
         Makes appropriate widgets for all the parameters in params,
