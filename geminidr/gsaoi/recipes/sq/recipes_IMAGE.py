@@ -66,7 +66,7 @@ def reduce_nostack(p):
     p.clearStream(stream='skysub')
     p.associateSky()
     p.skyCorrect(mask_objects=True)
-    p.storeProcessedScience(suffix="_image")
+    p.detectSources()
     return
 
 

@@ -216,6 +216,7 @@ def test_prism_string():
         ad.phu['PRISM'] = d['position']
         assert ad._prism() == d['value']
 
+
 def test_grating_string():
     # These are the values the grating header can take, copied from:
     # http://internal.gemini.edu/science/instruments/GNIRS/Systems_Reference/mechanisms/gnirsMechanisms
@@ -246,6 +247,7 @@ def test_grating_string():
         ad = AstroDataGnirs()
         ad.phu['GRATING'] = d['position']
         assert ad._grating() == d['value']
+
 
 if __name__ == "__main__":
     pytest.main()

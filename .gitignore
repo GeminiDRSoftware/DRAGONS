@@ -157,3 +157,6 @@ dmypy.json
 **/.adcc
 **/dragons_test_inputs
 **/spec_data.json
+
+# VSCode settings
+.vscode/settings.json

@@ -10,6 +10,7 @@ DRAGONS - Flamingos 2 Data Reduction Tutorial
 This is a brief tutorial on how to reduce Flamingos-2 images using DRAGONS (Data
 Reduction for Astronomy from Gemini Observatory North and South).
 
+[Return to the main |DRAGONS| page.]
 
 .. toctree::
    :maxdepth: 2

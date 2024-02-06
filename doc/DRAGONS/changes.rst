@@ -27,6 +27,13 @@ code from "provenance history" to simply "history".
 * Whitespace now allowed in directory paths (if quoted), e.g.,
   ``databases = "~/.my dragons/dragons.db"``
 
+Bug Fixes
+---------
+
+**geminidr.gmos**
+
+* Fix the QE model selection for the GMOS-S EEV CDDs.
+
 
 3.1.0
 =====
@@ -39,9 +46,10 @@ the user need to be aware of.  Please read on.
 New Features
 ------------
 
-Science quality support for GMOS longslit spectroscopy.
+Science quality support for GMOS longslit spectroscopy, including nod-and-shuffle.
   Please refer to the tutorial, |GMOSLSTut|.  DRAGONS is now the official
-  software for reducing GMOS longslit data.
+  software for reducing GMOS longslit data in normal and nod-and-shuffle
+  mode.
 
 New browser-base interactive tools to support spectroscopy.
   The following primitives have an interactive mode that can be activated with
@@ -441,8 +449,8 @@ Compatibility
 
 **geminidr.core**
 
-* Add compatibility with sigma_clip fro astropy v3.1+ 
-  
+* Add compatibility with sigma_clip fro astropy v3.1+
+
 **geminidr.gmos**
 
 * Add IRAF compatibility recipe.
