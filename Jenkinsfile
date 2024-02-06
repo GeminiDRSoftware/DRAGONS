@@ -35,10 +35,12 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '5'))
         timestamps()
         timeout(time: 6, unit: 'HOURS')
+        timeout(time: 6, unit: 'HOURS')
     }
 
     environment {
         MPLBACKEND = "agg"
+        PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
     }
 
@@ -46,6 +48,31 @@ pipeline {
 
         stage ("Prepare"){
             steps{
+                echo "Step would notify STARTED when dragons_ci is available"
+                // sendNotifications 'STARTED'
+            }
+        }
+
+        stage('Pre-install') {
+            agent { label "conda" }
+            environment {
+                TMPDIR = "${env.WORKSPACE}/.tmp/conda/"
+            }
+            steps {
+                echo "Update the Conda base install for all on-line nodes"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Create a trial Python 3.10 env, to cache new packages"
+                sh 'tox -e py310-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
+            }
+            post {
+                always {
+                    echo "Deleting conda temp workspace ${env.WORKSPACE}"
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                      deleteDir()
+                    }
+                }
                 echo "Step would notify STARTED when dragons_ci is available"
                 // sendNotifications 'STARTED'
             }
@@ -92,6 +119,7 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests with Python 3.10"
                         sh 'tox -e py310-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
@@ -130,6 +158,7 @@ pipeline {
                         checkout scm
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_dirs.sh'
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Integration tests"
                         sh 'tox -e py310-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
@@ -162,6 +191,7 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         echo "${env.PATH}"
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Regression tests"
                         sh 'tox -e py310-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
@@ -389,6 +419,7 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
                         sh 'tox -e py310-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
@@ -427,6 +458,7 @@ pipeline {
                         checkout scm
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_dirs.sh'
+                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Slow tests"
                         sh 'tox -e py310-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
@@ -454,9 +486,13 @@ pipeline {
         success {
             echo "Step would notify SUCCESSFUL when dragons_ci is available"
             // sendNotifications 'SUCCESSFUL'
+            echo "Step would notify SUCCESSFUL when dragons_ci is available"
+            // sendNotifications 'SUCCESSFUL'
 //            deleteDir() /* clean up our workspace */
         }
         failure {
+            echo "Step would notify FAILED when dragons_ci is available"
+            // sendNotifications 'FAILED'
             echo "Step would notify FAILED when dragons_ci is available"
             // sendNotifications 'FAILED'
 //            deleteDir() /* clean up our workspace */

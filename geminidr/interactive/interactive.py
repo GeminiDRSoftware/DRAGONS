@@ -317,8 +317,6 @@ class PrimitiveVisualizer(ABC):
             finally:
                 self.reinit_live = reinit_live
 
-            self.reinit_live = reinit_live
-
         self.make_ok_cancel_dialog(
             btn=reset_reinit_button,
             message="Do you want to reset the input parameters?",
@@ -770,6 +768,7 @@ class PrimitiveVisualizer(ABC):
         slider_width: int = 256,
         add_spacer=False,
         hide_textbox=None,
+        reinit_live=False
     ):
         """
         Makes appropriate widgets for all the parameters in params,

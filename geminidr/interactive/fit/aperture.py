@@ -250,23 +250,14 @@ class FindSourceAperturesModel:
         self.direction = None
         self.prof_mask = None
 
-        # target_location is the row from the target coords.
-        #
-        # max_width is the largest distance (in arcsec) from there to the edge
-        # of the slit.
-        #
-        # Note: although the ext may have been transposed to ensure that the
-        # slit is vertical, the WCS has not been modified
-        target_inv = ext.wcs.invert(
-            ext.central_wavelength(asNanometers=True),
-            ext.target_ra(),
-            ext.target_dec(),
-        )
-
-        target_location = target_inv[2 - ext.dispersion_axis()]
-
-        # gWCS will return NaN coords if sent Nones, so assume target is in
-        # center
+        # target_location is the row from the target coords
+        # max_width is the largest distance (in arcsec) from there to the edge of the slit
+        # Note: although the ext may have been transposed to ensure that
+        # the slit is vertical, the WCS has not been modified
+        target_location = ext.wcs.invert(
+            ext.central_wavelength(asNanometers=True), ext.target_ra(),
+            ext.target_dec())[2 - ext.dispersion_axis()]
+        # gWCS will return NaN coords if sent Nones, so assume target is in center
         if np.isnan(target_location):
             target_location = (self.profile_shape - 1) / 2
             self.max_width = target_location
@@ -1542,8 +1533,10 @@ def interactive_find_source_apertures(ext, ui_params=None, filename=None, **kwar
 
     """
     model = FindSourceAperturesModel(ext, **kwargs)
-    fsav = FindSourceAperturesVisualizer(
-        model, ui_params=ui_params, filename_info=ext.filename
-    )
+    if not filename:
+        filename = ext.filename
+    if not filename and hasattr(ext, "orig_filename"):
+        filename = ext.orig_filename
+    fsav = FindSourceAperturesVisualizer(model, ui_params=ui_params, filename_info=filename)
     interactive_fitter(fsav)
     return fsav.result()

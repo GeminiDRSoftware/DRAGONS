@@ -40,12 +40,11 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
-# Names to use for masks.  You can change these to change the label that gets
-# displayed in the legend
-SIGMA_MASK_NAME = "rejected (sigma)"
-USER_MASK_NAME = "rejected (user)"
-BAND_MASK_NAME = "excluded"
-INPUT_MASK_NAMES = ["aperture"]
+# Names to use for masks.  You can change these to change the label that gets displayed in the legend
+SIGMA_MASK_NAME = 'rejected (sigma)'
+USER_MASK_NAME = 'rejected (user)'
+BAND_MASK_NAME = 'excluded'
+INPUT_MASK_NAMES = ['aperture', 'threshold']
 
 
 class InteractiveModel(ABC):
@@ -77,6 +76,7 @@ class InteractiveModel(ABC):
         "black",
         "darksalmon",
         "lightgray",
+        "orange",
     ]  # Category10[4]
 
     def __init__(self):
@@ -154,6 +154,7 @@ class InteractiveModel1D(InteractiveModel):
         listeners=None,
         band_model=None,
         extra_masks=None,
+        initial_fit=None,
     ):
         """Create base class with given parameters as initial model inputs.
 
@@ -203,7 +204,11 @@ class InteractiveModel1D(InteractiveModel):
         self.section = section
         self.data = bm.ColumnDataSource({"x": [], "y": [], "mask": []})
 
-        xlinspace = np.linspace(*self.domain, 500)
+        if self.domain:
+            xlinspace = np.linspace(*self.domain, 500)
+        else:
+            xlinspace = np.linspace(min(x), max(x), 500)
+
         self.populate_bokeh_objects(
             x, y, weights=weights, mask=mask, extra_masks=extra_masks
         )
@@ -212,7 +217,9 @@ class InteractiveModel1D(InteractiveModel):
             "sigma" in fitting_parameters and fitting_parameters["sigma"]
         )
 
-        self.perform_fit()
+        if len(x):
+            self.perform_fit()
+
         self.evaluation = bm.ColumnDataSource(
             {"xlinspace": xlinspace, "model": self.evaluate(xlinspace)}
         )
@@ -479,8 +486,16 @@ class InteractiveModel1D(InteractiveModel):
 
                 if rank >= fitparms["order"]:
                     self.quality = FitQuality.GOOD
-
-                elif self.allow_poor_fits:
+                    self.fit = new_fit
+                elif self.fit is None:
+                    self.quality = FitQuality.BAD
+                    self.fit = new_fit
+                else:
+                    # Modify the fit_1D object with a shift by ugly hacking
+                    offset = np.mean(self.y[goodpix] - self.evaluate(self.x[goodpix]))
+                    self.fit.offset_fit(offset)
+                    self.fit.points = new_fit.points
+                    self.fit.mask = new_fit.mask
                     self.quality = FitQuality.POOR  # else stay BAD
         if self.quality != FitQuality.BAD:  # don't update if it's BAD
             self.fit = new_fit
@@ -971,6 +986,7 @@ class Fit1DPanel:
         enable_regions=True,
         central_plot=True,
         extra_masks=None,
+        initial_fit=None,
     ):
         """Panel for visualizing a 1-D fit, perhaps in a tab.
 
@@ -1053,6 +1069,7 @@ class Fit1DPanel:
             weights,
             band_model=band_model,
             extra_masks=extra_masks,
+            initial_fit=initial_fit,
         )
 
         self.model.add_listener(self.model_change_handler)
@@ -1544,6 +1561,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         ui_params=None,
         turbo_tabs=False,
         panel_class=Fit1DPanel,
+        reinit_live=False,
         **kwargs,
     ):
         """Initializes the Fit1DVisualizer and its parent class.
@@ -1616,6 +1634,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             The class of Panel to use in each tab. This allows specific
             operability for each primitive since most of the functions that do
             the work are methods of this class.
+        reinit_live : bool
+            If True, the reinit inputs will be recalculated live as the user
+            changes them. If False, a 'recalculate' button will be shown below
+            the reinit inputs instead.
         """
         super().__init__(
             title=title,
@@ -1624,6 +1646,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             template=template,
             help_text=help_text,
             ui_params=ui_params,
+            reinit_live=reinit_live,
         )
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
@@ -1686,6 +1709,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
+
+            else:
+                reset_reinit_button = self.build_reset_button()
+                reinit_widgets.append(reset_reinit_button)
 
             if recalc_inputs_above:
                 self.reinit_panel = row(

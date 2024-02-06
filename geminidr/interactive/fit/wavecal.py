@@ -91,6 +91,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         x=None,
         y=None,
         weights=None,
+        absorption=False,
         meta=None,
         **kwargs,
     ):
@@ -128,15 +129,41 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         # No need to compute wavelengths here as the model_change_handler()
         # does it
-        spectrum_data_dict = {
-            "wavelengths": np.zeros_like(meta["spectrum"]),
-            "spectrum": meta["spectrum"],
-        }
+        self.absorption = absorption
+        if absorption:
+            spectrum_data_dict = {
+                    'wavelengths': np.zeros_like(meta["spectrum"]),
+                    'spectrum': -meta["spectrum"]
+            }
+
+        else:
+            spectrum_data_dict = {
+                "wavelengths": np.zeros_like(meta["spectrum"]),
+                "spectrum": meta["spectrum"],
+            }
 
         self.spectrum = bm.ColumnDataSource(spectrum_data_dict)
 
+        # Data for the reference plot
+        self.show_refplot = False
+
+        if not (meta.get("refplot_spec") is None or meta.get("refplot_linelist") is None):
+            self.show_refplot = True
+            self.refplot_spectrum = bm.ColumnDataSource({'wavelengths': meta["refplot_spec"][:,0],
+                                                'refplot_spectrum': meta["refplot_spec"][:,1]})
+            wlengths = meta["refplot_linelist"][:,0]
+            self.refplot_linelist = bm.ColumnDataSource({
+                                    'wavelengths': wlengths,
+                                    'intensities': meta["refplot_linelist"][:,1],
+                                    'labels': ["{:.2f}".format(w) for w in wlengths]})
+            self.refplot_y_axis_label = meta["refplot_y_axis_label"]
+            self.refplot_name = meta["refplot_name"]
+
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
+
+        if len(x) == 0:
+            kwargs["initial_fit"] = meta["fit"]
 
         super().__init__(
             visualizer,
@@ -361,6 +388,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.identify_button.on_click(self.identify_lines)
 
+        self.clear_all_lines_button = bm.Button(label="Clear all lines", width=200,
+                                         button_type="warning", width_policy="fit",
+                                         height_policy="max")
+        self.clear_all_lines_button.on_click(self.clear_all_lines)
+
         self.new_line_prompt = bm.Div(
             text="",
             styles={"font-size": "16px"},
@@ -461,6 +493,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         identify_panel = row(
             self.identify_button,
+            self.clear_all_lines_button,
             self.new_line_row,
             sizing_mode="stretch_width",
             stylesheets=dragons_styles(),
@@ -470,13 +503,42 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.model.add_listener(info_panel.model_change_handler)
 
-        return [
-            p_spectrum,
-            identify_panel,
-            info_panel.component,
-            p_main,
-            p_supp,
-        ]
+        # ATRAN or other reference spectrum plot
+        if self.show_refplot:
+            p_refplot = figure(plot_width=self.width, plot_height=int(self.height // 1.5),
+                                min_width=400, title=self.refplot_name,
+                                x_axis_label="Wavelength (nm)", y_axis_label=self.refplot_y_axis_label,
+                                tools = "pan,wheel_zoom,box_zoom,reset",
+                                output_backend="webgl",
+                                x_range=self.p_spectrum.x_range, y_range=None,
+                                min_border_left=80)
+            p_refplot.height_policy = 'fixed'
+            p_refplot.width_policy = 'fit'
+            p_refplot.sizing_mode = 'stretch_width'
+            p_refplot.step(x='wavelengths', y='refplot_spectrum', source=self.refplot_spectrum,
+                            line_width=1, color="gray", mode="center")
+            p_refplot.text(name="labels",
+                           x='wavelengths', y= 'heights', text='labels',
+                            source=self.refplot_linelist, angle=0.5 * np.pi,
+                            text_color='gray',
+                            text_baseline='middle', text_align='right',
+                            text_font_size='8pt')
+            p_refplot.y_range.on_change("start", lambda attr, old, new:
+                                         self.update_refplot_label_heights())
+            p_refplot.y_range.on_change("end", lambda attr, old, new:
+                                         self.update_refplot_label_heights())
+            self.p_refplot = p_refplot
+
+            return [p_refplot, p_spectrum, identify_panel, info_panel.component,
+                p_main, p_supp]
+        else:
+            return [
+                p_spectrum,
+                identify_panel,
+                info_panel.component,
+                p_main,
+                p_supp,
+            ]
 
     @staticmethod
     def linear_model(model):
@@ -514,7 +576,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
             #          1.1 * self.spectrum.data['spectrum'].min())
             height = 44 / 29 * np.nanmax(self.spectrum.data["spectrum"])
 
-        padding = 0.25 * height
+        if self.absorption:
+            padding = -0.05 * height
+
+        else:
+            padding = 0.25 * height
 
         try:
             return [
@@ -557,9 +623,17 @@ class WavelengthSolutionPanel(Fit1DPanel):
             start = self.p_spectrum.y_range.start
             end = self.p_spectrum.y_range.end
             lheight = 0.05 * (end - start)
+
+            if self.absorption:
+                lheight *= -1
+
             self.new_line_marker.data["y"][1] = (
                 self.new_line_marker.data["y"][0] + lheight
             )
+
+    def update_refplot_label_heights(self):
+        """Simple callback to move the labels if the reference spectrum panel is resized"""
+        self.refplot_linelist.data['heights'] = self.refplot_label_height()
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
@@ -577,7 +651,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         model_data["nonlinear"] = y - linear_model(x)
         model_data["heights"] = self.label_height(x)
         model_data["lines"] = [wavestr(yy) for yy in y]
-
+        if self.show_refplot:
+            self.refplot_linelist.data['heights'] = self.refplot_label_height()
         eval_data = self.model.evaluation.data
         eval_data["nonlinear"] = (
             eval_data["model"] - linear_model(eval_data["xlinspace"])
@@ -702,10 +777,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
             else:
                 # TODO: Check this behaves sensibly, and doesn't find
                 # all tiny bumps
-                pinpoint_data = cwt_ricker(
-                    self.spectrum.data["spectrum"], [0.42466 * fwidth]
-                )[0]
-
+                if self.absorption:
+                    pinpoint_data = cwt_ricker(-self.spectrum.data["spectrum"],
+                                           [0.42466 * fwidth])[0]
+                else:
+                    pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
+                                           [0.42466 * fwidth])[0]
                 eps = np.finfo(np.float32).eps  # Minimum representative data
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
 
@@ -768,6 +845,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
         end = self.p_spectrum.y_range.end
         lheight = 0.05 * (end - start)
 
+        if self.absorption:
+            lheight *= -1
+
         height = self.spectrum.data["spectrum"][int(peak + 0.5)]
 
         self.new_line_marker.data = {
@@ -791,7 +871,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         eval_peaks = self.model.evaluate(new_peaks[index])
         close_to_peak = abs(eval_peaks - x) < (0.025 * (x2 - x1))
 
-        return close_to_peak
+        return close_to_peakuu
 
     @disable_when_identifying
     def delete_line(self, key, x, y):
@@ -905,25 +985,35 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if not in_dropdown:
             self.add_new_line()
 
+    def update_refplot_name(self, new_name):
+        self.refplot_name = new_name
+        self.p_refplot.title.text = new_name
+        self.p_refplot.title.update()
 
 class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
     A Visualizer specific to determineWavelengthSolution
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, absorption=None, **kwargs):
+        self.num_atran_params = None
         super().__init__(
             *args,
             **kwargs,
             panel_class=WavelengthSolutionPanel,
             help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
+            absorption=absorption,
         )
 
         calibration_type = "vacuo" if self.ui_params.in_vacuo else "air"
 
         text = f"<b>Calibrating to wavelengths in {calibration_type}" f"</b>"
 
-        self.reinit_panel.children[-3] = bm.Div(
+        skip_lines = -3
+        if self.num_atran_params is not None:
+            skip_lines = skip_lines - self.num_atran_params - 1
+
+        self.reinit_panel.children[skip_lines] = bm.Div(
             text=text,
             align="center",
             stylesheets=dragons_styles(),
@@ -987,8 +1077,29 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     this_dict = data
 
                 # spectrum update
-                spectrum = self.panels[i].spectrum
-                spectrum.data["spectrum"] = this_dict["meta"]["spectrum"]
+                self.panels[i].spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
+
+                if self.absorption:
+                    self.panels[i].spectrum.data['spectrum'] *= -1
+
+
+                try:
+                    self.panels[i].refplot_spectrum.data['wavelengths'] = this_dict["meta"]["refplot_spec"][:,0]
+                    self.panels[i].refplot_spectrum.data['refplot_spectrum'] = this_dict["meta"]["refplot_spec"][:,1]
+
+                    wlengths = this_dict["meta"]["refplot_linelist"][:,0]
+                    self.panels[i].refplot_linelist.update(
+                        data = {
+                            'wavelengths': wlengths,
+                            'intensities': this_dict["meta"]["refplot_linelist"][:,1],
+                            'labels': ["{:.2f}".format(w) for w in wlengths]
+                        }
+                    )
+                    self.panels[i].update_refplot_label_heights()
+                    self.panels[i].update_refplot_name(this_dict["meta"]["refplot_name"])
+                    self.panels[i].reset_view()
+                except (AttributeError, KeyError):
+                    pass
 
 
 def get_closest(arr, value):
