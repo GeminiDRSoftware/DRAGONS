@@ -89,7 +89,7 @@ setup(name='dragons',
         # 'gemini_calmgr>=1.1',  # these need uploading to PyPI first
         # 'gemini_obs_db>=1.0',
           'gwcs>=0.15',
-          'holoviews>=1.14',
+          'holoviews',
           'jinja2>=3.0',
           'jsonschema>=3.0',
           'matplotlib>=3.1',
