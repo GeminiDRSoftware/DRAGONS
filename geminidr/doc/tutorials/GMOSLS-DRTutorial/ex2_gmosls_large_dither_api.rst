@@ -587,12 +587,9 @@ interactive tool and have manually masked four data points.
     .. code-block:: python
 
         from gempy.adlibrary import plotting
-        import matplotlib.pyplot as plt
 
         ad = astrodata.open(reduce_std_795nm.output_filenames[0])
-        plt.ioff()
         plotting.dgsplot_bokeh(ad, 1)
-        plt.ion()
 
     To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
     Python script, see Tips and Tricks :ref:`plot_1d`.
@@ -708,6 +705,11 @@ This is what the 2-D spectrum image looks like.
     display.recipename = 'display'
     display.runr()
 
+.. note::
+
+    ``ds9`` must be launched by the user ahead of running the display primitive.
+    (``ds9&`` on the terminal prompt.)
+
 .. image:: _graphics/LS_ldred_sci_2D.png
    :width: 600
    :alt: 2D stacked spectrum
@@ -725,13 +727,10 @@ The 1-D flux-calibrated spectra of the two apertures are shown below.
     :lineno-start: 107
 
     from gempy.adlibrary import plotting
-    import matplotlib.pyplot as plt
 
     ad = astrodata.open(reduce_science.output_filenames[0])
-    plt.ioff()
     plotting.dgsplot_bokeh(ad, 1)
     plotting.dgsplot_bokeh(ad, 2)
-    plt.ion()
 
 
 .. image:: _graphics/LS_ldred_ap1_spec1D.png

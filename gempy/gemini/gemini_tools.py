@@ -30,6 +30,8 @@ from ..utils import logutils
 import astrodata
 from astrodata import Section
 
+from gempy.utils.errors import ConvergenceError
+
 ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
 
@@ -2101,9 +2103,11 @@ def sky_factor(nd1, nd2, skyfunc, multiplicative=False, threshold=0.001):
     -------
     float : factor to apply to "sky" to match "science"
     """
+    log = logutils.get_logger(__name__)
+
     factor = 0
     if multiplicative:
-        current_sky = 1
+        current_sky = 1.
         # A subtlety here: deepcopy-ing an AD slice will create a full AD
         # object, and so skyfunc() will return a list instead of the single
         # float value we want. So make sure the copy is a single slice too
@@ -2111,11 +2115,22 @@ def sky_factor(nd1, nd2, skyfunc, multiplicative=False, threshold=0.001):
             ndcopy = deepcopy(nd1)[0]
         else:
             ndcopy = deepcopy(nd1)
-        while abs(current_sky) > threshold:
+        iter = 1
+        max_iter = 100   # normally converges in < 10 iterations
+        while abs(current_sky) > threshold and iter <= max_iter:
             f = skyfunc(ndcopy) / skyfunc(nd2)
             ndcopy.subtract(nd2.multiply(f))
             current_sky *= f
             factor += current_sky
+            iter += 1
+        #print('iter upon exit: ', iter)
+        if iter > max_iter:
+            log.warning(f"Failed to converge.\n"
+                        f"   Reached: {abs(current_sky)} while threshold = {threshold}\n"
+                        f"   Final factor = {factor}")
+            nd2.divide(current_sky)  # reset to original value
+            raise(ConvergenceError)
+
         nd1.subtract(nd2.multiply(factor / current_sky))
         nd2.divide(factor)  # reset to original value
     else:

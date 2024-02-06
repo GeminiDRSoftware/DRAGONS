@@ -117,7 +117,7 @@ def qeModel(ext, use_iraf=False):
     if isinstance(data, dict) and 'knots' not in data:
         obs_date = ext.ut_date()
         for k in sorted(data):
-            if obs_date >= datetime.strptime(k, "%Y-%m-%d"):
+            if obs_date >= datetime.strptime(k, "%Y-%m-%d").date():
                 use_data = data[k]
         data = use_data
 

@@ -14,7 +14,7 @@ and new tutorials.  See the :ref:`changes` for all the details.
 
 This update of DRAGONS has four big changes over V3.0:
 
-* New science quality reduction for GMOS longslit data
+* New science quality reduction for GMOS longslit data, including nod-and-shuffle.
 * The alignment and stacking of GSAOI data is now done within DRAGONS and the]
   use of ``disco_stu`` is no longer required.
 * The calibration service has gone through a major refactoring.  Of direct
@@ -31,7 +31,7 @@ Science Quality reduction
    * NIRI imager
    * GSAOI imager
    * F2 imager
-   * GMOS longslit spectrograph
+   * GMOS longslit spectrograph (including nod-and-shuffle)
 
 For imaging and GMOS longslit spectroscopy, this software should be used
 instead of the Gemini IRAF package.

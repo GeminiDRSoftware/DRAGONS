@@ -64,6 +64,11 @@ Releases
 
    releasenotes.rst
    changes.rst
+   dragonsteam.rst
+
+==========
+
+
 
 .. Developer Notes
 .. ---------------
