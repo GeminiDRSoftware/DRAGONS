@@ -376,9 +376,9 @@ class UnivariateSplineWithOutlierRemoval:
             # x-value space, not the x-index space!
             if order is not None:
                 if order > 0:
-                    fully_masked_regions = np.sum(
+                    fully_masked_regions = np.sum([
                         full_mask[np.logical_and(xunique>=x1, xunique<=x2)].all()
-                        for x1, x2 in zip(knots[:-1], knots[1:]))
+                        for x1, x2 in zip(knots[:-1], knots[1:])])
                     wts[full_mask] = epsf if fully_masked_regions > min(k, order) else epsf
                 else:
                     wts = None if w is None else w.copy()

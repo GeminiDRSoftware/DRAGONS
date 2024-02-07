@@ -133,7 +133,7 @@ class GMOSImage(GMOS, Image, Photometry):
             else:
                 x -= datasec_list[ampsorder[amp_index]].x1
 
-            dilator = ndimage.morphology.generate_binary_structure(2, 1)
+            dilator = ndimage.generate_binary_structure(2, 1)
             for index in ampsorder[amp_index:]:
                 datasec = datasec_list[index]
                 sky, skysig, _ = gt.measure_bg_from_image(ad[index])
@@ -174,7 +174,7 @@ class GMOSImage(GMOS, Image, Photometry):
                 # Flood-fill region around guide-star with all pixels fainter
                 # than this boundary value
                 boundary = sky - contrast * (sky-wfs_sky)
-                regions, nregions = ndimage.measurements.label(
+                regions, nregions = ndimage.label(
                     np.logical_and(data_region < boundary, mask_region==0))
                 wfs_region = regions[newy, int(x+0.5)]
                 blocked = ndimage.morphology.binary_fill_holes(np.where(regions==wfs_region,
@@ -183,8 +183,7 @@ class GMOSImage(GMOS, Image, Photometry):
                 condition_met = False
                 while not condition_met:
                     last_mean_sky = this_mean_sky
-                    new_blocked = ndimage.morphology.binary_dilation(blocked,
-                                                                     structure=dilator)
+                    new_blocked = ndimage.binary_dilation(blocked, structure=dilator)
                     this_mean_sky = np.median(data_region[new_blocked ^ blocked])
                     blocked = new_blocked
                     if index <= gs_index or ad[index].array_section().x1 == 0:

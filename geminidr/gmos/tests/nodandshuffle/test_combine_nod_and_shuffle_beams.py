@@ -20,14 +20,15 @@ def test_combine_nod_and_shuffle_beams(ad, kwargs, result, caplog):
     p = GMOSLongslit([ad])
     p.combineNodAndShuffleBeams(**kwargs)
     for rec in caplog.records:
-        m = re.match(".*? (-?\d*.\d*) pixels", rec.message)
+        m = re.match(r".*? (-?\d*.\d*) pixels", rec.message)
         if m:
             assert abs(float(m.group(1)) - result) < 0.5
             break
 
 
 @pytest.fixture(scope='function')
-def ad(path_to_inputs, request):
+def ad(request):
+    path_to_inputs = "."
     """Return AD object in input directory"""
     path = os.path.join(path_to_inputs, request.param)
     if os.path.exists(path):
