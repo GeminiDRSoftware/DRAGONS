@@ -42,9 +42,9 @@ class Extractum:
             print("\n")
             print("OBJECT PROFILES (phi)")
             print(self.phi)
-            print("RAW COLUMN DATA")
+            print("RAW COLUMN DATA AND MASK")
             print(self.data)
-            print(good)
+            print(self.mask)
 
         if coeffs is None:
             coeffs = np.linalg.lstsq(self.phi.T[good], self.data[good],
@@ -109,8 +109,9 @@ class Extractum:
             print("\n")
             print("OBJECT PROFILES (phi)")
             print(self.phi)
-            print(f"RAW COLUMN DATA")
+            print(f"RAW COLUMN DATA AND MASK")
             print(self.data)
+            print(self.mask)
 
         model = np.dot(coeffs, self.phi)
         inv_var_use = 1. / np.maximum(self.noise_model(model) + (snoise * model) ** 2, 0)
