@@ -25,7 +25,7 @@ sci_datasets = [("S20230513S0232_slit.fits", {"processed_bias": "S20230513S0012_
 
 
 @pytest.mark.integration_test
-@pytest.mark.ghost
+@pytest.mark.ghostslit
 @pytest.mark.parametrize("input_filename", bias_datasets)
 def test_reduce_slit_bias(input_filename, path_to_inputs, path_to_refs, change_working_dir):
     """Test the complete reduction of slitviewer bias frames"""
@@ -40,7 +40,7 @@ def test_reduce_slit_bias(input_filename, path_to_inputs, path_to_refs, change_w
 
 
 @pytest.mark.integration_test
-@pytest.mark.ghost
+@pytest.mark.ghostslit
 @pytest.mark.parametrize("input_filename, processed_bias", flat_datasets)
 def test_reduce_slit_flat(input_filename, processed_bias, path_to_inputs,
                           path_to_refs, change_working_dir):
@@ -58,7 +58,7 @@ def test_reduce_slit_flat(input_filename, processed_bias, path_to_inputs,
 
 
 @pytest.mark.integration_test
-@pytest.mark.ghost
+@pytest.mark.ghostslit
 @pytest.mark.parametrize("input_filename, caldict", arc_datasets)
 def test_reduce_slit_arc(input_filename, caldict, path_to_inputs,
                          path_to_refs, change_working_dir):
@@ -76,7 +76,7 @@ def test_reduce_slit_arc(input_filename, caldict, path_to_inputs,
 
 
 @pytest.mark.integration_test
-@pytest.mark.ghost
+@pytest.mark.ghostslit
 @pytest.mark.parametrize("input_filename, caldict", sci_datasets)
 def test_reduce_slit_science(input_filename, caldict, path_to_inputs,
                              path_to_refs, change_working_dir):

@@ -29,13 +29,16 @@ def input_filename(request):
 
 @pytest.mark.dragons_remote_data
 @pytest.mark.integration_test
-@pytest.mark.ghost
+@pytest.mark.ghostspect
 @pytest.mark.parametrize("input_filename", datasets, indirect=True)
 @pytest.mark.parametrize("arm", ("blue", "red"))
-def test_reduce_bias(input_filename, arm, path_to_refs):
+def test_reduce_bias(path_to_inputs, input_filename, arm, path_to_refs):
     """Reduce an arm of a bias bundle"""
     adinputs = input_filename[arm]
-    p = GHOSTSpect(adinputs)
+    processed_bpm = os.path.join(
+        path_to_inputs, f"bpm_20220601_ghost_{arm}_11_full_4amp.fits")
+    ucals = {"processed_bpm": processed_bpm}
+    p = GHOSTSpect(adinputs, ucals=ucals)
     makeProcessedBias(p)
     assert len(p.streams['main']) == 1
     adout = p.streams['main'].pop()

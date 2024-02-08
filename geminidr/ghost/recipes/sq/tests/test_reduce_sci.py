@@ -32,9 +32,10 @@ def input_filename(request):
     return return_dict
 
 
+@pytest.mark.slow
 @pytest.mark.dragons_remote_data
 @pytest.mark.integration_test
-@pytest.mark.ghost
+@pytest.mark.ghostspect
 @pytest.mark.parametrize("input_filename, caldict", datasets,
                          indirect=["input_filename"])
 @pytest.mark.parametrize("arm", ("blue", "red"))
