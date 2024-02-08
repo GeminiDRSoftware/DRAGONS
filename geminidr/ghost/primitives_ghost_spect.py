@@ -607,7 +607,6 @@ class GHOSTSpect(GHOST):
         stacking_mode = params["stacking_mode"] or "none"
 
         # These should probably be exposed as user parameters
-        conserve = None
         interp_order = 1
         dq_threshold = 0.001
         parallel = False
@@ -661,7 +660,6 @@ class GHOSTSpect(GHOST):
                 adoutputs.append(ad)
                 continue
 
-            flux_calibrated = self.timestamp_keys["fluxCalibrate"] in ad.phu
             for i, ext in enumerate(ad):
                 waves = make_wavelength_table(ext)
                 # We can easily get underflows for the VAR in np.float32
@@ -669,10 +667,6 @@ class GHOSTSpect(GHOST):
                 spec_final = np.zeros(wavl_grid.size, dtype=np.float64)
                 mask_final = np.zeros_like(spec_final, dtype=DQ.datatype)
                 var_final = np.zeros_like(spec_final)
-
-                this_conserve = conserve_or_interpolate(
-                    ext, user_conserve=conserve,
-                    flux_calibrated=flux_calibrated, log=log)
 
                 # Loop over each input order, making the output spectrum the
                 # result of the weighted average of itself and the order
@@ -685,9 +679,13 @@ class GHOSTSpect(GHOST):
                     dg = transform.DataGroup((ext.nddata[order],), (t,))
                     dg.no_data['mask'] = DQ.no_data
                     dg.output_shape = wavl_grid.shape
+                    # Note: it's never correct to conserve because data in
+                    # electrons have still effectively been converted to a
+                    # flux *density* by flatfielding due to different pixel
+                    # wavelength extents
                     dg.transform(attributes=['data', 'mask', 'variance'],
                                  order=interp_order, subsample=1,
-                                 threshold=dq_threshold, conserve=this_conserve,
+                                 threshold=dq_threshold, conserve=False,
                                  parallel=parallel)
                     flux_for_adding = dg.output_dict['data']
                     ivar_for_adding = at.divide0(1.0, dg.output_dict['variance'].astype(np.float64))
