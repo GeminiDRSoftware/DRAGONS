@@ -3,8 +3,6 @@
 import os
 import pytest
 
-import pytest_dragons
-from pytest_dragons.fixtures import *
 import astrodata, gemini_instruments
 from geminidr.ghost.primitives_ghost_slit import GHOSTSlit
 from geminidr.ghost.recipes.sq.recipes_BIAS_SLITV import makeProcessedSlitBias

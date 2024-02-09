@@ -46,7 +46,7 @@ from . import parameters_ghost_spect
 
 from .lookups import polyfit_lookup, line_list
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 # ------------------------------------------------------------------------------
 
 GEMINI_SOUTH_LOC = astrocoord.EarthLocation.from_geodetic(
@@ -82,6 +82,7 @@ def convolve_with_mask(data, mask, rectangle_width = (100,20)):
 
 
 @parameter_override
+@capture_provenance
 class GHOSTSpect(GHOST):
     """
     Primitive class for processing GHOST science data.

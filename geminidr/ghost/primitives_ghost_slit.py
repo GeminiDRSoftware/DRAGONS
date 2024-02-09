@@ -20,7 +20,7 @@ from .primitives_ghost import filename_updater
 from . import parameters_ghost_slit
 from .lookups import polyfit_lookup
 
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 from functools import reduce
 
 import astrodata
@@ -35,6 +35,7 @@ def parse_timestr(timestr):
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GHOSTSlit(GHOST):
     """
     Primitive class for processing GHOST slit-viewer images.
