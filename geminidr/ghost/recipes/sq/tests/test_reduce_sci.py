@@ -22,14 +22,15 @@ datasets = [("S20230514S0022.fits", {"bias": "S20230513S0013.fits",
 
 
 @pytest.fixture
-def input_filename(request):
-    ad = astrodata.open(download_from_archive(request.param))
-    p = GHOSTBundle([ad])
-    adoutputs = p.splitBundle()
-    return_dict = {}
-    for arm in ("blue", "red"):
-        return_dict[arm] = [ad for ad in adoutputs if arm.upper() in ad.tags]
-    return return_dict
+def input_filename(change_working_dir, request):
+    with change_working_dir():
+        ad = astrodata.open(download_from_archive(request.param))
+        p = GHOSTBundle([ad])
+        adoutputs = p.splitBundle()
+        return_dict = {}
+        for arm in ("blue", "red"):
+            return_dict[arm] = [ad for ad in adoutputs if arm.upper() in ad.tags]
+        return return_dict
 
 
 @pytest.mark.slow
@@ -80,8 +81,8 @@ def test_reduce_science(input_filename, caldict, arm, skysub, path_to_inputs,
     with change_working_dir():
         reduceScience(p)
         assert len(p.streams['main']) == 1
-        adout = p.streams['main'].pop()
-        output_filename = adout.filename
+        output_filename = p.streams['main'][0].filename
+        adout = astrodata.open(output_filename)
         adref = astrodata.open(os.path.join(
             path_to_refs, f"skysub_{skysub}", output_filename))
         assert ad_compare(adref, adout)
