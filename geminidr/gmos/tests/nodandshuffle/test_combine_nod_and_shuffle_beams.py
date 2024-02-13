@@ -27,8 +27,7 @@ def test_combine_nod_and_shuffle_beams(ad, kwargs, result, caplog):
 
 
 @pytest.fixture(scope='function')
-def ad(request):
-    path_to_inputs = "."
+def ad(path_to_inputs, request):
     """Return AD object in input directory"""
     path = os.path.join(path_to_inputs, request.param)
     if os.path.exists(path):
