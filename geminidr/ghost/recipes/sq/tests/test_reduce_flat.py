@@ -4,7 +4,6 @@ import os
 import pytest
 from numpy.testing import assert_allclose
 
-import pytest_dragons
 from astrodata.testing import ad_compare, download_from_archive
 
 import astrodata, gemini_instruments

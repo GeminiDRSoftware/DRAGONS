@@ -3,8 +3,6 @@
 import os
 import pytest
 
-import pytest_dragons
-from pytest_dragons.fixtures import *
 from astrodata.testing import ad_compare, download_from_archive
 
 import astrodata, gemini_instruments
@@ -76,11 +74,12 @@ def test_reduce_science(input_filename, caldict, arm, skysub, path_to_inputs,
     standard = caldict.get('standard')
     if standard:
         standard = standard.replace(".fits", f"_{arm}001_standard.fits")
-        uparms["responseCorrect:standard"] = os.path.join(path_to_inputs, standard)
+        uparms["fluxCalibrate:standard"] = os.path.join(path_to_inputs, standard)
     p = GHOSTSpect(adinputs, ucals=ucals, uparms=uparms)
     with change_working_dir():
         reduceScience(p)
         assert len(p.streams['main']) == 1
+        p.writeOutputs()
         output_filename = p.streams['main'][0].filename
         adout = astrodata.open(output_filename)
         adref = astrodata.open(os.path.join(

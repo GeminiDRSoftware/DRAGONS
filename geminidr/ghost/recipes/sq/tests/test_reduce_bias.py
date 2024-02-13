@@ -3,8 +3,6 @@
 import os
 import pytest
 
-import pytest_dragons
-from pytest_dragons.fixtures import *
 from astrodata.testing import ad_compare, download_from_archive
 
 import astrodata, gemini_instruments
