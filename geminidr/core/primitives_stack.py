@@ -234,7 +234,7 @@ class Stack(PrimitivesBASE):
                 bytes += ext.variance.dtype.itemsize
 
             bytes += 2  # mask always created
-            bytes_per_ext.append(bytes * np.product(ext.shape))
+            bytes_per_ext.append(bytes * np.prod(ext.shape))
 
         if memory is not None and (num_img * max(bytes_per_ext) > memory):
             adinputs = self.flushPixels(adinputs)
