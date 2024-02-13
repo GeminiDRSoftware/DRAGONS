@@ -618,27 +618,39 @@ class GHOSTSpect(GHOST):
             raise IndexError("Not all inputs have the same number of extensions")
         else:
             numext = numext.pop()
-        wave_limits = np.array([get_wavelength_limits(ext)
-                                for ad in adinputs for ext in ad]).T
-        min_wavl, max_wavl = np.min(wave_limits[0]), np.max(wave_limits[1])
-        log.stdinfo(f"Wavelength limits: {min_wavl:9.4f} {max_wavl:9.4f}")
+        wave_limits = {arm: np.array([get_wavelength_limits(ext)
+                                for ad in adinputs if ad.arm() == arm for ext in ad]).T
+                       for arm in ("blue", "red")}
+        ratios = {'blue': [], 'red': []}
         if scale == "loglinear":
-            ratios = []
             for ad in adinputs:
                 for ext in ad:
                     waves = make_wavelength_table(ext)
                     if waves.ndim == 2:
-                        ratios.extend(list((waves[:, 1:] / waves[:, :-1]).ravel()))
+                        ratios[ad.arm()].extend(list((waves[:, 1:] / waves[:, :-1]).ravel()))
             if not ratios:
-                log.warning("No input spectra to process as all are 1D")
+                log.warning("Not input spectra to process as all are 1D")
                 return adinputs
 
-            logspacing = np.log(np.median(ratios)) / oversample
-            logmin, logmax = np.log([min_wavl, max_wavl])
-            wavl_grid = np.exp(np.linspace(
-                logmin, logmax, num=int((logmax - logmin) / logspacing)))
-            wcs = models.Exponential1D(amplitude=wavl_grid[0],
-                                       tau=1. / np.log(wavl_grid[1] / wavl_grid[0]))
+            wcs_models = {}
+            if stacking_mode != "none":
+                min_wavl = np.min([v[0].min() for v in wave_limits.values() if v.size])
+                max_wavl = np.max([v[1].max() for v in wave_limits.values() if v.size])
+                logspacing = np.log(np.median(np.concatenate([v for v in ratios.values()]))) / oversample
+            for arm, v in ratios.items():
+                if v:
+                    if stacking_mode == "none":
+                        min_wavl = np.min(wave_limits[arm][0])
+                        max_wavl = np.max(wave_limits[arm][1])
+                        logspacing = np.log(np.median(v)) / oversample
+                    logmin, logmax = np.log([min_wavl, max_wavl])
+                    wavl_grid = np.exp(np.linspace(
+                        logmin, logmax, num=int((logmax - logmin) / logspacing)))
+                    wcs_models[arm] = models.Exponential1D(
+                        amplitude=wavl_grid[0],
+                        tau=1. / np.log(wavl_grid[1] / wavl_grid[0]))
+                    log.stdinfo(f"Resampling {arm} arm: {min_wavl:9.4f} to "
+                                f"{max_wavl:9.4f}nm with {wavl_grid.size} pixels")
         else:  # can't happen yet as protected by parameters
             return adinputs
 
@@ -653,6 +665,7 @@ class GHOSTSpect(GHOST):
         # ADs are order-combined first, but it frees up different algorithms
         # for combining them.
         for j, ad in enumerate(adinputs):
+            wcs = wcs_models[ad.arm()]
             if j == 0 or stacking_mode == "none":
                 adout = astrodata.create(ad.phu)
             if any([len(ext.shape) == 1 for ext in ad]):
@@ -677,7 +690,8 @@ class GHOSTSpect(GHOST):
 
                     t = transform.Transform(models.Tabular1D(lookup_table=waves[order],
                                                              bounds_error=False) | wcs.inverse)
-                    dg = transform.DataGroup((ext.nddata[order],), (t,))
+                    dg = transform.DataGroup((ext.nddata[order],), (t,),
+                                             loglevel="debug")
                     dg.no_data['mask'] = DQ.no_data
                     dg.output_shape = wavl_grid.shape
                     # Note: it's never correct to conserve because data in
@@ -760,7 +774,7 @@ class GHOSTSpect(GHOST):
                     data=all_data[i, -1], mask=all_mask[i, -1],
                     variance=all_var[i, -1], meta={'header': deepcopy(ext.hdr)})
                 adout.append(output)
-                adout[i].wcs = gWCS([(adwcs.pixel_frame(1), wcs),
+                adout[i].wcs = gWCS([(adwcs.pixel_frame(1), wcs_models[ad.arm()]),
                                      (ext.wcs.output_frame, None)])
             adout.hdr['DATADESC'] = ('Interpolated data',
                                      self.keyword_comments['DATADESC'])

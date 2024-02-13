@@ -37,7 +37,7 @@ def test_combine_orders_single_file(change_working_dir, path_to_inputs, filename
 
 @pytest.mark.ghostspect
 def test_combine_orders_red_and_blue_no_stacking(path_to_inputs):
-    """Check that combineOrders() works on two files without stacking"""
+    """Check that combineOrders() works on red and blue files with stacking"""
     adinputs = [astrodata.open(os.path.join(path_to_inputs, filename))
                 for filename in FILENAMES]
     p = GHOSTSpect(adinputs)
@@ -53,10 +53,30 @@ def test_combine_orders_red_and_blue_no_stacking(path_to_inputs):
 @pytest.mark.ghostspect
 @pytest.mark.parametrize("stacking_mode", ("scaled", "unscaled"))
 def test_combine_orders_red_and_blue_stacking(path_to_inputs, stacking_mode):
-    """Check that combineOrders() works on two files without stacking"""
+    """Check that combineOrders() works on red and blue files with stacking"""
     adinputs = [astrodata.open(os.path.join(path_to_inputs, filename))
                 for filename in FILENAMES]
-    orig_wavl = np.array([make_wavelength_table(ad[0]) for ad in adinputs])
+    orig_wavl = np.array([make_wavelength_table(ad[0]).min()
+                          for ad in adinputs])
+    p = GHOSTSpect(adinputs)
+    adoutputs = p.combineOrders(stacking_mode=stacking_mode)
+    assert len(adoutputs) == 1  # stacking
+    ad_out = adoutputs[0]
+
+    # Check that this combined arc makes sense
+    pixels = np.arange(ad_out[0].data.size)
+    x = ad_out[0].wcs(pixels[1:]) / ad_out[0].wcs(pixels[:-1])
+    assert x.std() < 1e-12  # all wavelength ratios are the same
+    assert ad_out[0].wcs(0) == pytest.approx(orig_wavl.min())
+
+
+@pytest.mark.ghostspect
+@pytest.mark.parametrize("stacking_mode", ("scaled", "unscaled"))
+def test_combine_orders_one_arm_stacking(path_to_inputs, stacking_mode):
+    """Check that combineOrders() stacks files from one arm"""
+    adinputs = [astrodata.open(os.path.join(path_to_inputs, FILENAMES[0])) * 2]
+    orig_wavl = np.array([make_wavelength_table(ad[0]).min()
+                          for ad in adinputs])
     p = GHOSTSpect(adinputs)
     adoutputs = p.combineOrders(stacking_mode=stacking_mode)
     assert len(adoutputs) == 1  # stacking
