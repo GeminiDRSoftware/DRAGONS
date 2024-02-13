@@ -5,7 +5,6 @@ import itertools
 import datetime
 
 import astrodata
-import pytest_dragons
 import geminidr.ghost.polyfit as polyfit
 from geminidr.ghost.lookups.polyfit_lookup import get_polyfit_filename
 
