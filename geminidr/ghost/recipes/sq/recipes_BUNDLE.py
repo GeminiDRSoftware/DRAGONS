@@ -4,7 +4,7 @@ Recipes imported from :any:`qa.recipes_BUNDLE`.
 """
 recipe_tags = set(['GHOST', 'BUNDLE', 'RAW', 'UNPREPARED'])
 
-def makeProcessedBundle(p):
+def processBundle(p):
     """
     This recipe processes GHOST observation bundles.
 
@@ -17,4 +17,4 @@ def makeProcessedBundle(p):
     return
 
 
-_default = makeProcessedBundle
+_default = processBundle

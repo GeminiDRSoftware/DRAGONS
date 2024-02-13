@@ -1,3 +1,6 @@
+# Tests for combineOrders: these are NOT regression tests, just checks
+# that the output wavelength scale is correct
+
 import pytest
 import os
 
@@ -8,8 +11,8 @@ import astrodata, gemini_instruments
 from geminidr.ghost.primitives_ghost_spect import GHOSTSpect, make_wavelength_table
 
 
-FILENAMES = ["S20230130S0104_2x8_blue001_wavelengthSolutionAttached.fits",
-             "S20230130S0104_2x8_red001_wavelengthSolutionAttached.fits"]
+FILENAMES = ["S20230130S0104_blue001_wavelengthSolutionAttached.fits",
+             "S20230130S0104_red001_wavelengthSolutionAttached.fits"]
 
 
 @pytest.mark.ghostspect

@@ -3,8 +3,6 @@
 import os
 import pytest
 
-import pytest_dragons
-from pytest_dragons.fixtures import *
 from astrodata.testing import ad_compare, download_from_archive
 
 import astrodata, gemini_instruments
@@ -22,19 +20,21 @@ datasets = [("S20230514S0022.fits", {"bias": "S20230513S0013.fits",
 
 
 @pytest.fixture
-def input_filename(request):
-    ad = astrodata.open(download_from_archive(request.param))
-    p = GHOSTBundle([ad])
-    adoutputs = p.splitBundle()
-    return_dict = {}
-    for arm in ("blue", "red"):
-        return_dict[arm] = [ad for ad in adoutputs if arm.upper() in ad.tags]
-    return return_dict
+def input_filename(change_working_dir, request):
+    with change_working_dir():
+        ad = astrodata.open(download_from_archive(request.param))
+        p = GHOSTBundle([ad])
+        adoutputs = p.splitBundle()
+        return_dict = {}
+        for arm in ("blue", "red"):
+            return_dict[arm] = [ad for ad in adoutputs if arm.upper() in ad.tags]
+        return return_dict
 
 
+@pytest.mark.slow
 @pytest.mark.dragons_remote_data
 @pytest.mark.integration_test
-@pytest.mark.ghost
+@pytest.mark.ghostspect
 @pytest.mark.parametrize("input_filename, caldict", datasets,
                          indirect=["input_filename"])
 @pytest.mark.parametrize("arm", ("blue", "red"))
@@ -74,13 +74,14 @@ def test_reduce_science(input_filename, caldict, arm, skysub, path_to_inputs,
     standard = caldict.get('standard')
     if standard:
         standard = standard.replace(".fits", f"_{arm}001_standard.fits")
-        uparms["responseCorrect:standard"] = os.path.join(path_to_inputs, standard)
+        uparms["fluxCalibrate:standard"] = os.path.join(path_to_inputs, standard)
     p = GHOSTSpect(adinputs, ucals=ucals, uparms=uparms)
     with change_working_dir():
         reduceScience(p)
         assert len(p.streams['main']) == 1
-        adout = p.streams['main'].pop()
-        output_filename = adout.filename
+        p.writeOutputs()
+        output_filename = p.streams['main'][0].filename
+        adout = astrodata.open(output_filename)
         adref = astrodata.open(os.path.join(
             path_to_refs, f"skysub_{skysub}", output_filename))
         assert ad_compare(adref, adout)

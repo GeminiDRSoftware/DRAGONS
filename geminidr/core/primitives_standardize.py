@@ -7,7 +7,7 @@ import os
 
 import numpy as np
 from importlib import import_module
-from scipy.ndimage import measurements
+from scipy import ndimage
 from copy import deepcopy
 
 from astrodata.provenance import add_provenance
@@ -143,13 +143,13 @@ class Standardize(PrimitivesBASE):
                             # saturation level. Flag those. Assume we have an
                             # IR detector here because both non-linear and
                             # saturation levels are defined and nonlin<sat
-                            regions, nregions = measurements.label(
+                            regions, nregions = ndimage.label(
                                                 ext.data < non_linear_level)
                             # In all my tests, region 1 has been the majority
                             # of the image; however, I cannot guarantee that
                             # this is always the case and therefore we should
                             # check the size of each region
-                            region_sizes = measurements.labeled_comprehension(
+                            region_sizes = ndimage.labeled_comprehension(
                                 ext.data, regions, np.arange(1, nregions+1),
                                 len, int, 0)
                             # First, assume all regions are saturated, and

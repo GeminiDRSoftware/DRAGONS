@@ -13,13 +13,14 @@ from .primitives_ghost import GHOST
 from . import parameters_ghost_bundle
 
 from gempy.gemini import gemini_tools as gt
-from recipe_system.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from astropy.io.fits import PrimaryHDU, Header
 from astropy.table import Table
 
 # ------------------------------------------------------------------------------
 @parameter_override
+@capture_provenance
 class GHOSTBundle(GHOST):
     """
     Primitives for unpacking GHOST observation bundle files.

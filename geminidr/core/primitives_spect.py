@@ -8,8 +8,7 @@
 import os
 import re
 import warnings
-from contextlib import suppress
-from copy import copy, deepcopy
+from copy import copy
 from functools import partial, reduce
 from importlib import import_module
 
@@ -3447,11 +3446,16 @@ class Spect(Resample):
         InconsistentTableError: if the file can't be read as ASCII
         """
         log = self.log
-        try:
-            tbl = Table.read(filename)
-        except IORegistryError:
-            # Force ASCII
-            tbl = Table.read(filename, format='ascii')
+
+        # HST/calspec files have all sorts of UnitsWarnings because of
+        # incorrect names like "ANGSTROMS" and "FLAM"
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", u.UnitsWarning)
+            try:
+                tbl = Table.read(filename)
+            except IORegistryError:
+                # Force ASCII
+                tbl = Table.read(filename, format='ascii')
 
         # Create table, interpreting column names (or lack thereof)
         spec_table = Table()
