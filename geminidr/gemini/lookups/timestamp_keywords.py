@@ -71,6 +71,7 @@ timestamp_keys = {
     "skyCorrectNodAndShuffle": "SKYCORR",
     "slitIllumCorrect": "SILLCORR",
     "splitBundle": "SPLTBNDL",
+    "stackArcs": "STACKARC",
     "stackFrames": "STACKFRM",
     "stackSkyFrames": "STACKSKY",
     "standardizeInstrumentHeaders": "SDZHDRSI",

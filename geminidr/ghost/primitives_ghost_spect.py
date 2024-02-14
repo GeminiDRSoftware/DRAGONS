@@ -1947,7 +1947,7 @@ class GHOSTSpect(GHOST):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = "STCKARCS"  # FIXME - Needs to go into timestamp_keywords
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         if params['skip']:
             log.stdinfo('Skipping the specialized arc stacking step')

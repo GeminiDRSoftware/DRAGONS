@@ -62,7 +62,9 @@ def test_reduce_arc(input_filename, caldict, arm, path_to_inputs, path_to_refs):
     output_filename = p.streams['main'][0].filename
     adout = astrodata.open(os.path.join("calibrations", "processed_arc", output_filename))
     adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-    assert ad_compare(adref, adout)
+    # Changed timestamp kw from STCKARCS -> STACKARC and don't have time to
+    # re-upload reference, so just add these to the "ignore" list
+    assert ad_compare(adref, adout, ignore_kw=['PROCARC', 'STACKARC', 'STCKARCS'])
 
     # Need to evaluate WFIT
     arm = GhostArm(arm=adout.arm(), mode=adout.res_mode())
