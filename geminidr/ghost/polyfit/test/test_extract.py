@@ -52,8 +52,8 @@ class TestExtractor(object):
         slitv_fn = get_polyfit_filename(
             None, 'slitv', res, datetime.date(2016, 11, 20), None, 'slitvmod')
         sv = slitview.SlitView(
-            slit_image=np.loadtxt(os.path.join(TEST_DATA_DIR, 'slitimage.txt')),
-            flat_image=np.loadtxt(os.path.join(TEST_DATA_DIR, 'slitflat.txt')),
+            slit_image=np.loadtxt(os.path.join(TEST_DATA_DIR, 'slitimage.dat')),
+            flat_image=np.loadtxt(os.path.join(TEST_DATA_DIR, 'slitflat.dat')),
             slitvpars=astrodata.open(slitv_fn).TABLE[0], mode=res)
 
         ext = extract.Extractor(ga, sv)
