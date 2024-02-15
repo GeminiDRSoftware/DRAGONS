@@ -52,7 +52,7 @@ def initialize_database(path_to_inputs, filename=CONFIG_FILE):
 def test_reduce_ghost(change_working_dir, path_to_inputs, progid, file_dict):
 
     with change_working_dir(progid):
-        caldb = initialize_database()
+        caldb = initialize_database(path_to_inputs)
 
         # BIAS for calibrations
         calbias_files = file_dict["calbias"]
