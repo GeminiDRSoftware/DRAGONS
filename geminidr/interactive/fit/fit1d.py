@@ -41,18 +41,22 @@ from gempy.library.fitting import fit_1D
 
 
 # Names to use for masks.  You can change these to change the label that gets displayed in the legend
-SIGMA_MASK_NAME = 'rejected (sigma)'
-USER_MASK_NAME = 'rejected (user)'
-BAND_MASK_NAME = 'excluded'
-INPUT_MASK_NAMES = ['aperture', 'threshold']
+SIGMA_MASK_NAME = "rejected (sigma)"
+USER_MASK_NAME = "rejected (user)"
+BAND_MASK_NAME = "excluded"
+INPUT_MASK_NAMES = ["aperture", "threshold"]
+
+
+class InteractiveModelError(Exception):
+    """Base class for exceptions in this module."""
 
 
 class InteractiveModel(ABC):
     """Base class for all interactive models, containing:
-        (a) the parameters of the model
-        (b) the parameters that control the fitting (e.g., sigma-clipping)
-        (c) the way the fitting is performed
-        (d) the input and output coordinates, mask, and weights
+    (a) the parameters of the model
+    (b) the parameters that control the fitting (e.g., sigma-clipping)
+    (c) the way the fitting is performed
+    (d) the input and output coordinates, mask, and weights
     """
 
     MASK_TYPE = [
@@ -180,6 +184,7 @@ class InteractiveModel1D(InteractiveModel):
 
         extra_masks : dict of boolean arrays
             points to display but not use in fit
+
         initial_fit: fit_1D/None
             an initial fit to use if there are no data points
         """
@@ -197,8 +202,7 @@ class InteractiveModel1D(InteractiveModel):
         self.fitting_parameters = fitting_parameters
         self.domain = domain
         self.fit = initial_fit
-        if len(x) == 0:
-            self.fit = initial_fit
+
         self.listeners = listeners
 
         self.section = section
@@ -206,6 +210,7 @@ class InteractiveModel1D(InteractiveModel):
 
         if self.domain:
             xlinspace = np.linspace(*self.domain, 500)
+
         else:
             xlinspace = np.linspace(min(x), max(x), 500)
 
@@ -299,8 +304,15 @@ class InteractiveModel1D(InteractiveModel):
         else:
             init_mask = mask
 
+        # Check if the data has been fully masked; if so, raise a ValueError.
+        if init_mask.all():
+            raise ValueError(
+                "All data points are masked. Cannot perform a fit."
+            )
+
         x = x[~init_mask]
         y = y[~init_mask]
+
         if weights is not None:
             weights = weights[~init_mask]
 
@@ -465,6 +477,7 @@ class InteractiveModel1D(InteractiveModel):
         )
 
         self.quality = FitQuality.BAD
+
         if goodpix.sum():
             new_fit = fit_1D(
                 self.y[goodpix],
@@ -480,6 +493,7 @@ class InteractiveModel1D(InteractiveModel):
             # Chebyshevs it's effectively the number of fitted points (max
             # order+1).
             rank = new_fit.fit_info["rank"]
+
             if rank > 0:
                 if "params" in new_fit.fit_info:  # it's a polynomial
                     rank -= 1
@@ -487,18 +501,24 @@ class InteractiveModel1D(InteractiveModel):
                 if rank >= fitparms["order"]:
                     self.quality = FitQuality.GOOD
                     self.fit = new_fit
+
                 elif self.fit is None:
                     self.quality = FitQuality.BAD
                     self.fit = new_fit
+
                 else:
                     # Modify the fit_1D object with a shift by ugly hacking
-                    offset = np.mean(self.y[goodpix] - self.evaluate(self.x[goodpix]))
+                    offset = np.mean(
+                        self.y[goodpix] - self.evaluate(self.x[goodpix])
+                    )
                     self.fit.offset_fit(offset)
                     self.fit.points = new_fit.points
                     self.fit.mask = new_fit.mask
                     self.quality = FitQuality.POOR  # else stay BAD
+
         if self.quality != FitQuality.BAD:  # don't update if it's BAD
             self.fit = new_fit
+
             if "residuals" in self.data.data:
                 self.data.data["residuals"] = self.y - self.evaluate(self.x)
 
@@ -532,13 +552,25 @@ class InteractiveModel1D(InteractiveModel):
         self.data.data["mask"] = mask
 
     def evaluate(self, x):
-        return self.fit.evaluate(x)
+        try:
+            return self.fit.evaluate(x)
+
+        except AttributeError as err:
+            msg = f"Could not evaluate fit ({self.fit = })."
+
+            if self.fit is None:
+                msg += " Have you provided an initial fit?"
+
+            msg += " Is the image empty or completely masked?"
+
+            raise InteractiveModelError(msg) from err
 
 
 class FittingParametersUI:
     """Manager for the UI controls and their interactions with the fitting
     model.
     """
+
     def __init__(self, vis, fit, fitting_parameters):
         """Class to manage the set of UI controls for the inputs to the fitting
         model.
@@ -967,6 +999,7 @@ class Fit1DPanel:
     This class is typically used in tabs within the interactive module. It
     is meant to handle one set of data being fit at a time.
     """
+
     def __init__(
         self,
         visualizer,
@@ -1154,7 +1187,7 @@ class Fit1DPanel:
             css_classes=["tab-content"],
             spacing=10,
             stylesheets=dragons_styles(),
-            sizing_mode="stretch_width"
+            sizing_mode="stretch_width",
         )
 
     # pylint: disable=unused-argument
@@ -1449,8 +1482,7 @@ class Fit1DPanel:
     # x/y tracking when the mouse moves in the figure for calculateSensitivity
     @staticmethod
     def add_custom_cursor_behavior(pointer):
-        """Customize cursor behavior depending on which tool is active.
-        """
+        """Customize cursor behavior depending on which tool is active."""
         pan_start = """
             var mainPlot = document.getElementsByClassName('plot-main')[0];
             var active = [...mainPlot.getElementsByClassName('bk-active')];
@@ -1651,7 +1683,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
-        if 'pad_buttons' in kwargs:
+        if "pad_buttons" in kwargs:
             # Deprecation warning
             warnings.warn(
                 "pad_buttons is no longer supported",
@@ -1716,14 +1748,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
             if recalc_inputs_above:
                 self.reinit_panel = row(
-                    *reinit_widgets,
-                    stylesheets=dragons_styles()
+                    *reinit_widgets, stylesheets=dragons_styles()
                 )
 
             else:
                 self.reinit_panel = column(
-                    *reinit_widgets,
-                    stylesheets=dragons_styles()
+                    *reinit_widgets, stylesheets=dragons_styles()
                 )
 
         else:
@@ -1838,7 +1868,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col = column(
             self.tabs,
             stylesheets=dragons_styles(),
-            sizing_mode="stretch_width"
+            sizing_mode="stretch_width",
         )
 
         for btn in (self.submit_button, self.abort_button):
@@ -1907,14 +1937,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     self.reinit_panel,
                     col,
                     sizing_mode="stretch_width",
-                    stylesheets=dragons_styles()
+                    stylesheets=dragons_styles(),
                 )
             )
 
         self.layout = column(
             *layout_ls,
             sizing_mode="stretch_width",
-            stylesheets=dragons_styles()
+            stylesheets=dragons_styles(),
         )
 
         doc.add_root(self.layout)
@@ -1959,6 +1989,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.do_later(function)
 
         if self.reconstruct_points_fn is not None:
+
             def rfn():
                 data = None
                 try:
@@ -1977,7 +2008,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     logging.error(
                         "Unable to build data from inputs, got Exception %s",
                         err,
-                        exc_info=True
+                        exc_info=True,
                     )
 
                 if data is not None:
@@ -2211,9 +2242,7 @@ def fit1d_figure(
 
     if plot_residuals and plot_ratios:
         tabs = bm.Tabs(
-            tabs=[],
-            sizing_mode="stretch_width",
-            stylesheets=dragons_styles()
+            tabs=[], sizing_mode="stretch_width", stylesheets=dragons_styles()
         )
 
         tabs.tabs.append(bm.TabPanel(child=p_resid, title="Residuals"))
