@@ -123,6 +123,9 @@ def trace_apertures_data_provider(ext, ui_params):
             step=ui_params.values['step'],
         )
 
+        assert len(in_coords) == 2,\
+            f"No trace was found at {loc} in {ext.filename}."
+
         data["x"].append(in_coords[1 - dispaxis])
         data["y"].append(in_coords[dispaxis])
 
