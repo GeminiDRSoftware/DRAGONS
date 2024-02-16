@@ -3601,7 +3601,7 @@ class Spect(Resample):
                     constant_slit = 'LS' in ext.tags
 
                     data, mask, variance, extract_info = tracing.average_along_slit(
-                        ext, center=ui_params.nsum, nsum=ui_params.nsum,
+                        ext, center=ui_params.center, nsum=ui_params.nsum,
                         offset_from_center=ui_params.offset_from_center)
                     if constant_slit:
                         log.stdinfo(f"Extracting 1D spectrum from {direction}s "
