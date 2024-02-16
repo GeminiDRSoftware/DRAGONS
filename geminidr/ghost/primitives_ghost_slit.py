@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 import dateutil
 from matplotlib import pyplot as plt
 
+import astrodata
+from astrodata.provenance import add_provenance
+
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -21,9 +24,9 @@ from . import parameters_ghost_slit
 from .lookups import polyfit_lookup
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
+from recipe_system.utils.md5 import md5sum
 from functools import reduce
 
-import astrodata
 
 def parse_timestr(timestr):
     """
@@ -518,6 +521,8 @@ class GHOSTSlit(GHOST):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
+            if slitflat:
+                add_provenance(ad, slitflat.filename, md5sum(slitflat.path) or "", self.myself())
         return adinputs
 
 

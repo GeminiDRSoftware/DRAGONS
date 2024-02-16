@@ -27,9 +27,10 @@ from importlib import import_module
 
 import astrodata
 from astrodata import wcs as adwcs
+from astrodata.provenance import add_provenance
 from gemini_instruments.gemini import get_specphot_name
 
-from geminidr.core.primitives_spect import Spect, conserve_or_interpolate
+from geminidr.core.primitives_spect import Spect
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
 from gempy.library.nddops import NDStacker
@@ -47,6 +48,7 @@ from . import parameters_ghost_spect
 from .lookups import polyfit_lookup, line_list
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
+from recipe_system.utils.md5 import md5sum
 # ------------------------------------------------------------------------------
 
 GEMINI_SOUTH_LOC = astrocoord.EarthLocation.from_geodetic(
@@ -152,6 +154,10 @@ class GHOSTSpect(GHOST):
         # arc_list = params["arcs"]
         arc_before_file = params["arc_before"]
         arc_after_file = params["arc_after"]
+        if arc_before_file:
+            arc_before = astrodata.open(arc_before_file)
+        if arc_after_file:
+            arc_after = astrodata.open(arc_after_file)
 
         input_frame = adwcs.pixel_frame(2)
         output_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
@@ -161,45 +167,19 @@ class GHOSTSpect(GHOST):
         #         *gt.make_lists(adinputs, arc_list, force_ad=True)):
         for i, ad in enumerate(adinputs):
 
-            found_arcs = False
-
-            #if arc_list:
-            #    try:
-            #        arc_before, arc_after = arc_list[i]
-            #        found_arcs = True
-            #    except (TypeError, ValueError):
-            #        pass
-
-            if arc_before_file or arc_after_file:
-                arc_before = arc_before_file
-                arc_after = arc_after_file
-                found_arcs = True
-
-            # self.getProcessedArc(ad, howmany=2)
-            # if not found_arcs:
-            #     try:
-            #         arcs_calib = self._get_cal(ad, 'processed_arc', )
-            #         log.stdinfo('Found following arcs: {}'.format(
-            #             ', '.join([_ for _ in arcs_calib])
-            #         ))
-            #         arc_before, arc_after = self._get_cal(ad, 'processed_arc',)
-            #     except (TypeError, ValueError):
-            #         # Triggers if only one arc, or more than two
-            #         arc_before = self._get_cal(ad, 'processed_arc',)[0]
-            #         arc_after = None
-
-            if not found_arcs:
+            if arc_before_file is None and arc_after_file is None:
                 # Fetch the arc_before and arc_after in sequence
                 arc_before = self._request_bracket_arc(ad, before=True)
                 arc_after = self._request_bracket_arc(ad, before=False)
 
             if arc_before is None and arc_after is None:
-                raise IOError('No valid arcs found for {}'.format(ad.filename))
+                raise IOError(f'No valid arcs found for {ad.filename}')
 
-            log.stdinfo('Arcs for {}: \n'
-                        '   before: {}\n'
-                        '    after: {}'.format(ad.filename,
-                                               arc_before, arc_after))
+            log.stdinfo(f'Arcs for {ad.filename}:')
+            if arc_before:
+                log.stdinfo(f'   before: {arc_before.filename}')
+            if arc_after:
+                log.stdinfo(f'    after: {arc_after.filename}')
 
             # Stand up a GhostArm instance for this ad
             gs = GhostArm(arm=ad.arm(), mode=ad.res_mode(),
@@ -207,23 +187,17 @@ class GHOSTSpect(GHOST):
                           detector_y_bin=ad.detector_y_bin())
 
             if arc_before is None:
-                # arc = arc_after
-                arc_after = astrodata.open(arc_after)
                 wfit = gs.evaluate_poly(arc_after[0].WFIT)
-                ad.phu.set('ARCIM_A', os.path.abspath(arc_after.path),
+                ad.phu.set('ARCIM_A', os.path.abspath(arc_after.filename),
                            "'After' arc image")
             elif arc_after is None:
-                # arc = arc_before
-                arc_before = astrodata.open(arc_before)
                 wfit = gs.evaluate_poly(arc_before[0].WFIT)
-                ad.phu.set('ARCIM_B', os.path.abspath(arc_before.path),
+                ad.phu.set('ARCIM_B', os.path.abspath(arc_before.filename),
                            "'Before' arc image")
             else:
                 # Need to weighted-average the wavelength fits from the arcs
                 # Determine the weights (basically, the inverse time between
                 # the observation and the arc)
-                arc_after = astrodata.open(arc_after)
-                arc_before = astrodata.open(arc_before)
                 wfit_b = gs.evaluate_poly(arc_before[0].WFIT)
                 wfit_a = gs.evaluate_poly(arc_after[0].WFIT)
                 weight_b = np.abs((arc_before.ut_datetime() -
@@ -239,9 +213,9 @@ class GHOSTSpect(GHOST):
                 # Compute weighted mean fit
                 wfit = wfit_a * weight_a + wfit_b * weight_b
                 wfit /= (weight_a + weight_b)
-                ad.phu.set('ARCIM_A', os.path.abspath(arc_after.path),
+                ad.phu.set('ARCIM_A', os.path.abspath(arc_after.filename),
                            self.keyword_comments['ARCIM_A'])
-                ad.phu.set('ARCIM_B', os.path.abspath(arc_before.path),
+                ad.phu.set('ARCIM_B', os.path.abspath(arc_before.filename),
                            self.keyword_comments['ARCIM_B'])
                 ad.phu.set('ARCWT_A', weight_a,
                            self.keyword_comments['ARCWT_A'])
@@ -261,6 +235,10 @@ class GHOSTSpect(GHOST):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
+            if arc_before:
+                add_provenance(ad, arc_before.filename, md5sum(arc_before.path) or "", self.myself())
+            if arc_after:
+                add_provenance(ad, arc_after.filename, md5sum(arc_after.path) or "", self.myself())
 
         return adinputs
 
@@ -918,6 +896,7 @@ class GHOSTSpect(GHOST):
                        self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+            add_provenance(ad, dark.filename, md5sum(dark.path) or "", self.myself())
 
         return adinputs_orig
 
@@ -1441,8 +1420,12 @@ class GHOSTSpect(GHOST):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
-            if params["write_result"]:
-                ad.write(overwrite=True)
+
+            add_provenance(ad, flat.filename, md5sum(flat.path) or "", self.myself())
+            if "synthetic" not in slit_filename:
+                add_provenance(ad, slit_filename, md5sum(slit.path) or "", self.myself())
+            if "synthetic" not in slitflat_filename:
+                add_provenance(ad, slitflat_filename, md5sum(slitflat.path) or "", self.myself())
 
         return adinputs
 
@@ -1570,6 +1553,7 @@ class GHOSTSpect(GHOST):
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+            add_provenance(ad, std.filename, md5sum(std.path) or "", self.myself())
 
         return adinputs
 
@@ -1603,6 +1587,9 @@ class GHOSTSpect(GHOST):
 
         for ad, slitflat, origin in zip(*gt.make_lists(adinputs, *flat_list,
                                                        force_ad=(1,))):
+            if slitflat is None:
+                raise RuntimeError(f"No processed_slitflat found for {ad.filename}")
+
             res_mode = ad.res_mode()
             arm = GhostArm(arm=ad.arm(), mode=res_mode,
                            detector_x_bin=ad.detector_x_bin(),
@@ -1666,6 +1653,7 @@ class GHOSTSpect(GHOST):
             ad[0].BLAZE[extracted_mask.astype(bool)] = 0
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+            add_provenance(ad, slitflat.filename, md5sum(slitflat.path) or "", self.myself())
 
         return adinputs
 
@@ -1949,10 +1937,6 @@ class GHOSTSpect(GHOST):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if params['skip']:
-            log.stdinfo('Skipping the specialized arc stacking step')
-            return adinputs
-
         time_delta = params['time_delta']
         stack_params = self._inherit_params(params, "stackFrames")
 
@@ -2126,12 +2110,20 @@ class GHOSTSpect(GHOST):
 
         Parameters
         ----------
+        suffix: str
+            suffix to be added to output files
         slitflat: str or :class:`astrodata.AstroData` or None
             slit flat to use; if None, the calibration system is invoked
+        smoothing: int
+            Gaussian FWHM (in unbinned slitviewer pixels) for smoothing the
+            slit profile
+        make_pixel_model: bool
+            add a PIXMODEL extension with a model of the fiber traces?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
         make_pixel_model = params.get('make_pixel_model', False)
         smoothing = params["smoothing"]
 
@@ -2151,6 +2143,9 @@ class GHOSTSpect(GHOST):
                 log.warning(f"{self.myself()} is only run on prepared flats: "
                             f"{ad.filename} will not be processed")
                 continue
+
+            if slitflat is None:
+                raise RuntimeError(f"No processed_slitflat found for {ad.filename}")
 
             origin_str = f" (obtained from {origin})" if origin else ""
             log.stdinfo(f"{ad.filename}: using slitflat "
@@ -2231,6 +2226,8 @@ class GHOSTSpect(GHOST):
             if smoothing:
                 ad.phu['SMOOTH'] = (smoothing, "Pixel FWHM of SVC smoothing kernel")
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+            add_provenance(ad, slitflat.filename, md5sum(slitflat.path) or "", self.myself())
 
         return adinputs
 
@@ -2354,7 +2351,13 @@ class GHOSTSpect(GHOST):
         ad.phu['ARCBEFOR'] = before
         arc_ad = self.caldb.get_processed_arc([ad]).items()[0][0]
         del ad.phu['ARCBEFOR']
-        return arc_ad
+        # If the arc is retrieved from user_cals then it will ignore 'ARCBEFOR'
+        # and the same file will be returned twice, but we don't want that
+        if arc_ad:
+            arc_ad = astrodata.open(arc_ad)
+            correct_timing = before == (arc_ad.ut_datetime() < ad.ut_datetime())
+            return arc_ad if correct_timing else None
+        return None
 
 
 def _construct_datetime(hdr):

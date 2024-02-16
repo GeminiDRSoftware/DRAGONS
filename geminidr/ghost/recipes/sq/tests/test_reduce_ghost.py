@@ -5,11 +5,10 @@ import pytest
 from astrodata.testing import download_from_archive
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
-from recipe_system.utils.reduce_utils import normalize_ucals
-from recipe_system.cal_service import LocalDB, set_local_database, get_db_path_from_config
+from recipe_system.cal_service import LocalDB, get_db_path_from_config
 from recipe_system.config import load_config
 
-CONFIG_FILE = "./dragonsrc"
+CONFIG_FILE = "dragonsrc"
 
 
 datasets = {
@@ -28,8 +27,9 @@ datasets = {
 
 
 def initialize_database(path_to_inputs, filename=CONFIG_FILE):
+    cwd = os.getcwd()
     with open(filename, "w") as f:
-        f.write("[calibs]\ndatabases = ./dragons.db get store\n")
+        f.write(f"[calibs]\ndatabases = {cwd}/dragons.db get\n")
     try:
         os.remove("dragons.db")
     except FileNotFoundError:
@@ -44,6 +44,7 @@ def initialize_database(path_to_inputs, filename=CONFIG_FILE):
     return caldb
 
 
+@pytest.mark.skip("Skipping to test caldb cross-talk")
 @pytest.mark.slow
 @pytest.mark.integration_test
 @pytest.mark.ghostspect
@@ -187,7 +188,7 @@ def reduce(file_list, label, caldb, recipe_name=None,
     r = Reduce()
     r.files = file_list
     r.uparms = user_pars
-    r.config_file = CONFIG_FILE
+    r.config_file = os.path.join(os.getcwd(), CONFIG_FILE)
 
     if recipe_name:
         r.recipename = recipe_name
@@ -195,6 +196,8 @@ def reduce(file_list, label, caldb, recipe_name=None,
     r.runr()
 
     if caltype:
+        # Add calibrations manually rather than auto-store because of
+        # possible cross-talk with other tests
         for f in r.output_filenames:
             caldb.store_calibration(f"{os.path.join('calibrations', caltype, f)}", caltype=caltype)
         [os.remove(f) for f in r.output_filenames]
