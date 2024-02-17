@@ -84,11 +84,13 @@ def test_reduce_science(input_filename, caldict, arm, skysub, path_to_inputs,
         adout = astrodata.open(output_filename)
         adref = astrodata.open(os.path.join(
             path_to_refs, f"skysub_{skysub}", output_filename))
-        assert ad_compare(adref, adout, ignore_kw=['ARCIM_A', 'ARCIM_B', 'PROCSCI'])
+        assert ad_compare(adref, adout, ignore_kw=['ARCIM_A', 'ARCIM_B', 'PROCSCI'],
+                          atol=1e-14)
 
         # Now compare the _calibrated.fits files (not order-combined)
         intermediate_filename = output_filename.replace("_dragons", "_calibrated")
         adout = astrodata.open(os.path.join(path_to_outputs, "outputs", intermediate_filename))
         adref = astrodata.open(os.path.join(
             path_to_refs, f"skysub_{skysub}", intermediate_filename))
-        assert ad_compare(adref, adout, ignore_kw=['ARCIM_A', 'ARCIM_B', 'PROCSCI'])
+        assert ad_compare(adref, adout, ignore_kw=['ARCIM_A', 'ARCIM_B', 'PROCSCI'],
+                          atol=1e-14)

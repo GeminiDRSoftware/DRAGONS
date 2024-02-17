@@ -1473,12 +1473,16 @@ class GHOSTSpect(GHOST):
 
             if std is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed standard listed for "
-                                  f"{ad.filename}")
+                    raise RuntimeError("No processed standard listed for "
+                                       f"{ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no standard was specified")
                     continue
+
+            if ad.arm() != std.arm():
+                raise RuntimeError(f"{ad.filename} and {std.filename} are "
+                                   "from different GHOST arms.")
 
             origin_str = f" (obtained from {origin})" if origin else ""
             log.stdinfo(f"{ad.filename}: using the standard {std.filename}"
@@ -1494,12 +1498,13 @@ class GHOSTSpect(GHOST):
                 sensfunc_units = "W m-2 nm-1"
                 log.warning("Cannot confirm units of SENSFUNC: assuming "
                             f"{sensfunc_units}")
+
             std_waves = make_wavelength_table(std[0])
             try:
-                sensfunc = (sensfunc * u.Unit(sensfunc_units)).to(
+                (1 * u.Unit(sensfunc_units)).to(
                     final_units, equivalencies=u.spectral_density(std_waves)).value
             except u.UnitConversionError:
-                log.warning("Cannot transform units - continuing")
+                log.warning(f"Cannot transform units of {std.filename} - continuing")
                 continue
 
             telescope = ad.telescope()
@@ -1515,32 +1520,67 @@ class GHOSTSpect(GHOST):
                 log.stdinfo("Correcting for difference of "
                             f"{delta_airmass:5.3f} airmasses")
 
-            for index, ext in enumerate(ad):
+            for ext in ad:
                 extname = f"{ad.filename} extension {ext.id}"
-                # This covers binning and arm mismatches
-                if ext.shape != sensfunc.shape:
-                    log.warning(f"{extname}'s shape ({ext.shape}) does not "
-                                f"match shape of SENSFUNC ({sensfunc.shape}) "
-                                "- continuing")
-                    continue
                 if ext.hdr.get('BUNIT') != "electron":
                     log.warning(f"{extname} is not in units of electrons - "
                                 "continuing")
                     continue
 
+                sci_waves = make_wavelength_table(ext)
+
+                # Because SENSFUNC for GHOST stores the evaluated function and
+                # not the function itself, we need to reconstruct the function
+                # in order to evaluate it at new wavelengths (otherwise we may
+                # have to extrapolate if the standard is more heavily binned)
+                if ext.shape != std_waves.shape:
+                    bin_factor = std_waves.shape[1] / ext.shape[1]
+                    fit_it = fitting.LinearLSQFitter()
+                    sensfunc_fits = []
+                    poly_degree = 1
+                    for od, (waves, sens) in enumerate(zip(std_waves, sensfunc)):
+                        while True:
+                            m_init = models.Chebyshev1D(
+                                degree=poly_degree, domain=[waves.min(), waves.max()])
+                            m_final = fit_it(m_init, waves, sens)
+                            # All fits have the same degree so we only have to
+                            # work it out for the first order
+                            if od == 0:
+                                maxdev = abs(m_final(waves) - sens).max()
+                                log.debug(f"Trying degree {poly_degree}: maxdev={maxdev} "
+                                          f"mean={sens.mean()}")
+                                if maxdev < 1e-7 * sens.mean():
+                                    print(f"Using degree {poly_degree}")
+                                    log.debug(f"Using degree {poly_degree}")
+                                    break
+                                poly_degree += 1
+                                if poly_degree > 4:
+                                    raise RuntimeError("Cannot determine order of SENSFUNC"
+                                                       " polynomial fit, required to rebin")
+                            else:
+                                break
+                        sensfunc_fits.append(m_final)
+                    sensfunc_regrid = np.empty_like(ext.data)
+                    for od, func in enumerate(sensfunc_fits):
+                        sensfunc_regrid[od] = func(sci_waves[od]) * bin_factor
+                    sensfunc_to_use = (sensfunc_regrid * u.Unit(sensfunc_units)).to(
+                        final_units, equivalencies=u.spectral_density(sci_waves)).value
+                else:
+                    sensfunc_to_use = (sensfunc * u.Unit(sensfunc_units)).to(
+                        final_units, equivalencies=u.spectral_density(sci_waves)).value
+
                 airmass_corr = 1.0
                 if delta_airmass:
-                    waves = make_wavelength_table(ext)
                     try:
                         extinction_correction = extinct.extinction(
-                            waves, telescope=telescope)
+                            sci_waves, telescope=telescope)
                     except KeyError:
                         log.warning(f"Telescope {telescope} not recognized. "
                                     "Not making an airmass correction.")
                     else:
                         airmass_corr = 10 ** (0.4 * delta_airmass * extinction_correction)
 
-                scaling_factor = exptime * sensfunc / airmass_corr
+                scaling_factor = exptime * sensfunc_to_use / airmass_corr
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     ext.data /= scaling_factor
