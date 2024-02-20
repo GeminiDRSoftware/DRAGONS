@@ -1567,7 +1567,13 @@ class GHOSTSpect(GHOST):
                         m = models.Chebyshev1D(degree=len(kwargs) - 3,
                             domain=[kwargs.pop('wave_min'), kwargs.pop('wave_max')],
                                                **kwargs)
-                        sensfunc_regrid[od] = m(order_waves)
+                        # Orders with no data are set to zero, but we want
+                        # them to be np.inf for division
+                        sens_data = m(order_waves)
+                        if sens_data.max() > 0:
+                            sensfunc_regrid[od] = sens_data
+                        else:
+                            sensfunc_regrid[od] = np.inf
                     sensfunc_to_use = (sensfunc_regrid * u.Unit(sensfunc_units)).to(
                         final_units, equivalencies=u.spectral_density(sci_waves)).value
                 elif ext.shape == std_waves.shape:
