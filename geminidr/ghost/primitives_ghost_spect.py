@@ -16,6 +16,7 @@ from astropy import units as u
 from astropy import constants as const
 from astropy.stats import sigma_clip
 from astropy.modeling import fitting, models
+from astropy.table import Table
 from scipy import interpolate
 from scipy.ndimage import measurements
 from gwcs import coordinate_frames as cf
@@ -481,11 +482,20 @@ class GHOSTSpect(GHOST):
             # measurements from low counts at the extreme orders
             #ratio = sens_func / np.percentile(sens_func, 60, axis=1)[:, np.newaxis]
             #good &= np.logical_and(ratio >= 0.2, ratio <= 5)
-            ratio = sens_func / np.nanpercentile(
-                np.where(good, sens_func, np.nan), 60, axis=1)[:, np.newaxis]
-            good &= np.logical_and.reduce([ratio >= 0.2, ratio <= 5, ~np.isnan(ratio)])
-            fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(), sigma_clip,
-                                                       sigma_lower=2, maxiters=10)
+            #ratio = sens_func / np.nanpercentile(
+            #    np.where(good, sens_func, np.nan), 60, axis=1)[:, np.newaxis]
+            #good &= np.logical_and.reduce([ratio >= 0.2, ratio <= 5, ~np.isnan(ratio)])
+
+            # CJS 240219: We fit in two setps. First has quite a harsh
+            # asymmetric cut. Then points which are significantly below
+            # this fit (in terms of ratio) are masked before a symmetric
+            # fit is performed.
+            fit_it1 = fitting.FittingWithOutlierRemoval(
+                fitting.LinearLSQFitter(), sigma_clip,
+                sigma_lower=1, sigma_upper=3, maxiters=2)
+            fit_it2 = fitting.FittingWithOutlierRemoval(
+                fitting.LinearLSQFitter(), sigma_clip,
+                sigma_lower=3, sigma_upper=3, maxiters=10)
             plt.ioff()
             for od in range(sens_func.shape[0]):
                 good_order = good[od]
@@ -495,14 +505,26 @@ class GHOSTSpect(GHOST):
                     m_init = models.Chebyshev1D(
                         degree=poly_degree, c0=sens_func[od, good_order].mean(),
                         domain=[min_wave, max_wave])
-                    m_final, mask = fit_it(m_init, wavelengths[good_order],
-                                           sens_func[od, good_order],
-                                           weights=1. / np.sqrt(sens_func_var[od, good_order]))
+                    m_inter, mask = fit_it1(m_init, wavelengths[good_order],
+                                            sens_func[od, good_order],
+                                            weights=1. / np.sqrt(sens_func_var[od, good_order]))
+                    ratio = sens_func[od] / m_inter(wavelengths)
+                    good_order &= ratio > min(0.9, np.median(ratio))
+                    #rms = at.std_from_pixel_variations(sens_func[od, good_order])
+                    #rms = (m_inter(wavelengths[good_order]) - sens_func[od, good_order])[~mask].std()
+                    #good_order &= (abs(m_inter(wavelengths) - sens_func[od]) < 3 * rms)
+                    m_init = models.Chebyshev1D(
+                        degree=poly_degree, c0=sens_func[od, good_order].mean(),
+                        domain=[min_wave, max_wave])
+                    m_final, mask2 = fit_it2(m_init, wavelengths[good_order],
+                                             sens_func[od, good_order],
+                                             weights=1. / np.sqrt(sens_func_var[od, good_order]))
                     if debug_plots:
                         fig, ax = plt.subplots()
                         ax.plot(waves[od], sens_func[od], 'k-')
-                        ax.plot(waves[od, good_order][~mask],
-                                sens_func[od, good_order][~mask], 'r-')
+                        ax.plot(waves[od, good_order][~mask2],
+                                sens_func[od, good_order][~mask2], 'r-')
+                        ax.plot(waves[od], m_inter(waves[od]), 'g-')
                         ax.plot(waves[od], m_final(waves[od]), 'b-')
                         plt.show()
                     #rms = np.std((m_final(wavelengths) - sens_func[od])[good_order][~mask])
@@ -518,15 +540,24 @@ class GHOSTSpect(GHOST):
                         fig, ax = plt.subplots()
                         ax.plot(waves[od], sens_func[od], 'k-')
                         plt.show()
-                    sens_func_fits.append(models.Const1D(np.inf))
+                    sens_func_fits.append(models.Chebyshev1D(
+                        degree=poly_degree, domain=[min_wave, max_wave]))
             plt.ion()
 
+            colnames = [f"c{i}" for i in range(poly_degree+1)]
+            table_data = [[getattr(m, colname).value for m in sens_func_fits]
+                          for colname in colnames]
+            table_data.extend([[m.domain[i] for m in sens_func_fits]
+                               for i in (0, 1)])
+            sensfunc_table = Table(table_data,
+                                   names=colnames + ['wave_min', 'wave_max'])
             waves = make_wavelength_table(ext)
             sens_func_regrid = np.empty_like(ext.data)
             for od, sensfunc in enumerate(sens_func_fits):
                 sens_func_regrid[od] = sensfunc(waves[od])
 
-            ad[0].SENSFUNC = sens_func_regrid
+            #ad[0].SENSFUNC = sens_func_regrid
+            ad[0].SENSFUNC = sensfunc_table
             ad[0].hdr['SENSFUNC'] = (sensfunc_units, "Units for SENSFUNC table")
 
             # Timestamp & suffix updates
@@ -1529,45 +1560,56 @@ class GHOSTSpect(GHOST):
 
                 sci_waves = make_wavelength_table(ext)
 
-                # Because SENSFUNC for GHOST stores the evaluated function and
-                # not the function itself, we need to reconstruct the function
-                # in order to evaluate it at new wavelengths (otherwise we may
-                # have to extrapolate if the standard is more heavily binned)
-                if ext.shape != std_waves.shape:
-                    bin_factor = std_waves.shape[1] / ext.shape[1]
-                    fit_it = fitting.LinearLSQFitter()
-                    sensfunc_fits = []
-                    poly_degree = 1
-                    for od, (waves, sens) in enumerate(zip(std_waves, sensfunc)):
-                        while True:
-                            m_init = models.Chebyshev1D(
-                                degree=poly_degree, domain=[waves.min(), waves.max()])
-                            m_final = fit_it(m_init, waves, sens)
-                            # All fits have the same degree so we only have to
-                            # work it out for the first order
-                            if od == 0:
-                                maxdev = abs(m_final(waves) - sens).max()
-                                log.debug(f"Trying degree {poly_degree}: maxdev={maxdev} "
-                                          f"mean={sens.mean()}")
-                                if maxdev < 1e-7 * sens.mean():
-                                    print(f"Using degree {poly_degree}")
-                                    log.debug(f"Using degree {poly_degree}")
-                                    break
-                                poly_degree += 1
-                                if poly_degree > 4:
-                                    raise RuntimeError("Cannot determine order of SENSFUNC"
-                                                       " polynomial fit, required to rebin")
-                            else:
-                                break
-                        sensfunc_fits.append(m_final)
+                if isinstance(sensfunc, Table):
                     sensfunc_regrid = np.empty_like(ext.data)
-                    for od, func in enumerate(sensfunc_fits):
-                        sensfunc_regrid[od] = func(sci_waves[od]) * bin_factor
+                    for od, (row, order_waves) in enumerate(zip(sensfunc, sci_waves)):
+                        kwargs = {k: v for k, v in zip(sensfunc.colnames, row)}
+                        m = models.Chebyshev1D(degree=len(kwargs) - 3,
+                            domain=[kwargs.pop('wave_min'), kwargs.pop('wave_max')],
+                                               **kwargs)
+                        sensfunc_regrid[od] = m(order_waves)
                     sensfunc_to_use = (sensfunc_regrid * u.Unit(sensfunc_units)).to(
                         final_units, equivalencies=u.spectral_density(sci_waves)).value
                 else:
-                    sensfunc_to_use = (sensfunc * u.Unit(sensfunc_units)).to(
-                        final_units, equivalencies=u.spectral_density(sci_waves)).value
+                    # Because SENSFUNC for GHOST stores the evaluated function and
+                    # not the function itself, we need to reconstruct the function
+                    # in order to evaluate it at new wavelengths (otherwise we may
+                    # have to extrapolate if the standard is more heavily binned)
+                    if ext.shape != std_waves.shape:
+                        bin_factor = std_waves.shape[1] / ext.shape[1]
+                        fit_it = fitting.LinearLSQFitter()
+                        sensfunc_fits = []
+                        poly_degree = 1
+                        for od, (waves, sens) in enumerate(zip(std_waves, sensfunc)):
+                            while True:
+                                m_init = models.Chebyshev1D(
+                                    degree=poly_degree, domain=[waves.min(), waves.max()])
+                                m_final = fit_it(m_init, waves, sens)
+                                # All fits have the same degree so we only have to
+                                # work it out for the first order
+                                if od == 0:
+                                    maxdev = abs(m_final(waves) - sens).max()
+                                    log.debug(f"Trying degree {poly_degree}: maxdev={maxdev} "
+                                              f"mean={sens.mean()}")
+                                    if maxdev < 1e-7 * sens.mean():
+                                        print(f"Using degree {poly_degree}")
+                                        log.debug(f"Using degree {poly_degree}")
+                                        break
+                                    poly_degree += 1
+                                    if poly_degree > 4:
+                                        raise RuntimeError("Cannot determine order of SENSFUNC"
+                                                           " polynomial fit, required to rebin")
+                                else:
+                                    break
+                            sensfunc_fits.append(m_final)
+                        sensfunc_regrid = np.empty_like(ext.data)
+                        for od, func in enumerate(sensfunc_fits):
+                            sensfunc_regrid[od] = func(sci_waves[od]) * bin_factor
+                        sensfunc_to_use = (sensfunc_regrid * u.Unit(sensfunc_units)).to(
+                            final_units, equivalencies=u.spectral_density(sci_waves)).value
+                    else:
+                        sensfunc_to_use = (sensfunc * u.Unit(sensfunc_units)).to(
+                            final_units, equivalencies=u.spectral_density(sci_waves)).value
 
                 airmass_corr = 1.0
                 if delta_airmass:
