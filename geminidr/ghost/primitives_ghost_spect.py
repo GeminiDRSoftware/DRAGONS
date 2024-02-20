@@ -1570,46 +1570,12 @@ class GHOSTSpect(GHOST):
                         sensfunc_regrid[od] = m(order_waves)
                     sensfunc_to_use = (sensfunc_regrid * u.Unit(sensfunc_units)).to(
                         final_units, equivalencies=u.spectral_density(sci_waves)).value
-                else:
-                    # Because SENSFUNC for GHOST stores the evaluated function and
-                    # not the function itself, we need to reconstruct the function
-                    # in order to evaluate it at new wavelengths (otherwise we may
-                    # have to extrapolate if the standard is more heavily binned)
-                    if ext.shape != std_waves.shape:
-                        bin_factor = std_waves.shape[1] / ext.shape[1]
-                        fit_it = fitting.LinearLSQFitter()
-                        sensfunc_fits = []
-                        poly_degree = 1
-                        for od, (waves, sens) in enumerate(zip(std_waves, sensfunc)):
-                            while True:
-                                m_init = models.Chebyshev1D(
-                                    degree=poly_degree, domain=[waves.min(), waves.max()])
-                                m_final = fit_it(m_init, waves, sens)
-                                # All fits have the same degree so we only have to
-                                # work it out for the first order
-                                if od == 0:
-                                    maxdev = abs(m_final(waves) - sens).max()
-                                    log.debug(f"Trying degree {poly_degree}: maxdev={maxdev} "
-                                              f"mean={sens.mean()}")
-                                    if maxdev < 1e-7 * sens.mean():
-                                        print(f"Using degree {poly_degree}")
-                                        log.debug(f"Using degree {poly_degree}")
-                                        break
-                                    poly_degree += 1
-                                    if poly_degree > 4:
-                                        raise RuntimeError("Cannot determine order of SENSFUNC"
-                                                           " polynomial fit, required to rebin")
-                                else:
-                                    break
-                            sensfunc_fits.append(m_final)
-                        sensfunc_regrid = np.empty_like(ext.data)
-                        for od, func in enumerate(sensfunc_fits):
-                            sensfunc_regrid[od] = func(sci_waves[od]) * bin_factor
-                        sensfunc_to_use = (sensfunc_regrid * u.Unit(sensfunc_units)).to(
-                            final_units, equivalencies=u.spectral_density(sci_waves)).value
-                    else:
+                elif ext.shape == std_waves.shape:
                         sensfunc_to_use = (sensfunc * u.Unit(sensfunc_units)).to(
                             final_units, equivalencies=u.spectral_density(sci_waves)).value
+                else:
+                    raise RuntimeError(f"{std.filename} has a different "
+                                       f"binning to {ad.filename}")
 
                 airmass_corr = 1.0
                 if delta_airmass:
