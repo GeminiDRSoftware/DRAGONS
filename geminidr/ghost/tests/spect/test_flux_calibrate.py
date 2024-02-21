@@ -14,8 +14,8 @@ from gempy.library import astrotools as at
 from geminidr.ghost.primitives_ghost_spect import GHOSTSpect, make_wavelength_table
 
 # These should come from identical raw files where one has been binned in software
-DATASETS = [("unbinned_sensitivityCalculated.fits",
-             "binned_sensitivityCalculated.fits")]
+DATASETS = [("redunbinned_sensitivityCalculated.fits",
+             "redbinned_sensitivityCalculated.fits")]
 
 
 @pytest.mark.ghostspect
@@ -23,11 +23,15 @@ DATASETS = [("unbinned_sensitivityCalculated.fits",
 def test_flux_calibrate_binning(path_to_inputs, std_filenames):
     # We calibrate the standards using each other to confirm
     # things work when the standard has a lower and a higher
-    # binning
+    # binning. The criterion is a bit empirical because we don't
+    # get exactly the same result when binning. We ignore the
+    # most extreme orders (lowest S/N) and look at the 95th
+    # percentile deviation
     for sci_filename in std_filenames:
         outputs = {}
         for std_filename in std_filenames:
             ad_sci = astrodata.open(os.path.join(path_to_inputs, sci_filename))
+            arm = ad_sci.arm()
             sci_xbin, sci_ybin = ad_sci.detector_x_bin(), ad_sci.detector_y_bin()
             p = GHOSTSpect([ad_sci])
             ad_std = astrodata.open(os.path.join(path_to_inputs, std_filename))
@@ -47,10 +51,12 @@ def test_flux_calibrate_binning(path_to_inputs, std_filenames):
             bad_fom = []
             if k != (sci_xbin, sci_ybin):
                 for i in range(w.shape[0]):
+                    # ignore extrme orders
+                    if (arm == "red" and i < 2) or (arm == "blue" and w.shape[0] - i < 3):
+                        continue
                     dev = v[i] - base_output[0].data[i]
-                    fom = np.percentile(abs(dev) / rms_values[i], 90)
+                    fom = np.percentile(abs(dev) / rms_values[i], 95)
                     if fom > 1:
                         bad_fom.append((w[i].min(), fom))
-                    print(fom)
-        assert not bad_fom
+        assert not bad_fom, bad_fom
 
