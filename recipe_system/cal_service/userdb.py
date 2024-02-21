@@ -75,6 +75,7 @@ class UserDB(CalDB):
         # Return a list as long as adinputs if this calibration type is in
         # the user_cals. howmany is irrelevant, since there can be only one
         # match in the UserDB
+        print(self.user_cals)
         if caltype in self.user_cals:
             return CalReturn([(self.user_cals[caltype], "user_cals")] *
                              len(adinputs))
