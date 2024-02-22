@@ -6,6 +6,58 @@
 Change Logs
 ***********
 
+3.2.0
+=====
+
+This release includes support for GHOST data reduction and the new CCDs
+installed in GMOS-S in late 2023.
+
+New Features
+------------
+
+Full support for the reduction of GHOST data.
+  This is based on the external GHOSTDR package, with improvements and
+  changes to the names and scope of primitives to better align with the
+  other instrument recipes.
+
+Improvements
+------------
+**astrodata.wcs**
+
+* Support for reading and writing log-linear wavelength axes to/from FITS.
+
+* Support for reading and writing tabular wavelength information to/from FITS.
+
+**geminidr**
+
+* Creation of new ``skip_primitive`` parameter, e.g.,
+  ``reduce -p skyCorrectFromSlit:skip_primitive=True`` which allows any
+  primitive in a recipe to be skipped. Note that inconsiderate use of this
+  may cause a recipe to crash because the inputs to the subsequent primitive
+  in the recipe may be inappropriate.
+
+* Creation of new ``write_outputs`` parameter, e.g.,
+  ``reduce -p ADUToElectrons:write_outputs=True`` which will write to disk
+  the outputs of the primitive.
+
+
+Bug fixes
+---------
+**geminidr**
+
+* Set default ``calculateSensitivity.bandpass`` parameter to 0.001 nm to
+  better handle pure spectra in flux density units.
+
+* Allow ``display`` to handle non-standard extention names, which did not
+  work as intended.
+
+
+**recipe_system**
+
+* Set the ``engineering`` flag to False for all data stored in the local
+  calibration database, to ensure that it can be retrieved.
+
+
 3.1.1
 =====
 

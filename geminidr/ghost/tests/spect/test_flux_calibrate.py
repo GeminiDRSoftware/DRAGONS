@@ -18,6 +18,7 @@ DATASETS = [("redunbinned_sensitivityCalculated.fits",
              "redbinned_sensitivityCalculated.fits")]
 
 
+@pytest.mark.preprocessed_data
 @pytest.mark.ghostspect
 @pytest.mark.parametrize("std_filenames", DATASETS)
 def test_flux_calibrate_binning(path_to_inputs, std_filenames):
