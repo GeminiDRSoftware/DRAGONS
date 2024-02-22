@@ -5,6 +5,9 @@ import astrodata, gemini_instruments
 from geminidr.ghost.primitives_ghost_spect import GHOSTSpect
 
 
+@pytest.mark.slow
+@pytest.mark.preprocessed_data
+@pytest.mark.ghostspect
 def test_synthetic_slit_profile(path_to_inputs):
     """Simple test to confirm that spectra can be extracted
     with a synthetic slit profile. The output is not checked"""
