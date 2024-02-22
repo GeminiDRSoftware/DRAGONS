@@ -1463,7 +1463,7 @@ class GHOSTSpect(GHOST):
             if "synthetic" not in slit_filename:
                 add_provenance(ad, slit_filename, md5sum(slit.path) or "", self.myself())
             if "synthetic" not in slitflat_filename:
-                add_provenance(ad, slitflat_filename, md5sum(slit_flat.path) or "", self.myself())
+                add_provenance(ad, slitflat_filename, md5sum(slitflat.path) or "", self.myself())
 
         return adinputs
 
