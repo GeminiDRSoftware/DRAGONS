@@ -1266,17 +1266,17 @@ def stack_slit(data, mask=None, percentile=50, section=slice(None), dispersion_a
     return np.nan_to_num(profile, copy=False, nan=np.nanmedian(profile))
 
 
-def cwt_ricker(data, widths, **kwargs):
+def cwt_ricker(data, widths):
     """
     Continuous wavelet transform, using the Ricker filter.
-
-    Hacked from scipy.cwt to ensure that the convolution is done with
-    a wavelet that has an odd number of pixels.
     """
     output = np.zeros((len(widths), len(data)), dtype=np.float64)
     for ind, width in enumerate(widths):
         N = int(np.min([10 * width, len(data)])) // 2 * 2 - 1
-        wavelet_data = np.conj(signal.ricker(N, width, **kwargs)[::-1])
+        x = np.arange(N) - N // 2
+        normsq = (x / width) ** 2
+        ricker = 2 / (np.sqrt(3 * width * np.sqrt(np.pi))) * (1 - normsq) * np.exp(-0.5 * normsq)
+        wavelet_data = np.conj(ricker[::-1])
         output[ind] = np.convolve(data, wavelet_data, mode='same')
     return output
 

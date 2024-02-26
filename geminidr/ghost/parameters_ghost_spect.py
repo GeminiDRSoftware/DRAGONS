@@ -100,7 +100,6 @@ class extractSpectraConfig(config.Config):
     apply_centroids = config.Field("Apply slit center-of-light offsets?", bool, False)
     seeing = config.RangeField("FWHM of seeing disc if no processed_slit is "
                                "available", float, None, min=0.2, optional=True)
-    write_result = config.Field("Write primitive output to disk?", bool, False)
     debug_cr_map = config.Field("Add CR map to output?", bool, False)
     debug_order = config.RangeField("Order for CR debugging plot", int, None,
                                        min=33, max=97, optional=True)
@@ -168,11 +167,8 @@ class scaleCountsToReference(config.Config):
 
 
 class stackArcsConfig(parameters_stack.core_stacking_config):
-    skip = config.Field("No-op this primitive?", bool, False)
     time_delta = config.RangeField("Max. time separating bracketed arcs (seconds)",
                               float, 1200, min=0, optional=True)
-    write_result = config.Field("Write primitive output to disk?", bool, True,
-                                optional=True)
 
     def setDefaults(self):
         self.operation = "lmedian"
@@ -189,8 +185,6 @@ class traceFibersConfig(config.Config):
     slitflat = config.Field("Slit viewer flat field",
                             (str, ad),
                             None, optional=True)
-    flat = config.ListField("Flat field", (str, ad), None,
-                            optional=True, single=True)
     make_pixel_model = config.Field('Add a pixel model to the flat field?',
                                     bool, False)
     smoothing = config.RangeField("Gaussian smoothing of slit profile (unbinned pixels)",
