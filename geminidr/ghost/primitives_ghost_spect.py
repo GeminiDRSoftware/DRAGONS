@@ -16,6 +16,7 @@ from astropy import units as u
 from astropy import constants as const
 from astropy.stats import sigma_clip
 from astropy.modeling import fitting, models
+from astropy.table import Table
 from scipy import interpolate
 from scipy.ndimage import measurements
 from gwcs import coordinate_frames as cf
@@ -282,8 +283,8 @@ class GHOSTSpect(GHOST):
             if velocity is None:
                 ra, dec = ad.ra(), ad.dec()
                 if ra is None or dec is None:
-                    print("Unable to compute barycentric correction for "
-                          f"{ad.filename} (no sky pos data) - skipping")
+                    log.warnings("Unable to compute barycentric correction for"
+                                 f" {ad.filename} (no sky pos data) - skipping")
                     rv = None
                 else:
                     self.log.stdinfo(f"Computing SkyCoord for {ra}, {dec}")
@@ -427,6 +428,7 @@ class GHOSTSpect(GHOST):
                     log.stdinfo(f"{ad.filename}: Using spectrophotometric "
                                 f"data file {datafile} as supplied by user")
 
+            spectral_bin = ad.detector_x_bin()
             target = 0  # according to new extractSpectra() behaviour
             ext = ad[target]
             if ext.hdr.get('BUNIT') != "electron":
@@ -461,8 +463,9 @@ class GHOSTSpect(GHOST):
                 sensfunc_units, equivalencies=u.spectral_density(waves * u.nm)
             ).value
 
-            # Compute the sensitivity function
-            scaling_fac = regrid_std_ref * ad.exposure_time()
+            # Compute the sensitivity function. Determine it as if the data
+            # weren't binned spectrally.
+            scaling_fac = regrid_std_ref * ad.exposure_time() * spectral_bin
             with warnings.catch_warnings():  # division by zero
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 sens_func = ext.data / scaling_fac
@@ -481,11 +484,20 @@ class GHOSTSpect(GHOST):
             # measurements from low counts at the extreme orders
             #ratio = sens_func / np.percentile(sens_func, 60, axis=1)[:, np.newaxis]
             #good &= np.logical_and(ratio >= 0.2, ratio <= 5)
-            ratio = sens_func / np.nanpercentile(
-                np.where(good, sens_func, np.nan), 60, axis=1)[:, np.newaxis]
-            good &= np.logical_and.reduce([ratio >= 0.2, ratio <= 5, ~np.isnan(ratio)])
-            fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(), sigma_clip,
-                                                       sigma_lower=2, maxiters=10)
+            #ratio = sens_func / np.nanpercentile(
+            #    np.where(good, sens_func, np.nan), 60, axis=1)[:, np.newaxis]
+            #good &= np.logical_and.reduce([ratio >= 0.2, ratio <= 5, ~np.isnan(ratio)])
+
+            # CJS 240219: We fit in two setps. First has quite a harsh
+            # asymmetric cut. Then points which are significantly below
+            # this fit (in terms of ratio) are masked before a symmetric
+            # fit is performed.
+            fit_it1 = fitting.FittingWithOutlierRemoval(
+                fitting.LinearLSQFitter(), sigma_clip,
+                sigma_lower=1, sigma_upper=3, maxiters=2)
+            fit_it2 = fitting.FittingWithOutlierRemoval(
+                fitting.LinearLSQFitter(), sigma_clip,
+                sigma_lower=3, sigma_upper=3, maxiters=10)
             plt.ioff()
             for od in range(sens_func.shape[0]):
                 good_order = good[od]
@@ -495,14 +507,30 @@ class GHOSTSpect(GHOST):
                     m_init = models.Chebyshev1D(
                         degree=poly_degree, c0=sens_func[od, good_order].mean(),
                         domain=[min_wave, max_wave])
-                    m_final, mask = fit_it(m_init, wavelengths[good_order],
-                                           sens_func[od, good_order],
-                                           weights=1. / np.sqrt(sens_func_var[od, good_order]))
+                    m_inter, mask = fit_it1(m_init, wavelengths[good_order],
+                                            sens_func[od, good_order],
+                                            weights=1. / np.sqrt(sens_func_var[od, good_order]))
+                    ratio = sens_func[od] / m_inter(wavelengths)
+                    good_order &= ratio > min(0.9, np.median(ratio))
+                    #rms = at.std_from_pixel_variations(sens_func[od, good_order])
+                    #rms = (m_inter(wavelengths[good_order]) - sens_func[od, good_order])[~mask].std()
+                    #good_order &= (abs(m_inter(wavelengths) - sens_func[od]) < 3 * rms)
+                    #m_init = models.Chebyshev1D(
+                    #    degree=poly_degree, c0=sens_func[od, good_order].mean(),
+                    #    domain=[min_wave, max_wave])
+                    m_final, mask2 = fit_it2(m_inter, wavelengths[good_order],
+                                             sens_func[od, good_order],
+                                             weights=1. / np.sqrt(sens_func_var[od, good_order]))
+                    #if 358 < min_wave < 359:
+                    #    x = np.arange(359, 359.2, 0.01)
+                    #    print("TEST FIT")
+                    #    print(m_final(x))
                     if debug_plots:
                         fig, ax = plt.subplots()
                         ax.plot(waves[od], sens_func[od], 'k-')
-                        ax.plot(waves[od, good_order][~mask],
-                                sens_func[od, good_order][~mask], 'r-')
+                        ax.plot(waves[od, good_order][~mask2],
+                                sens_func[od, good_order][~mask2], 'r-')
+                        ax.plot(waves[od], m_inter(waves[od]), 'g-')
                         ax.plot(waves[od], m_final(waves[od]), 'b-')
                         plt.show()
                     #rms = np.std((m_final(wavelengths) - sens_func[od])[good_order][~mask])
@@ -518,15 +546,25 @@ class GHOSTSpect(GHOST):
                         fig, ax = plt.subplots()
                         ax.plot(waves[od], sens_func[od], 'k-')
                         plt.show()
-                    sens_func_fits.append(models.Const1D(np.inf))
+                    # coefficients default to zero, so this evaluates to zero
+                    sens_func_fits.append(models.Chebyshev1D(
+                        degree=poly_degree, domain=[min_wave, max_wave]))
             plt.ion()
 
+            colnames = [f"c{i}" for i in range(poly_degree+1)]
+            table_data = [[getattr(m, colname).value for m in sens_func_fits]
+                          for colname in colnames]
+            table_data.extend([[m.domain[i] for m in sens_func_fits]
+                               for i in (0, 1)])
+            sensfunc_table = Table(table_data,
+                                   names=colnames + ['wave_min', 'wave_max'])
             waves = make_wavelength_table(ext)
             sens_func_regrid = np.empty_like(ext.data)
             for od, sensfunc in enumerate(sens_func_fits):
                 sens_func_regrid[od] = sensfunc(waves[od])
 
-            ad[0].SENSFUNC = sens_func_regrid
+            #ad[0].SENSFUNC = sens_func_regrid
+            ad[0].SENSFUNC = sensfunc_table
             ad[0].hdr['SENSFUNC'] = (sensfunc_units, "Units for SENSFUNC table")
 
             # Timestamp & suffix updates
@@ -1473,12 +1511,16 @@ class GHOSTSpect(GHOST):
 
             if std is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed standard listed for "
-                                  f"{ad.filename}")
+                    raise RuntimeError("No processed standard listed for "
+                                       f"{ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no standard was specified")
                     continue
+
+            if ad.arm() != std.arm():
+                raise RuntimeError(f"{ad.filename} and {std.filename} are "
+                                   "from different GHOST arms.")
 
             origin_str = f" (obtained from {origin})" if origin else ""
             log.stdinfo(f"{ad.filename}: using the standard {std.filename}"
@@ -1494,12 +1536,13 @@ class GHOSTSpect(GHOST):
                 sensfunc_units = "W m-2 nm-1"
                 log.warning("Cannot confirm units of SENSFUNC: assuming "
                             f"{sensfunc_units}")
+
             std_waves = make_wavelength_table(std[0])
             try:
-                sensfunc = (sensfunc * u.Unit(sensfunc_units)).to(
+                (1 * u.Unit(sensfunc_units)).to(
                     final_units, equivalencies=u.spectral_density(std_waves)).value
             except u.UnitConversionError:
-                log.warning("Cannot transform units - continuing")
+                log.warning(f"Cannot transform units of {std.filename} - continuing")
                 continue
 
             telescope = ad.telescope()
@@ -1515,32 +1558,56 @@ class GHOSTSpect(GHOST):
                 log.stdinfo("Correcting for difference of "
                             f"{delta_airmass:5.3f} airmasses")
 
-            for index, ext in enumerate(ad):
+            spectral_bin = ad.detector_x_bin()
+
+            for ext in ad:
                 extname = f"{ad.filename} extension {ext.id}"
-                # This covers binning and arm mismatches
-                if ext.shape != sensfunc.shape:
-                    log.warning(f"{extname}'s shape ({ext.shape}) does not "
-                                f"match shape of SENSFUNC ({sensfunc.shape}) "
-                                "- continuing")
-                    continue
                 if ext.hdr.get('BUNIT') != "electron":
                     log.warning(f"{extname} is not in units of electrons - "
                                 "continuing")
                     continue
 
+                sci_waves = make_wavelength_table(ext)
+
+                if isinstance(sensfunc, Table):
+                    sensfunc_regrid = np.empty_like(ext.data)
+                    for od, (row, order_waves) in enumerate(zip(sensfunc, sci_waves)):
+                        kwargs = {k: v for k, v in zip(sensfunc.colnames, row)}
+                        m = models.Chebyshev1D(degree=len(kwargs) - 3,
+                            domain=[kwargs.pop('wave_min'), kwargs.pop('wave_max')],
+                                               **kwargs)
+                        # Orders with no data are set to zero, but we want
+                        # them to be np.inf for division
+                        sens_data = m(order_waves) / spectral_bin
+                        #if 358 < m(m.domain[0]) < 359:
+                        #    print("TEST FIT")
+                        #    x = np.arange(359, 359.2, 0.01)
+                        #    print(m(x))
+                        if sens_data.max() > 0:
+                            sensfunc_regrid[od] = sens_data
+                        else:
+                            sensfunc_regrid[od] = np.inf
+                    sensfunc_to_use = (sensfunc_regrid * u.Unit(sensfunc_units)).to(
+                        final_units, equivalencies=u.spectral_density(sci_waves)).value
+                elif ext.shape == std_waves.shape:
+                        sensfunc_to_use = (sensfunc * u.Unit(sensfunc_units)).to(
+                            final_units, equivalencies=u.spectral_density(sci_waves)).value
+                else:
+                    raise RuntimeError(f"{std.filename} has a different "
+                                       f"binning to {ad.filename}")
+
                 airmass_corr = 1.0
                 if delta_airmass:
-                    waves = make_wavelength_table(ext)
                     try:
                         extinction_correction = extinct.extinction(
-                            waves, telescope=telescope)
+                            sci_waves, telescope=telescope)
                     except KeyError:
                         log.warning(f"Telescope {telescope} not recognized. "
                                     "Not making an airmass correction.")
                     else:
                         airmass_corr = 10 ** (0.4 * delta_airmass * extinction_correction)
 
-                scaling_factor = exptime * sensfunc / airmass_corr
+                scaling_factor = exptime * sensfunc_to_use / airmass_corr
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     ext.data /= scaling_factor
@@ -2134,6 +2201,7 @@ class GHOSTSpect(GHOST):
         slitflat = params["slitflat"]
         if slitflat is None:
             flat_list = self.caldb.get_processed_slitflat(adinputs)
+            print("GOT", flat_list)
         else:
             flat_list = (slitflat, None)
 
@@ -2144,7 +2212,7 @@ class GHOSTSpect(GHOST):
                             f"{ad.filename} will not be processed")
                 continue
 
-            if slitflat is None:
+            if slit_flat is None:
                 raise RuntimeError(f"No processed_slitflat found for {ad.filename}")
 
             origin_str = f" (obtained from {origin})" if origin else ""
@@ -2227,7 +2295,7 @@ class GHOSTSpect(GHOST):
                 ad.phu['SMOOTH'] = (smoothing, "Pixel FWHM of SVC smoothing kernel")
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
-            add_provenance(ad, slitflat.filename, md5sum(slitflat.path) or "", self.myself())
+            add_provenance(ad, slit_flat.filename, md5sum(slit_flat.path) or "", self.myself())
 
         return adinputs
 

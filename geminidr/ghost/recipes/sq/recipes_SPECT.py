@@ -30,8 +30,8 @@ def reduceScience(p):
     p.attachWavelengthSolution()  # should be able to accept multiple input
                                # arcs, e.g. from start and end of night,
                                # and interpolate in time
-    p.barycentricCorrect()  # trivial - multiply wavelength scale
     p.fluxCalibrate()  # correct for atmospheric extinction before combining
+    p.barycentricCorrect()  # trivial - multiply wavelength scale
     p.storeProcessedScience(suffix="_calibrated")  # output these data products
     p.combineOrders()
     p.storeProcessedScience(suffix="_dragons")

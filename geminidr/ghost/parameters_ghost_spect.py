@@ -30,7 +30,7 @@ class calculateSensitivityConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
     filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
     order = config.RangeField("Order of polynomial fit to each echelle order", int,
-                              1, min=1, max=5)
+                              2, min=1, max=5)
     in_vacuo = config.Field("Are spectrophotometric data wavelengths measured "
                             "in vacuo?", bool, None, optional=True)
     debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",

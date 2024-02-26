@@ -333,6 +333,7 @@ class ADCompare:
         self.rtol = rtol
         self.atol = atol
         self.ignore_kw = self.fits_keys if ignore_fits_wcs else set([])
+        self.ignore_kw.add('')
         if ignore_kw:
             self.ignore_kw.update(ignore_kw)
         if compare is None:
