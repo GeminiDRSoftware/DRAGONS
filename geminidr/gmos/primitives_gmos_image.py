@@ -177,8 +177,8 @@ class GMOSImage(GMOS, Image, Photometry):
                 regions, nregions = ndimage.label(
                     np.logical_and(data_region < boundary, mask_region==0))
                 wfs_region = regions[newy, int(x+0.5)]
-                blocked = ndimage.morphology.binary_fill_holes(np.where(regions==wfs_region,
-                                                                        True, False))
+                blocked = ndimage.binary_fill_holes(np.where(regions==wfs_region,
+                                                             True, False))
                 this_mean_sky = wfs_sky
                 condition_met = False
                 while not condition_met:
