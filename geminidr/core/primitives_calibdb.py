@@ -361,7 +361,10 @@ def _update_datalab(ad, suffix, mode, keyword_comments_lut):
 
     datalab = ad.data_label()
     obsid = ad.observation_id()
-    new_datalab = re.sub('(%s-[0-9]+)(-[0-9A-Za-z]+)+$' % obsid, r'\1',
+    # new_datalab = re.sub('(%s-[0-9]+)(-[0-9A-Za-z]+)+$' % obsid, r'\1',
+    #                      datalab) + extension
+    # KL I think that this will work with old datalabel and new GPP datalabels
+    new_datalab = re.sub('(%s(-[0-9]+)+)(-[A-Za-z]+)+$' % obsid, r'\1',
                          datalab) + extension
     ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return

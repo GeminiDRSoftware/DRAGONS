@@ -1005,11 +1005,30 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
             date_taken = datetime.today().date()
         release = date_taken.strftime("%Y-%m-%d")
 
-        # Fake ID is G(N/S)-CALYYYYMMDD-900-fileno
-        prefix = 'GN-CAL' if 'north' in ad.telescope().lower() else 'GS-CAL'
+        # Fake CAL ID
 
-        prgid = "{}{}".format(prefix, date_taken.strftime("%Y%m%d"))
-        obsid = "{}-900".format(prgid)
+        # Is it old style or new style (figure it out from the program ID
+        # rather than a cutoff date.
+        if re.match('G[NS]', ad.program_id()):
+            style = 'ocs'
+        else:  # G- format
+            style = 'gpp'
+
+        if style == 'ocs':
+            # Fake ID is G(N/S)-CALYYYYMMDD-900-fileno
+            prefix = 'GN-CAL' if 'north' in ad.telescope().lower() else 'GS-CAL'
+
+            prgid = "{}{}".format(prefix, date_taken.strftime("%Y%m%d"))
+            obsid = "{}-900".format(prgid)
+        elif style == 'gpp':
+            # Fake ID is G-YYYYS-CAL-INST-900-fileno
+            #  TODO:  This might need to be revised for SCORPIO
+            semester = re.search('G-(\d+[AB])',  new).group(1)
+            instrument = re.sub('-', '', ad.instrument())
+            prefix = 'G'
+
+            prgid = "{}-{}-CAL-{}".format(prefix, semester, instrument)
+            obsid = "{}-900".format(pgrid)
 
         m = fitsfilenamecre.match(ad.filename)
         if m:
@@ -1025,7 +1044,12 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         if fileno is None:
             import random
             fileno = random.randint(1,999)
-        datalabel = "{}-{:03d}".format(obsid, fileno)
+
+        # The gpp version might need to be revised when we get SCORPIO.
+        if style == 'ocs':
+            datalabel = "{}-{:03d}".format(obsid, fileno)
+        elif style == 'gpp':
+            datalabel = "{}-{:04d}".format(obsid, fileno)
 
         # Set class, type, object to generic defaults
         ad.phu.set("OBSCLASS", "partnerCal", keyword_comments["OBSCLASS"])
