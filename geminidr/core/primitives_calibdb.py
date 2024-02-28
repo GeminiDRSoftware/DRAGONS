@@ -364,7 +364,8 @@ def _update_datalab(ad, suffix, mode, keyword_comments_lut):
     # new_datalab = re.sub('(%s-[0-9]+)(-[0-9A-Za-z]+)+$' % obsid, r'\1',
     #                      datalab) + extension
     # KL I think that this will work with old datalabel and new GPP datalabels
-    new_datalab = re.sub('(%s(-[0-9]+)+)(-[A-Za-z]+)+$' % obsid, r'\1',
+    #    And with ghost debundled data.
+    new_datalab = re.sub('(%s(-[0-9]+)+((-[A-Z]+)+(-[0-9]+)+)*)(-[A-Z]+)+$' % obsid, r'\1',
                          datalab) + extension
     ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return
