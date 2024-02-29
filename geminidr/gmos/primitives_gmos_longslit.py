@@ -419,7 +419,7 @@ class GMOSClassicLongslit(GMOSSpect):
             bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
             cols_fit, rows_fit = np.meshgrid(np.arange(width), bin_center)
 
-            fitter = fitting.SLSQPLSQFitter()
+            fitter = fitting.LinearLSQFitter()
             model_2d_init = models.Chebyshev2D(
                 x_degree=cheb2d_x_order, x_domain=(0, width),
                 y_degree=cheb2d_y_order, y_domain=(0, height))

@@ -44,7 +44,6 @@ def initialize_database(path_to_inputs, filename=CONFIG_FILE):
     return caldb
 
 
-@pytest.mark.skip("Skipping to test caldb cross-talk")
 @pytest.mark.slow
 @pytest.mark.integration_test
 @pytest.mark.ghostspect

@@ -167,7 +167,10 @@ class Rotate2D(FittableModel):
             raise ValueError("Expected input arrays to have the same shape")
         orig_shape = x.shape or (1,)
         inarr = np.array([x.flatten(), y.flatten()])
-        s, c = math.sin(angle), math.cos(angle)
+        if np.isscalar(angle):
+            s, c = math.sin(angle), math.cos(angle)
+        else:
+            s, c = math.sin(angle[0]), math.cos(angle[0])
         x, y = np.dot(np.array([[c, -s], [s, c]], dtype=np.float64), inarr)
         x.shape = y.shape = orig_shape
         return x, y

@@ -269,9 +269,10 @@ def _write_newfile(extns, suffix, base, log):
 
     # CJS 20221128: to ensure that processed cals from the different arms
     # have different data labels before going in the archive
-    n.phu['DATALAB'] += f"-{n.phu['CAMERA']}"
-    if n.phu['CAMERA'] != "SLITV":
-        n.phu['DATALAB'] += f"-{suffix[-3:]}"  # sequence number
+    if n.phu['CAMERA'] == "SLITV":
+        n.phu['DATALAB'] += "-SLITV-001"
+    else:
+        n.phu['DATALAB'] += f"-{n.phu['CAMERA']}-{suffix[-3:]}"  # sequence number
 
     # And add GHOSTDR version number
     #n.phu['GHOSTDR'] = (ghost_instruments.__version__, "GHOSTDR version")
