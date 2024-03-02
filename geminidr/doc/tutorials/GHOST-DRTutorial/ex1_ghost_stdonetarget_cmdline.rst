@@ -462,6 +462,18 @@ There is only a single blue exposure so there aren't multiple frames to stack
 and the ``tolerance`` parameter is irrelevant. It is included in this tutorial
 to make clear that it can be specified for both arms.
 
+.. note:: GHOST has some scattered light which appears as diffuse light in the
+   echellogram images. By default, this is not removed from the data. If your
+   spectra are binned 4x or 8x in the spatial direction and you are performing
+   the extraction with ``sky_subtract=True`` (the default) then the sky model
+   is smooth enough to remove the scattered light. Other reductions will have
+   some scattered light (which is at the 1% level or less) and there is a
+   primitive to remove this light. It is strongly recommended that you review
+   the scattered light model and compare it to the ``_arraysTiled`` file as a
+   validity check.
+
+    ``-p removeScatteredLight:skip=False removeScatteredLight:save_model=True``
+
 Clean up
 --------
 With the calibrations safely in the ``calibrations`` directory, we can clean
@@ -510,6 +522,8 @@ calspec and ESO X-Shooter libraries fulfil this criterion).
    * The sky subtraction can be turned off with ``-p extractProfile:sky_subtract=False``
      if it is found to add noise (of course, the sky emission lines will still be
      present in your data).
+   * If you wish to remove the scattered light, then add the parameters as
+     described at the end of the section on the standard star reduction.
    * If you expected IFU-2 to be on-sky but there's an accidental source, tell
      the software that there is a source and it isn't sky with
      ``-p extractProfile:ifu2=object``.

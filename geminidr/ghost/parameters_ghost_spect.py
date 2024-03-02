@@ -149,11 +149,11 @@ class removeScatteredLightConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_scatteredLightRemoved",
                           optional=True)
     skip = config.Field("Skip removal of scattered light?", bool, True)
-    xsampling = config.RangeField("Sampling in x direction (unbinned)", int, 32, min=1)
+    xsampling = config.RangeField("Sampling in x direction (unbinned)", int, 64, min=32)
     debug_spline_smoothness = config.RangeField(
-        "Scaling factor for spline smoothness", float, default=30, min=1)
+        "Scaling factor for spline smoothness", float, default=5, min=1)
     debug_percentile = config.RangeField("Percentile for statistics of inter-order light",
-                                         float, default=20, min=1, max=50, inclusiveMax=True)
+                                         float, default=40, min=1, max=50, inclusiveMax=True)
     debug_avoidance = config.RangeField(
         "Number of (unbinned) pixels to avoid at edges of orders", int, 2, min=1)
     debug_save_model = config.Field("Attach scattered light model to output?",

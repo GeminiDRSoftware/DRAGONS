@@ -1593,8 +1593,11 @@ class GHOSTSpect(GHOST):
                         sensfunc_to_use = (sensfunc * u.Unit(sensfunc_units)).to(
                             final_units, equivalencies=u.spectral_density(sci_waves)).value
                 else:
-                    raise RuntimeError(f"{std.filename} has a different "
-                                       f"binning to {ad.filename}")
+                    raise RuntimeError(
+                        f"{std.filename} has a different binning to "
+                        f"{ad.filename} and cannot be used as its SENSFUNC "
+                        "data are stored as a data table, not a model. "
+                        "You should re-reduce the standard star.")
 
                 airmass_corr = 1.0
                 if delta_airmass:
@@ -1765,6 +1768,13 @@ class GHOSTSpect(GHOST):
         save_model = params["debug_save_model"]
         flat_list = self.caldb.get_processed_flat(adinputs)
 
+        warn_msg = (f"{self.myself()} has not been fully tested. "
+                    "It is strongly recommended that you ")
+        if not save_model:
+            warn_msg += "run with debug_save_model=True and "
+        warn_msg += "review the scattered light model."
+        log.warning(warn_msg)
+
         for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list, force_ad=(1,))):
             if len(ad) > 1:
                 log.warning(f"{ad.filename} has more than one extension - "
@@ -1854,32 +1864,36 @@ class GHOSTSpect(GHOST):
             #        #    unilluminated[-iy-768//ybin:, ix] = False
 
             ny, nx = ad[0].shape
-            #if ad[0].mask is not None:
-            #    unilluminated &= (ad[0].mask == 0)
 
             interp_points = []
             xs = xsampling // xbin
             y = np.repeat(np.arange(ny)[:, np.newaxis], xs, axis=1)
+            regions, nregions = measurements.label(unilluminated)
+            if ad[0].mask is not None:
+                regions[ad[0].mask > 0] = 0
             for ix in range(0, nx, xs):
                 _slice = (slice(None), slice(ix, ix+xs))
-                regions, nregions = measurements.label(unilluminated[_slice])
                 for i in range(1, nregions+1):
-                    points = (regions == i)
-                    if ad[0].mask is not None:
-                        points &= (ad[0].mask[_slice] == 0)
-                    interp_points.append([ix + 0.5 * (xs-1), np.mean(y[points]),
-                                          np.percentile(ad[0].data[_slice][points], percentile)])
+                    points = (regions[_slice] == i)
+                    if points.any():
+                        interp_points.append(
+                            [ix + 0.5 * (xs-1), np.mean(y[points]),
+                             np.percentile(ad[0].data[_slice][points],
+                                           percentile)])
             interp_points = np.asarray(interp_points).T
 
-            spline = interpolate.SmoothBivariateSpline(*interp_points, bbox=[0, nx-1, 0, ny-1],
-                                                       s=smoothness*interp_points.shape[1])
-            for i in range(interp_points.shape[1]):
-                print(interp_points[:, i], spline(*interp_points[:2, i]))
+            spline = interpolate.SmoothBivariateSpline(
+                *interp_points, bbox=[0, nx-1, 0, ny-1],
+                s=smoothness*interp_points.shape[1])
             scattered_light = spline(np.arange(nx), np.arange(ny), grid=True).T
             scattered_light = np.maximum(scattered_light, 0)
 
             if save_model:
-                ad[0].SCATT = scattered_light
+                ad_scatt = astrodata.create(ad.phu)
+                ad_scatt.append(scattered_light)
+                ad_scatt.update_filename(suffix="_scatteredLightModel", strip=True)
+                log.stdinfo(f"Saving scattered light model as {ad_scatt.filename}")
+                ad_scatt.write(overwrite=True)
             ad[0].subtract(scattered_light)
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
