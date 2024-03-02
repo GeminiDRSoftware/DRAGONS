@@ -1139,7 +1139,6 @@ def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 new_ad[-1].SLITEDGE = auxext.SLITEDGE
                 new_ad[-1].hdr[ad._keyword_for('detector_section')] =\
                     detsec.asIRAFsection(binning=(xbin, ybin))
-                new_ad[-1].wcs = auxext.wcs
             cut_this_ad = True
 
         if return_dtype:
