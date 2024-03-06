@@ -1339,7 +1339,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
             *profile_controls,
             *peak_controls,
             reset_find_buttons,
-            sizing_mode="fixed",
+            sizing_mode="inherit",
             stylesheets=dragons_styles(),
         )
 
