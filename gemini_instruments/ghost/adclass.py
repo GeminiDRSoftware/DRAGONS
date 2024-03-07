@@ -687,7 +687,7 @@ class AstroDataGhost(AstroDataGemini):
         if 'PREPARED' in self.tags:
             return retval
         if self.is_single:
-            return retval if retval else 65535
+            return None if retval is None else retval if retval > 0 else 65535
         return [None if v is None else v if v > 0 else 65535 for v in retval]
 
     @astro_data_descriptor
