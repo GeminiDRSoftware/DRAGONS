@@ -223,32 +223,38 @@ class GHOSTSlit(GHOST):
                 continue
 
             sv_duration = ad.exposure_time()
-            sci_starts = [dateutil.parser.parse(utstart)
-                          for utstart in ad.SCIEXP['UTSTART']]
-            tzero = min(sci_starts)
-            sci_starts = np.asarray([(start - tzero).total_seconds()
-                                     for start in sci_starts])
-            sv_starts = np.asarray([(dateutil.parser.parse(f"{d}T{t}") -
-                                     tzero).total_seconds() for d, t in
-                                    zip(ad.hdr['DATE-OBS'], ad.hdr['UTSTART'])])
-            sci_ends = np.asarray([(dateutil.parser.parse(utstart) -
-                                    tzero).total_seconds()
-                                   for utstart in ad.SCIEXP['UTEND']])
+            sv_starts = [dateutil.parser.parse(f"{d}T{t}") for d, t in
+                                    zip(ad.hdr['DATE-OBS'], ad.hdr['UTSTART'])]
+            try:
+                sci_starts = [dateutil.parser.parse(utstart)
+                              for utstart in ad.SCIEXP['UTSTART']]
+            except AttributeError:
+                tzero = min(sv_starts)
+                sci_starts = None
+            else:
+                tzero = min(sci_starts)
+                sci_starts = np.asarray([(start - tzero).total_seconds()
+                                         for start in sci_starts])
+                sci_ends = np.asarray([(dateutil.parser.parse(utstart) -
+                                        tzero).total_seconds()
+                                       for utstart in ad.SCIEXP['UTEND']])
+            sv_offsets = np.asarray([(s - tzero).total_seconds() for s in sv_starts])
 
             fig, ax = plt.subplots()
-            ax.errorbar(sv_starts + 0.5 * sv_duration, fluxes,
+            ax.errorbar(sv_offsets + 0.5 * sv_duration, fluxes,
                         xerr=0.5 * sv_duration, fmt='none', color="black")
 
             y1, y2 = ax.get_ylim()
             yblue = y1 - 0.05 * (y2 - y1)
             yred = y1
 
-            for sci_img, start, end in zip(ad.SCIEXP['for'],
-                                           sci_starts, sci_ends):
-                if 'blue' in sci_img:
-                    ax.plot([start, end], [yblue, yblue], 'b-')
-                if 'red' in sci_img:
-                    ax.plot([start, end], [yred, yred], 'r-')
+            if sci_starts is not None:
+                for sci_img, start, end in zip(ad.SCIEXP['for'],
+                                               sci_starts, sci_ends):
+                    if 'blue' in sci_img:
+                        ax.plot([start, end], [yblue, yblue], 'b-')
+                    if 'red' in sci_img:
+                        ax.plot([start, end], [yred, yred], 'r-')
 
             ax.set_title(ad.filename)
             ax.set_xlabel("Time since start of observation (s)")
