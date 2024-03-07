@@ -2461,7 +2461,7 @@ def plot_extracted_spectra(ad, arm, all_peaks, lines_out, mask=None, nrows=4):
         mask = np.zeros(len(lines_out), dtype=bool)
     pixels = np.arange(arm.szy)
     with PdfPages(ad.filename.replace('.fits', '.pdf')) as pdf:
-        for m_ix, (flux, peaks) in enumerate(zip(ad[0].data[:, :, 0], all_peaks)):
+        for m_ix, (flux, peaks) in enumerate(zip(ad[0].data, all_peaks)):
             order = m_ix + arm.m_min
             if m_ix % nrows == 0:
                 if m_ix > 0:
