@@ -1326,12 +1326,17 @@ class WaveModel(Fittable2DModel):
             #print(order, np.median(lines[indices,2]), [(pix, resid) for pix, resid in zip(x, y)])
             ax.plot([0, self.szy], [order, order], f'{col}-', linewidth=1)
             for pix, resid, m in zip(px, py, pm):
-                symb = f"{col}:" if m else f"{col}-"
-                ax.plot([pix, pix], [order, order + resid / (3 * rms)], symb, linewidth=2)
+                linestyle = "dashed" if m else "solid"
+                ax.plot([pix, pix], [order, order + resid / (3 * rms)], c=col,
+                        ls=linestyle, linewidth=2)
             #ax.plot(x, [order] * x.size + y / 0.002, 'bo')
         ax.set_xlim(0, self.szy)
         if self.m_ref < 60:
             ax.set_ylim(max(orders) + 2, min(orders) - 2)
         else:
             ax.set_ylim(min(orders) - 2, max(orders) + 2)
+        if self.name is not None:
+            ax.set_title(self.name)
+        ax.set_xlabel("Column number")
+        ax.set_ylabel("Order number")
         fig.savefig(filename, bbox_inches='tight')

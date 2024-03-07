@@ -1053,7 +1053,7 @@ class GHOSTSpect(GHOST):
             #                                 plots=params['plot_fit'])
 
             wmod_shape = wpars[0].data.shape
-            m_init = WaveModel(model=wpars[0].data, arm=arm)
+            m_init = WaveModel(name=ad.filename, model=wpars[0].data, arm=arm)
             arm.spectral_format_with_matrix(
                 flat[0].XMOD, m_init.parameters.reshape(wmod_shape),
                 spatpars[0].data, specpars[0].data, rotpars[0].data)
