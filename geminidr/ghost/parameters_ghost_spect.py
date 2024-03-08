@@ -22,7 +22,7 @@ class attachWavelengthSolutionConfig(config.Config):
 class barycentricCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_barycentricCorrected",
                           optional=True)
-    velocity = config.Field("Radial velocity correction", float,
+    velocity = config.Field("Radial velocity correction (km/s)", float,
                             None, optional=True)
 
 
