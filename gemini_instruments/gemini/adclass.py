@@ -138,6 +138,12 @@ def get_specphot_name(ad):
     corresponding to the filename containing the specphot data in
     geminidr.gemini.lookups.spectrophotometric_standards
 
+    We match to within 2" regardless of name, or a 5' (sic) match if the
+    name matches. We have found cases where the PMRA/PMDEC keywords in the
+    header (which are used by the target_ra/dec descriptors) are wrong or
+    zero and so there is a larger positional disagreement than you might
+    have thought.
+
     Parameters
     ----------
     ad: AstroData object which might be a specphot standard
@@ -169,7 +175,7 @@ def get_specphot_name(ad):
                  distance=10*u.pc)
     separations = target.separation(c.apply_space_motion(dt=dt)).arcsec
     i = separations.argmin()
-    if separations[i] < 2 or separations[i] < 10 and all_names[i] == target_name:
+    if separations[i] < 2 or separations[i] < 300 and all_names[i] == target_name:
         return all_names[i]
 
 
