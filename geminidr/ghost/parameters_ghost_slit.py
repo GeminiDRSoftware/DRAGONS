@@ -13,7 +13,7 @@ class darkCorrectConfig(parameters_preprocess.darkCorrectConfig):
         self.do_cal = "skip"
 
 class fixCosmicRaysConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_CRCorrected",
+    suffix = config.Field("Filename suffix", str, "_CRFixed",
                           optional=True)
     ndev = config.RangeField("Number of median absolute deviations for "
                              "CR identification", float, 20, min=3)
