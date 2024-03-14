@@ -1839,6 +1839,32 @@ nominal_zeropoints = {
     # ('BI11-33-4k-1', 'OVIC'): 23.1,
     # ('BI12-34-4k-1', 'OVIC'): 23.1,
     # ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'OVIC'): 23.1,
+
+    # KL Mar24 - this LUT is truly a mess. the GMOS-S 2023 CCD swap did not
+    # just replace all 3 CCDs, it replaced 2 and moved an old one.  Above,
+    # the ones that were replaced no longer appear.  This breaks the descriptor
+    # for GMOS-S Ham first gen data.  I'm adding the values for the replaced
+    # CCDs to avoid crashes.  But we need a better way to track zeropoints.
+    #  Note: this is used only in-house in QAP context.
+    # The CCD that was kept is  BI12-34-4k-1
+
+    # CCDr = BI5-36-4k-2
+    # CCDg = BI11-33-4k-1
+    ('BI5-36-4k-2', 'u'):  24.138,  # 0.025,
+    ('BI11-33-4k-1', 'u'): 24.103,  # 0.045,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'u'): 24.10,
+    ('BI5-36-4k-2', 'g'):  28.002,  # 0.044,
+    ('BI11-33-4k-1', 'g'): 27.985,  # 0.059,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'g'): 27.99,
+    ('BI5-36-4k-2', 'r'):  28.244,  # -0.022,
+    ('BI11-33-4k-1', 'r'): 28.227,  # 0.004,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'r'): 28.23,
+    ('BI5-36-4k-2', 'i'):  28.229,  # -0.020,
+    ('BI11-33-4k-1', 'i'): 28.209,  # -0.012,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'i'): 28.21,
+    ('BI5-36-4k-2', 'z'):  28.035,  # -0.068,
+    ('BI11-33-4k-1', 'z'): 28.020,  # -0.005,
+    ('BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1', 'z'): 28.02,
 }
 
 # Dictionary of the pixel scale for all GMOS sites and detectors
