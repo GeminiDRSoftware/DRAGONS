@@ -521,10 +521,6 @@ class GHOSTSpect(GHOST):
                     m_final, mask2 = fit_it2(m_inter, wavelengths[good_order],
                                              sens_func[od, good_order],
                                              weights=1. / np.sqrt(sens_func_var[od, good_order]))
-                    #if 358 < min_wave < 359:
-                    #    x = np.arange(359, 359.2, 0.01)
-                    #    print("TEST FIT")
-                    #    print(m_final(x))
                     if debug_plots:
                         fig, ax = plt.subplots()
                         ax.plot(waves[od], sens_func[od], 'k-')
@@ -563,7 +559,6 @@ class GHOSTSpect(GHOST):
             for od, sensfunc in enumerate(sens_func_fits):
                 sens_func_regrid[od] = sensfunc(waves[od])
 
-            #ad[0].SENSFUNC = sens_func_regrid
             ad[0].SENSFUNC = sensfunc_table
             ad[0].hdr['SENSFUNC'] = (sensfunc_units, "Units for SENSFUNC table")
 
@@ -792,6 +787,12 @@ class GHOSTSpect(GHOST):
                 adout.append(output)
                 adout[i].wcs = gWCS([(adwcs.pixel_frame(1), wcs_models[ad.arm()]),
                                      (ext.wcs.output_frame, None)])
+
+            # Some housekeeping for data label -- as in stackFrames()
+            # This will also copy the provenance of all inputs
+            adout.orig_filename = adout.phu.get('ORIGNAME')
+            adout.phu.set('DATALAB', f"{adout.data_label()}-STACK",
+                           self.keyword_comments['DATALAB'])
             adout.hdr['DATADESC'] = ('Interpolated data',
                                      self.keyword_comments['DATADESC'])
             gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
