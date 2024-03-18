@@ -22,13 +22,13 @@ copyright = '2023, Association of University for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
-version = '3.0'
-release = '3.0.x'
-rtdurl = 'release-'+release
-#release = '3.0.5'
-#rtdurl = 'v'+release
+version = '3.2'
+release = '3.2.0'
+rtdurl = 'v'+release
+#release = '3.2.x'
+#rtdurl = 'release-'+release
 
-today = 'May 2023'
+today = 'April 2024'
 
 # -- General configuration ---------------------------------------------------
 
@@ -73,7 +73,7 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'TutorialSeries-GMOSLSDRDRAGONS'
+htmlhelp_basename = 'TutorialSeries-GHOSTDRDRAGONS'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -104,7 +104,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'TutorialSeries-GHOSTDRDRAGONS.tex', 'Tutorial Series - GHOST Data Reduction with DRAGONS Documentation',
+    (master_doc, 'TutorialSeries-GHOSTDRDRAGONS.tex', 'Tutorial Series - GHOST Data Reduction with DRAGONS',
      'DRAGONS Team', 'manual'),
 ]
 
@@ -117,11 +117,12 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'tutorialseries-ghostdrdragons', 'Tutorial Series - GHOST Data Reduction with DRAGONS Documentation',
+    (master_doc, 'tutorialseries-ghostdrdragons', 'Tutorial Series - GHOST Data Reduction with DRAGONS',
      [author], 1)
 ]
 
 # --- Customizations ----------------
+
 
 def setup(app):
     app.add_css_file('todo-styles.css')

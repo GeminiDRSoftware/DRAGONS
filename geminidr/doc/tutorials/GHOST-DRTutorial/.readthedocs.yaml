@@ -17,7 +17,7 @@ build:
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
-   configuration: geminidr/doc/tutorials/F2Img-DRTutorial/conf.py
+   configuration: geminidr/doc/tutorials/GHOST-DRTutorial/conf.py
 
 # If using Sphinx, optionally build your docs in additional formats such as PDF
 # formats:
