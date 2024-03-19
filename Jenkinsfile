@@ -18,7 +18,7 @@ pipeline {
 
     triggers {
        // Polls Source Code Manager every 15 mins
-        pollSCM('*/15 * * * *')
+        //pollSCM('*/15 * * * *')
     }
 
     options {
