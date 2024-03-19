@@ -461,6 +461,8 @@ class Spect(Resample):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             Data as 2D spectral images.
+        pinhole : str
+            Name of pinhole file to use.
         suffix : str
             Suffix to be added to output files.
 
