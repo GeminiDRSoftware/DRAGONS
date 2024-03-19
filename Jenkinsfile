@@ -16,10 +16,10 @@ pipeline {
 
     agent any
 
-    triggers {
-       // Polls Source Code Manager every 15 mins
-        //pollSCM('*/15 * * * *')
-    }
+    //triggers {
+    //   //Polls Source Code Manager every 15 mins
+    //   pollSCM('*/15 * * * *')
+    //}
 
     options {
         skipDefaultCheckout(true)
