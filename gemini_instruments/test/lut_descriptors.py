@@ -158,6 +158,12 @@ fixture_data = {
         ('telescope_x_offset', -0.0324777684697),
         ('telescope_y_offset', 1.52706222735),
     ),
+    ('F2', 'S20150622S0008.fits'): (
+        ('focal_plane_mask', 'GS2011SQ600-02'),
+    ),
+    ('F2', 'S20130719S0463.fits'): (
+        ('focal_plane_mask', 'Open'),
+    ),
     ('GMOS', 'N20160605S0099.fits'): (
         ('airmass', 1.269),
         ('ao_seeing', None),
