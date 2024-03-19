@@ -304,7 +304,7 @@ fixture_data = {
         ('nod_count', None),
         ('shuffle_pixels', None),
         ('nominal_atmospheric_extinction', 0.002299999999999991),
-        ('nominal_photometric_zeropoint', [None, None, None, None]),
+        ('nominal_photometric_zeropoint', [27.693869869509008, 27.68460698159726, 27.728983802095854, 27.707914081527598]),
         ('non_linear_level', [65535, 65535, 65535, 65535]),
         ('object', 'V4077 Sgr'),
         ('observation_class', 'acq'),
