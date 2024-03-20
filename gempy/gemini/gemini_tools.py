@@ -1131,6 +1131,7 @@ def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
                           format(os.path.basename(this_aux.filename), ad.filename))
         cut_this_ad = False
 
+        # Since this is cutting a full frame, should be only one extension.
         for ext in ad:
             # Make a new science file for appending to, starting with PHU
             new_ad = astrodata.create(ad.phu)
@@ -1139,6 +1140,61 @@ def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 new_ad[-1].SLITEDGE = auxext.SLITEDGE
                 new_ad[-1].hdr[ad._keyword_for('detector_section')] =\
                     detsec.asIRAFsection(binning=(xbin, ybin))
+
+                # By default, when a section is cut out of an array the WCS is
+                # updated with Shift models corresponding to the number of rows/
+                # columns that were removed, so that the WCS of the cut-out
+                # section remains the same. For this, however, we want to change
+                # the WCS so that in each slit the sky position points at the
+                # center of the slit.
+
+                # Get the forward and backward transforms from the input and
+                # auxiliary files so we can update the spatial shifts simultaneously
+                f_transform = new_ad[-1].wcs.get_transform('pixels', 'world')
+                aux_f_transform = auxext.wcs.get_transform('rectified', 'world')
+
+                b_transform = new_ad[-1].wcs.get_transform('world', 'pixels')
+                aux_b_transform = auxext.wcs.get_transform('world', 'rectified')
+
+                # In the first or last two submodels of the forward and backward
+                # (respectively) transforms will be one or more Shift models.
+                # Set these Shifts to 0. It's not part of the WAVE & SKY paradigm
+                # so they will be dropped later anyway, but it's good to be
+                # consistent at each step.
+                # TODO: This works assuming a single Shift in the spatial direction.
+                # If there's also a shift in the spectral direction (instead of
+                # an Identity, this will need updating.
+                for m in range(0, 2, 1):
+                    if isinstance(f_transform[m], models.Shift):
+                        f_transform[m].offset = 0
+                        break
+
+                for n in range(-2, 0, 1):
+                    if isinstance(b_transform[n], models.Shift):
+                        b_transform[n].offset = 0
+                        break
+
+                forward_shift, backward_shift = False, False
+                # Now find the offset that sets the middle of the slit to the WCS
+                # sky position from the auxiliary file and copy it over.
+                for j in range(f_transform.n_submodels):
+                    if (isinstance(f_transform[j], models.Shift) and
+                        isinstance(f_transform[j+1], models.Const1D)):
+
+                        f_transform[j].offset = aux_f_transform[j].offset
+                        forward_shift = True
+                        break
+
+                for k in range(b_transform.n_submodels):
+                    if (isinstance(b_transform[k], models.Shift) and
+                        isinstance(b_transform[k+1], models.Shift)):
+
+                        b_transform[k].offset = aux_b_transform[k].offset
+                        backward_shift = True
+                        break
+
+            if not (forward_shift or backward_shift):
+                raise RuntimeError("No forward or backward shift found in WCS")
             cut_this_ad = True
 
         if return_dtype:

@@ -2448,7 +2448,6 @@ class Spect(Resample):
                 reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
 
-
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
@@ -3991,11 +3990,13 @@ class Spect(Resample):
             dwout = (w2out - w1out) / (npixout - 1)
 
         new_wave_model.name = 'WAVE'
+        # dicts handle models for multiple extensions
         if ndim == 1:
-            new_wcs_model = new_wave_model
+            new_wcs_models = {i: new_wave_model for i in range(len(refad))}
         else:
-            new_wcs_model = refad[0].wcs.forward_transform.replace_submodel(
-                'WAVE', new_wave_model)
+            new_wcs_models = {i: refad[i].wcs.forward_transform.replace_submodel(
+                'WAVE', new_wave_model) for i in range(len(refad))}
+
 
         # Now let's think about the spatial direction
         if ndim > 1:
@@ -4081,7 +4082,7 @@ class Spect(Resample):
                 resampled_frame = copy(ext.wcs.input_frame)
                 resampled_frame.name = 'resampled'
                 ext.wcs = gWCS([(ext.wcs.input_frame, resampling_model),
-                                (resampled_frame, new_wcs_model),
+                                (resampled_frame, new_wcs_models[iext]),
                                 (ext.wcs.output_frame, None)])
 
                 new_ext = transform.resample_from_wcs(
@@ -4571,8 +4572,8 @@ class Spect(Resample):
                         if in_coords.size:
                             min_value = in_coords[1 - dispaxis].min()
                             max_value = in_coords[1 - dispaxis].max()
-                            log.debug(f"Aperture at {c0:.1f} traced from {min_value} "
-                                      f"to {max_value}")
+                            log.fullinfo(f"Aperture at {c0:.1f} traced from {min_value} "
+                                         f"to {max_value}")
 
                         # Find model to transform actual (x,y) locations to the
                         # value of the reference pixel along the dispersion axis
@@ -4935,6 +4936,11 @@ class Spect(Resample):
                         y2 = min(int(np.ceil(model2(x2))) + pad,
                                  ext.data.shape[1 - dispaxis])
 
+                    midpoint_x = (x2 - x1) / 2
+                    midpoint_y = (y2 - y1) / 2
+                    mid_spect = midpoint_y if dispaxis == 0 else midpoint_x
+                    mid_spat = midpoint_x if dispaxis == 0 else midpoint_y
+
                     # Create a Section to cut out, and append that section as
                     # the new data plane of the new `adout`.
                     cut_section = Section(x1=x1, x2=x2, y1=y1, y2=y2)
@@ -4951,7 +4957,8 @@ class Spect(Resample):
                     adout[-1].SLITEDGE["slit"] = 0  # reset slit number in ext
 
                     # Create a slit rectification model for the slit and add it
-                    # to the WCS.
+                    # to the WCS in this next section. ------------------------
+
                     # Create values to evaluate the slit edge models at along
                     # the array. Every 20 pixels is fine, as that's the default
                     # interval that the edge tracing uses.
@@ -4959,28 +4966,75 @@ class Spect(Resample):
                                    0, ext.data.shape[dispaxis]+1, 20)]
                     # Stack them together to represent both edges.
                     eval_coords_temp = np.concatenate((eval_coords, eval_coords))
-                    half_point = len(eval_coords) // 2
 
                     in_coords1 = np.array(np.array([model1(n) for n in
                                           eval_coords]))
                     in_coords2 = np.array(np.array([model2(n) for n in
                                           eval_coords]))
                     in_coords_temp = np.concatenate((in_coords1, in_coords2))
-                    # Need to correct by the offset of the cut-out section.
-                    in_coords_temp -= offset
+
+                    # Find the edges of the slit half-way in the spectral direction
+                    # so we can find the offset to correct the slit by to make
+                    # the center line up with the target RA and DEC. These
+                    # are in slit-coordinates.
+                    edge1_mid = model1(mid_spect)
+                    edge2_mid = model2(mid_spect)
+                    mid = (x2 - x1) / 2
+                    slit_center = (edge1_mid + edge2_mid) / 2 - offset
+
+                    # Need to update both forward and backward transforms
+                    # together in sync.
+                    forward_shift, backward_shift = False, False
+                    f_transform = adout[-1].wcs.get_transform('pixels', 'world')
+                    b_transform = adout[-1].wcs.get_transform('world', 'pixels')
+
+                    for j in range(f_transform.n_submodels):
+                        if (isinstance(f_transform[j], models.Shift) and
+                            isinstance(f_transform[j+1], models.Const1D)):
+                            # This sets the center of the slit to be where the
+                            # WCS sky coordinates point.
+                            f_transform[j].offset = -slit_center
+                            forward_shift = True
+                            break
+
+                    for k in range(b_transform.n_submodels):
+                        if (isinstance(b_transform[k], models.Shift) and
+                            isinstance(b_transform[k+1], models.Shift)):
+                            b_transform[k].offset = slit_center
+                            backward_shift = True
+                            break
+
+                    # When regions are cut out of a larger frame, Shift models
+                    # are added to keep the WCS the same. We want the WCS to
+                    # instead point to the center of the slit, so zero out these
+                    # auto-added Shifts, which will be in the first/last two
+                    # submodels of the forward and backward transforms.
+                    # Since we cut the entire array in the spectral direction,
+                    # there will be one Shift (in the spatial direction) and
+                    # one Identity model here, so we can break after finding the
+                    # Shift.
+                    for m in range(0, 2, 1):
+                        if isinstance(f_transform[m], models.Shift):
+                            f_transform[m].offset = 0
+                            break
+
+                    for n in range(-2, 0, 1):
+                        if isinstance(b_transform[n], models.Shift):
+                            b_transform[n].offset = 0
+                            break
+
+                    if not (forward_shift and backward_shift):
+                        log.debug(f"{f_transform=}")
+                        log.debug(f"{b_transform=}")
+                        raise RuntimeError("Couldn't find Shift model in WCS")
 
                     # Set the reference coordinates to the value of the models
                     # half-way across the detector in the dispersion direction.
                     # This "rotates" the shift around that point, rather than
-                    # around one end of the slit. We can simply take the half-way
-                    # index since we created the `in_coords` across the entire
-                    # detector.
-                    ref_coords1 = np.full_like(in_coords1,
-                                               in_coords1[half_point])
-                    ref_coords2 = np.full_like(in_coords2,
-                                               in_coords2[half_point])
+                    # around one end of the slit.
+                    ref_coords1 = np.full_like(in_coords1, edge1_mid)
+                    ref_coords2 = np.full_like(in_coords2, edge2_mid)
                     ref_coords_temp = np.concatenate((ref_coords1, ref_coords2))
-                    ref_coords_temp -= offset
 
                     # Create lists of coordinates; they are always given as a
                     # list of x-coordinates and y-coordinates, so this `if`

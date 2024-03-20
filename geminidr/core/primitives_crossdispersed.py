@@ -9,10 +9,12 @@ from importlib import import_module
 from astropy.modeling import models
 from astropy.table import Table
 from gwcs import coordinate_frames as cf
+from gwcs.wcs import WCS as gWCS
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astromodels as am
 from geminidr.core import Spect, Preprocess
 from . import parameters_crossdispersed
 
@@ -65,30 +67,38 @@ class CrossDispersed(Spect, Preprocess):
                 '.orders_XD_GNIRS', self.inst_lookups).order_info[order_key],
                 names=columns)
 
-            for j, ext in enumerate(ad):
+            for i, ext in enumerate(ad):
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
-                row = order_info[j]
 
-                # Handle the WCS. Need to adjust it for each slit.
+                # Update the WCS by adding a "first guess" wavelength scale
+                # for each slit.
                 for idx, step in enumerate(ext.wcs.pipeline):
                     if ext.wcs.pipeline[idx+1].frame.name == 'world':
-                        if not (isinstance(step.transform[4], models.Scale)
-                            and isinstance(step.transform[5], models.Shift)):
+                        # Need to find a sequence of Shift + Scale models, which
+                        # collectively represent the wavecal model.
+                        _, m_wave_sky = step
+                        found_wavecal_model, found_sky_model = False, False
+                        for j in range(m_wave_sky.n_submodels):
+                            if (isinstance(m_wave_sky[j], models.Shift) and
+                                isinstance(m_wave_sky[j+1], models.Scale) and
+                                isinstance(m_wave_sky[j+2], models.Shift)):
+
+                                found_wavecal_model = True
+                                break
+
+                        if found_wavecal_model:
+                            # The first shift is the offset to the center of the
+                            # array, don't modify it.
+                            # Dispersion (nm/pixel)
+                            step.transform[j+1].factor = order_info[i]['dispersion']
+                            # Central wavelength offset (nm)
+                            step.transform[j+2].offset = order_info[i]['central_wavelength']
+
+                            log.fullinfo(f"Updated WCS for extension {ext.id}")
+                            break
+                        else:
                             log.warning("No initial wavelength model found - "
                                         "not modifying the WCS")
-                            break
-
-                        # Central wavelength offset (nm)
-                        step.transform[5].offset = row['central_wavelength']
-                        # Dispersion (nm/pixel)
-                        step.transform[4].factor = row['dispersion']
-                        # Offset of center of slit (pixels) - The order of sub-
-                        # models in the WCS transform is independent of
-                        # dispersion axis, so the Shift model
-                        # index changes depending on orientation.
-                        crpix_index = 7 if dispaxis == 0 else 3
-                        step.transform[crpix_index].offset = row['center_offset']
-                        log.fullinfo(f"Updated WCS for ext {ext.id}")
                         break
 
             # Timestamp and update the filename
@@ -133,6 +143,7 @@ class CrossDispersed(Spect, Preprocess):
         timestamp_key = self.timestamp_keys[self.myself()]
         flat = params['flat']
         do_flat = params.get('do_flat', None)
+        sfx = params["suffix"]
 
         if flat is None:
             flat_list = self.caldb.get_processed_flat(adinputs)
@@ -153,7 +164,21 @@ class CrossDispersed(Spect, Preprocess):
 
             # Cut the science frames to match the flats, which have already
             # been cut in the flat reduction.
-            cut_ads.append(gt.cut_to_match_auxiliary_data(adinput=ad, aux=flat))
+            cut_ad = gt.cut_to_match_auxiliary_data(adinput=ad, aux=flat)
+            # Need to update the WCS in each extension by replacing its WAVE
+            # model with the one from the corresponding extension in the flat.
+            # To do that, recreate the WCS with the original input and output
+            # frames and the new wavecal mode taken from the flat.
+            for ext, auxext in zip(cut_ad, flat):
+                aux_wave_model = am.get_named_submodel(auxext.wcs.forward_transform,
+                                                       'WAVE')
+                new_wave_model = ext.wcs.forward_transform.replace_submodel(
+                    "WAVE", aux_wave_model)
+                ext.wcs = gWCS([(ext.wcs.input_frame, new_wave_model),
+                                (ext.wcs.output_frame, None)])
+                log.fullinfo(f'WCS wavecal model updated in ext {ext.id}')
+
+            cut_ads.append(cut_ad)
 
         adoutputs = super().flatCorrect(adinputs=cut_ads, **params)
         for ad in adoutputs:
@@ -161,5 +186,9 @@ class CrossDispersed(Spect, Preprocess):
                 ad[0].wcs.get_transform("pixels", "rectified")
             except:
                 log.warning(f"No rectification model found for {ad.filename}")
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adoutputs
