@@ -44,7 +44,7 @@ def test_showrecipes_on_gnirs():
         assert expected_answers[i] in answer
 
 
-@pytest.mark.dragons_remote_dataO
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gnirs_ls():
     file_location = download_from_archive(GNIRS_LS)
 
@@ -64,7 +64,7 @@ def test_showrecipes_on_gnirs_ls():
         assert gnirs_ls_answer[i] in answer
 
 
-@pytest.mark.dragons_remote_dataO
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gnirs_xd():
     file_location = download_from_archive(GNIRS_XD)
 
