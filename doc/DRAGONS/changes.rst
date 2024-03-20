@@ -16,9 +16,11 @@ New Features
 ------------
 
 Full support for the reduction of GHOST data.
-  This is based on the external GHOSTDR package, with improvements and
-  changes to the names and scope of primitives to better align with the
+  This is based on the external GHOSTDR package, with important improvements.
+  Includes changes to the names and scope of primitives to better align with the
   other instrument recipes.
+
+Support for new GMOS-S CCDs installed in late 2023.
 
 Improvements
 ------------
@@ -28,7 +30,16 @@ Improvements
 
 * Support for reading and writing tabular wavelength information to/from FITS.
 
-**geminidr**
+**astrodata.provenance**
+
+* Renamed the ``PROVHISTORY`` table to ``HISTORY``, and changed wording in the
+code from "provenance history" to simply "history".
+
+**astrodata.fits**
+
+* Support reading ASCII tables when opening FITS files with astrodata
+
+**geminidr.core**
 
 * Creation of new ``skip_primitive`` parameter, e.g.,
   ``reduce -p skyCorrectFromSlit:skip_primitive=True`` which allows any
@@ -40,51 +51,47 @@ Improvements
   ``reduce -p ADUToElectrons:write_outputs=True`` which will write to disk
   the outputs of the primitive.
 
-
-Bug fixes
----------
-**geminidr**
-
-* Set default ``calculateSensitivity.bandpass`` parameter to 0.001 nm to
-  better handle pure spectra in flux density units.
-
-* Allow ``display`` to handle non-standard extention names, which did not
-  work as intended.
-
-
-**recipe_system**
-
-* Set the ``engineering`` flag to False for all data stored in the local
-  calibration database, to ensure that it can be retrieved.
-
-
-3.1.1
-=====
-
-Improvements
-------------
-
-**astrodata.provenance**
-
-* Renamed the ``PROVHISTORY`` table to ``HISTORY``, and changed wording in the
-code from "provenance history" to simply "history".
-
-**geminidr.core**
-
 * Allow input files to ``shiftImages`` to recognize tabs or multiple
   whitespaces as the delimiter
+
+**geminidr.gsaoi***
+
+* Modification to the `nostack` science recipe to not "store" the image but
+  rather continue and detect sources in the images in anticipation of the likely
+  stacking that will follow later.  The output images will have the
+  `_sourcesDetected` suffix rather than the `_image` suffix.
 
 **recipe_system.cal_service**
 
 * Whitespace now allowed in directory paths (if quoted), e.g.,
   ``databases = "~/.my dragons/dragons.db"``
 
-Bug Fixes
+
+Bug fixes
 ---------
+**geminidr.core**
+
+* Set default ``calculateSensitivity.bandpass`` parameter to 0.001 nm to
+  better handle pure spectra in flux density units.
+
+* Allow ``display`` to handle non-standard extension names, which did not
+  work as intended.
 
 **geminidr.gmos**
 
 * Fix the QE model selection for the GMOS-S EEV CDDs.
+
+**recipe_system**
+
+* Set the ``engineering`` flag to False for all data stored in the local
+  calibration database, to ensure that it can be retrieved.
+
+Compatibility
+-------------
+**geminidr.interactive**
+
+* The interactive tools are now compatible with and require bokeh v3 and above.
+
 
 
 3.1.0
