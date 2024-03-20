@@ -435,4 +435,6 @@ rst_epilog = """
 .. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System Users Manual</a>`
 .. |astrodataprog| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/progmanual/index.html">Astrodata Programmer Manual</a>`
 
+.. |DRAGONS| replace:: :raw-html:`<a href="http://dragons.readthedocs.io/en/{v}/">DRAGONS</a>`
+
 """.format(v = rtdurl)

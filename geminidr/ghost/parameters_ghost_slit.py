@@ -3,7 +3,12 @@
 from astrodata import AstroData
 
 from gempy.library import config
-from geminidr.core import parameters_preprocess
+from geminidr.core import parameters_preprocess, parameters_standardize
+
+
+class addDQConfig(parameters_standardize.addDQConfig):
+    def setDefaults(self):
+        self.static_bpm = None
 
 
 class darkCorrectConfig(parameters_preprocess.darkCorrectConfig):

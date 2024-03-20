@@ -14,7 +14,6 @@ class AstroDataF2(AstroDataGemini):
     __keyword_dict = dict(central_wavelength='WAVELENG',
                           disperser='GRISM',
                           dispersion='DISPERSI',
-                          focal_plane_mask='MOSPOS',
                           lyot_stop='LYOT',
                           )
 
@@ -521,19 +520,39 @@ class AstroDataF2(AstroDataGemini):
     @astro_data_descriptor
     def lyot_stop(self):
         """
-        Returns the LYOT filter used for the observation.  This works around
+        Returns the LYOT stop used for the observation.  This works around
         inconsistencies in the header keywords.
 
         Returns
         -------
         str
-            LYOT filter name, or None
+            LYOT stop name, or None
 
         """
         lyot = self.phu.get('LYOT', None)
         if lyot:
             return lyot
         return self.phu.get('LYOTPOS', None)
+
+    @astro_data_descriptor
+    def focal_plane_mask(self, stripID=False, pretty=False):
+        """
+        Returns the focal plane mask used for the observation. This is generally
+        the MASKNAME header. For imaging data, MASKNAME sometimes has strange
+        values, so we check MOSPOS and if MOSPOS is 'Open' we return that
+        for consistency.
+
+        The stripID and pretty arguments are ignored.
+
+        Returns
+        -------
+        str
+            focal plane mask name, or None
+
+        """
+        mospos = self.phu.get('MOSPOS', None)
+        maskname = self.phu.get('MASKNAME', None)
+        return mospos if mospos == 'Open' else maskname
 
     @returns_list
     @astro_data_descriptor

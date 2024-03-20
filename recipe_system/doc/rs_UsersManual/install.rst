@@ -4,6 +4,18 @@
 
     <a href="https://www.anaconda.com/distribution/#download-section" target="_blank">https://www.anaconda.com/distribution/#download-section</a>
 
+.. |miniforge_link| raw:: html
+
+    <a href="https://github.com/conda-forge/miniforge" target="_blank">https://github.com/conda-forge/miniforge</a>
+
+.. |miniforgelinux| raw:: html
+
+    <a href="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" target="_blank">Miniforge3-Linux-x86_64.sh</a>
+
+.. |miniforgemacosx| raw:: html
+
+    <a href="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh" target="_blank">Miniforge3-MacOSX-x86_64.sh</a>
+
 .. |geminiiraf_link| raw:: html
 
    <a href="https://www.gemini.edu/observing/phase-iii/reducing-data/gemini-iraf-data-reduction-software" target="_blank">https://www.gemini.edu/observing/phase-iii/reducing-data/gemini-iraf-data-reduction-software</a>
@@ -14,91 +26,102 @@
 Installation
 ************
 
-The Recipe System is distributed as part of DRAGONS.  DRAGONS is available
+The Recipe System is the automation part of DRAGONS.  DRAGONS is available
 as a conda package.  The installation instructions below will install all
 the necessary dependencies.
 
 The use of the ``bash`` shell is recommended.
 
-Install Anaconda
-================
+Install Miniforge
+=================
 
-Download and install Anaconda
------------------------------
-If you already have Anaconda installed, you can skip this step and go to
-the :ref:`Install DRAGONS <install_dragons>` section below.  If not, then your
-first step is to get and install Anaconda.  You can download it from the
-Anaconda website.  We recommend clicking on the "Get Additional Installers"
-instead of using the green Download button as it will allow you to do a finer
-selection.  Here we show how to use the "Command Line Installer"
+We recommend using Miniforge instead of Anaconda.  It is smaller and installs
+contents from conda-forge which is now our main channel for python packages.
+The overall size of the installation will therefore be much smaller than
+a full Anaconda installation.  The instructions below are for Miniforge.
 
-+-----------------------------------------+
-|  **Download Anaconda**: |anaconda_link| |
-+-----------------------------------------+
+Anaconda will work just fine too if you prefer or have a business need for
+it.  We just don't provide instructions for its installation.  Whether you use
+Miniforge or Anaconda will not impact the DRAGONS installation as long as
+your using the correct conda channels.
 
-.. warning::  M1 MacOS Users!!!  DRAGONS is not yet built with the M1
-      architecture. The x86 build will work anyway.  But you have to be careful
-      when you install Anaconda.
+Download and install Miniforge
+------------------------------
+If you already have Miniforge installed (or Anaconda and don't want to move
+to Miniforge), you can skip this step and go to the
+:ref:`Install DRAGONS <install_dragons>` section below.
 
-      We recommend that you use the "64-bit Command Line Installer", ie. the
-      non-M1 version.  This version is the x86 (aka Intel) build. When using
-      that version, by default, x86 binaries of the various conda packages will
-      be installed.
+If not, then your first step is to get and install Miniforge.  You can download
+it from the Miniforge github page.  The direct links to the Linux and Mac
+installer are provided in the table below.
 
-      M1 can run x86 binaries via the Rosetta interface.  It is seamless.
++--------------------------------------------------+
+|  **Miniforge Page**: |miniforge_link|            |
++--------------------------------------------------+
+|  **Linux x64_86 Installer**: |miniforgelinux|    |
++--------------------------------------------------+
+|  **MacOSX x64_86 Installer**:  |miniforgemacosx| |
++--------------------------------------------------+
 
-The current version of DRAGONS has been tested with Python 3.9 and Python 3.10.
-We recommend that you install the standard Python 3 version of Anaconda, the
-specific Python version can be adjusted later, if necessary.
 
-If you have downloaded the graphical installer, follow the graphical installer
-instructions.  Install in your home directory.  It should be the default.
+.. warning::  arm64 MacOS Users!!!  (That's M1/M2/M etc) DRAGONS is not yet
+      built with the arm64 architecture. Some dependencies are also either not
+      available for arm64 or not reliable.  The x86 build will work.  All you
+      need to do is install the x64_86 version of Miniforge (or Anaconda).
+      That way, the x64_86 binaries will automatically be seeked, and found.
 
-If you have downloaded the command-line installer (recommended), type the
-following in a terminal, replacing the ``.sh`` file name to the name of the
-file you have downloaded.  The ``/bin/bash -l`` line is not needed if you are
-already using bash.  The command-line installer allows for more customization
-of the installation.
+      arm64 machines can run x86 binaries via the Rosetta interface.  It is
+      seamless.
+
+The current version of DRAGONS has been tested with Python 3.10.  At the time
+of this writing, Miniforge installs Python 3.10 by default.  (Other version
+of Python can subsequently be installed.)
+
+To install, run the installer that you have downloaded.
+Type the following in a terminal, replacing the ``.sh`` file name with the name
+of the file you have downloaded.
 
 ::
 
-    $ /bin/bash -l
-    $ chmod a+x Anaconda3-2022.10-MacOSX-x86_64.sh
-    $ ./Anaconda3-2022.10-MacOSX-x86_64.sh
+    $ /bin/bash Miniforge3-MacOSX-x86_64.sh
 
 (``$`` indicates the terminal prompt.)
 
-.. note::  To prevent the Anaconda "base" environment from loading
-   automatically, do::
+.. note::  For the arm64 Macs, it will tell you that the architecture does not
+           match.  That's okay, type `yes` to accept.
+
+At ``"Do you wish to update your shell profile to automatically initialize conda?"``,
+answer `no`.   The script sometimes put the "conda init" information in the
+wrong shell file (observed on Mac).  To avoid confusion do the initialization
+manually::
+
+    $ ~/miniforge3/bin/conda init
+
+.. note::  To prevent the "base" environment from loading automatically, do::
 
    $ conda config --set auto_activate_base false
 
 
-Verify Anaconda installation
-----------------------------
-We recommend the use of the ``bash`` shell::
-
-    $ /bin/bash -l
-
-Make sure that ``~/anaconda3/bin/conda`` is in your ``PATH`` by doing::
+Verify Miniforge installation
+-----------------------------
+Make sure that ``~/miniforge3/bin/conda`` is in your ``PATH`` by doing::
 
     $ which conda
 
-The Anaconda installer should have added conda configurations to the
-``~/.bash_profile`` for you.  If ``conda`` is not found, try::
+It should show a path with ``miniforge3``, not ``anaconda``.
+
+.. note:: If you had a previous installation of Anaconda, you might need to
+          find the Anaconda's "conda initialize" block and comment it out.
+          Look in files like .bash_profile, .bashrc, .zshrc.
+
+The `conda init` command should have added conda configurations to the
+``~/.bash_profile`` for you (or ``.bashrc``, ``.zshrc``).  If ``conda`` is not found,
+try::
 
     $ source ~/.bash_profile
 
-If ``activate`` is still not found, you might have to add
-``export PATH=~/anaconda3/bin:$PATH`` to your ``~/.bash_profile`` using your
-favorite text editor, and run the ``source`` command above again.
-
-.. note:: Sometimes the Anaconda installer will install the software in
-    ``~/anaconda3`` instead of simply ``~/anaconda``.  Just
-    check in your home directory which one of the tow possibilities was used.
-
-The code Anaconda adds to the .bash_profile will automatically activate
-anaconda.  To activate or deactivate Anaconda manually::
+The code Miniforge adds to the ``.bash_profile`` will automatically activate
+Miniforge.  To activate or deactivate Miniforge manually::
 
     $ conda activate
     $ conda deactivate
@@ -108,7 +131,7 @@ anaconda.  To activate or deactivate Anaconda manually::
 
 Install DRAGONS
 ===============
-With Anaconda installed and ready to go, now we can install DRAGONS and
+With Miniforge installed and ready to go, now we can install DRAGONS and
 the necessary dependencies.
 
 Add conda-forge and the Gemini channel.  Those channels host the conda packages
@@ -118,11 +141,16 @@ that we will need.
 
     $ conda config --add channels conda-forge
     $ conda config --add channels http://astroconda.gemini.edu/public
-    $ conda config --set channel_priority disabled
+
+The content of the `~/.condarc` file should look like this (the order matters)::
+
+   channels:
+     - http://astroconda.gemini.edu/public
+     - conda-forge
 
 The next step is to create a virtual environment and install the DRAGONS
 software and its dependencies in it.  The name of the environment can be
-anything you like.  Here we use "dragons" as the name and we install
+anything you like.  Here we use "dragons" as the name and we request
 Python 3.10.
 
 ::
@@ -137,17 +165,17 @@ You will need to activate the environment whenever you start a new shell.
 If you are planning to use it all the time, you might want to add the
 command to your ``.bash_profile``, after the "conda init" block.
 
-.. note::
+.. .. note::
     For Linux users only.
 
-    As a side note, if you are going to use PyRAF regularly, for example to
+..    As a side note, if you are going to use PyRAF regularly, for example to
     reduce Gemini data not yet supported in DRAGONS, you should install the
     ``iraf-all`` and ``pyraf-all`` conda packages as well.
 
-    $ conda create -n geminiconda python=3.10 iraf-all pyraf-all ds9 dragons
+.. ..    $ conda create -n geminiconda python=3.10 iraf-all pyraf-all ds9 dragons
 
-    DRAGONS and the Recipe System do not need IRAF or PyRAF, however. See the
-    Gemini website for information on how to configure IRAF (|geminiiraf_link|)
+..    DRAGONS and the Recipe System do not need IRAF or PyRAF, however. See the
+..    Gemini website for information on how to configure IRAF (|geminiiraf_link|)
 
 .. _configure:
 
@@ -174,7 +202,7 @@ on your preferences.  The path and name of the calibration database can be
 anything, as long at the path exists.  The "get" means that DRAGONS will get
 calibrations from that database.  The "store" option can be added after the
 "get" to have DRAGONS automatically add new processed calibrations to the
-database.  See any of the tutorials to see the calibration manager in action.
+database.  See any of the tutorials to learn how to use the calibration manager.
 
 On a new installation, you will need to configure ``ds9`` buffer
 configurations::
@@ -186,11 +214,11 @@ configurations::
       Add this line to the .bash_profile:
         export IMTOOLRC=~/.imtoolrc
 
-While not specific at all to DRAGONS, it is recommended to increase the
-Operating System limit on the number of opened files.  We have seen an increase
-in reports of the error "Too many open files."
+It is recommended to increase the Operating System limit on the number of
+opened files.  We have seen an increase in reports of the error
+"Too many open files" when reducing spectroscopy data.
 
-In your .bash_profile, add the following line to overcome that OS limitation::
+In your `.bash_profile`, add the following line to overcome that OS limitation::
 
     ulimit -n 1024
 
@@ -215,9 +243,9 @@ are compiled and loaded::
 
     $ reduce --help
 
-This will print the reduce help to the screen.
+This will print the ``reduce`` help to the screen.
 
-If you have Gemini FITS files available, you can test that the Recipe System
+If you have Gemini FITS files available, you can test that DRAGONS
 is functioning as expected as follow (replace the file name with the name
 of your file)::
 
@@ -254,3 +282,5 @@ If all is well, you will see something like::
     Wrote N20180106S0700_prepared.fits in output directory
 
     reduce completed successfully.
+
+
