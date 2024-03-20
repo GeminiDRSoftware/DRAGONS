@@ -10,6 +10,8 @@ Recipe System Programmers Manual
 
    PIPE-USER-108_RSProgManual
 
+[Return to the main |DRAGONS| page.]
+
 .. toctree::
    :maxdepth: 2
    :caption: Table of Contents

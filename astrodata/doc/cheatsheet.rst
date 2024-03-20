@@ -13,7 +13,7 @@ Cheat Sheet
 A data package is available for download if you wish to run the examples
 included in this cheat sheet.  Download it at:
 
-    `<http://www.gemini.edu/sciops/data/software/datapkgs/ad_usermanual_datapkg-v1.tar>`_
+    `<https://www.gemini.edu/sciops/data/software/datapkgs/ad_usermanual_datapkg-v1.tar>`_
 
 To unpack::
 

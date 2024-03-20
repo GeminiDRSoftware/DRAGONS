@@ -35,14 +35,15 @@ The use of the ``bash`` shell is recommended.
 Install Miniforge
 =================
 
-We recommend using Miniforge instead of Anaconda.  It is smaller and install
+We recommend using Miniforge instead of Anaconda.  It is smaller and installs
 contents from conda-forge which is now our main channel for python packages.
 The overall size of the installation will therefore be much smaller than
 a full Anaconda installation.  The instructions below are for Miniforge.
 
 Anaconda will work just fine too if you prefer or have a business need for
-it.  We just don't provide instructions for its installation.  Miniforge or
-Anaconda will not impact the DRAGONS installation.
+it.  We just don't provide instructions for its installation.  Whether you use
+Miniforge or Anaconda will not impact the DRAGONS installation as long as
+your using the correct conda channels.
 
 Download and install Miniforge
 ------------------------------
@@ -74,12 +75,11 @@ installer are provided in the table below.
 
 The current version of DRAGONS has been tested with Python 3.10.  At the time
 of this writing, Miniforge installs Python 3.10 by default.  (Other version
-of Python an subsequently be installed.)
+of Python can subsequently be installed.)
 
-To install, run the installer that you have downloaded
-Type the following in a terminal, replacing the ``.sh`` file name to the name
-of the file you have downloaded.  The ``/bin/bash -l`` line is not needed if
-you are already using bash.
+To install, run the installer that you have downloaded.
+Type the following in a terminal, replacing the ``.sh`` file name with the name
+of the file you have downloaded.
 
 ::
 
@@ -87,11 +87,11 @@ you are already using bash.
 
 (``$`` indicates the terminal prompt.)
 
-.. note::  For the arm64 Macs, it will note that the architecture does not
+.. note::  For the arm64 Macs, it will tell you that the architecture does not
            match.  That's okay, type `yes` to accept.
 
-At "Do you wish to update your shell profile to automatically initialize conda?",
-answer "no".   The script sometimes put the "conda init" information in the
+At ``"Do you wish to update your shell profile to automatically initialize conda?"``,
+answer `no`.   The script sometimes put the "conda init" information in the
 wrong shell file (observed on Mac).  To avoid confusion do the initialization
 manually::
 
@@ -108,20 +108,20 @@ Make sure that ``~/miniforge3/bin/conda`` is in your ``PATH`` by doing::
 
     $ which conda
 
-It should show a path with `miniforge3`, not `anaconda`.
+It should show a path with ``miniforge3``, not ``anaconda``.
 
 .. note:: If you had a previous installation of Anaconda, you might need to
           find the Anaconda's "conda initialize" block and comment it out.
           Look in files like .bash_profile, .bashrc, .zshrc.
 
 The `conda init` command should have added conda configurations to the
-``~/.bash_profile`` for you (or .bashrc, .zshrc).  If ``conda`` is not found,
+``~/.bash_profile`` for you (or ``.bashrc``, ``.zshrc``).  If ``conda`` is not found,
 try::
 
     $ source ~/.bash_profile
 
-The code Miniforge adds to the .bash_profile will automatically activate
-miniforge.  To activate or deactivate Anaconda manually::
+The code Miniforge adds to the ``.bash_profile`` will automatically activate
+Miniforge.  To activate or deactivate Miniforge manually::
 
     $ conda activate
     $ conda deactivate
@@ -142,12 +142,11 @@ that we will need.
     $ conda config --add channels conda-forge
     $ conda config --add channels http://astroconda.gemini.edu/public
 
-The content of the `~/.condarc` file should look like this::
+The content of the `~/.condarc` file should look like this (the order matters)::
 
    channels:
      - http://astroconda.gemini.edu/public
      - conda-forge
-     - defaults
 
 The next step is to create a virtual environment and install the DRAGONS
 software and its dependencies in it.  The name of the environment can be
@@ -203,7 +202,7 @@ on your preferences.  The path and name of the calibration database can be
 anything, as long at the path exists.  The "get" means that DRAGONS will get
 calibrations from that database.  The "store" option can be added after the
 "get" to have DRAGONS automatically add new processed calibrations to the
-database.  See any of the tutorials to see the calibration manager in action.
+database.  See any of the tutorials to learn how to use the calibration manager.
 
 On a new installation, you will need to configure ``ds9`` buffer
 configurations::
@@ -244,7 +243,7 @@ are compiled and loaded::
 
     $ reduce --help
 
-This will print the reduce help to the screen.
+This will print the ``reduce`` help to the screen.
 
 If you have Gemini FITS files available, you can test that DRAGONS
 is functioning as expected as follow (replace the file name with the name
