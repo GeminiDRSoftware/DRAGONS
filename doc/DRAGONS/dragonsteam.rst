@@ -10,13 +10,14 @@ Current DRAGONS Team
 ====================
 (Alphabetical order)
 
+* Dan Avner
 * Daniel Berke
 * Paul Hirst
-* David Jones
 * Kathleen Labrie
 * Chris Simpson
 * Olesja Smirnova
 * Monika Soraisam
+* D.J. Teal
 * James Turner
 * Bill Vacca
 

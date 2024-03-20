@@ -6,6 +6,37 @@
 Release Notes
 *************
 
+V3.2.0
+======
+
+This release adds:
+
+* Fully integrated support for GHOST
+* Support for the new GMOS-S CCDs that were installed in late 2023
+
+The release also includes a number of other improvements and bug fixes.
+See the :ref:`changes` for all the details.
+
+With this release, DRAGONS offers support for:
+
+Science Quality reduction
+   * GMOS imager
+   * NIRI imager
+   * GSAOI imager
+   * F2 imager
+   * GMOS longslit spectrograph (including nod-and-shuffle)
+   * GHOST spectrograph
+
+For imaging and GMOS longslit spectroscopy, this software should be used
+instead of the Gemini IRAF package.
+
+To install DRAGONS, please follow the installation guide provided in the
+Recipe System User Manual:
+
+  |RSUserInstall|.
+
+
+
 V3.1.0
 ======
 
