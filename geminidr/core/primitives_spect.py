@@ -3529,6 +3529,18 @@ class Spect(Resample):
                                   * u.Unit("erg cm-2 s-1") / u.Hz)
         return spec_table
 
+    def _apply_wavelength_model_bounds(self, model=None, ext=None):
+        # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
+        # the range of parameter space to explore
+        # The default here is 2% tolerance in central wavelength and dispersion
+        for i, (pname, pvalue) in enumerate(zip(model.param_names, model.parameters)):
+            if i == 0:  # central wavelength
+                prange = 0.02 * pvalue
+            elif i == 1:  # half the wavelength extent (~dispersion)
+                prange = 0.02 * abs(pvalue)
+            else:  # higher-order terms
+                prange = 1
+            getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)
 
 # -----------------------------------------------------------------------------
 

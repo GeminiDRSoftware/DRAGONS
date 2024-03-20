@@ -113,6 +113,7 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     interactive = config.Field("Display interactive fitter?", bool, False)
+    verbose = config.Field("Print additional fitting information?", bool, False)
 
     def setDefaults(self):
         del self.function
