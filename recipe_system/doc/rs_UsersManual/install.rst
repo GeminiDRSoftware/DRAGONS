@@ -87,6 +87,16 @@ you are already using bash.
 
 (``$`` indicates the terminal prompt.)
 
+.. note::  For the arm64 Macs, it will note that the architecture does not
+           match.  That's okay, type `yes` to accept.
+
+At "Do you wish to update your shell profile to automatically initialize conda?",
+answer "no".   The script sometimes put the "conda init" information in the
+wrong shell file (observed on Mac).  To avoid confusion do the initialization
+manually::
+
+    $ ~/miniforge3/bin/conda init
+
 .. note::  To prevent the "base" environment from loading automatically, do::
 
    $ conda config --set auto_activate_base false
@@ -94,29 +104,24 @@ you are already using bash.
 
 Verify Miniforge installation
 -----------------------------
-We recommend the use of the ``bash`` shell::
-
-    $ /bin/bash -l
-
 Make sure that ``~/miniforge3/bin/conda`` is in your ``PATH`` by doing::
 
     $ which conda
 
-The Miniforge installer should have added conda configurations to the
-``~/.bash_profile`` for you.  If ``conda`` is not found, try::
+It should show a path with `miniforge3`, not `anaconda`.
+
+.. note:: If you had a previous installation of Anaconda, you might need to
+          find the Anaconda's "conda initialize" block and comment it out.
+          Look in files like .bash_profile, .bashrc, .zshrc.
+
+The `conda init` command should have added conda configurations to the
+``~/.bash_profile`` for you (or .bashrc, .zshrc).  If ``conda`` is not found,
+try::
 
     $ source ~/.bash_profile
 
-If ``activate`` is still not found, you might have to add
-``export PATH=~/anaconda3/bin:$PATH`` to your ``~/.bash_profile`` using your
-favorite text editor, and run the ``source`` command above again.
-
-.. .. note:: Sometimes the Anaconda installer will install the software in
-    ``~/anaconda3`` instead of simply ``~/anaconda``.  Just
-    check in your home directory which one of the tow possibilities was used.
-
 The code Miniforge adds to the .bash_profile will automatically activate
-anaconda.  To activate or deactivate Anaconda manually::
+miniforge.  To activate or deactivate Anaconda manually::
 
     $ conda activate
     $ conda deactivate
