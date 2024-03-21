@@ -13,7 +13,7 @@ Downloading the tutorial datasets
 All the data needed to run this tutorial are found in the tutorial's data
 packages.
 
-* Example 1: `niriim_tutorial_datapkg-extended-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/niriim_tutorial_datapkg-extended-v1.tar>`_
+* Example 1: `niriim_tutorial_datapkg-extended-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/niriim_tutorial_datapkg-extended-v1.tar>`_
 
 Download the package and unpack it somewhere convenient.
 

@@ -20,7 +20,7 @@ Full support for the reduction of GHOST data.
   Includes changes to the names and scope of primitives to better align with the
   other instrument recipes.
 
-Support for new GMOS-S CCDs installed in late 2023.
+**Support for new GMOS-S CCDs installed in late 2023.**
 
 Improvements
 ------------
@@ -33,7 +33,7 @@ Improvements
 **astrodata.provenance**
 
 * Renamed the ``PROVHISTORY`` table to ``HISTORY``, and changed wording in the
-code from "provenance history" to simply "history".
+  code from "provenance history" to simply "history".
 
 **astrodata.fits**
 
@@ -54,7 +54,7 @@ code from "provenance history" to simply "history".
 * Allow input files to ``shiftImages`` to recognize tabs or multiple
   whitespaces as the delimiter
 
-**geminidr.gsaoi***
+**geminidr.gsaoi**
 
 * Modification to the `nostack` science recipe to not "store" the image but
   rather continue and detect sources in the images in anticipation of the likely
