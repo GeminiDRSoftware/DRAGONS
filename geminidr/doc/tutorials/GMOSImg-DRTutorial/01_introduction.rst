@@ -60,8 +60,8 @@ All the data needed to run this tutorial are found in the tutorial's data
 packages.  We have split the data packages per example to keep the size
 of each package within some reasonable limit.
 
-* Example 1: `gmosim_tutorial_datapkg-starfield-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gmosim_tutorial_datapkg-starfield-v1.tar>`_
-* Example 2: `gmosim_tutorial_datapkg-separateCCDs-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gmosim_tutorial_datapkg-separateCCDs-v1.tar>`_
+* Example 1: `gmosim_tutorial_datapkg-starfield-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gmosim_tutorial_datapkg-starfield-v1.tar>`_
+* Example 2: `gmosim_tutorial_datapkg-separateCCDs-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gmosim_tutorial_datapkg-separateCCDs-v1.tar>`_
 
 Download one or several packages and unpack them somewhere
 convenient.

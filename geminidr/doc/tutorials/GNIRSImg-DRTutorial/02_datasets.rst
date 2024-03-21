@@ -14,7 +14,7 @@ Downloading the tutorial datasets
 All the data needed to run this tutorial are found in the tutorial's data
 packages.
 
-* Example 1: `gnirsim_tutorial_datapkg-twostars-v1.tar <http://www.gemini.edu/sciops/data/software/datapkgs/gnirsim_tutorial_datapkg-twostars-v1.tar>`_
+* Example 1: `gnirsim_tutorial_datapkg-twostars-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gnirsim_tutorial_datapkg-twostars-v1.tar>`_
 
 Download the packages and unpack them somewhere convenient.
 

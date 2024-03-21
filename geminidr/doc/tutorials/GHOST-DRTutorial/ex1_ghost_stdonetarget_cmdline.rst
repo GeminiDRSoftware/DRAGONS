@@ -51,6 +51,8 @@ Here is a copy of the table for quick reference.
 +-----------------+-------------------------------------------------+
 + BPMs            || bpm_20220601_ghost_blue_11_full_4amp.fits      |
 |                 || bpm_20220601_ghost_red_11_full_4amp.fits       |
+|                 ||                                                |
+|                 ||  From archive, not data package.               |
 +-----------------+-------------------------------------------------+
 
 
@@ -106,8 +108,8 @@ large.)
     ../playdata/example1/S20230417S0038.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
     ../playdata/example1/S20230417S0039.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
     ../playdata/example1/S20230417S0040.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
-    ../playdata/example1/bpm_20220601_ghost_blue_11_full_4amp.fits           BPM                                   1                                   1                                                     slow
-    ../playdata/example1/bpm_20220601_ghost_red_11_full_4amp.fits            BPM                                   1                                   1                                                     slow
+..    ../playdata/example1/bpm_20220601_ghost_blue_11_full_4amp.fits           BPM                                   1                                   1                                                     slow
+..    ../playdata/example1/bpm_20220601_ghost_red_11_full_4amp.fits            BPM                                   1                                   1                                                     slow
 
 
 Bad Pixel Mask
@@ -115,18 +117,30 @@ Bad Pixel Mask
 Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
 calibrations.  They are downloadable from the archive instead of being
 packaged with the software. They are automatically associated like any other
-calibrations.  This means that the user now must download the BPMs along with
+calibrations.  This means that the user can now download the BPMs along with
 the other calibrations and add the BPMs to the local calibration manager.
 
-See :ref:`getBPM` in :ref:`tips_and_tricks` to learn about the various ways
-to get the BPMs from the archive.
 
-To add the static BPM included in the data package to the local calibration
-database:
+.. For this tutorial, the BPMs are not included in the data package.  However,
+  it is possible to let the calibration manager ask the Gemini Observatory
+  Archive for them.
 
-::
+.. Make sure that you have added the archive in the list of databases in the
+  ``dragonsrc`` file.  See :ref:`cal_service_config`.
 
-    caldb add ../playdata/example1/bpm*.fits
+.. .. note:: You can search the archive for GHOST BPMs and download them ahead of
+      time.  You will then add the static BPM included in the data package to
+      the local calibration database as follows::
+
+.. caldb add <path_to>/bpm*.fits
+
+For this tutorial, the BPMs are not included in the data package.
+See :ref:`datasetup` for a link to download them.
+
+Once you have them locally, add them to the calibration database::
+
+  caldb add ../playdata/example1/bpm*.fits
+
 
 Master Biases
 =============
@@ -336,10 +350,9 @@ Reduce the arcs
 
   reduce @arcred.lis
   reduce @arcblue.lis
-  caldb add calibrations/processed_arc/*.fits
 
 .. note::  If you want to save a plot of the wavelength fits,
-    add ``-p fitWavelength:plot1d=True`` to the ``reduce`` call.
+    add ``-p determineWavelengthSolution:plot1d=True`` to the ``reduce`` call.
     A PDF will be created.
 
 Clean up
@@ -390,7 +403,7 @@ period of time and so a single reduced slit-viewer image can be used for both.
 During the reduction of on-sky slit-viewer images, a plot is produced of the
 total flux (summed from both the red and blue slit images) as a function of
 time, with the durations of each of the spectrograph exposures also plotted.
-By default, this is written to the working directory as a pdf file with a
+By default, this is written to the working directory as a PDF file with a
 like ``S20230416S0073_slit_slitflux.pdf``. You can change the format with
 the ``-p plotSlitFlux:format=png`` or ``-p plotSlitFlux:format=screen``
 where the latter option will display a plot on the screen without saving it
@@ -414,6 +427,14 @@ reported, together with the fraction of light collected by the IFU. Here
 the seeing improves significantly from the first to the second red exposure,
 which explains the increase in the counts from the slit-viewer camera seen
 in the previous plot.
+
+The spectrophotometric standard used in this tutorial is in the Gemini list and
+so the file containging the table of spectrophotometric data will be found
+automatically. If you were to use a spectrophotometric standard not on the
+Gemini list, you would need to provide that flux standard file with the
+``-p calculateSensitivity:filename=path/name_of_file``.  The accepted format are the "IRAF
+format" and any FITS table which properly describes its columns (files in the HST
+calspec and ESO X-Shooter libraries fulfill this criterion).
 
 ::
 
@@ -509,14 +530,6 @@ each spectrograph exposure in the bundle.
 
 Reduce the Science Frames
 -------------------------
-The spectrophotometric standard used in this tutorial is in the Gemini list and
-so the file containging the table of spectrophotometric data will be found
-automatically. If you were to use a spectrophotometric standard not on the
-Gemini list, you would need to provide that flux standard file with the
-``-p filename=path/name_of_file``.  The accepted format are the "IRAF
-format" and any FITS table which properly describes its columns (files in the HST
-calspec and ESO X-Shooter libraries fulfil this criterion).
-
 .. note::  Possible customizations.
 
    * The sky subtraction can be turned off with ``-p extractProfile:sky_subtract=False``
@@ -531,7 +544,7 @@ calspec and ESO X-Shooter libraries fulfil this criterion).
      ``-p barycentricCorrect:velocity=0``.
    * If you don't have a spectrophotometric standard and are happy to have your output
      spectra in units of electrons, make sure to add
-     ``-p responseCorrect:do_cal=skip``
+     ``-p fluxCalibrate:do_cal=skip``
 
 ::
 
@@ -541,7 +554,7 @@ calspec and ESO X-Shooter libraries fulfil this criterion).
   reduce @scired.lis
   reduce @sciblue.lis
 
-Note that during the ``extractProfile`` step (which takes a few minutes for
+Note that during the ``extractSpectra`` step (which takes a few minutes for
 each expoure), a warning appears that "There are saturated pixels that have
 not been flagged as cosmic rays" with pixel coordinates. The pixel coordinates
 are different for each exposure and in all cases only the first instance is
@@ -617,7 +630,7 @@ Alternative data products
 If you don't wish to stack the individual order-combined spectra, you can
 adjust the parameters to ``combineOrders`` to get the result you desire.
 You can turn off stacking with ``-p combineOrders:stacking_mode=none``
-nd you will obtain one ``_dragons``
+and you will obtain one ``_dragons``
 file for each exposure. These can be combined later if you wish by running
 the following command:
 

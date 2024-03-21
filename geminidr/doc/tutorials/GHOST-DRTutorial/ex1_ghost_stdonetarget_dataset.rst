@@ -65,8 +65,23 @@ package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 +-----------------+-------------------------------------------------+
 + BPMs            || bpm_20220601_ghost_blue_11_full_4amp.fits      |
 |                 || bpm_20220601_ghost_red_11_full_4amp.fits       |
+|                 ||                                                |
+|                 || ** Not in data package.  Need to be retrieved  |
+|                 || ** from the archive.                           |
 +-----------------+-------------------------------------------------+
 
+
+BPMs from the archive
+---------------------
+.. The BPMs are not included in the data package.  If you have added the
+  ``archive.gemini.edu`` in the list of databases in ``.dragonsrc``, they will be
+  automatically associated and retrieved.
+
+
+You can download them from
+here: https://archive.gemini.edu/searchform/GHOST/notengineering/cols=CTOWBEQ/NotFail/not_site_monitoring/BPM
+
+Put them in ``playdata/example1/``.
 
 
 
