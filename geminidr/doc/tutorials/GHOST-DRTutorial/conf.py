@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Tutorial Series - GHOST Data Reduction with DRAGONS'
-copyright = '2023, Association of University for Research in Astronomy'
+copyright = '2024, Association of University for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
@@ -148,4 +148,7 @@ rst_epilog = """
 .. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata-user-manual.readthedocs.io/en/{v}/" target="_blank">Astrodata User Manual</a>`
 
 .. |RSUserInstall| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/{v}/install.html" target="_blank">DRAGONS Installation Instructions</a>`
+.. |DRAGONS| replace:: :raw-html:`<a href="http://dragons.readthedocs.io/en/{v}/">DRAGONS</a>`
+
+
 """.format(v = rtdurl)

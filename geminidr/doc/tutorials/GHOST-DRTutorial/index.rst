@@ -10,6 +10,7 @@ Tutorial Series - GHOST Data Reduction with DRAGONS
 
    PIPE-USER-127_GHOST-DRTutorial
 
+[Return to the main |DRAGONS| page.]
 
 .. toctree::
    :maxdepth: 1
