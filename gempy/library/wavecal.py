@@ -650,7 +650,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             score = fit1d.rms / max(nmatched - config.order - 1, np.finfo(float).eps)
             if score < best_score:
                 best_score = score
-        return initial_model_fit, False
+
+    return initial_model_fit, False
 
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
@@ -707,6 +708,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     while fits_to_do:
         start = datetime.now()
         p0, c0, dw = fits_to_do.pop()
+        print(f"Pixel={p0:7.2f} c0={c0:9.4f} dw={dw:8.4f}")
         if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
             p1 = p0
         else:
