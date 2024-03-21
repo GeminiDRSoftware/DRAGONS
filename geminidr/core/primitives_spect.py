@@ -3992,7 +3992,7 @@ class Spect(Resample):
         new_wave_model.name = 'WAVE'
         # dicts handle models for multiple extensions
         if ndim == 1:
-            new_wcs_models = {i: new_wave_model for i in range(len(refad))}
+            new_wcs_models = {i: new_wave_model for i in range(len(adinputs[0]))}
         else:
             new_wcs_models = {i: refad[i].wcs.forward_transform.replace_submodel(
                 'WAVE', new_wave_model) for i in range(len(refad))}
