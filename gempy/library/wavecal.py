@@ -371,6 +371,7 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
         # peak locations and line wavelengths of matched peaks/lines
         data["x"].append(fit1d.points[~fit1d.mask])
         data["y"].append(fit1d.image[~fit1d.mask])
+        input_data["init_models"] = [fit1d.model] + input_data["init_models"]
         data["meta"].append(input_data)
     return data
 
@@ -581,9 +582,9 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     fit1d.mask = np.array([], dtype=bool)
     initial_model_fit = fit1d
 
-    # Iterate over models most rapidly
-    for loc_start, min_lines_per_fit, model in cart_product(
-            (0.5, 0.4, 0.6), min_lines, init_models):
+    # Iterate over start position models most rapidly
+    for min_lines_per_fit, model, loc_start in cart_product(
+            min_lines, init_models, (0.25, 0.5, 0.75)):
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
@@ -708,7 +709,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     while fits_to_do:
         start = datetime.now()
         p0, c0, dw = fits_to_do.pop()
-        print(f"Pixel={p0:7.2f} c0={c0:9.4f} dw={dw:8.4f}")
+        #print(f"Pixel={p0:7.2f} c0={c0:9.4f} dw={dw:8.4f}")
         if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
             p1 = p0
         else:
@@ -764,7 +765,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             pass
         else:
             if min(len(arc_lines), len(peaks)) > min_lines_per_fit:
-                print("GOING AGAIN")
                 if p_lo < p0 <= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
                     fits_to_do.append((p_lo, arc_line, dw))

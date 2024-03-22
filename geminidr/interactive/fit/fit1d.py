@@ -154,6 +154,7 @@ class InteractiveModel1D(InteractiveModel):
         listeners=None,
         band_model=None,
         extra_masks=None,
+        default_model=None,
     ):
         """Create base class with given parameters as initial model inputs.
 
@@ -179,6 +180,9 @@ class InteractiveModel1D(InteractiveModel):
 
         extra_masks : dict of boolean arrays
             points to display but not use in fit
+
+        default_model : callable
+            function to evaluate model if self.fit is None
         """
         super().__init__()
 
@@ -195,6 +199,7 @@ class InteractiveModel1D(InteractiveModel):
         self.domain = domain
         self.fit = None
         self.listeners = listeners
+        self.default_model = default_model
 
         self.section = section
         self.data = bm.ColumnDataSource({"x": [], "y": [], "mask": []})
@@ -514,6 +519,12 @@ class InteractiveModel1D(InteractiveModel):
         self.data.data["mask"] = mask
 
     def evaluate(self, x):
+        if self.fit is None:
+            # fit_1D.evaluate() always returns an array so we need to also
+            retval = self.default_model(x)
+            if isinstance(retval, float):
+                return np.array([retval])
+            return retval
         return self.fit.evaluate(x)
 
 
@@ -887,7 +898,10 @@ class InfoPanel:
         model : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
             The model that has changed.
         """
-        rms_str = "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
+        try:
+            rms_str = "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
+        except AttributeError:
+            rms_str = "--"
 
         rms = (
             f'<div class="info_panel">'
@@ -968,6 +982,7 @@ class Fit1DPanel:
         enable_regions=True,
         central_plot=True,
         extra_masks=None,
+        default_model=None,
     ):
         """Panel for visualizing a 1-D fit, perhaps in a tab.
 
@@ -1021,6 +1036,9 @@ class Fit1DPanel:
 
         extra_masks : dict of boolean arrays
             points to display but not use in the fit
+
+        default_model : callable
+            function to evaluate model if self.fit is None
         """
         # Just to get the doc later
         self.visualizer = visualizer
@@ -1050,6 +1068,7 @@ class Fit1DPanel:
             weights,
             band_model=band_model,
             extra_masks=extra_masks,
+            default_model=default_model,
         )
 
         self.model.add_listener(self.model_change_handler)
