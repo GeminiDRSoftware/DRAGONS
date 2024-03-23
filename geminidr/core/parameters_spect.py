@@ -145,6 +145,12 @@ class determineSlitEdgesConfig(config.Config):
                               optional=True, single=True)
     debug_plots = config.Field("Plot fits of edges and print extra information",
                                bool, False)
+    debug_max_missed = config.RangeField("Maximum missed steps when tracing edges",
+                                         int, 8, min=1)
+    debug_max_shift = config.RangeField("Maximum perpendicular shift (in pixels) per pixel",
+                                        float, 0.08, min=0.)
+    debug_step = config.RangeField("Step size (in pixels) for fitting edges",
+                                   int, 20, min=1)
 
 
 class determineWavelengthSolutionConfig(config.core_1Dfitting_config):

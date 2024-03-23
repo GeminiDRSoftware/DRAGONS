@@ -5,6 +5,8 @@ from geminidr.core import parameters_standardize
 from geminidr.core.parameters_standardize import addIllumMaskToDQConfig
 from gempy.library import config
 
+from geminidr.core import parameters_spect
+
 def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
     return True
@@ -14,13 +16,22 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True
 
+class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
+    # GNIRS XD has narrow slits with more curvature than the longslit flats
+    # the default values were calibrated to, so adjust the values.
+    debug_max_missed = config.RangeField("Maximum missed steps when tracing edges",
+                                         int, 4, min=1)
+    debug_max_shift = config.RangeField("Maximum perpendicular shift (in pixels) per pixel",
+                                        float, 0.3, min=0.)
+    debug_step = config.RangeField("Step size (in pixels) for fitting edges",
+                                   int, 8, min=1)
+
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     order = config.RangeField("Order of fitting function", int, 3, min=0,
                               optional=True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment",
                                    (str, int), '50,20',
                                    check=list_of_ints_check)
-
     def setDefaults(self):
         self.in_vacuo = True
 

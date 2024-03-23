@@ -1827,7 +1827,7 @@ def _attach_rectification_model(target, source, log=None):
 
     Copies the transform step in an Astropy gWCS object corresponding to a
     slit rectification model from the given source file to a given target
-    file. The source file must have either one extenstion, or the same
+    file. The source file must have either one extension, or the same
     number of extensions as the target, in which case the model in each
     extension in the source will be copied to the corresponding extension
     in the target. This function will either add a rectification model if

@@ -1517,6 +1517,17 @@ class Spect(Resample):
             left edges, `edges2` the bottom or right edges.
         debug_plots : bool, Default: False
             Generate plots of several aspects of the fitting process.
+        debug_max_missed : int
+            The maximum number of steps that can be missed before the trace is
+            lost. The default value is set per instrument/mode, but can be
+            changed if needed.
+        debug_max_shift : float
+            The maximum perpendicular shift (in pixels) between rows/columns.
+            The default value is set per instrument/mode, but can be changed if
+            needed.
+        debug_step : int
+            The number of rows/columns per step. The default value is set per
+            instrument/mode, but can be changed if needed.
 
         Returns
         -------
@@ -1768,15 +1779,6 @@ class Spect(Resample):
                 # Count the number of pairs of edges found.
                 pair_num = 0
                 models_dict = {}
-                # Search parameters for different observing modes. XD slits are
-                # much more tilted and curved than LS slits, and need looser
-                # tolerances as a result.
-                params = {'LS': {'max_missed': 8,
-                                 'step': 20,
-                                 'max_shift': 0.08},
-                          'XD': {'max_missed': 4,
-                                 'step': 8,
-                                 'max_shift': 0.3}}
 
                 # Progressively increase the sigma parameter of the search,
                 # since it being too narrow sometimes causes the fitting to fail.
@@ -1848,9 +1850,9 @@ class Spect(Resample):
                                 arr, dispaxis, start=cut,
                                 initial=[loc],
                                 variance=ext.variance,
-                                max_missed=params[observing_mode]['max_missed'],
-                                step=params[observing_mode]['step'],
-                                max_shift=params[observing_mode]['max_shift'],
+                                max_missed=params['debug_max_missed'],
+                                step=params['debug_step'],
+                                max_shift=params['debug_max_shift'],
                                 min_peak_value=5*ext.read_noise())
                         except ValueError:
                             # Unable to trace edge. If one edge can't be
@@ -1886,8 +1888,8 @@ class Spect(Resample):
                             # Log the trace.
                             min_value = in_coords_new[1 - dispaxis].min()
                             max_value = in_coords_new[1 - dispaxis].max()
-                            log.debug(f"    Edge at {loc:.2f} traced from "
-                                      f"{min_value} to {max_value}.")
+                            log.fullinfo(f"    Edge at {loc:.2f} traced from "
+                                         f"{min_value} to {max_value}.")
 
                             # Perform the fit of the coordinates for the traced
                             # edges. Use log-weighting to help ensure valid
@@ -1900,6 +1902,7 @@ class Spect(Resample):
                                 plt.plot(in_coords_new[1-dispaxis], weights,
                                          label='Weights')
                                 plt.xlabel(f'{row_or_col.capitalize()} number')
+                                plt.title(f'Slit {slit_num+1}, {edge} edge')
                                 plt.legend()
                                 plt.show()
 
