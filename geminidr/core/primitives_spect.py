@@ -1375,12 +1375,12 @@ class Spect(Resample):
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
                         ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
                     if not acceptable_fit:
-                        log.warning("No acceptable wavelength solution found "
-                                    f"for {ext.id}")
-
-                    wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
-                    wavecal.save_fit_as_pdf(input_data["spectrum"], fit1d.points[~fit1d.mask],
-                                            fit1d.image[~fit1d.mask], ad.filename)
+                        log.warning("No acceptable wavelength solution found")
+                    else:
+                        wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
+                        wavecal.save_fit_as_pdf(
+                            input_data["spectrum"], fit1d.points[~fit1d.mask],
+                            fit1d.image[~fit1d.mask], ad.filename)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

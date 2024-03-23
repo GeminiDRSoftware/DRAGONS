@@ -905,10 +905,11 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     domain = m_final.domain
     rms = fit1d.rms
     nmatched = len(incoords)
-    log.stdinfo(m_final)
+    log.stdinfo("Chebyshev coefficients: "+" ".join(
+        f"{p:.5f}" for p in m_final.parameters))
     # TODO: Do we need input_data? config.fwidth?
     log.stdinfo(f"Matched {nmatched}/{len(input_data['peaks'])} lines with "
-                f"rms = {rms:.3f} nm.")
+                f"rms = {rms:.3f} nm")
 
     dw = np.diff(m_final(domain))[0] / np.diff(domain)[0]
     max_rms = 0.2 * rms / abs(dw)  # in pixels
@@ -916,7 +917,7 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
                                             max_deviation=max_dev)
     inv_rms = np.std(m_inverse(m_final(incoords)) - incoords)
-    log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
+    log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels")
     m_final.name = "WAVE"  # always WAVE, never AWAV
     m_final.inverse = m_inverse
 
