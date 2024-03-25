@@ -1547,7 +1547,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         fitting_parameters,
         modal_message=None,
         modal_button_label=None,
-        tab_name_fmt="{}",
+        tab_name_fmt=None,
         xlabel="x",
         ylabel="y",
         domains=None,
@@ -1590,8 +1590,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             If set and if modal_message was set, this will be used for the
             label on the recalculate button.  It is not required.
 
-        tab_name_fmt : str
-            Format string for naming the tabs
+        tab_name_fmt : callable
+            Turns ext.id into a title for the tab name
 
         xlabel : str
             String label for X axis
@@ -1770,6 +1770,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         elif turbo_tabs:
             self.turbo = TabsTurboInjector(self.tabs)
+            
+        if tab_name_fmt is None:
+            tab_name_fmt = lambda i: f"Extension {i+1}"
 
         for i in range(self.nfits):
             extra_masks = {}
@@ -1799,12 +1802,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
             if turbo_tabs:
                 self.turbo.add_tab(
-                    tui.component, title=tab_name_fmt.format(i + 1)
+                    tui.component, title=str(tab_name_fmt(i))
                 )
 
             else:
                 tab = bm.TabPanel(
-                    child=tui.component, title=tab_name_fmt.format(i + 1)
+                    child=tui.component, title=str(tab_name_fmt(i))
                 )
 
                 self.tabs.tabs.append(tab)

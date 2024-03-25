@@ -806,7 +806,7 @@ class Spect(Resample):
                 uiparams = UIParameters(config)
                 visualizer = fit1d.Fit1DVisualizer({"x": all_waves, "y": all_zpt, "weights": all_weights},
                                                    fitting_parameters=all_fp_init,
-                                                   tab_name_fmt="CCD {}",
+                                                   tab_name_fmt=lambda i: f"CCD {i+1}",
                                                    xlabel=f'Wavelength ({xunits})',
                                                    ylabel=f'Sensitivity ({yunits})',
                                                    domains=all_domains,
@@ -1354,7 +1354,7 @@ class Spect(Resample):
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
-                    tab_name_fmt="Slit {}",
+                    tab_name_fmt=lambda i: f"Slit {i+1}",
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
                     title="Wavelength Solution",
@@ -2987,7 +2987,7 @@ class Spect(Resample):
                 ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
                 visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
                                                    fitting_parameters=[fit1d_params]*count,
-                                                   tab_name_fmt="Slit {}",
+                                                   tab_name_fmt=lambda i: f"Slit {i+1}",
                                                    xlabel='Row',
                                                    ylabel='Signal',
                                                    domains=all_shapes,
