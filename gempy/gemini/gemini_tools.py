@@ -1140,6 +1140,7 @@ def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 new_ad[-1].SLITEDGE = auxext.SLITEDGE
                 new_ad[-1].hdr[ad._keyword_for('detector_section')] =\
                     detsec.asIRAFsection(binning=(xbin, ybin))
+                new_ad[-1].hdr['SPECORDR'] = auxext.hdr['SPECORDR']
 
                 # By default, when a section is cut out of an array the WCS is
                 # updated with Shift models corresponding to the number of rows/

@@ -5084,6 +5084,9 @@ class Spect(Resample):
                     adout.hdr.set_comment(
                         det_sec_kw, self.keyword_comments.get(det_sec_kw))
 
+                    # Add a keyword for the spectral order, the mapping for which
+                    # should be defined in the instrument/mode class.
+                    adout[-1].hdr['SPECORDR'] = self._map_spec_order(adout[-1].id)
             adoutputs.append(adout)
 
         return adoutputs
