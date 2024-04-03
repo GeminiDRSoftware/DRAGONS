@@ -566,12 +566,11 @@ class AstroDataF2(AstroDataGemini):
         -------
         str
             LYOT filter name, or None
-
         """
-        lyot = self.phu.get('LYOT', None)
-        if lyot:
-            return lyot
-        return self.phu.get('LYOTPOS', None)
+        lyot = self.phu.get('LYOT', self.phu.get('LYOTPOS', None))
+        if lyot == "Undefined":
+            lyot = None
+        return lyot
 
     @returns_list
     @astro_data_descriptor
