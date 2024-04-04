@@ -4645,7 +4645,7 @@ class Spect(Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        suffix = params['suffix']
+        sfx = params['suffix']
         step = params['step']
         max_missed = params['max_missed']
         max_shift = params['max_shift']
@@ -4739,6 +4739,9 @@ class Spect(Resample):
                     ext.wcs.insert_frame(ext.wcs.input_frame, model,
                                            cf.Frame2D(name='rectified'))
 
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def write1DSpectra(self, adinputs=None, **params):
