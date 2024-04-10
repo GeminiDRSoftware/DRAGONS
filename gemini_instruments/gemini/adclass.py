@@ -2154,10 +2154,15 @@ class AstroDataGemini(AstroData):
         """
         def empirical_pixel_scale(ext):
             """Brute-force calculation of pixel scale"""
-            if ext.wcs is None:
+            if ext.wcs is None or len(ext.shape) > 2:  # for now, no cubes
                 return None
             yc, xc = [0.5 * l for l in ext.shape]
-            ra, dec = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc])[-2:]
+            axes = tuple(i for i, unit in enumerate(ext.wcs.output_frame.unit)
+                         if str(unit) == "deg")
+            if len(axes) != 2:
+                return None
+            world_coords = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc])
+            ra, dec = [world_coords[ax] for ax in axes]
             cosdec = math.cos(dec[0] * np.pi / 180)
             a = (ra[2] - ra[0]) * cosdec
             b = (ra[1] - ra[0]) * cosdec
