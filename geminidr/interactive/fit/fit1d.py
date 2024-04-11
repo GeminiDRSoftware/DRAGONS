@@ -1541,7 +1541,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         ui_params=None,
         turbo_tabs=False,
         panel_class=Fit1DPanel,
-        reinit_live=True,
+        reinit_live=False,
         **kwargs,
     ):
         """Initializes the Fit1DVisualizer and its parent class.
@@ -1618,7 +1618,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         reinit_live : bool
             If True, some buttons and parameters will will recalculate the data
             points immediately.  If False, the reinit button will be disabled
-            until the user clicks the "Recalculate" button.
+            until the user clicks the "Recalculate" button. Default is False.
         """
         super().__init__(
             title=title,
