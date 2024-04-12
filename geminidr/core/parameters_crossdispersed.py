@@ -8,10 +8,15 @@ from astrodata import AstroData
 from geminidr.core import parameters_spect
 
 
+class findAperturesConfig(parameters_spect.findAperturesConfig):
+    ext = config.RangeField("Extension (1-indexed) to use for finding apertures",
+                            int, None, optional=True, min=1, inclusiveMin=True)
+    comp_method = config.Field("Comparison method to find 'best' order ('sum', 'median')",
+                               str, "sum", optional=True)
+
 class flatCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_flatCorrected", optional=True)
     flat = config.ListField("Flatfield frame", (str, AstroData), None, optional=True, single=True)
-
 
 class resampleToCommonFrameConfig(parameters_spect.resampleToCommonFrameConfig):
     """

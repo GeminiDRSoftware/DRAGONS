@@ -4,10 +4,7 @@
 #                                            primitives_gnirs_crossdispersed.py
 # -----------------------------------------------------------------------------
 
-from copy import deepcopy
-
 from astropy.table import Table, hstack
-import numpy as np
 
 from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import (parameter_override,
@@ -38,9 +35,11 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
         """Return the spectral order corresponding to the given extension ID
 
         This provides a mapping between extension ID and spectral order; for
-        GNIRS cross-dispersed this is a simple linear relation.
+        GNIRS cross-dispersed this is a simple linear relation. The orders that
+        are traced are 3-8.
         """
         return ext_id + 2
+
     # TODO: handle _fields_overlap()
 
 
@@ -88,7 +87,6 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                 log.stdinfo(f"Added MDF table for {ad.filename}")
 
         return adinputs
-
 
     def _get_order_information_key(self):
         """

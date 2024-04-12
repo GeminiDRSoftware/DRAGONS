@@ -1,11 +1,11 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gnirs_crossdispersed.py file, in alphabetical order.
 from geminidr.core import parameters_spect
+from geminidr.core import parameters_crossdispersed
 from geminidr.core import parameters_standardize
 from geminidr.core.parameters_standardize import addIllumMaskToDQConfig
 from gempy.library import config
 
-from geminidr.core import parameters_spect
 
 def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
@@ -34,6 +34,18 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
                                    check=list_of_ints_check)
     def setDefaults(self):
         self.in_vacuo = True
+
+class findAperturesConfig(parameters_crossdispersed.findAperturesConfig):
+    ext = config.RangeField("Extension (1 - 6) to use for finding apertures",
+                            int, None, optional=True, min=1, max=6,
+                            inclusiveMin=True, inclusiveMax=True)
+
+class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
+    # Set flatfield threshold a little lower to avoid masking a region in
+    # order 8.
+    threshold = config.RangeField("Threshold for flagging unilluminated pixels",
+                                  float, 0.005, min=0.005, max=1.0)
+
 
 class tracePinholeAperturesConfig(config.core_1Dfitting_config):
     """
