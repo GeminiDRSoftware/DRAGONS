@@ -4094,6 +4094,7 @@ class Spect(Resample):
                     origin=origin_dict[iext],
                     output_shape=output_shape_dict[iext],
                     threshold=dq_threshold)
+
                 if iext == 0:
                     ad_out = new_ext
                 else:
@@ -4697,13 +4698,15 @@ class Spect(Resample):
                     data, widths=widths, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)
-                log.fullinfo(f"Found {len(initial_peaks)} peaks")
 
                 in_traces, ref_traces = [], []
-                log.fullinfo(f"Starting trace at {direction} {start}")
-                log.debug(f"tracing from {min_trace_pos} to "
-                          f"{max_trace_pos}")
-                for peak in initial_peaks[min_trace_pos:max_trace_pos]:
+                log.stdinfo(f"Found {len(initial_peaks)} peaks in extension "
+                            f"{ext.id}, tracing "
+                            f"numbers {min_trace_pos or 0} to "
+                            f"{max_trace_pos or len(initial_peaks)} "
+                            f"starting at {direction} {start}")
+
+                for j, peak in enumerate(initial_peaks[min_trace_pos:max_trace_pos]):
                     ref_coords, in_coords = tracing.trace_lines(
                         # Only need a single `start` value for all lines.
                         ext, axis=dispaxis,
@@ -4717,6 +4720,11 @@ class Spect(Resample):
                     in_traces.append(in_coords)
                     ref_traces.append(ref_coords)
 
+                    min_value = in_coords[1 - dispaxis].min()
+                    max_value = in_coords[1 - dispaxis].max()
+                    log.fullinfo(f"  Peak {j + (min_trace_pos or 0)} traced from "
+                                 f"{min_value} to {max_value}.")
+
                 tot_in_coords = np.concatenate(in_traces, axis=1)
                 tot_ref_coords = np.concatenate(ref_traces, axis=1)
 
@@ -4725,8 +4733,6 @@ class Spect(Resample):
                     x_degree=x_ord, y_degree=y_ord,
                     x_domain=[0, ext.shape[1]-1],
                     y_domain=[0, ext.shape[0]-1])
-                log.stdinfo("Creating distortion model for slit "
-                            f"rectification for slit {i}")
                 # The `fixed_linear` parameter is False because we should
                 # have both edges for each slit.
                 model, m_final_2d, m_inverse_2d = create_distortion_model(
@@ -4742,6 +4748,7 @@ class Spect(Resample):
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+
         return adinputs
 
     def write1DSpectra(self, adinputs=None, **params):

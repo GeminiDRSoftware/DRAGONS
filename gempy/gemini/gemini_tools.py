@@ -1158,7 +1158,8 @@ def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 aux_b_transform = auxext.wcs.get_transform('world', 'rectified')
 
                 # In the first or last two submodels of the forward and backward
-                # (respectively) transforms will be one or more Shift models.
+                # (respectively) transforms will be one or more Shift models
+                # representing the amount of rows or columns that have been cut.
                 # Set these Shifts to 0. It's not part of the WAVE & SKY paradigm
                 # so they will be dropped later anyway, but it's good to be
                 # consistent at each step.
