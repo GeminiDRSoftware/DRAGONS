@@ -6,6 +6,12 @@
 Release Notes
 *************
 
+V3.2.1
+======
+
+This patch release includes improvements to speed up and increase the success
+rate of wavelength calibration.
+
 V3.2.0
 ======
 

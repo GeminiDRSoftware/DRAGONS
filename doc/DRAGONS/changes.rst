@@ -6,6 +6,16 @@
 Change Logs
 ***********
 
+3.2.1
+=====
+
+Improvements
+------------
+**geminidr & gempy**
+
+* Improved speed and success rate of wavelength calibration.
+
+
 3.2.0
 =====
 
