@@ -154,6 +154,7 @@ class InteractiveModel1D(InteractiveModel):
         listeners=None,
         band_model=None,
         extra_masks=None,
+        default_model=None,
     ):
         """Create base class with given parameters as initial model inputs.
 
@@ -179,6 +180,9 @@ class InteractiveModel1D(InteractiveModel):
 
         extra_masks : dict of boolean arrays
             points to display but not use in fit
+
+        default_model : callable
+            function to evaluate model if self.fit is None
         """
         super().__init__()
 
@@ -195,6 +199,7 @@ class InteractiveModel1D(InteractiveModel):
         self.domain = domain
         self.fit = None
         self.listeners = listeners
+        self.default_model = default_model
 
         self.section = section
         self.data = bm.ColumnDataSource({"x": [], "y": [], "mask": []})
@@ -514,6 +519,12 @@ class InteractiveModel1D(InteractiveModel):
         self.data.data["mask"] = mask
 
     def evaluate(self, x):
+        if self.fit is None:
+            # fit_1D.evaluate() always returns an array so we need to also
+            retval = self.default_model(x)
+            if isinstance(retval, float):
+                return np.array([retval])
+            return retval
         return self.fit.evaluate(x)
 
 
@@ -887,7 +898,10 @@ class InfoPanel:
         model : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
             The model that has changed.
         """
-        rms_str = "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
+        try:
+            rms_str = "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
+        except AttributeError:
+            rms_str = "--"
 
         rms = (
             f'<div class="info_panel">'
@@ -968,6 +982,7 @@ class Fit1DPanel:
         enable_regions=True,
         central_plot=True,
         extra_masks=None,
+        default_model=None,
     ):
         """Panel for visualizing a 1-D fit, perhaps in a tab.
 
@@ -1021,6 +1036,9 @@ class Fit1DPanel:
 
         extra_masks : dict of boolean arrays
             points to display but not use in the fit
+
+        default_model : callable
+            function to evaluate model if self.fit is None
         """
         # Just to get the doc later
         self.visualizer = visualizer
@@ -1050,6 +1068,7 @@ class Fit1DPanel:
             weights,
             band_model=band_model,
             extra_masks=extra_masks,
+            default_model=default_model,
         )
 
         self.model.add_listener(self.model_change_handler)
@@ -1528,7 +1547,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         fitting_parameters,
         modal_message=None,
         modal_button_label=None,
-        tab_name_fmt="{}",
+        tab_name_fmt=None,
         xlabel="x",
         ylabel="y",
         domains=None,
@@ -1571,8 +1590,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             If set and if modal_message was set, this will be used for the
             label on the recalculate button.  It is not required.
 
-        tab_name_fmt : str
-            Format string for naming the tabs
+        tab_name_fmt : callable
+            Turns ext.id into a title for the tab name
 
         xlabel : str
             String label for X axis
@@ -1751,6 +1770,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         elif turbo_tabs:
             self.turbo = TabsTurboInjector(self.tabs)
+            
+        if tab_name_fmt is None:
+            tab_name_fmt = lambda i: f"Extension {i+1}"
 
         for i in range(self.nfits):
             extra_masks = {}
@@ -1780,12 +1802,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
             if turbo_tabs:
                 self.turbo.add_tab(
-                    tui.component, title=tab_name_fmt.format(i + 1)
+                    tui.component, title=str(tab_name_fmt(i))
                 )
 
             else:
                 tab = bm.TabPanel(
-                    child=tui.component, title=tab_name_fmt.format(i + 1)
+                    child=tui.component, title=str(tab_name_fmt(i))
                 )
 
                 self.tabs.tabs.append(tab)

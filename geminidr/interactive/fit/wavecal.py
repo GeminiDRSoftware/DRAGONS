@@ -26,6 +26,7 @@ from geminidr.interactive.styles import dragons_styles
 
 from gempy.library.matching import match_sources
 from gempy.library.tracing import cwt_ricker, pinpoint_peaks
+from gempy.library.fitting import fit_1D
 
 from .fit1d import (
     Fit1DPanel,
@@ -117,7 +118,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             The weights of the fit.
 
         meta : dict
-            A dictionary of metadata.
+            A dictionary of metadata. This is the "all_input_data"
 
         kwargs : dict
             Any additional keyword arguments.
@@ -132,6 +133,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             "wavelengths": np.zeros_like(meta["spectrum"]),
             "spectrum": meta["spectrum"],
         }
+        kwargs["default_model"] = meta["init_models"][0]
 
         self.spectrum = bm.ColumnDataSource(spectrum_data_dict)
 
@@ -483,7 +485,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """Return only the linear part of a model. It doesn't work for
         splines, which is why it's not in the InteractiveModel1D class
         """
-        model = model.fit._models
+        if model.fit is None:
+            model = model.default_model
+        else:
+            model = model.fit.model
         new_model = model.__class__(
             degree=1, c0=model.c0, c1=model.c1, domain=model.domain
         )

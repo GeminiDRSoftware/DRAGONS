@@ -793,7 +793,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
                 uiparams = UIParameters(config, reinit_params=reinit_params, extras=extras)
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
-                                                   tab_name_fmt="CCD {}",
+                                                   tab_name_fmt=lambda i: f"CCD {i+1}",
                                                    xlabel='x (pixels)', ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",
