@@ -178,11 +178,11 @@ class Stack(PrimitivesBASE):
         if memory is not None:
             memory = int(memory * 1000000000)
 
-        zero = params["zero"]
-        scale = params["scale"]
+        zero = params.get("zero", False)
+        scale = params.get("scale", False)
         apply_dq = params["apply_dq"]
-        separate_ext = params["separate_ext"]
-        statsec = params["statsec"]
+        separate_ext = params.get("separate_ext", False)
+        statsec = params.get("statsec", None)
         reject_method = params["reject_method"]
         save_rejection_map = params["save_rejection_map"]
 
@@ -234,7 +234,7 @@ class Stack(PrimitivesBASE):
                 bytes += ext.variance.dtype.itemsize
 
             bytes += 2  # mask always created
-            bytes_per_ext.append(bytes * np.product(ext.shape))
+            bytes_per_ext.append(bytes * np.prod(ext.shape))
 
         if memory is not None and (num_img * max(bytes_per_ext) > memory):
             adinputs = self.flushPixels(adinputs)
@@ -357,8 +357,8 @@ class Stack(PrimitivesBASE):
             if process_rn:
                 # Output gets the rms value of the inputs
                 rns = [rn[index] for rn in rn_list]
-                output_rn = np.sqrt(np.mean([np.square(np.asarray(rn).mean())
-                                             for rn in rns]))
+                output_rn = np.sqrt(np.sum([np.square(np.asarray(rn).mean())
+                                             for rn in rns]) / num_img)
                 ad_out[-1].hdr[ad_out._keyword_for("read_noise")] = output_rn
 
             log.stdinfo("")

@@ -34,8 +34,9 @@ Tutorials - Reducing data with DRAGONS
 * |GSAOIImgTut|
 * |GNIRSImgTut|
 
-**Longslit Spectroscopy**
+**Spectroscopy**
 
+* |GHOSTTut|
 * |GMOSLSTut|
 
 DRAGONS Manuals
@@ -64,6 +65,11 @@ Releases
 
    releasenotes.rst
    changes.rst
+   dragonsteam.rst
+
+==========
+
+
 
 .. Developer Notes
 .. ---------------

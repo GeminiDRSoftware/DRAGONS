@@ -3,16 +3,23 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
+COLORS = ['blue', 'orange', 'green', 'red', 'purple',
+          'brown', 'pink', 'grey', 'olive', 'cyan']
+
+
+
 def dgsplot_matplotlib(ad, aperture):
     plot_data = _setup_dgsplots(ad, aperture)
 
     plt.title(plot_data['title'])
     plt.xlabel(plot_data['xaxis'])
     plt.ylabel(plot_data['yaxis'])
-    plt.plot(plot_data['wavelength'], plot_data['data'])
+    for i, (x, y) in enumerate(zip(plot_data['wavelength'], plot_data['data'])):
+        plt.plot(x, y, color=COLORS[i % len(COLORS)])
     plt.show()
 
     return
+
 
 def dgsplot_bokeh(ad, aperture):
     plot_data = _setup_dgsplots(ad, aperture)
@@ -24,24 +31,41 @@ def dgsplot_bokeh(ad, aperture):
     output_file('dgsplot.html')
 
     p = figure(title=plot_data['title'], x_axis_label=plot_data['xaxis'],
-               y_axis_label=plot_data['yaxis'], plot_width=1000, plot_height=600)
+               y_axis_label=plot_data['yaxis'], width=1000, height=600)
     p.title.text_font_size = '15pt'
     p.title.align = 'center'
     p.xaxis.axis_label_text_font_size = '12pt'
     p.yaxis.axis_label_text_font_size = '12pt'
-    p.line(plot_data['wavelength'], plot_data['data'])
+    for i, (x, y) in enumerate(zip(plot_data['wavelength'], plot_data['data'])):
+        p.line(x, y, color=COLORS[i % len(COLORS)])
     show(p)
 
     return
 
-def _setup_dgsplots(ad, aperture):
-    setup_plot = {}
-    data = ad[aperture-1].data
-    setup_plot['data'] = data
-    setup_plot['wavelength'] = ad[aperture-1].wcs(np.arange(data.size)).astype(np.float32)
-    setup_plot['wave_units'] = ad[aperture-1].wcs.output_frame.unit[0]
-    setup_plot['signal_units'] = ad[aperture-1].hdr["BUNIT"]
 
+def _setup_dgsplots(ad, aperture):
+    if not (0 < aperture <= len(ad)):
+        raise ValueError(f"Aperture {aperture} is invalid "
+                         f"({ad.filename} has {len(ad)} extensions)")
+    data = ad[aperture-1].data
+    wcs = ad[aperture-1].wcs
+    nworld_axes = wcs.output_frame.naxes
+    if nworld_axes != 1:
+        raise ValueError(f"{ad.filename} has {nworld_axes} world axes")
+    pix = np.arange(data.shape[-1])
+
+    setup_plot = {}
+    if data.ndim == 1:
+        setup_plot['data'] = [data]
+        setup_plot['wavelength'] = [wcs(pix).astype(np.float32)]
+    else:
+        setup_plot['data'] = data
+        grid = np.meshgrid(pix, np.arange(data.shape[0]),
+                           sparse=True, indexing='xy')
+        setup_plot['wavelength'] = wcs(*grid)
+
+    setup_plot['wave_units'] = wcs.output_frame.unit[0]
+    setup_plot['signal_units'] = ad[aperture-1].hdr["BUNIT"]
     setup_plot['title'] = f'{ad.filename} - Aperture {aperture}'
     setup_plot['xaxis'] = f'Wavelength ({setup_plot["wave_units"]})'
     setup_plot['yaxis'] = f'Signal ({setup_plot["signal_units"]})'

@@ -4,7 +4,7 @@ import astrodata.testing
 import gemini_instruments
 import os
 
-from lut_tags import fixture_data as tags_fixture_data
+from .lut_tags import fixture_data as tags_fixture_data
 
 
 @pytest.mark.dragons_remote_data

@@ -282,6 +282,12 @@ fixture_data = {
                                             'NON_SIDEREAL', 'PREPARED', 'PROCESSED', 'LAMPON'],
     # This is a processed image, so we don't care about LAMPON, but it's harmless, and easier to just keep it there
 
+    # GHOST bundle and extracted files
+    ('GHOST', 'S20230214S0025.fits'): ['UNPREPARED', 'SOUTH', 'RAW', 'GHOST', 'GEMINI', 'SIDEREAL', 'BUNDLE'],
+    ('GHOST', 'S20230214S0025_blue001.fits'): ['BLUE', 'GHOST', 'SIDEREAL', 'UNPREPARED', 'SPECT', 'SOUTH', 'RAW', 'GEMINI', 'XD'],
+    ('GHOST', 'S20230214S0025_red002.fits'): ['RED', 'GHOST', 'SIDEREAL', 'UNPREPARED', 'SPECT', 'SOUTH', 'RAW', 'GEMINI', 'XD'],
+    ('GHOST', 'S20230214S0025_slit.fits'): ['SLIT', 'GHOST', 'SIDEREAL', 'SLITV', 'UNPREPARED', 'SOUTH', 'IMAGE', 'RAW', 'GEMINI'],
+
     #    ('bhros', 'S20070131S0030.fits') : ['BHROS', 'SIDEREAL', 'GEMINI_SOUTH', 'SPECT', 'UNPREPARED', 'RAW'],
     #    ('bhros', 'S20070131S0152.fits') : ['AT_ZENITH', 'BHROS', 'AZEL_TARGET', 'NON_SIDEREAL', 'GEMINI_SOUTH', 'SPECT', 'UNPREPARED', 'RAW'],
     #    ('F2', 'S20150629S0208.fits') : ['MOS', 'SPECT', 'F2', 'NON_SIDEREAL', 'GEMINI_SOUTH', 'UNPREPARED', 'RAW'],

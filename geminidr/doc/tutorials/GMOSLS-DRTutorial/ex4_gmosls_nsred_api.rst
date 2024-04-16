@@ -600,6 +600,11 @@ This is what the 2-D spectrum looks like.  Only the middle section is valid.
     display.recipename = 'display'
     display.runr()
 
+.. note::
+
+    ``ds9`` must be launched by the user ahead of running the display primitive.
+    (``ds9&`` on the terminal prompt.)
+
 .. image:: _graphics/2Dspectrum_nsred.png
    :width: 600
    :alt: 2D stacked nod-and-shuffle spectrum

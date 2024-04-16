@@ -5,7 +5,7 @@ Default is "reduce".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'FLAT'}
 
-from ..sq.recipes_FLAT_LS_SPECT import (makeProcessedFlatStack,
+from geminidr.gmos.recipes.sq.recipes_FLAT_LS_SPECT import (makeProcessedFlatStack,
                                         makeProcessedFlatNoStack)
 
 _default = makeProcessedFlatNoStack

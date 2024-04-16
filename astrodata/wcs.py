@@ -8,6 +8,7 @@ from astropy import coordinates as coord
 from astropy import units as u
 from astropy.io import fits
 from astropy.modeling import core, models, projections, CompoundModel
+from astropy.table import Table
 from gwcs import coordinate_frames as cf
 from gwcs import utils as gwutils
 from gwcs.utils import sky_pairs, specsystems
@@ -47,21 +48,24 @@ def pixel_frame(naxes, name="pixels"):
                               axes_names=axes_names, unit=[u.pix] * naxes)
 
 
-def fitswcs_to_gwcs(hdr):
+def fitswcs_to_gwcs(input):
     """
-    Create and return a gWCS object from a FITS header. If it can't
-    construct one, it should quietly return None.
+    Create and return a gWCS object from a FITS header or NDData object.
+    If it can't construct one, it should quietly return None.
     """
     # coordinate names for CelestialFrame
     coordinate_outputs = {'alpha_C', 'delta_C'}
 
     # transform = gw.make_fitswcs_transform(hdr)
     try:
-        transform = make_fitswcs_transform(hdr)
+        transform = make_fitswcs_transform(input)
     except Exception as e:
         return None
     outputs = transform.outputs
-    wcs_info = read_wcs_from_header(hdr)
+    try:
+        wcs_info = read_wcs_from_header(input.meta['header'])
+    except AttributeError:
+        wcs_info = read_wcs_from_header(input)
 
     in_frame = pixel_frame(transform.n_inputs)
     out_frames = []
@@ -143,9 +147,12 @@ def gwcs_to_fits(ndd, hdr=None):
         hdr = {}
 
     wcs = ndd.wcs
+    # Don't need to "copy" because any changes to transform use
+    # replace_submodel, which creates a new instance
     transform = wcs.forward_transform
     world_axes = list(wcs.output_frame.axes_names)
     nworld_axes = len(world_axes)
+    tabular_axes = dict()
     wcs_dict = {'NAXIS': len(ndd.shape),  # in case it's not written to a file
                 'WCSAXES': nworld_axes,
                 'WCSDIM': nworld_axes}
@@ -155,6 +162,8 @@ def gwcs_to_fits(ndd, hdr=None):
                      for i in range(nworld_axes)})
     pix_center = [0.5 * (length - 1) for length in ndd.shape[::-1]]
     wcs_center = transform(*pix_center)
+    if nworld_axes == 1:
+        wcs_center = (wcs_center,)
 
     # Find and process the sky projection first
     if {'lon', 'lat'}.issubset(world_axes):
@@ -194,8 +203,52 @@ def gwcs_to_fits(ndd, hdr=None):
         # Remove projection parts so we can calculate the CD matrix
         if projcode:
             nat2cel.name = 'nat2cel'
+            transform_inverse = transform.inverse
+            for m in transform_inverse:
+                if isinstance(m, models.RotateCelestial2Native):
+                    m.name = 'cel2nat'
+                elif isinstance(m, models.Sky2PixProjection):
+                    m.name = 'sky2pix'
+            transform_inverse = transform_inverse.replace_submodel('sky2pix', models.Identity(2))
+            transform_inverse = transform_inverse.replace_submodel('cel2nat', models.Identity(2))
             transform = transform.replace_submodel('pix2sky', models.Identity(2))
             transform = transform.replace_submodel('nat2cel', models.Identity(2))
+            transform.inverse = transform_inverse
+
+    # Replace a log-linear axis with a linear axis representing the log
+    # and a Tabular axis with Identity to ensure the affinity check is passed
+    compound = isinstance(transform, CompoundModel)
+    if not compound:  # just so we can iterate
+        transform = transform | models.Identity(nworld_axes)
+    for i in reversed(range(transform.n_submodels)):
+        m_this = transform[i]
+        if isinstance(m_this, models.Exponential1D):
+            if m_this.name is None:
+                m_this.name = "UNIQUE_NAME"
+            m_new = (models.Scale(1. / m_this.tau) |
+                     models.Shift(np.log(m_this.amplitude)))
+            transform = transform.replace_submodel(m_this.name, m_new)
+        elif isinstance(m_this, (models.Tabular1D, models.Tabular2D)):
+            ndim = m_this.lookup_table.ndim
+            points = m_this.points
+            if not (ndim == 1 and np.allclose(points, np.arange(points.size)) or
+                    ndim == 2 and np.allclose(points[0], np.arange(points[0].size))
+                    and np.allclose(points[1], np.arange(points[1].size))):
+                print("Tabular has different 'points' than expected")
+                continue
+            if m_this.name is None:
+                m_this.name = "UNIQUE_NAME"
+            tabular_axes[m_this.name] = m_this.lookup_table
+            # We need the model to produce CDij keywords that indicate which
+            # axes it depends on
+            if ndim == 1:
+                m_map = models.Identity(1)
+            else:
+                m_map = models.Mapping((0,), n_inputs=2) + models.Mapping((1,))
+                m_map.inverse = models.Mapping((0, 0))
+            transform = transform.replace_submodel(m_this.name, m_map)
+    if not compound:
+        transform = transform[:-1]
 
     # Deal with other axes
     # TODO: AD should refactor to allow the descriptor to be used here
@@ -203,8 +256,22 @@ def gwcs_to_fits(ndd, hdr=None):
         if f'CRVAL{i}' in wcs_dict:
             continue
         if axis_type == "SPECTRAL":
-            wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1] if nworld_axes > 1 else wcs_center)
-            wcs_dict[f'CTYPE{i}'] = wcs.output_frame.axes_names[i-1]  # AWAV/WAVE
+            try:
+                wave_tab = tabular_axes["WAVE"]
+            except KeyError:
+                wcs_dict[f'CRVAL{i}'] = hdr.get('CENTWAVE', wcs_center[i-1])
+                wcs_dict[f'CTYPE{i}'] = wcs.output_frame.axes_names[i-1]  # AWAV/WAVE
+            else:
+                wcs_dict[f'CRVAL{i}'] = 0
+                wcs_dict[f'CTYPE{i}'] = wcs.output_frame.axes_names[i-1][:4] + "-TAB"
+                if wave_tab.ndim == 1:  # Greisen et al. (2006)
+                    wcs_dict[f'PS{i}_0'] = wcs.output_frame.axes_names[i-1]
+                    wcs_dict[f'PS{i}_1'] = ("WAVELENGTH", "Name of column")
+                    wcs_dict['extensions'] = {wcs.output_frame.axes_names[i-1]:
+                                                  Table([wave_tab], names=('WAVELENGTH',))}
+                else:  # make something up here
+                    wcs_dict[f'PS{i}_0'] = wcs.output_frame.axes_names[i-1]
+                    wcs_dict['extensions'] = {wcs.output_frame.axes_names[i-1]: wave_tab.T}
         else:  # Just something
             wcs_dict[f'CRVAL{i}'] = wcs_center[i-1]
 
@@ -225,14 +292,35 @@ def gwcs_to_fits(ndd, hdr=None):
                      if f'CTYPE{i}' not in wcs_dict})
 
     crval = [wcs_dict[f'CRVAL{i+1}'] for i, _ in enumerate(world_axes)]
-    crpix = np.array(wcs.backward_transform(*crval)) + 1
+    try:
+        crval[lon_axis] = 0
+        crval[lat_axis] = 0
+    except NameError:
+        pass
+
+    # Find any world axes that we previous logarithmed and fix the CDij
+    # matrix -- we follow FITS-III (Greisen et al. 2006; A&A 446, 747)
+    modified_wcs_center = transform(*pix_center)
+    if nworld_axes == 1:
+        modified_wcs_center = (modified_wcs_center,)
+    for world_axis, (wcs_val, modified_wcs_val) in enumerate(
+            zip(wcs_center, modified_wcs_center), start=1):
+        if wcs_val > 0 and np.isclose(modified_wcs_val, np.log(wcs_val)):
+            for j, _ in enumerate(ndd.shape, start=1):
+                wcs_dict[f'CD{world_axis}_{j}'] *= crval[world_axis-1]
+                wcs_dict[f'CTYPE{world_axis}'] = wcs_dict[f'CTYPE{world_axis}'][:4] + "-LOG"
+            crval[world_axis-1] = np.log(crval[world_axis-1])
+
+    # This (commented) line fails for un-invertable Tabular2D
+    #crpix = np.array(wcs.backward_transform(*crval)) + 1
+    crpix = np.array(transform.inverse(*crval)) + 1
 
     # Cope with a situation where the sky projection center is not in the slit
     # We may be able to fix this in future, but FITS doesn't handle it well.
     if len(ndd.shape) > 1:
         crval2 = wcs(*(crpix - 1))
         try:
-            sky_center = coord.SkyCoord(crval[lon_axis], crval[lat_axis], unit=u.deg)
+            sky_center = coord.SkyCoord(nat2cel.lon.value, nat2cel.lat.value, unit=u.deg)
         except NameError:
             pass
         else:
@@ -240,7 +328,7 @@ def gwcs_to_fits(ndd, hdr=None):
             if sky_center.separation(sky_center2).arcsec > 0.01:
                 wcs_dict['FITS-WCS'] = ('APPROXIMATE', 'FITS WCS is approximate')
 
-    if nworld_axes == 1:
+    if len(ndd.shape) == 1:
         wcs_dict['CRPIX1'] = crpix
     else:
         # Comply with FITS standard, must define CRPIXj for "extra" axes
@@ -314,21 +402,21 @@ def calculate_affine_matrices(func, shape, origin=None):
     except TypeError:
         ndim = 1
     if origin is None:
-        halfsize = [0.5 * length for length in shape] + [1.] * (ndim - indim)
+        halfsize = [0.5 * length for length in shape]
     else:
         halfsize = [0.5 * (len1 + len2)
-                    for len1, len2 in zip(origin, shape)] + [1.] * (ndim - indim)
+                    for len1, len2 in zip(origin, shape)] + [1.]
 
-    points = np.array([halfsize] * (2 * ndim + 1)).T
-    points[:, 1:ndim + 1] += np.eye(ndim) * points[:, 0]
-    points[:, ndim + 1:] -= np.eye(ndim) * points[:, 0]
+    points = np.array([halfsize] * (2 * indim + 1)).T
+    points[:, 1:indim + 1] += np.eye(indim) * points[:, 0]
+    points[:, indim + 1:] -= np.eye(indim) * points[:, 0]
     if ndim > 1:
         transformed = np.array(list(zip(*list(func(*point[:indim])
                                               for point in points.T)))).T
     else:
         transformed = np.array([func(*points)]).T
-    matrix = np.array([[0.5 * (transformed[j + 1, i] - transformed[ndim + j + 1, i]) / halfsize[j]
-                        for j in range(ndim)] for i in range(ndim)])
+    matrix = np.array([[0.5 * (transformed[j + 1, i] - transformed[indim + j + 1, i]) / halfsize[j]
+                        for j in range(indim)] for i in range(ndim)])
     offset = transformed[0] - np.dot(matrix, halfsize)
     return AffineMatrices(matrix[::-1, ::-1], offset[::-1])
 
@@ -388,9 +476,9 @@ def read_wcs_from_header(header):
         cdelt.append(header.get(f'CDELT{i}', 1.0))
 
     has_cd = len(header['CD?_?']) > 0
-    cd = np.zeros((wcsaxes, wcsaxes))
+    cd = np.zeros((wcsaxes, naxis))
     for i in range(1, wcsaxes + 1):
-        for j in range(1, wcsaxes + 1):
+        for j in range(1, naxis + 1):
             if has_cd:
                 cd[i - 1, j - 1] = header.get('CD{0}_{1}'.format(i, j), 0)
             else:
@@ -399,11 +487,11 @@ def read_wcs_from_header(header):
 
     # Hack to deal with non-FITS-compliant data where one axis is ignored
     unspecified_pixel_axes = [axis for axis, unused in
-                              enumerate(np.all(cd == 0, axis=1)) if unused]
+                              enumerate(np.all(cd == 0, axis=0)) if unused]
     if unspecified_pixel_axes:
         unused_world_axes = [axis for axis, unused in
-                             enumerate(np.all(cd == 0, axis=0)) if unused]
-        unused_world_axes += list(range(wcsaxes, wcsaxes+len(unspecified_pixel_axes)))
+                             enumerate(np.all(cd == 0, axis=1)) if unused]
+        unused_world_axes += [wcsaxes - 1] * len(unspecified_pixel_axes)
         for pixel_axis, world_axis in zip(unspecified_pixel_axes, unused_world_axes):
             cd[world_axis, pixel_axis] = 1.0
 
@@ -412,6 +500,7 @@ def read_wcs_from_header(header):
     wcs_info['CRPIX'] = crpix
     wcs_info['CRVAL'] = crval
     wcs_info['CD'] = cd
+    wcs_info.update({k: v for k, v in header.items() if k.startswith('PS')})
     return wcs_info
 
 
@@ -507,7 +596,7 @@ def _get_contributing_axes(wcs_info, world_axes):
     #                    for i in world_axes if cd[i, j] != 0))
 
 
-def make_fitswcs_transform(header):
+def make_fitswcs_transform(input):
     """
     Create a basic FITS WCS transform.
     It does not include distortions.
@@ -518,12 +607,18 @@ def make_fitswcs_transform(header):
         FITS Header (or dict) with basic WCS information
 
     """
-    if isinstance(header, fits.Header):
-        wcs_info = read_wcs_from_header(header)
-    elif isinstance(header, dict):
-        wcs_info = header
+    other = None
+    if isinstance(input, fits.Header):
+        wcs_info = read_wcs_from_header(input)
+    elif isinstance(input, dict):
+        wcs_info = input
     else:
-        raise TypeError("Expected a FITS Header or a dict.")
+        try:
+            wcs_info = read_wcs_from_header(input.meta['header'])
+        except AttributeError:
+            raise TypeError("Expected a FITS Header, dict, or NDData object")
+        else:
+            other = input.meta['other']
 
     # If a pixel axis maps directly to an output axis, we want to have that
     # model completely self-contained, so don't put all the CRPIXj shifts
@@ -532,8 +627,8 @@ def make_fitswcs_transform(header):
 
     # The tricky stuff!
     sky_model = fitswcs_image(wcs_info)
-    linear_models = fitswcs_linear(wcs_info)
-    all_models = linear_models
+    other_models = fitswcs_other(wcs_info, other=other)
+    all_models = other_models
     if sky_model:
         all_models.append(sky_model)
 
@@ -541,6 +636,7 @@ def make_fitswcs_transform(header):
     all_models.sort(key=lambda m: m.meta['output_axes'][0])
     input_axes = [ax for m in all_models for ax in m.meta['input_axes']]
     output_axes = [ax for m in all_models for ax in m.meta['output_axes']]
+
     if input_axes != list(range(len(input_axes))):
         input_mapping = models.Mapping([max(x, 0) for x in input_axes])
         transforms.append(input_mapping)
@@ -597,9 +693,11 @@ def fitswcs_image(header):
     # create a "ghost" orthogonal axis here so an inverse can be defined
     # Modify the CD matrix in case we have to use a backup Matrix Model later
     if len(pixel_axes) == 1:
-        cd[sky_axes[0], -1] = -cd[sky_axes[1], pixel_axes[0]]
-        cd[sky_axes[1], -1] = cd[sky_axes[0], pixel_axes[0]]
-        sky_cd = cd[np.ix_(sky_axes, pixel_axes + [-1])]
+        sky_cd = np.array([[cd[sky_axes[0], pixel_axes[0]], -cd[sky_axes[1], pixel_axes[0]]],
+                           [cd[sky_axes[1], pixel_axes[0]], cd[sky_axes[0], pixel_axes[0]]]])
+        #cd[sky_axes[0], -1] = -cd[sky_axes[1], pixel_axes[0]]
+        #cd[sky_axes[1], -1] = cd[sky_axes[0], pixel_axes[0]]
+        #sky_cd = cd[np.ix_(sky_axes, pixel_axes + [-1])]
         affine = models.AffineTransformation2D(matrix=sky_cd, name='cd_matrix')
         # TODO: replace when PR#10362 is in astropy
         #rotation = models.fix_inputs(affine, {'y': 0})
@@ -622,7 +720,7 @@ def fitswcs_image(header):
     return sky_model
 
 
-def fitswcs_linear(header):
+def fitswcs_other(header, other=None):
     """
     Create WCS linear transforms for any axes not associated with
     celestial coordinates. We require that each world axis aligns
@@ -653,31 +751,47 @@ def fitswcs_linear(header):
     #if not sky_axes and len(unknown) == 2:
     #    unknown = []
 
-    linear_models = []
+    other_models = []
     for ax in spec_axes + unknown:
         pixel_axes = _get_contributing_axes(wcs_info, ax)
-        if len(pixel_axes) == 1:
+        ctype = wcs_info['CTYPE'][ax].upper()
+        if ctype.endswith("-TAB"):
+            table = None
+            if other is not None:
+                table_name = header.get(f'PS{ax + 1}_0')
+                table = other.get(table_name)
+            if table is None:
+                raise ValueError(f"Cannot read table for {ctype} for axis {ax}")
+            if isinstance(table, Table):
+                other_model = models.Tabular1D(lookup_table=table[f'PS{ax + 1}_1'])
+            else:
+                other_model = models.Tabular2D(lookup_table=table.T)
+            other_model.name = model_name_mapping.get(ctype[:4], ctype[:4])
+            del other[table_name]
+        elif len(pixel_axes) == 1:
             pixel_axis = pixel_axes[0]
-            linear_model = (models.Shift(1 - crpix[pixel_axis],
-                                            name='crpix' + str(pixel_axis + 1)) |
-                            models.Scale(cd[ax, pixel_axis]) |
-                            models.Shift(crval[ax]))
-            ctype = wcs_info['CTYPE'][ax][:4].upper()
-            linear_model.name = model_name_mapping.get(ctype, ctype)
-            linear_model.outputs = (wcs_info['CTYPE'][ax],)
-            linear_model.meta.update({'input_axes': pixel_axes,
-                                      'output_axes': [ax]})
-        elif len(pixel_axes) > 1:
-            raise ValueError(f"Axis {ax} depends on more than one input axis")
+            m1 = models.Shift(1 - crpix[pixel_axis],
+                              name='crpix' + str(pixel_axis + 1))
+            if ctype.endswith("-LOG"):
+                other_model = (m1 | models.Exponential1D(
+                    amplitude=crval[ax], tau=crval[ax] / cd[ax, pixel_axis]))
+                ctype = ctype[:4]
+            else:
+                other_model = (m1 | models.Scale(cd[ax, pixel_axis]) |
+                               models.Shift(crval[ax]))
+            other_model.name = model_name_mapping.get(ctype, ctype)
+        elif len(pixel_axes) == 0:
+            pixel_axes = [-1]
+            other_model = models.Const1D(crval[ax])
+            other_model.inverse = models.Identity(1)
         else:
-            linear_model = models.Const1D(crval[ax])
-            linear_model.inverse = models.Identity(1)
-            linear_model.meta.update({'input_axes': [-1],
-                                      'output_axes': [ax]})
+            raise ValueError(f"Axis {ax} depends on more than one input axis")
+        other_model.outputs = (ctype,)
+        other_model.meta.update({'input_axes': pixel_axes,
+                                 'output_axes': [ax]})
+        other_models.append(other_model)
 
-        linear_models.append(linear_model)
-
-    return linear_models
+    return other_models
 
 
 def remove_axis_from_frame(frame, axis):

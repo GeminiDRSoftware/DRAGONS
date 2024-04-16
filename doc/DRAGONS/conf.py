@@ -61,9 +61,9 @@ copyright = '2023, Association of Universities for Research in Astronomy'
 # The short X.Y version.
 version = '3.2'
 # The full version, including alpha/beta/rc tags.
-#release = '3.1.0'
+#release = '3.2.0'
 #rtdurl = 'v'+release
-#release = '3.1.x'
+#release = '3.2.x'
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
 
@@ -73,7 +73,7 @@ rtdurl = 'latest'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2023'
+today = 'April 2024'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -295,6 +295,7 @@ rst_epilog = """
 .. |GNIRSImgTut| replace:: :raw-html:`<a href="http://GNIRSImg-DRTutorial.readthedocs.io/en/{v}">GNIRS Keyhole Imaging Data Reduction Tutorial</a>`
 
 .. |GMOSLSTut| replace:: :raw-html:`<a href="http://GMOSLS-DRTutorial.readthedocs.io/en/{v}">GMOS Longslit Data Reduction Tutorial</a>`
+.. |GHOSTTut| replace:: :raw-html:`<a href="http://GHOST-DRTutorial.readthedocs.io/en/{v}">GHOST Data Reduction Tutorial</a>`
 
 .. |ADMaster| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}">Astrodata Manual</a>`
 .. |ADCheat| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/cheatsheet.html">AstroData Cheat Sheet</a>`

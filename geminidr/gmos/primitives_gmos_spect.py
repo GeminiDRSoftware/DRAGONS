@@ -83,16 +83,32 @@ def qeModel(ext, use_iraf=False):
                            "2006-08-31": [2.225037, -4.441856E-3, 5.216792E-6, -1.977506E-9]},
         "EEV 8261-07-04": {"1900-01-01": [1.3771, -1.863e-3, 2.559e-6, -1.0289e-9],
                            "2006-08-31": [8.694583E-1, 1.021462E-3, -2.396927E-6, 1.670948E-9]},
-        # GMOS-S Hamamatsu CCD1 and 3
+        # GMOS-S Hamamatsu CCD1 (original) and 3
         "BI5-36-4k-2": {"order": 3,
                         "knots": [374., 409., 451., 523.5, 584.5, 733.5, 922., 1070.75],
                         "coeffs": [1.04722893, 0.87968707, 0.70533794, 0.67657144, 0.71217743,
                                    0.82421959, 0.94903734, 1.00847771, 0.98158784, 0.90798127]},
-        "BI12-34-4k-1": {"order": 3,
-                         "knots": [340.25, 377.5, 406., 439., 511.5, 601., 746., 916.5, 1070.],
-                         "coeffs": [0.7433304, 1.07041859, 1.51006315, 1.43997471, 1.03126307,
-                                    0.84984109, 0.8944949, 1.02806209, 1.11960524, 1.12224211,
-                                    0.95279761]},
+        # CCD3 before and after replacement (it's the same CCD but this
+        # is a ratio to CCD2, which has changed)
+        "BI12-34-4k-1": {"1900-01-01": {"order": 3,
+                                        "knots": [340.25, 377.5, 406., 439.,
+                                                  511.5, 601., 746., 916.5, 1070.],
+                                        "coeffs": [0.7433304, 1.07041859, 1.51006315,
+                                                   1.4399747, 1.03126307, 0.84984109,
+                                                   0.8944949, 1.02806209, 1.11960524,
+                                                   1.1222421, 0.95279761]},
+                         "2023-12-14": {"order": 3,
+                                        "knots": [342.75, 361.0, 371.0, 405.0, 432.0,
+                                                  458.5, 582.0, 715.5, 1043.5],
+                                        "coeffs": [1.1720608, 1.6827764, 2.1932968,
+                                                   0.6824087, 1.0712193, 1.0245441,
+                                                   0.9778866, 0.9672609, 0.9682988,
+                                                   0.97707780, 0.9745534]}},
+        # GMOS-S Hamamatsu new CCD1
+        "BI11-41-4k-2": {"order": 3,
+                         "knots": [408.0, 487.0, 524.0, 568.5, 775.5, 1096.0],
+                         "coeffs": [0.8045865, 0.9031578, 1.1704650, 1.1776077, 1.0853394,
+                                    0.8585280, 0.8748014, 0.8858184]},
         # IRAF coefficients
         ("BI5-36-4k-2", "IRAF"): [-6.00810046e+02,  6.74834788e+00, -3.26251680e-02,
                                   8.87677395e-05, -1.48699188e-07, 1.57120033e-10,
@@ -117,7 +133,7 @@ def qeModel(ext, use_iraf=False):
     if isinstance(data, dict) and 'knots' not in data:
         obs_date = ext.ut_date()
         for k in sorted(data):
-            if obs_date >= datetime.strptime(k, "%Y-%m-%d"):
+            if obs_date >= datetime.strptime(k, "%Y-%m-%d").date():
                 use_data = data[k]
         data = use_data
 
@@ -578,3 +594,15 @@ class GMOSSpect(Spect, GMOS):
     def _get_cenwave_accuracy(self, ext=None):
         # Assumed accuracy of central wavelength in nm for a given instrument/setup.
         return 10
+
+    def _apply_wavelength_model_bounds(self, model=None, ext=None):
+        # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
+        # the range of parameter space to explore
+        for i, (pname, pvalue) in enumerate(zip(model.param_names, model.parameters)):
+            if i == 0:  # central wavelength
+                prange = 10
+            elif i == 1:  # half the wavelength extent (~dispersion)
+                prange = 0.02 * abs(pvalue)
+            else:  # higher-order terms
+                prange = 1
+            getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)

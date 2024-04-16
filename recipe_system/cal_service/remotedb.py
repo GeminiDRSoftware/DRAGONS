@@ -87,7 +87,6 @@ class RemoteDB(CalDB):
                 continue
 
             good_cals = []
-            print(remote_cals[0])
             caldir = path.join(self.caldir, rq.caltype)
             for calurl, calmd5 in zip(*remote_cals):
                 log.stdinfo(f"Found calibration (url): {calurl}")

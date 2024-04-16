@@ -61,9 +61,14 @@ nominal_zeropoints = {
 
     # (BAND, CAMERA): Nominal zeropoint for airmass=1
     ('Y', 'f/16'): 25.11+1.62,
-    ('J', 'f/16'): 25.19+1.62,
-    ('H', 'f/16'): 25.41+1.62,
-    ('Ks', 'f/16'): 24.59+1.62,
+    # ('J', 'f/16'): 25.19+1.62,
+    # ('H', 'f/16'): 25.41+1.62,
+    # ('Ks', 'f/16'): 24.59+1.62,
+
+    # New values from Joan (Feb 2024) already in 1 e-/s
+    ('J', 'f/16'): 26.51,  # +/- 0.08
+    ('H', 'f/16'): 26.75,  # +/- 0.08
+    ('Ks', 'f/16'): 26.12, # +/- 0.08
 
 }
  # Instruction for making this LUT:

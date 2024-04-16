@@ -20,7 +20,7 @@ def test_combine_nod_and_shuffle_beams(ad, kwargs, result, caplog):
     p = GMOSLongslit([ad])
     p.combineNodAndShuffleBeams(**kwargs)
     for rec in caplog.records:
-        m = re.match(".*? (-?\d*.\d*) pixels", rec.message)
+        m = re.match(r".*? (-?\d*.\d*) pixels", rec.message)
         if m:
             assert abs(float(m.group(1)) - result) < 0.5
             break

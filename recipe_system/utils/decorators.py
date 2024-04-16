@@ -317,44 +317,59 @@ def parameter_override(fn):
         instream = params.get('instream', stream)
         outstream = params.get('outstream', stream)
         adinputs = params.get('adinputs')
-        for k in ('adinputs', 'stream', 'instream', 'outstream'):
-            if k not in config:
-                with suppress(KeyError):
-                    del params[k]
-        # Can update config now it only has parameters it knows about
-        config.update(**params)
-        config.validate()
+        skip = params.get('skip_primitive', False)
+        write_after = params.get('write_outputs', False) and toplevel
 
-        if len(args) == 0 and adinputs is None:
-            # Use appropriate stream input/output
-            # Many primitives operate on AD instances in situ, so need to
-            # copy inputs if they're going to a new output stream
+        if skip and toplevel:
+            log.stdinfo(f"Parameter skip_primitive has been set so {pname} "
+                        "will not be run")
             if instream != outstream:
-                adinputs = [deepcopy(ad) for ad in pobj.streams.get(instream, [])]
-            else:
-                # Allow a non-existent stream to be passed
-                adinputs = pobj.streams.get(instream, [])
-
-            try:
-                fnargs = dict(config.items())
-                ret_value = fn(pobj, adinputs=adinputs, **fnargs)
-            except Exception:
-                zeroset()
-                raise
-            # And place the outputs in the appropriate stream
-            pobj.streams[outstream] = ret_value
+                log.warning("The input and output streams differ so skipping "
+                            "this primitive may have unintended consequences")
+            ret_value = pobj.streams[instream]
         else:
-            if args:  # if not, adinputs has already been assigned from params
-                adinputs = args[0]
+            for k in ('adinputs', 'stream', 'instream', 'outstream',
+                      'skip_primitive', 'write_outputs'):
+                if k not in config:
+                    with suppress(KeyError):
+                        del params[k]
+            # Can update config now it only has parameters it knows about
+            config.update(**params)
+            config.validate()
 
-            try:
-                if isinstance(adinputs, AstroData):
-                    raise TypeError("Single AstroData instance passed to "
-                                    "primitive, should be a list")
-                ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-            except Exception:
-                zeroset()
-                raise
+            if len(args) == 0 and adinputs is None:
+                # Use appropriate stream input/output
+                # Many primitives operate on AD instances in situ, so need to
+                # copy inputs if they're going to a new output stream
+                if instream != outstream:
+                    adinputs = [deepcopy(ad) for ad in pobj.streams.get(instream, [])]
+                else:
+                    # Allow a non-existent stream to be passed
+                    adinputs = pobj.streams.get(instream, [])
+
+                try:
+                    fnargs = dict(config.items())
+                    ret_value = fn(pobj, adinputs=adinputs, **fnargs)
+                except Exception:
+                    zeroset()
+                    raise
+                # And place the outputs in the appropriate stream
+                pobj.streams[outstream] = ret_value
+            else:
+                if args:  # if not, adinputs has already been assigned from params
+                    adinputs = args[0]
+
+                try:
+                    if isinstance(adinputs, AstroData):
+                        raise TypeError("Single AstroData instance passed to "
+                                        "primitive, should be a list")
+                    ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+                except Exception:
+                    zeroset()
+                    raise
+
+        if write_after:
+            pobj.writeOutputs(stream=outstream)
         unset_logging()
         gc.collect()
         return ret_value

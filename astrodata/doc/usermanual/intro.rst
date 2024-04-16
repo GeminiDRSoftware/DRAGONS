@@ -55,7 +55,7 @@ Installing Astrodata
 ====================
 
 The |astrodata| package has a few dependencies, |astropy|, |numpy| and others.
-The best way to get everything you need is to install Anaconda_, and the
+The best way to get everything you need is to install Miniconda, and the
 |dragons| stack from conda-forge and Gemini's public conda channel.
 
 |astrodata| itself is part of |DRAGONS|. It is available from the
@@ -64,106 +64,19 @@ does not do much by itself, it needs a companion instrument definitions
 package. For Gemini, this is ``gemini_instruments``, also included in
 |DRAGONS|.
 
-Installing Anaconda and the DRAGONS stack
------------------------------------------
+.. note::  We are in the process of making ``astrodata`` an Astropy affiliated
+        package.  For now, |DRAGONS| uses the ``astrodata`` integrated with
+        DRAGONS not the affiliated package.
+
+Installing Miniforge and the DRAGONS stack
+------------------------------------------
 This is required whether you are installing |DRAGONS| from the
 repository, the tar file or the conda package.
 
-#. Install Anaconda.
-    Go to https://www.anaconda.com/download/ and install the latest 64-bit
-    Anaconda.
+To avoid duplication, please follow the installation guide provided in the
+Recipe System User Manual:
 
-#. Open a bash session.
-    Anaconda requires bash. If you are not familiar with bash, note that the
-    shell configuration files are named ``.bash_profile`` and ``.bashrc``.
-    During the installation, a PATH setting has been added to your
-    ``.bash_profile`` or ``.bashrc`` to add the Anaconda bin directory to
-    the ``PATH``.
-
-#. Activate Anaconda.
-    Normal Python 3 installation puts the software in ``~/anaconda3/``.::
-
-    $ conda init
-
-#. Set up conda channels.
-    Configure the ``conda`` package manager to look in conda-forge, and in the
-    GEMINI Conda Channel. This is a one-time step. It affects current and
-    future Anaconda installations belonging to the same user on the same
-    machine.::
-
-    $ conda config --add channels conda-forge
-    $ conda config --add channels http://astroconda.gemini.edu/public
-
-#. Create an environment.
-    To keep things clean, Anaconda offers virtual environments.  Each project
-    can use its own environment.  For example, if you do not want to modify
-    the software packages needed for a previous project, just create a new
-    environment for the new project.
-
-    Here we set up an environment where the ``DRAGONS`` dependencies can
-    be installed without affecting the rest of the system when not using that
-    virtual environement.  The new virtual environment here is named
-    ``dragons``.  The software has been tested with Python 3.10 hence we
-    recommend that you use this specific version of Python with DRAGONS.
-    ::
-
-    $ conda create -n dragons python=3.10 dragons ds9
-
-
-#. Activate your new virtual environment.
-    ::
-
-    $ conda activate dragons
-
-
-#. Configure DRAGONS.
-    These configurations are not strictly required when using only |astrodata|.
-    It is however likely that if you are using |astrodata| you will be using
-    DRAGONS too at some point.  So let's configure it to have it ready to go.
-
-    DRAGONS requires a configuration file located in ``~/.dragons/``.  The
-    ``dragonsrc`` file contains basic configuration for DRAGONS local calibration
-    manager used by ``reduce``.
-
-    ::
-
-        $ cd ~
-        $ mkdir .dragons
-        $ cd .dragons
-        $ touch dragonsrc
-
-    Open ``dragonsrc`` with your favorite editor and add these lines::
-        [interactive]
-        browser = one of "safari", "chrome", "firefox"
-
-        [calibs]
-        databases = ~/.dragons/dragons.db
-
-    Next time you start a DRAGONS project, set the ``databases`` to a path
-    of your liking, this is where the local calibration database will be written.
-
-    Then configure buffers for ``ds9``::
-
-        $ cd ~/
-        $ cp $CONDA_PREFIX/lib/python3.10/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
-        $ vi .bash_profile (or use your favority editor)
-             Add this line to the .bash_profile:
-                export IMTOOLRC=~/.imtoolrc
-
-
-Update an existing DRAGONS installation
----------------------------------------
-To check which version of DRAGONS you have installed::
-
-    $ conda list dragons
-
-To check for newer version::
-
-    $ conda search dragons
-
-To update to the newest version::
-
-    $ conda update dragons
+  |RSUserInstall|
 
 
 Smoke test the Astrodata installation
@@ -200,7 +113,7 @@ Try it yourself
 Download the data package if you wish to follow along and run the
 examples presented in this manual.  It is available at:
 
-    `<http://www.gemini.edu/sciops/data/software/datapkgs/ad_usermanual_datapkg-v1.tar>`_
+    `<https://www.gemini.edu/sciops/data/software/datapkgs/ad_usermanual_datapkg-v1.tar>`_
 
 Unpack it::
 

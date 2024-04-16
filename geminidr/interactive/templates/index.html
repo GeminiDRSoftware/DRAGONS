@@ -83,35 +83,39 @@
     // doing whole document.  Or we could figure out how to target a bokeh-generated container div
     // preventDefault causes the key not to pass to any widgets that are in focus, such as a text input
     window.controller_keys_enabled=false;
+
     function setupKeyListener() {
-        document.addEventListener("keydown", function(event){
-            if (window.controller_keys_enabled == true) {
-                if ((event.key >= 'a' && event.key <= 'z') || event.key === '*' || event.key === '[' || event.key === ']') {
-                    var url = '/handle_key?key=' + event.key
-                    $.ajax(url)
-                    event.preventDefault()
-                    return
-                }
-            }
-        });
-     }
-     window.addEventListener('load', setupKeyListener);
-     var help_popup = null;
-     function openHelpPopup() {
-       if (help_popup == null || help_popup.closed) {
-         help_popup = window.open(
-           window.location + "help",
-           "Find Source Apertures Help",
-           "resizable=yes,scrollbars=yes,status=yes,height=800,width=800"
-         );
-       }
-       else {
-         help_popup.focus();
-       };
-     };
-     window.onbeforeunload = function() {
-       help_popup.close();
-     };
+       document.addEventListener("keydown", function(event){
+           if (window.controller_keys_enabled == true) {
+               if ((event.key >= 'a' && event.key <= 'z') || event.key === '*' || event.key === '[' || event.key === ']') {
+                   var url = '/handle_key?key=' + event.key
+                   $.ajax(url)
+                   event.preventDefault()
+                   return
+               }
+           }
+       });
+    }
+
+    window.addEventListener('load', setupKeyListener);
+    var help_popup = null;
+
+    function openHelpPopup() {
+      if (help_popup == null || help_popup.closed) {
+        help_popup = window.open(
+          window.location + "help",
+          "Find Source Apertures Help",
+          "resizable=yes,scrollbars=yes,status=yes,height=800,width=800"
+        );
+      } else {
+        help_popup.focus();
+      };
+    };
+
+
+    window.onbeforeunload = function() {
+      help_popup.close();
+    };
 </script>
 
 {% endblock %}

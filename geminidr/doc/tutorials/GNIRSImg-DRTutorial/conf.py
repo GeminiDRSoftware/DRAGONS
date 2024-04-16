@@ -48,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Tutorial Series - GNIRS Imaging Data Reduction with DRAGONS'
-copyright = '2023, Association of Universities for Research in Astronomy'
+copyright = '2024, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -58,9 +58,9 @@ author = 'DRAGONS Team'
 # The short X.Y version.
 version = '3.2'
 # The full version, including alpha/beta/rc tags.
-#release = '3.1.0'
+#release = '3.2.0'
 #rtdurl = 'v'+release
-#release = '3.1.x'
+#release = '3.2.x'
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
 
@@ -73,7 +73,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2023'
+today = 'April 2024'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -154,7 +154,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'TutorialSeries-GNIRSImgDRDRAGONS.tex', 'Tutorial Series - GNIRS Imaging Data Reduction with DRAGONS Documentation',
+    (master_doc, 'TutorialSeries-GNIRSImgDRDRAGONS.tex', 'Tutorial Series - GNIRS Imaging Data Reduction with DRAGONS',
      'DRAGONS Team', 'manual'),
 ]
 
@@ -164,7 +164,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'tutorialseries-gnirsimgdrdragons', 'Tutorial Series - GNIRS Imaging Data Reduction with DRAGONS Documentation',
+    (master_doc, 'tutorialseries-gnirsimgdrdragons', 'Tutorial Series - GNIRS Imaging Data Reduction with DRAGONS',
      [author], 1)
 ]
 
@@ -234,4 +234,7 @@ rst_epilog = """
 .. |typewalk| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#typewalk" target="_blank">typewalk</a>`
 .. |atfile| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>`
 .. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/usermanual/index.html" target="_blank">Astrodata User Manual</a>`
+
+.. |DRAGONS| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/en/{v}/" target="_blank">DRAGONS</a>`
+
 """.format(v = rtdurl)

@@ -110,7 +110,7 @@ Pick the one you prefer, they all yield the same list.
 
    ::
 
-       $ reduce -r checkWCS @sci_images.list
+       $ reduce -r checkWCS @target.lis
 
    Please see details in :ref:`checkWCS` in the :ref:`tips_and_tricks` chapter.
 

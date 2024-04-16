@@ -33,6 +33,8 @@ from gempy.library.filtering import ring_median_filter
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
+from gempy.utils.errors import ConvergenceError
+
 from . import parameters_preprocess
 
 
@@ -129,11 +131,12 @@ class Preprocess(PrimitivesBASE):
                         kw = ad._keyword_for(desc)
                     except AttributeError:
                         continue
-                    new_value = np.mean(
-                        gain * gt.array_from_descriptor_value(ext, desc))
-                    # Make sure we update the comment too!
-                    new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
-                    ext.hdr[kw] = (new_value, new_comment)
+                    if kw in ext.hdr:
+                        new_value = np.mean(
+                            gain * gt.array_from_descriptor_value(ext, desc))
+                        # Make sure we update the comment too!
+                        new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
+                        ext.hdr[kw] = (new_value, new_comment)
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
@@ -1662,6 +1665,7 @@ class Preprocess(PrimitivesBASE):
         reset_sky = params["reset_sky"]
         scale = params["scale_sky"]
         zero = params["offset_sky"]
+        debug_threshold = params["debug_threshold"]
         if scale and zero:
             log.warning("Both the scale_sky and offset_sky parameters are set. "
                         "Setting offset_sky=False.")
@@ -1671,7 +1675,7 @@ class Preprocess(PrimitivesBASE):
         # in gt.measure_bg_from_image()
         sampling = 1 if adinputs[0].instrument() == 'GNIRS' else 10
         skyfunc = partial(gt.measure_bg_from_image, value_only=True,
-                          sampling=sampling)
+                          sampling=sampling, gaussfit=True)
 
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
                                              force_ad=True)):
@@ -1688,8 +1692,26 @@ class Preprocess(PrimitivesBASE):
                             f"the science frame {ad.filename}")
                 if scale or zero:
                     # This actually does the sky subtraction as well
-                    factors = [gt.sky_factor(ext, ext_sky, skyfunc, multiplicative=scale)
-                               for ext, ext_sky in zip(ad, ad_sky)]
+                    try:
+                        factors = [gt.sky_factor(ext, ext_sky, skyfunc,
+                                                 multiplicative=scale,
+                                                 threshold=debug_threshold)
+                                   for ext, ext_sky in zip(ad, ad_sky)]
+                    except ConvergenceError as error:
+                        log.warning(f"The scaling of sky using a gaussian fit "
+                                    f"did not converge.  \n"
+                                    f"Using the median method instead.")
+                        skyfunc = partial(gt.measure_bg_from_image,
+                                          value_only=True,
+                                          sampling=sampling, gaussfit=False)
+                        try:
+                            factors = [gt.sky_factor(ext, ext_sky, skyfunc,
+                                                     multiplicative=scale)
+                                       for ext, ext_sky in zip(ad, ad_sky)]
+                        except ConvergenceError as error:
+                            log.error(f"Failed to scaled sky.")
+                            raise(error)
+
                     for ext_sky, factor in zip(ad_sky, factors):
                         log.fullinfo("Applying {} of {} to extension {}".
                                 format("scaling" if scale else "offset",

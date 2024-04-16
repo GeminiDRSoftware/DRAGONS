@@ -167,7 +167,10 @@ class Rotate2D(FittableModel):
             raise ValueError("Expected input arrays to have the same shape")
         orig_shape = x.shape or (1,)
         inarr = np.array([x.flatten(), y.flatten()])
-        s, c = math.sin(angle), math.cos(angle)
+        if np.isscalar(angle):
+            s, c = math.sin(angle), math.cos(angle)
+        else:
+            s, c = math.sin(angle[0]), math.cos(angle[0])
         x, y = np.dot(np.array([[c, -s], [s, c]], dtype=np.float64), inarr)
         x.shape = y.shape = orig_shape
         return x, y
@@ -376,9 +379,9 @@ class UnivariateSplineWithOutlierRemoval:
             # x-value space, not the x-index space!
             if order is not None:
                 if order > 0:
-                    fully_masked_regions = np.sum(
+                    fully_masked_regions = np.sum([
                         full_mask[np.logical_and(xunique>=x1, xunique<=x2)].all()
-                        for x1, x2 in zip(knots[:-1], knots[1:]))
+                        for x1, x2 in zip(knots[:-1], knots[1:])])
                     wts[full_mask] = epsf if fully_masked_regions > min(k, order) else epsf
                 else:
                     wts = None if w is None else w.copy()

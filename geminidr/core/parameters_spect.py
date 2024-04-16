@@ -72,7 +72,7 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
     in_vacuo = config.Field("Are spectrophotometric data wavelengths measured "
                             "in vacuo?", bool, None, optional=True)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
-                                 float, 5., min=0.1, max=10.)
+                                 float, 0.001, min=0.001, max=10.)
     resampling = config.RangeField("Resampling interval (nm) for spectrophotometric data file",
                                    float, None, min=0, inclusiveMin=False, optional=True)
     debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
@@ -176,6 +176,8 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    allowed={"mean": "mean",
                                             "median": "median"},
                                    default="mean", optional=False)
+    verbose = config.Field("Print additional fitting information?", bool, False)
+
     def setDefaults(self):
         del self.function
         del self.grow
@@ -512,7 +514,7 @@ class separateSkyConfig(parameters_preprocess.separateSkyConfig):
 
 class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
-    regions = config.Field("Sample regions", str, None, optional=True)
+    regions = config.Field("Sample regions. (eg. 100:150,251:264)", str, None, optional=True)
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
     interactive = config.Field("Run primitive interactively?", bool, False)

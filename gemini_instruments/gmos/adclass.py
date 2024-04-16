@@ -612,8 +612,10 @@ class AstroDataGmos(AstroDataGemini):
         if ut_date is None:
             return None  # converted to list by decorator if needed
 
-        if ut_date >= date(2017, 2, 24):
+        if ut_date >= date(2023, 12, 14):
             gain_dict = lookup.gmosampsGain
+        elif ut_date >= date(2017, 2, 24):
+            gain_dict = lookup.gmosampsGainBefore20231214
         elif ut_date >= date(2015, 8, 26):
             gain_dict = lookup.gmosampsGainBefore20170224
         elif ut_date >= date(2006, 8, 31):
@@ -978,8 +980,10 @@ class AstroDataGmos(AstroDataGemini):
         if ut_date is None:
             return None  # converted to list by decorator if needed
 
-        if ut_date > date(2017, 2, 24):
+        if ut_date > date(2023, 12, 14):
             rn_dict = lookup.gmosampsRdnoise
+        elif ut_date > date(2017, 2, 24):
+            rn_dict = lookup.gmosampsRdnoiseBefore20231214
         elif ut_date >= date(2015, 8, 26):
             rn_dict = lookup.gmosampsRdnoiseBefore20170224
         elif ut_date >= date(2006, 8, 31):

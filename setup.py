@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '3.1.0-dev'
+VERSION = '3.2.0'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -79,21 +79,27 @@ setup(name='dragons',
           'Topic :: Scientific/Engineering :: Astronomy',
       ],
       install_requires=[
-          'asdf',
-          'astropy>=4.3',
-          'astroquery',
-          'astroscrappy',
-          'bokeh>=2.3',
-          'bottleneck',
-          'future',
-          'gwcs>=0.14',
-          'holoviews',
-          'matplotlib',
-          'numpy',
-          'psutil',
-          'python-dateutil',
-          'requests',
-          'scipy',
+          'asdf>=2.7,!=2.10.0',
+          'astropy>=4.3,!=5.3.0',
+          'astroquery>=0.4',
+          'astroscrappy>=1.1',
+          'bokeh>=3.0',
+          'bottleneck>=1.2',
+          'future>=0.17',
+        # 'gemini_calmgr>=1.1',  # these need uploading to PyPI first
+        # 'gemini_obs_db>=1.0',
+          'gwcs>=0.15',
+          'holoviews>=1.14',
+          'jinja2>=3.0',
+          'jsonschema>=3.0',
+          'matplotlib>=3.1',
+          'numpy>=1.17',
+          'psutil>=5.6',
+          'pyerfa>=1.7',
+          'python-dateutil>=2.5.3',
+          'requests>=2.22',
+          'scikit-image>=0.21',
+          'scipy>=1.3',
           'specutils>=1.1',
           'sqlalchemy',
       ],

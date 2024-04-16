@@ -7,11 +7,13 @@ import os
 
 import numpy as np
 from importlib import import_module
-from scipy.ndimage import measurements
+from scipy import ndimage
+from copy import deepcopy
 
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
+from gempy.adlibrary.manipulate_ad import rebin_data
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -89,6 +91,9 @@ class Standardize(PrimitivesBASE):
                 final_static = [None] * len(ad)
             else:
                 log.stdinfo("Using {} as static BPM\n".format(static.filename))
+                if static.binning() != ad.binning():
+                    static = rebin_data(deepcopy(static), xbin=ad.detector_x_bin(),
+                                        ybin=ad.detector_y_bin())
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
                                                       aux_type='bpm',
                                                       return_dtype=DQ.datatype)
@@ -97,6 +102,9 @@ class Standardize(PrimitivesBASE):
                 final_user = [None] * len(ad)
             else:
                 log.stdinfo("Using {} as user BPM".format(user.filename))
+                if user.binning() != ad.binning():
+                    user = rebin_data(deepcopy(user), xbin=ad.detector_x_bin(),
+                                      ybin=ad.detector_y_bin())
                 final_user = gt.clip_auxiliary_data(ad, aux=user,
                                                     aux_type='bpm',
                                                     return_dtype=DQ.datatype)
@@ -141,13 +149,13 @@ class Standardize(PrimitivesBASE):
                             # saturation level. Flag those. Assume we have an
                             # IR detector here because both non-linear and
                             # saturation levels are defined and nonlin<sat
-                            regions, nregions = measurements.label(
+                            regions, nregions = ndimage.label(
                                                 ext.data < non_linear_level)
                             # In all my tests, region 1 has been the majority
                             # of the image; however, I cannot guarantee that
                             # this is always the case and therefore we should
                             # check the size of each region
-                            region_sizes = measurements.labeled_comprehension(
+                            region_sizes = ndimage.labeled_comprehension(
                                 ext.data, regions, np.arange(1, nregions+1),
                                 len, int, 0)
                             # First, assume all regions are saturated, and
@@ -383,7 +391,7 @@ class Standardize(PrimitivesBASE):
     def standardizeWCS(self, adinputs=None, **params):
         return adinputs
 
-    def validateData(self, adinputs=None, suffix=None):
+    def validateData(self, adinputs=None, suffix=None, require_wcs=True):
         """
         This is the data validation primitive. It checks that the instrument
         matches the primitivesClass and that there are the correct number
@@ -393,6 +401,8 @@ class Standardize(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+        require_wcs: bool
+            do all extensions have to have a defined WCS?
         """
         log = self.log
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -430,9 +440,9 @@ class Standardize(PrimitivesBASE):
                               "does not match the number of extensions "
                               f"expected in raw {inst_name} data.")
 
-            # Check for WCS
-            missing_wcs_list.extend([f"{ad.filename}:{ext.id}"
-                                     for ext in ad if ext.wcs is None])
+            if require_wcs:
+                missing_wcs_list.extend([f"{ad.filename}:{ext.id}"
+                                         for ext in ad if ext.wcs is None])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
