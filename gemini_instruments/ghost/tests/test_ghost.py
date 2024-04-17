@@ -49,7 +49,7 @@ def test_instrument():
 def test_various_tags():
     path = astrodata.testing.download_from_archive("S20221209S0007.fits")
     ad = astrodata.open(path)
-    assert 'STD' in ad.tags
+    # assert 'STD' in ad.tags  #STD is no longer a tag
     assert 'GHOST' in ad.tags
     assert 'BUNDLE' in ad.tags
 
