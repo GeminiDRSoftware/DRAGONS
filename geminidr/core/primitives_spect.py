@@ -10,7 +10,7 @@ from itertools import islice
 import os
 import re
 import warnings
-from copy import copy
+from copy import copy, deepcopy
 from functools import partial, reduce
 from importlib import import_module
 
