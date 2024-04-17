@@ -417,8 +417,8 @@ class ADCompare:
 
         for kw in hdr1:
             # GEM-TLM is "time last modified"
-            if kw not in timestamp_keys.values() and kw not in ignore_list and
-                kw not in self.ignore_kw:
+            if (kw not in timestamp_keys.values() and kw not in ignore_list and
+                kw not in self.ignore_kw):
                 try:
                     v1, v2 = hdr1[kw], hdr2[kw]
                 except KeyError:  # Missing keyword in AD2

@@ -439,7 +439,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         init_models, ui_params.toDict(), peaks=peaks,
         peak_weights=weights[ui_params.weighting],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
-        dcenwave = input_data["cenwave_accuracy"], filename=ext.filename)
+        dcenwave = input_data["cenwave_accuracy"],
         bounds_setter = input_data["bounds_setter"], filename = ext.filename)
 
     input_data["fit"] = fit1d
