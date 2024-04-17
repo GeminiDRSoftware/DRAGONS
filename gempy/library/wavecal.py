@@ -603,7 +603,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     return {"spectrum": np.ma.masked_array(data, mask=mask),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
-            "cenwave_accuracy" : dcenwave, "refplot_data": refplot_dict}
+            "cenwave_accuracy" : dcenwave, "refplot_data": refplot_dict,
             "bounds_setter": partial(p._apply_wavelength_model_bounds, ext=ext)}
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
