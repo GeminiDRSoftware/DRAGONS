@@ -49,6 +49,13 @@ class GHOST(Gemini, CCD, CalibDBGHOST):
         # Add GHOST-specific timestamp keywords
         self.keyword_comments.update(keyword_comments.keyword_comments)
 
+    def standardizeWCS(self, adinputs=None, **params):
+        """
+        There is no need at this time to run this primitive on GHOST data.
+        No-op.
+        """
+        return adinputs
+
     @staticmethod
     def _has_valid_extensions(ad):
         return len(ad) > 0
