@@ -135,9 +135,6 @@ class PrimitiveVisualizer(ABC):
         global _visualizer
         _visualizer = self
 
-        # Reinitialization attr
-        self.reinit_live = reinit_live
-
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
         self.widgets = {}
@@ -793,7 +790,6 @@ class PrimitiveVisualizer(ABC):
         -------
         list : Returns a list of widgets to display in the UI.
         """
-        self.reinit_live = reinit_live
 
         widgets = []
         if hide_textbox is None:
