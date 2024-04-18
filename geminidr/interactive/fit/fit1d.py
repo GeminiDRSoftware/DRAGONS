@@ -1651,9 +1651,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             operability for each primitive since most of the functions that do
             the work are methods of this class.
         reinit_live : bool
-            If True, the reinit inputs will be recalculated live as the user
-            changes them. If False, a 'recalculate' button will be shown below
-            the reinit inputs instead.
+            If True, some buttons and parameters will will recalculate the data
+            points immediately.  If False, the reinit button will be disabled
+            until the user clicks the "Recalculate" button. Default is False.
         """
         super().__init__(
             title=title,
