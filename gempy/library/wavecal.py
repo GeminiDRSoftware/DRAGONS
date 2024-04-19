@@ -663,7 +663,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
     # Iterate over start position models most rapidly
     for min_lines_per_fit, model, loc_start in cart_product(
-            min_lines, init_models, (0.25, 0.5, 0.75)):
+            min_lines, init_models, (0.5, 0.25, 0.75)):
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
@@ -788,7 +788,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     while fits_to_do:
         start = datetime.now()
         p0, c0, dw = fits_to_do.pop()
-        #print(f"Pixel={p0:7.2f} c0={c0:9.4f} dw={dw:8.4f}")
+        #print(f"Pixel={p0:7.2f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_per_fit}")
         if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
             p1 = p0
         else:
@@ -811,10 +811,8 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         else:
             m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
-        #m_init.c0.bounds = (c0 - dc0, c0 + dc0)
-        #m_init.c1.bounds = (c1 - 0.02 * abs(c1), c1 + 0.02 * abs(c1))
-        #print(m_init.bounds)
         bounds_setter(m_init)
+        #print(m_init.bounds)
         if not first:
             m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
         #print(datetime.now() - start)
@@ -839,7 +837,8 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         except ValueError:
             pass
         else:
-            if min(len(arc_lines), len(peaks)) > min_lines_per_fit:
+            #if min(len(arc_lines), len(peaks)) > min_lines_per_fit:
+            if True:
                 if p_lo < p0 <= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
                     fits_to_do.append((p_lo, arc_line, dw))

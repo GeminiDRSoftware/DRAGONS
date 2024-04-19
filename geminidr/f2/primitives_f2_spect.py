@@ -406,6 +406,11 @@ class F2Spect(Spect, F2):
     def _apply_wavelength_model_bounds(self, model=None, ext=None):
         # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
         # the range of parameter space to explore
-        # Override the default central wavelength tolerane of 2% to 10 nm
-        super()._apply_wavelength_model_bounds(model, ext)
-        model.c0.bounds = (model.c0 - 10, model.c0 + 10)
+        for i, (pname, pvalue) in enumerate(zip(model.param_names, model.parameters)):
+            if i == 0:  # central wavelength
+                prange = 10
+            elif i == 1:  # half the wavelength extent (~dispersion)
+                prange = 0.05 * abs(pvalue)
+            else:  # higher-order terms
+                prange = 20
+            getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)
