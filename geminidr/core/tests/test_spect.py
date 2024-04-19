@@ -679,6 +679,7 @@ def test_make_atran_linelist(change_working_dir, path_to_inputs, path_to_refs):
                           "end_wvl": 1108.7898999999998, "spec_range": 51.5798,
                            "wv_content": 1.0, "resolution": 17520.0, "cenwave": 1082.9999999999998,
                            "in_vacuo": True, "absorption": True, "nlines": 50}
+    p._get_cenwave_accuracy = lambda x: 10  # kludge FIX to preserve behaviour
     p = primitives_spect.Spect([])
     linelist_em,_ = p._make_atran_linelist(ext=ad_em[0], filename=None, model_params=model_params_em)
     linelist_abs,_ = p._make_atran_linelist(ext=ad_abs[0], filename=None, model_params=model_params_abs)
@@ -700,6 +701,7 @@ def test_make_refplot_data(change_working_dir, path_to_inputs, path_to_refs):
                            "in_vacuo": True, "absorption": False, "nlines": 50}
 
     p = primitives_spect.Spect([])
+    p._get_cenwave_accuracy = lambda x: 10  # kludge FIX to preserve behaviour
     refplot_data_f2 = p._make_refplot_data(ext=ad_f2[0], model_params=model_params_f2,
                                     refplot_linelist=LineList(os.path.join(path_to_inputs, "nearIRsky.dat")))
     with change_working_dir(path_to_refs):
