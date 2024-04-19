@@ -402,3 +402,10 @@ class F2Spect(Spect, F2):
             slit_width = fpmask
         disperser = ext.disperser(pretty=True)
         return resolving_power.get(f"{slit_width}", {}).get(f"{disperser}", None)
+
+    def _apply_wavelength_model_bounds(self, model=None, ext=None):
+        # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
+        # the range of parameter space to explore
+        # The default here is 2% tolerance in central wavelength and dispersion
+        super()._apply_wavelength_model_bounds(model, ext)
+        model.c0.bounds = (model.c0 - 10, model.c0 + 10)
