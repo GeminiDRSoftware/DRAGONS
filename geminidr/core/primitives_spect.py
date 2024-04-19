@@ -5285,10 +5285,14 @@ class Spect(Resample):
 
         return actual_cenwave
 
-
     def _get_cenwave_accuracy(self, ext):
-        # Accuracy of central wavelength (nm) for a given instrument/setup.
-        return 10
+        # TODO: remove this
+        dispaxis = 2 - ext.dispersion_axis()
+        npix = ext.shape[dispaxis]
+        w1, w2 = am.get_named_submodel(ext.wcs.forward_transform, "WAVE").copy()([0, npix-1])
+        m_wave = models.Chebyshev1D(degree=1, c0=0.5*(w1+w2), c1=0.5*(w2-w1))
+        self._apply_wavelength_model_bounds(m_wave, ext)
+        return 0.5 * abs(np.diff(m_wave.c0.bounds)[0])
 
     def _apply_wavelength_model_bounds(self, model=None, ext=None):
         # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate

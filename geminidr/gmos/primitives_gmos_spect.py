@@ -591,10 +591,6 @@ class GMOSSpect(Spect, GMOS):
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
         return wavecal.LineList(filename)
 
-    def _get_cenwave_accuracy(self, ext=None):
-        # Assumed accuracy of central wavelength in nm for a given instrument/setup.
-        return 10
-
     def _apply_wavelength_model_bounds(self, model=None, ext=None):
         # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
         # the range of parameter space to explore

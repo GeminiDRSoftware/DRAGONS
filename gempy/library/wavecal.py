@@ -439,8 +439,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         init_models, ui_params.toDict(), peaks=peaks,
         peak_weights=weights[ui_params.weighting],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
-        dcenwave = input_data["cenwave_accuracy"],
-        bounds_setter = input_data["bounds_setter"], filename = ext.filename)
+        bounds_setter=input_data["bounds_setter"], filename=ext.filename)
 
     input_data["fit"] = fit1d
     return input_data, fit1d, acceptable_fit
@@ -485,7 +484,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     "linelist" : LineList object
     "fwidth" : feature width (pixels)
     "location" : extraction location (if 2D spectrum)
-    "cenwave_accuracy" : accuracy of the central wavelength
      "bounds_setter" : a callable to set the uncertainty on polynomial parameters
     """
     cenwave = config["central_wavelength"]
@@ -597,18 +595,15 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                     log.warning(f"{i}. Offset {m.right.offset_0.value} "
                                 f"scale {m.right.factor_1.value}")
 
-    # Get the accuracy of the central wavelength
-    dcenwave = p._get_cenwave_accuracy(ext=ext)
-
     return {"spectrum": np.ma.masked_array(data, mask=mask),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
-            "cenwave_accuracy" : dcenwave, "refplot_data": refplot_dict,
+            "refplot_data": refplot_dict,
             "bounds_setter": partial(p._apply_wavelength_model_bounds, ext=ext)}
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,
-                  kdsigma=1, k=1, filename=None, dcenwave=10, bounds_setter=None):
+                  kdsigma=1, k=1, filename=None, bounds_setter=None):
     """
     Find the best wavelength solution from the set of initial models.
 
@@ -676,8 +671,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
                                         kdsigma, order=config["order"],
                                         min_lines_per_fit=min_lines_per_fit,
-                                        k=k, dcenwave=dcenwave,
-                                        bounds_setter=bounds_setter)
+                                        k=k, bounds_setter=bounds_setter)
 
         # We perform a regular least-squares fit to all the matches
         # we've made. This allows a high polynomial order to be
@@ -742,7 +736,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                           order=3, min_lines_per_fit=15, k=1,
-                          arc_weights=None, dcenwave=10, bounds_setter=None):
+                          arc_weights=None, bounds_setter=None):
     """
     This function performs fits in multiple regions of the 1D arc spectrum.
     Given a starting location, a suitable fitting region is "grown" outwards
@@ -788,7 +782,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     wave_start = model(pixel_start)
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
-    dc0 = dcenwave
     fits_to_do = [(pixel_start, wave_start, dw_start)]
 
     first = True
