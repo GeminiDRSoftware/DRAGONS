@@ -430,16 +430,12 @@ class GNIRSSpect(Spect, GNIRS):
     def _apply_wavelength_model_bounds(self, model=None, ext=None):
         # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
         # the range of parameter space to explore
-        dispaxis = 2 - ext.dispersion_axis()
-        npix = ext.shape[dispaxis]
-        for i, (pname, pvalue) in enumerate(zip(model.param_names, model.parameters)):
-            if i == 0:  # central wavelength
-                if 'ARC' in ext.tags or ext.filter_name(pretty=True)[0] in 'LM':
-                    prange = 10
-                else:
-                    prange = abs(ext.dispersion(asNanometers=True)) * npix * 0.07
-            elif i == 1:  # half the wavelength extent (~dispersion)
-                prange = 0.02 * abs(pvalue)
-            else:  # higher-order terms
-                prange = 20
-            getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)
+        # GNIRS has a different central wavelength uncertainty
+        super()._apply_wavelength_model_bounds(model, ext)
+        if 'ARC' in ext.tags or not (ext.filter_name(pretty=True)[0] in 'LM'):
+            prange = 10
+        else:
+            dispaxis = 2 - ext.dispersion_axis()
+            npix = ext.shape[dispaxis]
+            prange = abs(ext.dispersion(asNanometers=True)) * npix * 0.07
+        model.c0.bounds = (model.c0 - prange, model.c0 + prange)

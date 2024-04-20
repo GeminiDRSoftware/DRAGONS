@@ -5304,7 +5304,7 @@ class Spect(Resample):
             elif i == 1:  # half the wavelength extent (~dispersion)
                 prange = 0.02 * abs(pvalue)
             else:  # higher-order terms
-                prange = 1
+                prange = 20
             getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)
 
 

@@ -812,9 +812,11 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
         bounds_setter(m_init)
-        #print(m_init.bounds)
         if not first:
             m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
+        #print("INPUT MODEL")
+        #print(m_init.parameters)
+        #print(m_init.bounds)
         #print(datetime.now() - start)
 
         # Need to set in_weights=None as there aren't many lines so
@@ -822,6 +824,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         m_this = _fit_region(m_init, peaks, arc_lines, kdsigma,
                              in_weights=None, ref_weights=arc_weights,
                              matches=matches, k=k, first=first)
+        #print("OUTPUT", m_this.parameters)
         dw = 2 * m_this.c1 / np.diff(m_this.domain)[0]
 
         # Add new matches to the list
