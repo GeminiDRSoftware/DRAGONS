@@ -227,7 +227,7 @@ associated_calibrations_absorp = {
 
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.slow
+@pytest.mark.wavecal
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("ad, params", input_pars, indirect=['ad'])
