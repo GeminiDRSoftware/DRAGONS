@@ -663,7 +663,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
     # Iterate over start position models most rapidly
     for min_lines_per_fit, model, loc_start in cart_product(
-            min_lines, init_models, (0.5, 0.25, 0.75)):
+            min_lines, init_models, (0.5, 0.3, 0.7)):
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
