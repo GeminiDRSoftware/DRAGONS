@@ -512,8 +512,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                 x_axis_label="Wavelength (nm)", y_axis_label=self.refplot_y_axis_label,
                                 tools = "pan,wheel_zoom,box_zoom,reset",
                                 output_backend="webgl",
-                                x_range=self.p_spectrum.x_range, y_range=None,
-                                min_border_left=80)
+                                x_range=self.p_spectrum.x_range,
+                                min_border_left=80, stylesheets=dragons_styles())
             p_refplot.height_policy = 'fixed'
             p_refplot.width_policy = 'fit'
             p_refplot.sizing_mode = 'stretch_width'
