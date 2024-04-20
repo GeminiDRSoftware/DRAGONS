@@ -395,11 +395,14 @@ class Trace:
     def _as_list(self):
         return list(self.trace)
 
+    def __len__(self):
+        return len(self.trace)
+
     def __iter__(self):
         return iter(self.trace)
 
     def __repr__(self):
-        return self.trace
+        return str(self.trace)
 
     def _verify_point(self, point):
         """Return a tuple from a len-2 iterable"""
@@ -1700,14 +1703,14 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     def keep_line(line, min_length):
         positions = [element[0] for element in line]
         return (max(positions) - min(positions)) > min_length * ext_data.shape[0]
-    final_coord_lists = [line for line in traces if keep_line(line, min_line_length)]
-    final_peaks = [trace.starting_point[1] for trace in traces]
+    final_traces = [trace for trace in traces if keep_line(trace, min_line_length)]
+    final_peaks = [trace.starting_point[1] for trace in final_traces]
 
     # List of traced peak positions
-    in_coords = np.array([c for coo in traces for c in coo]).T
+    in_coords = np.array([c for coo in final_traces for c in coo]).T
     # List of "reference" positions (i.e., the coordinate perpendicular to
     # the line remains constant at its initial value
-    ref_coords = np.array([(ypos, ref) for coo, ref in zip(traces, final_peaks)
+    ref_coords = np.array([(ypos, ref) for coo, ref in zip(final_traces, final_peaks)
                      for (ypos, xpos) in coo]).T
 
     # Return the coordinate lists, in the form (x-coords, y-coords),
