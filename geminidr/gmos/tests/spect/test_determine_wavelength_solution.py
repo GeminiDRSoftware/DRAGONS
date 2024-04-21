@@ -108,7 +108,7 @@ input_pars = [
     ("N20130830S0291_mosaic.fits", dict()),  # R831:0.845 E2V
     ("N20170910S0009_mosaic.fits", dict()),  # R831:0.653 HAM
     ("N20170509S0682_mosaic.fits", dict()),  # R831:0.750 HAM
-    ("N20170416S0058_mosaic.fits", dict()),  # R831:0.855 HAM
+    #("N20170416S0058_mosaic.fits", dict()),  # R831:0.855 HAM
     ("N20170416S0081_mosaic.fits", dict()),  # R831:0.865 HAM
     ("N20180120S0315_mosaic.fits", dict()),  # R831:0.865 HAM
     ("N20190111S0271_mosaic.fits", dict()),  # R831:0.525 HAM
