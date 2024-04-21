@@ -600,5 +600,5 @@ class GMOSSpect(Spect, GMOS):
             elif i == 1:  # half the wavelength extent (~dispersion)
                 prange = 0.05 * abs(pvalue)
             else:  # higher-order terms
-                prange = 2
+                prange = 20
             getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)
