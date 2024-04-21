@@ -169,7 +169,7 @@ input_pars = [
     #("N20101203S0315_varAdded.fits", dict()), # 3700nm, 68nm, R=1800, 0.30arcsec. Unstable, gradient.
     #("N20100915S0155_varAdded.fits", dict(min_snr=5)), # 3770nm, 63nm, R=1800, 0.30arcsec, crazy gradient, unstable
     # L-band, 10 l/mm, LongCam
-    ("N20160321S0222_varAdded.fits", dict()), #	3100nm,	35nm, R=264, 0.68arcsec
+    #("N20160321S0222_varAdded.fits", dict()), #	3100nm,	35nm, R=264, 0.68arcsec MIGHT BE WRONG
     #("N20110718S0086_varAdded.fits", dict()), # 3300nm, 97nm, R=400, 0.45arcsec. Very large dw
     ("N20130516S0183_varAdded.fits", dict()), #	3400nm,	25nm, R=400, 0.45arcsec
     ("N20161115S0402_varAdded.fits", dict()), #	3400nm,	46nm, R=1200, 0.15arcsec
