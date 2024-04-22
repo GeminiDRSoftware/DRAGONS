@@ -1650,6 +1650,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             The class of Panel to use in each tab. This allows specific
             operability for each primitive since most of the functions that do
             the work are methods of this class.
+
         reinit_live : bool
             If True, some buttons and parameters will will recalculate the data
             points immediately.  If False, the reinit button will be disabled

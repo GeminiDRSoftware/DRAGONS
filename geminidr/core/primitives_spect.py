@@ -4102,6 +4102,7 @@ class Spect(Resample):
                                                    recalc_inputs_above=True,
                                                    ui_params=ui_params,
                                                    reinit_live=True)
+
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 # Pull out the final parameters to use as inputs doing the real fit

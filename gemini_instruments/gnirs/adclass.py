@@ -722,6 +722,27 @@ class AstroDataGnirs(AstroDataGemini):
         else:
             return "Unknown"
 
+    def prism_motor_steps(self):
+        """
+        Returns the PRSM_ENG header value, which is the step count of the prism
+        mechanism. This is needed to associate HR-IFR (at least) flats correctly
+        following discovery in Apr-2024 that the prism mechanism does not
+        position with sufficient reproducability for the HR-IFU. Thus, sci-ops
+        will tweak the step count on the fly at the start of a sequence, taking
+        "dummy" flats to do so. The correct flat to use must have the same
+        prism_eng value as the science.
+
+        Returns
+        -------
+        PRSM_ENG value from the PHU as an int, or None if unable.
+        """
+
+        try:
+            return int(self.phu.get('PRSM_ENG'))
+        except (ValueError, TypeError):
+            return None
+
+
     # --------------------------------------
     # Private methods
     def _grating(self, stripID=False, pretty=False):
