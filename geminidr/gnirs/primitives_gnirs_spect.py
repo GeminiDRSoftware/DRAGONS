@@ -439,3 +439,5 @@ class GNIRSSpect(Spect, GNIRS):
             npix = ext.shape[dispaxis]
             prange = abs(ext.dispersion(asNanometers=True)) * npix * 0.07
         model.c0.bounds = (model.c0 - prange, model.c0 + prange)
+        dx = 0.02 * abs(model.c1.value)
+        model.c1.bounds = (model.c1 - dx, model.c1 + dx)
