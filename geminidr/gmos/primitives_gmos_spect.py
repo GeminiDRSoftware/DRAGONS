@@ -590,15 +590,3 @@ class GMOSSpect(Spect, GMOS):
         filename = os.path.join(lookup_dir,
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
         return wavecal.LineList(filename)
-
-    def _apply_wavelength_model_bounds(self, model=None, ext=None):
-        # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
-        # the range of parameter space to explore
-        for i, (pname, pvalue) in enumerate(zip(model.param_names, model.parameters)):
-            if i == 0:  # central wavelength
-                prange = 10
-            elif i == 1:  # half the wavelength extent (~dispersion)
-                prange = 0.05 * abs(pvalue)
-            else:  # higher-order terms
-                prange = 20
-            getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)
