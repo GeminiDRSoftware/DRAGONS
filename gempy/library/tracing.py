@@ -36,6 +36,7 @@ from scipy import interpolate, optimize, signal
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library import astromodels as am
+from gempy.library.fitting import fit_1D
 from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
@@ -376,13 +377,13 @@ class Aperture:
 class Trace:
     """A class describing a trace along columns. It has the following attributes:
 
-    starting_point: len-2 iterable
+    starting_point : len-2 iterable
         The starting point of the trace on the array, in (y, x) format.
-    trace: collections.deque
+    trace : collections.deque
         A deque holding points (len-2 iterables) found for the trace.
-    top_limit: float
+    top_limit : float
         The highest y-value that the trace has reached.
-    bottom_limit: float
+    bottom_limit : float
         The lowest y-value that the trace have reached.
     """
     def __init__(self, starting_point):
@@ -408,7 +409,7 @@ class Trace:
         """Return a tuple from a len-2 iterable"""
         if len(point) != 2:
             raise RuntimeError(f"Point {point} should have 2 values, not "
-                               f"len(point)")
+                               f"{len(point)}")
         if isinstance(point, tuple):
             return point
         else:
@@ -434,8 +435,43 @@ class Trace:
                                f"{point}, top: {self.top_limit}, "
                                f"bottom: {self.bottom_limit}")
 
-    def predict_location(self):
-        pass
+    def predict_location(self, lookahead, upwards=True, lookback=4):
+        """Predict where the next peak will be in the spatial direction.
+
+        lookahead : int
+            Number of pixels from the last point in the trace to predict the
+            next peak's location.
+        upwards : bool, Default : True
+            Whether to predict the location from the top or bottom end of the
+            trace.
+        lookback : int
+            The number of points in the trace (in addition to the final one) to
+            include in the fit to predict where it's going.
+
+        """
+        # Make sure there are enough points for the requested lookback and that
+        # it's a sensible number.
+        assert len(self.trace) > lookback, "Too few points to perform fit."
+        assert lookback > 0, "`lookback` must be greater than zero."
+
+        # Get points to trace, from eithe end as appropriate. In either case,
+        # `points` will be a list of points starting from one end and heading
+        # towards the middle of the trace.
+        if upwards:
+            points = [self.trace[i] for i in range(-1, -(lookback+2), -1)]
+        else:
+            points = [self.trace[i] for i in range(0, lookback+1, 1)]
+
+        # Set up model and fit to points
+        _fit_1d = fit_1D([point[1] for point in points],
+                         points=[point[0] for point in points],
+                         domain=[self.top_limit + lookahead + 1,
+                                 self.bottom_limit - lookahead - 1],
+                         order=1)
+
+        if not upwards: # Flip `lookahead` to be downwards
+            lookahead *= -1
+        return _fit_1d.evaluate(points[0][0] + lookahead)[0]
 
 
 ###############################################################################
