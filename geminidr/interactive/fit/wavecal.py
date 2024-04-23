@@ -587,18 +587,19 @@ class WavelengthSolutionPanel(Fit1DPanel):
     def refplot_label_height(self):
         """
         Provide a location for a wavelength label identifying a line
-        in the reference spectrum plot
+        in the reference spectrum plot.
+
+        This calculates the label heights relative to lines already present in
+        the plot, and lets bokeh handle rescaling the y-axis as needed.
 
         Returns
         -------
         float/list : appropriate y value(s) for writing a label
         """
-        try:
-            height = self.p_refplot.y_range.end - self.p_refplot.y_range.start
-        except TypeError:  # range is None, plot being initialized
-            # This is calculated on the basis that bokeh pads by 5% of the
-            # data range on each side
-            height = 44 / 29 * np.nanmax(self.refplot_linelist.data["intensities"])
+        # Height relative to points in the spectrum, rather than relative to
+        # the plot.
+        height = 44 / 29 * np.nanmax(self.refplot_linelist.data["intensities"])
+
         if self.absorption:
             padding = -0.05 * height
         else:
