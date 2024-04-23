@@ -390,9 +390,6 @@ class Trace:
         self.starting_point = self._verify_point(starting_point)
         self.trace = deque([self.starting_point])
 
-        # Set the initial limits of the trace.
-        self.top_limit = self.bottom_limit = self.starting_point[0]
-
     def _as_list(self):
         return list(self.trace)
 
@@ -418,6 +415,14 @@ class Trace:
             except:
                 raise RuntimeError(f"Something went wrong with point {point}")
 
+    @property
+    def top_limit(self):
+        return self.trace[-1][0]
+
+    @property
+    def bottom_limit(self):
+        return self.trace[0][0]
+
     def add_point(self, point):
         """Add a point to the deque, at either end as appropriate"""
         point = self._verify_point(point)
@@ -425,10 +430,8 @@ class Trace:
 
         if y > self.top_limit:
             self.trace.append(point)
-            self.top = y
         elif y < self.bottom_limit:
             self.trace.appendleft(point)
-            self.bottom = y
         else:
             # Should only add points at ends of range
             raise RuntimeError("Trying to insert point in middle of trace,"
