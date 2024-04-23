@@ -532,14 +532,14 @@ Reduce the Science Frames
 -------------------------
 .. note::  Possible customizations.
 
-   * The sky subtraction can be turned off with ``-p extractProfile:sky_subtract=False``
+   * The sky subtraction can be turned off with ``-p extractSpectra:sky_subtract=False``
      if it is found to add noise (of course, the sky emission lines will still be
      present in your data).
    * If you wish to remove the scattered light, then add the parameters as
      described at the end of the section on the standard star reduction.
    * If you expected IFU-2 to be on-sky but there's an accidental source, tell
      the software that there is a source and it isn't sky with
-     ``-p extractProfile:ifu2=object``.
+     ``-p extractSpectra:ifu2=object``.
    * If you do not want the barycentric correction, turn is off with
      ``-p barycentricCorrect:velocity=0``.
    * If you don't have a spectrophotometric standard and are happy to have your output
