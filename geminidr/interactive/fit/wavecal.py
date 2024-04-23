@@ -553,7 +553,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         return new_model
 
     def label_height(self, x):
-        """Provide a location for a wavelength label identifying a line
+        """Provide a location for a wavelength label identifying a line.
+
+        This calculates the label heights relative to lines already present in
+        the plot, and lets bokeh handle rescaling the y-axis as needed.
 
         Parameters
         ----------
@@ -564,18 +567,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         -------
         float/list : appropriate y value(s) for writing a label
         """
-        try:
-            height = (
-                self.p_spectrum.y_range.end - self.p_spectrum.y_range.start
-            )
+        # Height relative to points in the spectrum, rather than relative to
+        # the plot.
+        height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
 
-        except TypeError:  # range is None, plot being initialized
-            # This is calculated on the basis that bokeh pads by 5% of the
-            # data range on each side
-            # height = (44 / 29 * self.spectrum.data['spectrum'].max() -
-            #          1.1 * self.spectrum.data['spectrum'].min())
-
-            height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
         if self.absorption:
             padding = -0.05 * height
         else:
