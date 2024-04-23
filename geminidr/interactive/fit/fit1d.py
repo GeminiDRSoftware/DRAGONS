@@ -47,12 +47,13 @@ USER_MASK_NAME = "rejected (user)"
 BAND_MASK_NAME = "excluded"
 INPUT_MASK_NAMES = ["aperture", "threshold"]
 
+
 class InteractiveModel(ABC):
     """Base class for all interactive models, containing:
-        (a) the parameters of the model
-        (b) the parameters that control the fitting (e.g., sigma-clipping)
-        (c) the way the fitting is performed
-        (d) the input and output coordinates, mask, and weights
+    (a) the parameters of the model
+    (b) the parameters that control the fitting (e.g., sigma-clipping)
+    (c) the way the fitting is performed
+    (d) the input and output coordinates, mask, and weights
     """
 
     MASK_TYPE = [
@@ -68,6 +69,7 @@ class InteractiveModel(ABC):
         "circle",
         "square",
         "inverted_triangle",
+        "square",
     ]
 
     PALETTE = [
@@ -76,6 +78,7 @@ class InteractiveModel(ABC):
         "black",
         "darksalmon",
         "lightgray",
+        "orange",
     ]  # Category10[4]
 
     def __init__(self):
@@ -495,15 +498,17 @@ class InteractiveModel1D(InteractiveModel):
                     self.fit = new_fit
                 else:
                     # Modify the fit_1D object with a shift by ugly hacking
-                    offset = np.mean(self.y[goodpix] - self.evaluate(self.x[goodpix]))
+                    offset = np.mean(
+                        self.y[goodpix] - self.evaluate(self.x[goodpix])
+                    )
                     self.fit.offset_fit(offset)
                     self.fit.points = new_fit.points
                     self.fit.mask = new_fit.mask
                     self.quality = FitQuality.POOR  # else stay BAD
         if self.quality != FitQuality.BAD:  # don't update if it's BAD
-            if 'residuals' in self.data.data:
-                self.data.data['residuals'] = self.y - self.evaluate(self.x)
-            if 'ratio' in self.data.data:
+            if "residuals" in self.data.data:
+                self.data.data["residuals"] = self.y - self.evaluate(self.x)
+            if "ratio" in self.data.data:
                 with np.errstate(invalid="ignore", divide="ignore"):
                     self.data.data["ratio"] = self.y / self.evaluate(self.x)
 
@@ -546,6 +551,7 @@ class FittingParametersUI:
     """Manager for the UI controls and their interactions with the fitting
     model.
     """
+
     def __init__(self, vis, fit, fitting_parameters):
         """Class to manage the set of UI controls for the inputs to the fitting
         model.
@@ -913,7 +919,9 @@ class InfoPanel:
             The model that has changed.
         """
         try:
-            rms_str = "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
+            rms_str = (
+                "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
+            )
         except AttributeError:
             rms_str = "--"
 
@@ -977,6 +985,7 @@ class Fit1DPanel:
     This class is typically used in tabs within the interactive module. It
     is meant to handle one set of data being fit at a time.
     """
+
     def __init__(
         self,
         visualizer,
@@ -1170,7 +1179,7 @@ class Fit1DPanel:
             css_classes=["tab-content"],
             spacing=10,
             stylesheets=dragons_styles(),
-            sizing_mode="stretch_width"
+            sizing_mode="stretch_width",
         )
 
     # pylint: disable=unused-argument
@@ -1465,8 +1474,7 @@ class Fit1DPanel:
     # x/y tracking when the mouse moves in the figure for calculateSensitivity
     @staticmethod
     def add_custom_cursor_behavior(pointer):
-        """Customize cursor behavior depending on which tool is active.
-        """
+        """Customize cursor behavior depending on which tool is active."""
         pan_start = """
             var mainPlot = document.getElementsByClassName('plot-main')[0];
             var active = [...mainPlot.getElementsByClassName('bk-active')];
@@ -1663,12 +1671,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             template=template,
             help_text=help_text,
             ui_params=ui_params,
-            reinit_live=reinit_live
+            reinit_live=reinit_live,
         )
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
 
-        if 'pad_buttons' in kwargs:
+        if "pad_buttons" in kwargs:
             # Deprecation warning
             warnings.warn(
                 "pad_buttons is no longer supported",
@@ -1732,14 +1740,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
             if recalc_inputs_above:
                 self.reinit_panel = row(
-                    *reinit_widgets,
-                    stylesheets=dragons_styles()
+                    *reinit_widgets, stylesheets=dragons_styles()
                 )
 
             else:
                 self.reinit_panel = column(
-                    *reinit_widgets,
-                    stylesheets=dragons_styles()
+                    *reinit_widgets, stylesheets=dragons_styles()
                 )
 
         else:
@@ -1797,7 +1803,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         elif turbo_tabs:
             self.turbo = TabsTurboInjector(self.tabs)
-            
+
         if tab_name_fmt is None:
             tab_name_fmt = lambda i: f"Extension {i+1}"
 
@@ -1829,9 +1835,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             )
 
             if turbo_tabs:
-                self.turbo.add_tab(
-                    tui.component, title=str(tab_name_fmt(i))
-                )
+                self.turbo.add_tab(tui.component, title=str(tab_name_fmt(i)))
 
             else:
                 tab = bm.TabPanel(
@@ -1858,7 +1862,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         col = column(
             self.tabs,
             stylesheets=dragons_styles(),
-            sizing_mode="stretch_width"
+            sizing_mode="stretch_width",
         )
 
         for btn in (self.submit_button, self.abort_button):
@@ -1927,14 +1931,14 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     self.reinit_panel,
                     col,
                     sizing_mode="stretch_width",
-                    stylesheets=dragons_styles()
+                    stylesheets=dragons_styles(),
                 )
             )
 
         self.layout = column(
             *layout_ls,
             sizing_mode="stretch_width",
-            stylesheets=dragons_styles()
+            stylesheets=dragons_styles(),
         )
 
         doc.add_root(self.layout)
@@ -1979,6 +1983,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         self.do_later(function)
 
         if self.reconstruct_points_fn is not None:
+
             def rfn():
                 data = None
                 try:
@@ -1997,7 +2002,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     logging.error(
                         "Unable to build data from inputs, got Exception %s",
                         err,
-                        exc_info=True
+                        exc_info=True,
                     )
 
                 if data is not None:
@@ -2231,9 +2236,7 @@ def fit1d_figure(
 
     if plot_residuals and plot_ratios:
         tabs = bm.Tabs(
-            tabs=[],
-            sizing_mode="stretch_width",
-            stylesheets=dragons_styles()
+            tabs=[], sizing_mode="stretch_width", stylesheets=dragons_styles()
         )
 
         tabs.tabs.append(bm.TabPanel(child=p_resid, title="Residuals"))
