@@ -389,6 +389,9 @@ class Trace:
     def __init__(self, starting_point):
         self.starting_point = self._verify_point(starting_point)
         self.trace = deque([self.starting_point])
+        self.last_point = self.starting_point
+        self.steps_missed = 0
+        self.active = True
 
     def _as_list(self):
         return list(self.trace)
@@ -437,44 +440,51 @@ class Trace:
             raise RuntimeError("Trying to insert point in middle of trace,"
                                f"{point}, top: {self.top_limit}, "
                                f"bottom: {self.bottom_limit}")
+        self.last_point = point
 
-    def predict_location(self, lookahead, upwards=True, lookback=4):
-        """Predict where the next peak will be in the spatial direction.
+    def predict_location(self, row, lookback=4, order=1):
+        """Predict where the next peak will be in the tracing direction.
 
-        lookahead : int
-            Number of pixels from the last point in the trace to predict the
-            next peak's location.
-        upwards : bool, Default : True
-            Whether to predict the location from the top or bottom end of the
-            trace.
+        row : float
+            Where to predict the location
         lookback : int
             The number of points in the trace (in addition to the final one) to
             include in the fit to predict where it's going.
+        order: int
+            order of fit function
 
         """
+        # Save ourselves some trouble by quickly returning a dummy value if
+        # this Trace is inactive
+        if not self.active:
+            return None
+
         # Make sure there are enough points for the requested lookback and that
         # it's a sensible number.
-        assert len(self.trace) > lookback, "Too few points to perform fit."
-        assert lookback > 0, "`lookback` must be greater than zero."
+        assert lookback >= 0, "'lookback' must not be negative"
+        lookback = min(lookback, len(self.trace) - 1)
+        order = min(order, lookback)
 
         # Get points to trace, from eithe end as appropriate. In either case,
         # `points` will be a list of points starting from one end and heading
         # towards the middle of the trace.
-        if upwards:
+        if row > self.top_limit:
             points = [self.trace[i] for i in range(-1, -(lookback+2), -1)]
-        else:
+        elif row < self.bottom_limit:
             points = [self.trace[i] for i in range(0, lookback+1, 1)]
+        else:
+            raise RuntimeError("No prediction within existing trace")
+
+        if order == 0:
+            return points[0][1]
 
         # Set up model and fit to points
         _fit_1d = fit_1D([point[1] for point in points],
                          points=[point[0] for point in points],
-                         domain=[self.top_limit + lookahead + 1,
-                                 self.bottom_limit - lookahead - 1],
-                         order=1)
+                         domain=[self.bottom_limit, self.top_limit],
+                         order=order)
 
-        if not upwards: # Flip `lookahead` to be downwards
-            lookahead *= -1
-        return _fit_1d.evaluate(points[0][0] + lookahead)[0]
+        return _fit_1d.evaluate(row)[0]
 
 
 ###############################################################################
@@ -1634,12 +1644,13 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
     traces = [Trace((start, peak)) for peak in initial_peaks]
     for direction in (1, -1):
+        for trace in traces:
+            trace.last_point = trace.starting_point
+            trace.active = True
+            trace.steps_missed = 0
         ypos = start
-        last_coords = [[ypos, peak] for peak in initial_peaks]
-        missing_but_not_lost = None
 
-        while True:
-            missing_but_not_lost = missing_but_not_lost or ypos
+        while any(t.active for t in traces):
             ypos += step
             # Reached the bottom or top?
             if not (min(step_centers) <= ypos <= max(step_centers)):
@@ -1647,13 +1658,15 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
             # This indicates we should start making profiles binned across
             # multiple steps because we have lost lines but they're not
-            # completely lost yet.
-            lookback = min(int((ypos - missing_but_not_lost) / step), max_missed)
+            # completely lost yet. Even if no steps have been missed, we
+            # set lookback to 1 in order to bin if we can't find a peak
+            # in the next step
+            lookback = max(t.steps_missed for t in traces if t.active) + 1
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             # There's always at least one such array
             for i in range(lookback + 1):
-                slices = [_slice(ypos - j*step) for j in range(i+1)]
+                slices = [_slice(ypos - j * step) for j in range(i+1)]
                 d, m, v = func(np.concatenate(list(ext_data[s] for s in slices)),
                                mask=None if ext_mask is None else np.concatenate(list(ext_mask[s] for s in slices)),
                                variance=None)
@@ -1672,69 +1685,51 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             # because it cannot derive pixel-to-pixel variations. This makes
             # the data array 0 as well, and we can't find any peaks
             if any(mask[0] == 0) and not all(np.isinf(var[0])):
-                last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
-                peaks, peak_values = pinpoint_peaks(data[0], peaks=last_peaks, mask=mask[0],
-                                       halfwidth=halfwidth)
-
-                for i, (last_row, old_peak) in enumerate(last_coords):
-                    if np.isnan(old_peak):
-                        continue
-                    # If we found no peaks at all, then continue through
-                    # the loop but nothing will match
-                    if peaks:
-                        j = np.argmin(abs(np.array(peaks) - old_peak))
-                        new_peak, new_peak_value = peaks[j], peak_values[j]
-                    else:
-                        new_peak = np.inf
-
-                    # Is this close enough to the existing peak?
-                    steps_missed = len([c for c in step_centers if (last_row < c < ypos) or (last_row > c > ypos)])
-                    for j in range(min(steps_missed, lookback) + 1):
-                        tolerance = max_shift * (j + 1) * abs(step)
-                        if abs(new_peak - old_peak) <= tolerance and\
-                              (min_peak_value is None or new_peak_value > min_peak_value):
-                            new_coord = [ypos - 0.5 * j * step, new_peak]
-                            break
-                        elif j < lookback:
-                            # Investigate more heavily-binned profiles
-                            # new_peak calculated here may be added in the
-                            # next iteration of the loop
-                            try:
-                                new_peak, new_peak_value = [x[0] for x in pinpoint_peaks(
-                                    data[j+1], peaks=[old_peak], mask=mask[j+1],
-                                    halfwidth=halfwidth)]
-                            except IndexError:  # No peak there
-                                new_peak = np.inf
-                    else:
-                        # We haven't found the continuation of this line.
-                        # If it's gone for good, set the coord to NaN to avoid it
-                        # picking up a different line if there's significant tilt
-                        if steps_missed >= max_missed:
-                            last_coords[i] = [ypos, np.nan]
+                for trace in traces:
+                    if not trace.active:
                         continue
 
-                    # Too close to the edge?
-                    if (new_coord[1] < halfwidth or
-                            new_coord[1] > ext_data.shape[1] - 0.5 * halfwidth):
-                        last_coords[i][1] = np.nan
+                    # Again, if we haven't missed anything, we still want to
+                    # be able to bin up two steps
+                    for j in range(min(trace.steps_missed + 1, data.shape[0]) + 1):
+                        effective_ypos = ypos - 0.5 * j * step
+                        tolerance = max_shift * abs(effective_ypos - trace.last_point[0])
+                        predicted_peak = trace.predict_location(effective_ypos, order=0)
+
+                        peaks, peak_values = pinpoint_peaks(
+                            data[j], peaks=[predicted_peak], mask=mask[j],
+                            halfwidth=halfwidth)
+
+                        if (not peaks or min_peak_value is not None and
+                                peak_values[0] < min_peak_value or
+                                abs(peaks[0] - trace.last_point[1]) > tolerance):
+                            continue
+
+                        break
+                    else:  # no valid peak
+                        trace.steps_missed += 1
+                        if trace.steps_missed > max_missed:
+                            trace.active = False
+                        continue
+
+                    # We found a peak. Is it too close to the edge?
+                    if not (halfwidth < peaks[0] < ext_data.shape[1] -
+                            halfwidth - 1):
+                        trace.active = False
                         continue
 
                     if viewer:
-                        kwargs = dict(zip(('y1', 'x1'), last_coords[i] if axis == 0
-                        else reversed(last_coords[i])))
-                        kwargs.update(dict(zip(('y2', 'x2'), new_coord if axis == 0
-                        else reversed(new_coord))))
+                        kwargs = dict(zip(('y1', 'x1'), trace.last_point if axis == 0
+                        else reversed(trace.last_point)))
+                        kwargs.update(dict(zip(('y2', 'x2'), (effective_ypos, peaks[0]) if axis == 0
+                        else (peaks[0], effective_ypos))))
                         viewer.line(origin=0, **kwargs)
 
-                    traces[i].add_point(new_coord)
-                    last_coords[i] = new_coord.copy()
-                try:
-                    missing_but_not_lost = direction * min(
-                        direction * last[0] for last in last_coords if not np.isnan(last[1]))
-                except ValueError:  # lost all lines
-                    break
+                    trace.add_point((effective_ypos, peaks[0]))
+                    trace.steps_missed = 0
             else:  # We don't bin across completely dead regions
-                missing_but_not_lost = None
+                for trace in traces:
+                    trace.steps_missed = 0
 
         step *= -1
 
