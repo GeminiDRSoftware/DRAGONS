@@ -915,22 +915,31 @@ class PrimitiveVisualizer(ABC):
                             stylesheets=dragons_styles(),
                         )
 
-
                         class TextHandler:
-                            def __init__(self, key, extras, fn):
+                            def __init__(self, key, extras, fn, reinit_live):
                                 self.key = key
                                 self.extras = extras
                                 self.fn = fn
+                                self.reinit_live = reinit_live
 
                             def handler(self, name, old, new):
                                 self.extras[self.key] = new
                                 if self.reinit_live and self.fn is not None:
                                     self.fn()
 
-                        widget.on_change("value", TextHandler(key, self.extras, lambda: self.reconstruct_points()).handler)
+                        widget.on_change(
+                            "value",
+                            TextHandler(
+                                key,
+                                self.extras,
+                                self.reconstruct_points,
+                                self.reinit_live
+                            ).handler
+                        )
 
                         self.widgets[key] = widget
                         widgets.append(widget)
+
         return widgets
 
     def slider_handler_factory(self, key):
