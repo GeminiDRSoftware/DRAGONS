@@ -245,7 +245,7 @@ class findAperturesConfig(config.Config):
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
                            "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.1, min=0, max=1)
+                                  float, 0.1, min=0, max=1, fix_end_to_max=True)
     interactive = config.Field("Use interactive interface", bool, False)
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
                                        int, None, min=1, inclusiveMax=True, optional=True)
