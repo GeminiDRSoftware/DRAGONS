@@ -801,7 +801,9 @@ class PrimitiveVisualizer(ABC):
 
                 if hasattr(field, "min"):
                     is_float = field.dtype is not int
-                    step = 0.1 if is_float else 1
+
+                    # Step is handled in the slider factory.
+                    step = None 
 
                     slider_handler = self.slider_handler_factory(key)
 
@@ -1110,7 +1112,7 @@ def build_text_slider(
 
     if step is None:
         if is_float:
-            step = 0.1
+            step = min(0.1, (end - start) / 100)
         else:
             step = 1
 

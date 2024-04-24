@@ -534,7 +534,8 @@ class traceAperturesConfig(config.core_1Dfitting_config):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True,
+                                  fix_end_to_max=True)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing",
