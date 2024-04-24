@@ -198,6 +198,14 @@ this one::
 
   --expr="binning=='2x2' and read_mode=='slow'"
 
+.. note::  You may see the following error message::
+
+       ERROR - ValueError: zero-size array to reduction operation minimum which has no identity
+
+    If so, your bias frame is corrupted (all pixels have the same value)
+    and you should find an alternative bias with the same binning and
+    read speeds in the archive and use that instead.
+
 
 Reduce the flat/arc biases
 --------------------------
@@ -296,6 +304,19 @@ trace each of the echelle orders.
 
   reduce @flatred.lis
   reduce @flatblue.lis
+
+
+.. note::  If you are reducing out-of-focus data from the December 2023 FT run,
+    you should add the flag::
+
+       -p smoothing=6
+
+    when reducing the flats (not the slit-flat). The value of 6 (the FWHM in
+    pixels of the Gaussian smoothing kernel) applied to the slit-viewer
+    camera images (which are in focus) seems to work well but may not be
+    optimal. The value is stored in the header of the processed flat so it
+    is applied automatically to the reduction of the arc and on-sky frames
+    that use the flat. You are welcome to try other values.
 
 Clean up
 --------
@@ -591,6 +612,13 @@ possible configurations:
 * One object, no sky subtraction: 1 spectrum per order: object spectrum
 * Two objects, no sky subtraction: 2 spectra per order: object1 spectrum,
   object2 spectrum
+
+
+.. note::  If you are reducing standard-resolution out-of-focus data from
+    the December 2023 FTrun in two-object mode or with one of the IFUs stowed
+    you may see "ripple" artifacts in your data due to contamination of the
+    sky fibres by light from the target(s). Using
+    ``-p extractProfile:sky_subtract=False weighting=uniform`` may help.
 
 
 It is possible to write the spectra to a text file with ``write1DSpectrum``,
