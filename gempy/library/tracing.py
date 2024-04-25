@@ -1670,10 +1670,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
             # This indicates we should start making profiles binned across
             # multiple steps because we have lost lines but they're not
-            # completely lost yet. Even if no steps have been missed, we
-            # set lookback to 1 in order to bin if we can't find a peak
-            # in the next step
-            lookback = min(max(t.steps_missed for t in traces if t.active) + 1,
+            # completely lost yet.
+            lookback = min(max(t.steps_missed for t in traces if t.active),
                            step_index - latest_lookback_step)
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
@@ -1722,7 +1720,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                         break
                     else:  # no valid peak
                         trace.steps_missed += 1
-                        if trace.steps_missed >= max_missed:
+                        if trace.steps_missed > max_missed:
                             trace.active = False
                         continue
 
