@@ -1588,28 +1588,30 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         ext_mask = None if mask is None else mask.T & DQ.not_signal
         direction = "column"
 
+    # Make a slice around a given row center. No bounds checking
+    # as that needs to be done by the calling code.
+    def _slice(center):
+        return slice(center - nsum // 2, center + nsum - nsum // 2)
+
+    halfwidth = cwidth // 2
     if start is None:
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
     else:  # just to be sure
         start = int(min(max(start, nsum // 2), ext_data.shape[0] - nsum / 2))
 
-    # Get accurate starting positions for all peaks
-    halfwidth = cwidth // 2
-    y1 = max(int(start - 0.5 * nsum + 0.5), 0)
-    _slice = slice(min(y1, ext_data.size - nsum),
-                   min(y1 + nsum, ext_data.size))
-    data, mask, var = func(ext_data[_slice], mask=None if ext_mask is None
-                           else ext_mask[_slice], variance=None)
-
-    if rwidth:
-        data = cwt_ricker(data, widths=[rwidth])[0]
-
-    # Get better peak positions if requested
+    # Get accurate starting positions for all peaks if requested
     if initial_tolerance is None:
         initial_peaks = initial
     else:
-        peaks = pinpoint_peaks(data, peaks=initial, mask=mask)[0]
+        data, mask, var = func(ext_data[_slice(start)],
+                               mask=None if ext_mask is None
+                               else ext_mask[_slice(start)], variance=None)
+        if rwidth:
+            data = cwt_ricker(data, widths=[rwidth])[0]
+
+        peaks = pinpoint_peaks(data, peaks=initial, mask=mask,
+                               halfwidth=halfwidth)[0]
         initial_peaks = []
         for peak in initial:
             j = np.argmin(abs(np.array(peaks) - peak))
@@ -1624,49 +1626,60 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     mask = np.zeros_like(data, dtype=DQ.datatype)
     var = np.empty_like(data)
 
-    # Make a slice around a given row center
-    def _slice(center):
-        return slice(center - nsum // 2, center + nsum - nsum // 2)
+    # We're going to make lists of valid step centers to help later
+    step_centers_up = list(np.arange(start, ext_data.shape[0] - nsum / 2,
+                                     step, dtype=int))
+    step_centers_down = list(np.arange(start, nsum / 2, -step, dtype=int))
 
-    # We're going to make a list of valid step centers to help later. These
-    # will help us to calculate for how many steps a trace has been missed,
-    # since we don't count steps which cover masked regions.
-    step_centers = list(np.arange(start + 1, ext_data.shape[0] - nsum / 2, step, dtype=int))
-    step_centers.extend(list(np.arange(start - step, nsum / 2, -step, dtype=int)))
-    all_slices = [_slice(c) for c in step_centers]
     # Eliminate blocks that are completely masked (e.g., chip gaps, bridges, amp5)
     # Also need to eliminate regions with only one valid column because NDStacker
     # can't compute the pixel-to-pixel variance and hence the S/N can't be calculated
     if ext_mask is not None:
-        for i, s in reversed(list(enumerate(all_slices))):
-            if np.bincount((ext_mask[s] & DQ.not_signal).min(axis=1))[0] <= 1:
-                del step_centers[i]
+        for i, s in reversed(list(enumerate(step_centers_up))):
+            if np.bincount((ext_mask[_slice(s)] & DQ.not_signal).min(axis=1))[0] <= 1:
+                step_centers_up[i] = None
+        for i, s in reversed(list(enumerate(step_centers_down))):
+            if np.bincount((ext_mask[_slice(s)] & DQ.not_signal).min(axis=1))[0] <= 1:
+                step_centers_down[i] = None
 
     traces = [Trace((start, peak)) for peak in initial_peaks]
-    for direction in (1, -1):
+    for direction, step_centers in zip((1, -1), (step_centers_up, step_centers_down)):
         for trace in traces:
             trace.last_point = trace.starting_point
             trace.active = True
             trace.steps_missed = 0
-        ypos = start
+        step_index = 0
+        latest_lookback_step = 0
 
         while any(t.active for t in traces):
-            ypos += step
+            # Our first point is step_index=1. The point step_index=0 is the
+            # start location, so we don't want to recompute that, but it's in
+            # the step_centers so we can go back and bin up including it.
+            step_index += 1
+
             # Reached the bottom or top?
-            if not (min(step_centers) <= ypos <= max(step_centers)):
+            if step_index >= len(step_centers):
                 break
+
+            # Are we going across a "dead zone", which we don't bin across?
+            if step_centers[step_index] is None:
+                latest_lookback_step = None
+                continue
+            elif latest_lookback_step is None:  # recover from "dead zone"
+                latest_lookback_step = step_index
 
             # This indicates we should start making profiles binned across
             # multiple steps because we have lost lines but they're not
             # completely lost yet. Even if no steps have been missed, we
             # set lookback to 1 in order to bin if we can't find a peak
             # in the next step
-            lookback = max(t.steps_missed for t in traces if t.active) + 1
+            lookback = min(max(t.steps_missed for t in traces if t.active) + 1,
+                           step_index - latest_lookback_step)
 
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             # There's always at least one such array
             for i in range(lookback + 1):
-                slices = [_slice(ypos - j * step) for j in range(i+1)]
+                slices = [_slice(step_centers[step_index-j]) for j in range(i+1)]
                 d, m, v = func(np.concatenate(list(ext_data[s] for s in slices)),
                                mask=None if ext_mask is None else np.concatenate(list(ext_mask[s] for s in slices)),
                                variance=None)
@@ -1692,7 +1705,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     # Again, if we haven't missed anything, we still want to
                     # be able to bin up two steps
                     for j in range(min(trace.steps_missed + 1, data.shape[0]) + 1):
-                        effective_ypos = ypos - 0.5 * j * step
+                        effective_ypos = step_centers[step_index] - 0.5 * j * step
                         tolerance = max_shift * abs(effective_ypos - trace.last_point[0])
                         predicted_peak = trace.predict_location(effective_ypos, order=0)
 
@@ -1705,10 +1718,11 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                                 abs(peaks[0] - trace.last_point[1]) > tolerance):
                             continue
 
+                        # A valid peak has been found
                         break
                     else:  # no valid peak
                         trace.steps_missed += 1
-                        if trace.steps_missed > max_missed:
+                        if trace.steps_missed >= max_missed:
                             trace.active = False
                         continue
 
@@ -1728,8 +1742,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     trace.add_point((effective_ypos, peaks[0]))
                     trace.steps_missed = 0
             else:  # We don't bin across completely dead regions
-                for trace in traces:
-                    trace.steps_missed = 0
+                # We really shouldn't get here as this should be handled by
+                # the step_centers creation
+                latest_lookback_step = None
 
         step *= -1
 
