@@ -108,3 +108,72 @@ def make_initial_flat_cube(data_list, mode, bg_y_slice):
     cube3 = [sub_bg_from_slice(d1, bg_y_slice) for d1 in cube2]
 
     return cards, cube3
+
+from .readout_pattern_guard import remove_pattern_from_guard
+from .ro_pattern_fft import (get_amp_wise_rfft,
+                             make_model_from_rfft)
+
+def select_k_to_remove(c, n=2):
+    ca = np.abs(c)
+    # k = np.median(ca, axis=0)[1:]  # do no include the 1st column
+    k = np.percentile(ca, 95, axis=0)[1:]  # do no include the 1st column
+    # print(k[:10])
+    x = np.arange(1, 1 + len(k))
+    msk = (x < 5) | (15 < x)  # only select k from 5:15
+
+    # polyfit with 5:15 data
+    p = np.polyfit(np.log10(x[msk]), np.log10(k[msk]), 2,
+                   w=1./x[msk])
+    # p = np.polyfit(np.log10(x[msk][:30]), np.log10(k[msk][:30]), 2,
+    #                w=1./x[msk][:30])
+    # print(p)
+
+    # sigma from last 256 values
+    ss = np.std(np.log10(k[-256:]))
+
+    # model from p with 3 * ss
+    y = 10.**(np.polyval(p, np.log10(x)))
+
+    di = 5
+    dly = np.log10(k/y)[di:15]
+
+    # select first two values above 3 * ss
+    ii = np.argsort(dly)
+    yi = [di + i1 + 1for i1 in ii[::-1][:n] if dly[i1] > 3 * ss]
+
+    return yi
+
+
+def remove_pattern(data_minus, mask=None, remove_level=1,
+                   remove_amp_wise_var=True):
+
+    d1 = remove_pattern_from_guard(data_minus)
+
+    if remove_level == 2:
+        d2 = apply_rp_2nd_phase(d1, mask=mask)
+    elif remove_level == 3:
+        d2 = apply_rp_2nd_phase(d1, mask=mask)
+        d2 = apply_rp_3rd_phase(d2)
+    else:
+        d2 = d1
+
+    if remove_amp_wise_var:
+        c = get_amp_wise_rfft(d2)
+
+        ii = select_k_to_remove(c)
+        print(ii)
+        # ii = [9, 6]
+
+        new_shape = (32, 64, 2048)
+        mm = np.zeros(new_shape)
+
+        for i1 in ii:
+            mm1 = make_model_from_rfft(c, slice(i1, i1+1))
+            mm += mm1[:, np.newaxis, :]
+
+        ddm = mm.reshape((-1, 2048))
+
+        return d2 - ddm
+
+    else:
+        return d2

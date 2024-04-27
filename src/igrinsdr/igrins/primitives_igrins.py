@@ -59,6 +59,18 @@ from .procedures.process_wvlsol_volume_fit import (_append_offset,
 from .procedures.nd_poly import NdPolyNamed
 from .procedures.process_derive_wvlsol import fit_wvlsol, _convert2wvlsol
 
+from .procedures.readout_pattern_helper import remove_pattern
+
+
+from .procedures.slit_profile import (extract_slit_profile,
+                                      _get_norm_profile_ab,
+                                      _get_norm_profile,
+                                      _get_profile_func_from_dict,
+                                      make_slitprofile_map)
+# from igrinsdr.igrins.json_helper import dict_to_table
+
+from .procedures.spec_extract_w_profile import extract_spec_using_profile
+
 
 def _get_wavelength_solutions(affine_tr_matrix, zdata,
                               new_orders):
@@ -151,8 +163,98 @@ def identify_lines_from_spec(orders, spec_data, wvlsol,
 
     return fitted_pixels
 
+# for spliiting A & B
+def groupby_pq(pql):
+    """
+    pql : list of (p, q)
+    """
 
+    pql = np.array(pql)
 
+    xy0 = np.percentile(pql, 25, axis=0)
+    xy1 = np.percentile(pql, 75, axis=0)
+
+    dxy = xy1 - xy0
+
+    dd = np.dot(pql - xy0, dxy)
+    dd /= (dd.max() - dd.min())
+
+    return [d1 < 0.5 for d1 in dd]
+
+assert groupby_pq([(0, 0), (2.5, 2.5), (2.4, 2.6), (0, 0.1)]) == [True, False, False, True]
+
+def splitAB(adinputs):
+    adinputsA, adinputsB = [], []
+
+    ad0 = adinputs[0]
+    if "FRMTYPE" in ad0.phu:
+        group_by = "frametype"
+    else:
+        group_by = "pq"
+
+    if group_by == "frametype":
+        frametypes = [ad.phu["FRMTYPE"] for ad in adinputs]
+        frametype_set = set(frametypes)
+        assert len(frametype_set) == 2
+
+        if "A" in frametype_set:
+            groupA_name = "A"
+        elif "ON" in frametype_set:
+            groupA_name = "ON"
+        else:
+            groupA_name = frametypes[0]
+
+        flags = [ft == groupA_name for ft in frametypes]
+
+    else:
+        # we groupby pq
+        pql = [(ad.phu["POFFSET"], ad.phu["QOFFSET"]) for ad in adinputs]
+
+        flags = groupby_pq(pql)
+
+    for flag, ad in zip(flags, adinputs):
+        if flag:
+            adinputsA.append(ad)
+        else:
+            adinputsB.append(ad)
+
+    return adinputsA, adinputsB
+
+def subtract_ab(dataA, dataB, varA, varB, mask,
+                # allow_no_b_frame=False,
+                remove_level=2,
+                remove_amp_wise_var=False,
+                # interactive=False,
+                # cache_only=False
+                ):
+
+    if remove_level == "auto":
+        remove_level = 2
+
+    if remove_amp_wise_var == "auto":
+        remove_amp_wise_var = False
+
+    # if interactive:
+    #     params = run_interactive(obsset,
+    #                              data_minus_raw, data_plus, bias_mask,
+    #                              remove_level, remove_amp_wise_var)
+
+    #     print("returned", params)
+    #     if not params["to_save"]:
+    #         print("canceled")
+    #         return
+
+    #     remove_level = params["remove_level"]
+    #     remove_amp_wise_var = params["amp_wise"]
+
+    data = remove_pattern(dataA - dataB, mask=mask,
+                          remove_level=remove_level,
+                          remove_amp_wise_var=remove_amp_wise_var)
+
+    var = remove_pattern(varA + varB, remove_level=1,
+                        remove_amp_wise_var=False)
+
+    return data, var
 
 @parameter_override
 class Igrins(Gemini, NearIR):
@@ -750,3 +852,226 @@ class Igrins(Gemini, NearIR):
         ad[0].WVLFIT_RESULTS = dict_to_table(fit_results)
 
         return adinputs
+
+    def makeAB(self, adinputs, **params):
+        adinputsA, adinputsB = splitAB(adinputs)
+        stackedA = self.stackFrames(adinputsA)
+        stackedB = self.stackFrames(adinputsB)
+
+        # params = dict(#allow_no_b_frame=False,
+        #               remove_level=2,
+        #               remove_amp_wise_var=False,
+        #               interactive=False,
+        #               cache_only=False)
+
+        # fnA = "SDCH_20190412_0035_stack.fits"
+        # adinputsA = [astrodata.open(fnA)]
+        # fnB = "SDCH_20190412_0036_stack.fits"
+        # adinputsB = [astrodata.open(fnB)]
+
+
+        # bias_mask = obsset.load_resource_for("bias_mask")
+        # FIXME use caldb to load ad_sky
+        fn_sky = "SDCH_20190412_0040_wvl0.fits"
+        ad_sky = astrodata.open(fn_sky)
+        mask = ad_sky[0].ORDERMAP != 0
+
+        data, var = subtract_ab(stackedA[0][0].data, stackedB[0][0].data,
+                                stackedA[0][0].variance, stackedB[0][0].variance,
+                                mask,
+                                remove_level=params["remove_level"],
+                                remove_amp_wise_var=params["remove_amp_wise_var"],
+                                )
+
+        # FIXME should we better to create a new instance of AstroData?
+        ad = stackedA[0]
+        ad[0].data = data
+        ad[0].variance = var
+
+        return [ad]
+
+    def estimateSlitProfile(self, adinputs, **params):
+        """
+        return a profile function
+
+        def profile(order, x_pixel, y_slit_pos):
+            return profile_value
+
+        """
+
+        # FIXME use caldb (or similar)
+        fn_flat = "calibrations/processed_flat/SDCH_20190412_0021_flat.fits"
+        ad_flat = astrodata.open(fn_flat)
+        fn_sky = "SDCH_20190412_0040_wvl0.fits"
+        ad_sky = astrodata.open(fn_sky)
+
+
+        # params = dict(slit_profile_range=[800, 2048-800],
+        #               do_ab=True,
+        #               frac_slit=None)
+
+        # fn = "SDCH_20190412_0035_stack.fits"
+        # ad = astrodata.open(fn)
+        ad = adinputs[0]
+
+        # from ..igrins_libs.resource_helper_igrins import ResourceHelper
+        # helper = ResourceHelper(obsset)
+
+        orderflat = ad_flat[0].data
+
+        # orderflat = helper.get("orderflat")
+
+        # data_minus = obsset.load_fits_sci_hdu("COMBINED_IMAGE1",
+        #                                       postfix=obsset.basename_postfix).data
+        data_minus = ad[0].data
+        data_minus_flattened = data_minus / orderflat
+
+        ap = Apertures(ad_sky[0].SLITEDGE)
+        # from .aperture_helper import get_aperture_from_obsset
+        # orders = helper.get("orders")
+        # ap = get_aperture_from_obsset(obsset, orders=orders)
+
+        ordermap = ad_sky[0].ORDERMAP
+        # ordermap_bpixed = helper.get("ordermap_bpixed")
+        slitpos_map = ad_sky[0].SLITPOSMAP
+
+        ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
+
+        x1, x2 = params["slit_profile_range"]
+        _ = extract_slit_profile(ap,
+                                 ordermap_bpixed, slitpos_map,
+                                 data_minus_flattened,
+                                 x1=x1, x2=x2)
+        bins, hh0, slit_profile_list = _
+
+        if params["do_ab"]:
+            profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
+            # profile = get_profile_func_ab(profile_x, profile_y)
+        else:
+            profile_x, profile_y = _get_norm_profile(bins, hh0)
+            # profile = get_profile_func(profile_x, profile_y)
+
+        slit_profile_dict = dict(orders=ap.orders,
+                                 ab_mode=params["do_ab"],
+                                 slit_profile_list=slit_profile_list,
+                                 profile_x=profile_x,
+                                 profile_y=profile_y)
+
+        tbl = dict_to_table(slit_profile_dict)
+        ad[0].SLITPROFILE = tbl
+
+        profile = _get_profile_func_from_dict(slit_profile_dict)
+        profile_map = make_slitprofile_map(ap, profile,
+                                           ordermap, slitpos_map,
+                                           frac_slit=params["frac_slit"])
+
+        ad[0].SLITPROFILE_MAP = profile_map
+
+        return adinputs
+
+    def extractStellarSpec(self, adinputs, **params):
+        # extraction_mode="optimal",
+        #                      conserve_2d_flux=True,
+        #                      pixel_per_res_element=None):
+
+        fn_flat = "calibrations/processed_flat/SDCH_20190412_0021_flat.fits"
+        ad_flat = astrodata.open(fn_flat)
+        fn_sky = "SDCH_20190412_0040_wvl0.fits"
+        ad_sky = astrodata.open(fn_sky)
+
+        extraction_mode = params["extraction_mode"]
+        pixel_per_res_element = params["pixel_per_res_element"]
+
+        # fn = "SDCH_20190412_0035_stack.fits"
+        # ad = astrodata.open(fn)
+        ad = adinputs[0]
+
+        ap = Apertures(ad_sky[0].SLITEDGE)
+
+        orderflat = ad_flat[0].data
+        data_minus = ad[0].data
+        data_minus_flattened = data_minus / orderflat
+
+        # if False:
+        #     variance_map = obsset.load_fits_sci_hdu("combined_variance1",
+        #                                             postfix=postfix).data
+        #     variance_map0 = obsset.load_fits_sci_hdu("combined_variance0",
+        #                                              postfix=postfix).data
+
+        variance_map = ad[0].variance
+        variance_map0 = None # FIXME original plp used this to update variance
+                             # while doing the iterationin optima extraction. We
+                             # simply ignore this by setting it to NaN.
+
+        ordermap = ad_sky[0].ORDERMAP
+        # ordermap_bpixed = helper.get("ordermap_bpixed")
+        slitpos_map = ad_sky[0].SLITPOSMAP
+
+        ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
+
+        slitoffset_map = ad_sky[0].SLITOFFSETMAP
+        # slitoffset_map = helper.get("slitoffsetmap")
+
+        # ordermap = helper.get("ordermap")
+        # ordermap_bpixed = helper.get("ordermap_bpixed")
+        # slitpos_map = helper.get("slitposmap")
+
+        # gain = float(obsset.rs.query_ref_value("gain"))
+        gain = 1.
+
+        profile_map = ad[0].SLITPROFILE_MAP
+
+        # profile_map = obsset.load_fits_sci_hdu("slitprofile_fits",
+        #                                        postfix=postfix).data
+
+        _ = extract_spec_using_profile(ap, profile_map,
+                                       variance_map,
+                                       variance_map0,
+                                       data_minus_flattened,
+                                       orderflat,
+                                       ordermap, ordermap_bpixed,
+                                       slitpos_map,
+                                       slitoffset_map,
+                                       gain,
+                                       extraction_mode=extraction_mode,
+                                       debug=False)
+
+        s_list, v_list, cr_mask, aux_images = _
+
+        wvl_solutions_map = dict(zip(ad_sky[0].WVLSOL["orders"], ad_sky[0].WVLSOL["wavelengths"]))
+
+        wvl_solutions = []
+        sn_list = []
+        for o, s, v in zip(ap.orders_to_extract,
+                           s_list, v_list):
+            wvl = wvl_solutions_map[o]
+            # if pixel_per_res_element is None:
+            if pixel_per_res_element == 0.:
+                dw = np.gradient(wvl)
+                _pixel_per_res_element = (wvl/40000.)/dw
+            else:
+                _pixel_per_res_element = float(pixel_per_res_element)
+
+            # print pixel_per_res_element[1024]
+            # len(pixel_per_res_element) = 2047. But we ignore it.
+
+            with np.errstate(invalid="ignore"):
+                sn = (s/v**.5)*(_pixel_per_res_element**.5)
+
+            sn_list.append(sn)
+            wvl_solutions.append(wvl)
+
+        from astropy.table import Table
+        tbl = Table([ap.orders_to_extract, wvl_solutions, s_list, v_list, sn_list],
+                    names=["orders", "wavelengths", "spec", "variance", "sn_per_res_element"])
+
+        ad[0].SPEC1D = tbl
+
+        shifted = aux_images["shifted"]
+        tbl = Table([shifted._fields, list(shifted)],
+                    names=["type", "array"])
+
+        ad[0].WVLCOR = tbl
+
+        return adinputs
+

@@ -1,10 +1,8 @@
 import numpy as np
 import scipy.ndimage as ni
 
-from ..utils.image_combine import image_median
-from ..procedures import destripe_helper as dh
-
-from ..igrins_libs.logger import logger
+from .image_combine import image_median
+from . import destripe_helper as dh
 
 
 def _make_background_mask(dark1):
@@ -21,7 +19,7 @@ def _make_background_mask(dark1):
         if k.max() < 0.6:
             break
     else:
-        logger.warning("No suitable background threshold is found")
+        # logger.warning("No suitable background threshold is found")
         m = np.zeros_like(m, dtype=bool)
         f, th = np.inf, np.inf
 

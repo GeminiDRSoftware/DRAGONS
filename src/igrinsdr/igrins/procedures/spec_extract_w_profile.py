@@ -1,7 +1,7 @@
 import numpy as np
 
 from .shifted_images import ShiftedImages
-from ..igrins_libs.lacosmics import get_cr_mask
+from .lacosmics import get_cr_mask
 
 
 def get_xshifted_all(ap, profile_map, variance_map,
@@ -85,8 +85,10 @@ def extract_spec_using_profile(ap, profile_map,
                                   slitoffset_map=slitoffset_map)
 
     # update variance map
-    variance_map = get_updated_variance(variance_map, variance_map0, synth_map,
-                                        gain)
+    if variance_map0 is not None:
+        variance_map = get_updated_variance(variance_map, variance_map0, synth_map,
+                                            gain)
+
     # get cosmicray mask
     sig_map = np.abs(data_minus_flattened - synth_map) / (variance_map**.5)
 

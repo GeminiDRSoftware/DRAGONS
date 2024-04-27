@@ -77,3 +77,15 @@ class volumeFitConfig(config.Config):
 class makeSpectralMapsConfig(config.Config):
     pass
 
+class makeABConfig(config.Config):
+    remove_level = config.Field("readoutpattern remove level", int, 2)
+    remove_amp_wise_var = config.Field("remove amp-wise variation if True", bool, False)
+
+class estimateSlitProfileConfig(config.Config):
+    do_ab = config.Field("if ABBA is used", bool, True)
+    frac_slit = config.Field("slit fraction to extract", tuple, (0, 1))
+    slit_profile_range = config.Field("x-range of detectors where slit profiles are estimated",
+                                      tuple, (800, 2048-800))
+class extractStellarSpecConfig(config.Config):
+    extraction_mode = config.Field("Extraction mode", str, "optimal")
+    pixel_per_res_element = config.Field("number of pixel per res. element", float, 0.)
