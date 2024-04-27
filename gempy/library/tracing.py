@@ -426,8 +426,8 @@ class Trace:
     def bottom_limit(self):
         return self.points[0][0]
 
-    def reference_coordinates(self):
-        xref = self.starting_point[1]
+    def reference_coordinates(self, reference_coord=None):
+        xref = reference_coord or self.starting_point[1]
         return [(y, xref) for y, _ in self.points]
 
     def add_point(self, point):
