@@ -55,3 +55,25 @@ class fixIgrinsHeaderConfig(config.Config):
 
 class referencePixelsCorrectConfig(config.Config):
     pass
+
+class extractSimpleSpecConfig(config.Config):
+    pass
+
+class identifyOrdersConfig(config.Config):
+    pass
+
+class identifyLinesAndGetWvlsolConfig(config.Config):
+    suffix = config.Field("Initial Wavelength solution attached", str, "_wvl0")
+
+class extractSpectraMultiConfig(config.Config):
+    pass
+
+class identifyMultilineConfig(config.Config):
+    pass
+
+class volumeFitConfig(config.Config):
+    pass
+
+class makeSpectralMapsConfig(config.Config):
+    pass
+

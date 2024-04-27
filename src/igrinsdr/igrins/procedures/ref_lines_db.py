@@ -3,7 +3,11 @@ import pandas as pd
 
 from scipy.interpolate import interp1d
 
-from ..utils.list_utils import flatten
+from .reidentify import reidentify
+# from .ref_data_sky import load_sky_ref_data
+
+def flatten(l):
+    return [r_ for r1 in l for r_ in r1]
 
 
 def get_group_flag_generator():
@@ -121,7 +125,7 @@ def fitted_lines_init(ref_lines):
                                          d_cent=[],
                                          cent_pixel0=[],
                                          order=[]))
-        
+
         return fitted_lines
         #order = None
     else:
@@ -160,7 +164,6 @@ def fitted_lines_reidentify(fitted_lines, ref_lines, s, x,
     else:
         ref_sigma = ref_sigma0
 
-    from .reidentify import reidentify
     res = reidentify(s, ref_pixels, x=x, sigma_init=ref_sigma)
 
     params = [p for p, _, _ in res]
@@ -274,28 +277,32 @@ class RefLinesDBBase:
 
         return fitted_pixels_master
 
+import pandas as pd
+from astropy.table import Table
 
 class SkyLinesDB(RefLinesDBBase):
+    def __init__(self):
+        self._refdata = None
+
     def _load_refdata(self):
-        from .ref_data_sky import load_sky_ref_data
-        # sky_refdata = load_sky_ref_data(self.config, band)
-        sky_refdata = load_sky_ref_data(self.ref_loader)
-        return sky_refdata
+
+        tbl = Table.read("ref_lines_oh.fits")
+        df = tbl.to_pandas()
+
+        ref_wvl_dict = {}
+        for o, grouped_by_order in df.groupby("order"):
+            ref_wvl_dict[o] = list(v.values for gid, v in grouped_by_order.groupby("gid")["um"])
+
+        return ref_wvl_dict
 
     def get_ref_lines(self, o, wvl, x):
         """
         return RefLines instance
         """
-        sky_ref_data = self._get_refdata()
+        ref_wvl_dict = self._get_refdata()
 
-        ohlines_db = sky_ref_data["ohlines_db"]
-        try:
-            line_indices = sky_ref_data["ohline_indices"][o]
-        except KeyError:
-            line_indices = []
-
-        _ref_lines = get_ref_list1(ohlines_db, line_indices,
-                                  wvl, x=x)
+        ref_wvl = ref_wvl_dict.get(o, [])
+        _ref_lines = get_ref_pixels(ref_wvl, wvl, x=x)
 
         _ref_lines["order"] = o
 
@@ -335,38 +342,38 @@ class HitranSkyLinesDB(RefLinesDBBase):
         return ref_lines
 
 
-class Test:
-    def __init__(self, config):
-        from .igrins_config import get_config
-        config = get_config(config)
-        self.config = config
+# class Test:
+#     def __init__(self, config):
+#         from .igrins_config import get_config
+#         config = get_config(config)
+#         self.config = config
 
-    def update_K(self, reidentified_lines_map,
-                 orders_w_solutions,
-                 wvl_solutions, s_list):
-        # fn = "hitran_bootstrap_K_%s.json" % self.refdate
-        # bootstrap_name = master_calib.get_master_calib_abspath(fn)
-        # import json
-        # bootstrap = json.load(open(bootstrap_name))
+#     def update_K(self, reidentified_lines_map,
+#                  orders_w_solutions,
+#                  wvl_solutions, s_list):
+#         # fn = "hitran_bootstrap_K_%s.json" % self.refdate
+#         # bootstrap_name = master_calib.get_master_calib_abspath(fn)
+#         # import json
+#         # bootstrap = json.load(open(bootstrap_name))
 
-        from .master_calib import load_ref_data
-        bootstrap = load_ref_data(config, band="K",
-                                  kind="HITRAN_BOOTSTRAP_K")
+#         from .master_calib import load_ref_data
+#         bootstrap = load_ref_data(config, band="K",
+#                                   kind="HITRAN_BOOTSTRAP_K")
 
 
-        from . import hitran
-        r, ref_pixel_list = hitran.reidentify(orders_w_solutions,
-                                              wvl_solutions, s_list,
-                                              bootstrap)
-        # json_name = "hitran_reidentified_K_%s.json" % igrins_log.date
-        # r = json.load(open(json_name))
-        for i, s in r.items():
-            ss = reidentified_lines_map[int(i)]
-            ss0 = np.concatenate([ss[0], s["pixel"]])
-            ss1 = np.concatenate([ss[1], s["wavelength"]])
-            reidentified_lines_map[int(i)] = (ss0, ss1)
+#         from . import hitran
+#         r, ref_pixel_list = hitran.reidentify(orders_w_solutions,
+#                                               wvl_solutions, s_list,
+#                                               bootstrap)
+#         # json_name = "hitran_reidentified_K_%s.json" % igrins_log.date
+#         # r = json.load(open(json_name))
+#         for i, s in r.items():
+#             ss = reidentified_lines_map[int(i)]
+#             ss0 = np.concatenate([ss[0], s["pixel"]])
+#             ss1 = np.concatenate([ss[1], s["wavelength"]])
+#             reidentified_lines_map[int(i)] = (ss0, ss1)
 
-        return reidentified_lines_map
+#         return reidentified_lines_map
 
 
 class RefLines:

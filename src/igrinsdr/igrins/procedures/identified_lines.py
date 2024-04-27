@@ -1,4 +1,5 @@
-from ..utils.list_utils import compress_list
+def compress_list(mask, items):
+    return [o for (m, o) in zip(mask, items) if m]
 
 
 class IdentifiedLines(object):

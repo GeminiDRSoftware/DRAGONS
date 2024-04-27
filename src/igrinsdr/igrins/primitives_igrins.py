@@ -5,6 +5,9 @@
 # ------------------------------------------------------------------------------
 
 import numpy as np
+import json
+import pandas as pd
+from collections import namedtuple
 
 from astropy.io import fits
 from astropy.table import Table
@@ -20,6 +23,8 @@ from . import parameters_igrins
 
 from .lookups import timestamp_keywords as igrins_stamps
 
+from .json_helper import dict_to_table
+
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
@@ -29,6 +34,124 @@ from .procedures.procedure_dark import (make_guard_n_bg_subtracted_images,
 from .procedures.trace_flat import trace_flat_edges, table_to_poly
 from .procedures.iter_order import iter_order
 from .procedures.reference_pixel import fix_pattern_using_reference_pixel
+
+from .procedures.trace_flat import table_to_poly
+from .procedures.iter_order import iter_order
+from .procedures.apertures import Apertures
+from .procedures.match_orders import match_orders
+
+import matplotlib
+import warnings
+
+from .procedures.procedures_register import _get_offset_transform_between_2spec
+from .procedures.line_identify_simple import match_lines1_pix
+from .procedures.identified_lines import IdentifiedLines
+from .procedures.echellogram import Echellogram
+from .procedures.fit_affine import fit_affine_clip
+from .procedures.ecfit import get_ordered_line_data, fit_2dspec  # , check_fit
+from .procedures.ref_lines_db import SkyLinesDB
+
+from .procedures.sky_spec_helper import _get_slices
+from .procedures.process_wvlsol_volume_fit import (_append_offset,
+                                                   _filter_points,
+                                                   _volume_poly_fit)
+
+from .procedures.nd_poly import NdPolyNamed
+from .procedures.process_derive_wvlsol import fit_wvlsol, _convert2wvlsol
+
+
+def _get_wavelength_solutions(affine_tr_matrix, zdata,
+                              new_orders):
+    """
+    new_orders : output orders
+
+    convert (x, y) of zdata (where x, y are pixel positions and z
+    is wavelength) with affine transform, then derive a new wavelength
+    solution.
+
+    """
+    affine_tr = matplotlib.transforms.Affine2D()
+    affine_tr.set_matrix(affine_tr_matrix)
+
+    d_x_wvl = {}
+    for order, z in zdata.items():
+        xy_T = affine_tr.transform(np.array([z.x, z.y]).T)
+        x_T = xy_T[:, 0]
+        d_x_wvl[order] = (x_T, z.wvl)
+
+    _xl, _ol, _wl = get_ordered_line_data(d_x_wvl)
+    # _xl : pixel
+    # _ol : order
+    # _wl : wvl * order
+
+    x_domain = [0, 2047]
+    # orders = igrins_orders[band]
+    # y_domain = [orders_band[0]-2, orders_band[-1]+2]
+    y_domain = [new_orders[0], new_orders[-1]]
+    p, m = fit_2dspec(_xl, _ol, _wl, x_degree=4, y_degree=3,
+                      x_domain=x_domain, y_domain=y_domain)
+
+    # if 0:
+    #     import matplotlib.pyplot as plt
+    #     fig = plt.figure(figsize=(12, 7))
+    #     orders_band = sorted(zdata.keys())
+    #     check_fit(fig, xl, yl, zl, p, orders_band, d_x_wvl)
+    #     fig.tight_layout()
+
+    xx = np.arange(2048)
+    wvl_sol = []
+    for o in new_orders:
+        oo = np.empty_like(xx)
+        oo.fill(o)
+        wvl = p(xx, oo) / o
+        wvl_sol.append(list(wvl))
+
+    # if 0:
+    #     json.dump(wvl_sol,
+    #               open("wvl_sol_phase0_%s_%s.json" % \
+    #                    (band, igrins_log.date), "w"))
+
+    return wvl_sol
+
+def get_ref_data(band):
+    j = dict(
+        ref_spec=json.load(open(f"SKY_{band}.oned_spec.json")),
+        identified_lines_v0=json.load(open(f"SKY_{band}.identified_lines_v0.json")),
+        echellogram_data=json.load(open(f"echellogram_{band}.json")),
+
+    )
+    return j
+
+
+Spec = namedtuple("Spec", ["s_map", "wvl_map"])
+
+def identify_lines_from_spec(orders, spec_data, wvlsol,
+                             ref_lines_db, ref_lines_db_hitrans,
+                             ref_sigma=1.5):
+    small_list = []
+    small_keys = []
+
+    spec = Spec(dict(zip(orders, spec_data)),
+                dict(zip(orders, wvlsol)))
+
+    fitted_pixels_oh = ref_lines_db.identify(spec, ref_sigma=ref_sigma)
+    small_list.append(fitted_pixels_oh)
+    small_keys.append("OH")
+
+    # if obsset.band == "K":
+    if ref_lines_db_hitrans is not None:
+        fitted_pixels_hitran = ref_lines_db_hitrans.identify(spec)
+        small_list.append(fitted_pixels_hitran)
+        small_keys.append("Hitran")
+
+    fitted_pixels = pd.concat(small_list,
+                              keys=small_keys,
+                              names=["kind"],
+                              axis=0)
+
+    return fitted_pixels
+
+
 
 
 @parameter_override
@@ -258,5 +381,372 @@ class Igrins(Gemini, NearIR):
         for ad in adinputs:
             for ext in ad:
                 ext.data = fix_pattern_using_reference_pixel(ext.data)
+
+        return adinputs
+
+    def extractSimpleSpec(self, adinputs, **params):
+        # from recipe_system import cal_service
+        # caldb = cal_service.set_local_database()
+        # procmode = 'sq' if self.mode == 'sq' else None
+        # c = caldb.get_calibrations(adinputs, caltype="processed_flat", procmode=procmode)
+
+        fn_flat = "calibrations/processed_flat/SDCH_20190412_0021_flat.fits"
+        ad_flat = astrodata.open(fn_flat)
+
+        ad = adinputs[0]
+        tbl = ad_flat[0].SLITEDGE
+
+        ap = Apertures(tbl)
+        # FIXME we need to apply the badpixel mask.
+        s = ap.extract_spectra_simple(ad[0].data, f1=0., f2=1.)
+
+        # t = Table(s,
+        #           names=(f"{o}" for o in ap.orders_to_extract))
+        ss = [np.array(s1, dtype='float32') for s1 in s]
+        t = Table([ap.orders_to_extract, ss], names=['orders_initial', 'specs'])
+
+        ad[0].SPEC1D = t
+        ad[0].SLITEDGE = tbl
+
+        return adinputs
+
+
+    def identifyOrders(self, adinputs):
+        ad = adinputs[0]
+        spec1d = ad[0].SPEC1D
+
+        s_list_ = spec1d["specs"]
+        s_list = [np.array(s, dtype=np.float64) for s in s_list_]
+
+        band = ad.phu["BAND"]
+        ref_spectra = json.load(open(f"SKY_{band}.oned_spec.json"))
+
+        orders_ref = ref_spectra["orders"]
+        s_list_ref = ref_spectra["specs"]
+
+        # match the orders of s_list_src & s_list_dst
+        delta_indx, new_orders = match_orders(orders_ref, s_list_ref,
+                                              s_list)
+
+        spec1d["orders"] = new_orders
+        order_map = dict(zip(spec1d["orders_initial"], new_orders))
+        ad[0].SLITEDGE["order"] = [order_map[o] for o in ad[0].SLITEDGE["order"]]
+
+        # ad[0].SPEC1D_NEW = spec1d
+        return adinputs
+
+    def identifyLinesAndGetWvlsol(self, adinputs, **params):
+        ad = adinputs[0]
+
+        tgt_spec = ad[0].SPEC1D
+
+        band = ad.phu["BAND"]
+
+        ref_data = get_ref_data(band)
+
+        ref_spec = ref_data["ref_spec"]
+
+        intersected_orders, d = _get_offset_transform_between_2spec(ref_spec,
+                                                                    tgt_spec)
+
+        l = ref_data["identified_lines_v0"]
+        offsetfunc_map = dict(zip(intersected_orders, d["sol_list"]))
+
+        identified_lines_ref = IdentifiedLines(l)
+        ref_map = identified_lines_ref.get_dict()
+
+        identified_lines_tgt = IdentifiedLines(l)
+        identified_lines_tgt.update(dict(wvl_list=[], ref_indices_list=[],
+                                         pixpos_list=[], orders=[]))
+
+        for o, s in zip(tgt_spec["orders"], tgt_spec["specs"]):
+            if (o not in ref_map) or (o not in offsetfunc_map):
+                wvl, indices, pixpos = [], [], []
+            else:
+                pixpos, indices, wvl = ref_map[o]
+                pixpos = np.array(pixpos)
+                msk = (pixpos >= 0)
+
+                ref_pix_list = offsetfunc_map[o](pixpos[msk])
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('ignore', r'Degrees of freedom')
+                    pix_list, dist = match_lines1_pix(np.array(s), ref_pix_list)
+
+                pix_list[dist > 1] = -1
+                pixpos[msk] = pix_list
+
+            identified_lines_tgt.append_order_info(int(o), wvl, indices, pixpos)
+
+        # We now fit affine transform
+
+        ap = Apertures(ad[0].SLITEDGE)
+
+        xy_list_tgt = identified_lines_tgt.get_xy_list_from_pixlist(ap)
+
+        # echellogram_data = json.load(open(f"echellogram_{band}.json"))
+        echellogram_data = ref_data["echellogram_data"]
+
+        echellogram = Echellogram.from_dict(echellogram_data)
+
+        xy_list_ref = identified_lines_tgt.get_xy_list_from_wvllist(echellogram)
+
+        assert len(xy_list_tgt) == len(xy_list_ref)
+
+        affine_tr, mm = fit_affine_clip(np.array(xy_list_ref),
+                                        np.array(xy_list_tgt))
+
+        d = dict(xy1f=xy_list_ref, xy2f=xy_list_tgt,
+                 affine_tr_matrix=affine_tr.get_matrix(),
+                 affine_tr_mask=mm)
+
+        # we now get new wavelength solution
+        affine_tr_matrix = d["affine_tr_matrix"]
+
+        orders = tgt_spec["orders"]
+        wvl_sol = _get_wavelength_solutions(affine_tr_matrix,
+                                            echellogram.zdata,
+                                            orders)
+
+        ad[0].WVLSOL0 = Table([orders, wvl_sol], names=['orders', 'wavelengths'])
+
+        ad.update_filename(suffix=params['suffix'], strip=True)
+
+        return adinputs
+
+    def extractSpectraMulti(self, adinputs, **params):
+
+        ad = adinputs[0]
+
+        n_slice_one_direction = 2
+        slice_center, slice_up, slice_down = _get_slices(n_slice_one_direction)
+
+        data = ad[0].data
+
+        ap = Apertures(ad[0].SLITEDGE)
+
+        slices = slice_down[::-1] + [slice_center] + slice_up
+        slit_centers = [0.5*(s1+s2) for (s1, s2) in slices]
+
+        ss = []
+        for s1, s2 in slices:
+            s = ap.extract_spectra_simple(data, s1, s2)
+            ss.append(s)
+        ss = np.array(ss)
+
+        orders = ap.orders_to_extract
+        tbl = Table([orders, [ss[:, i, :] for i in range(ss.shape[1])], [slit_centers]*len(orders)],
+                    names=["orders", "multispec", "slit_centers"])
+
+        ad[0].SPEC1D_MULTI = tbl
+
+        return adinputs
+
+    def identifyMultiline(self, adinputs, **params):
+
+        # fn = "./SDCH_20190412_0040_wvl0.fits"
+        # ad = astrodata.open(fn)
+        ad = adinputs[0]
+
+        # multi_spec = obsset.load("multi_spec_fits")
+        multi_spec = ad[0].SPEC1D_MULTI
+
+        # # just to retrieve order information
+        # wvlsol_v0 = obsset.load_resource_for("wvlsol_v0")
+        # orders = wvlsol_v0["orders"]
+        # wvlsol = wvlsol_v0["wvl_sol"]
+
+        orders = ad[0].WVLSOL0["orders"]
+        wvlsol = ad[0].WVLSOL0["wavelengths"]
+
+
+        # ref_lines_db = SkyLinesDB(config=obsset.get_config())
+        ref_lines_db = SkyLinesDB()
+
+        ref_lines_db_hitrans = None
+        # if obsset.rs.get_resource_spec()[1] == "K":
+        #     ref_lines_db_hitrans = HitranSkyLinesDB(obsset.rs.master_ref_loader)
+        # else:
+        #     ref_lines_db_hitrans = None
+
+        # keys = []
+        fitted_pixels_list = []
+
+        slit_centers = multi_spec["slit_centers"][0]
+        for i, slit_center in enumerate(slit_centers):
+            d = multi_spec["multispec"][:, i, :]
+            fitted_pixels_ = identify_lines_from_spec(orders, d, wvlsol,
+                                                      ref_lines_db,
+                                                      ref_lines_db_hitrans)
+
+            fitted_pixels_list.append(fitted_pixels_)
+
+        # for hdu in multi_spec:
+        #     slit_center = hdu.header["FSLIT_CN"]
+        #     keys.append(slit_center)
+
+        #     fitted_pixels_ = identify_lines_from_spec(orders, hdu.data, wvlsol,
+        #                                               ref_lines_db,
+        #                                               ref_lines_db_hitrans)
+
+        #     fitted_pixels_list.append(fitted_pixels_)
+
+        # concatenate collected list of fitted pixels.
+        fitted_pixels_master = pd.concat(fitted_pixels_list,
+                                         keys=slit_centers,
+                                         names=["slit_center"],
+                                         axis=0)
+
+
+        # storing multi-index seems broken. Enforce reindexing.
+        tbl = Table.from_pandas(fitted_pixels_master.reset_index())
+
+        # tbl["params"] is type of object. We need to transform it to float[4]
+        tbl["params"] = np.array(list(tbl["params"]))
+
+        ad[0].LINEFIT = tbl
+
+        return adinputs
+
+    def volumeFit(self, adinputs, **params):
+
+        # fn = "./SDCH_20190412_0040_wvl0.fits"
+        # ad = astrodata.open(fn)
+        ad = adinputs[0]
+
+        linefit = ad[0].LINEFIT
+        # d = obsset.load("SKY_FITTED_PIXELS_JSON")
+        # .remove_column("params") # params column is a multi-d data,
+        #                                       # not supported for conversion. We
+        #                                       # just drop it.
+        colnames = linefit.colnames
+
+        df = linefit[colnames[:-1]].to_pandas()
+
+        index_names = ["kind", "order", "wavelength"]
+        df = df.set_index(index_names)[["slit_center", "pixels"]]
+
+        dd = _append_offset(df)
+        dd = _filter_points(dd)
+
+        names = ["pixel", "order", "slit"]
+        orders = [3, 2, 1]
+
+        # because the offset at slit center should be 0, we divide the
+        # offset by slit_pos, and fit the data then multiply by slit_pos.
+
+        cc0 = dd["slit_center"] - 0.5
+
+        # 3d points : x-pixel, order, location on the slit
+        points0 = dict(zip(names, [dd["pixels0"],
+                                   dd["order"],
+                                   cc0]))
+        # scalar is offset of the measured line from the location at slic center.
+        scalar0 = dd["offsets"]
+
+        msk = abs(cc0) > 0.
+
+        points = dict(zip(names, [dd["pixels0"][msk],
+                                  dd["order"][msk],
+                                  cc0[msk]]))
+
+        scalar = dd["offsets"][msk] / cc0[msk]
+
+        poly, params = _volume_poly_fit(points, scalar, orders, names)
+
+        if 0:
+            #values = dict(zip(names, [pixels, orders, slit_pos]))
+            offsets_fitted = poly.multiply(points0, params[0])
+            doffsets = scalar0 - offsets_fitted * cc0
+
+            clf()
+            scatter(dd["pixels0"], doffsets, c=cc0.values, cmap="gist_heat")
+
+            # clf()
+            # scatter(dd["pixels0"] + doffsets, dd["order"] + dd["slit_center"], color="g")
+            # scatter(dd["pixels0"], dd["order"] + dd["slit_center"], color="r")
+
+
+            # # test with fitted data
+            # #input_points = np.zeros_like(offsets_fitted)
+            # input_points = offsets_fitted
+            # poly, params = volume_poly_fit(points,
+            #                                input_points,
+            #                                orders, names)
+
+            # offsets_fitted = poly.multiply(points, params[0])
+            # doffsets = input_points - offsets_fitted
+
+            # clf()
+            # scatter(dd["pixels0"], dd["order"] + dd["slit_center"] + doffsets, color="g")
+            # scatter(dd["pixels0"], dd["order"] + dd["slit_center"], color="r")
+
+        # save
+        out_df = poly.to_pandas(coeffs=params[0])
+        out_df = out_df.reset_index()
+        ad[0].VOLUMEFIT_COEFFS = Table.from_pandas(out_df)
+        # d = out_df.to_dict(orient="split")
+        # obsset.store("VOLUMEFIT_COEFFS_JSON", d)
+
+        return adinputs
+
+    def makeSpectralMaps(self, adinputs, **params):
+
+        ad = adinputs[0]
+
+        ap = Apertures(ad[0].SLITEDGE)
+
+        ordermap = ad[0].ORDERMAP = ap.make_order_map()
+        slitposmap = ad[0].SLITPOSMAP = ap.make_slitpos_map()
+
+        # # FIXME Do not remember why we needed this.
+        # order_map2 = ap.make_order_map(mask_top_bottom=True)
+
+        # We now make slitoffset map. It could be refactored to become a separate function.
+        yy, xx = np.indices(ordermap.shape)
+
+        msk = np.isfinite(ordermap) & (ordermap > 0)
+        pixels, orders, slitpos = (xx[msk], ordermap[msk],
+                                   slitposmap[msk])
+
+        tbl = ad[0].VOLUMEFIT_COEFFS
+        in_df = tbl.to_pandas() # pd.DataFrame(**d)
+
+        names = ["pixel", "order", "slit"]
+
+        # # pixel, order, slit : saved as float, needt to be int. Not needed for dragons.
+        # for n in names:
+        #     in_df[n] = in_df[n].astype("i")
+
+        in_df = in_df.set_index(names)
+        poly, coeffs = NdPolyNamed.from_pandas(in_df)
+
+        cc0 = slitpos - 0.5
+        values = dict(zip(names, [pixels, orders, cc0]))
+        offsets = poly.multiply(values, coeffs) # * cc0
+
+        offset_map = np.empty(ordermap.shape, dtype=np.float64)
+        offset_map.fill(np.nan)
+        offset_map[msk] = offsets * cc0 # dd["offsets"]
+
+        ad[0].SLITOFFSETMAP = offset_map
+
+        # Derive wavelength solution
+
+        linefit = ad[0].LINEFIT
+        colnames = [n for n in linefit.colnames if n != "params"]
+        dfm = linefit[colnames].to_pandas().query("slit_center == 0.5")
+
+        p, fit_results = fit_wvlsol(dfm)
+
+        # from ..igrins_libs.resource_helper_igrins import ResourceHelper
+        # helper = ResourceHelper(obsset)
+        # orders = helper.get("orders")
+
+        wvl_sol = _convert2wvlsol(p, ap.orders)
+
+        ad[0].WVLSOL = Table([ap.orders, wvl_sol], names=["orders", "wavelengths"])
+
+        fit_results["orders"] = ap.orders
+        ad[0].WVLFIT_RESULTS = dict_to_table(fit_results)
 
         return adinputs

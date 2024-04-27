@@ -9,82 +9,19 @@ import matplotlib  # Affine class is used
 
 # from astropy.io.fits import Card
 
-from .. import DESCS
-from ..igrins_libs.resource_helper_igrins import ResourceHelper
-from ..utils.load_fits import get_first_science_hdu
+# from .. import DESCS
+# from ..igrins_libs.resource_helper_igrins import ResourceHelper
+# from ..utils.load_fits import get_first_science_hdu
 
-from .aperture_helper import get_simple_aperture_from_obsset
+# from .aperture_helper import get_simple_aperture_from_obsset
 
-# from .sky_spec import make_combined_image_sky, extract_spectra
-# these are used by recipes
+# # from .sky_spec import make_combined_image_sky, extract_spectra
+# # these are used by recipes
 
-from .trace_flat import (get_smoothed_order_spec,
-                         get_order_boundary_indices)
+# from .trace_flat import (get_smoothed_order_spec,
+#                          get_order_boundary_indices)
 
-from .smooth_continuum import get_smooth_continuum
-
-
-def _get_ref_spec_name(recipe_name):
-
-    # if recipe_name is None:
-    #     recipe_name = self.recipe_name
-
-    if (recipe_name in ["SKY"]) or recipe_name.endswith("_AB"):
-        ref_spec_key = "SKY_REFSPEC_JSON"
-        ref_identified_lines_key = "SKY_IDENTIFIED_LINES_V0_JSON"
-
-    elif recipe_name in ["THAR"]:
-        ref_spec_key = "THAR_REFSPEC_JSON"
-        ref_identified_lines_key = "THAR_IDENTIFIED_LINES_V0_JSON"
-
-    else:
-        raise ValueError("Recipe name of '%s' is unsupported."
-                         % recipe_name)
-
-    return ref_spec_key, ref_identified_lines_key
-
-
-def _match_order(src_spectra, ref_spectra):
-
-    orders_ref = ref_spectra["orders"]
-    s_list_ref = ref_spectra["specs"]
-
-    s_list_ = src_spectra["specs"]
-    s_list = [np.array(s, dtype=np.float64) for s in s_list_]
-
-    # match the orders of s_list_src & s_list_dst
-    from .match_orders import match_orders
-    delta_indx, orders = match_orders(orders_ref, s_list_ref,
-                                      s_list)
-
-    return orders
-
-
-def identify_orders(obsset):
-
-    ref_spec_key, _ = _get_ref_spec_name(obsset.recipe_name)
-    # from igrins.libs.master_calib import load_ref_data
-    # ref_spectra = load_ref_data(helper.config, band,
-
-    ref_spec_path, ref_spectra = obsset.rs.load_ref_data(ref_spec_key,
-                                                         get_path=True)
-
-    src_spectra = obsset.load(DESCS["ONED_SPEC_JSON"])
-
-    new_orders = _match_order(src_spectra, ref_spectra)
-
-    from ..igrins_libs.logger import info
-    info("          orders: {}...{}".format(new_orders[0], new_orders[-1]))
-
-    src_spectra["orders"] = new_orders
-    obsset.store(DESCS["ONED_SPEC_JSON"],
-                 data=src_spectra)
-
-    aperture_basename = src_spectra["aperture_basename"]
-    obsset.store(DESCS["ORDERS_JSON"],
-                 data=dict(orders=new_orders,
-                           aperture_basename=aperture_basename,
-                           ref_spec_path=ref_spec_path))
+# from .smooth_continuum import get_smooth_continuum
 
 
 def _get_offset_transform(thar_spec_src, thar_spec_dst):

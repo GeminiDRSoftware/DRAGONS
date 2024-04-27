@@ -2,7 +2,9 @@ import numpy as np
 import numpy.polynomial as P
 import scipy.ndimage as ni
 
-from ..utils.image_combine import image_median
+
+from igrinsdr.igrins.procedures.trace_flat import table_to_poly
+from igrinsdr.igrins.procedures.iter_order import iter_order
 
 
 class ApCoeff(object):
@@ -22,6 +24,134 @@ class ApCoeff(object):
 
 
 class Apertures(object):
+    def __init__(self, tbl):
+        self.orders = []
+        self.apcoeffs = {}
+
+        # We assume that orders are continuous integers from min to max.
+        for o, p in table_to_poly(tbl):
+            self.orders.append(o)
+            self.apcoeffs[o] = ApCoeff(p["bottom"], p["top"])
+
+        # This will set self.orders_to_extract attribute, this will only be
+        # used for extraction.
+        self.set_order_minmax_to_extract(None, None)
+
+        self.yi = np.arange(2048)
+        self.xi = np.arange(2048)
+
+    def set_order_minmax_to_extract(self, start_order, end_order):
+        if (start_order is None) or (start_order < 0):
+            start_order = min(self.orders)
+
+        if (end_order is None) or (end_order < 0):
+            end_order = max(self.orders)
+
+        self.orders_to_extract = range(start_order, end_order+1)
+
+    def extract_spectra_simple(self, data, f1=0., f2=1.):
+
+        xx = np.arange(2048)
+
+        s_list = []
+        for o in self.orders_to_extract:
+            yy1 = self.apcoeffs[o](xx, frac=f1)
+            yy2 = self.apcoeffs[o](xx, frac=f2)
+
+            down = np.clip((yy1+0.5).astype("i"), 0, 2048)
+            up = np.clip((yy2+0.5).astype("i"), 0, 2048)
+
+            import warnings
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', r'Mean of empty slice')
+                warnings.filterwarnings('ignore', r'All-NaN slice')
+
+                s = [np.nanmedian(data[down[i]:up[i], i]) for i in range(2048)]
+
+            s_list.append(s)
+
+        return s_list
+
+    def get_xy_list(self, pixels_list, nan_filter=None):
+        """
+        pixel_list : dict of tuples of (pixel coord list)
+        """
+
+        xy2 = []
+        for order_i, pixel in pixels_list.items():
+            pixel_y = self.apcoeffs[order_i](pixel)
+            xy2.extend(zip(pixel, pixel_y))
+
+        if nan_filter is not None:
+            xy2 = np.compress(nan_filter, xy2, axis=0)
+
+        return xy2
+
+    def make_order_map(self, frac1=0., frac2=1.,
+                       mask_top_bottom=False):
+
+        xx, yy = self.xi, self.yi
+
+        bottom_list = [self.apcoeffs[o](xx, frac1) for o in self.orders]
+        top_list = [self.apcoeffs[o](xx, frac2) for o in self.orders]
+
+        if mask_top_bottom is False:
+            def _g(i1):
+                order_map1 = np.zeros(len(xx), dtype="i")
+                for order, bottom, top in zip(self.orders,
+                                              bottom_list, top_list):
+                    m_up = yy > bottom[i1]
+                    m_down = yy < top[i1]
+                    order_map1[m_up & m_down] = order
+
+                return order_map1
+        else:
+            def _g(i1):
+                order_map1 = np.zeros(len(xx), dtype="i")
+                for order, bottom, top in zip(self.orders,
+                                              bottom_list, top_list):
+                    m_up = yy > bottom[i1]
+                    m_down = yy < top[i1]
+                    order_map1[m_up & m_down] = order
+
+                order_map1[yy > top_list[-1][i1]] = 999
+                order_map1[yy < bottom_list[0][i1]] = 999
+                return order_map1
+
+        order_map = np.hstack([_g(i1).reshape((-1, 1)) for i1 in xx])
+
+        return order_map
+
+    def make_slitpos_map(self):
+
+        xx, yy = self.xi, self.yi
+
+        bottom_list = [self.apcoeffs[o](xx, 0.) for o in self.orders]
+        top_list = [self.apcoeffs[o](xx, 1.) for o in self.orders]
+
+        def _g(i1):
+            slitpos_map1 = np.empty(len(xx), dtype="d")
+            slitpos_map1.fill(np.nan)
+            for order, bottom, top in zip(self.orders,
+                                          bottom_list, top_list):
+                m_up = yy > bottom[i1]
+                m_down = yy < top[i1]
+                m_order = m_up & m_down
+                slit_pos = (yy[m_order] - bottom[i1])/(top[i1] - bottom[i1])
+                slitpos_map1[m_order] = slit_pos
+
+            return slitpos_map1
+
+        order_map = np.hstack([_g(i1).reshape((-1, 1)) for i1 in xx])
+
+        return order_map
+
+
+# Below is original code from plp.
+
+
+
+class Apertures_original(object):
     def set_order_minmax_to_extract(self, start_order, end_order):
         if (start_order is None) or (start_order < 0):
             start_order = self.orders[0]

@@ -34,6 +34,12 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
         return TagSet(['SPECT'])
 
     @astro_data_tag
+    def _tag_band(self):
+        band = self.phu.get('BAND')
+
+        return TagSet([band])
+
+    @astro_data_tag
     def _tag_sky(self):
         if self.phu.get('OBJTYPE') == 'SKY' or self[0].hdr.get('OBJTYPE') == 'SKY':
             return TagSet(['SKY', 'CAL'])
@@ -69,12 +75,15 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
         if 'S' in self.wavelength_band():
             oclass = 'acq'
 
-        if 'STD' in otype:
-            oclass = 'partnerCal'
-        elif 'TAR' in otype:
-            oclass = 'science'
-        elif otype in ["partnerCal"]:
-            oclass = 'partnerCal'
+        if isinstance(otype, str):
+            if 'STD' in otype:
+                oclass = 'partnerCal'
+            elif 'TAR' in otype:
+                oclass = 'science'
+            elif otype in ["partnerCal"]:
+                oclass = 'partnerCal'
+        else:
+            oclass = "unknown"
 
         return oclass
 
@@ -133,6 +142,7 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
             progid = "GN-2099A-Q-000"
 
         return progid
+
 
 class AstroDataIGRINS(_AstroDataIGRINS):
     # single keyword mapping.  add only the ones that are different
@@ -241,7 +251,6 @@ class AstroDataIGRINS(_AstroDataIGRINS):
             ctype = self.phu.get('CTYPE2')
         #return crval if ctype == 'DEC--TAN' else None
         return 1
-
 
 
 class AstroDataIGRINS2(AstroDataIGRINS):
