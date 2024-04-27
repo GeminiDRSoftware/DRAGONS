@@ -63,10 +63,9 @@ def makeProcessedFlat(p: Igrins):
     p.referencePixelsCorrect()
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
-    p.addVAR(poisson_noise=True)
     p.makeLampFlat() # This separates the lamp-on and lamp-off flats, stacks
                      # them, subtracts one from the other, and returns that
-                     # single frame
+                     # single frame. It requires LAMPON/LAMPOFF tags.
 
     # # ported IGRINS's version of slit edge detection
     p.determineSlitEdges()

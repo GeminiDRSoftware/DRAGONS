@@ -2,7 +2,8 @@
 """
 from igrinsdr.igrins.primitives_igrins import Igrins
 
-recipe_tags = {'IGRINS'}
+recipe_tags = {'IGRINS', 'SKY'}
+# recipe_tags = {'IGRINS'}
 
 def makeSky(p: Igrins):
     """
@@ -28,7 +29,6 @@ def makeSky(p: Igrins):
     p.referencePixelsCorrect()
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
-    p.addVAR(poisson_noise=True)
 
     p.stackFrames()
     p.extractSimpleSpec()
@@ -47,4 +47,3 @@ def makeSky(p: Igrins):
     return
 
 _default = makeSky
-
