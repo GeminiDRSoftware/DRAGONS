@@ -1706,9 +1706,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     if not trace.active:
                         continue
 
-                    # Again, if we haven't missed anything, we still want to
-                    # be able to bin up two steps
-                    for j in range(min(trace.steps_missed + 1, data.shape[0]) + 1):
+                    for j in range(min(trace.steps_missed + 1, data.shape[0])):
                         effective_ypos = step_centers[step_index] - 0.5 * j * step
                         tolerance = max_shift * abs(effective_ypos - trace.last_point[0])
                         predicted_peak = trace.predict_location(effective_ypos, order=0)
