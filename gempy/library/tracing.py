@@ -388,22 +388,22 @@ class Trace:
     """
     def __init__(self, starting_point):
         self.starting_point = self._verify_point(starting_point)
-        self.trace = deque([self.starting_point])
+        self.points = deque([self.starting_point])
         self.last_point = self.starting_point
         self.steps_missed = 0
         self.active = True
 
     def _as_list(self):
-        return list(self.trace)
+        return list(self.points)
 
     def __len__(self):
-        return len(self.trace)
+        return len(self.points)
 
     def __iter__(self):
-        return iter(self.trace)
+        return iter(self.points)
 
     def __repr__(self):
-        return str(self.trace)
+        return str(self.points)
 
     def _verify_point(self, point):
         """Return a tuple from a len-2 iterable"""
@@ -420,11 +420,15 @@ class Trace:
 
     @property
     def top_limit(self):
-        return self.trace[-1][0]
+        return self.points[-1][0]
 
     @property
     def bottom_limit(self):
-        return self.trace[0][0]
+        return self.points[0][0]
+
+    def reference_coordinates(self):
+        xref = self.starting_point[1]
+        return [(y, xref) for y, _ in self.points]
 
     def add_point(self, point):
         """Add a point to the deque, at either end as appropriate"""
@@ -432,9 +436,9 @@ class Trace:
         y = point[0]
 
         if y > self.top_limit:
-            self.trace.append(point)
+            self.points.append(point)
         elif y < self.bottom_limit:
-            self.trace.appendleft(point)
+            self.points.appendleft(point)
         else:
             # Should only add points at ends of range
             raise RuntimeError("Trying to insert point in middle of trace,"
@@ -462,16 +466,16 @@ class Trace:
         # Make sure there are enough points for the requested lookback and that
         # it's a sensible number.
         assert lookback >= 0, "'lookback' must not be negative"
-        lookback = min(lookback, len(self.trace) - 1)
+        lookback = min(lookback, len(self.points) - 1)
         order = min(order, lookback)
 
         # Get points to trace, from eithe end as appropriate. In either case,
         # `points` will be a list of points starting from one end and heading
         # towards the middle of the trace.
         if row > self.top_limit:
-            points = [self.trace[i] for i in range(-1, -(lookback+2), -1)]
+            points = [self.points[i] for i in range(-1, -(lookback+2), -1)]
         elif row < self.bottom_limit:
-            points = [self.trace[i] for i in range(0, lookback+1, 1)]
+            points = [self.points[i] for i in range(0, lookback+1, 1)]
         else:
             raise RuntimeError("No prediction within existing trace")
 
@@ -1593,11 +1597,20 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     def _slice(center):
         return slice(center - nsum // 2, center + nsum - nsum // 2)
 
+    # Create profile for centering. This could just be the data (maybe
+    # Ricker-filtered) but we use the SNR
+    def _profile_for_centering(data, var, rwidth):
+        var[var <= 0] = np.inf
+        if rwidth:
+            return np.where(data / np.sqrt(var) > 0.5,
+                            cwt_ricker(data, widths=[rwidth])[0], 0)
+        return np.where(data / np.sqrt(var) > 0.5, data, 0)
+
     halfwidth = cwidth // 2
     if start is None:
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
-    else:  # just to be sure
+    else:  # just to be sure it's OK
         start = int(min(max(start, nsum // 2), ext_data.shape[0] - nsum / 2))
 
     # Get accurate starting positions for all peaks if requested
@@ -1607,8 +1620,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         data, mask, var = func(ext_data[_slice(start)],
                                mask=None if ext_mask is None
                                else ext_mask[_slice(start)], variance=None)
-        if rwidth:
-            data = cwt_ricker(data, widths=[rwidth])[0]
+        data = _profile_for_centering(data, var, rwidth)
 
         peaks = pinpoint_peaks(data, peaks=initial, mask=mask,
                                halfwidth=halfwidth)[0]
@@ -1681,13 +1693,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                 d, m, v = func(np.concatenate(list(ext_data[s] for s in slices)),
                                mask=None if ext_mask is None else np.concatenate(list(ext_mask[s] for s in slices)),
                                variance=None)
-                # Variance could plausibly be zero
-                var[i] = np.where(v <= 0, np.inf, v)
-                if rwidth:
-                    data[i] = np.where(d / np.sqrt(var[i]) > 0.5,
-                                       cwt_ricker(d, widths=[rwidth])[0], 0)
-                else:
-                    data[i] = np.where(d / np.sqrt(var[i]) > 0.5, d, 0)
+                data[i] = _profile_for_centering(d, v, rwidth)
                 if m is not None:
                     mask[i] = m
 
@@ -1747,18 +1753,16 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         step *= -1
 
     # Remove short lines
-    def keep_line(line, min_length):
-        positions = [element[0] for element in line]
-        return (max(positions) - min(positions)) > min_length * ext_data.shape[0]
-    final_traces = [trace for trace in traces if keep_line(trace, min_line_length)]
-    final_peaks = [trace.starting_point[1] for trace in final_traces]
+    min_length_pixels = min_line_length * ext_data.shape[0]
+    final_traces = [trace for trace in traces if (
+            trace.points[-1][0] - trace.points[0][0] >= min_length_pixels)]
 
     # List of traced peak positions
-    in_coords = np.array([c for coo in final_traces for c in coo]).T
+    in_coords = np.array([coord for trace in final_traces for coord in trace]).T
     # List of "reference" positions (i.e., the coordinate perpendicular to
     # the line remains constant at its initial value
-    ref_coords = np.array([(ypos, ref) for coo, ref in zip(final_traces, final_peaks)
-                     for (ypos, xpos) in coo]).T
+    ref_coords = np.array([coord for trace in final_traces
+                           for coord in trace.reference_coordinates()]).T
 
     # Return the coordinate lists, in the form (x-coords, y-coords),
     # regardless of the dispersion axis

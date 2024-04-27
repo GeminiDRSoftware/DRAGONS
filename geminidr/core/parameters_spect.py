@@ -564,7 +564,7 @@ class traceAperturesConfig(config.core_1Dfitting_config):
         self.order = 2
 
 
-class tracePinholeAperturesConfig(config.core_1Dfitting_config):
+class tracePinholeAperturesConfig(config.Config):
     """
     Configuration for the tracePinholeApertures() primitive.
 

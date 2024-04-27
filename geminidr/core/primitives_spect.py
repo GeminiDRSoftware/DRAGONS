@@ -4653,20 +4653,15 @@ class Spect(Resample):
         min_snr = params['min_snr']
         nsum = params['nsum']
         min_line_length = params['min_line_length']
-        order = params['order']
         spect_ord = params['spectral_order']
         min_trace_pos = params['debug_min_trace_pos']
         max_trace_pos = params['debug_max_trace_pos']
 
-        fwidth = 2  # An educated guess for pinholes.
-        rwidth = 0.42466 * fwidth
-        fit1d_params = fit_1D.translate_params({"function": "chebyshev",
-                                                "order": order})
+        fwidth = 3  # An educated guess for pinholes.
 
         for ad in adinputs:
 
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-            tot_in_coords, tot_ref_coords = [], []
             for i, ext in enumerate(ad):
 
                 dispaxis = 2 - ext.dispersion_axis() # Python sense
@@ -4711,7 +4706,7 @@ class Spect(Resample):
                         # Only need a single `start` value for all lines.
                         ext, axis=dispaxis,
                         start=start, initial=[peak],
-                        rwidth=rwidth, cwidth=max(int(fwidth), 5),
+                        rwidth=None, cwidth=max(int(fwidth), 5),
                         step=step, nsum=nsum, max_missed=max_missed,
                         max_shift=max_shift * ybin / xbin,
                         min_line_length=min_line_length,
@@ -6002,11 +5997,10 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
 
     Returns
     -------
-    model : astropy.modeling.models.Mapping
-        The output model mapping.
-    m_final, m_inverse : astropy.modeling.fitting.FittingWithOutlierRemoval
-        Models describing the forward and inverse transformations used in
-        `model`.
+    model : astropy.modeling.models.Model
+        The output model, with forward and backward transformations
+    m_final, m_inverse : astropy.modeling.models.Chebyshev2D instances
+        describing the forward and inverse transformations used in `model`.
     """
     # Rather than fit to the reference coords, fit to the
     # *shift* we want in the spectral direction and then add a
@@ -6031,9 +6025,11 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
                                                sigma_clip, sigma=3)
     m_final, _ = fit_it(m_init, *in_coords, shifts)
     m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
+
+    # Add the linear term: the coordinate perpendicular to the trace direction
     for m in (m_final, m_inverse):
         m.c0_0 += domain_centre
-        # param_names[0] will be 'c1_0' (tranforms_axis == 0) or 'c0_1'.
+        # param_names[0] will be 'c1_0' (transform_axis == 0) or 'c0_1'.
         getattr(m, param_names[0]).value += domain_end - domain_centre
 
     if transform_axis == 0:
