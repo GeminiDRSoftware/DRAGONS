@@ -37,7 +37,8 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
     def _tag_band(self):
         band = self.phu.get('BAND')
 
-        return TagSet([band])
+        if band:
+            return TagSet([band])
 
     @astro_data_tag
     def _tag_sky(self):
