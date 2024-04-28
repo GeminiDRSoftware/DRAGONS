@@ -1076,3 +1076,25 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
+    def checkCALDB(self, adinputs, **params):
+        print(params["caltypes"])
+        for caltype in params["caltypes"]:
+            calibrations = self.caldb.get_calibrations(adinputs, caltype)
+            if calibrations.files[0] is None:
+                raise RuntimeError(f"calibration file of {caltype} need to be specified")
+
+        return adinputs
+
+    def fixHeader(self, adinputs, **params):
+        # print("###", params["tags"])
+        for ad in adinputs:
+            forced_tags = set(ad.phu.get("TAG_FORCED", "").split())
+            for tag in params["tags"]:
+                if tag not in forced_tags:
+                    forced_tags.add(tag)
+            ad.phu["TAG_FORCED"] = " ".join(forced_tags)
+
+            gt.mark_history(ad, primname=self.myself(), keyword="fixHeader")
+            ad.update_filename(suffix=params['suffix'], strip=False)
+
+        return adinputs

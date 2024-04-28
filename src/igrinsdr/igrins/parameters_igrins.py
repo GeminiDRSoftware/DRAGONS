@@ -89,3 +89,10 @@ class estimateSlitProfileConfig(config.Config):
 class extractStellarSpecConfig(config.Config):
     extraction_mode = config.Field("Extraction mode", str, "optimal")
     pixel_per_res_element = config.Field("number of pixel per res. element", float, 0.)
+
+class checkCALDBConfig(config.Config):
+    caltypes = config.Field("list of caltypes to check", str, "")
+
+class fixHeaderConfig(config.Config):
+    tags = config.ListField("tags to force", str, [], single=False)
+    suffix = config.Field("suffix for files with fixed header", str, "_fixed")

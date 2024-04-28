@@ -14,6 +14,7 @@ def makeStd(p: Igrins):
         A primitive set matching the recipe_tags.
     """
 
+    p.checkCALDB(caltypes=("processed_flat", "processed_arc"))
     p.prepare(require_wcs=False)
     p.addDQ()
 
