@@ -3,7 +3,6 @@
 from igrinsdr.igrins.primitives_igrins import Igrins
 
 recipe_tags = {'IGRINS', 'STANDARD'}
-# recipe_tags = {'IGRINS'}
 
 def makeStd(p: Igrins):
     """
@@ -27,11 +26,10 @@ def makeStd(p: Igrins):
     # header. Since IGRINS does not have these values defined, we add them
     # here.
     # p.fixIgrinsHeader()
-    # p.referencePixelsCorrect()
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
 
-    p.makeAB()
+    p.makeAB() # This will make stacked A-B and do the reference pixel correction.
     p.estimateSlitProfile()
     p.extractStellarSpec()
 

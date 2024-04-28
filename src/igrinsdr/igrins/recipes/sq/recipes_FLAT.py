@@ -3,7 +3,7 @@ Recipes available to data with tags ['IGRINS', 'CAL', 'FLAT'].
 """
 from igrinsdr.igrins.primitives_igrins import Igrins
 
-recipe_tags = {'IGRINS', 'CAL', 'FLAT'}
+recipe_tags = {'IGRINS', 'FLAT'}
 
 def estimateNoise(p: Igrins):
     """This recipe performs the analysis of irs readout pattern noise in flat off
