@@ -41,13 +41,10 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
             return TagSet([band])
 
     @astro_data_tag
-    def _tag_sky(self):
+    def _tag_caltype(self):
         if self.phu.get('OBJTYPE') == 'SKY' or self[0].hdr.get('OBJTYPE') == 'SKY':
-            return TagSet(['SKY', 'CAL'])
-
-    @astro_data_tag
-    def _tag_lamp(self):
-        if self.phu.get('FRMTYPE') == "ON":
+            return TagSet(['SKY', 'ARC'])
+        elif self.phu.get('FRMTYPE') == "ON":
             return TagSet(['LAMPON'])
         elif self.phu.get('FRMTYPE') == "OFF":
             return TagSet(['LAMPOFF'])
@@ -283,18 +280,24 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
         return TagSet(['IGRINS', 'VERSION2'])
 
     @astro_data_tag
-    def _tag_obstype(self):
-        if self.phu.get("OBSTYPE").strip() == "FLAT":
-            return TagSet(['FLAT'])
+    def _tag_caltype(self):
+        tags = TagSet()
 
-    @astro_data_tag
-    def _tag_lamp(self):
+        if self.phu.get("OBSTYPE").strip() == "FLAT":
+            tags.add.add("FLAT")
+        elif self.phu.get("OBSTYPE") == "OBJECT" and self.phu.get("OBSCLASS") == "partnerCal":
+            if "sky" in self.phu.get("OBJECT").lower():
+                tags.add.add("SKY")
+                tags.add.add("ARC")
+            else:
+                tags.add.add("STANDARD")
+
         if self.phu.get("GCALLAMP") == "QH" and self.phu.get("GCALSHUT") == "CLOSED":
-            return TagSet(['LAMPON'])
+            tags.add.add("LAMPON")
         elif self.phu.get("GCALLAMP") == "IRhigh" and self.phu.get("GCALSHUT") == "CLOSED":
-            return TagSet(['LAMPOFF'])
-        elif "sky" in self.phu.get("OBJECT").lower() and self.phu.get("OBSTYPE") == "OBJECT" and self.phu.get("OBSCLASS") == "partnerCal":
-            return TagSet(['SKY'])
+            tags.add.add("LAMPOFF")
+
+        return tags
 
     @astro_data_tag
     def _tag_band(self):

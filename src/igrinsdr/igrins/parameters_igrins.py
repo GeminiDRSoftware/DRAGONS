@@ -91,7 +91,7 @@ class extractStellarSpecConfig(config.Config):
     pixel_per_res_element = config.Field("number of pixel per res. element", float, 0.)
 
 class checkCALDBConfig(config.Config):
-    caltypes = config.Field("list of caltypes to check", str, "")
+    caltypes = config.ListField("list of caltypes to check", str, [], single=False)
 
 class fixHeaderConfig(config.Config):
     tags = config.ListField("tags to force", str, [], single=False)

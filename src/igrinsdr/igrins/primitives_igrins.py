@@ -667,8 +667,6 @@ class Igrins(Gemini, NearIR):
 
     def identifyMultiline(self, adinputs, **params):
 
-        # fn = "./SDCH_20190412_0040_wvl0.fits"
-        # ad = astrodata.open(fn)
         ad = adinputs[0]
 
         # multi_spec = obsset.load("multi_spec_fits")
@@ -881,22 +879,9 @@ class Igrins(Gemini, NearIR):
         stackedA = self.stackFrames(adinputsA)
         stackedB = self.stackFrames(adinputsB)
 
-        # params = dict(#allow_no_b_frame=False,
-        #               remove_level=2,
-        #               remove_amp_wise_var=False,
-        #               interactive=False,
-        #               cache_only=False)
+        ad = adinputs[0]
+        ad_sky = self._get_ad_sky(ad)
 
-        # fnA = "SDCH_20190412_0035_stack.fits"
-        # adinputsA = [astrodata.open(fnA)]
-        # fnB = "SDCH_20190412_0036_stack.fits"
-        # adinputsB = [astrodata.open(fnB)]
-
-
-        # bias_mask = obsset.load_resource_for("bias_mask")
-        # FIXME use caldb to load ad_sky
-        fn_sky = "SDCH_20190412_0040_wvl0.fits"
-        ad_sky = astrodata.open(fn_sky)
         mask = ad_sky[0].ORDERMAP != 0
 
         data, var = subtract_ab(stackedA[0][0].data, stackedB[0][0].data,
@@ -924,31 +909,11 @@ class Igrins(Gemini, NearIR):
 
         ad = adinputs[0]
 
-        # FIXME use caldb (or similar)
-        # fn_flat = "calibrations/processed_flat/SDCH_20190412_0021_flat.fits"
-        # ad_flat = astrodata.open(fn_flat)
         ad_flat = self._get_ad_flat(ad)
-
-        # fn_sky = "SDCH_20190412_0040_wvl0.fits"
-        # ad_sky = astrodata.open(fn_sky)
         ad_sky = self._get_ad_sky(ad)
-
-        # params = dict(slit_profile_range=[800, 2048-800],
-        #               do_ab=True,
-        #               frac_slit=None)
-
-        # fn = "SDCH_20190412_0035_stack.fits"
-        # ad = astrodata.open(fn)
-
-        # from ..igrins_libs.resource_helper_igrins import ResourceHelper
-        # helper = ResourceHelper(obsset)
 
         orderflat = ad_flat[0].data
 
-        # orderflat = helper.get("orderflat")
-
-        # data_minus = obsset.load_fits_sci_hdu("COMBINED_IMAGE1",
-        #                                       postfix=obsset.basename_postfix).data
         data_minus = ad[0].data
         data_minus_flattened = data_minus / orderflat
 
@@ -1000,17 +965,13 @@ class Igrins(Gemini, NearIR):
         #                      conserve_2d_flux=True,
         #                      pixel_per_res_element=None):
 
-        fn_flat = "calibrations/processed_flat/SDCH_20190412_0021_flat.fits"
-        ad_flat = astrodata.open(fn_flat)
-        fn_sky = "SDCH_20190412_0040_wvl0.fits"
-        ad_sky = astrodata.open(fn_sky)
-
         extraction_mode = params["extraction_mode"]
         pixel_per_res_element = params["pixel_per_res_element"]
 
-        # fn = "SDCH_20190412_0035_stack.fits"
-        # ad = astrodata.open(fn)
         ad = adinputs[0]
+
+        ad_flat = self._get_ad_flat(ad)
+        ad_sky = self._get_ad_sky(ad)
 
         ap = Apertures(ad_sky[0].SLITEDGE)
 
@@ -1102,7 +1063,6 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def checkCALDB(self, adinputs, **params):
-        print(params["caltypes"])
         for caltype in params["caltypes"]:
             calibrations = self.caldb.get_calibrations(adinputs, caltype)
             if calibrations.files[0] is None:
@@ -1111,7 +1071,6 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def fixHeader(self, adinputs, **params):
-        # print("###", params["tags"])
         for ad in adinputs:
             forced_tags = set(ad.phu.get("TAG_FORCED", "").split())
             for tag in params["tags"]:
