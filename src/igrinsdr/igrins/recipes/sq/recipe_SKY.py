@@ -44,6 +44,8 @@ def makeSky(p: Igrins):
 
     p.makeSpectralMaps()
 
+    p.storeProcessedArc()
+
     return
 
 _default = makeSky
