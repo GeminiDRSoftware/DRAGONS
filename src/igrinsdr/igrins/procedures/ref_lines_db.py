@@ -281,12 +281,13 @@ import pandas as pd
 from astropy.table import Table
 
 class SkyLinesDB(RefLinesDBBase):
-    def __init__(self):
+    def __init__(self, ref_file):
         self._refdata = None
+        self._ref_file = ref_file
 
     def _load_refdata(self):
 
-        tbl = Table.read("ref_lines_oh.fits")
+        tbl = Table.read(self._ref_file) # "ref_lines_oh.fits"
         df = tbl.to_pandas()
 
         ref_wvl_dict = {}

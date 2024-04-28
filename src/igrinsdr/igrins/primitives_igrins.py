@@ -8,6 +8,7 @@ import numpy as np
 import json
 import pandas as pd
 from collections import namedtuple
+from importlib.resources import files
 
 from astropy.io import fits
 from astropy.table import Table
@@ -126,14 +127,20 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
     return wvl_sol
 
 def get_ref_data(band):
-    j = dict(
-        ref_spec=json.load(open(f"SKY_{band}.oned_spec.json")),
-        identified_lines_v0=json.load(open(f"SKY_{band}.identified_lines_v0.json")),
-        echellogram_data=json.load(open(f"echellogram_{band}.json")),
+    pkgroot = files("igrinsdr") # FIXME okay to use hardcoded module name?
+    dataroot = pkgroot / "igrins/lookups/ref_data"
 
+    # FIXME use hardcoded file names for now.
+    j = dict(
+        ref_spec=json.load(open(dataroot / f"SDC{band}_20140525_0029.oned_spec.json")),
+        identified_lines_v0=json.load(open(dataroot / f"SKY_SDC{band}_20140525.identified_lines_v0.json")),
+        echellogram_data=json.load(open(dataroot / f"SDC{band}_20140525.echellogram.json")),
     )
     return j
 
+def get_ref_line_path():
+    pkgroot = files("igrinsdr") # FIXME okay to use hardcoded module name?
+    return pkgroot / "igrins/lookups/ref_data" / "ref_lines_oh.fits"
 
 Spec = namedtuple("Spec", ["s_map", "wvl_map"])
 
@@ -487,19 +494,31 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
+    def _get_ad_flat(self, ad):
+        calreturns = self.caldb.get_calibrations([ad, ad], caltype="processed_flat")
+        for fn, mode in zip(*calreturns):
+            assert mode == "user_cals"  # for now we assume userdb.
+            return astrodata.open(fn)
+
+    def _get_ad_sky(self, ad):
+        calreturns = self.caldb.get_calibrations([ad, ad], caltype="processed_arc")
+        for fn, mode in zip(*calreturns):
+            assert mode == "user_cals"  # for now we assume userdb.
+            return astrodata.open(fn)
+
     def extractSimpleSpec(self, adinputs, **params):
         # from recipe_system import cal_service
         # caldb = cal_service.set_local_database()
         # procmode = 'sq' if self.mode == 'sq' else None
         # c = caldb.get_calibrations(adinputs, caltype="processed_flat", procmode=procmode)
 
-        fn_flat = "calibrations/processed_flat/SDCH_20190412_0021_flat.fits"
-        ad_flat = astrodata.open(fn_flat)
-
         ad = adinputs[0]
-        tbl = ad_flat[0].SLITEDGE
 
+        ad_flat = self._get_ad_flat(ad)
+
+        tbl = ad_flat[0].SLITEDGE
         ap = Apertures(tbl)
+
         # FIXME we need to apply the badpixel mask.
         s = ap.extract_spectra_simple(ad[0].data, f1=0., f2=1.)
 
@@ -521,8 +540,10 @@ class Igrins(Gemini, NearIR):
         s_list_ = spec1d["specs"]
         s_list = [np.array(s, dtype=np.float64) for s in s_list_]
 
-        band = ad.phu["BAND"]
-        ref_spectra = json.load(open(f"SKY_{band}.oned_spec.json"))
+        band = ad.band() # phu["BAND"]
+
+        ref_spectra = get_ref_data(band)["ref_spec"]
+        # ref_spectra = json.load(open(f"SKY_{band}.oned_spec.json"))
 
         orders_ref = ref_spectra["orders"]
         s_list_ref = ref_spectra["specs"]
@@ -543,7 +564,7 @@ class Igrins(Gemini, NearIR):
 
         tgt_spec = ad[0].SPEC1D
 
-        band = ad.phu["BAND"]
+        band = ad.band() # phu["BAND"]
 
         ref_data = get_ref_data(band)
 
@@ -663,7 +684,8 @@ class Igrins(Gemini, NearIR):
 
 
         # ref_lines_db = SkyLinesDB(config=obsset.get_config())
-        ref_lines_db = SkyLinesDB()
+        ref_file = get_ref_line_path() # "ref_lines_oh.fits"
+        ref_lines_db = SkyLinesDB(ref_file)
 
         ref_lines_db_hitrans = None
         # if obsset.rs.get_resource_spec()[1] == "K":
@@ -900,12 +922,16 @@ class Igrins(Gemini, NearIR):
 
         """
 
-        # FIXME use caldb (or similar)
-        fn_flat = "calibrations/processed_flat/SDCH_20190412_0021_flat.fits"
-        ad_flat = astrodata.open(fn_flat)
-        fn_sky = "SDCH_20190412_0040_wvl0.fits"
-        ad_sky = astrodata.open(fn_sky)
+        ad = adinputs[0]
 
+        # FIXME use caldb (or similar)
+        # fn_flat = "calibrations/processed_flat/SDCH_20190412_0021_flat.fits"
+        # ad_flat = astrodata.open(fn_flat)
+        ad_flat = self._get_ad_flat(ad)
+
+        # fn_sky = "SDCH_20190412_0040_wvl0.fits"
+        # ad_sky = astrodata.open(fn_sky)
+        ad_sky = self._get_ad_sky(ad)
 
         # params = dict(slit_profile_range=[800, 2048-800],
         #               do_ab=True,
@@ -913,7 +939,6 @@ class Igrins(Gemini, NearIR):
 
         # fn = "SDCH_20190412_0035_stack.fits"
         # ad = astrodata.open(fn)
-        ad = adinputs[0]
 
         # from ..igrins_libs.resource_helper_igrins import ResourceHelper
         # helper = ResourceHelper(obsset)

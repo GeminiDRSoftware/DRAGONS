@@ -264,6 +264,9 @@ class AstroDataIGRINS(AstroDataIGRINSBase):
 
         return progid
 
+    @astro_data_descriptor
+    def band(self):
+        return self.phu.get('BAND')
 
 class AstroDataIGRINS2(AstroDataIGRINSBase):
 
@@ -317,3 +320,7 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
             instrument name
         """
         return 'IGRINS' if generic else self.phu.get('INSTRUME')
+
+    @astro_data_descriptor
+    def band(self):
+        return self.phu.get('FILTER')
