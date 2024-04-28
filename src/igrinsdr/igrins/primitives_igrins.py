@@ -265,8 +265,9 @@ class Igrins(Gemini, NearIR):
 
     tagset = {"GEMINI", "IGRINS"}
 
-    def __init__(self, adinputs, **kwargs):
-        super(Igrins, self).__init__(adinputs, **kwargs)
+    def _initialize(self, adinputs, **kwargs):
+        self.inst_lookups = 'geminidr.igrins.lookups'
+        super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_igrins)
         # Add IGRINS specific timestamp keywords
         self.timestamp_keys.update(igrins_stamps.timestamp_keys)
