@@ -115,39 +115,17 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
 
         return otype
 
-    @astro_data_descriptor
-    def data_label(self):
+# This will be shared between IGRINS and IGRINS2
 
-        # The IGRINS data does not have a DATALAB keyword inthe header. Thus,
-        # the `data_label` descriptor return None, which raises an error during
-        # storeProcessedDark. We try to define a ad-hoc data label out of its
-        # file name. But it should be revisited. FIXME
-
-        # The header has 'GEMPRID' etc, but no OBSID and such is defined.
-        _, obsdate, obsid = self.filename.split('.')[0].split('_')[:3]
-        datalab = f"igrins-{obsdate}-{obsid}"
-        return datalab
-
-    @astro_data_descriptor
-    def program_id(self):
-        """
-        Returns the ID of the program the observation was taken for
-
-        Returns
-        -------
-        str
-            the program ID
-        """
-        progid = self.phu.get('GEMPRGID')
-        if progid is None:
-            progid = "GN-2099A-Q-000"
-
-        return progid
-
-
-class AstroDataIGRINS(_AstroDataIGRINS):
+class AstroDataIGRINSBase(_AstroDataIGRINS):
     # single keyword mapping.  add only the ones that are different
     # from what's already defined in AstroDataGemini.
+
+    @astro_data_tag
+    def _tag_forcced(self):
+        # workaround for wrong headers. Check fixHeader recipe.
+        tag_forced = self.phu.get('TAG_FORCED', '')
+        return TagSet(tag_forced.split())
 
     @astro_data_tag
     def _tag_instrument(self):
@@ -253,20 +231,89 @@ class AstroDataIGRINS(_AstroDataIGRINS):
         #return crval if ctype == 'DEC--TAN' else None
         return 1
 
-
-class AstroDataIGRINS2(AstroDataIGRINS):
+class AstroDataIGRINS(AstroDataIGRINSBase):
     # single keyword mapping.  add only the ones that are different
     # from what's already defined in AstroDataGemini.
 
+    @astro_data_descriptor
+    def data_label(self):
+
+        # The IGRINS data does not have a DATALAB keyword inthe header. Thus,
+        # the `data_label` descriptor return None, which raises an error during
+        # storeProcessedDark. We try to define a ad-hoc data label out of its
+        # file name. But it should be revisited. FIXME
+
+        # The header has 'GEMPRID' etc, but no OBSID and such is defined.
+        _, obsdate, obsid = self.filename.split('.')[0].split('_')[:3]
+        datalab = f"igrins-{obsdate}-{obsid}"
+        return datalab
+
+    @astro_data_descriptor
+    def program_id(self):
+        """
+        Returns the ID of the program the observation was taken for
+
+        Returns
+        -------
+        str
+            the program ID
+        """
+        progid = self.phu.get('GEMPRGID')
+        if progid is None:
+            progid = "GN-2099A-Q-000"
+
+        return progid
+
+
+class AstroDataIGRINS2(AstroDataIGRINSBase):
+
     @staticmethod
     def _matches_data(source):
-        grins = source[0].header.get('INSTRUME', '').upper() == 'IGRINS-2'
-        if not grins:
-            grins = source[1].header.get('INSTRUME', '').upper() == 'IGRINS-2'
+        igrins = source[0].header.get('INSTRUME', '').upper() == 'IGRINS-2'
+        if not igrins:
+            igrins = source[1].header.get('INSTRUME', '').upper() == 'IGRINS-2'
 
-        return grins
+        return igrins
 
     @astro_data_tag
     def _tag_instrument(self):
         return TagSet(['IGRINS', 'VERSION2'])
 
+    @astro_data_tag
+    def _tag_obstype(self):
+        if self.phu.get("OBSTYPE").strip() == "FLAT":
+            return TagSet(['FLAT'])
+
+    @astro_data_tag
+    def _tag_lamp(self):
+        if self.phu.get("GCALLAMP") == "QH" and self.phu.get("GCALSHUT") == "CLOSED":
+            return TagSet(['LAMPON'])
+        elif self.phu.get("GCALLAMP") == "IRhigh" and self.phu.get("GCALSHUT") == "CLOSED":
+            return TagSet(['LAMPOFF'])
+        elif "sky" in self.phu.get("OBJECT").lower() and self.phu.get("OBSTYPE") == "OBJECT" and self.phu.get("OBSCLASS") == "partnerCal":
+            return TagSet(['SKY'])
+
+    @astro_data_tag
+    def _tag_band(self):
+        band = self.phu.get('FILTER')
+
+        if band:
+            return TagSet([band])
+
+    @astro_data_descriptor
+    def instrument(self, generic=False):
+        """
+        Returns the name of the instrument making the observation
+
+        Parameters
+        ----------
+        generic: boolean
+            If set, don't specify the specific instrument if there are clones
+            (e.g., return "IGRINS" rather than "IGRINS-2")
+
+        Returns
+        -------
+        str
+            instrument name
+        """
+        return 'IGRINS' if generic else self.phu.get('INSTRUME')
