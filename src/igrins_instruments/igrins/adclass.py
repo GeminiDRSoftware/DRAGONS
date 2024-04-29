@@ -291,6 +291,8 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
                 tags.add.add("ARC")
             else:
                 tags.add.add("STANDARD")
+        else:
+            tags.add.add("SCIENCE")
 
         if self.phu.get("GCALLAMP") == "QH" and self.phu.get("GCALSHUT") == "CLOSED":
             tags.add.add("LAMPON")
