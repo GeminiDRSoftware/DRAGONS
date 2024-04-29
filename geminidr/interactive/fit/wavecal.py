@@ -601,7 +601,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         height = 44 / 29 * np.nanmax(self.refplot_linelist.data["intensities"])
 
         if self.absorption:
-            padding = -0.005 * height
+            padding = -0.05 * height
         else:
             padding = 0.35 * height
         heights = self.refplot_linelist.data["intensities"] + padding
