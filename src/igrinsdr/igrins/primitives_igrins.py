@@ -1277,6 +1277,6 @@ class Igrins(Gemini, NearIR):
         if params["save_debug"]:
             ad_debug = self.streams["debug"]
             ad_debug[0].update_filename(suffix="_spec_debug", strip=True)
-            ad_debug.write()
+            ad_debug[0].write()
 
         return adinputs

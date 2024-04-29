@@ -108,4 +108,4 @@ class saveTwodspecConfig(config.Config):
 
 class saveDebugImageConfig(config.Config):
     save_debug =  config.Field("save the debug image if True. Default is True",
-                                                bool, False)
+                                                bool, True)
