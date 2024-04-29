@@ -4,7 +4,7 @@ from igrinsdr.igrins.primitives_igrins import Igrins
 
 recipe_tags = {'IGRINS', 'STANDARD'}
 
-def makeStd(p: Igrins):
+def makeStellar(p: Igrins):
     """
 
     Parameters
@@ -13,7 +13,7 @@ def makeStd(p: Igrins):
         A primitive set matching the recipe_tags.
     """
 
-    p.checkCALDB(caltypes=("processed_flat", "processed_arc"))
+    p.checkCALDB(caltypes=["processed_flat", "processed_arc"])
     p.prepare(require_wcs=False)
     p.addDQ()
 
@@ -33,9 +33,21 @@ def makeStd(p: Igrins):
     p.estimateSlitProfile()
     p.extractStellarSpec()
 
-    # p.stackFrames(stream="A")
-    # p.stackFrames(stream="B")
-    # p.subtractAB(streamA="A", streamB="B")
+    p.saveTwodspec()
+    p.saveDebugImage()
+
     return
+
+def makeStd(p: Igrins):
+    """
+
+    Parameters
+    ----------
+    p : PrimitivesCORE object
+        A primitive set matching the recipe_tags.
+    """
+
+    makeStellar(p)
+    # normalize the spectra
 
 _default = makeStd

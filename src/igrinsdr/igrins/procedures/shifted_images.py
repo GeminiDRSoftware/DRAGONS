@@ -19,3 +19,10 @@ class ShiftedImages(_ShiftedImages):
              else hdu.data
              for hdu in hdul]
         return cls(*_)
+
+    @classmethod
+    def from_table(cls, tbl):
+        d = dict(zip(tbl["type"], tbl["array"]))
+        _ = [d[k] for k in ShiftedImages._fields]
+
+        return cls(*_)

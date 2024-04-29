@@ -43,6 +43,7 @@ def makeSky(p: Igrins):
     p.volumeFit()
 
     p.makeSpectralMaps()
+    p.attachWatTable()
 
     p.storeProcessedArc()
 

@@ -72,6 +72,13 @@ from .procedures.slit_profile import (extract_slit_profile,
 
 from .procedures.spec_extract_w_profile import extract_spec_using_profile
 
+from .procedures.astropy_poly_helper import deserialize_poly_model
+from .procedures.iraf_helper import get_wat_spec, default_header_str
+from .procedures.iraf_helper import invert_order
+
+from .procedures.correct_distortion import get_rectified_2dspec
+from .procedures.shifted_images import ShiftedImages
+
 
 def _get_wavelength_solutions(affine_tr_matrix, zdata,
                               new_orders):
@@ -125,6 +132,7 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
     #                    (band, igrins_log.date), "w"))
 
     return wvl_sol
+
 
 def get_ref_data(band):
     pkgroot = files("igrinsdr") # FIXME okay to use hardcoded module name?
@@ -227,6 +235,7 @@ def splitAB(adinputs):
 
     return adinputsA, adinputsB
 
+
 def subtract_ab(dataA, dataB, varA, varB, mask,
                 # allow_no_b_frame=False,
                 remove_level=2,
@@ -262,6 +271,84 @@ def subtract_ab(dataA, dataB, varA, varB, mask,
                         remove_amp_wise_var=False)
 
     return data, var
+
+
+def get_wat_cards(fit_results_tbl):
+
+    fit_results_map = dict(zip(fit_results_tbl["key"], fit_results_tbl["encoded"]))
+    fitted_model_encoded = fit_results_map["fitted_model"]
+    orders = json.loads(fit_results_map["orders"])
+    modeul_name, class_name, serialized = json.loads(fitted_model_encoded)
+
+    p = deserialize_poly_model(modeul_name, class_name, serialized)
+
+    # save as WAT fits header
+    xx = np.arange(0, 2048)
+    xx_plus1 = np.arange(1, 2048+1)
+
+    from astropy.modeling import models, fitting
+
+    # We convert 2d chebyshev solution to a seriese of 1d
+    # chebyshev.  For now, use naive (and inefficient)
+    # approach of refitting the solution with 1d. Should be
+    # reimplemented.
+
+    p1d_list = []
+    for o in orders:
+        oo = np.empty_like(xx)
+        oo.fill(o)
+        wvl = p(xx, oo) / o * 1.e4  # um to angstrom
+
+        p_init1d = models.Chebyshev1D(domain=[1, 2048],
+                                      degree=p.x_degree)
+        fit_p1d = fitting.LinearLSQFitter()
+        p1d = fit_p1d(p_init1d, xx_plus1, wvl)
+        p1d_list.append(p1d)
+
+    wat_list = get_wat_spec(orders, p1d_list)
+
+    cards = [fits.Card.fromstring(l.strip())
+             for l in default_header_str]
+
+    wat = "wtype=multispec " + " ".join(wat_list)
+    char_per_line = 68
+    num_line, remainder = divmod(len(wat), char_per_line)
+    for i in range(num_line):
+        k = "WAT2_%03d" % (i+1,)
+        v = wat[char_per_line*i:char_per_line*(i+1)]
+        c = fits.Card(k, v)
+        cards.append(c)
+
+    if remainder > 0:
+        i = num_line
+        k = "WAT2_%03d" % (i+1,)
+        v = wat[char_per_line*i:]
+        c = fits.Card(k, v)
+        cards.append(c)
+
+    return cards
+
+
+def get_wat_header(wat_table, wavelength_increasing_order=False):
+
+    cards = [fits.Card.fromstring(s) for s in wat_table['cards']]
+    header = fits.Header(cards)
+
+    # hdu = obsset.load_resource_sci_hdu_for("wvlsol_fits")
+    if wavelength_increasing_order:
+        header = invert_order(header)
+
+        def convert_data(d):
+            return d[::-1]
+    else:
+
+        def convert_data(d):
+            return d
+
+    return header, convert_data
+
+
+
 
 @parameter_override
 class Igrins(Gemini, NearIR):
@@ -719,7 +806,6 @@ class Igrins(Gemini, NearIR):
                                          names=["slit_center"],
                                          axis=0)
 
-
         # storing multi-index seems broken. Enforce reindexing.
         tbl = Table.from_pandas(fitted_pixels_master.reset_index())
 
@@ -809,6 +895,18 @@ class Igrins(Gemini, NearIR):
         ad[0].VOLUMEFIT_COEFFS = Table.from_pandas(out_df)
         # d = out_df.to_dict(orient="split")
         # obsset.store("VOLUMEFIT_COEFFS_JSON", d)
+
+        return adinputs
+
+    def attachWatTable(self, adinputs, **params):
+
+        ad = adinputs[0]
+        fit_results_tbl = ad[0].WVLFIT_RESULTS
+
+        cards = get_wat_cards(fit_results_tbl)
+        tbl = Table([[c.image for c in cards]], names=["cards"])
+
+        ad[0].WAT_HEADER = tbl
 
         return adinputs
 
@@ -960,6 +1058,29 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
+    def _get_spec1d(self, ad, ad_sky):
+
+        ad_out = astrodata.create(ad.phu)
+
+        # from astrodata.nddata import NDAstroData as NDDataObject
+
+        # from astropy.table import Table
+        fit_results_tbl = ad_sky[0].WVLFIT_RESULTS
+        cards = get_wat_cards(fit_results_tbl)
+        # tbl = Table([[c.image for c in cards]], names=["cards"])
+
+        header = fits.Header(cards)
+
+        hdu = fits.ImageHDU(header=header,
+                            data=np.array(ad[0].SPEC1D["spec"]))
+        ad_out.append(hdu)
+
+        ad_out[0].variance = np.array(ad[0].SPEC1D["variance"])
+        ad_out[0].WAVELENGTHS = np.array(ad[0].SPEC1D["wavelengths"])
+        ad_out[0].SN_PER_RESEL = np.array(ad[0].SPEC1D["sn_per_res_element"])
+
+        return ad_out
+
     def extractStellarSpec(self, adinputs, **params):
         # extraction_mode="optimal",
         #                      conserve_2d_flux=True,
@@ -1060,7 +1181,12 @@ class Igrins(Gemini, NearIR):
 
         ad[0].WVLCOR = tbl
 
-        return adinputs
+        ad_1dspec = self._get_spec1d(ad, ad_sky)
+        ad_1dspec.update_filename(suffix="_spec1d", strip=True)
+
+        self.streams["debug"] = adinputs
+
+        return [ad_1dspec]
 
     def checkCALDB(self, adinputs, **params):
         for caltype in params["caltypes"]:
@@ -1080,5 +1206,77 @@ class Igrins(Gemini, NearIR):
 
             gt.mark_history(ad, primname=self.myself(), keyword="fixHeader")
             ad.update_filename(suffix=params['suffix'], strip=False)
+
+        return adinputs
+
+    def saveTwodspec(self, adinputs, **params):
+
+        height_2dspec = params["height_2dspec"]
+        conserve_flux = True
+        # height_2dspec = 100 # obsset.get_recipe_parameter("height_2dspec")
+        wavelength_increasing_order = params["wavelength_increasing_order"]
+
+        ad = self.streams["debug"][0]
+
+        ad_sky = self._get_ad_sky(ad)
+
+        shifted = ShiftedImages.from_table(ad[0].WVLCOR)
+        data_shft = shifted.image
+        variance_map_shft = shifted.variance
+
+        wat_table = ad_sky[0].WAT_HEADER
+
+        # make sure you apply convert_data to the output. If get_wat_header is
+        # called with wavelength_increasing_order=True, convert_data will rearrange
+        # the data to the correct order.
+        wvl_header, convert_data = get_wat_header(wat_table,
+                                                  wavelength_increasing_order)
+
+        ordermap = ad_sky[0].ORDERMAP
+        # FIXME we should use proper badpixel mask.
+        ordermap_bpixed = np.ma.array(ordermap, mask=ad_sky[0].mask).filled(0)
+
+        ap = Apertures(ad_sky[0].SLITEDGE)
+
+        order_map = ad_sky[0].ORDERMAP
+
+        _ = get_rectified_2dspec(data_shft, ordermap_bpixed, ap, # bottom_up_solutions,
+                                 conserve_flux=conserve_flux, height=height_2dspec)
+
+
+        d0_shft_list, msk_shft_list, height = _
+
+        with np.errstate(invalid="ignore"):
+            d = np.array(d0_shft_list) / np.array(msk_shft_list)
+
+        d = convert_data(d.astype("float32"))
+
+        hdu_spec2d = fits.ImageHDU(header=wvl_header, data=d)
+
+        ad_out = astrodata.create(ad.phu)
+        ad_out.append(hdu_spec2d)
+
+        _ = get_rectified_2dspec(variance_map_shft, order_map, ap, # bottom_up_solutions,
+                                 conserve_flux=conserve_flux, height=height)
+
+        d0_shft_list, msk_shft_list, _ = _
+
+        with np.errstate(invalid="ignore"):
+            d = np.array(d0_shft_list) / np.array(msk_shft_list)
+
+        ad_out[0].variance = d
+
+        ad_out[0].WAVELENGTHS = np.array(ad_sky[0].WVLSOL["wavelengths"])
+
+        ad_out.update_filename(suffix="_spec2d", strip=True)
+        ad_out.write(overwrite=True)
+
+        return adinputs
+
+    def saveDebugImage(self, adinputs, **params):
+        if params["save_debug"]:
+            ad_debug = self.streams["debug"]
+            ad_debug[0].update_filename(suffix="_spec_debug", strip=True)
+            ad_debug.write()
 
         return adinputs

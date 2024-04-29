@@ -77,6 +77,9 @@ class volumeFitConfig(config.Config):
 class makeSpectralMapsConfig(config.Config):
     pass
 
+class attachWatTableConfig(config.Config):
+    pass
+
 class makeABConfig(config.Config):
     remove_level = config.Field("readoutpattern remove level", int, 2)
     remove_amp_wise_var = config.Field("remove amp-wise variation if True", bool, False)
@@ -96,3 +99,13 @@ class checkCALDBConfig(config.Config):
 class fixHeaderConfig(config.Config):
     tags = config.ListField("tags to force", str, [], single=False)
     suffix = config.Field("suffix for files with fixed header", str, "_fixed")
+
+class saveTwodspecConfig(config.Config):
+    height_2dspec = config.Field("height of strip. 0 will set to median.", int, 0)
+    wavelength_increasing_order =  config.Field("rearrange the data so that wavelengths are"
+                                                "in increasing order. default is False",
+                                                bool, False)
+
+class saveDebugImageConfig(config.Config):
+    save_debug =  config.Field("save the debug image if True. Default is True",
+                                                bool, False)

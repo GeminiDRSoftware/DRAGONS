@@ -33,7 +33,7 @@ class ShiftX(object):
         return d0_shft
 
 
-def get_rectified_2dspec(data, order_map, bottom_up_solutions,
+def get_rectified_2dspec(data, order_map, ap, # bottom_up_solutions,
                          conserve_flux=False, height=0):
 
     # sl = slice(0, 2048), slice(0, 2048)
@@ -59,14 +59,15 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
                                   bounds_error=False)
                          for dd in acc_data.T]
 
-        bottom_up_list = []
-
         if height == 0:
             max_height = 0
 
-            for c in bottom_up_solutions:
-                bottom = Polynomial(c[0][1])(xx)
-                up = Polynomial(c[1][1])(xx)
+            # for c in bottom_up_solutions:
+            for o in ap.orders:
+                bottom = ap.apcoeffs[o](xx, 0)
+                up = ap.apcoeffs[o](xx, 1)
+                # bottom = Polynomial(c[0][1])(xx)
+                # up = Polynomial(c[1][1])(xx)
 
                 _height = up - bottom
                 max_height = max(int(np.ceil(max(_height))), max_height)
@@ -75,9 +76,14 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
 
         d_factor = 1./height
 
-        for c in bottom_up_solutions:
-            bottom = Polynomial(c[0][1])(xx)
-            up = Polynomial(c[1][1])(xx)
+        bottom_up_list = []
+
+        # for c in bottom_up_solutions:
+        #     bottom = Polynomial(c[0][1])(xx)
+        #     up = Polynomial(c[1][1])(xx)
+        for o in ap.orders:
+            bottom = ap.apcoeffs[o](xx, 0)
+            up = ap.apcoeffs[o](xx, 1)
             dh = (up - bottom) * d_factor  # * 0.02
 
             bottom_up = zip(bottom - dh, up)
@@ -111,32 +117,48 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
     d0_shft_list = get_shifted(data, height=height)
     msk_shft_list = get_shifted(msk, normalize=conserve_flux, height=height)
 
-    return d0_shft_list, msk_shft_list
+    return d0_shft_list, msk_shft_list, height
 
 
 if __name__ == "__main__":
-    d = pyfits.open("../outdata/20140525/SDCH_20140525_0016.combined_image.fits")[0].data
+    fn = "SDCH_20240425_0067_arc.fits"
+    import astrodata
+    ad_sky = astrodata.open(fn)
+    from igrinsdr.igrins.procedures.apertures import Apertures
+    ap = Apertures(ad_sky[0].SLITEDGE)
+    from igrinsdr.igrins.procedures.shifted_images import ShiftedImages
 
-    msk = np.isfinite(pyfits.open("../outdata/20140525/SDCH_20140525_0042.combined_image.fits")[0].data)
+    data = ad_sky[0].data
+    # data = ad_sky[0].WVLCOR
+    order_map = ad_sky[0].ORDERMAP
 
-    d[~msk] = np.nan
-
-    slitoffset = pyfits.open("../calib/primary/20140525/SKY_SDCH_20140525_0029.slitoffset_map.fits")[0].data
-
-    d[~np.isfinite(slitoffset)] = np.nan
+    data = ShiftedImages.from_table(ad[0].WVLCOR).image
+    d, m = get_rectified_2dspec(data, order_map, ap, # bottom_up_solutions,
+                                conserve_flux=False, height=0)
 
 
-    # now shift
-    msk = np.isfinite(d)
-    d0 = d.copy()
-    d0[~msk] = 0.
+    # d = pyfits.open("../outdata/20140525/SDCH_20140525_0016.combined_image.fits")[0].data
 
-    shiftx = ShiftX(slitoffset)
+    # msk = np.isfinite(pyfits.open("../outdata/20140525/SDCH_20140525_0042.combined_image.fits")[0].data)
 
-    d0_shft = shiftx(d0)
-    msk_shft = shiftx(msk)
+    # d[~msk] = np.nan
 
-    variance = d0
-    variance_shft = shiftx(variance)
+    # slitoffset = pyfits.open("../calib/primary/20140525/SKY_SDCH_20140525_0029.slitoffset_map.fits")[0].data
 
-    d0_flux = d0_shft / msk_shft
+    # d[~np.isfinite(slitoffset)] = np.nan
+
+
+    # # now shift
+    # msk = np.isfinite(d)
+    # d0 = d.copy()
+    # d0[~msk] = 0.
+
+    # shiftx = ShiftX(slitoffset)
+
+    # d0_shft = shiftx(d0)
+    # msk_shft = shiftx(msk)
+
+    # variance = d0
+    # variance_shft = shiftx(variance)
+
+    # d0_flux = d0_shft / msk_shft
