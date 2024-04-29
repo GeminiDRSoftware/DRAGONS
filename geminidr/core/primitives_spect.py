@@ -28,6 +28,7 @@ from astropy.table import Table, hstack, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from numpy.ma.extras import _ezclump
 from scipy import optimize
 from scipy.signal import find_peaks
@@ -2257,24 +2258,33 @@ class Spect(Resample):
                                                     visualizer.image, visualizer.meta):
                     fit1d.image = image
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
-            else:
-                for ext, calc_ext in zip(ad, calc_ad):
-                    if len(ad) > 1:
-                        log.stdinfo(f"Determining solution for extension {ext.id}")
 
-                    input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                        calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
-                    if not acceptable_fit:
-                        log.warning("No acceptable wavelength solution found")
-                    else:
-                        wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
-                        wavecal.save_fit_as_pdf(
-                            input_data["spectrum"], fit1d.points[~fit1d.mask],
-                            fit1d.image[~fit1d.mask], ad.filename)
+                # We do the filename updating here to make it easier to get a
+                # filename for the non-interactive PDF plot
+                ad.update_filename(suffix=sfx, strip=True)
+            else:
+                ad.update_filename(suffix=sfx, strip=True)
+                plot_filename = ad.filename.replace('.fits', '.pdf')
+                with PdfPages(plot_filename) as pdf:
+                    for ext, calc_ext in zip(ad, calc_ad):
+                        if len(ad) > 1:
+                            log.stdinfo(f"Determining solution for extension {ext.id}")
+
+                        input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
+                            calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                        if not acceptable_fit:
+                            log.warning("No acceptable wavelength solution found")
+                        else:
+                            wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
+                            fig = wavecal.create_pdf_plot(
+                                input_data["spectrum"], fit1d.points[~fit1d.mask],
+                                fit1d.image[~fit1d.mask], f"{ad.filename}:{ext.id}")
+                            pdf.savefig(fig, bbox_inches='tight')
+                    plt.close()
+                log.fullinfo(f"Writing {plot_filename} to disk")
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 

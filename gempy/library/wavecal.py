@@ -1067,39 +1067,41 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
                         (output_frame, None)])
 
 
-def save_fit_as_pdf(data, peaks, arc_lines, filename):
+def create_pdf_plot(data, peaks, arc_lines, title):
     """
     Create and save a simple pdf plot of the arc spectrum with line
     identifications, useful for checking the validity of the solution.
 
     Parameters
     ----------
-    data : 1d array
+    data: 1d array
         the arc spectrum
-    m : MatchBox
-        model and matching information
-    peaks : 1d array
+    peaks: 1d array
         pixel locations of peaks
-    filename : str
-        filename
+    arc_lines: 1d array
+        wavelengths of arc lines
+    title: str
+        plot title
+
+    Returns
+    -------
+    fig: a matplotlib figure
     """
     data_max = data.max()
-    plt.ioff()
     fig, ax = plt.subplots()
     ax.plot(data, 'b-')
-    ax.set_ylim(0, data_max * 1.05)
+    ax.set_ylim(0, data_max * 1.1)
     if len(arc_lines) and np.diff(arc_lines)[0] / np.diff(peaks)[0] < 0:
         ax.set_xlim(len(data), -1)
     else:
         ax.set_xlim(-1, len(data))
-    #for p in peaks:
-    #    ax.plot([p, p], [0, 2 * data_max], 'r:')
     for p, w in zip(peaks, arc_lines):
         j = int(p + 0.5)
-        ax.plot([p, p], [data[j], data[j] + 0.02 * data_max], 'k-')
+        ax.plot([p, p], [data[j] + 0.01 * data_max,
+                         data[j] + 0.02 * data_max], 'k-')
         ax.text(p, data[j] + 0.03 * data_max, str('{:.5f}'.format(w)),
                 horizontalalignment='center', rotation=90, fontdict={'size': 8})
+    ax.set_xlabel("Pixel number")
+    ax.set_title(title)
     fig.set_size_inches(17, 11)
-    plt.savefig(filename.replace('.fits', '.pdf'), bbox_inches='tight', dpi=600)
-    plt.close()  # KL: otherwise the plot can pop up in subsequent plt.show()
-    plt.ion()
+    return fig

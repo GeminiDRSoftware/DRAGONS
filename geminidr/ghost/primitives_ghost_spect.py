@@ -1386,9 +1386,18 @@ class GHOSTSpect(GHOST):
                 slit_models = sview.model_profile(slit_data, slitflat_data)
                 log.stdinfo("")
                 for k, model in slit_models.items():
-                    fwhm, apfrac = model.estimate_seeing()
-                    log.stdinfo(f"Estimated seeing in the {k} arm: {fwhm:5.3f}"
-                                f" ({apfrac*100:.1f}% aperture throughput)")
+                    try:
+                        fwhm, apfrac = model.estimate_seeing()
+                    except ValueError:
+                        log.warning(f"Cannot estimate seeing in the {k} arm. "
+                                    "This may be due to a lack of signal in "
+                                    "the slitviewer camera that will result "
+                                    "in a poor reduction. Consider using a "
+                                    "synthetic slit profile model.")
+                    else:
+                        log.stdinfo(f"Estimated seeing in the {k} arm: {fwhm:5.3f}"
+                                    f" ({apfrac*100:.1f}% aperture throughput)")
+
             if slitflat is None:
                 log.stdinfo("Creating synthetic slitflat image")
                 slitflat_data = sview.fake_slitimage()
