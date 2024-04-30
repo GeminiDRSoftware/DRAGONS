@@ -644,7 +644,8 @@ def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
 
     # Now get rid of insignificant maxima
     stddev = at.std_from_pixel_variations(profile if prof_mask is None else
-                                          profile[~prof_mask])
+                                          profile[~prof_mask],
+                                          subtract_linear_fits=True)
 
     def merge_with_left(index):
         del apertures[index]
@@ -823,7 +824,8 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
 
     # 10 is a good value to capture artifacts
     stddev = at.std_from_pixel_variations(profile if prof_mask is None
-                                          else profile[~prof_mask], separation=10)
+                                          else profile[~prof_mask], separation=10,
+                                          subtract_linear_fits=True)
     peaks = [x[0] for x in extrema[1::2]]
     all_limits = get_limits(np.nan_to_num(profile), prof_mask, peaks=peaks,
                             threshold=threshold, extrema=extrema)
@@ -940,7 +942,8 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # (do this before any smoothing)
     if variance is None:
         variance = at.std_from_pixel_variations(data[~mask],
-                                                separation=int(max_width)) ** 2
+                                                separation=int(max_width),
+                                                subtract_linear_fits=True) ** 2
 
     # For really broad peaks we can do a median filter to remove spikes
     if min(widths) > 10:
@@ -1229,7 +1232,8 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
         niter = 0
     if variance is None:
         stddev = np.full_like(data, at.std_from_pixel_variations(
-            data if mask is None else data[~mask], separation=10))
+            data if mask is None else data[~mask], separation=10,
+            subtract_linear_fits=True))
     else:
         stddev = np.sqrt(variance)
 
