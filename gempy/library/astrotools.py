@@ -191,7 +191,7 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
     """
     if variance is None:
         y = np.ma.masked_array(data, mask=mask)
-        sigma1 = std_from_pixel_variations(y, subtract_linear_fit=True)
+        sigma1 = std_from_pixel_variations(y, subtract_linear_fits=True)
         diff = np.diff(y)
         # 0.1 is a fudge factor that seems to work well
         #sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
