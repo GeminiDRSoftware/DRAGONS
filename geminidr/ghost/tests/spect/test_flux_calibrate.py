@@ -44,7 +44,8 @@ def test_flux_calibrate_binning(path_to_inputs, std_filenames):
 
         base_output = outputs[(sci_xbin, sci_ybin)]
         w = make_wavelength_table(base_output[0])
-        rms_values = [at.std_from_pixel_variations(row)
+        rms_values = [at.std_from_pixel_variations(row,
+                                                   subtract_linear_fits=False)
                       for row in base_output[0].data]
 
         data = {k: v[0].data for k, v in outputs.items()}
@@ -60,4 +61,3 @@ def test_flux_calibrate_binning(path_to_inputs, std_filenames):
                     if fom > 1:
                         bad_fom.append((w[i].min(), fom))
         assert not bad_fom, bad_fom
-
