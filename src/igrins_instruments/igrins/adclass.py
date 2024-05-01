@@ -40,14 +40,12 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
         if band:
             return TagSet([band])
 
+    # LAMPON/lAMPOFF tags are inccorectly set by AstroDataGemini._type_gacl_alp
+    # method. We simply override this to return nothing.
     @astro_data_tag
-    def _tag_caltype(self):
-        if self.phu.get('OBJTYPE') == 'SKY' or self[0].hdr.get('OBJTYPE') == 'SKY':
-            return TagSet(['SKY', 'ARC'])
-        elif self.phu.get('FRMTYPE') == "ON":
-            return TagSet(['LAMPON'])
-        elif self.phu.get('FRMTYPE') == "OFF":
-            return TagSet(['LAMPOFF'])
+    def _type_gcal_lamp(self):
+        return
+
 
     @astro_data_descriptor
     def observation_class(self):
@@ -231,6 +229,15 @@ class AstroDataIGRINSBase(_AstroDataIGRINS):
 class AstroDataIGRINS(AstroDataIGRINSBase):
     # single keyword mapping.  add only the ones that are different
     # from what's already defined in AstroDataGemini.
+
+    @astro_data_tag
+    def _tag_caltype(self):
+        if self.phu.get('OBJTYPE') == 'SKY' or self[0].hdr.get('OBJTYPE') == 'SKY':
+            return TagSet(['SKY', 'ARC'])
+        elif self.phu.get('FRMTYPE') == "ON":
+            return TagSet(['LAMPON'])
+        elif self.phu.get('FRMTYPE') == "OFF":
+            return TagSet(['LAMPOFF'])
 
     @astro_data_descriptor
     def data_label(self):
