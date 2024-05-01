@@ -1834,8 +1834,10 @@ class Spect(Resample):
 
                         # The "- 1" here is because np.diff shrinks the array
                         # by 1 in taking the first derivative.
-                        if (loc < buffer) or\
-                           (loc > ext.data.shape[1-dispaxis] - buffer - 1):
+                        if buffer < loc < ext.data.shape[1-dispaxis] - buffer - 1:
+                            edge_in_array = True
+                        else:
+                           edge_in_array = False
                            log.debug(f"Not tracing at {loc:.2f} because "
                                      "it is off (or too close to) the "
                                      "detector edge.")
@@ -1861,6 +1863,9 @@ class Spect(Resample):
                             # untraced edge, so just continue for now.
                             log.warning(f"Unable to trace edge at {loc:.2f}.")
                             continue
+
+                        if len(in_coords) == 0 and edge_in_array:
+                            log.warning(f"Failed to trace edge at {loc:.2f}.")
 
                         # This complicated bit of code parses out coordinates
                         # for the traced edges.
