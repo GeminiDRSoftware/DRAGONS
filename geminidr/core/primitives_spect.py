@@ -1659,6 +1659,7 @@ class Spect(Resample):
                 std = np.std(median_slice_1)
                 multiplier = 3.5 if observing_mode == 'LS' else 1.
                 peak_height = multiplier * std
+                cwidth = 8
                 if exp_edges_1[0] < 0:
                     # If the expected edge position is off the end of the
                     # detector, don't try to match as it might pick up
@@ -1672,7 +1673,8 @@ class Spect(Resample):
                     # find_peaks returns integer values, so use pinpoint_peaks
                     # to better describe the positions.
                     positions_1, _ = tracing.pinpoint_peaks(median_slice_1,
-                                                            peaks=positions_1)
+                                                            peaks=positions_1,
+                                                            halfwidth=cwidth//2)
                 if exp_edges_2[0] > ext.shape[1-dispaxis]:
                     positions_2 = []
                 else:
@@ -1681,7 +1683,8 @@ class Spect(Resample):
                                                 distance=5,
                                                 prominence=2.*std)
                     positions_2, _ = tracing.pinpoint_peaks(median_slice_2,
-                                                            peaks=positions_2)
+                                                            peaks=positions_2,
+                                                            halfwidth=cwidth//2)
 
                 log.fullinfo('Found edge candidates at:\n'
                              f'  {edge1.capitalize()}: {positions_1}\n'
@@ -1855,7 +1858,8 @@ class Spect(Resample):
                                 max_missed=params['debug_max_missed'],
                                 step=params['debug_step'],
                                 max_shift=params['debug_max_shift'],
-                                min_peak_value=5*ext.read_noise())
+                                min_peak_value=5*ext.read_noise(),
+                                cwidth=cwidth)
                         except ValueError:
                             # Unable to trace edge. If one edge can't be
                             # traced but the other can, the same model (shifted
