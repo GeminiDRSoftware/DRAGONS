@@ -884,7 +884,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def clear_all_lines(self):
         """
-        Called when the user clicks the "Clear all ines" button. Deletes
+        Called when the user clicks the "Clear all lines" button. Deletes
         all identified lines, performs a new fit.
         """
         self.model.data.data = {col: [] for col, values in self.model.data.data.items()}
