@@ -552,6 +552,25 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         return new_model
 
+    @staticmethod
+    def _get_plot_ranges(plot: figure):
+        """Get the start and end of the x and y ranges of a plot."""
+        x_range = plot.x_range
+        y_range = plot.y_range
+
+        ranges = {
+            "x": (x_range.start, x_range.end),
+            "y": (y_range.start, y_range.end),
+        }
+
+        return ranges
+
+    def plot_range(self):
+        return self._get_plot_ranges(self.p_spectrum)
+
+    def plot_range_refplot(self):
+        return self._get_plot_ranges(self.p_refplot)
+
     def label_height(self, x):
         """Provide a location for a wavelength label identifying a line.
 
