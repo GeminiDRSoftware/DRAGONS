@@ -568,7 +568,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
     def plot_range(self):
         return self._get_plot_ranges(self.p_spectrum)
 
-    def plot_range_refplot(self):
+    def refplot_range(self):
         return self._get_plot_ranges(self.p_refplot)
 
     def label_height(self, x):
@@ -586,14 +586,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
         -------
         float/list : appropriate y value(s) for writing a label
         """
-        # Height relative to points in the spectrum, rather than relative to
-        # the plot.
-        height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
+        plot_range = self.plot_range()
+        height = abs(plot_range['y'][0] - plot_range['y'][1])
 
         if self.absorption:
             padding = -0.05 * height
+
         else:
             padding = 0.25 * height
+
         try:
             return [
                 self.spectrum.data["spectrum"][int(xx + 0.5)] + padding
@@ -615,14 +616,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
         -------
         float/list : appropriate y value(s) for writing a label
         """
-        # Height relative to points in the spectrum, rather than relative to
-        # the plot.
-        height = 44 / 29 * np.nanmax(self.refplot_linelist.data["intensities"])
+        plot_range = self.refplot_range()
+        height = abs(plot_range['y'][0] - plot_range['y'][1])
 
         if self.absorption:
             padding = -0.05 * height
+
         else:
-            padding = 0.35 * height
+            padding = 0.25 * height
+
         heights = self.refplot_linelist.data["intensities"] + padding
         return heights
 
