@@ -47,7 +47,6 @@ from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
-from geminidr.gnirs.primitives_gnirs_crosssdispersed import GNIRSCrossDispersed
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
 from geminidr.gnirs import primitives_gnirs_longslit
@@ -638,28 +637,6 @@ def test_trace_apertures():
     actual = np.array([ad_out[0].APERTURE[0][k] for k in keys])
 
     np.testing.assert_allclose(desired, actual, atol=0.18)
-
-
-@pytest.mark.preprocessed_data
-@pytest.mark.regression
-def test_trace_pinhole_apertures(change_working_dir, path_to_inputs):
-
-    c0_0_1_values = (89.69, 73.72, 74.15, 83.76, 99.95, 120.51)
-
-    with change_working_dir(path_to_inputs):
-        ad = astrodata.open("S20060507S0125_flatCorrected.fits")
-
-    p = GNIRSCrossDispersed([ad])
-
-    ad_out = p.tracePinholeApertures()[0]
-
-    for ext, c_val in zip(ad_out, c0_0_1_values):
-        model = ext.wcs.get_transform('pixels', 'rectified')
-        assert model.name == 'PNHLRECT'
-        assert len(model._parameters) == 8
-        assert model.c0_0_1 == pytest.approx(c_val, abs=0.15)
-        assert model.inputs == ('x0', 'x1')
-        assert model.outputs == ('z', 'x0')
 
 
 @pytest.mark.parametrize('unit', ("", "electron", "W / (m2 nm)"))

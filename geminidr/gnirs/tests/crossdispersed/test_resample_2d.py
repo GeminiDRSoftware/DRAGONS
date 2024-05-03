@@ -7,7 +7,7 @@ import pytest
 
 import astrodata
 import gemini_instruments
-from geminidr.gnirs.primitives_gnirs_crosssdispersed import GNIRSCrossDispersed
+from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 from gempy.utils import logutils
 
 # Test paremeters ------------------------------------------------------
@@ -19,7 +19,7 @@ test_datasets = (
     "S20060507S0051_distortionCorrected.fits",
 )
 
-# Widths of the
+# Widths of the extensions after cutting
 ext_widths = (157, 130, 135, 159, 197, 245)
 
 # Local fixtures and helper functions ----------------------------------
