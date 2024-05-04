@@ -12,8 +12,6 @@ import astrodata
 import geminidr
 from astropy.modeling import models
 from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
-# from gempy.library import transform, astromodels as am
-# from gempy.testing import assert_have_same_distortion
 from gempy.utils import logutils
 from recipe_system.testing import ref_ad_factory
 
