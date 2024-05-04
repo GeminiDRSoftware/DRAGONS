@@ -1713,7 +1713,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     for j in range(min(trace.steps_missed + 1, data.shape[0])):
                         effective_ypos = step_centers[step_index] - 0.5 * j * step
                         tolerance = max_shift * abs(effective_ypos - trace.last_point[0])
-                        predicted_peak = trace.predict_location(effective_ypos, order=0)
+                        predicted_peak = trace.predict_location(effective_ypos, order=1)
 
                         peaks, peak_values = pinpoint_peaks(
                             data[j], peaks=[predicted_peak], mask=mask[j],
