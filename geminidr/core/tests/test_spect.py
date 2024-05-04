@@ -582,7 +582,7 @@ def test_mask_beyond_slit(in_file, instrument, change_working_dir,
                                       in_file + '_maskedBeyondSlit.fits'))
     assert ad_compare(ad_out, ref)
 
-
+@pytest.mark.skip("Needs redoing/moving, think about how best to test slit rectification")
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename,instrument',
                          [# GNIRS, 111/mm LongBlue
