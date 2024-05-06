@@ -625,8 +625,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # Get points around the line.
         def get_nearby_points(p):
-            low = max(0, int(p - 4.5))
-            high = min(len(spectrum), int(p + 5.5))
+            distance = 5
+            low = max(0, int(p - distance + 0.5))
+            high = min(len(spectrum), int(p + distance + 0.5))
             return spectrum[low:high]
 
         ranges = (
