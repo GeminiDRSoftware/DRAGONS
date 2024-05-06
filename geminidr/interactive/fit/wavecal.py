@@ -579,10 +579,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                                       text_color='gray',
                                                       text_baseline='middle', text_align=text_align,
                                                       text_font_size=f'{font_size}pt')
-            p_refplot.y_range.on_change("start", lambda attr, old, new:
-                                         self.update_refplot_label_heights())
-            p_refplot.y_range.on_change("end", lambda attr, old, new:
-                                         self.update_refplot_label_heights())
 
             # Set the initial vertical range to include some padding for labels
             y_low = np.amin(self.refplot_linelist.data["intensities"])
@@ -731,12 +727,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] - lheight
             else:
                 self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
-
-    def update_refplot_label_heights(self):
-        """Simple callback to move the labels if the reference spectrum panel is resized"""
-        # This is now defunct.
-        logging.warning("update_refplot_label_heights called, but is defunct")
-        return
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
@@ -1196,7 +1186,6 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                             'labels': ["{:.2f}".format(w) for w in wlengths]
                         }
                     )
-                    self.panels[i].update_refplot_label_heights()
                     self.panels[i].update_refplot_name(this_dict["meta"]["refplot_name"])
                     self.panels[i].reset_view()
                 except (AttributeError, KeyError):
