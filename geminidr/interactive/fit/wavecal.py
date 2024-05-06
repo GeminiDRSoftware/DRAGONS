@@ -387,8 +387,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # Set the initial vertical range to include some padding for labels
         label_positions = self.label_height(self.model.x)
-        y_low = np.amin(label_positions)
-        y_high = np.amax(label_positions)
+        min_line_intensity = np.amin(label_positions)
+        min_spectrum_intensity = np.amin(self.spectrum.data["spectrum"])
+        max_line_intensity = np.amax(label_positions)
+        max_spectrum_intensity = np.amax(self.spectrum.data["spectrum"])
+        y_low = min(min_line_intensity, min_spectrum_intensity)
+        y_high = max(max_line_intensity, max_spectrum_intensity)
         spectrum_range = y_high - y_low
         max_assumed_chars = 10
         text_padding = max_assumed_chars * font_size
@@ -580,8 +584,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                                       text_font_size=f'{font_size}pt')
 
             # Set the initial vertical range to include some padding for labels
-            y_low = np.amin(self.refplot_linelist.data["intensities"])
-            y_high = np.amax(self.refplot_linelist.data["intensities"])
+            min_line_intensity = np.amin(self.refplot_linelist.data["intensities"])
+            min_spectrum_intensity = np.amin(self.refplot_spectrum.data["refplot_spectrum"])
+            max_line_intensity = np.amax(self.refplot_linelist.data["intensities"])
+            max_spectrum_intensity = np.amax(self.refplot_spectrum.data["refplot_spectrum"])
+            y_low = min(min_line_intensity, min_spectrum_intensity)
+            y_high = max(max_line_intensity, max_spectrum_intensity)
             spectrum_range = y_high - y_low
             labels = self.refplot_linelist.data["labels"]
             text_padding = max(len(x) for x in labels) * font_size
