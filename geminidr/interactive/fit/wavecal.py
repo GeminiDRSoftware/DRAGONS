@@ -327,7 +327,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             mode="center",
         )
 
-        p_spectrum.text(
+        self._spectrum_line_labels = p_spectrum.text(
             x="fitted",
             y="heights",
             text="lines",
@@ -519,12 +519,26 @@ class WavelengthSolutionPanel(Fit1DPanel):
             p_refplot.sizing_mode = 'stretch_width'
             p_refplot.step(x='wavelengths', y='refplot_spectrum', source=self.refplot_spectrum,
                             line_width=1, color="gray", mode="center")
-            p_refplot.text(name="labels",
-                           x='wavelengths', y= 'heights', text='labels',
-                            source=self.refplot_linelist, angle=0.5 * np.pi,
-                            text_color='gray',
-                            text_baseline='middle', text_align='right',
-                            text_font_size='8pt')
+
+            # Offset is in pixels in screen space (up is negative, down is
+            # positive) Technically, this is actually relative to the anchor
+            # point for the text, which is the center of the text, so it's
+            # inverse the common axes logic. And also not standard for, e.g.,
+            # image coordinates in most software.
+            y_offset = -5 
+            text_align = 'left'
+
+            if self.absorption:
+                y_offset = -y_offset
+                text_align = 'right'
+
+            self._replot_line_labels = p_refplot.text(name="labels",
+                                                      x='wavelengths', y='intensities', text='labels',
+                                                      y_offset=y_offset,
+                                                      source=self.refplot_linelist, angle=0.5 * np.pi,
+                                                      text_color='gray',
+                                                      text_baseline='middle', text_align=text_align,
+                                                      text_font_size='8pt')
             p_refplot.y_range.on_change("start", lambda attr, old, new:
                                          self.update_refplot_label_heights())
             p_refplot.y_range.on_change("end", lambda attr, old, new:
