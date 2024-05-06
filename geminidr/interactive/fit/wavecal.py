@@ -5,7 +5,6 @@ WavelengthSolutionVisualizer classes, which are used to interactively fit a
 wavelength solution to a spectrum.
 """
 import logging
-from tkinter import font
 import uuid
 
 from bisect import bisect
