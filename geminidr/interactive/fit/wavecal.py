@@ -5,6 +5,7 @@ WavelengthSolutionVisualizer classes, which are used to interactively fit a
 wavelength solution to a spectrum.
 """
 import logging
+from tkinter import font
 import uuid
 
 from bisect import bisect
@@ -332,6 +333,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # for the text, which is the center of the text, so it's inverse the
         # common axes logic. And also not standard for, e.g., image coordinates
         # in most software.
+        font_size = 10
         y_offset = -5
         text_align = 'left'
 
@@ -349,7 +351,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             text_color=self.model.mask_rendering_kwargs()["color"],
             text_baseline="middle",
             text_align=text_align,
-            text_font_size="10pt",
+            text_font_size=f"{font_size}pt",
         )
 
         delete_line_handler = Handler("d", "Delete arc line", self.delete_line)
@@ -383,6 +385,28 @@ class WavelengthSolutionPanel(Fit1DPanel):
         p_spectrum.y_range.on_change(
             "end", lambda attr, old, new: self.update_label_heights()
         )
+
+        # Set the initial vertical range to include some padding for labels
+        label_positions = self.label_height(self.model.x)
+        y_low = np.amin(label_positions)
+        y_high = np.amax(label_positions)
+        spectrum_range = y_high - y_low
+        max_assumed_chars = 10
+        text_padding = max_assumed_chars * font_size
+        margin_padding = 0.1 * spectrum_range
+
+        # Scale text padding to plot units
+        text_padding *= 4 * (y_high - y_low) / (3 * p_spectrum.height)
+
+        if self.absorption:
+            y_low -= text_padding + margin_padding
+            y_high += margin_padding
+
+        else:
+            y_low -= margin_padding
+            y_high += text_padding + margin_padding
+
+        p_spectrum.y_range = bm.Range1d(start=y_low, end=y_high)
 
         self.p_spectrum = p_spectrum
 
@@ -541,6 +565,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
             y_offset = -5 
             text_align = 'left'
 
+            # Font size (pt)
+            font_size = 8
+
             if self.absorption:
                 y_offset = -y_offset
                 text_align = 'right'
@@ -551,11 +578,33 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                                       source=self.refplot_linelist, angle=0.5 * np.pi,
                                                       text_color='gray',
                                                       text_baseline='middle', text_align=text_align,
-                                                      text_font_size='8pt')
+                                                      text_font_size=f'{font_size}pt')
             p_refplot.y_range.on_change("start", lambda attr, old, new:
                                          self.update_refplot_label_heights())
             p_refplot.y_range.on_change("end", lambda attr, old, new:
                                          self.update_refplot_label_heights())
+
+            # Set the initial vertical range to include some padding for labels
+            y_low = np.amin(self.refplot_linelist.data["intensities"])
+            y_high = np.amax(self.refplot_linelist.data["intensities"])
+            spectrum_range = y_high - y_low
+            labels = self.refplot_linelist.data["labels"]
+            text_padding = max(len(x) for x in labels) * font_size
+            margin_padding = 0.1 * spectrum_range
+
+            # Scale text padding to plot units
+            text_padding *= 4 * (y_high - y_low) / (3 * p_refplot.height)
+
+            if self.absorption:
+                y_low -= text_padding + margin_padding
+                y_high += margin_padding
+
+            else:
+                y_low -= margin_padding
+                y_high += text_padding + margin_padding
+
+            p_refplot.y_range = bm.Range1d(start=y_low, end=y_high)
+
             self.p_refplot = p_refplot
 
             return [p_refplot, p_spectrum, identify_panel, info_panel.component,
