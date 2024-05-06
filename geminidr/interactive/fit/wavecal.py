@@ -1133,7 +1133,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             for key in params.reinit_params:
                 # The following is to add a special subset of UI widgets
                 # for fine-tuning the generated ATRAN linelist
-                if type(key) == dict and "atran_linelist_pars" in key:
+                if isinstance(key, dict) and "atran_linelist_pars" in key:
                     linelist_reinit_params = key.get("atran_linelist_pars")
                     params.reinit_params.remove(key)
                     params.reinit_params = params.reinit_params+linelist_reinit_params
