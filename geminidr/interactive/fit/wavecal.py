@@ -327,15 +327,28 @@ class WavelengthSolutionPanel(Fit1DPanel):
             mode="center",
         )
 
+        # Offset is in pixels in screen space (up is negative, down is
+        # positive) Technically, this is actually relative to the anchor point
+        # for the text, which is the center of the text, so it's inverse the
+        # common axes logic. And also not standard for, e.g., image coordinates
+        # in most software.
+        y_offset = -5
+        text_align = 'left'
+
+        if self.absorption:
+            y_offset = -y_offset
+            text_align = 'right'
+
         self._spectrum_line_labels = p_spectrum.text(
             x="fitted",
             y="heights",
             text="lines",
+            y_offset=y_offset,
             source=self.model.data,
             angle=0.5 * np.pi,
             text_color=self.model.mask_rendering_kwargs()["color"],
             text_baseline="middle",
-            text_align="right",
+            text_align=text_align,
             text_font_size="10pt",
         )
 
@@ -600,23 +613,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
         -------
         float/list : appropriate y value(s) for writing a label
         """
-        plot_range = self.plot_range()
-        height = abs(plot_range['y'][0] - plot_range['y'][1])
-
-        if self.absorption:
-            padding = -0.05 * height
-
-        else:
-            padding = 0.25 * height
-
         try:
             return [
-                self.spectrum.data["spectrum"][int(xx + 0.5)] + padding
+                self.spectrum.data["spectrum"][int(xx + 0.5)]
                 for xx in x
             ]
 
         except TypeError:
-            return self.spectrum.data["spectrum"][int(x + 0.5)] + padding
+            return self.spectrum.data["spectrum"][int(x + 0.5)]
 
     def refplot_label_height(self):
         """
