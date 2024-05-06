@@ -678,8 +678,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
             get_nearby_points(xx) for xx in x
         )
 
+        extrema_func = np.amin if self.absorption else np.amax
+
         heights = [
-            values.max()
+            extrema_func(values)
             for values in ranges
         ]
 
