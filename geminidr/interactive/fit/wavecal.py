@@ -332,7 +332,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # for the text, which is the center of the text, so it's inverse the
         # common axes logic. And also not standard for, e.g., image coordinates
         # in most software.
-        y_offset = -5
+        y_offset = -15
         text_align = 'left'
 
         if self.absorption:
@@ -663,7 +663,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def update_refplot_label_heights(self):
         """Simple callback to move the labels if the reference spectrum panel is resized"""
-        self.refplot_linelist.data['heights'] = self.refplot_label_height()
+        # This is now defunct.
+        logging.warning("update_refplot_label_heights called, but is defunct")
+        return
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
