@@ -332,7 +332,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # for the text, which is the center of the text, so it's inverse the
         # common axes logic. And also not standard for, e.g., image coordinates
         # in most software.
-        y_offset = -15
+        y_offset = -5
         text_align = 'left'
 
         if self.absorption:
@@ -614,13 +614,34 @@ class WavelengthSolutionPanel(Fit1DPanel):
         float/list : appropriate y value(s) for writing a label
         """
         try:
-            return [
-                self.spectrum.data["spectrum"][int(xx + 0.5)]
-                for xx in x
-            ]
+            iter(x)
+            single_value = False
 
         except TypeError:
-            return self.spectrum.data["spectrum"][int(x + 0.5)]
+            single_value = True
+            x = [x]
+
+        spectrum = self.spectrum.data["spectrum"]
+
+        # Get points around the line.
+        def get_nearby_points(p):
+            low = max(0, int(p - 4.5))
+            high = min(len(spectrum), int(p + 5.5))
+            return spectrum[low:high]
+
+        ranges = (
+            get_nearby_points(xx) for xx in x
+        )
+
+        heights = [
+            values.max()
+            for values in ranges
+        ]
+
+        if single_value:
+            return heights[0]
+        
+        return heights
 
     def refplot_label_height(self):
         """
