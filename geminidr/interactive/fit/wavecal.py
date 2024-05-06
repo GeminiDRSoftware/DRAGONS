@@ -1163,7 +1163,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
 
                 # spectrum update
                 spectrum = self.panels[i].spectrum
-                if self.absorption == True:
+                if self.absorption:
                     spectrum.data['spectrum'] = -this_dict["meta"]["spectrum"]
                 else:
                     spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
