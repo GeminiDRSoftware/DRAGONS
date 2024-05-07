@@ -1528,6 +1528,9 @@ class Spect(Resample):
         debug_step : int
             The number of rows/columns per step. The default value is set per
             instrument/mode, but can be changed if needed.
+        debug_nsum : int
+            The number of rows/columns to sum each step. The default value is
+            set per instrument/mode, but can be changed if needed.
 
         Returns
         -------
@@ -1857,6 +1860,7 @@ class Spect(Resample):
                                 variance=ext.variance,
                                 max_missed=params['debug_max_missed'],
                                 step=params['debug_step'],
+                                nsum=params['debug_nsum'],
                                 max_shift=params['debug_max_shift'],
                                 min_peak_value=5*ext.read_noise(),
                                 cwidth=cwidth)

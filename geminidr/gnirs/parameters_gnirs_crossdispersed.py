@@ -24,7 +24,9 @@ class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
     debug_max_shift = config.RangeField("Maximum perpendicular shift (in pixels) per pixel",
                                         float, 0.3, min=0.)
     debug_step = config.RangeField("Step size (in pixels) for fitting edges",
-                                   int, 8, min=1)
+                                   int, 10, min=5)
+    debug_nsum = config.RangeField("Columns/rows to sum each step when fitting edges",
+                                   int, 10, min=5)
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     order = config.RangeField("Order of fitting function", int, 3, min=0,

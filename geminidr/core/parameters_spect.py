@@ -150,7 +150,9 @@ class determineSlitEdgesConfig(config.Config):
     debug_max_shift = config.RangeField("Maximum perpendicular shift (in pixels) per pixel",
                                         float, 0.08, min=0.)
     debug_step = config.RangeField("Step size (in pixels) for fitting edges",
-                                   int, 20, min=1)
+                                   int, 20, min=5)
+    debug_nsum = config.RangeField("Columns/rows to sum each step when fitting edges",
+                                   int, 10, min=5)
 
 
 class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
