@@ -327,16 +327,30 @@ class WavelengthSolutionPanel(Fit1DPanel):
             mode="center",
         )
 
-        p_spectrum.text(
+        # Offset is in pixels in screen space (up is negative, down is
+        # positive) Technically, this is actually relative to the anchor point
+        # for the text, which is the center of the text, so it's inverse the
+        # common axes logic. And also not standard for, e.g., image coordinates
+        # in most software.
+        font_size = 10
+        y_offset = -5
+        text_align = 'left'
+
+        if self.absorption:
+            y_offset = -y_offset
+            text_align = 'right'
+
+        self._spectrum_line_labels = p_spectrum.text(
             x="fitted",
             y="heights",
             text="lines",
+            y_offset=y_offset,
             source=self.model.data,
             angle=0.5 * np.pi,
             text_color=self.model.mask_rendering_kwargs()["color"],
             text_baseline="middle",
-            text_align="right",
-            text_font_size="10pt",
+            text_align=text_align,
+            text_font_size=f"{font_size}pt",
         )
 
         delete_line_handler = Handler("d", "Delete arc line", self.delete_line)
@@ -370,6 +384,32 @@ class WavelengthSolutionPanel(Fit1DPanel):
         p_spectrum.y_range.on_change(
             "end", lambda attr, old, new: self.update_label_heights()
         )
+
+        # Set the initial vertical range to include some padding for labels
+        label_positions = self.label_height(self.model.x)
+        min_line_intensity = np.amin(label_positions)
+        min_spectrum_intensity = np.amin(self.spectrum.data["spectrum"])
+        max_line_intensity = np.amax(label_positions)
+        max_spectrum_intensity = np.amax(self.spectrum.data["spectrum"])
+        y_low = min(min_line_intensity, min_spectrum_intensity)
+        y_high = max(max_line_intensity, max_spectrum_intensity)
+        spectrum_range = y_high - y_low
+        max_assumed_chars = 10
+        text_padding = max_assumed_chars * font_size
+        margin_padding = 0.1 * spectrum_range
+
+        # Scale text padding to plot units
+        text_padding *= 4 * (y_high - y_low) / (3 * p_spectrum.height)
+
+        if self.absorption:
+            y_low -= text_padding + margin_padding
+            y_high += margin_padding
+
+        else:
+            y_low -= margin_padding
+            y_high += text_padding + margin_padding
+
+        p_spectrum.y_range = bm.Range1d(start=y_low, end=y_high)
 
         self.p_spectrum = p_spectrum
 
@@ -519,16 +559,55 @@ class WavelengthSolutionPanel(Fit1DPanel):
             p_refplot.sizing_mode = 'stretch_width'
             p_refplot.step(x='wavelengths', y='refplot_spectrum', source=self.refplot_spectrum,
                             line_width=1, color="gray", mode="center")
-            p_refplot.text(name="labels",
-                           x='wavelengths', y= 'heights', text='labels',
-                            source=self.refplot_linelist, angle=0.5 * np.pi,
-                            text_color='gray',
-                            text_baseline='middle', text_align='right',
-                            text_font_size='8pt')
-            p_refplot.y_range.on_change("start", lambda attr, old, new:
-                                         self.update_refplot_label_heights())
-            p_refplot.y_range.on_change("end", lambda attr, old, new:
-                                         self.update_refplot_label_heights())
+
+            # Offset is in pixels in screen space (up is negative, down is
+            # positive) Technically, this is actually relative to the anchor
+            # point for the text, which is the center of the text, so it's
+            # inverse the common axes logic. And also not standard for, e.g.,
+            # image coordinates in most software.
+            y_offset = -5 
+            text_align = 'left'
+
+            # Font size (pt)
+            font_size = 8
+
+            if self.absorption:
+                y_offset = -y_offset
+                text_align = 'right'
+
+            self._replot_line_labels = p_refplot.text(name="labels",
+                                                      x='wavelengths', y='intensities', text='labels',
+                                                      y_offset=y_offset,
+                                                      source=self.refplot_linelist, angle=0.5 * np.pi,
+                                                      text_color='gray',
+                                                      text_baseline='middle', text_align=text_align,
+                                                      text_font_size=f'{font_size}pt')
+
+            # Set the initial vertical range to include some padding for labels
+            min_line_intensity = np.amin(self.refplot_linelist.data["intensities"])
+            min_spectrum_intensity = np.amin(self.refplot_spectrum.data["refplot_spectrum"])
+            max_line_intensity = np.amax(self.refplot_linelist.data["intensities"])
+            max_spectrum_intensity = np.amax(self.refplot_spectrum.data["refplot_spectrum"])
+            y_low = min(min_line_intensity, min_spectrum_intensity)
+            y_high = max(max_line_intensity, max_spectrum_intensity)
+            spectrum_range = y_high - y_low
+            labels = self.refplot_linelist.data["labels"]
+            text_padding = max(len(x) for x in labels) * font_size
+            margin_padding = 0.1 * spectrum_range
+
+            # Scale text padding to plot units
+            text_padding *= 4 * (y_high - y_low) / (3 * p_refplot.height)
+
+            if self.absorption:
+                y_low -= text_padding + margin_padding
+                y_high += margin_padding
+
+            else:
+                y_low -= margin_padding
+                y_high += text_padding + margin_padding
+
+            p_refplot.y_range = bm.Range1d(start=y_low, end=y_high)
+
             self.p_refplot = p_refplot
 
             return [p_refplot, p_spectrum, identify_panel, info_panel.component,
@@ -552,8 +631,30 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         return new_model
 
+    @staticmethod
+    def _get_plot_ranges(plot: figure):
+        """Get the start and end of the x and y ranges of a plot."""
+        x_range = plot.x_range
+        y_range = plot.y_range
+
+        ranges = {
+            "x": (x_range.start, x_range.end),
+            "y": (y_range.start, y_range.end),
+        }
+
+        return ranges
+
+    def plot_range(self):
+        return self._get_plot_ranges(self.p_spectrum)
+
+    def refplot_range(self):
+        return self._get_plot_ranges(self.p_refplot)
+
     def label_height(self, x):
-        """Provide a location for a wavelength label identifying a line
+        """Provide a location for a wavelength label identifying a line.
+
+        This calculates the label heights relative to lines already present in
+        the plot, and lets bokeh handle rescaling the y-axis as needed.
 
         Parameters
         ----------
@@ -565,49 +666,52 @@ class WavelengthSolutionPanel(Fit1DPanel):
         float/list : appropriate y value(s) for writing a label
         """
         try:
-            height = (
-                self.p_spectrum.y_range.end - self.p_spectrum.y_range.start
-            )
-
-        except TypeError:  # range is None, plot being initialized
-            # This is calculated on the basis that bokeh pads by 5% of the
-            # data range on each side
-            # height = (44 / 29 * self.spectrum.data['spectrum'].max() -
-            #          1.1 * self.spectrum.data['spectrum'].min())
-
-            height = 44 / 29 * np.nanmax(self.spectrum.data['spectrum'])
-        if self.absorption:
-            padding = -0.05 * height
-        else:
-            padding = 0.25 * height
-        try:
-            return [
-                self.spectrum.data["spectrum"][int(xx + 0.5)] + padding
-                for xx in x
-            ]
+            iter(x)
+            single_value = False
 
         except TypeError:
-            return self.spectrum.data["spectrum"][int(x + 0.5)] + padding
+            single_value = True
+            x = [x]
+
+        spectrum = self.spectrum.data["spectrum"]
+
+        # Get points around the line.
+        def get_nearby_points(p):
+            distance = 5
+            low = max(0, int(p - distance + 0.5))
+            high = min(len(spectrum), int(p + distance + 0.5))
+            return spectrum[low:high]
+
+        extrema_func = np.amin if self.absorption else np.amax
+
+        heights = [extrema_func(get_nearby_points(xx)) for xx in x]
+
+        if single_value:
+            return heights[0]
+        
+        return heights
 
     def refplot_label_height(self):
         """
         Provide a location for a wavelength label identifying a line
-        in the reference spectrum plot
+        in the reference spectrum plot.
+
+        This calculates the label heights relative to lines already present in
+        the plot, and lets bokeh handle rescaling the y-axis as needed.
 
         Returns
         -------
         float/list : appropriate y value(s) for writing a label
         """
-        try:
-            height = self.p_refplot.y_range.end - self.p_refplot.y_range.start
-        except TypeError:  # range is None, plot being initialized
-            # This is calculated on the basis that bokeh pads by 5% of the
-            # data range on each side
-            height = 44 / 29 * np.nanmax(self.refplot_linelist.data["intensities"])
+        plot_range = self.refplot_range()
+        height = abs(plot_range['y'][0] - plot_range['y'][1])
+
         if self.absorption:
             padding = -0.05 * height
+
         else:
-            padding = 0.35 * height
+            padding = 0.25 * height
+
         heights = self.refplot_linelist.data["intensities"] + padding
         return heights
 
@@ -625,10 +729,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] - lheight
             else:
                 self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
-
-    def update_refplot_label_heights(self):
-        """Simple callback to move the labels if the reference spectrum panel is resized"""
-        self.refplot_linelist.data['heights'] = self.refplot_label_height()
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
@@ -888,7 +988,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def clear_all_lines(self):
         """
-        Called when the user clicks the "Clear all ines" button. Deletes
+        Called when the user clicks the "Clear all lines" button. Deletes
         all identified lines, performs a new fit.
         """
         self.model.data.data = {col: [] for col, values in self.model.data.data.items()}
@@ -1041,7 +1141,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             for key in params.reinit_params:
                 # The following is to add a special subset of UI widgets
                 # for fine-tuning the generated ATRAN linelist
-                if type(key) == dict and "atran_linelist_pars" in key:
+                if isinstance(key, dict) and "atran_linelist_pars" in key:
                     linelist_reinit_params = key.get("atran_linelist_pars")
                     params.reinit_params.remove(key)
                     params.reinit_params = params.reinit_params+linelist_reinit_params
@@ -1071,7 +1171,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
 
                 # spectrum update
                 spectrum = self.panels[i].spectrum
-                if self.absorption == True:
+                if self.absorption:
                     spectrum.data['spectrum'] = -this_dict["meta"]["spectrum"]
                 else:
                     spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
@@ -1088,7 +1188,6 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                             'labels': ["{:.2f}".format(w) for w in wlengths]
                         }
                     )
-                    self.panels[i].update_refplot_label_heights()
                     self.panels[i].update_refplot_name(this_dict["meta"]["refplot_name"])
                     self.panels[i].reset_view()
                 except (AttributeError, KeyError):
