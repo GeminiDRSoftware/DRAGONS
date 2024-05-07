@@ -3467,7 +3467,7 @@ class Spect(Resample):
         sfx = params["suffix"]
 
         # Parse parameters
-        debug = params['debug_plots']
+        debug_plots = params['debug_plots']
 
         for ad in adinputs:
             log.stdinfo(f"Masking unilluminated regions in {ad.filename}")
@@ -3515,7 +3515,7 @@ class Spect(Resample):
                 # pixels (64), and bitwise OR composite with the existing DQ mask.
                 ext.mask |= mask * DQ.unilluminated
 
-                if debug:
+                if debug_plots:
                     # Show a plot of the DQ plane after applying the mask
                     plt.subplot(111)
                     plt.imshow(ext.mask, origin='lower', cmap='gray')
