@@ -21,7 +21,7 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
         self.debug_reject_bad = False
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
-    order = config.RangeField("Order of fitting function", int, None, min=0,
+    order = config.RangeField("Order of fitting function", int, None, min=1,
                               optional=True)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=0.1, optional=True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), None,
