@@ -4,6 +4,7 @@ This module contains the WavelengthSolutionPanel and
 WavelengthSolutionVisualizer classes, which are used to interactively fit a
 wavelength solution to a spectrum.
 """
+from cProfile import label
 import logging
 import uuid
 
@@ -387,6 +388,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # Set the initial vertical range to include some padding for labels
         label_positions = self.label_height(self.model.x)
+        
+        # Some of the following code will fail if there are no labels for any
+        # reason (e.g., no fit). In that case, we'll just set the range to the
+        # min/max of the spectrum data, which we're collecting twice here (but
+        # it's cached by the ufunc anyways).
+        if not label_positions:
+            label_positions = self.spectrum.data["spectrum"]
+
+        # 
         min_line_intensity = np.amin(label_positions)
         min_spectrum_intensity = np.amin(self.spectrum.data["spectrum"])
         max_line_intensity = np.amax(label_positions)
