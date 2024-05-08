@@ -1846,7 +1846,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 if isinstance(tab_name_fmt, str):
                     msg += (
                         " If you want to use a string, you should use "
-                        "a lambda function like: \n"
+                        "a lambda function like:\n"
                         "  tab_name_fmt = lambda i: f'Extension {i}'\n"
                         "or, if you want to ignore the argument, use:\n"
                         "  tab_name_fmt = lambda _: 'Extension'"
