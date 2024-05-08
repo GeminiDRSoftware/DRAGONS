@@ -661,6 +661,8 @@ class FittingParametersUI:
                 slider_width=128,
             )
 
+        self.order_slider = builder(vis.ui_params, "order", "Order")
+
         self.sigma_upper_slider = builder(
             vis.ui_params, "sigma_upper", "Sigma (Upper)"
         )
