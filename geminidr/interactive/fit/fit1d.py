@@ -1834,6 +1834,26 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 extra_masks=extra_masks,
             )
 
+            # tab_name_fmt is expected to be a callable, which traditionally is
+            # just an anonymous function passed to the relevant visualizer as
+            # an argument.
+            if not callable(tab_name_fmt):
+                msg = (
+                    f"tab_name_fmt must be callable, but got "
+                    f"{type(tab_name_fmt)} ({tab_name_fmt})."
+                )
+
+                if isinstance(tab_name_fmt, str):
+                    msg += (
+                        " If you want to use a string, you should use "
+                        "a lambda function like: \n"
+                        "  tab_name_fmt = lambda i: f'Extension {i}'\n"
+                        "or, if you want to ignore the argument, use:\n"
+                        "  tab_name_fmt = lambda _: 'Extension'"
+                    )
+
+                raise ValueError(msg)
+
             if turbo_tabs:
                 self.turbo.add_tab(tui.component, title=str(tab_name_fmt(i)))
 
