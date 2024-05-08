@@ -4,7 +4,6 @@ This module contains the WavelengthSolutionPanel and
 WavelengthSolutionVisualizer classes, which are used to interactively fit a
 wavelength solution to a spectrum.
 """
-from cProfile import label
 import logging
 import uuid
 
