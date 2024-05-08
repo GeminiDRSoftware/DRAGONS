@@ -1544,7 +1544,7 @@ class Spect(Resample):
         sfx = params["suffix"]
 
         # Parse parameters
-        debug = params['debug_plots']
+        debug_plots = params['debug_plots']
         spectral_order = params['spectral_order']
         edges1 = params['edges1']
         edges2 = params['edges2']
@@ -1692,7 +1692,7 @@ class Spect(Resample):
                 log.fullinfo('Found edge candidates at:\n'
                              f'  {edge1.capitalize()}: {positions_1}\n'
                              f'  {edge2.capitalize()}: {positions_2}\n')
-                if debug:
+                if debug_plots:
                     # Print a diagnostic plot of the profile being fitted.
                     plt.plot(median_slice_1, label='1st-derivative of flux')
                     plt.plot(median_slice_2, label='Inverse')
@@ -1707,7 +1707,7 @@ class Spect(Resample):
                     log.warning("No edges could be found for "
                                 f"{ad.orig_filename}.\n"
                                 "No SLITEDGE table will be attached.")
-                    if debug:
+                    if debug_plots:
                         plt.show()
                     continue
 
@@ -1770,11 +1770,11 @@ class Spect(Resample):
                                 "attached. Consider setting positions of\n"
                                 "edges manually using the `edges1` and "
                                 "`edges2` parameters.")
-                    if debug:
+                    if debug_plots:
                         plt.show()
                     continue
 
-                if debug:
+                if debug_plots:
                     for pair in edge_pairs:
                         for pos in pair:
                             plt.axvline(pos, color='Black', alpha=0.5,
@@ -1820,7 +1820,7 @@ class Spect(Resample):
                         with warnings.catch_warnings():
                             warnings.simplefilter('ignore', AstropyUserWarning)
                             m_final = fit_model(m_init, pair, guess,
-                                                sigma=n_sigma, verbose=debug)
+                                                sigma=n_sigma, verbose=debug_plots)
 
                         n_sigma += 1
                         expected = m_final.inverse(guess)
@@ -1911,7 +1911,7 @@ class Spect(Resample):
                                 in_coords_new[1 - dispaxis].astype(int)])
 
                             # Create a plot of weights for inspection.
-                            if debug:
+                            if debug_plots:
                                 plt.plot(in_coords_new[1-dispaxis], weights,
                                          label='Weights')
                                 plt.xlabel(f'{row_or_col.capitalize()} number')
@@ -1925,7 +1925,7 @@ class Spect(Resample):
                                 weights=weights,
                                 domain=[0, ext.shape[1 - dispaxis] - 1],
                                 points=in_coords_new[1 - dispaxis],
-                                plot=debug,
+                                plot=debug_plots,
                                 **fit1d_params,)
                             model_fit = am.model_to_table(_fit_1d.model)
 
