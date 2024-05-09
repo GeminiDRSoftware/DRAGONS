@@ -1575,36 +1575,43 @@ class Spect(Resample):
                 observing_mode = 'XD'
             else:
                 raise ValueError('Unsupported mode (not LS or XD).')
+            slit_name = 'order' if observing_mode == 'XD' else 'slit'
 
             log.stdinfo('Finding edges of illuminated region in flat for '
                         f'{ad.filename}')
 
             # Get the expected slit center and length for long slit.
+            width_from_mdf = True
             if (edges1 is not None) and (edges2 is not None):
                 log.stdinfo('Using user-supplied edges.')
+                width_from_mdf = False
                 exp_edges_1, exp_edges_2 = edges1, edges2
             elif (edges1 is None) and (edges2 is None):
                 exp_edges_1, exp_edges_2 = self._get_slit_edge_estimates(ad)
-                log.debug('Estimating fit edges...')
+                log.fullinfo('Using edges from MDF.')
             else:
                 log.warning("Both `edges1` and `edges2` parameters need to be "
                             "provided in order to use them. Using "
-                            "edges from mask definition files.")
+                            f"{slit_name} edges from MDF.")
                 exp_edges_1, exp_edges_2 = self._get_slit_edge_estimates(ad)
 
             slit_widths = [b - a for a, b in zip(exp_edges_1, exp_edges_2)]
             mdf_edge_guesses = [(a, b) for a, b in zip(exp_edges_1,
                                                        exp_edges_2)]
 
+
             edge1, edge2 = ("left", "right") if ad.dispersion_axis()[0] == 2\
                             else ("bottom", "top")
-            log.fullinfo('Expected edge positions:\n'
-                         f'  {edge1.capitalize()} edges: {exp_edges_1}\n'
-                         f'  {edge2.capitalize()} edges: {exp_edges_2}\n')
+            log.debug('Expected edge positions:\n'
+                      f'  {edge1.capitalize()} edges: {exp_edges_1}\n'
+                      f'  {edge2.capitalize()} edges: {exp_edges_2}\n')
+
+            if len(slit_widths) > 1:
+                log.stdinfo(f"Finding {len(slit_widths)} {slit_name}s.")
 
             # This is the number of rows/columns to sum around the row with
-            # the maxium flux to create the profile for finding edges, to
-            # help eliminate cosmic rays. The row used for finding edges
+            # the maximum flux to create the profile for finding edges, to
+            # help eliminate cosmic rays. The row/column used for finding edges
             # will also be at least this far from the ends of the detector.
             # XD slits can be much more tilted/curved, so need a smaller cut to
             # prevent the edges being too wide.
@@ -1617,7 +1624,7 @@ class Spect(Resample):
             for ext in ad:
 
                 dispaxis = 2 - ext.dispersion_axis()
-                log.fullinfo(f'Dispersion axis is axis {dispaxis}.')
+                log.debug(f"Dispersion axis is axis '{dispaxis}'.")
 
                 # Find the row/column with the highest median flux, at least
                 # `offset` pixels away from the edge of the detector. Will be
@@ -1633,8 +1640,13 @@ class Spect(Resample):
                     # use a predefined row.
                     cut = ad.MDF['y_ccd'][0]
 
-                row_or_col = 'row' if dispaxis == 0 else 'column'
-                log.fullinfo(f'Creating profile around {row_or_col} {cut}.')
+                # row_or_col = 'row' if dispaxis == 0 else 'column'
+                row_or_col = ['row', 'column'][dispaxis]
+                col_or_row = ['row', 'column'][dispaxis-1]
+                # Use 1-indexed numbers for rows/columns for user-facing output
+                # for easier legibility.
+                log.fullinfo(f"Creating profile around {row_or_col} {cut+1}"
+                             f" ± {offset} {row_or_col}s.")
 
                 # Take the first derivative of flux to find the slit edges.
                 # Left edges will be peaks, right edges troughs, so make a
@@ -1689,9 +1701,9 @@ class Spect(Resample):
                                                             peaks=positions_2,
                                                             halfwidth=cwidth//2)
 
-                log.fullinfo('Found edge candidates at:\n'
-                             f'  {edge1.capitalize()}: {positions_1}\n'
-                             f'  {edge2.capitalize()}: {positions_2}\n')
+                log.debug('Found edge candidates at:\n'
+                          f'  {edge1.capitalize()}: {positions_1}\n'
+                          f'  {edge2.capitalize()}: {positions_2}\n')
                 if debug_plots:
                     # Print a diagnostic plot of the profile being fitted.
                     plt.plot(median_slice_1, label='1st-derivative of flux')
@@ -1790,7 +1802,7 @@ class Spect(Resample):
                 # since it being too narrow sometimes causes the fitting to fail.
                 for slit_num, (pair, guess) in enumerate(zip(edge_pairs,
                                                              mdf_edge_guesses)):
-                    log.stdinfo(f"Fitting edges of slit {slit_num}")
+                    log.stdinfo(f"Finding edges of {slit_name} {slit_num+1}.")
                     # Create the model to shift and scale the slit to the found
                     # edges.
                     pair_center = (pair[0] + pair[1]) / 2
@@ -1802,19 +1814,19 @@ class Spect(Resample):
                     m_init = m_recenter | m_shift | m_scale | m_recenter.inverse
 
                     models_dict[pair_num] = {edge1: None, edge2: None}
-                    # log.fullinfo(f"Slit {slit_num} {'-' * 20}")
-                    log.fullinfo("  Fitting guess at "
-                                 f"({guess[0]}, {guess[1]}) to "
-                                 f"({pair[0]:.2f}, {pair[1]:.2f}).")
+                    log.fullinfo(f"  Fitting expected edges at {col_or_row}s "
+                                 f"{guess[0]+1:.0f} & {guess[1]+1:.0f} to "
+                                 f"found edges at {col_or_row}s "
+                                 f"{pair[0]:.0f} & {pair[1]:.0f}.")
 
                     n_sigma = 1
                     max_sigma = 10
                     tolerance = 1.0  # in pixels
                     while True:
-                        log.fullinfo(f'    Trying fitting with sigma={n_sigma}')
+                        log.debug(f'    Trying fitting with sigma={n_sigma}.')
                         if n_sigma > max_sigma:
-                            raise RuntimeError("Unable to fit slit edges. "
-                                               "Slit length may need adjusting "
+                            raise RuntimeError(f"Unable to fit {slit_name} edges. "
+                                               "Width may need adjusting "
                                                "using `edges1` and `edges2` "
                                                "parameters.")
                         with warnings.catch_warnings():
@@ -1828,11 +1840,11 @@ class Spect(Resample):
                            abs(expected[1] - pair[1]) < tolerance:
                             break
 
-                    log.fullinfo(f"  Found a shift of {m_final.offset_1.value:.3f} "
+                    log.fullinfo(f"  Found a shift of {m_final.offset_1.value:.2f} "
                                  "and a scale of "
                                  f"{m_final.factor_2.value:.3f}.")
-                    log.fullinfo("  Looking for edges at "
-                                 f"({expected[0]:.2f}, {expected[1]:.2f}).")
+                    log.fullinfo("  Tracing edges at "
+                                 f"{expected[0]+1:.0f} and {expected[1]+1:.0f}.")
 
                     for loc, arr, edge in zip(expected,
                                               [diffarr_1, diffarr_2],
@@ -1844,15 +1856,12 @@ class Spect(Resample):
                             edge_in_array = True
                         else:
                            edge_in_array = False
-                           log.debug(f"Not tracing at {loc:.2f} because "
-                                     "it is off (or too close to) the "
-                                     "detector edge.")
+                           log.debug(f"Not tracing at {loc+1:.0f} because "
+                                     "it is off (or within {buffer} pixels of) "
+                                     "the detector edge.")
                            continue
 
-                        # Trace the edge. max_shift is slightly larger than the
-                        # default value of 0.05 since there's (theoretically) no
-                        # chance of confusion with other lines, and some flats
-                        # have enough 'tilt' to exceed that value.
+                        # Trace the edge.
                         try:
                             ref_coords, in_coords = tracing.trace_lines(
                                 arr, dispaxis, start=cut,
@@ -1869,11 +1878,15 @@ class Spect(Resample):
                             # traced but the other can, the same model (shifted
                             # by the slit breadth) can be applied to the
                             # untraced edge, so just continue for now.
-                            log.warning(f"Unable to trace edge at {loc:.2f}.")
+                            log.warning(f"Unable to trace {edge} edge at "
+                                        f"{loc+1:.d}. This is fine if the "
+                                        "other edge can be traced. Continuing.")
                             continue
 
                         if len(in_coords) == 0 and edge_in_array:
-                            log.warning(f"Failed to trace edge at {loc:.2f}.")
+                            log.warning(f"Failed to trace {edge} edge at "
+                                        f"{loc+1:.0f} despite it being expected "
+                                        "on the array.")
 
                         # This complicated bit of code parses out coordinates
                         # for the traced edges.
@@ -1887,7 +1900,13 @@ class Spect(Resample):
                             # because it's off the end of the CCD or very
                             # close. Just continue for now and copy the model
                             # from the other edge of the pair at the end.
-                            log.warning(f"No edge was found at {loc:.2f}.")
+                            width_from = "MDF" if width_from_mdf else\
+                                "user_specified values"
+                            log.warning(f"Unable to locate {edge} slit edge "
+                                        f"near {row_or_col} {loc+1:.0f}; "
+                                        "using slit width of "
+                                        f"{slit_widths[slit_num]} pixels "
+                                        f"estimated from {width_from}.")
                             continue
 
                         else:
@@ -1901,8 +1920,10 @@ class Spect(Resample):
                             # Log the trace.
                             min_value = in_coords_new[1 - dispaxis].min()
                             max_value = in_coords_new[1 - dispaxis].max()
-                            log.fullinfo(f"    Edge at {loc:.2f} traced from "
-                                         f"{min_value} to {max_value}.")
+                            log.fullinfo(f"    {edge.capitalize()} edge at "
+                                         f"{loc+1:.0f} traced from "
+                                         f"{row_or_col}s {min_value:.0f} "
+                                         f"to {max_value:.0f}.")
 
                             # Perform the fit of the coordinates for the traced
                             # edges. Use log-weighting to help ensure valid
@@ -1931,22 +1952,22 @@ class Spect(Resample):
 
 
                             if _fit_1d.rms > 2.:
-                                raise RuntimeError(f"RMS of fit to edge {edge} "
+                                raise RuntimeError(f"RMS of fit to {edge} edge "
                                                    "exceeds 2 pixels "
-                                                   f"({_fit_1d.rms:.2f}).\n"
+                                                   f"({_fit_1d.rms:.3f}).\n"
                                                    "The order of the fit "
                                                    "may need to be increased "
-                                                   "with the 'spectral_order "
+                                                   "with the `spectral_order` "
                                                    "parameter.")
                             elif _fit_1d.rms > 0.5:
                                 log.warning(f"RMS of fit to {edge} edge is "
-                                            f"{_fit_1d.rms:.2f} pixels. "
+                                            f"{_fit_1d.rms:.3f} pixels. "
                                             "Consider increasing\n"
                                             "the order of the fit with the "
-                                            "'spectral_order' parameter")
+                                            "'spectral_order' parameter.")
                             else:
-                                log.fullinfo(f"    RMS of fit to {edge} edge is "
-                                            f"{_fit_1d.rms:.2f} pixels")
+                                log.fullinfo(f"      RMS of fit to {edge} edge "
+                                             f"is {_fit_1d.rms:.3f} pixels.")
 
                             models_dict[pair_num][edge] = model_fit
                             models_dict[pair_num][f"coords_{edge}"] = values
@@ -1977,7 +1998,7 @@ class Spect(Resample):
                         e_1, e_2 = m_final.inverse(mdf_edge_guesses[key])
                         log.warning("Couldn't fit either edge for the pair "
                                     "with edges at "
-                                    f"{edge1}={e_1:.2f} and {edge2}={e_2:.2f}.\n"
+                                    f"{edge1}={e_1+1:.0f} and {edge2}={e_2+1:.0f}.\n"
                                     "This may be because the slit length "
                                     "estimate is incorrect.\nYou may be able "
                                     "to fix this by manually giving the edges "
@@ -2028,7 +2049,7 @@ class Spect(Resample):
                     spatial_order = 0
                     if (coords_one is not None and coords_two is not None):
                         log.fullinfo("Getting coordinates from both traced "
-                                     f"edges for slit {slit_num}.")
+                                     f"edges for {slit_name} {slit_num+1}.")
                         in_coords_tot.append(
                             [np.concatenate([a, b]) for a, b in zip(
                              coords_one[2:], coords_two[2:])])
@@ -2042,7 +2063,7 @@ class Spect(Resample):
                     else:
                         # If only one edge has been traced, get the values from it.
                         log.fullinfo("Only one edge was traced for slit "
-                                     f"{slit_num}, get coordinates from it.")
+                                     f"{slit_num+1}, get coordinates from it.")
                         coords = coords_one if coords_two is None else coords_two
                         in_coords_tot.append([np.array(a) for a in coords[2:]])
                         ref_coords_tot.append([np.array(a) for a in coords[:2]])
@@ -2071,7 +2092,7 @@ class Spect(Resample):
                         y_domain=[0, ext.shape[0]-1])
 
                     # Create the distortion model from the available coords.
-                    log.stdinfo("Creating slit rectification model")
+                    log.stdinfo("Creating rectification model.")
                     fixed = (spatial_order == 0)
                     model, m_final_2d, m_inverse_2d = create_distortion_model(
                         m_init_2d, dispaxis, in_coords, ref_coords, fixed)
