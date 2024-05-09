@@ -3486,7 +3486,7 @@ class Spect(Resample):
 
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points,
                                                    all_fp_init,
-                                                   tab_name_fmt="Array {}",
+                                                   tab_name_fmt=lambda i: f"Array {i}",
                                                    xlabel=xaxis_label, ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",
