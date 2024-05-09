@@ -634,7 +634,7 @@ class FittingParametersUI:
                 pkey = alt_keys[key]
             field = ui_params.fields[pkey]
 
-            step = 1 if isinstance(field.default, int) else 0.1
+            step = 1 if field.dtype == int else 0.1
 
             field_min = field.min if hasattr(field, "min") else None
 
