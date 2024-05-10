@@ -964,7 +964,34 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.set_currently_identifying(peak)
 
     def _close_to_peak(self, x, x1, x2, new_peaks, index):
-        """Checks if the click is close to a peak and if so returns True."""
+        """Checks if the click is close to a peak and if so returns True.
+        
+        Parameters
+        ----------
+        x : float
+            The x-coordinate of the click.
+
+        x1 : float
+            The start of the x-axis range.
+
+        x2 : float
+            The end of the x-axis range.
+
+        new_peaks : array-like
+            The peaks that have not been identified yet.
+
+        index : int
+            The index of the peak that is closest to the click.
+
+        Returns
+        -------
+        bool : True if the click is close to a peak, False otherwise.
+
+        Notes
+        -----
+        If the index is None, then the click is not close to a peak. It's
+        assumed this means no lines were found in the region.
+        """
         # No index -> no peak
         if index is None:
             return False
