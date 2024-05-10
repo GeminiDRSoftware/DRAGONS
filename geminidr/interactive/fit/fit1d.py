@@ -2019,11 +2019,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                         f"Unable to build data from inputs due to exception "
                         f"({err.__class__.__name__})\nreverting"
                     )
-                    logging.error(
-                        "Unable to build data from inputs, got Exception %s",
-                        err,
-                        exc_info=True,
-                    )
 
                 if data is not None:
                     for i, fit in enumerate(self.fits):
