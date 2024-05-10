@@ -868,8 +868,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 self.model.meta["peaks"], self.model.x, assume_unique=True
             )
 
-            # This will fail if no line was deleted before user attempts to
+            # This will fail if no line was before user attempts to
             # identify a line, so do it only if there are new_peaks
+            index = None
             if len(new_peaks):
                 index = np.argmin(abs(new_peaks - pixel))
 
@@ -964,6 +965,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def _close_to_peak(self, x, x1, x2, new_peaks, index):
         """Checks if the click is close to a peak and if so returns True."""
+        # No index -> no peak
+        if index is None:
+            return False
+
         # Handle numpy arrays and lists.
         try:
             if not new_peaks.shape[0]:
