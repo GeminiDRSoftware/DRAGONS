@@ -314,6 +314,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             tools="pan,wheel_zoom,box_zoom,reset",
             output_backend="webgl",
             x_range=p_main.x_range,
+            y_range=(np.nan, np.nan),
             min_border_left=80,
             sizing_mode="stretch_width",
             stylesheets=dragons_styles(),
@@ -378,50 +379,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         controls.set_help_text()
 
-        p_spectrum.y_range.on_change(
-            "start", lambda attr, old, new: self.update_label_heights()
-        )
-
-        p_spectrum.y_range.on_change(
-            "end", lambda attr, old, new: self.update_label_heights()
-        )
-
-        # Set the initial vertical range to include some padding for labels
-        label_positions = self.label_height(self.model.x)
-        
-        # Some of the following code will fail if there are no labels for any
-        # reason (e.g., no fit). In that case, we'll just set the range to the
-        # min/max of the spectrum data, which we're collecting twice here (but
-        # it's cached by the ufunc anyways).
-        if not label_positions:
-            label_positions = self.spectrum.data["spectrum"]
-
-        # 
-        min_line_intensity = np.amin(label_positions)
-        min_spectrum_intensity = np.amin(self.spectrum.data["spectrum"])
-        max_line_intensity = np.amax(label_positions)
-        max_spectrum_intensity = np.amax(self.spectrum.data["spectrum"])
-        y_low = min(min_line_intensity, min_spectrum_intensity)
-        y_high = max(max_line_intensity, max_spectrum_intensity)
-        spectrum_range = y_high - y_low
-        max_assumed_chars = 10
-        text_padding = max_assumed_chars * font_size
-        margin_padding = 0.1 * spectrum_range
-
-        # Scale text padding to plot units
-        text_padding *= 4 * (y_high - y_low) / (3 * p_spectrum.height)
-
-        if self.absorption:
-            y_low -= text_padding + margin_padding
-            y_high += margin_padding
-
-        else:
-            y_low -= margin_padding
-            y_high += text_padding + margin_padding
-
-        p_spectrum.y_range = bm.Range1d(start=y_low, end=y_high)
-
+        # The set_*_axes functions work on the stored reference itself.
         self.p_spectrum = p_spectrum
+        self._spectrum_label_font_size = font_size
+
+        self._set_spectrum_plot_axes()
 
         self.identify_button = bm.Button(
             label="Identify lines",
@@ -563,6 +525,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                 tools = "pan,wheel_zoom,box_zoom,reset",
                                 output_backend="webgl",
                                 x_range=self.p_spectrum.x_range,
+                                y_range=(np.nan, np.nan),
                                 min_border_left=80, stylesheets=dragons_styles())
             p_refplot.height_policy = 'fixed'
             p_refplot.width_policy = 'fit'
@@ -593,38 +556,119 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                                       text_baseline='middle', text_align=text_align,
                                                       text_font_size=f'{font_size}pt')
 
-            # Set the initial vertical range to include some padding for labels
-            min_line_intensity = np.amin(self.refplot_linelist.data["intensities"])
-            min_spectrum_intensity = np.amin(self.refplot_spectrum.data["refplot_spectrum"])
-            max_line_intensity = np.amax(self.refplot_linelist.data["intensities"])
-            max_spectrum_intensity = np.amax(self.refplot_spectrum.data["refplot_spectrum"])
-            y_low = min(min_line_intensity, min_spectrum_intensity)
-            y_high = max(max_line_intensity, max_spectrum_intensity)
-            spectrum_range = y_high - y_low
-            labels = self.refplot_linelist.data["labels"]
-            text_padding = max(len(x) for x in labels) * font_size
-            margin_padding = 0.1 * spectrum_range
-
-            # Scale text padding to plot units
-            text_padding *= 4 * (y_high - y_low) / (3 * p_refplot.height)
-
-            if self.absorption:
-                y_low -= text_padding + margin_padding
-                y_high += margin_padding
-
-            else:
-                y_low -= margin_padding
-                y_high += text_padding + margin_padding
-
-            p_refplot.y_range = bm.Range1d(start=y_low, end=y_high)
-
+            # The set_*_axes functions work on the stored reference itself.
             self.p_refplot = p_refplot
+            self._refplot_label_font_size = font_size
+
+            self._set_refplot_axes()
 
             return [p_refplot, p_spectrum, identify_panel, info_panel.component,
                 p_main, p_supp]
         else:
             return [p_spectrum, identify_panel, info_panel.component,
                 p_main, p_supp]
+
+    def reset_spectrum_axes(self):
+        """Reset the axes for the spectrum plot. If a reference plot is shown,
+        reset the axes for that as well.
+        """
+        self._set_spectrum_plot_axes()
+
+        if self.show_refplot:
+            self._set_refplot_axes()
+
+    def _set_spectrum_plot_axes(self):
+        """Set the axes for the spectrum plot"""
+        p_spectrum = self.p_spectrum
+        font_size = self._spectrum_label_font_size
+
+        # Set the initial vertical range to include some padding for labels
+        label_positions = self.label_height(self.model.x)
+        
+        # Some of the following code will fail if there are no labels for any
+        # reason (e.g., no fit). In that case, we'll just set the range to the
+        # min/max of the spectrum data, which we're collecting twice here (but
+        # it's cached by the ufunc anyways).
+        if not label_positions:
+            label_positions = self.spectrum.data["spectrum"]
+
+        min_line_intensity = np.amin(label_positions)
+        min_spectrum_intensity = np.amin(self.spectrum.data["spectrum"])
+        max_line_intensity = np.amax(label_positions)
+        max_spectrum_intensity = np.amax(self.spectrum.data["spectrum"])
+        y_low = min(min_line_intensity, min_spectrum_intensity)
+        y_high = max(max_line_intensity, max_spectrum_intensity)
+        spectrum_range = y_high - y_low
+        max_assumed_chars = 10
+        text_padding = max_assumed_chars * font_size
+        margin_padding = 0.1 * spectrum_range
+
+        # Scale text padding to plot units
+        text_padding *= 4 * (y_high - y_low) / (3 * p_spectrum.height)
+
+        if self.absorption:
+            y_low -= text_padding + margin_padding
+            y_high += margin_padding
+
+        else:
+            y_low -= margin_padding
+            y_high += text_padding + margin_padding
+
+        p_spectrum.y_range.start = y_low
+        p_spectrum.y_range.end = y_high
+
+    def _set_refplot_axes(self):
+        """Set the axes for the reference plot.
+        
+        This should only be called if the reference plot is shown.
+
+        Raises
+        ------
+        AttributeError
+            If the reference plot is not found.
+        """
+        if not hasattr(self, "p_refplot"):
+            msg = (
+                f"Reference plot not found in {self.__class__.__name__}, "
+                f"expected a plot at self.p_refplot."
+            )
+            raise AttributeError(msg)
+
+        p_refplot = self.p_refplot
+        font_size = self._refplot_label_font_size
+
+        # Set the initial vertical range to include some padding for labels
+        linelist_intensity = self.refplot_linelist.data["intensities"]
+        spectrum_intensity = self.refplot_spectrum.data["refplot_spectrum"]
+
+        min_line_intensity = np.amin(linelist_intensity)
+        min_spectrum_intensity = np.amin(spectrum_intensity)
+        max_line_intensity = np.amax(linelist_intensity)
+        max_spectrum_intensity = np.amax(spectrum_intensity)
+        y_low = min(min_line_intensity, min_spectrum_intensity)
+        y_high = max(max_line_intensity, max_spectrum_intensity)
+        spectrum_range = y_high - y_low
+        labels = self.refplot_linelist.data["labels"]
+        text_padding = max(len(x) for x in labels) * font_size
+        margin_padding = 0.1 * spectrum_range
+
+        # Scale text padding to plot units
+        text_padding *= 4 * (y_high - y_low) / (3 * p_refplot.height)
+
+        if self.absorption:
+            y_low -= text_padding + margin_padding
+            y_high += margin_padding
+
+        else:
+            y_low -= margin_padding
+            y_high += text_padding + margin_padding
+
+        p_refplot.y_range.start = y_low
+        p_refplot.y_range.end = y_high
+
+    def reset_view(self):
+        super().reset_view()
+        self.reset_spectrum_axes()
 
     @staticmethod
     def linear_model(model):
@@ -1235,6 +1279,10 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     self.panels[i].reset_view()
                 except (AttributeError, KeyError):
                     pass
+            
+            # Reset panel axes
+            for panel in self.panels:
+                panel.reset_spectrum_axes()
 
 
 def get_closest(arr, value):
