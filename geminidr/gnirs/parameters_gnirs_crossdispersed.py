@@ -49,7 +49,7 @@ class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
                                   float, 0.005, min=0.005, max=1.0)
 
 
-class tracePinholeAperturesConfig(config.core_1Dfitting_config):
+class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):
     """
     Configuration for the tracePinholeApertures() primitive.
     """

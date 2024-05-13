@@ -577,10 +577,12 @@ class tracePinholeAperturesConfig(config.Config):
     """
     suffix = config.Field("Filename suffix",
                           str, "_pinholeAperturesTraced", optional=True)
+    start_pos = config.RangeField("Row or column to start tracing at (default: halfway)",
+                                  int, None, min=0, inclusiveMin=True)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.5,
+                                  float, 0.05, min=0.001, max=0.3,
                                   inclusiveMax=True)
     min_line_length = config.RangeField("Minimum line length as a fraction of array",
                                         float, 0, min=0, max=1, inclusiveMin=True,

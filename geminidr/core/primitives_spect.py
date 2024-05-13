@@ -4699,7 +4699,10 @@ class Spect(Resample):
             for i, ext in enumerate(ad):
 
                 dispaxis = 2 - ext.dispersion_axis() # Python sense
-                start = ext.shape[dispaxis] // 2
+                if params['start_pos']:
+                    start = params['start_pos']
+                else:
+                    start = ext.shape[dispaxis] // 2
                 data, mask, variance = ext.data, ext.mask, ext.variance
 
                 # Make life easier for the poor coder by transposing data if
