@@ -1263,6 +1263,11 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
 
     for peak in peaks:
         xc = int(peak + 0.5)
+        if xc < 0 or xc > data.size:
+            if keep_bad:
+                final_peaks.append(None)
+                peak_values.append(None)
+            continue
         xc = np.argmax(data[max(xc - 1, 0):min(xc + 2, npts)]) + xc - 1
         x1 = int(xc - halfwidth - 1)
         x2 = int(xc + halfwidth + 2)
