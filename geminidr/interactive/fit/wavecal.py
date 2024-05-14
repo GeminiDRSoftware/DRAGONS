@@ -12,6 +12,7 @@ from bisect import bisect
 from functools import lru_cache
 
 from bokeh import models as bm
+from bokeh.events import Reset
 from bokeh.layouts import row, column
 from bokeh.plotting import figure
 from bokeh.models import CustomJS
@@ -616,6 +617,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         p_spectrum.y_range.start = y_low
         p_spectrum.y_range.end = y_high
+        p_spectrum.y_range.reset_start = y_low
+        p_spectrum.y_range.reset_end = y_high
+
 
     def _set_refplot_axes(self):
         """Set the axes for the reference plot.
@@ -665,6 +669,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         p_refplot.y_range.start = y_low
         p_refplot.y_range.end = y_high
+        p_refplot.y_range.reset_start = y_low
+        p_refplot.y_range.reset_end = y_high
 
     def reset_view(self):
         super().reset_view()
