@@ -55,7 +55,8 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import tracing, transform, wavecal
-from gempy.library.astrotools import array_from_list, transpose_if_needed
+from gempy.library.astrotools import (array_from_list, transpose_if_needed,
+                                      std_from_pixel_variations)
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter, match_sources, fit_model
@@ -1607,7 +1608,7 @@ class Spect(Resample):
                       f'  {edge2.capitalize()} edges: {exp_edges_2}\n')
 
             if len(slit_widths) > 1:
-                log.stdinfo(f"Finding {len(slit_widths)} {slit_name}s.")
+                log.stdinfo(f"Looking for {len(slit_widths)} {slit_name}s.")
 
             # This is the number of rows/columns to sum around the row with
             # the maximum flux to create the profile for finding edges, to
@@ -1668,12 +1669,16 @@ class Spect(Resample):
                                                 axis=[dispaxis])
 
                 # Search for position of peaks in the first derivative of flux
-                # perpendicular to the dispersion direction. Apply a 3.5-sigma
-                # limit to avoid picking up too many noise peaks, but
-                # match_sources later on should pick out the real ones.
-                std = np.std(median_slice_1)
-                multiplier = 3.5 if observing_mode == 'LS' else 1.
-                peak_height = multiplier * std
+                # in the spatial direction. Setting a value for the std and
+                # minimum peak height is something of an art, and requires
+                # different values between longslit and cross-dispersed data.
+                if observing_mode == 'LS':
+                    std = np.std(median_slice_1)
+                    min_height = 3.5 * std
+                elif observing_mode == 'XD':
+                    std = std_from_pixel_variations(median_slice_1,
+                                                    subtract_linear_fits=True)
+                    min_height = std
                 cwidth = 8
                 if exp_edges_1[0] < 0:
                     # If the expected edge position is off the end of the
@@ -1682,7 +1687,7 @@ class Spect(Resample):
                     positions_1 = []
                 else:
                     positions_1, _ = find_peaks(median_slice_1,
-                                                height=peak_height,
+                                                height=min_height,
                                                 distance=5,
                                                 prominence=2.*std)
                     # find_peaks returns integer values, so use pinpoint_peaks
@@ -1694,7 +1699,7 @@ class Spect(Resample):
                     positions_2 = []
                 else:
                     positions_2, _ = find_peaks(median_slice_2,
-                                                height=peak_height,
+                                                height=min_height,
                                                 distance=5,
                                                 prominence=2.*std)
                     positions_2, _ = tracing.pinpoint_peaks(median_slice_2,
@@ -1775,6 +1780,16 @@ class Spect(Resample):
 
                 # Generate pairs of slit edges.
                 edge_pairs = [(a, b) for a, b in zip(edges_1, edges_2)]
+                # This can be used instead of the lines below once we're no longer
+                # testing Python 3.7 on Jenkins. My first use of a walrus
+                # operator in real code! DAB 20240510
+                # if (fnd := len(edge_pairs)) != (exp := len(slit_widths)):
+                #     log.warning(f"Did not find expected number of {slit_name}s "
+                #                 f"(found {fnd}, expected {exp}).")
+                if len(edge_pairs) != len(slit_widths):
+                    log.warning(f"Did not find expected number of {slit_name}s "
+                                f"(found {len(edge_pairs)}, expected "
+                                f"{len(slit_widths)}).")
 
                 if not edge_pairs:
                     log.warning("No edges could be determined for "
@@ -1842,7 +1857,7 @@ class Spect(Resample):
 
                     log.fullinfo(f"  Found a shift of {m_final.offset_1.value:.2f} "
                                  "and a scale of "
-                                 f"{m_final.factor_2.value:.3f}.")
+                                 f"{m_final.factor_2.value:.2f}.")
                     log.fullinfo("  Tracing edges at "
                                  f"{expected[0]+1:.0f} and {expected[1]+1:.0f}.")
 
@@ -1949,7 +1964,6 @@ class Spect(Resample):
                                 plot=debug_plots,
                                 **fit1d_params,)
                             model_fit = am.model_to_table(_fit_1d.model)
-
 
                             if _fit_1d.rms > 2.:
                                 raise RuntimeError(f"RMS of fit to {edge} edge "
