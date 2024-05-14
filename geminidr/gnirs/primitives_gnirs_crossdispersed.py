@@ -81,12 +81,46 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
             else:
                 mdf_key_parts = ('telescope', '_prism', 'decker',
                                  '_grating', 'camera')
-                mdf_key = "_".join(getattr(ad, desc)() for desc in mdf_key_parts)
+                mdf_key = "_".join(getattr(ad, desc)()
+                                   for desc in mdf_key_parts)
                 ad.MDF = Table(slit_info[mdf_key],
                                names=columns)
                 log.stdinfo(f"Added MDF table for {ad.filename}")
 
         return adinputs
+
+
+    def tracePinholeApertures(self, adinputs=None, **params):
+        """
+        This primitive exists to provide some mode-specific values to the
+        tracePinholeApertures() in primitives_spect, since the modes in GNIRS
+        cross-dispersed are different enough to warrant having different values.
+        """
+
+        camera = getattr(adinputs[0], 'camera')()
+
+        if 'Short' in camera:
+            # In the short camera configuration there are four good pinholes
+            # and one that's right on the edge of the slit and isn't consistently
+            # picked up. This setting stops it from being used in the orders it
+            # is found in since it produces a sketchy fit.
+            if params['debug_max_trace_pos'] is None:
+                params['debug_max_trace_pos'] = 4
+                self.log.debug("Setting debug_max_trace_pos to 4 for Short "
+                               "camera.")
+
+        elif 'Long' in camera:
+            # In the long camera configuration the 5th and 6th slits run off the
+            # side of the array, necessitating a start point much closer to the
+            # bottom instead of the default middle-of-the-array.
+            if params['start_pos'] is None:
+                params['start_pos'] = 150
+                self.log.fullinfo("Setting trace start location to 150 for "
+                                  "Long camera.")
+
+        # Call the parent primitive with the new parameter values.
+        return super().tracePinholeApertures(adinputs=adinputs, **params)
+
 
     def _get_order_information_key(self):
         """
