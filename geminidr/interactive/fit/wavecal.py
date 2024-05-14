@@ -139,6 +139,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         kwargs["default_model"] = meta["init_models"][0]
 
         self.spectrum = bm.ColumnDataSource(spectrum_data_dict)
+        self.spectrum_linelist = meta["linelist"]
 
         # Data for the reference plot
         self.show_refplot = False
@@ -914,7 +915,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # Find all unidentified arc lines that this could be, maintaining
         # monotonicity
-        all_lines = self.model.meta["linelist"].wavelengths(
+        all_lines = self.spectrum_linelist.wavelengths(
             in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm"
         )
 
@@ -1050,7 +1051,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         dw = linear_model.c1 / np.diff(linear_model.domain)[0]
         matching_distance = abs(self.model.meta["fwidth"] * dw)
 
-        all_lines = self.model.meta["linelist"].wavelengths(
+        all_lines = self.spectrum_linelist.wavelengths(
             in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm"
         )
 
@@ -1217,6 +1218,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                 else:
                     spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
 
+                self.panels[i].spectrum_linelist = this_dict["meta"]["linelist"]
                 try:
                     self.panels[i].refplot_spectrum.data['wavelengths'] = this_dict["meta"]["refplot_spec"][:,0]
                     self.panels[i].refplot_spectrum.data['refplot_spectrum'] = this_dict["meta"]["refplot_spec"][:,1]
