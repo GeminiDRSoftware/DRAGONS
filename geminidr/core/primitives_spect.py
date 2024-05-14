@@ -4710,7 +4710,7 @@ class Spect(Resample):
         for ad in adinputs:
 
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-            for i, ext in enumerate(ad):
+            for ext in ad:
 
                 dispaxis = 2 - ext.dispersion_axis() # Python sense
                 if params['start_pos']:
