@@ -579,7 +579,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self._set_refplot_axes()
 
     def _set_spectrum_plot_axes(self):
-        """Set the axes for the spectrum plot"""
+        """Set the axes for the spectrum plot.
+        
+        Notes
+        -----
+        This should only be called if the spectrum plot is shown. It can be
+        called before the plot has bounds, though.
+
+        This also overwrites the original bounds of the plot.
+        """
         p_spectrum = self.p_spectrum
         font_size = self._spectrum_label_font_size
 
@@ -625,6 +633,13 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """Set the axes for the reference plot.
         
         This should only be called if the reference plot is shown.
+        
+        Notes
+        -----
+        This should only be called if the spectrum plot is shown. It can be
+        called before the plot has bounds, though.
+
+        This also overwrites the original bounds of the plot.
 
         Raises
         ------
