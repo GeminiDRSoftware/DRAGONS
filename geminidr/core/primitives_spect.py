@@ -5004,7 +5004,7 @@ class Spect(Resample):
                     # the new data plane of the new `adout`.
                     cut_section = Section(x1=x1, x2=x2, y1=y1, y2=y2)
                     adout.append(ext.nddata[cut_section.asslice()])
-                    log.fullinfo(f"  Cutting slit {i} in extension {ext.id} "
+                    log.fullinfo(f"Cutting slit {i+1} in extension {ext.id} "
                                  "with corners at "
                                  f"({x1}, {y1}) & ({x2}, {y2})")
 
@@ -5111,8 +5111,8 @@ class Spect(Resample):
                         x_degree=x_ord, y_degree=y_ord,
                         x_domain=[0, ext.shape[1]-1],
                         y_domain=[0, ext.shape[0]-1])
-                    log.stdinfo("Creating distortion model for slit "
-                                f"rectification for slit {i}")
+                    log.stdinfo("  Creating distortion model for slit "
+                                f"rectification for slit {i+1}")
                     # The `fixed_linear` parameter is False because we should
                     # have both edges for each slit.
                     model, m_final_2d, m_inverse_2d = create_distortion_model(
