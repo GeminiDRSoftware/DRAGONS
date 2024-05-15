@@ -53,9 +53,5 @@ class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):
     """
     Configuration for the tracePinholeApertures() primitive.
     """
-    suffix = config.Field("Filename suffix",
-                          str, "_pinholeAperturesTraced", optional=True)
-    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
-                                   int, 4, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.4, min=0.001, max=0.5, inclusiveMax=True)
