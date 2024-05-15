@@ -17,7 +17,8 @@ from recipe_system.testing import ref_ad_factory
 
 datasets = [
     #GNIRS XD pinhole files
-    "S20060507S0125_flatCorrected.fits",
+    "S20060507S0125_flatCorrected.fits", # 32 l/mm, ShortBlue
+    "N20130821S0556_flatCorrected.fits", # 10 l/mm, LongBlue
     ]
 
 @pytest.mark.gnirsxd
