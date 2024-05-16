@@ -33,6 +33,9 @@ class InteractiveConfig:
         self.bokeh_template_css = 'template_default.css'
         self.browser = None
 
+        # Default port number for Bokeh server
+        self.port_number = 5006
+
         try:
             cfg = globalConf['interactive']
 
@@ -63,6 +66,12 @@ class InteractiveConfig:
 
             try:
                 self.browser = cfg["browser"]
+
+            except KeyError:
+                pass
+
+            try:
+                self.port_number = int(cfg["port_number"])
 
             except KeyError:
                 pass
