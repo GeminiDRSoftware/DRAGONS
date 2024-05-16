@@ -115,7 +115,7 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
             # bottom instead of the default middle-of-the-array.
             if params['start_pos'] is None:
                 params['start_pos'] = 150
-                self.log.fullinfo("Setting trace start location to 150 for "
+                self.log.fullinfo("Setting trace start location to row 150 for "
                                   "Long camera.")
 
         # Call the parent primitive with the new parameter values.
