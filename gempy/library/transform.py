@@ -680,7 +680,7 @@ class Transform:
             msg.append(repr(model))
         return new_line_indent.join(msg)
 
-    def apply(self, input_array, output_shape, interpolant="spline3",
+    def apply(self, input_array, output_shape, interpolant="linear",
               cval=0, inverse=False):
         """
         Apply the transform to the pixels of the input array. Recall that the
@@ -721,7 +721,7 @@ class Transform:
 
     @staticmethod
     def transform_data(input_array, mapping, output_shape=None,
-                       interpolant="spline3", cval=0):
+                       interpolant="linear", cval=0):
         """
         Perform the transformation (a static method so it can be called
         elsewhere).
@@ -760,6 +760,7 @@ class Transform:
             if isinstance(mapping, GeoMap):
                 return ndimage.map_coordinates(input_array, mapping.coords,
                                                cval=cval, order=order)
+            print(f"ORDER = {order}")
             return ndimage.affine_transform(
                 input_array, mapping.matrix, mapping.offset, output_shape,
                 cval=cval, order=order)
@@ -999,7 +1000,7 @@ class DataGroup:
                             [models.Shift(-offset) for offset in self.origin[::-1]]))
         self.origin = None
 
-    def transform(self, attributes=['data'], interpolant="spline3", subsample=1,
+    def transform(self, attributes=['data'], interpolant="linear", subsample=1,
                   threshold=0.01, conserve=False, parallel=False):
         """
         This method transforms and combines the arrays into a single output
@@ -1270,7 +1271,7 @@ class DataGroup:
     def _apply_geometric_transform(self, input_array, mapping, output_key,
                                    output_shape, cval=0., dtype=np.float32,
                                    threshold=None, subsample=1,
-                                   interpolant="spline3", jfactor=1):
+                                   interpolant="linear", jfactor=1):
         """
         None-returning function to apply geometric transform, so it can be used
         by multiprocessing
@@ -1556,7 +1557,7 @@ def add_longslit_wcs(ad, central_wavelength=None, pointing=None):
     return ad
 
 
-def resample_from_wcs(ad, frame_name, attributes=None, interpolant="spline3",
+def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
                       subsample=1, threshold=0.001, conserve=False, parallel=False,
                       process_objcat=False, output_shape=None, origin=None):
     """
