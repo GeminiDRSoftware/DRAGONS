@@ -6,6 +6,23 @@
 Change Logs
 ***********
 
+4.0.0
+=====
+
+This release includes new support for longslit spectroscopic data from the
+near-infrared facility instruments F2, GNIRS, and NIRI, as well as the
+cross-dispersed mode of GNIRS.
+
+New Features
+------------
+
+Additional interpolation modes during resampling.
+  Cubic and quintic polynomial interpolation are now available. The "order"
+  parameter that was previously used to designate the order of spline
+  interpolation has been replaced by a string parameter that can take the
+  value "nearest", "linear", "poly3", "poly5", "spline3", or "spline5".
+
+
 3.2.1
 =====
 

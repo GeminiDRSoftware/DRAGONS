@@ -186,7 +186,14 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
 
 class distortionCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
-    order = config.RangeField("Interpolation order", int, 3, min=0, max=5, inclusiveMax=True)
+    interpolant = config.ChoiceField("Type of interpolant", str,
+                                     allowed={"nearest": "Nearest neighbour",
+                                              "linear": "Linear interpolation",
+                                              "poly3": "Cubic polynomial interpolation",
+                                              "poly5": "Quintic polynomial interpolation",
+                                              "spline3": "Cubic spline interpolation",
+                                              "spline5": "Quintic spline interpolation"},
+                                     default="spline3", optional=False)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
                                      float, 0.001, min=0.)
@@ -457,7 +464,14 @@ class linearizeSpectraConfig(config.Config):
     dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
     conserve = config.Field("Conserve flux?", bool, None, optional=True)
-    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
+    interpolant = config.ChoiceField("Type of interpolant", str,
+                                     allowed={"nearest": "Nearest neighbour",
+                                              "linear": "Linear interpolation",
+                                              "poly3": "Cubic polynomial interpolation",
+                                              "poly5": "Quintic polynomial interpolation",
+                                              "spline3": "Cubic spline interpolation",
+                                              "spline5": "Quintic spline interpolation"},
+                                     default="spline3", optional=False)
 
     def validate(self):
         config.Config.validate(self)
@@ -491,7 +505,14 @@ class resampleToCommonFrameConfig(config.Config):
     dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
     conserve = config.Field("Conserve flux?", bool, None, optional=True)
-    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
+    interpolant = config.ChoiceField("Type of interpolant", str,
+                                     allowed={"nearest": "Nearest neighbour",
+                                              "linear": "Linear interpolation",
+                                              "poly3": "Cubic polynomial interpolation",
+                                              "poly5": "Quintic polynomial interpolation",
+                                              "spline3": "Cubic spline interpolation",
+                                              "spline5": "Quintic spline interpolation"},
+                                     default="spline3", optional=False)
     trim_spatial = config.Field("Trim spatial range to fully-covered region?", bool, True)
     trim_spectral = config.Field("Trim wavelength range to fully-covered region?", bool, False)
     force_linear = config.Field("Force linear wavelength solution?", bool, True)

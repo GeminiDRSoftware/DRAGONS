@@ -372,8 +372,8 @@ class Image(Preprocess, Register, Resample):
         ----------
         suffix : str
             suffix to be added to output files
-        order : int (0-5)
-            order of interpolation (0=nearest, 1=linear, etc.)
+        interpolant : str
+            type of interpolant
         trim_data : bool
             trim image to size of reference image?
         clean_data : bool
@@ -601,8 +601,8 @@ class Image(Preprocess, Register, Resample):
             suffix to be added to output files
         source: str
             name of stream containing single stacked image
-        order: int (0-5)
-            order of interpolation
+        interpolant : str
+            type of interpolation
         threshold: float
             threshold above which an interpolated pixel should be flagged
         dilation: float
@@ -611,7 +611,7 @@ class Image(Preprocess, Register, Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         source = params["source"]
-        order = params["order"]
+        interpolant = params["interpolant"]
         threshold = params["threshold"]
         dilation = params["dilation"]
         sfx = params["suffix"]
@@ -657,7 +657,7 @@ class Image(Preprocess, Register, Resample):
                     else:
                         objmask = transform.Transform(t_align).apply(
                             source_ext.OBJMASK.astype(np.float32),
-                            output_shape=ext.shape, order=order, cval=0)
+                            output_shape=ext.shape, interpolant=interpolant, cval=0)
                     objmask = binary_dilation(np.where(abs(objmask) > threshold, 1, 0).
                                               astype(np.uint8), structure).astype(np.uint8)
                     if ext.OBJMASK is None:

@@ -49,6 +49,11 @@ from scipy import ndimage
 from gempy.library import astromodels as am, astrotools as at
 from gempy.gemini import gemini_tools as gt
 
+try:
+    from gempy.library.cython_utils import polyinterp
+except ImportError:  # pragma: no cover
+    raise ImportError("Run 'cythonize -i cython_utils.pyx' in gempy/library")
+
 import multiprocessing as multi
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -651,7 +656,8 @@ class Transform:
 
         Returns
         -------
-            AffineMatrices(array, array): affine matrix and offset
+        AffineMatrices(array, array): affine matrix and offset, in
+            standard python order
         """
         if shape is None:
             try:
@@ -674,7 +680,8 @@ class Transform:
             msg.append(repr(model))
         return new_line_indent.join(msg)
 
-    def apply(self, input_array, output_shape, order=1, cval=0, inverse=False):
+    def apply(self, input_array, output_shape, interpolant="poly3",
+              cval=0, inverse=False):
         """
         Apply the transform to the pixels of the input array. Recall that the
         scipy.ndimage functions need to know where in the input_array to find
@@ -690,8 +697,8 @@ class Transform:
             the input "image"
         output_shape: sequence
             shape of the output array
-        order: int (0-5)
-            order of interpolation
+        interpolant: str
+            type of interpolant
         cval: float-like
             value to use where there's no pixel data
         inverse: bool
@@ -703,16 +710,71 @@ class Transform:
         """
         if self.is_affine:
             if inverse:
-                matrix, offset = self.affine_matrices(input_array.shape)
+                mapping = self.affine_matrices(input_array.shape)
             else:
-                matrix, offset = self.inverse.affine_matrices(input_array.shape)
-            output_array = ndimage.affine_transform(input_array, matrix, offset,
-                                        output_shape, order=order, cval=cval)
+                mapping = self.inverse.affine_matrices(input_array.shape)
         else:
             mapping = GeoMap(self, output_shape, inverse=inverse)
-            output_array = ndimage.map_coordinates(input_array, mapping.coords,
-                                        order=order, cval=cval)
-        return output_array
+
+        return self.transform_data(input_array, mapping, output_shape,
+                                   interpolant=interpolant, cval=cval)
+
+    @staticmethod
+    def transform_data(input_array, mapping, output_shape=None,
+                       interpolant="poly3", cval=0):
+        """
+        Perform the transformation (a static method so it can be called
+        elsewhere).
+
+        Parameters
+        ----------
+        input_array
+            the input "image"
+        mapping: AffineMatrices or GeoMap instance
+            describing the mapping from each output pixel to input coordinates
+        output_shape: tuple/None
+            output array shape (not needed for GeoMap)
+        interpolant: str
+            type of interpolant
+        cval: float
+            value for out-of-bounds pixels
+
+        Returns
+        -------
+        ndarray: output array "image"
+        """
+        if interpolant == "nearest":
+            interpolant = "spline0"
+        elif interpolant == "linear":
+            interpolant = "spline1"
+
+        if not (interpolant.startswith("spline") or
+                interpolant.startswith("poly")):
+            raise ValueError(f"Invalid interpolant string '{interpolant}'")
+        try:
+            order = int(interpolant[-1])
+        except ValueError:
+            raise ValueError(f"Invalid interpolant string '{interpolant}'")
+
+        if interpolant.startswith("spline"):
+            if isinstance(mapping, GeoMap):
+                return ndimage.map_coordinates(input_array, mapping.coords,
+                                               cval=cval, order=order)
+            return ndimage.affine_transform(
+                input_array, mapping.matrix, mapping.offset, output_shape,
+                cval=cval, order=order)
+
+        # Polynomial interpolation
+        if isinstance(mapping, GeoMap):
+            out_array = np.empty(mapping.coords[0].shape, dtype=np.float32)
+            polyinterp(input_array.ravel(),
+                       np.asarray(input_array.shape, dtype=np.int32),
+                       len(input_array.shape), out_array.ravel(), out_array.size,
+                       np.asarray(mapping.coords).ravel().astype(np.float32),
+                       order, cval)
+        else:
+            raise TypeError("Cannot perform polynomial interpolation with non-GeoMap")
+        return out_array
 
     @classmethod
     def create2d(cls, translation=(0, 0), rotation=None, magnification=None,
@@ -937,7 +999,7 @@ class DataGroup:
                             [models.Shift(-offset) for offset in self.origin[::-1]]))
         self.origin = None
 
-    def transform(self, attributes=['data'], order=1, subsample=1,
+    def transform(self, attributes=['data'], interpolant="poly3", subsample=1,
                   threshold=0.01, conserve=False, parallel=False):
         """
         This method transforms and combines the arrays into a single output
@@ -952,8 +1014,8 @@ class DataGroup:
         ----------
         attributes: sequence
             attributes of the input objects to transform
-        order: int (0-5)
-            order of spline interpolation
+        interpolant: str
+            type of interpolant
         subsample: int
             subsampling of input/output arrays
         threshold: float
@@ -990,8 +1052,7 @@ class DataGroup:
             if self.origin is not None and any(x != 0 for x in self.origin):
                 transform.append(reduce(Model.__and__,
                                  [models.Shift(-offset) for offset in self.origin[::-1]]))
-            output_corners = self._prepare_for_output(input_array,
-                                                      transform, subsample)
+            output_corners = self._prepare_for_output(input_array, transform)
             output_array_shape = tuple(max_ - min_ for min_, max_ in output_corners)
 
             # This can happen if the origin and/or output_shape are modified
@@ -1018,7 +1079,7 @@ class DataGroup:
                     transform.append([rescale, rescale_shift])
 
                 trans_output_shape = tuple(length * subsample for length in output_array_shape)
-                if transform.inverse.is_affine:
+                if transform.inverse.is_affine and not interpolant.startswith("poly"):
                     mapping = transform.inverse.affine_matrices(shape=trans_output_shape)
                 else:
                     # If we're conserving the flux, we need to compute the
@@ -1084,11 +1145,14 @@ class DataGroup:
                 jobs = []
                 if np.issubdtype(arr.dtype, np.unsignedinteger):
                     for j in range(0, 16):
-                        bit = 2**j
+                        bit = 2 ** j
                         if bit == cval or np.sum(arr & bit) > 0:
                             key = ((attr,bit), output_corners)
-                            jobs.append((key, arr & bit, {'cval': bit & cval,
-                                                          'threshold': threshold*bit}))
+                            # Convert bit plane to float32 so the output
+                            # will be float32 and we can threshold
+                            jobs.append((key, (arr & bit).astype(np.float32),
+                                         {'cval': bit & cval,
+                                          'threshold': threshold * bit}))
                 else:
                     key = (attr, output_corners)
                     jobs.append((key, arr, {}))
@@ -1097,7 +1161,7 @@ class DataGroup:
                 for (key, arr, kwargs) in jobs:
                     args = (arr, mapping, key, output_array_shape)
                     kwargs.update({'dtype': self.output_dict[attr].dtype,
-                                   'order': order,
+                                   'interpolant': interpolant,
                                    'subsample': subsample,
                                    'jfactor': jfactor})
                     if parallel:
@@ -1128,7 +1192,7 @@ class DataGroup:
         del self.output_arrays
         return self.output_dict
 
-    def _prepare_for_output(self, input_array, transform, subsample):
+    def _prepare_for_output(self, input_array, transform):
         """
         Determine the shape of the output array that this input will be
         transformed into, accounting for the overall output array. If
@@ -1205,8 +1269,8 @@ class DataGroup:
 
     def _apply_geometric_transform(self, input_array, mapping, output_key,
                                    output_shape, cval=0., dtype=np.float32,
-                                   threshold=None, subsample=1, order=1,
-                                   jfactor=1):
+                                   threshold=None, subsample=1,
+                                   interpolant="poly3", jfactor=1):
         """
         None-returning function to apply geometric transform, so it can be used
         by multiprocessing
@@ -1230,8 +1294,8 @@ class DataGroup:
             (if set, a bool array is returned, irrespective of dtype)
         subsample: int
             subsampling in output array for transformation
-        order: int (0-5)
-            order of spline interpolation
+        interpolant: str
+            type of interpolant
         jfactor: float/array
             Jacobian of transformation (basically the increase in pixel area)
         """
@@ -1251,13 +1315,9 @@ class DataGroup:
         # the "ringing" from the interpolation and flag appropriately
         out_dtype = np.float32 if np.issubdtype(
             input_array.dtype, np.unsignedinteger) else input_array.dtype
-        if isinstance(mapping, GeoMap):
-            out_array = ndimage.map_coordinates(input_array, mapping.coords,
-                                                cval=cval, order=order, output=out_dtype)
-        else:
-            out_array = ndimage.affine_transform(input_array, mapping.matrix,
-                                                 mapping.offset, trans_output_shape,
-                                                 cval=cval, order=order, output=out_dtype)
+        out_array = Transform.transform_data(
+            input_array, mapping, trans_output_shape, interpolant=interpolant,
+            cval=cval)
 
         # We average to undo the subsampling. This retains the "threshold" and
         # conserves flux according to the Jacobian of input/output arrays.
@@ -1496,8 +1556,8 @@ def add_longslit_wcs(ad, central_wavelength=None, pointing=None):
     return ad
 
 
-def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
-                      threshold=0.001, conserve=False, parallel=False,
+def resample_from_wcs(ad, frame_name, attributes=None, interpolant="poly3",
+                      subsample=1, threshold=0.001, conserve=False, parallel=False,
                       process_objcat=False, output_shape=None, origin=None):
     """
     This takes a single AstroData object with WCS objects attached to the
@@ -1515,8 +1575,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         name of the frame to resample to
     attributes : list/None
         list of attributes to resample (None => all standard ones that exist)
-    order : int
-        order of interpolation
+    interpolant : str
+        type of interpolant
     subsample : int
         if >1, will transform onto finer pixel grid and block-average down
     threshold : float
@@ -1596,7 +1656,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         attributes += ['data']
     log.fullinfo("Processing the following array attributes: "
                  "{}".format(', '.join(attributes)))
-    dg.transform(attributes=attributes, order=order, subsample=subsample,
+    dg.transform(attributes=attributes, interpolant=interpolant, subsample=subsample,
                  threshold=threshold, conserve=conserve, parallel=parallel)
 
     ad_out = astrodata.create(ad.phu)

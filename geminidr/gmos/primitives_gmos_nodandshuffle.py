@@ -63,8 +63,8 @@ class GMOSNodAndShuffle(GMOS):
             Maximum distance from the header offset, for the correlation
             method (arcsec). If the correlation computed offset is too
             different from the header offset, then the latter is used.
-        order: int
-            order of polynomial for resampling
+        interpolant: str
+            type of interpolant
         subsample: int
             output pixel subsampling when resampling
         dq_threshold : float
@@ -78,7 +78,7 @@ class GMOSNodAndShuffle(GMOS):
         align_sources = params["align_sources"]
         region = params["region"]
         tolerance = params["tolerance"]
-        order = params["order"]
+        interpolant = params["interpolant"]
         subsample = params["subsample"]
         dq_threshold = params["dq_threshold"]
 
@@ -137,8 +137,9 @@ class GMOSNodAndShuffle(GMOS):
                     ext.wcs.insert_frame(ext.wcs.input_frame, beamshift,
                                          aligned_frame)
                     ad_out = transform.resample_from_wcs(
-                        ext, 'nod_aligned', order=order, subsample=subsample,
-                        parallel=False, output_shape=ext.shape, origin=(0,0),
+                        ext, 'nod_aligned', interpolant=interpolant,
+                        subsample=subsample, parallel=False,
+                        output_shape=ext.shape, origin=(0,0),
                         threshold=dq_threshold)
                     ext.subtract(ad_out[0])
                     ext.wcs = orig_wcs

@@ -1891,8 +1891,8 @@ class Spect(Resample):
             2D spectral images with appropriately-calibrated WCS.
         suffix : str
             Suffix to be added to output files.
-        order : int (0 - 5)
-            Order of interpolation when resampling.
+        interpolant : str
+            Type of interpolant
         subsample : int
             Pixel subsampling factor.
         dq_threshold : float
@@ -1909,7 +1909,7 @@ class Spect(Resample):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         sfx = params["suffix"]
-        order = params["order"]
+        interpolant = params["interpolant"]
         subsample = params["subsample"]
         do_cal = params["do_cal"]
         dq_threshold = params["dq_threshold"]
@@ -2014,7 +2014,7 @@ class Spect(Resample):
 
             if mosaic:
                 ad_out = transform.resample_from_wcs(
-                    ad, 'distortion_corrected', order=order,
+                    ad, 'distortion_corrected', interpolant=interpolant,
                     subsample=subsample, parallel=False,
                     threshold=dq_threshold
                 )
@@ -2022,7 +2022,7 @@ class Spect(Resample):
                 for i, ext in enumerate(ad):
                     if i == 0:
                         ad_out = transform.resample_from_wcs(
-                            ext, 'distortion_corrected', order=order,
+                            ext, 'distortion_corrected', interpolant=interpolant,
                             subsample=subsample, parallel=False,
                             threshold=dq_threshold
                         )
@@ -2030,7 +2030,7 @@ class Spect(Resample):
                         ad_out.append(
                             transform.resample_from_wcs(ext,
                                                         'distortion_corrected',
-                                                        order=order,
+                                                        interpolant=interpolant,
                                                         subsample=subsample,
                                                         parallel=False,
                                                         threshold=dq_threshold)
@@ -3179,8 +3179,8 @@ class Spect(Resample):
             Number of pixels in output spectrum. See Notes below.
         conserve : bool
             Conserve flux (rather than interpolate)?
-        order : int
-            order of interpolation during the resampling
+        interpolant : str
+            type of interpolant
 
         Notes
         -----
@@ -3200,7 +3200,7 @@ class Spect(Resample):
         dw = params["dw"]
         npix = params["npix"]
         conserve = params["conserve"]
-        order = params["order"]
+        interpolant = params["interpolant"]
 
         # There are either 1 or 4 Nones, due to validation
         nones = [w1, w2, dw, npix].count(None)
@@ -3220,9 +3220,10 @@ class Spect(Resample):
         # align them in the spatial direction
         adoutputs = []
         for ad in adinputs:
-            ad_out = self.resampleToCommonFrame([ad], suffix=sfx, w1=w1, w2=w2, npix=npix,
-                                                conserve=conserve, order=order,
-                                                trim_spectral=False)[0]
+            ad_out = self.resampleToCommonFrame(
+                [ad], suffix=sfx, w1=w1, w2=w2, npix=npix,
+                conserve=conserve, interpolant=interpolant,
+                trim_spectral=False)[0]
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(ad_out)
 
@@ -3584,8 +3585,8 @@ class Spect(Resample):
             Number of pixels in output spectrum. See Notes below.
         conserve : bool
             Conserve flux (rather than interpolate)?
-        order : int
-            order of interpolation during the resampling
+        interpolant : str
+            type of interpolant
         trim_spatial : bool
             Output data will cover the intersection (rather than union) of
             the inputs' spatial coverage?
@@ -3620,6 +3621,7 @@ class Spect(Resample):
         dw = params["dw"]
         npix = params["npix"]
         conserve = params["conserve"]
+        interpolant = params["interpolant"]
         trim_spatial = params["trim_spatial"]
         trim_spectral = params["trim_spectral"]
         force_linear = params["force_linear"]
@@ -3830,8 +3832,8 @@ class Spect(Resample):
                 new_ext = transform.resample_from_wcs(
                     ext, 'resampled', subsample=subsample,
                     attributes=attributes, conserve=this_conserve,
-                    origin=origin, output_shape=output_shape,
-                    threshold=dq_threshold)
+                    inerpolant=interpolant, origin=origin,
+                    output_shape=output_shape, threshold=dq_threshold)
                 if iext == 0:
                     ad_out = new_ext
                 else:
