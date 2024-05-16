@@ -253,11 +253,15 @@ def start_server():
     will block and this call will not return.
     """
     global _bokeh_server
+    port = interactive_conf().port_number
 
     if not _bokeh_server:
         static_app = Application(DRAGONSStaticHandler())
-        port = 5006
-        while port < 5701 and _bokeh_server is None:
+
+        # Maximum TCP/IP port number
+        max_port_number = 65535
+
+        while port < max_port_number and _bokeh_server is None:
             try:
                 # NOTE:
                 # Tornado generates a WebSocketClosedError when the user
@@ -298,7 +302,7 @@ def start_server():
                 )
             except OSError:
                 port = port + 1
-                if port >= 5701:
+                if port >= max_port_number:
                     raise
         _bokeh_server.start()
 
