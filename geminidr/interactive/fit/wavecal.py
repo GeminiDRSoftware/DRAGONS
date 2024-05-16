@@ -12,7 +12,6 @@ from bisect import bisect
 from functools import lru_cache
 
 from bokeh import models as bm
-from bokeh.events import Reset
 from bokeh.layouts import row, column
 from bokeh.plotting import figure
 from bokeh.models import CustomJS
