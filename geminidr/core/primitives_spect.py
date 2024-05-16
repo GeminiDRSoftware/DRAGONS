@@ -4791,6 +4791,14 @@ class Spect(Resample):
                     ext.wcs.insert_frame(ext.wcs.input_frame, model,
                                            cf.Frame2D(name='rectified'))
 
+                if params["debug_plots"]:
+                    plt.plot(tot_in_coords[0], tot_in_coords[1], linestyle='',
+                             marker='o')
+                    plt.title(f"Extension {ext.id}")
+                    plt.xlabel("X")
+                    plt.ylabel("Y")
+                    plt.show()
+
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)

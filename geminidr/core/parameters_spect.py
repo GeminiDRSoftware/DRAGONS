@@ -599,6 +599,7 @@ class tracePinholeAperturesConfig(config.Config):
                                        dtype=int, default=None, optional=True)
     debug_max_trace_pos = config.Field("Use traces below this number",
                                        dtype=int, default=None, optional=True)
+    debug_plots = config.Field("Create diagnostic plots of traces", bool, False)
 
 
 def wavelength_units_check(value):
