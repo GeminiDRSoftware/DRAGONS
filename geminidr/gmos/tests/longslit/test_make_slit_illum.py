@@ -194,7 +194,7 @@ def test_split_mosaic_into_extensions(request):
         ext.data = data
 
     mosaic_ad = transform.resample_from_wcs(
-        ad, "mosaic", attributes=None, order=1, process_objcat=False)
+        ad, "mosaic", attributes=None, interpolant="linear", process_objcat=False)
 
     mosaic_ad[0].data = np.pad(mosaic_ad[0].data, 10, mode='edge')
 
