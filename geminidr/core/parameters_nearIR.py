@@ -51,6 +51,7 @@ class cleanReadoutConfig(config.Config):
     debug_subtract_background = config.Field("Subtract median from each pattern box?", bool, True)
     level_bias_offset = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
     smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=1)
+    intraquad_smooth = config.RangeField("Height (in pix) of the region at a bias jump to be smoothed over", int, 50, min=1)
     sg_win_size = config.RangeField("Smoothing window size (pixels) for Savitzky-Golay filter", int, 25, min=3)
     simple_thres = config.RangeField("Pattern edge detection threshold", float, 0.6, min=0.0)
     pat_strength_thres = config.RangeField("Pattern strength threshold", float, 15.0, min=0.0)
