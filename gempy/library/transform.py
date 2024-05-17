@@ -760,21 +760,27 @@ class Transform:
             if isinstance(mapping, GeoMap):
                 return ndimage.map_coordinates(input_array, mapping.coords,
                                                cval=cval, order=order)
-            print(f"ORDER = {order}")
             return ndimage.affine_transform(
                 input_array, mapping.matrix, mapping.offset, output_shape,
                 cval=cval, order=order)
 
         # Polynomial interpolation
         if isinstance(mapping, GeoMap):
-            out_array = np.empty(mapping.coords[0].shape, dtype=np.float32)
-            polyinterp(input_array.ravel(),
-                       np.asarray(input_array.shape, dtype=np.int32),
-                       len(input_array.shape), out_array.ravel(), out_array.size,
-                       np.asarray(mapping.coords).ravel().astype(np.float32),
-                       order, cval)
+            affinity = False
+            output_shape = mapping.coords[0].shape
+            geomap = np.asarray(mapping.coords).ravel().astype(np.float32)
         else:
-            raise TypeError("Cannot perform polynomial interpolation with non-GeoMap")
+            affinity = True
+            geomap = np.concatenate([mapping.matrix,
+                                     mapping.offset[:, np.newaxis]],
+                                    axis=1).astype(np.float32).ravel()
+        out_array = np.empty(output_shape, dtype=np.float32)
+        polyinterp(input_array.ravel(),
+                   np.asarray(input_array.shape, dtype=np.int32),
+                   len(input_array.shape), out_array.ravel(),
+                   np.asarray(out_array.shape, dtype=np.int32),
+                   geomap, affinity, order, cval)
+
         return out_array
 
     @classmethod
@@ -1080,7 +1086,7 @@ class DataGroup:
                     transform.append([rescale, rescale_shift])
 
                 trans_output_shape = tuple(length * subsample for length in output_array_shape)
-                if transform.inverse.is_affine and not interpolant.startswith("poly"):
+                if transform.inverse.is_affine:
                     mapping = transform.inverse.affine_matrices(shape=trans_output_shape)
                 else:
                     # If we're conserving the flux, we need to compute the
