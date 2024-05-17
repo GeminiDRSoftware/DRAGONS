@@ -33,7 +33,7 @@ class mosaicDetectorsConfig(config.Config):
                                               "poly5": "Quintic polynomial interpolation",
                                               "spline3": "Cubic spline interpolation",
                                               "spline5": "Quintic spline interpolation"},
-                                     default="spline3", optional=False)
+                                     default="poly3", optional=False)
 
 
 class tileArraysConfig(config.Config):

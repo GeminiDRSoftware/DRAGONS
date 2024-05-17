@@ -23,7 +23,7 @@ class combineNodAndShuffleBeamsConfig(config.Config):
                                               "poly5": "Quintic polynomial interpolation",
                                               "spline3": "Cubic spline interpolation",
                                               "spline5": "Quintic spline interpolation"},
-                                     default="spline3", optional=False)
+                                     default="poly3", optional=False)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
                                      float, 0.001, min=0.)

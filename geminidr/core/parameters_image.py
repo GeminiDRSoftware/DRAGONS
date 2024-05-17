@@ -38,7 +38,7 @@ class resampleToCommonFrameConfig(config.Config):
                                               "poly5": "Quintic polynomial interpolation",
                                               "spline3": "Cubic spline interpolation",
                                               "spline5": "Quintic spline interpolation"},
-                                     default="spline3", optional=False)
+                                     default="poly3", optional=False)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
     clean_data = config.Field("Clean bad pixels before interpolation?", bool, False)
     conserve = config.Field("Conserve image flux?", bool, True)
@@ -68,7 +68,7 @@ class transferObjectMaskConfig(config.Config):
                                               "poly5": "Quintic polynomial interpolation",
                                               "spline3": "Cubic spline interpolation",
                                               "spline5": "Quintic spline interpolation"},
-                                     default="spline3", optional=False)
+                                     default="poly3", optional=False)
     threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
     dilation = config.RangeField("Dilation radius (pixels)", float, 1.5, min=0)
 

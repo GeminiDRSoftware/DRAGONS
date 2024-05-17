@@ -193,7 +193,7 @@ class distortionCorrectConfig(parameters_generic.calRequirementConfig):
                                               "poly5": "Quintic polynomial interpolation",
                                               "spline3": "Cubic spline interpolation",
                                               "spline5": "Quintic spline interpolation"},
-                                     default="spline3", optional=False)
+                                     default="poly3", optional=False)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
                                      float, 0.001, min=0.)
@@ -471,7 +471,7 @@ class linearizeSpectraConfig(config.Config):
                                               "poly5": "Quintic polynomial interpolation",
                                               "spline3": "Cubic spline interpolation",
                                               "spline5": "Quintic spline interpolation"},
-                                     default="spline3", optional=False)
+                                     default="poly3", optional=False)
 
     def validate(self):
         config.Config.validate(self)
@@ -512,7 +512,7 @@ class resampleToCommonFrameConfig(config.Config):
                                               "poly5": "Quintic polynomial interpolation",
                                               "spline3": "Cubic spline interpolation",
                                               "spline5": "Quintic spline interpolation"},
-                                     default="spline3", optional=False)
+                                     default="poly3", optional=False)
     trim_spatial = config.Field("Trim spatial range to fully-covered region?", bool, True)
     trim_spectral = config.Field("Trim wavelength range to fully-covered region?", bool, False)
     force_linear = config.Field("Force linear wavelength solution?", bool, True)

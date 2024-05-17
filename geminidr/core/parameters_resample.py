@@ -13,7 +13,7 @@ class shiftImagesConfig(config.Config):
                                               "poly5": "Quintic polynomial interpolation",
                                               "spline3": "Cubic spline interpolation",
                                               "spline5": "Quintic spline interpolation"},
-                                     default="spline3", optional=False)
+                                     default="poly3", optional=False)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
     clean_data = config.Field("Clean bad pixels before interpolation?", bool, False)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
