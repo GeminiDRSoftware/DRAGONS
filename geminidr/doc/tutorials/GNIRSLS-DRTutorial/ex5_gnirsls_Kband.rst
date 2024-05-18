@@ -12,8 +12,8 @@ dwarf.
 .. toctree::
    :maxdepth: 1
 
-   ex1_gnirsls_Kband_dataset
-   ex1_gnirsls_Kband_cmdline
-   ex1_gnirsls_Kband_api
+   ex5_gnirsls_Kband_dataset
+   ex5_gnirsls_Kband_cmdline
+   ex5_gnirsls_Kband_api
 
 

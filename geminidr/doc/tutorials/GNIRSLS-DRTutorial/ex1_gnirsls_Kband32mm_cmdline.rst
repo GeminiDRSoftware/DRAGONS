@@ -312,7 +312,7 @@ To run the reduction with all the interactive tools activated, set the
 
 ::
 
-    reduce @sci.lis -p interactive=True traceApertures:niter=3
+    reduce @sci.lis -p interactive=True distortionCorrect:order=1 traceApertures:niter=3
 
 At the ``findApertures`` step, you will notice that it finds 4 sources.
 Clearly, only the central one is real.  In interactive mode, just delete the

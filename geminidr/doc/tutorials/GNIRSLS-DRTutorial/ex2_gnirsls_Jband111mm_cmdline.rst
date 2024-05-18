@@ -324,7 +324,7 @@ to call |reduce| on the science frames to get an extracted spectrum.
 
 ::
 
-    reduce @sci.lis
+    reduce @sci.lis -p findAperture:max_apertures=1 traceApertures:niter=3 distortionCorrect:order=1
 
 .. todo:: funky shape to the spectrum.  Somewhat visible in the raw data
         however.
