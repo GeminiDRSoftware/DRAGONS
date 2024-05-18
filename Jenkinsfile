@@ -20,14 +20,15 @@ def runtests_niri    = 1
 def runtests_gsaoi   = 1
 def runtests_gnirs   = 1
 def runtests_wavecal = 1
+def runtests_ghost   = 1
 
 pipeline {
 
     agent any
 
     //triggers {
-    //   // Polls Source Code Manager every four hours
-    //    pollSCM('*/15 * * * *')
+    //   //Polls Source Code Manager every 15 mins
+    //   pollSCM('*/15 * * * *')
     //}
 
     options {
@@ -188,154 +189,159 @@ pipeline {
             } // end parallel
         }
 
-        stage('F2 Tests') {
-            when {
-                expression { runtests_f2  == 1 }
-            }
-
-            agent { label "master" }
-            environment {
-                MPLBACKEND = "agg"
-                DRAGONS_TEST_OUT = "f2_tests_outputs"
-                TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                TMPDIR = "${env.WORKSPACE}/.tmp/f2/"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_dirs.sh'
-                echo "Running tests"
-                sh 'tox -e py310-f2 -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml ${TOX_ARGS}'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F f2'
-            }  // end steps
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside F2 Tests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: '.tmp/py310-f2/reports/*_results.xml'
-                    )
-                    echo "Deleting F2 Tests workspace ${env.WORKSPACE}"
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                      deleteDir()
+        stage('Instrument tests') {
+            parallel {
+                stage('F2 Tests') {
+                    when {
+                        expression { runtests_f2  == 1 }
                     }
-                }  // end always
-            }  // end post
-        }  // end stage
-        stage('GSAOI Tests') {
-            when {
-                expression { runtests_gsaoi  == 1 }
-            }
 
-            agent { label "master" }
-            environment {
-                MPLBACKEND = "agg"
-                DRAGONS_TEST_OUT = "gsaoi_tests_outputs"
-                TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                TMPDIR = "${env.WORKSPACE}/.tmp/gsaoi/"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_dirs.sh'
-                echo "Running tests"
-                sh 'tox -e py310-gsaoi -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml ${TOX_ARGS}'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F gsaoi'
-            }  // end steps
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside GSAOI Tests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: '.tmp/py310-gsaoi/reports/*_results.xml'
-                    )
-                    echo "Deleting GSAOI Tests workspace ${env.WORKSPACE}"
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                      deleteDir()
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        DRAGONS_TEST_OUT = "f2_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/f2/"
                     }
-                }  // end always
-            }  // end post
-        }  // end stage
-        stage('NIRI Tests') {
-            when {
-                expression { runtests_niri  == 1 }
-            }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_dirs.sh'
+                        echo "Running tests"
+                        sh 'tox -e py310-f2 -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F f2'
+                    }  // end steps
+                    post {
+                        always {
+                            echo "Running 'archivePlots' from inside F2 Tests"
+                            archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py310-f2/reports/*_results.xml'
+                            )
+                            echo "Deleting F2 Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }  // end always
+                    }  // end post
+                }  // end stage
+                stage('GSAOI Tests') {
+                    when {
+                        expression { runtests_gsaoi  == 1 }
+                    }
 
-            agent { label "master" }
-            environment {
-                MPLBACKEND = "agg"
-                DRAGONS_TEST_OUT = "niri_tests_outputs"
-                TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                TMPDIR = "${env.WORKSPACE}/.tmp/niri/"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_dirs.sh'
-                echo "Running tests"
-                sh 'tox -e py310-niri -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml ${TOX_ARGS}'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F niri'
-            }  // end steps
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside NIRI Tests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: '.tmp/py310-niri/reports/*_results.xml'
-                    )
-                    echo "Deleting NIRI Tests workspace ${env.WORKSPACE}"
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                      deleteDir()
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        DRAGONS_TEST_OUT = "gsaoi_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/gsaoi/"
                     }
-                }  // end always
-            }  // end post
-        }  // end stage
-        stage('GNIRS Tests') {
-            when {
-                expression { runtests_gnirs == 1 }
-            }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_dirs.sh'
+                        echo "Running tests"
+                        sh 'tox -e py310-gsaoi -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F gsaoi'
+                    }  // end steps
+                    post {
+                        always {
+                            echo "Running 'archivePlots' from inside GSAOI Tests"
+                            archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py310-gsaoi/reports/*_results.xml'
+                            )
+                            echo "Deleting GSAOI Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }  // end always
+                    }  // end post
+                }  // end stage
+                stage('NIRI Tests') {
+                    when {
+                        expression { runtests_niri  == 1 }
+                    }
 
-            agent { label "master" }
-            environment {
-                MPLBACKEND = "agg"
-                DRAGONS_TEST_OUT = "gnirs_tests_outputs"
-                TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                TMPDIR = "${env.WORKSPACE}/.tmp/gnirs/"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_dirs.sh'
-                echo "Running tests"
-                sh 'tox -e py310-gnirs -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml ${TOX_ARGS}'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F gnirs'
-            }  // end steps
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside GNIRS Tests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: '.tmp/py310-gnirs/reports/*_results.xml'
-                    )
-                    echo "Deleting GNIRS Tests workspace ${env.WORKSPACE}"
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                      deleteDir()
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        DRAGONS_TEST_OUT = "niri_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/niri/"
                     }
-                }  // end always
-            }  // end post
-        }  // end stage
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_dirs.sh'
+                        echo "Running tests"
+                        sh 'tox -e py310-niri -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F niri'
+                    }  // end steps
+                    post {
+                        always {
+                            echo "Running 'archivePlots' from inside NIRI Tests"
+                            archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py310-niri/reports/*_results.xml'
+                            )
+                            echo "Deleting NIRI Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }  // end always
+                    }  // end post
+                }  // end stage
+                stage('GNIRS Tests') {
+                    when {
+                        expression { runtests_gnirs == 1 }
+                    }
+
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        DRAGONS_TEST_OUT = "gnirs_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/gnirs/"
+                    }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_dirs.sh'
+                        echo "Running tests"
+                        sh 'tox -e py310-gnirs -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F gnirs'
+                    }  // end steps
+                    post {
+                        always {
+                            echo "Running 'archivePlots' from inside GNIRS Tests"
+                            archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py310-gnirs/reports/*_results.xml'
+                            )
+                            echo "Deleting GNIRS Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }  // end always
+                    }  // end post
+                }  // end stage
+            } // end parallel
+        }
+
         stage('WaveCal Tests') {
             when {
                 expression { runtests_wavecal == 1 }
@@ -422,7 +428,7 @@ pipeline {
                     agent { label "master" }
                     environment {
                         MPLBACKEND = "agg"
-                        DRAGONS_TEST_OUT = "regression_tests_outputs"
+                        DRAGONS_TEST_OUT = "slow_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
                         TMPDIR = "${env.WORKSPACE}/.tmp/slow/"
                     }
@@ -444,6 +450,43 @@ pipeline {
                                 testResults: '.tmp/py310-slow/reports/*_results.xml'
                             )
                             echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }
+                    } // end post
+                } // end stage
+
+                stage('GHOST Tests') {
+                    when {
+                        expression { runtests_gnirs == 1 }
+                    }
+
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        DRAGONS_TEST_OUT = "ghost_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/ghost/"
+                    }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        echo "${env.PATH}"
+                        sh '.jenkins/scripts/setup_dirs.sh'
+                        echo "GHOST tests"
+                        sh 'tox -e py310-ghost -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/ghost_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F ghost'
+                    } // end steps
+                    post {
+                        always {
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py310-ghost/reports/*_results.xml'
+                            )
+                            echo "Deleting GHOST Tests workspace ${env.WORKSPACE}"
                             cleanWs()
                             dir("${env.WORKSPACE}@tmp") {
                               deleteDir()

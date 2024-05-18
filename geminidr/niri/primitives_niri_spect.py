@@ -66,7 +66,6 @@ class NIRISpect(Spect, NIRI):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
         This NIRI-specific primitive sets the default order in case it's None,
@@ -193,7 +192,6 @@ class NIRISpect(Spect, NIRI):
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
 
-    
     def _get_arc_linelist(self, ext, waves=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
@@ -213,7 +211,6 @@ class NIRISpect(Spect, NIRI):
 
         return wavecal.LineList(filename)
 
-
     def _get_resolution(self, ad):
         # For NIRI actual resolving power values are much lower than
         # the theoretical ones, so read them from LUT
@@ -228,7 +225,6 @@ class NIRISpect(Spect, NIRI):
         except KeyError:
             return None
         return resolution
-
 
     def _get_actual_cenwave(self, ext, asMicrometers=False, asNanometers=False, asAngstroms=False):
         # For NIRI wavelength at central pixel doesn't match the descriptor value

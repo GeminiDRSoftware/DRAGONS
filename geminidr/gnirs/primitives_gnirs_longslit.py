@@ -13,6 +13,7 @@ from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr.gnirs.lookups.maskdb import bl_filter_range_dict
 
 from .primitives_gnirs_spect import GNIRSSpect
 from geminidr.core.primitives_longslit import Longslit
@@ -60,14 +61,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
             don't apply second order mask? (default is False)
 
         """
-        # Cut-on and cut-off wavelengths (um) of GNIRS order-blocking filters, based on conservative transmissivity (1%),
-        # or inter-order minima.
-        bl_filter_range_dict = {'X': (1.01, 1.19),
-                                'J': (1.15, 1.385),
-                                'H': (1.46, 1.84),
-                                'K': (1.89, 2.54),
-                                'L': (2.77, 4.44),
-                                'M': (4.2, 6.0)}
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -95,11 +89,17 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
                 dispaxis_center = ad[0].shape[dispaxis] // 2
                 cenwave = ad.central_wavelength(asMicrometers=True)
                 dispersion = ad.dispersion(asMicrometers=True)[0]
-                filter = ad.filter_name(pretty=True)
-                filter_cuton_wvl = bl_filter_range_dict[filter][0]
-                filter_cutoff_wvl = bl_filter_range_dict[filter][1]
-                filter_cuton_pix = min(int(dispaxis_center - (cenwave - filter_cuton_wvl) / dispersion), ad[0].shape[dispaxis] - 1)
-                filter_cutoff_pix = max(int(dispaxis_center + (filter_cutoff_wvl - cenwave) / dispersion), 0)
+                filter = ad.filter_name(keepID=True)
+                try:
+                    filter_cuton_wvl = bl_filter_range_dict[filter][0]
+                    filter_cutoff_wvl = bl_filter_range_dict[filter][1]
+                except KeyError:
+                    log.warning("Unknown illumination mask for the filter {} for {}".
+                                format(filter, ad.filename))
+                    break
+                else:
+                    filter_cuton_pix = min(int(dispaxis_center - (cenwave - filter_cuton_wvl) / dispersion), ad[0].shape[dispaxis] - 1)
+                    filter_cutoff_pix = max(int(dispaxis_center + (filter_cutoff_wvl - cenwave) / dispersion), 0)
 
                 for ext in ad:
                     ext.mask[:filter_cutoff_pix] |= DQ.unilluminated

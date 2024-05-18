@@ -18,18 +18,18 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS'
-copyright = '2023, Association of Universities for Research in Astronomy'
+copyright = '2024, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
 version = '3.2'
-#release = '3.1.0'
+#release = '3.2.0'
 #rtdurl = 'v'+release
-#release = '3.1.x'
+#release = '3.2.x'
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
 
-today = 'April 2023'
+today = 'April 2024'
 
 # -- General configuration ---------------------------------------------------
 
@@ -107,7 +107,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'TutorialSeries-GMOSLSDRDRAGONS.tex', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'TutorialSeries-GMOSLSDRDRAGONS.tex', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS',
      'DRAGONS Team', 'manual'),
 ]
 
@@ -120,12 +120,13 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'tutorialseries-gmoslsdrdragons', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'tutorialseries-gmoslsdrdragons', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS',
      [author], 1)
 ]
 
 
 # --- Customizations ----------------
+
 
 def setup(app):
     app.add_css_file('todo-styles.css')

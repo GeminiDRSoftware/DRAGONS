@@ -238,6 +238,13 @@ class LocalManager:
             self.remove_file(path)
             raise err
 
+        # If a file is being ingested to the local DB, the user will want to
+        # retrieve it, so let's make sure it's not "engineering"
+        try:
+            dbtools.force_not_engineering(self.session, filename)
+        except AttributeError:  # not implemented
+            pass
+
     def ingest_directory(self, path, walk=False, log=None):
         """Registers into the database all FITS files under a directory
 

@@ -38,6 +38,7 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     nbright = config.RangeField("Number of bright lines to eliminate", int, 0, min=0)
 
     def setDefaults(self):
+        self.weighting = "local"
         self.order = 3
         self._fields["central_wavelength"].max = 1200
         del self.absorption

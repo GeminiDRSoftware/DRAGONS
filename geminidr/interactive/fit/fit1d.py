@@ -40,15 +40,12 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
-# Names to use for masks.  You can change these to change the label that gets displayed in the legend
+# Names to use for masks.  You can change these to change the label that gets
+# displayed in the legend
 SIGMA_MASK_NAME = "rejected (sigma)"
 USER_MASK_NAME = "rejected (user)"
 BAND_MASK_NAME = "excluded"
 INPUT_MASK_NAMES = ["aperture", "threshold"]
-
-
-class InteractiveModelError(Exception):
-    """Base class for exceptions in this module."""
 
 
 class InteractiveModel(ABC):
@@ -72,6 +69,7 @@ class InteractiveModel(ABC):
         "circle",
         "square",
         "inverted_triangle",
+        "square",
     ]
 
     PALETTE = [
@@ -159,6 +157,7 @@ class InteractiveModel1D(InteractiveModel):
         band_model=None,
         extra_masks=None,
         initial_fit=None,
+        default_model=None,
     ):
         """Create base class with given parameters as initial model inputs.
 
@@ -187,6 +186,9 @@ class InteractiveModel1D(InteractiveModel):
 
         initial_fit: fit_1D/None
             an initial fit to use if there are no data points
+
+        default_model : callable
+            function to evaluate model if self.fit is None
         """
         super().__init__()
 
@@ -204,6 +206,7 @@ class InteractiveModel1D(InteractiveModel):
         self.fit = initial_fit
 
         self.listeners = listeners
+        self.default_model = default_model
 
         self.section = section
         self.data = bm.ColumnDataSource({"x": [], "y": [], "mask": []})
@@ -213,7 +216,6 @@ class InteractiveModel1D(InteractiveModel):
 
         else:
             xlinspace = np.linspace(min(x), max(x), 500)
-
         self.populate_bokeh_objects(
             x, y, weights=weights, mask=mask, extra_masks=extra_masks
         )
@@ -224,7 +226,6 @@ class InteractiveModel1D(InteractiveModel):
 
         if len(x):
             self.perform_fit()
-
         self.evaluation = bm.ColumnDataSource(
             {"xlinspace": xlinspace, "model": self.evaluate(xlinspace)}
         )
@@ -517,11 +518,8 @@ class InteractiveModel1D(InteractiveModel):
                     self.quality = FitQuality.POOR  # else stay BAD
 
         if self.quality != FitQuality.BAD:  # don't update if it's BAD
-            self.fit = new_fit
-
             if "residuals" in self.data.data:
                 self.data.data["residuals"] = self.y - self.evaluate(self.x)
-
             if "ratio" in self.data.data:
                 with np.errstate(invalid="ignore", divide="ignore"):
                     self.data.data["ratio"] = self.y / self.evaluate(self.x)
@@ -552,18 +550,13 @@ class InteractiveModel1D(InteractiveModel):
         self.data.data["mask"] = mask
 
     def evaluate(self, x):
-        try:
-            return self.fit.evaluate(x)
-
-        except AttributeError as err:
-            msg = f"Could not evaluate fit ({self.fit = })."
-
-            if self.fit is None:
-                msg += " Have you provided an initial fit?"
-
-            msg += " Is the image empty or completely masked?"
-
-            raise InteractiveModelError(msg) from err
+        if self.fit is None:
+            # fit_1D.evaluate() always returns an array so we need to also
+            retval = self.default_model(x)
+            if isinstance(retval, float):
+                return np.array([retval])
+            return retval
+        return self.fit.evaluate(x)
 
 
 class FittingParametersUI:
@@ -653,7 +646,7 @@ class FittingParametersUI:
                 pkey = alt_keys[key]
             field = ui_params.fields[pkey]
 
-            step = 1 if isinstance(field.default, int) else 0.1
+            step = 1 if field.dtype == int else 0.1
 
             field_min = field.min if hasattr(field, "min") else None
 
@@ -937,7 +930,12 @@ class InfoPanel:
         model : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
             The model that has changed.
         """
-        rms_str = "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
+        try:
+            rms_str = (
+                "--" if np.isnan(model.fit.rms) else f"{model.fit.rms:.4f}"
+            )
+        except AttributeError:
+            rms_str = "--"
 
         rms = (
             f'<div class="info_panel">'
@@ -1019,6 +1017,7 @@ class Fit1DPanel:
         enable_regions=True,
         central_plot=True,
         extra_masks=None,
+        default_model=None,
         initial_fit=None,
     ):
         """Panel for visualizing a 1-D fit, perhaps in a tab.
@@ -1073,6 +1072,9 @@ class Fit1DPanel:
 
         extra_masks : dict of boolean arrays
             points to display but not use in the fit
+
+        default_model : callable
+            function to evaluate model if self.fit is None
         """
         # Just to get the doc later
         self.visualizer = visualizer
@@ -1094,6 +1096,7 @@ class Fit1DPanel:
 
         # Avoids having to check whether this is None all the time
         band_model = GIRegionModel(domain=domain)
+
         self.model = InteractiveModel1D(
             fitting_parameters,
             domain,
@@ -1102,6 +1105,7 @@ class Fit1DPanel:
             weights,
             band_model=band_model,
             extra_masks=extra_masks,
+            default_model=default_model,
             initial_fit=initial_fit,
         )
 
@@ -1580,7 +1584,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         fitting_parameters,
         modal_message=None,
         modal_button_label=None,
-        tab_name_fmt="{}",
+        tab_name_fmt=None,
         xlabel="x",
         ylabel="y",
         domains=None,
@@ -1624,8 +1628,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             If set and if modal_message was set, this will be used for the
             label on the recalculate button.  It is not required.
 
-        tab_name_fmt : str
-            Format string for naming the tabs
+        tab_name_fmt : callable
+            Turns ext.id into a title for the tab name
 
         xlabel : str
             String label for X axis
@@ -1667,9 +1671,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             operability for each primitive since most of the functions that do
             the work are methods of this class.
         reinit_live : bool
-            If True, the reinit inputs will be recalculated live as the user
-            changes them. If False, a 'recalculate' button will be shown below
-            the reinit inputs instead.
+            If True, some buttons and parameters will recalculate the data
+            points immediately.  If False, the reinit button will be disabled
+            until the user clicks the "Recalculate" button. Default is False.
         """
         super().__init__(
             title=title,
@@ -1741,7 +1745,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
                     self.make_modal(reinit_widgets[0], modal_message)
                     self.modal_widget = reinit_widgets[0]
-
             else:
                 reset_reinit_button = self.build_reset_button()
                 reinit_widgets.append(reset_reinit_button)
@@ -1812,6 +1815,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         elif turbo_tabs:
             self.turbo = TabsTurboInjector(self.tabs)
 
+        if tab_name_fmt is None:
+            tab_name_fmt = lambda i: f"Extension {i+1}"
+
         for i in range(self.nfits):
             extra_masks = {}
 
@@ -1829,6 +1835,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 if k.endswith("_mask"):
                     extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
 
+            # making the fit panel
             tui = panel_class(
                 self,
                 fitting_params,
@@ -1838,14 +1845,32 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 extra_masks=extra_masks,
             )
 
-            if turbo_tabs:
-                self.turbo.add_tab(
-                    tui.component, title=tab_name_fmt.format(i + 1)
+            # tab_name_fmt is expected to be a callable, which traditionally is
+            # just an anonymous function passed to the relevant visualizer as
+            # an argument.
+            if not callable(tab_name_fmt):
+                msg = (
+                    f"tab_name_fmt must be callable, but got "
+                    f"{type(tab_name_fmt)} ({tab_name_fmt})."
                 )
+
+                if isinstance(tab_name_fmt, str):
+                    msg += (
+                        " If you want to use a string, you should use "
+                        "a lambda function like:\n"
+                        "  tab_name_fmt = lambda i: f'Extension {i}'\n"
+                        "or, if you want to ignore the argument, use:\n"
+                        "  tab_name_fmt = lambda _: 'Extension'"
+                    )
+
+                raise ValueError(msg)
+
+            if turbo_tabs:
+                self.turbo.add_tab(tui.component, title=str(tab_name_fmt(i)))
 
             else:
                 tab = bm.TabPanel(
-                    child=tui.component, title=tab_name_fmt.format(i + 1)
+                    child=tui.component, title=str(tab_name_fmt(i))
                 )
 
                 self.tabs.tabs.append(tab)
@@ -2004,11 +2029,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                     self.show_user_message(
                         f"Unable to build data from inputs due to exception "
                         f"({err.__class__.__name__})\nreverting"
-                    )
-                    logging.error(
-                        "Unable to build data from inputs, got Exception %s",
-                        err,
-                        exc_info=True,
                     )
 
                 if data is not None:

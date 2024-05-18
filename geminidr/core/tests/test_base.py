@@ -6,7 +6,7 @@ from geminidr.gmos.primitives_gmos_image import GMOSImage
 
 
 CORRECT_PARAMETERS = [('GMOSImage', 'standardizeWCS', ['suffix']),
-                      ('GMOSImage', 'prepare', ['suffix', 'attach_mdf', 'mdf']),
+                      ('GMOSImage', 'prepare', ['suffix', 'attach_mdf', 'mdf', 'require_wcs']),
                       ('F2Image', 'stackDarks',
                        ['suffix', 'apply_dq', 'statsec', 'operation',
                         'reject_method', 'hsigma', 'lsigma', 'mclip',

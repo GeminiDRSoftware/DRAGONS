@@ -15,9 +15,6 @@ from astrodata import (
 from gemini_instruments.gemini import AstroDataGemini
 from gemini_instruments.common import build_group_id
 
-# from astrodata.fits import FitsProviderProxy
-from copy import deepcopy
-
 
 def return_dict_for_bundle(desc_fn):
     """
@@ -32,34 +29,27 @@ def return_dict_for_bundle(desc_fn):
     Its behaviour on multi-extension slices is unclear.
     """
     def wrapper(self, *args, **kwargs):
-        def confirm_single_valued(_list):
-            return _list[0] if _list and _list == _list[::-1] else None
-
         if not self.is_single and 'BUNDLE' in self.tags:
-            ret_dict = {k: confirm_single_valued(
-                [desc_fn(self[i+1:i+1+ext.hdr['NAMPS']], *args, **kwargs)
-                 for i, ext in enumerate(self)
-                 if ext.arm() == k and not ext.shape])
-                for k in ('blue', 'red')}
-            ret_dict['slitv'] = confirm_single_valued(
-                [desc_fn(self[i:i+1], *args, **kwargs)
-                 for i, ext in enumerate(self) if ext.arm() == 'slitv'])
+            ret_dict = dict()
+            cameras = self.hdr.get('CAMERA', '')
+            namps = self.hdr.get('NAMPS')
+            i = 0
+            while i < len(namps):
+                camera = cameras[i].lower()
+                # We've found the nascent PHU of an arm exposure
+                if namps[i] > 1:
+                    ret_value = desc_fn(self[i+1:i+namps[i]+1], *args, **kwargs)
+                    i += namps[i] + 1
+                else:  # it's a slitviewer
+                    ret_value = desc_fn(self[i], *args, **kwargs)
+                    i += 1
+                # Check for single-valuedness of all returns from this camera
+                try:
+                    if ret_dict[camera] != ret_value:
+                        ret_dict[camera] = None
+                except KeyError:
+                    ret_dict[camera] = ret_value
             return ret_dict
-            # This is the debugging version of the above code
-            #final_return = {}
-            #for k in ('BLUE', 'RED'):
-            #    print(f"Looking for {k}")
-            #    ret_values = []
-            #    for i, ext in enumerate(self):
-            #        if ext.hdr.get('CAMERA') == k and not ext.shape:
-            #            print("BLAH", i)
-            #            tmp = self[i+1:i+1+ext.hdr['NAMPS']]
-            #            print("created tmp", len(tmp), tmp.tags)
-            #            ret_value = desc_fn(tmp, *args, **kwargs)
-            #            print("return_dict", i, ret_value, tmp.detector_name())
-            #            ret_values.append(ret_value)
-            #    final_return[k.lower()] = confirm_single_valued(ret_values)
-            #return final_return
         return desc_fn(self, *args, **kwargs)
     return wrapper
 
@@ -71,7 +61,8 @@ def use_nascent_phu_for_bundle(desc_fn):
     """
     def wrapper(self, *args, **kwargs):
         if 'BUNDLE' in self.tags:
-            phu_index = min(i for i, camera in enumerate(self.hdr['CAMERA']) if camera in ('BLUE', 'RED'))
+            phu_index = min(i for i, camera in enumerate(self.hdr['CAMERA'])
+                            if camera in ('BLUE', 'RED'))
             nascent_phu = self[phu_index]
             return desc_fn(nascent_phu, *args, **kwargs)
         return desc_fn(self, *args, **kwargs)
@@ -91,6 +82,13 @@ class AstroDataGhost(AstroDataGemini):
                           saturation_level = 'SATURATE',
                           )
 
+    def __iter__(self):
+        if self.is_single:
+            yield self
+        else:
+            for n in range(len(self)):
+                yield self[n]
+
     def __getitem__(self, idx):
         """
         Override default slicing method for bundles for two reasons:
@@ -101,17 +99,21 @@ class AstroDataGhost(AstroDataGemini):
         """
         obj = super().__getitem__(idx)
         if 'BUNDLE' in self.tags:
+            #print("BUNDLE", idx, obj._mapping)
             if max(obj.indices) - min(obj.indices) != len(obj.indices) - 1:
                 raise ValueError("Bundles can only be sliced contiguously")
-
+            #print(obj.tags)
             # Find the nascent PHU if it's not a slit viewer, keep PHU if it is
             # this copes with CAMERA return a list or a string (single-slice)
             if obj.hdr.get('CAMERA')[0].startswith('S'):
                 # add in the first SLITV header so keywords are there
                 # (which is explicitly done in debundling)
-                obj.phu = self.phu + (obj.hdr if obj.is_single else obj[0].hdr)
+                objhdr = obj.hdr if obj.is_single else obj[0].hdr
+                phu = self.phu + objhdr
+                # because people just do things without understanding the ramifications
+                phu['EXPTIME'] = objhdr['EXPTIME']
+                obj.phu = phu
                 return obj
-
             for i in range(min(obj.indices), -1, -1):
                 ndd = self._all_nddatas[i]
                 if not ndd.shape:
@@ -120,16 +122,12 @@ class AstroDataGhost(AstroDataGemini):
             else:
                 phu = self._all_nddatas[min(obj.indices)].meta['header']
             obj.phu = phu
-
             # This has to happen way down here because only by resetting the PHU
             # can we prevent the 'BUNDLE' tag appearing and hence allow more
             # slicing to occur
             if len(set(ext.shape for ext in obj)) > 1:
                 raise ValueError("Bundles must be sliced from the same camera")
             #print("RETURNING", len(obj))
-        #else:
-        #    obj._dataprov = FitsProviderProxyForGhostBundles(obj._dataprov, self.phu)
-        #print("Returning", type(obj), obj._dataprov)
         return obj
 
     @astro_data_descriptor
@@ -179,7 +177,7 @@ class AstroDataGhost(AstroDataGemini):
         Define the 'bias data' tag set for GHOST data.
         """
         if self.phu.get('OBSTYPE') == 'BIAS':
-            return TagSet(['CAL', 'BIAS'])
+            return TagSet(['CAL', 'BIAS'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_dark(self):
@@ -187,7 +185,7 @@ class AstroDataGhost(AstroDataGemini):
         Define the 'dark data' tag set for GHOST data.
         """
         if self.phu.get('OBSTYPE') == 'DARK':
-            return TagSet(['CAL', 'DARK'])
+            return TagSet(['CAL', 'DARK'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_arc(self):
@@ -222,17 +220,6 @@ class AstroDataGhost(AstroDataGemini):
         if self.phu.get('OBSTYPE') == 'SKY':
             return TagSet(['SKY'])
 
-    @astro_data_tag
-    def _tag_res(self):
-        """
-        Define the tagset for GHOST data of different resolutions.
-        """
-        mode = self.phu.get('SMPNAME')
-        if mode.endswith('HI_ONLY'):
-            return TagSet(['HIGH'])
-        else:
-            return TagSet(['STD'])
-
     # MCW 191107 - had to add SLIT back in to make cal system work
     @astro_data_tag
     def _tag_slitv(self):
@@ -240,18 +227,37 @@ class AstroDataGhost(AstroDataGemini):
         Define the 'slit data' tag set for GHOST data.
         """
         if self.phu.get('CAMERA', '').lower().startswith('slit'):
-            return TagSet(['SLITV', 'SLIT', 'IMAGE'],
+            return TagSet(['SLITV', 'SLIT'],
                           blocks=['SPECT', 'BUNDLE'])
 
     @astro_data_tag
-    def _tag_spect(self):
+    def _tag_image(self):
+        """
+        Tag slitviewer images as IMAGE (must be done separately from
+        the "SLITV" so "SLITV" isn't blocked by BIAS or BPM)
+        """
+        if self.phu.get('CAMERA', '').lower().startswith('slit'):
+            return TagSet(['IMAGE'])
+
+    @astro_data_tag
+    def _tag_camera(self):
         """
         Define the 'spectrograph data' tag set for GHOST data.
         """
         # Also returns BLUE or RED if the CAMERA keyword is set thus
-        if 'CAMERA' in self.phu:
-            return TagSet(({self.phu['CAMERA']} & {'BLUE', 'RED'}) | {'SPECT'},
-                          blocks=['BUNDLE'])
+        camera = self.phu.get('CAMERA')
+        if camera in ('BLUE', 'RED'):
+            return TagSet([camera], blocks=['BUNDLE'])
+
+    @astro_data_tag
+    def _tag_spect(self):
+        """
+        Tag echelle frames as SPECT (must be done separately from
+        "RED"/"BLUE" so that isn't blocked by BIAS or BPM)
+        """
+        camera = self.phu.get('CAMERA')
+        if camera in ('BLUE', 'RED'):
+            return TagSet(['SPECT', 'XD'], blocks=['BUNDLE'])
 
     @astro_data_tag
     def _status_processed_ghost_cals(self):
@@ -259,29 +265,34 @@ class AstroDataGhost(AstroDataGemini):
         Define the 'processed data' tag set for GHOST data.
         """
         kwords = set(['PRSLITIM', 'PRSLITBI', 'PRSLITDA', 'PRSLITFL',
-                      'PRWAVLFT', 'PRPOLYFT'])
+                      'PRWAVLFT', 'PRPOLYFT', 'PROCSTND'])
         if set(self.phu) & kwords:
             return TagSet(['PROCESSED'])
 
     @astro_data_tag
-    def _tag_binning_mode(self):
-        """
-        TODO: this should not be a tag
-        Define the tagset for GHOST data of different binning modes.
-        """
-        binnings = self.hdr.get('CCDSUM')
-        if binnings is None:  # CJS hack
-            return TagSet([])
-        if isinstance(binnings, list):
-            binnings = [x for x in binnings if x]
-            if all(x == binnings[0] for x in binnings):
-                return TagSet([binnings[0].replace(' ', 'x', 1)])
-            else:
-                return TagSet(['NxN'])
-        else:
-            # A list should always be returned but it doesn't
-            # hurt to be able to handle a string just in case
-            return TagSet([binnings.replace(' ', 'x', 1)])
+    def _tag_processed_standard(self):
+        if 'PROCSTND' in self.phu:
+            return TagSet(['STANDARD'])
+
+    #@astro_data_tag
+    #def _tag_binning_mode(self):
+    #    """
+    #    TODO: this should not be a tag
+    #    Define the tagset for GHOST data of different binning modes.
+    #    """
+    #    binnings = self.hdr.get('CCDSUM')
+    #    if binnings is None:  # CJS hack
+    #        return TagSet([])
+    #    if isinstance(binnings, list):
+    #        binnings = [x for x in binnings if x]
+    #        if all(x == binnings[0] for x in binnings):
+    #            return TagSet([binnings[0].replace(' ', 'x', 1)])
+    #        else:
+    #            return TagSet(['NxN'])
+    #    else:
+    #        # A list should always be returned but it doesn't
+    #        # hurt to be able to handle a string just in case
+    #        return TagSet([binnings.replace(' ', 'x', 1)])
 
     @astro_data_tag
     def _tag_obsclass(self):
@@ -366,13 +377,19 @@ class AstroDataGhost(AstroDataGemini):
             return [f"{ext.detector_name()}, {ext.hdr.get('AMPNAME')}" for ext in self]
 
     @astro_data_descriptor
+    @return_dict_for_bundle
+    def binning(self):
+        """
+        Returns an "MxN"-style string because CJS is fed up with not having this!
+        """
+        return super().binning()
+
+    @astro_data_descriptor
     def calibration_key(self):
         """
         Returns a suitable calibration key for GHOST, which includes the arm.
         """
         return (self.data_label().replace('_stack', ''), self.arm())
-
-
 
     # FIXME Remove once headers corrected
     @astro_data_descriptor
@@ -488,6 +505,21 @@ class AstroDataGhost(AstroDataGemini):
         #
         #return exp_time_default
 
+    @astro_data_descriptor
+    def focal_plane_mask(self, *args, **kwargs):
+        """
+        Returns the "focal plane mask", primarily to populate the archive's
+        Header table so it can be searched on.
+
+        Returns
+        -------
+        str
+            "HR"/"SR" as appropriate
+        """
+        try:
+            return self.res_mode().upper()[0]+"R"
+        except AttributeError:
+            return None
 
     # The gain() descriptor is inherited from gemini/adclass, and returns
     # the value of the GAIN keyword (as a list if sent a complete AD object,
@@ -578,8 +610,15 @@ class AstroDataGhost(AstroDataGemini):
         """
         if 'BUNDLE' not in self.tags:
             return len(self) if 'SLITV' in self.tags else 1  # probably
-        return {k.lower(): sum(ext.hdr.get('CAMERA') == k and not ext.shape
-                               for ext in self) for k in ('BLUE', 'RED')}
+        if self.is_single:
+            return 1
+        cameras = self.hdr.get('CAMERA')
+        namps = self.hdr.get('NAMPS')
+        ret_value = {'blue': 0, 'red': 0, 'slitv': 0}
+        for camera, namp in zip(cameras, namps):
+            if namp is not None:
+                ret_value[camera.lower()] += 1
+        return ret_value
 
     @astro_data_descriptor
     @return_dict_for_bundle
@@ -598,6 +637,7 @@ class AstroDataGhost(AstroDataGemini):
         _read_mode_dict = {("slow", "low"): "slow",
                            ("medium", "low"): "medium",
                            ("fast", "low"): "fast",
+                           ("fast", "high"): "bright",
                            ("standard", "standard"): "standard"}  # SLITV
         return _read_mode_dict.get((self.read_speed_setting(),
                                     self.gain_setting()), "unknown")
@@ -639,6 +679,16 @@ class AstroDataGhost(AstroDataGemini):
         except Exception:
             pass
         return None
+
+    @astro_data_descriptor
+    def saturation_level(self):
+        """Patch because SATURATE=0 for the blue spectrograph"""
+        retval = super().saturation_level()
+        if 'PREPARED' in self.tags:
+            return retval
+        if self.is_single:
+            return None if retval is None else retval if retval > 0 else 65535
+        return [None if v is None else v if v > 0 else 65535 for v in retval]
 
     @astro_data_descriptor
     @use_nascent_phu_for_bundle

@@ -1,13 +1,13 @@
 import re
 from itertools import product as cart_product
-from functools import reduce
+from functools import partial, reduce
 
 import numpy as np
 from scipy.spatial import cKDTree
 from bisect import bisect
 
 from astropy import units as u
-from astropy.modeling import fix_inputs, fitting, models, Model
+from astropy.modeling import fix_inputs, fitting, models, Model, CompoundModel
 from astropy.table import Table
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -319,7 +319,7 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
     """
     npix = ext.shape[dispersion_axis]
     try:
-        fwd_transform = ext.wcs.forward_transform
+        fwd_transform = ext.wcs.forward_transform.copy()
     except AttributeError:
         # Descriptors are not evaluated by the decorator to avoid overriding
         # the WCS (which may have done some tweaks, e.g., GMOS-S 1um offset)
@@ -340,6 +340,13 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
         # https://github.com/astropy/astropy/issues/12021
         axis_models = [models.Const1D(axes.get(i, 0.5 * (length-1)))
                        for i, length in enumerate(ext.shape)]
+        for m in axis_models:
+            m.amplitude.fixed = True
+        if isinstance(fwd_transform, CompoundModel):
+            for m in fwd_transform:
+                if m.name == "SKY":
+                    for p in m.param_names:
+                        getattr(m, p).fixed = True
         axis_models[dispersion_axis] = models.Identity(1)
         model = (models.Mapping((0,) * ndim) |
                  reduce(Model.__and__, axis_models[::-1]) |
@@ -384,6 +391,7 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
                 if refplot_data is not None:
                     input_data.update(refplot_data)
 
+        input_data["init_models"] = [fit1d.model] + input_data["init_models"]
         data["meta"].append(input_data)
     return data
 
@@ -431,7 +439,7 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         init_models, ui_params.toDict(), peaks=peaks,
         peak_weights=weights[ui_params.weighting],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
-        dcenwave = input_data["cenwave_accuracy"], filename=ext.filename)
+        bounds_setter=input_data["bounds_setter"], filename=ext.filename)
 
     input_data["fit"] = fit1d
     return input_data, fit1d, acceptable_fit
@@ -476,7 +484,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     "linelist" : LineList object
     "fwidth" : feature width (pixels)
     "location" : extraction location (if 2D spectrum)
-    "cenwave_accuracy" : accuracy of the central wavelength
+     "bounds_setter" : a callable to set the uncertainty on polynomial parameters
     """
     cenwave = config["central_wavelength"]
 
@@ -605,18 +613,15 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                     log.warning(f"{i}. Offset {m.right.offset_0.value} "
                                 f"scale {m.right.factor_1.value}")
 
-    # Get the accuracy of the central wavelength
-    dcenwave = p._get_cenwave_accuracy(ext=ext)
-
     return {"spectrum": np.ma.masked_array(data, mask=mask),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
-            "cenwave_accuracy" : dcenwave, "refplot_data": refplot_dict}
-
+            "refplot_data": refplot_dict,
+            "bounds_setter": partial(p._apply_wavelength_model_bounds, ext=ext)}
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
-                  linelist=None, fwidth=4, kdsigma=1, k=1, filename=None,
-                  dcenwave=10):
+                  linelist=None, fwidth=4,
+                  kdsigma=1, k=1, filename=None, bounds_setter=None):
     """
     Find the best wavelength solution from the set of initial models.
 
@@ -630,12 +635,14 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         list of peak weights
     filename : str
         name of file being checked
+    bounds_setter : callable
+        function to provide bounds for the wavelength model
+
     Returns
     -------
     length-2 tuple
         A tuple of the best-fit model and a boolean denoting whether or not it
         is an acceptable fit.
-
     """
     log = logutils.get_logger(__name__)
     min_lines = [int(x) for x in str(config["debug_min_lines"]).split(',')]
@@ -645,6 +652,11 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     # This allows suppression of the terminal log output by calling the function
     # with loglevel='debug'.
     loglevel = "stdinfo" if "verbose" in config else "fullinfo"
+    logit = getattr(log, loglevel)
+
+    # This allows suppression of the terminal log output by calling the function
+    # with loglevel='debug'.
+    loglevel = "stdinfo" if config["verbose"] else "fullinfo"
     logit = getattr(log, loglevel)
 
     # Create an initial fit_1D object using the initial wavelength model
@@ -671,9 +683,9 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     fit1d.mask = np.array([], dtype=bool)
     initial_model_fit = fit1d
 
-    # Iterate over models most rapidly
-    for loc_start, min_lines_per_fit, model in cart_product(
-            (0.5, 0.4, 0.6), min_lines, init_models):
+    # Iterate over start position models most rapidly
+    for min_lines_per_fit, model, loc_start in cart_product(
+            min_lines, init_models, (0.5, 0.3, 0.7)):
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
@@ -681,7 +693,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
                                         kdsigma, order=config["order"],
                                         min_lines_per_fit=min_lines_per_fit,
-                                        k=k, dcenwave=dcenwave)
+                                        k=k, bounds_setter=bounds_setter)
 
         # We perform a regular least-squares fit to all the matches
         # we've made. This allows a high polynomial order to be
@@ -724,8 +736,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 log.warning("Line-matching failed")
                 continue
             nmatched = np.sum(~fit1d.mask)
-            logit(f"{filename} {repr(fit1d.model)} "
-                  f"{nmatched} {fit1d.rms}")
+            logit(f"{filename} {repr(fit1d.model)} {nmatched} {fit1d.rms}")
 
             # Calculate how many lines *could* be fit. We require a constrained
             # fit but also that it fits some reasonable number of lines
@@ -741,12 +752,13 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             score = fit1d.rms / max(nmatched - config["order"] - 1, np.finfo(float).eps)
             if score < best_score:
                 best_score = score
+
     return initial_model_fit, False
 
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                           order=3, min_lines_per_fit=15, k=1,
-                          arc_weights=None, dcenwave=10):
+                          arc_weights=None, bounds_setter=None):
     """
     This function performs fits in multiple regions of the 1D arc spectrum.
     Given a starting location, a suitable fitting region is "grown" outwards
@@ -777,27 +789,28 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         maximum number of arc lines to match each peak
     arc_weights : array-like/None
         weights of output coordinates
+    bounds_setter : callable
+        function to provide bounds for the wavelength model
 
     Returns
     -------
     array : index in arc_lines that each peak has been matched to (the
             value -1 means no match)
     """
+    from datetime import datetime
+    start_time = datetime.now()
     matches = np.full_like(peaks, -1, dtype=int)
     len_data = np.diff(model.meta["domain"])[0]
     wave_start = model(pixel_start)
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
-    dc0 = dcenwave
     fits_to_do = [(pixel_start, wave_start, dw_start)]
-    # DB: Calculate a bound for the c2 component of the fitting function. If
-    # the spectral range is less than ~200 nm, it needs to be smaller than the
-    # default of 20 or nondeterministic behavior can occur in wavecal (e.g.,
-    # non-monotonic assignment of wavelengths to lines sometimes, etc.).
-    spect_range = (len_data - 1) * abs(dw_start)
-    c2_bound = 20 if spect_range > 200. else spect_range / 10.
+
+    first = True
     while fits_to_do:
+        start = datetime.now()
         p0, c0, dw = fits_to_do.pop()
+        #print(f"Pixel={p0:7.2f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_per_fit}")
         if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
             p1 = p0
         else:
@@ -817,18 +830,23 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         if p1 > 0.25 * len_data and order >= 2:
             m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
-            m_init.c2.bounds = (-c2_bound, c2_bound)
         else:
             m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
-        m_init.c0.bounds = (c0 - dc0, c0 + dc0)
-        m_init.c1.bounds = (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))
+        bounds_setter(m_init)
+        if not first:
+            m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
+        #print("INPUT MODEL")
+        #print(m_init.parameters)
+        #print(m_init.bounds)
+        #print(datetime.now() - start)
 
         # Need to set in_weights=None as there aren't many lines so
         # the fit could be swayed by a single very bright line
         m_this = _fit_region(m_init, peaks, arc_lines, kdsigma,
                              in_weights=None, ref_weights=arc_weights,
-                             matches=matches, k=k)
+                             matches=matches, k=k, first=first)
+        #print("OUTPUT", m_this.parameters)
         dw = 2 * m_this.c1 / np.diff(m_this.domain)[0]
 
         # Add new matches to the list
@@ -854,12 +872,14 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                 if p_hi > p0 >= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
                     fits_to_do.append((p_hi, arc_line, dw))
-        dc0 = 5 * abs(dw)
+        #dc0 = 5 * abs(dw)
+        first = False
+
     return matches
 
 
 def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
-                ref_weights=None, matches=None, k=1):
+                ref_weights=None, matches=None, k=1, first=False):
     """
     This function fits a region of a 1D spectrum (delimited by the domain of
     the input Chebyshev model) using the KDTreeFitter. Only detected peaks
@@ -904,12 +924,12 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     new_ref_weights = ref_weights
     # Maybe consider two fits here, one with a large kdsigma, and then
     # one with a small one (perhaps the second could use weights)?
-    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='differential_evolution')
+    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='direct')
     m_init.linear = False  # supress warning
     m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
-                    ref_weights=new_ref_weights, matches=matches, popsize=30,
-                    mutation=(0.5,1.0), workers=-1, updating='deferred',
-                    polish=False)
+                    ref_weights=new_ref_weights, matches=matches,
+                    locally_biased=not first, eps=1e-2,
+                    maxfun=80000, maxiter=20000, vol_tol=1e-6 if first else 1e-4)
     m_this.linear = True
     return m_this
 
@@ -984,10 +1004,11 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     domain = m_final.domain
     rms = fit1d.rms
     nmatched = len(incoords)
-    log.stdinfo(m_final)
+    log.stdinfo("Chebyshev coefficients: "+" ".join(
+        f"{p:.5f}" for p in m_final.parameters))
     # TODO: Do we need input_data? config.fwidth?
     log.stdinfo(f"Matched {nmatched}/{len(input_data['peaks'])} lines with "
-                f"rms = {rms:.3f} nm.")
+                f"rms = {rms:.3f} nm")
 
     dw = np.diff(m_final(domain))[0] / np.diff(domain)[0]
     max_rms = max(0.2 * rms / abs(dw), 1e-4)  # in pixels
@@ -1069,39 +1090,41 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
                         (output_frame, None)])
 
 
-def save_fit_as_pdf(data, peaks, arc_lines, filename):
+def create_pdf_plot(data, peaks, arc_lines, title):
     """
     Create and save a simple pdf plot of the arc spectrum with line
     identifications, useful for checking the validity of the solution.
 
     Parameters
     ----------
-    data : 1d array
+    data: 1d array
         the arc spectrum
-    m : MatchBox
-        model and matching information
-    peaks : 1d array
+    peaks: 1d array
         pixel locations of peaks
-    filename : str
-        filename
+    arc_lines: 1d array
+        wavelengths of arc lines
+    title: str
+        plot title
+
+    Returns
+    -------
+    fig: a matplotlib figure
     """
     data_max = data.max()
-    plt.ioff()
     fig, ax = plt.subplots()
     ax.plot(data, 'b-')
-    ax.set_ylim(0, data_max * 1.05)
+    ax.set_ylim(0, data_max * 1.1)
     if len(arc_lines) and np.diff(arc_lines)[0] / np.diff(peaks)[0] < 0:
         ax.set_xlim(len(data), -1)
     else:
         ax.set_xlim(-1, len(data))
-    #for p in peaks:
-    #    ax.plot([p, p], [0, 2 * data_max], 'r:')
     for p, w in zip(peaks, arc_lines):
         j = int(p + 0.5)
-        ax.plot([p, p], [data[j], data[j] + 0.02 * data_max], 'k-')
+        ax.plot([p, p], [data[j] + 0.01 * data_max,
+                         data[j] + 0.02 * data_max], 'k-')
         ax.text(p, data[j] + 0.03 * data_max, str('{:.5f}'.format(w)),
                 horizontalalignment='center', rotation=90, fontdict={'size': 8})
+    ax.set_xlabel("Pixel number")
+    ax.set_title(title)
     fig.set_size_inches(17, 11)
-    plt.savefig(filename.replace('.fits', '.pdf'), bbox_inches='tight', dpi=600)
-    plt.close()  # KL: otherwise the plot can pop up in subsequent plt.show()
-    plt.ion()
+    return fig

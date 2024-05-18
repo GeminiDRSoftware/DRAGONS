@@ -11,7 +11,6 @@ from itertools import islice
 import os
 import re
 import warnings
-from contextlib import suppress
 from functools import partial, reduce
 from importlib import import_module
 
@@ -29,6 +28,7 @@ from astropy.table import Table, hstack, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from numpy.ma.extras import _ezclump
 from scipy import optimize
 from scipy.signal import find_peaks
@@ -1111,7 +1111,7 @@ class Spect(Resample):
                 uiparams = UIParameters(config)
                 visualizer = fit1d.Fit1DVisualizer({"x": all_waves, "y": all_zpt, "weights": all_weights},
                                                    fitting_parameters=all_fp_init,
-                                                   tab_name_fmt="CCD {}",
+                                                   tab_name_fmt=lambda i: f"CCD {i+1}",
                                                    xlabel=f'Wavelength ({xunits})',
                                                    ylabel=f'Sensitivity ({yunits})',
                                                    domains=all_domains,
@@ -2502,7 +2502,7 @@ class Spect(Resample):
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
-                    tab_name_fmt="Slit {}",
+                    tab_name_fmt=lambda i: f"Slit {i+1}",
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
                     absorption=absorption,
@@ -2516,26 +2516,35 @@ class Spect(Resample):
                                                     visualizer.image, visualizer.meta):
                     fit1d.image = image
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
+
+                # We do the filename updating here to make it easier to get a
+                # filename for the non-interactive PDF plot
+                ad.update_filename(suffix=sfx, strip=True)
             else:
-                for ext, calc_ext in zip(ad, calc_ad):
-                    if len(ad) > 1:
-                        log.stdinfo("")
-                        log.stdinfo("Determining solution for extension "
-                                    f"{ext.id} (of {len(ad)})")
+                ad.update_filename(suffix=sfx, strip=True)
+                plot_filename = ad.filename.replace('.fits', '.pdf')
+                with PdfPages(plot_filename) as pdf:
+                    for ext, calc_ext in zip(ad, calc_ad):
+                        if len(ad) > 1:
+                            log.stdinfo(f"Determining solution for extension"
+                                        f"{ext.id} (of {len(ad)})")
 
-                    input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                        calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
-                    if not acceptable_fit:
-                        log.warning("No acceptable wavelength solution found "
-                                    f"for extension {ext.id}")
-
-                    wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
-                    wavecal.save_fit_as_pdf(input_data["spectrum"], fit1d.points[~fit1d.mask],
-                                            fit1d.image[~fit1d.mask], ad.filename)
+                        input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
+                            calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                        if not acceptable_fit:
+                            log.warning("No acceptable wavelength solution found"
+                                        f"for extension {ext.id}")
+                        else:
+                            wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
+                            fig = wavecal.create_pdf_plot(
+                                input_data["spectrum"], fit1d.points[~fit1d.mask],
+                                fit1d.image[~fit1d.mask], f"{ad.filename}:{ext.id}")
+                            pdf.savefig(fig, bbox_inches='tight')
+                    plt.close()
+                log.fullinfo(f"Writing {plot_filename} to disk")
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -3753,7 +3762,7 @@ class Spect(Resample):
 
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points,
                                                    all_fp_init,
-                                                   tab_name_fmt="Array {}",
+                                                   tab_name_fmt=lambda i: f"Array {i}",
                                                    xlabel=xaxis_label, ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",
@@ -4410,7 +4419,7 @@ class Spect(Resample):
                 ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
                 visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
                                                    fitting_parameters=[fit1d_params]*count,
-                                                   tab_name_fmt="Slit {}",
+                                                   tab_name_fmt=lambda i: f"Slit {i+1}",
                                                    xlabel='Row',
                                                    ylabel='Signal',
                                                    domains=all_shapes,
@@ -4421,7 +4430,9 @@ class Spect(Resample):
                                                    plot_ratios=False,
                                                    enable_user_masking=False,
                                                    recalc_inputs_above=True,
-                                                   ui_params=ui_params)
+                                                   ui_params=ui_params,
+                                                   reinit_live=True)
+
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 # Pull out the final parameters to use as inputs doing the real fit
@@ -5245,11 +5256,16 @@ class Spect(Resample):
         InconsistentTableError: if the file can't be read as ASCII
         """
         log = self.log
-        try:
-            tbl = Table.read(filename)
-        except IORegistryError:
-            # Force ASCII
-            tbl = Table.read(filename, format='ascii')
+
+        # HST/calspec files have all sorts of UnitsWarnings because of
+        # incorrect names like "ANGSTROMS" and "FLAM"
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", u.UnitsWarning)
+            try:
+                tbl = Table.read(filename)
+            except IORegistryError:
+                # Force ASCII
+                tbl = Table.read(filename, format='ascii')
 
         # Create table, interpreting column names (or lack thereof)
         spec_table = Table()
@@ -5944,10 +5960,26 @@ class Spect(Resample):
 
         return actual_cenwave
 
-
     def _get_cenwave_accuracy(self, ext):
-        # Accuracy of central wavelength (nm) for a given instrument/setup.
-        return 10
+        # TODO: remove this
+        dispaxis = 2 - ext.dispersion_axis()
+        npix = ext.shape[dispaxis]
+        w1, w2 = am.get_named_submodel(ext.wcs.forward_transform, "WAVE").copy()([0, npix-1])
+        m_wave = models.Chebyshev1D(degree=1, c0=0.5*(w1+w2), c1=0.5*(w2-w1))
+        self._apply_wavelength_model_bounds(m_wave, ext)
+        return 0.5 * abs(np.diff(m_wave.c0.bounds)[0])
+
+    def _apply_wavelength_model_bounds(self, model=None, ext=None):
+        # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
+        # the range of parameter space to explore
+        for i, (pname, pvalue) in enumerate(zip(model.param_names, model.parameters)):
+            if i == 0:  # central wavelength
+                prange = 10
+            elif i == 1:  # half the wavelength extent (~dispersion)
+                prange = 0.05 * abs(pvalue)
+            else:  # higher-order terms
+                prange = 20
+            getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)
 
 # -----------------------------------------------------------------------------
 

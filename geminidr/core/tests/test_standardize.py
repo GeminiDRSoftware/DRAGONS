@@ -57,13 +57,16 @@ class TestStandardize:
     @pytest.mark.niri
     @pytest.mark.regression
     @pytest.mark.preprocessed_data
-    def test_addDQ(self, change_working_dir, path_to_refs):
+    def test_addDQ(self, change_working_dir, path_to_refs,
+                   path_to_common_inputs):
 
         with change_working_dir():
             ad = astrodata.open(os.path.join(path_to_refs,
                                              'N20070819S0104_prepared.fits'))
+            bpmfile = os.path.join(path_to_common_inputs,
+                                   'bpm_20010317_niri_niri_11_full_1amp.fits')
             p = NIRIImage([ad])
-            adout = p.addDQ()[0]
+            adout = p.addDQ(static_bpm=bpmfile)[0]
         assert ad_compare(adout,
                           astrodata.open(os.path.join(path_to_refs,
                                            'N20070819S0104_dqAdded.fits')))

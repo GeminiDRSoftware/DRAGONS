@@ -140,6 +140,12 @@ def get_specphot_name(ad):
     corresponding to the filename containing the specphot data in
     geminidr.gemini.lookups.spectrophotometric_standards
 
+    We match to within 2" regardless of name, or a 5' (sic) match if the
+    name matches. We have found cases where the PMRA/PMDEC keywords in the
+    header (which are used by the target_ra/dec descriptors) are wrong or
+    zero and so there is a larger positional disagreement than you might
+    have thought.
+
     Parameters
     ----------
     ad: AstroData object which might be a specphot standard
@@ -171,7 +177,7 @@ def get_specphot_name(ad):
                  distance=10*u.pc)
     separations = target.separation(c.apply_space_motion(dt=dt)).arcsec
     i = separations.argmin()
-    if separations[i] < 2 or separations[i] < 10 and all_names[i] == target_name:
+    if separations[i] < 2 or separations[i] < 300 and all_names[i] == target_name:
         return all_names[i]
 
 
@@ -532,6 +538,13 @@ class AstroDataGemini(AstroData):
 
         """
         return self.phu.get(self._keyword_for('azimuth'))
+
+    @astro_data_descriptor
+    def binning(self):
+        """
+        Returns an "MxN"-style string because CJS is fed up with not having this!
+        """
+        return f"{self.detector_x_bin()}x{self.detector_y_bin()}"
 
     @astro_data_descriptor
     def calibration_key(self):
@@ -1049,8 +1062,16 @@ class AstroDataGemini(AstroData):
         if f1 is None or f2 is None:
             return None
 
-        if pretty:
+        if pretty or keepID:
             filter_comps = []
+            if keepID:
+                def filter_with_id(fltname, fltid):
+                    return fltname if fltid is None else (fltname + "_" + fltid)
+
+                f1 = filter_with_id(gmu.removeComponentID(f1),
+                                              gmu.getComponentID(f1))
+                f2 = filter_with_id(gmu.removeComponentID(f2),
+                                              gmu.getComponentID(f2))
             for fn in (f1, f2):
                 # Not interested in clear or neutral density filters
                 if not ("open" in fn.lower() or "Clear" in fn or
@@ -1062,6 +1083,7 @@ class AstroDataGemini(AstroData):
             for cal, fn in cals:
                 if cal in f1 or cal in f2:
                     filter_comps.append(fn)
+
         else:
             filter_comps = [f1, f2]
 

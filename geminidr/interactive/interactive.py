@@ -135,9 +135,6 @@ class PrimitiveVisualizer(ABC):
         global _visualizer
         _visualizer = self
 
-        # Reinitialization attr
-        self.reinit_live = reinit_live
-
         # Make the widgets accessible from external code so we can update
         # their properties if the default setup isn't great
         self.widgets = {}
@@ -794,7 +791,6 @@ class PrimitiveVisualizer(ABC):
         -------
         list : Returns a list of widgets to display in the UI.
         """
-        self.reinit_live = reinit_live
 
         widgets = []
         if hide_textbox is None:
@@ -806,7 +802,9 @@ class PrimitiveVisualizer(ABC):
 
                 if hasattr(field, "min"):
                     is_float = field.dtype is not int
-                    step = 0.1 if is_float else 1
+
+                    # Step is handled in the slider factory.
+                    step = None
 
                     slider_handler = self.slider_handler_factory(key)
 
@@ -825,6 +823,8 @@ class PrimitiveVisualizer(ABC):
                         handler=slider_handler,
                         add_spacer=add_spacer,
                         hide_textbox=key in hide_textbox,
+                        fix_end_to_max=field.fix_end_to_max,
+                        fix_start_to_min=field.fix_start_to_min,
                     )
 
                     self.widgets[key] = widget.children[0]
@@ -903,17 +903,45 @@ class PrimitiveVisualizer(ABC):
                     else:
                         title = _title_from_field(field)
 
-                    widget = TextInput(
-                        title=title,
-                        min_width=100,
-                        max_width=256,
-                        width_policy="fit",
-                        placeholder=params.placeholders.get(key, None),
-                        stylesheets=dragons_styles(),
-                    )
+                    val = self.ui_params.values.get(key, "")
+                    if val is None:
+                        # TextInput can't handle None value
+                        raise ValueError(f"None value cannot be expressed in UI and {key} parameter came in as None")
+                    else:
+                        widget = TextInput(
+                            title=title,
+                            min_width=100,
+                            max_width=256,
+                            width_policy="fit",
+                            placeholder=params.placeholders.get(key, None),
+                            value=val,
+                            stylesheets=dragons_styles(),
+                        )
 
-                    self.widgets[key] = widget
-                    widgets.append(widget)
+                        class TextHandler:
+                            def __init__(self, key, extras, fn, reinit_live):
+                                self.key = key
+                                self.extras = extras
+                                self.fn = fn
+                                self.reinit_live = reinit_live
+
+                            def handler(self, name, old, new):
+                                self.extras[self.key] = new
+                                if self.reinit_live and self.fn is not None:
+                                    self.fn()
+
+                        widget.on_change(
+                            "value",
+                            TextHandler(
+                                key,
+                                self.extras,
+                                self.reconstruct_points,
+                                self.reinit_live
+                            ).handler
+                        )
+
+                        self.widgets[key] = widget
+                        widgets.append(widget)
 
         return widgets
 
@@ -986,6 +1014,9 @@ def build_text_slider(
     is_float=None,
     add_spacer=False,
     hide_textbox=False,
+    *,
+    fix_start_to_min=False,
+    fix_end_to_max=False,
 ):
     """
     Make a slider widget to use in the bokeh interface.
@@ -1020,6 +1051,12 @@ def build_text_slider(
         False)
     hide_textbox : bool
         If True, don't show a text box and just use a slider (default False)
+    fix_start_to_min : bool, optional, keyword-only
+        If True, the start value of the slider will be fixed to the min_value
+        (default False).
+    fix_end_to_max : bool, optional, keyword-only
+        If True, the end value of the slider will be fixed to the max_value
+        (default False).
 
     Returns
     -------
@@ -1046,6 +1083,7 @@ def build_text_slider(
             msg="max_value must be greater than 0 or None. Setting to None."
         )
 
+    # TODO: These probably shouldn't default to 10 for the max value.
     if value is None:
         # If the value is None/Falsey, set to a default value
         start = min_value or 0
@@ -1058,6 +1096,13 @@ def build_text_slider(
         end = max(value, max_value or 2 * value, 10)
         slider_kwargs = {"value": value, "show_value": True}
 
+    # Fix the start/end values to the min/max values if requested
+    if fix_start_to_min:
+        start = min_value
+
+    if fix_end_to_max:
+        end = max_value
+
     # trying to convince int-based sliders to behave
     if is_float is None:
         is_float = (
@@ -1068,7 +1113,7 @@ def build_text_slider(
 
     if step is None:
         if is_float:
-            step = 0.1
+            step = min(0.1, (end - start) / 100)
         else:
             step = 1
 
@@ -2203,7 +2248,7 @@ class UIParameters:
         :reinit_params: list
             List of names of configuration fields to show in the reinit panel
 
-        :titles_overrides: dict
+        :title_overrides: dict
             Dictionary of overrides for labeling the fields in the UI
 
         :placeholders: dict

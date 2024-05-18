@@ -371,7 +371,8 @@ class KDTreeFitter(Fitter):
         farg = (model_copy, in_coords, tree)
         p0, *_ = model_to_fit_params(model_copy)
 
-        arg_names = inspect.getfullargspec(self._opt_method).args
+        argspec = inspect.getfullargspec(self._opt_method)
+        arg_names, kwarg_names = argspec.args, argspec.kwonlyargs
         args = [self.objective_function]
         if arg_names[1] == 'x0':
             args.append(p0)
@@ -380,15 +381,15 @@ class KDTreeFitter(Fitter):
         else:
             raise ValueError("Don't understand argument {}".format(arg_names[1]))
 
-        if 'args' in arg_names:
+        if 'args' in arg_names or 'args' in kwarg_names:
             kwargs['args'] = farg
 
         if 'method' in arg_names:
             kwargs['method'] = self._method
 
-        if 'minimizer_kwargs' in arg_names:
-            kwargs['minimizer_kwargs'] = {'args': farg,
-                                          'method': 'Nelder-Mead'}
+        #if 'minimizer_kwargs' in arg_names:
+        #    kwargs['minimizer_kwargs'] = {'args': farg,
+        #                                  'method': 'Nelder-Mead'}
 
         result = self._opt_method(*args, **kwargs)
 

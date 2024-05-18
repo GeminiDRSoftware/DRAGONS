@@ -383,9 +383,10 @@ class NDStacker:
         if variance is None:
             return NDStacker.mean(data, mask, variance)
         mask, out_mask = NDStacker._process_mask(mask)
-        out_data = (_masked_sum(data / variance, mask=mask) /
-                    _masked_sum(1 / variance, mask=mask))
-        out_var = 1 / _masked_sum(1 / variance, mask=mask)
+        with np.errstate(all="ignore"):
+            out_data = (_masked_sum(data / variance, mask=mask) /
+                        _masked_sum(1 / variance, mask=mask))
+            out_var = 1 / _masked_sum(1 / variance, mask=mask)
         return out_data, out_mask, out_var
 
     @staticmethod

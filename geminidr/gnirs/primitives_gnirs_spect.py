@@ -87,20 +87,17 @@ class GNIRSSpect(Spect, GNIRS):
 
         return wavecal.LineList(filename)
 
-
-    def _get_cenwave_accuracy(self, ext):
-        # Accuracy of central wavelength (nm) for a given instrument/setup.
-        # According to GNIRS instrument pages "wavelength settings are accurate
-        # to better than 5 percent of the wavelength coverage".
-        # However using 7% covers more cases. For the arcs dc0=10 works just fine for all modes.
-
-        mband = ext.filter_name(pretty=True).startswith('M')
-        lband = ext.filter_name(pretty=True).startswith('L')
-        dispaxis = 2 - ext.dispersion_axis()  # python sense
-        npix = ext.shape[dispaxis]
-
-        if 'ARC' in ext.tags or not (mband or lband):
-            dcenwave = 10
+    def _apply_wavelength_model_bounds(self, model=None, ext=None):
+        # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
+        # the range of parameter space to explore
+        # GNIRS has a different central wavelength uncertainty
+        super()._apply_wavelength_model_bounds(model, ext)
+        if 'ARC' in ext.tags or not (ext.filter_name(pretty=True)[0] in 'LM'):
+            prange = 10
         else:
-            dcenwave = abs(ext.dispersion(asNanometers=True)) * npix * 0.07
-        return dcenwave
+            dispaxis = 2 - ext.dispersion_axis()
+            npix = ext.shape[dispaxis]
+            prange = abs(ext.dispersion(asNanometers=True)) * npix * 0.07
+        model.c0.bounds = (model.c0 - prange, model.c0 + prange)
+        dx = 0.02 * abs(model.c1.value)
+        model.c1.bounds = (model.c1 - dx, model.c1 + dx)

@@ -81,6 +81,7 @@ def reduceStandard(p):
     p.biasCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
+    p.attachWavelengthSolution()
     p.flatCorrect()
     p.QECorrect()
     p.distortionCorrect()

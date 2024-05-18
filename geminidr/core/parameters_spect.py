@@ -77,7 +77,7 @@ class calculateSensitivityConfig(config.core_1Dfitting_config):
     in_vacuo = config.Field("Are spectrophotometric data wavelengths measured "
                             "in vacuo?", bool, None, optional=True)
     bandpass = config.RangeField("Bandpass width (nm) if not supplied",
-                                 float, 5., min=0.1, max=10.)
+                                 float, 0.001, min=0.001, max=10.)
     resampling = config.RangeField("Resampling interval (nm) for spectrophotometric data file",
                                    float, None, min=0, inclusiveMin=False, optional=True)
     debug_airmass0 = config.Field("Calculate sensitivity curve at zero airmass?",
@@ -193,6 +193,8 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    allowed={"mean": "mean",
                                             "median": "median"},
                                    default="mean", optional=False)
+    verbose = config.Field("Print additional fitting information?", bool, False)
+
     def setDefaults(self):
         del self.function
         del self.grow
@@ -260,7 +262,7 @@ class findAperturesConfig(config.Config):
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
                            "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.1, min=0, max=1)
+                                  float, 0.1, min=0, max=1, fix_end_to_max=True)
     interactive = config.Field("Use interactive interface", bool, False)
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
                                        int, None, min=1, inclusiveMax=True, optional=True)
@@ -551,7 +553,8 @@ class traceAperturesConfig(config.core_1Dfitting_config):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True,
+                                  fix_end_to_max=True)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing",

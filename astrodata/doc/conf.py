@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Astrodata Manual'
-copyright = '2023, Association of Universities for Research in Astronomy'
+copyright = '2024, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -58,10 +58,10 @@ author = 'DRAGONS Team'
 #
 # The short X.Y version.
 version = '3.2'
-# The ull version, including alpha/beta/rc tags.
-#release = '3.1.x'
+# The full version, including alpha/beta/rc tags.
+#release = '3.2.x'
 #rtdurl = 'release-'+release
-#release = '3.1.0'
+#release = '3.2.0'
 #rtdurl = 'v'+release
 rtdurl = 'latest'
 
@@ -76,7 +76,7 @@ language = "en"
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
 #
-today = 'April 2023'
+today = 'April 2024'
 #
 # Else, today_fmt is used as the format for a strftime call.
 #
@@ -457,6 +457,8 @@ rst_epilog = """
 .. |DRAGONS| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/en/{v}/">DRAGONS</a>`
 .. |RSProgManual| replace:: :raw-html:`<a href="http://dragons-recipe-system-programmers-manual.readthedocs.io/en/{v}/">Recipe System Programmer Manual</a>`
 .. |RSUserManual| replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System User Manual<a>`
+
+.. |RSUserInstall|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/install.html">Installation Guide</a>`
 
 
 """.format(v = rtdurl)

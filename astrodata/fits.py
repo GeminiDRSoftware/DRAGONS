@@ -500,16 +500,6 @@ def read_fits(cls, source, extname_parser=None):
             meta={'header': header},
         )
 
-        if parts['wcs'] is not None:
-            # Load the gWCS object from the ASDF extension
-            nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
-        if nd.wcs is None:
-            # Fallback to the data header
-            nd.wcs = fitswcs_to_gwcs(nd.meta['header'])
-            if nd.wcs is None:
-                # In case WCS info is in the PHU
-                nd.wcs = fitswcs_to_gwcs(hdulist[0].header)
-
         ad.append(nd, name=DEFAULT_EXTENSION)
 
         # This is used in the writer to keep track of the extensions that
@@ -521,6 +511,16 @@ def read_fits(cls, source, extname_parser=None):
                 warnings.warn(f"Skip HDU {other} because it has no EXTNAME")
             else:
                 setattr(ad[-1], other.name, other)
+
+        if parts['wcs'] is not None:
+            # Load the gWCS object from the ASDF extension
+            nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
+        if nd.wcs is None:
+            # Fallback to the data header
+            nd.wcs = fitswcs_to_gwcs(nd)
+            if nd.wcs is None:
+                # In case WCS info is in the PHU
+                nd.wcs = fitswcs_to_gwcs(hdulist[0].header)
 
     for other in hdulist:
         if other in seen:
@@ -584,6 +584,13 @@ def ad_to_hdulist(ad):
                 # Delete this if it's left over from a previous save
                 if 'FITS-WCS' in header:
                     del header['FITS-WCS']
+                try:
+                    extensions = wcs_dict.pop('extensions')
+                except KeyError:
+                    pass
+                else:
+                    for k, v in extensions.items():
+                        ext.meta['other'][k] = v
                 header.update(wcs_dict)
                 # Use "in" here as the dict entry may be (value, comment)
                 if 'APPROXIMATE' not in wcs_dict.get('FITS-WCS', ''):

@@ -820,7 +820,7 @@ class DataGroup:
     """
     UnequalError = ValueError("Number of arrays and transforms must be equal")
 
-    def __init__(self, arrays=None, transforms=None):
+    def __init__(self, arrays=None, transforms=None, loglevel="stdinfo"):
         if transforms is None:
             self._arrays = arrays or []
             self._transforms = [Transform()] * len(self._arrays)
@@ -837,6 +837,7 @@ class DataGroup:
         self.output_shape = None
         self.origin = None
         self.log = logutils.get_logger(__name__)
+        self.logit = getattr(self.log, loglevel)
 
     def __getitem__(self, index):
         return (self._arrays[index], self._transforms[index])
@@ -1156,8 +1157,8 @@ class DataGroup:
         self.corners.append(trans_corners[::-1])  # standard python order
         min_coords = [int(np.ceil(min(coords))) for coords in trans_corners]
         max_coords = [int(np.floor(max(coords)))+1 for coords in trans_corners]
-        self.log.stdinfo("Array maps to ["+",".join(["{}:{}".format(min_+1, max_)
-                                for min_, max_ in zip(min_coords, max_coords)])+"]")
+        self.logit("Array maps to ["+",".join(
+            [f"{min_+1}:{max_}" for min_, max_ in zip(min_coords, max_coords)])+"]")
         # If this maps to a region not starting in the bottom-left of the
         # output, shift the whole thing so we can efficiently transform it
         # into an array. Coords are still in reverse python order.

@@ -420,7 +420,7 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
             bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
             cols_fit, rows_fit = np.meshgrid(np.arange(width), bin_center)
 
-            fitter = fitting.SLSQPLSQFitter()
+            fitter = fitting.LinearLSQFitter()
             model_2d_init = models.Chebyshev2D(
                 x_degree=cheb2d_x_order, x_domain=(0, width),
                 y_degree=cheb2d_y_order, y_domain=(0, height))
@@ -794,7 +794,7 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
                 extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
                 uiparams = UIParameters(config, reinit_params=reinit_params, extras=extras)
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
-                                                   tab_name_fmt="CCD {}",
+                                                   tab_name_fmt=lambda i: f"CCD {i+1}",
                                                    xlabel='x (pixels)', ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",

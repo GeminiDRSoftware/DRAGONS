@@ -26,6 +26,7 @@ from geminidr.interactive.styles import dragons_styles
 
 from gempy.library.matching import match_sources
 from gempy.library.tracing import cwt_ricker, pinpoint_peaks
+from gempy.library.fitting import fit_1D
 
 from .fit1d import (
     Fit1DPanel,
@@ -83,18 +84,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
     specific wavelength in a spectrum. This is usually handled within a bokeh
     Tab, and this class manages the contents of that tab.
     """
-    def __init__(
-        self,
-        visualizer,
-        fitting_parameters,
-        domain=None,
-        x=None,
-        y=None,
-        weights=None,
-        absorption=False,
-        meta=None,
-        **kwargs,
-    ):
+    def __init__(self, visualizer, fitting_parameters, domain=None,
+                 x=None, y=None, weights=None, absorption=False, meta=None, **kwargs):
+
         """Initializes the WavelengthSolutionPanel.
 
         Parameters
@@ -117,8 +109,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
         weights : array-like
             The weights of the fit.
 
+        absorption :  boolean
+            Whether we are fitting absorption lines or not.
+
         meta : dict
-            A dictionary of metadata.
+            A dictionary of metadata. This is the "all_input_data"
 
         kwargs : dict
             Any additional keyword arguments.
@@ -127,26 +122,27 @@ class WavelengthSolutionPanel(Fit1DPanel):
         -----
         This class is a subclass of |Fit1DPanel| and so inherits all of its
         """
-        # No need to compute wavelengths here as the model_change_handler()
-        # does it
+
+        # No need to compute wavelengths here as the model_change_handler() does it
         self.absorption = absorption
         if absorption:
             spectrum_data_dict = {
-                    'wavelengths': np.zeros_like(meta["spectrum"]),
-                    'spectrum': -meta["spectrum"]
+                "wavelengths": np.zeros_like(meta["spectrum"]),
+                "spectrum": -meta["spectrum"],
             }
-
         else:
             spectrum_data_dict = {
                 "wavelengths": np.zeros_like(meta["spectrum"]),
                 "spectrum": meta["spectrum"],
             }
 
+        kwargs["default_model"] = meta["init_models"][0]
+
         self.spectrum = bm.ColumnDataSource(spectrum_data_dict)
+        self.spectrum_linelist = meta["linelist"]
 
         # Data for the reference plot
         self.show_refplot = False
-
         if not (meta.get("refplot_spec") is None or meta.get("refplot_linelist") is None):
             self.show_refplot = True
             self.refplot_spectrum = bm.ColumnDataSource({'wavelengths': meta["refplot_spec"][:,0],
@@ -158,6 +154,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                                     'labels': ["{:.2f}".format(w) for w in wlengths]})
             self.refplot_y_axis_label = meta["refplot_y_axis_label"]
             self.refplot_name = meta["refplot_name"]
+
 
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
@@ -317,6 +314,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             tools="pan,wheel_zoom,box_zoom,reset",
             output_backend="webgl",
             x_range=p_main.x_range,
+            y_range=(np.nan, np.nan),
             min_border_left=80,
             sizing_mode="stretch_width",
             stylesheets=dragons_styles(),
@@ -331,16 +329,30 @@ class WavelengthSolutionPanel(Fit1DPanel):
             mode="center",
         )
 
-        p_spectrum.text(
+        # Offset is in pixels in screen space (up is negative, down is
+        # positive) Technically, this is actually relative to the anchor point
+        # for the text, which is the center of the text, so it's inverse the
+        # common axes logic. And also not standard for, e.g., image coordinates
+        # in most software.
+        font_size = 10
+        y_offset = -5
+        text_align = 'left'
+
+        if self.absorption:
+            y_offset = -y_offset
+            text_align = 'right'
+
+        self._spectrum_line_labels = p_spectrum.text(
             x="fitted",
             y="heights",
             text="lines",
+            y_offset=y_offset,
             source=self.model.data,
             angle=0.5 * np.pi,
             text_color=self.model.mask_rendering_kwargs()["color"],
             text_baseline="middle",
-            text_align="right",
-            text_font_size="10pt",
+            text_align=text_align,
+            text_font_size=f"{font_size}pt",
         )
 
         delete_line_handler = Handler("d", "Delete arc line", self.delete_line)
@@ -367,15 +379,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         controls.set_help_text()
 
-        p_spectrum.y_range.on_change(
-            "start", lambda attr, old, new: self.update_label_heights()
-        )
-
-        p_spectrum.y_range.on_change(
-            "end", lambda attr, old, new: self.update_label_heights()
-        )
-
+        # The set_*_axes functions work on the stored reference itself.
         self.p_spectrum = p_spectrum
+        self._spectrum_label_font_size = font_size
+
+        self._set_spectrum_plot_axes()
 
         self.identify_button = bm.Button(
             label="Identify lines",
@@ -388,9 +396,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         self.identify_button.on_click(self.identify_lines)
 
-        self.clear_all_lines_button = bm.Button(label="Clear all lines", width=200,
-                                         button_type="warning", width_policy="fit",
-                                         height_policy="max")
+        self.clear_all_lines_button = bm.Button(
+            label="Clear all lines",
+            width=200,
+            max_width=250,
+            button_type="warning",
+            width_policy="fit",
+            height_policy="max",
+            stylesheets=dragons_styles()
+        )
         self.clear_all_lines_button.on_click(self.clear_all_lines)
 
         self.new_line_prompt = bm.Div(
@@ -505,55 +519,216 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # ATRAN or other reference spectrum plot
         if self.show_refplot:
-            p_refplot = figure(plot_width=self.width, plot_height=int(self.height // 1.5),
+            p_refplot = figure(width=self.width, height=int(self.height // 1.5),
                                 min_width=400, title=self.refplot_name,
                                 x_axis_label="Wavelength (nm)", y_axis_label=self.refplot_y_axis_label,
                                 tools = "pan,wheel_zoom,box_zoom,reset",
                                 output_backend="webgl",
-                                x_range=self.p_spectrum.x_range, y_range=None,
-                                min_border_left=80)
+                                x_range=self.p_spectrum.x_range,
+                                y_range=(np.nan, np.nan),
+                                min_border_left=80, stylesheets=dragons_styles())
             p_refplot.height_policy = 'fixed'
             p_refplot.width_policy = 'fit'
             p_refplot.sizing_mode = 'stretch_width'
             p_refplot.step(x='wavelengths', y='refplot_spectrum', source=self.refplot_spectrum,
                             line_width=1, color="gray", mode="center")
-            p_refplot.text(name="labels",
-                           x='wavelengths', y= 'heights', text='labels',
-                            source=self.refplot_linelist, angle=0.5 * np.pi,
-                            text_color='gray',
-                            text_baseline='middle', text_align='right',
-                            text_font_size='8pt')
-            p_refplot.y_range.on_change("start", lambda attr, old, new:
-                                         self.update_refplot_label_heights())
-            p_refplot.y_range.on_change("end", lambda attr, old, new:
-                                         self.update_refplot_label_heights())
+
+            # Offset is in pixels in screen space (up is negative, down is
+            # positive) Technically, this is actually relative to the anchor
+            # point for the text, which is the center of the text, so it's
+            # inverse the common axes logic. And also not standard for, e.g.,
+            # image coordinates in most software.
+            y_offset = -5
+            text_align = 'left'
+
+            # Font size (pt)
+            font_size = 8
+
+            if self.absorption:
+                y_offset = -y_offset
+                text_align = 'right'
+
+            self._replot_line_labels = p_refplot.text(name="labels",
+                                                      x='wavelengths', y='intensities', text='labels',
+                                                      y_offset=y_offset,
+                                                      source=self.refplot_linelist, angle=0.5 * np.pi,
+                                                      text_color='gray',
+                                                      text_baseline='middle', text_align=text_align,
+                                                      text_font_size=f'{font_size}pt')
+
+            # The set_*_axes functions work on the stored reference itself.
             self.p_refplot = p_refplot
+            self._refplot_label_font_size = font_size
+
+            self._set_refplot_axes()
 
             return [p_refplot, p_spectrum, identify_panel, info_panel.component,
                 p_main, p_supp]
         else:
-            return [
-                p_spectrum,
-                identify_panel,
-                info_panel.component,
-                p_main,
-                p_supp,
-            ]
+            return [p_spectrum, identify_panel, info_panel.component,
+                p_main, p_supp]
+
+    def reset_spectrum_axes(self):
+        """Reset the axes for the spectrum plot. If a reference plot is shown,
+        reset the axes for that as well.
+        """
+        self._set_spectrum_plot_axes()
+
+        if self.show_refplot:
+            self._set_refplot_axes()
+
+    def _set_spectrum_plot_axes(self):
+        """Set the axes for the spectrum plot.
+
+        Notes
+        -----
+        This should only be called if the spectrum plot is shown. It can be
+        called before the plot has bounds, though.
+
+        This also overwrites the original bounds of the plot.
+        """
+        p_spectrum = self.p_spectrum
+        font_size = self._spectrum_label_font_size
+
+        # Set the initial vertical range to include some padding for labels
+        label_positions = self.label_height(self.model.x)
+
+        # Some of the following code will fail if there are no labels for any
+        # reason (e.g., no fit). In that case, we'll just set the range to the
+        # min/max of the spectrum data, which we're collecting twice here (but
+        # it's cached by the ufunc anyways).
+        if not label_positions:
+            label_positions = self.spectrum.data["spectrum"]
+
+        min_line_intensity = np.amin(label_positions)
+        min_spectrum_intensity = np.amin(self.spectrum.data["spectrum"])
+        max_line_intensity = np.amax(label_positions)
+        max_spectrum_intensity = np.amax(self.spectrum.data["spectrum"])
+        y_low = min(min_line_intensity, min_spectrum_intensity)
+        y_high = max(max_line_intensity, max_spectrum_intensity)
+        spectrum_range = y_high - y_low
+        max_assumed_chars = 10
+        text_padding = max_assumed_chars * font_size
+        margin_padding = 0.1 * spectrum_range
+
+        # Scale text padding to plot units
+        text_padding *= 4 * (y_high - y_low) / (3 * p_spectrum.height)
+
+        if self.absorption:
+            y_low -= text_padding + margin_padding
+            y_high += margin_padding
+
+        else:
+            y_low -= margin_padding
+            y_high += text_padding + margin_padding
+
+        p_spectrum.y_range.start = y_low
+        p_spectrum.y_range.end = y_high
+        p_spectrum.y_range.reset_start = y_low
+        p_spectrum.y_range.reset_end = y_high
+
+
+    def _set_refplot_axes(self):
+        """Set the axes for the reference plot.
+
+        This should only be called if the reference plot is shown.
+
+        Notes
+        -----
+        This should only be called if the spectrum plot is shown. It can be
+        called before the plot has bounds, though.
+
+        This also overwrites the original bounds of the plot.
+
+        Raises
+        ------
+        AttributeError
+            If the reference plot is not found.
+        """
+        if not hasattr(self, "p_refplot"):
+            msg = (
+                f"Reference plot not found in {self.__class__.__name__}, "
+                f"expected a plot at self.p_refplot."
+            )
+            raise AttributeError(msg)
+
+        p_refplot = self.p_refplot
+        font_size = self._refplot_label_font_size
+
+        # Set the initial vertical range to include some padding for labels
+        linelist_intensity = self.refplot_linelist.data["intensities"]
+        spectrum_intensity = self.refplot_spectrum.data["refplot_spectrum"]
+
+        min_line_intensity = np.amin(linelist_intensity)
+        min_spectrum_intensity = np.amin(spectrum_intensity)
+        max_line_intensity = np.amax(linelist_intensity)
+        max_spectrum_intensity = np.amax(spectrum_intensity)
+        y_low = min(min_line_intensity, min_spectrum_intensity)
+        y_high = max(max_line_intensity, max_spectrum_intensity)
+        spectrum_range = y_high - y_low
+        labels = self.refplot_linelist.data["labels"]
+        text_padding = max(len(x) for x in labels) * font_size
+        margin_padding = 0.1 * spectrum_range
+
+        # Scale text padding to plot units
+        text_padding *= 4 * (y_high - y_low) / (3 * p_refplot.height)
+
+        if self.absorption:
+            y_low -= text_padding + margin_padding
+            y_high += margin_padding
+
+        else:
+            y_low -= margin_padding
+            y_high += text_padding + margin_padding
+
+        p_refplot.y_range.start = y_low
+        p_refplot.y_range.end = y_high
+        p_refplot.y_range.reset_start = y_low
+        p_refplot.y_range.reset_end = y_high
+
+    def reset_view(self):
+        super().reset_view()
+        self.reset_spectrum_axes()
 
     @staticmethod
     def linear_model(model):
         """Return only the linear part of a model. It doesn't work for
         splines, which is why it's not in the InteractiveModel1D class
         """
-        model = model.fit._models
+        if model.fit is None:
+            model = model.default_model
+        else:
+            model = model.fit.model
         new_model = model.__class__(
             degree=1, c0=model.c0, c1=model.c1, domain=model.domain
         )
 
         return new_model
 
+    @staticmethod
+    def _get_plot_ranges(plot: figure):
+        """Get the start and end of the x and y ranges of a plot."""
+        x_range = plot.x_range
+        y_range = plot.y_range
+
+        ranges = {
+            "x": (x_range.start, x_range.end),
+            "y": (y_range.start, y_range.end),
+        }
+
+        return ranges
+
+    def plot_range(self):
+        return self._get_plot_ranges(self.p_spectrum)
+
+    def refplot_range(self):
+        return self._get_plot_ranges(self.p_refplot)
+
     def label_height(self, x):
-        """Provide a location for a wavelength label identifying a line
+        """Provide a location for a wavelength label identifying a line.
+
+        This calculates the label heights relative to lines already present in
+        the plot, and lets bokeh handle rescaling the y-axis as needed.
 
         Parameters
         ----------
@@ -565,16 +740,45 @@ class WavelengthSolutionPanel(Fit1DPanel):
         float/list : appropriate y value(s) for writing a label
         """
         try:
-            height = (
-                self.p_spectrum.y_range.end - self.p_spectrum.y_range.start
-            )
+            iter(x)
+            single_value = False
 
-        except TypeError:  # range is None, plot being initialized
-            # This is calculated on the basis that bokeh pads by 5% of the
-            # data range on each side
-            # height = (44 / 29 * self.spectrum.data['spectrum'].max() -
-            #          1.1 * self.spectrum.data['spectrum'].min())
-            height = 44 / 29 * np.nanmax(self.spectrum.data["spectrum"])
+        except TypeError:
+            single_value = True
+            x = [x]
+
+        spectrum = self.spectrum.data["spectrum"]
+
+        # Get points around the line.
+        def get_nearby_points(p):
+            distance = 5
+            low = max(0, int(p - distance + 0.5))
+            high = min(len(spectrum), int(p + distance + 0.5))
+            return spectrum[low:high]
+
+        extrema_func = np.amin if self.absorption else np.amax
+
+        heights = [extrema_func(get_nearby_points(xx)) for xx in x]
+
+        if single_value:
+            return heights[0]
+
+        return heights
+
+    def refplot_label_height(self):
+        """
+        Provide a location for a wavelength label identifying a line
+        in the reference spectrum plot.
+
+        This calculates the label heights relative to lines already present in
+        the plot, and lets bokeh handle rescaling the y-axis as needed.
+
+        Returns
+        -------
+        float/list : appropriate y value(s) for writing a label
+        """
+        plot_range = self.refplot_range()
+        height = abs(plot_range['y'][0] - plot_range['y'][1])
 
         if self.absorption:
             padding = -0.05 * height
@@ -582,34 +786,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
         else:
             padding = 0.25 * height
 
-        try:
-            return [
-                self.spectrum.data["spectrum"][int(xx + 0.5)] + padding
-                for xx in x
-            ]
-
-        except TypeError:
-            return self.spectrum.data["spectrum"][int(x + 0.5)] + padding
-
-    def refplot_label_height(self):
-        """
-        Provide a location for a wavelength label identifying a line
-        in the reference spectrum plot
-
-        Returns
-        -------
-        float/list : appropriate y value(s) for writing a label
-        """
-        try:
-            height = self.p_refplot.y_range.end - self.p_refplot.y_range.start
-        except TypeError:  # range is None, plot being initialized
-            # This is calculated on the basis that bokeh pads by 5% of the
-            # data range on each side
-            height = 44 / 29 * np.nanmax(self.refplot_linelist.data["intensities"])
-        if self.absorption:
-            padding = -0.05 * height
-        else:
-            padding = 0.35 * height
         heights = self.refplot_linelist.data["intensities"] + padding
         return heights
 
@@ -623,17 +799,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
             start = self.p_spectrum.y_range.start
             end = self.p_spectrum.y_range.end
             lheight = 0.05 * (end - start)
-
             if self.absorption:
                 lheight *= -1
 
             self.new_line_marker.data["y"][1] = (
                 self.new_line_marker.data["y"][0] + lheight
             )
-
-    def update_refplot_label_heights(self):
-        """Simple callback to move the labels if the reference spectrum panel is resized"""
-        self.refplot_linelist.data['heights'] = self.refplot_label_height()
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
@@ -651,8 +822,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
         model_data["nonlinear"] = y - linear_model(x)
         model_data["heights"] = self.label_height(x)
         model_data["lines"] = [wavestr(yy) for yy in y]
+
         if self.show_refplot:
             self.refplot_linelist.data['heights'] = self.refplot_label_height()
+
         eval_data = self.model.evaluation.data
         eval_data["nonlinear"] = (
             eval_data["model"] - linear_model(eval_data["xlinspace"])
@@ -762,8 +935,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 self.model.meta["peaks"], self.model.x, assume_unique=True
             )
 
-            # This will fail if no line was deleted before user attempts to
+            # This will fail if no line was before user attempts to
             # identify a line, so do it only if there are new_peaks
+            index = None
             if len(new_peaks):
                 index = np.argmin(abs(new_peaks - pixel))
 
@@ -783,6 +957,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 else:
                     pinpoint_data = cwt_ricker(self.spectrum.data["spectrum"],
                                            [0.42466 * fwidth])[0]
+
                 eps = np.finfo(np.float32).eps  # Minimum representative data
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
 
@@ -806,7 +981,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # Find all unidentified arc lines that this could be, maintaining
         # monotonicity
-        all_lines = self.model.meta["linelist"].wavelengths(
+        all_lines = self.spectrum_linelist.wavelengths(
             in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm"
         )
 
@@ -840,13 +1015,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.new_line_dropdown.disabled = True
 
         self.new_line_prompt.text = f"Line at {peak:.1f} ({est_wave:.5f} nm)"
-
         start = self.p_spectrum.y_range.start
         end = self.p_spectrum.y_range.end
-        lheight = 0.05 * (end - start)
 
-        if self.absorption:
-            lheight *= -1
+        lheight = (end - start) * (-0.05 if self.absorption else 0.05)
+        # TODO: check what happens here in case of absorption -OS
 
         height = self.spectrum.data["spectrum"][int(peak + 0.5)]
 
@@ -858,7 +1031,38 @@ class WavelengthSolutionPanel(Fit1DPanel):
         self.set_currently_identifying(peak)
 
     def _close_to_peak(self, x, x1, x2, new_peaks, index):
-        """Checks if the click is close to a peak and if so returns True."""
+        """Checks if the click is close to a peak and if so returns True.
+
+        Parameters
+        ----------
+        x : float
+            The x-coordinate of the click.
+
+        x1 : float
+            The start of the x-axis range.
+
+        x2 : float
+            The end of the x-axis range.
+
+        new_peaks : array-like
+            The peaks that have not been identified yet.
+
+        index : int
+            The index of the peak that is closest to the click.
+
+        Returns
+        -------
+        bool : True if the click is close to a peak, False otherwise.
+
+        Notes
+        -----
+        If the index is None, then the click is not close to a peak. It's
+        assumed this means no lines were found in the region.
+        """
+        # No index -> no peak
+        if index is None:
+            return False
+
         # Handle numpy arrays and lists.
         try:
             if not new_peaks.shape[0]:
@@ -892,7 +1096,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def clear_all_lines(self):
         """
-        Called when the user clicks the "Clear all ines" button. Deletes
+        Called when the user clicks the "Clear all lines" button. Deletes
         all identified lines, performs a new fit.
         """
         self.model.data.data = {col: [] for col, values in self.model.data.data.items()}
@@ -913,7 +1117,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         dw = linear_model.c1 / np.diff(linear_model.domain)[0]
         matching_distance = abs(self.model.meta["fwidth"] * dw)
 
-        all_lines = self.model.meta["linelist"].wavelengths(
+        all_lines = self.spectrum_linelist.wavelengths(
             in_vacuo=self.visualizer.ui_params.in_vacuo, units="nm"
         )
 
@@ -994,24 +1198,21 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     """
     A Visualizer specific to determineWavelengthSolution
     """
-
     def __init__(self, *args, absorption=None, **kwargs):
         self.num_atran_params = None
-        super().__init__(
-            *args,
-            **kwargs,
-            panel_class=WavelengthSolutionPanel,
-            help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
-            absorption=absorption,
-        )
+        super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
+                         help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
+                         absorption=absorption)
+        #self.widgets["in_vacuo"] = bm.RadioButtonGroup(
+        #    labels=["Air", "Vacuum"], active=0)
+        #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
+        skip_lines = -3
+        if self.num_atran_params is not None:
+            skip_lines = skip_lines - self.num_atran_params - 1
 
         calibration_type = "vacuo" if self.ui_params.in_vacuo else "air"
 
         text = f"<b>Calibrating to wavelengths in {calibration_type}" f"</b>"
-
-        skip_lines = -3
-        if self.num_atran_params is not None:
-            skip_lines = skip_lines - self.num_atran_params - 1
 
         self.reinit_panel.children[skip_lines] = bm.Div(
             text=text,
@@ -1048,7 +1249,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             for key in params.reinit_params:
                 # The following is to add a special subset of UI widgets
                 # for fine-tuning the generated ATRAN linelist
-                if type(key) == dict and "atran_linelist_pars" in key:
+                if isinstance(key, dict) and "atran_linelist_pars" in key:
                     linelist_reinit_params = key.get("atran_linelist_pars")
                     params.reinit_params.remove(key)
                     params.reinit_params = params.reinit_params+linelist_reinit_params
@@ -1060,7 +1261,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             self.num_atran_params = len(linelist_reinit_params)
             section_title = bm.Div(
                 text="Parameters for ATRAN linelist generation:",
-                align="start", style={"font-weight":"bold"}, margin=(40,0,20,0))
+                align="start", styles={"font-weight":"bold"}, margin=(40,0,20,0))
             lst.insert((-self.num_atran_params), section_title)
         return lst
 
@@ -1077,12 +1278,13 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     this_dict = data
 
                 # spectrum update
-                self.panels[i].spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
-
+                spectrum = self.panels[i].spectrum
                 if self.absorption:
-                    self.panels[i].spectrum.data['spectrum'] *= -1
+                    spectrum.data['spectrum'] = -this_dict["meta"]["spectrum"]
+                else:
+                    spectrum.data['spectrum'] = this_dict["meta"]["spectrum"]
 
-
+                self.panels[i].spectrum_linelist = this_dict["meta"]["linelist"]
                 try:
                     self.panels[i].refplot_spectrum.data['wavelengths'] = this_dict["meta"]["refplot_spec"][:,0]
                     self.panels[i].refplot_spectrum.data['refplot_spectrum'] = this_dict["meta"]["refplot_spec"][:,1]
@@ -1095,11 +1297,14 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                             'labels': ["{:.2f}".format(w) for w in wlengths]
                         }
                     )
-                    self.panels[i].update_refplot_label_heights()
                     self.panels[i].update_refplot_name(this_dict["meta"]["refplot_name"])
                     self.panels[i].reset_view()
                 except (AttributeError, KeyError):
                     pass
+
+            # Reset panel axes
+            for panel in self.panels:
+                panel.reset_spectrum_axes()
 
 
 def get_closest(arr, value):

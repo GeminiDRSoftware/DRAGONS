@@ -65,7 +65,7 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
         fitting_parameters=fit_par_list,
         help_text=help_text,
         primitive_name="traceApertures",
-        tab_name_fmt="Aperture {}",
+        tab_name_fmt=lambda i: f"Aperture {i+1}",
         title="Interactive Trace Apertures",
         xlabel=xlabel,
         ylabel=ylabel,
