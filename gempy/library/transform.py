@@ -724,7 +724,8 @@ class Transform:
                        interpolant="linear", cval=0):
         """
         Perform the transformation (a static method so it can be called
-        elsewhere).
+        elsewhere). This is the single point where the resampling function
+        is called.
 
         Parameters
         ----------
@@ -768,16 +769,18 @@ class Transform:
         if isinstance(mapping, GeoMap):
             affinity = False
             output_shape = mapping.coords[0].shape
-            geomap = np.asarray(mapping.coords).ravel().astype(np.float32)
+            geomap = np.asarray(mapping.coords).ravel().astype(np.float32,
+                                                               copy=False)
         else:
             affinity = True
             geomap = np.concatenate([mapping.matrix,
                                      mapping.offset[:, np.newaxis]],
                                     axis=1).astype(np.float32).ravel()
         out_array = np.empty(output_shape, dtype=np.float32)
-        polyinterp(input_array.ravel(),
+        polyinterp(input_array.astype(np.float32, copy=False).ravel(),
                    np.asarray(input_array.shape, dtype=np.int32),
-                   len(input_array.shape), out_array.ravel(),
+                   len(input_array.shape),
+                   out_array.astype(np.float32, copy=False).ravel(),
                    np.asarray(out_array.shape, dtype=np.int32),
                    geomap, affinity, order, cval)
 
@@ -875,7 +878,7 @@ class GeoMap:
         grids = np.meshgrid(*(np.arange(length) for length in self._shape), indexing='ij')
         offset_array = np.array(mapping.offset).reshape(len(grids), 1)
         affine_coords = (np.dot(mapping.matrix, np.array([grid.flatten() for grid in grids]))
-                         + offset_array).astype(np.float32).reshape(len(grids), *self._shape)
+                         + offset_array).astype(np.float32, copy=False).reshape(len(grids), *self._shape)
         offsets = np.sum(np.square(self.coords - affine_coords), axis=0)
         return np.sqrt(np.mean(offsets)), np.sqrt(np.max(offsets))
 
@@ -1074,7 +1077,8 @@ class DataGroup:
 
             integer_shift = (transform.is_affine
                 and np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
-                                 np.array_equal(mapping.offset, mapping.offset.astype(int)))
+                                   np.array_equal(mapping.offset,
+                                                  mapping.offset.astype(int)))
 
             if not integer_shift:
                 ndim = transform.ndim
@@ -1266,10 +1270,10 @@ class DataGroup:
             # have the bit set (and-like), but the other bits combine or-like
             cval = self.no_data.get(attr[0], 0)
             if attr[1] != cval:
-                output_region |= (arr * attr[1]).astype(dtype)
+                output_region |= (arr * attr[1]).astype(dtype, copy=False)
             else:
                 self.output_dict[attr[0]][slice_] = ((output_region & (65535 ^ cval)) |
-                                                (output_region & (arr * attr[1]))).astype(dtype)
+                                                (output_region & (arr * attr[1]))).astype(dtype, copy=False)
         else:
             self.output_dict[attr][slice_] += arr
         del self.output_arrays[key]
@@ -1338,7 +1342,7 @@ class DataGroup:
             jfactor = 1  # Since we've done it
 
         if threshold is None:
-            self.output_arrays[output_key] = (out_array * jfactor).astype(dtype)
+            self.output_arrays[output_key] = (out_array * jfactor).astype(dtype, copy=False)
         else:
             self.output_arrays[output_key] = np.where(abs(out_array) > threshold,
                                                       True, False)
