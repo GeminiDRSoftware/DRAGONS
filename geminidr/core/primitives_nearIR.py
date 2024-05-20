@@ -497,8 +497,12 @@ class NearIR(Bookkeeping):
                         edges[ystart, xstart] = {"pattern": pattern,
                                                  "clean": False}
 
+                        qstr = (f"{ad.filename} extension {ext.id} "
+                                f"{ydesc}-{xdesc} quadrant")
                         # MS: do not touch the quad if pattern strength is weak
                         if pattern.std() >= pat_strength_thres or clean == "force":
+                            if pattern.std() < pat_strength_thres:
+                                log.stdinfo(f"Forcing cleaning on {qstr}")
                             # MS: now finding the applicable roi for pattern subtraction.
                             # Calculate the scaling factors for the pattern in
                             # all pattern boxes and investigate as a fn of row
@@ -518,14 +522,9 @@ class NearIR(Bookkeeping):
                                     axis=1, sigma=2.0)[1].repeat(pysize)
                             pattern_strengths.append(flip(pattern_strength, padding, ystart > 0))
                         else:
-                            qstr = (f"{ad.filename} extension {ext.id} "
-                                    f"{ydesc}-{xdesc} quadrant")
-                            if clean == "force":
-                                log.stdinfo(f"Forcing cleaning on {qstr}")
-                            else:
-                                log.stdinfo(f"Weak pattern for {qstr}, "
-                                            "not applying pattern removal.")
-                                continue
+                            log.stdinfo(f"Weak pattern for {qstr}, "
+                                        "not applying pattern removal.")
+                            continue
                         edges[ystart, xstart]["clean"] = True
                         cleaned_quads += 1
 

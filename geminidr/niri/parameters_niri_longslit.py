@@ -6,4 +6,4 @@ from geminidr.core import parameters_nearIR
 class cleanReadoutConfig(parameters_nearIR.cleanReadoutConfig):
     # Need a larger extent to cope with a bright spectrum down the middle
     def setDefaults(self):
-        self.smoothing_extent = 100
+        self.smoothing_extent = 300

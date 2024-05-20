@@ -55,8 +55,13 @@ class cleanReadoutConfig(config.Config):
     sg_win_size = config.RangeField("Smoothing window size (pixels) for Savitzky-Golay filter", int, 25, min=3)
     simple_thres = config.RangeField("Pattern edge detection threshold", float, 0.6, min=0.0)
     pat_strength_thres = config.RangeField("Pattern strength threshold", float, 15.0, min=0.0)
-    clean = config.Field("Behavior of the routine? Must be one of default, skip, or force", str, "default")
+    clean = config.ChoiceField("Cleaning behavior", str,
+                               allowed={"default": "perform pattern removal if pattern in strong enough",
+                                        "force": "force pattern removal",
+                                        "skip": "skip primitive"},
+                               default="default", optional=False)
     debug_canny_sigma = config.RangeField("Standard deviation for smoothing of Canny edge-finding", float, 3, min=1)
+
 
 class cleanFFTReadoutConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_readoutFFTCleaned", optional=True)
@@ -67,8 +72,13 @@ class cleanFFTReadoutConfig(config.Config):
     lquad = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
     l2clean = config.Field("Clean Fourier artifacts?", bool, True)
     l2thres = config.RangeField("Sigma factor to be used in thresholding for l2clean", float, 4., min=0)
-    clean = config.Field("Behavior of the routine? Must be one of default, skip, or force", str, "default")
+    clean = config.ChoiceField("Cleaning behavior", str,
+                               allowed={"default": "perform pattern removal if pattern in strong enough",
+                                        "force": "force pattern removal",
+                                        "skip": "skip primitive"},
+                               default="default", optional=False)
     smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=1)
+
 
 class separateFlatsDarksConfig(config.Config):
     pass
