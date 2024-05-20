@@ -2361,6 +2361,10 @@ class GHOSTSpect(GHOST):
         Spect.write1DSpectra(self, adinputs, **params)
         return adinputs
 
+    @staticmethod
+    def _has_valid_extensions(ad):
+        return len(ad) == 4
+
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
