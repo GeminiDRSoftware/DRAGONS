@@ -7,21 +7,9 @@ from bokeh.io import curdoc
 
 
 class DragonsStyleManager:
-    _last_document = None
-    _last_stylesheet = None
-
     _url = "/dragons/static/dragons.css"
 
-    # Singleton
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(DragonsStyleManager, cls).__new__(cls)
-
-        return cls._instance
-
-    @property
+    @classmethod
     def stylesheet(self):
         """Returns the stylesheet, creating a new instance if the document is
         new.
@@ -34,14 +22,7 @@ class DragonsStyleManager:
 
         This only occurs 2-3 times per document, so it's not a big deal.
         """
-        doc = curdoc()
-
-        if doc is not self._last_document:
-            self._last_document = doc
-            self._last_stylesheet = bm.ImportedStyleSheet(url=self._url)
-            return self._last_stylesheet
-
-        return self._last_stylesheet
+        return bm.ImportedStyleSheet(url=self._url)
 
 def dragons_styles():
     """Returns a list of fresh style sheets to be used by the interactive
@@ -56,7 +37,7 @@ def dragons_styles():
     # across the interactive viewer. If we need more stylesheets, we can create
     # new ImportedStyleSheets here, to keep everything in one place.
     stylesheets = [
-        DragonsStyleManager().stylesheet
+        DragonsStyleManager.stylesheet(),
     ]
 
     return stylesheets
