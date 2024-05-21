@@ -198,7 +198,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         last_obsid = None
         last_endtime = None
         for ad in adinputs:
-            if ad.tags.intersection({'ARC', 'BIAS', 'DARK', 'FLAT'}):
+            if ad.tags.intersection({'ARC', 'BIAS', 'DARK', 'FLAT', 'PINHOLE'}):
                 log.debug(f"Skipping {ad.filename} due to its tags")
                 continue
             if (ad.instrument() == 'NIRI' and ad.is_ao() and
