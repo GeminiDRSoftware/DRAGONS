@@ -83,7 +83,7 @@ def test_regression_in_distortion_correct(ad, change_working_dir, ref_ad_factory
 
         p = primitives_gmos_longslit.GMOSLongslit([deepcopy(ad)])
         p.viewer = geminidr.dormantViewer(p, None)
-        p.distortionCorrect(order=3, subsample=1)
+        p.distortionCorrect(interpolant="spline3", subsample=1)
         dist_corrected_ad = p.writeOutputs()[0]
 
     ref_ad = ref_ad_factory(dist_corrected_ad.filename)

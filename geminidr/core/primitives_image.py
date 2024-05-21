@@ -652,7 +652,7 @@ class Image(Preprocess, Register, Resample):
                         affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
                         objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
                                                    affine.matrix, affine.offset,
-                                                   output_shape=ext.shape, order=order,
+                                                   output_shape=ext.shape, interpolant=interpolant,
                                                    cval=0)
                     else:
                         objmask = transform.Transform(t_align).apply(
