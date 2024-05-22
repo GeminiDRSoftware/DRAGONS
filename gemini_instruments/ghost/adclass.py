@@ -403,9 +403,9 @@ class AstroDataGhost(AstroDataGemini):
 
         if val is None:
             if self.arm() == 'red':
-                val = 4000. * 10**-10
+                val = 7500. * 10**-10
             elif self.arm() == 'blue':
-                val = 6000. * 10**-10
+                val = 4400. * 10**-10
             else:
                 return None
 
