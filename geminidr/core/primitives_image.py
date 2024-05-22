@@ -338,7 +338,8 @@ class Image(Preprocess, Register, Resample):
         # separate_ext is irrelevant unless (scale or zero) but let's be explicit
         adinputs = self.stackSkyFrames(adinputs, mask_objects=True, separate_ext=False,
                                        scale=False, zero=False,
-                    **self._inherit_params(params, "stackSkyFrames", pass_suffix=True))
+                      **self._inherit_params(params, "stackSkyFrames",
+                                             pass_suffix=True))
         if len(adinputs) > 1:
             raise ValueError("Problem with stacking fringe frames")
 
@@ -644,17 +645,32 @@ class Image(Preprocess, Register, Resample):
                     log.warning(f"{ad.filename}:{ext.id} already has an "
                                 "OBJMASK that will be overwritten")
                 ext.OBJMASK = None
+
+                # affine_transform take the inverse of the transformation,
+                # whereas Transform.apply() takes the forward transformation
                 for source_ext in ad_source:
                     t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
-                    # This line is needed until gWCS PR#405 is merged
-                    t_align.inverse = ext.wcs.forward_transform | source_ext.wcs.backward_transform
-                    if force_affine:
+                    if force_affine and len(ext.shape) != 2:
                         affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
+                        try:
+                            order = int(interpolant[-1])
+                        except ValueError:
+                            if interpolant == "nearest":
+                                order = 0
+                            elif interpolant == "linear":
+                                order = 1
+                        if interpolant.startswith("poly"):
+                            log.warning("Polynomial interpolation replaced with"
+                                        " spline interpolation")
                         objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
                                                    affine.matrix, affine.offset,
-                                                   output_shape=ext.shape, interpolant=interpolant,
+                                                   output_shape=ext.shape, order=order,
                                                    cval=0)
                     else:
+                        if force_affine:
+                            affine = adwcs.calculate_affine_matrices(t_align, ad[0].shape)
+                            t_align = models.AffineTransformation2D(
+                                affine.matrix[::-1, ::-1], affine.offset[::-1])
                         objmask = transform.Transform(t_align).apply(
                             source_ext.OBJMASK.astype(np.float32),
                             output_shape=ext.shape, interpolant=interpolant, cval=0)

@@ -23,8 +23,8 @@ FrameMapping = namedtuple("FrameMapping", "cls description")
 frame_mapping = {'WAVE': FrameMapping(cf.SpectralFrame, "Wavelength in vacuo"),
                  'AWAV': FrameMapping(cf.SpectralFrame, "Wavelength in air")}
 
-re_ctype = re.compile("^CTYPE(\d+)$", re.IGNORECASE)
-re_cd = re.compile("^CD(\d+)_\d+$", re.IGNORECASE)
+re_ctype = re.compile("^CTYPE(\\d+)$", re.IGNORECASE)
+re_cd = re.compile("^CD(\\d+)_\\d+$", re.IGNORECASE)
 
 #-----------------------------------------------------------------------------
 # FITS-WCS -> gWCS
@@ -383,7 +383,8 @@ def calculate_affine_matrices(func, shape, origin=None):
     Parameters
     ----------
     func : callable
-        function that maps input->output coordinates
+        function that maps input->output coordinates; these coordinates
+        are x-first, because "func" is usually an astropy.modeling.Model
     shape : sequence
         shape to use for fiducial points
     origin : sequence/None
