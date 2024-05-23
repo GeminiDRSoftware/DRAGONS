@@ -3832,7 +3832,7 @@ class Spect(Resample):
                 new_ext = transform.resample_from_wcs(
                     ext, 'resampled', subsample=subsample,
                     attributes=attributes, conserve=this_conserve,
-                    inerpolant=interpolant, origin=origin,
+                    interpolant=interpolant, origin=origin,
                     output_shape=output_shape, threshold=dq_threshold)
                 if iext == 0:
                     ad_out = new_ext
