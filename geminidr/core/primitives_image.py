@@ -604,7 +604,7 @@ class Image(Preprocess, Register, Resample):
             name of stream containing single stacked image
         interpolant : str
             type of interpolation
-        threshold: float
+        dq_threshold: float
             threshold above which an interpolated pixel should be flagged
         dilation: float
             amount by which to dilate the OBJMASK after transference
@@ -613,7 +613,7 @@ class Image(Preprocess, Register, Resample):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         source = params["source"]
         interpolant = params["interpolant"]
-        threshold = params["threshold"]
+        dq_threshold = params["dq_threshold"]
         dilation = params["dilation"]
         sfx = params["suffix"]
 
@@ -674,7 +674,7 @@ class Image(Preprocess, Register, Resample):
                         objmask = transform.Transform(t_align).apply(
                             source_ext.OBJMASK.astype(np.float32),
                             output_shape=ext.shape, interpolant=interpolant, cval=0)
-                    objmask = binary_dilation(np.where(abs(objmask) > threshold, 1, 0).
+                    objmask = binary_dilation(np.where(abs(objmask) > dq_threshold, 1, 0).
                                               astype(np.uint8), structure).astype(np.uint8)
                     if ext.OBJMASK is None:
                         ext.OBJMASK = objmask

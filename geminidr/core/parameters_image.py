@@ -69,7 +69,7 @@ class transferObjectMaskConfig(config.Config):
                                               "spline3": "Cubic spline interpolation",
                                               "spline5": "Quintic spline interpolation"},
                                      default="poly3", optional=False)
-    threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
+    dq_threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
     dilation = config.RangeField("Dilation radius (pixels)", float, 1.5, min=0)
 
 

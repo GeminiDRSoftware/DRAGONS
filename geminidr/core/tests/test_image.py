@@ -24,7 +24,7 @@ def test_transfer_object_mask(path_to_inputs, path_to_refs, dataset):
     ad_target = astrodata.open(os.path.join(path_to_inputs, object_mask_datasets[dataset]))
     p = NIRIImage([ad_target])
     p.streams['donor'] = [ad_donor]
-    adout = p.transferObjectMask(source="donor", threshold=0.01, dilation=1.5,
+    adout = p.transferObjectMask(source="donor", dq_threshold=0.01, dilation=1.5,
                                  interpolant="linear").pop()
     adout.write(overwrite=True)
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
