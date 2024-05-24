@@ -22,6 +22,15 @@ Additional interpolation modes during resampling.
   interpolation has been replaced by a string parameter that can take the
   value "nearest", "linear", "poly3", "poly5", "spline3", or "spline5".
 
+Interface Modifications
+-----------------------
+
+**geminidr.core**
+
+* Rename the "order" parameter in the various resample primitives to
+  "interpolant", as described above.
+* Rename the "threshold" parameter in ``transferObjectMask``
+  to "dq_threshold", in line with other primitives.
 
 3.2.1
 =====
