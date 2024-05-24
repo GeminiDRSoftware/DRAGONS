@@ -1647,7 +1647,6 @@ class Spect(Resample):
                     # use a predefined row.
                     cut = ad.MDF['y_ccd'][0]
 
-                # row_or_col = 'row' if dispaxis == 0 else 'column'
                 row_or_col = ['row', 'column'][dispaxis]
                 col_or_row = ['row', 'column'][dispaxis-1]
                 # Use 1-indexed numbers for rows/columns for user-facing output
