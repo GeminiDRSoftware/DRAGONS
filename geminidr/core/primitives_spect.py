@@ -4741,6 +4741,7 @@ class Spect(Resample):
 
         for ad in adinputs:
 
+            log.stdinfo(f"Tracing pinhole apertures in {ad.filename}.")
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             for ext in ad:
 
