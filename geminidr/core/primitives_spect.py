@@ -1414,7 +1414,7 @@ class Spect(Resample):
                 # quite a bit slower, so this block of code does the line
                 # tracing based on the slit involved.
                 if constant_slit:
-                    ref_coords, in_coords = tracing.trace_lines(
+                    traces = tracing.trace_lines(
                         # Only need a single `start` value for all lines.
                         ext, axis=1 - dispaxis,
                         start=start, initial=initial_peaks,
@@ -1423,14 +1423,15 @@ class Spect(Resample):
                         max_shift=max_shift * ybin / xbin,
                         viewer=self.viewer if debug else None,
                         min_line_length=min_line_length)
+
                 else:
-                    ref_coords = np.array([])
+                    traces = []
                     for peak in initial_peaks:
                         # Need to start midway along the slit, which varies
                         # along the dispersion axis. `extract_info` here is the
                         # polynomial describing that midway line.
                         start = extract_info(peak)
-                        temp_ref_coords, temp_in_coords = tracing.trace_lines(
+                        temp_traces = tracing.trace_lines(
                             ext, axis=1 - dispaxis,
                             start=start, initial=[peak],
                             rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
@@ -1438,15 +1439,20 @@ class Spect(Resample):
                             max_shift=max_shift * ybin / xbin,
                             viewer=self.viewer if debug else None,
                             min_line_length=0.1)
-                        if temp_ref_coords.size:
-                            if not ref_coords.size:
-                                ref_coords = temp_ref_coords
-                                in_coords = temp_in_coords
+                        if temp_traces:
+                            if not traces:
+                                traces = temp_traces
                             else:
-                                ref_coords = np.concatenate(
-                                    (ref_coords, temp_ref_coords), axis=1)
-                                in_coords = np.concatenate(
-                                    (in_coords, temp_in_coords), axis=1)
+                                for trace, t_trace in zip(traces, temp_traces):
+                                    trace.points.extend(t_trace.points)
+
+                # List of traced peak positions
+                in_coords = np.array([coord for trace in traces for
+                                      coord in trace]).T
+                # List of "reference" positions (i.e., the coordinate
+                # perpendicular to the line remains constant at its initial value
+                ref_coords = np.array([coord for trace in traces for
+                                       coord in trace.reference_coordinates()]).T
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
@@ -1878,7 +1884,7 @@ class Spect(Resample):
 
                         # Trace the edge.
                         try:
-                            ref_coords, in_coords = tracing.trace_lines(
+                            traces = tracing.trace_lines(
                                 arr, dispaxis, start=cut,
                                 initial=[loc],
                                 variance=ext.variance,
@@ -1897,6 +1903,15 @@ class Spect(Resample):
                                         f"{loc+1:.d}. This is fine if the "
                                         "other edge can be traced. Continuing.")
                             continue
+
+                        # List of traced peak positions
+                        in_coords = np.array([coord for trace in traces for
+                                              coord in trace.input_coordinates()]).T
+                        # List of "reference" positions (i.e., the coordinate
+                        # perpendicular to the line remains constant at its
+                        # initial value
+                        ref_coords = np.array([coord for trace in traces for
+                                               coord in trace.reference_coordinates()]).T
 
                         if len(in_coords) == 0 and edge_in_array:
                             log.warning(f"Failed to trace {edge} edge at "
@@ -4604,11 +4619,21 @@ class Spect(Resample):
                                     f"aperture {i+1} at pixel {start+1}")
 
                         # The coordinates are always returned as (x-coords, y-coords)
-                        ref_coords, in_coords = tracing.trace_lines(
+                        traces = tracing.trace_lines(
                             ext, axis=dispaxis, start=start, initial=[loc],
                             rwidth=None, cwidth=5, step=step, nsum=nsum,
                             max_missed=max_missed, initial_tolerance=None,
                             max_shift=max_shift, viewer=self.viewer if debug else None)
+
+                        # List of traced peak positions
+                        in_coords = np.array([coord for trace in traces for
+                                              coord in trace.input_coordinates()]).T
+                        # List of "reference" positions (i.e., the coordinate
+                        # perpendicular to the line remains constant at its
+                        # initial value
+                        ref_coords = np.array([coord for trace in traces for
+                                               coord in trace.reference_coordinates()]).T
+
                         if ref_coords.size:
                             if all_ref_coords.size:
                                 all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
@@ -4756,34 +4781,30 @@ class Spect(Resample):
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)
 
-                in_traces, ref_traces = [], []
-                log.stdinfo(f"Found {len(initial_peaks)} peaks in extension "
-                            f"{ext.id}, tracing "
-                            f"numbers {min_trace_pos or 0} to "
-                            f"{max_trace_pos or len(initial_peaks)} "
-                            f"starting at {direction} {start}")
+                log.fullinfo(f"  Found {len(initial_peaks)} peaks in extension "
+                             f"{ext.id}, tracing "
+                             f"numbers {min_trace_pos or 0} to "
+                             f"{max_trace_pos or len(initial_peaks)} "
+                             f"starting at {direction} {start}")
 
-                for j, peak in enumerate(initial_peaks[min_trace_pos:max_trace_pos]):
-                    ref_coords, in_coords = tracing.trace_lines(
-                        # Only need a single `start` value for all lines.
-                        ext, axis=dispaxis,
-                        start=start, initial=[peak],
-                        rwidth=None, cwidth=max(int(fwidth), 5),
-                        step=step, nsum=nsum, max_missed=max_missed,
-                        max_shift=max_shift * ybin / xbin,
-                        min_line_length=min_line_length,
-                        initial_tolerance=2.0)
+                traces = tracing.trace_lines(
+                    # Only need a single `start` value for all lines.
+                    ext, axis=dispaxis,
+                    start=start,
+                    initial=initial_peaks[min_trace_pos:max_trace_pos],
+                    rwidth=None, cwidth=max(int(fwidth), 5),
+                    step=step, nsum=nsum, max_missed=max_missed,
+                    max_shift=max_shift * ybin / xbin,
+                    min_line_length=min_line_length,
+                    initial_tolerance=2.0)
 
-                    in_traces.append(in_coords)
-                    ref_traces.append(ref_coords)
-
-                    min_value = in_coords[1 - dispaxis].min()
-                    max_value = in_coords[1 - dispaxis].max()
-                    log.fullinfo(f"  Peak {j + (min_trace_pos or 0)} traced from "
-                                 f"{min_value} to {max_value}.")
-
-                tot_in_coords = np.concatenate(in_traces, axis=1)
-                tot_ref_coords = np.concatenate(ref_traces, axis=1)
+                # List of traced peak positions
+                in_coords = np.array([coord for trace in traces for
+                                      coord in trace]).T
+                # List of "reference" positions (i.e., the coordinate
+                # perpendicular to the line remains constant at its initial value
+                ref_coords = np.array([coord for trace in traces for
+                                       coord in trace.reference_coordinates()]).T
 
                 # Create the 2D slit rectification model:
                 m_init_2d = models.Chebyshev2D(
@@ -4793,7 +4814,7 @@ class Spect(Resample):
                 # The `fixed_linear` parameter is False because we should
                 # have both edges for each slit.
                 model, m_final_2d, m_inverse_2d = create_distortion_model(
-                    m_init_2d, dispaxis, tot_in_coords, tot_ref_coords, False)
+                    m_init_2d, dispaxis, in_coords, ref_coords, False)
                 model.name = "PNHLRECT"
 
                 try:
@@ -4803,7 +4824,7 @@ class Spect(Resample):
                                            cf.Frame2D(name='rectified'))
 
                 if params["debug_plots"]:
-                    plt.plot(tot_in_coords[0], tot_in_coords[1], linestyle='',
+                    plt.plot(in_coords[0], in_coords[1], linestyle='',
                              marker='o')
                     plt.title(f"Extension {ext.id}")
                     plt.xlabel("X")

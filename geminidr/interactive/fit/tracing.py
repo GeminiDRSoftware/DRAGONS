@@ -109,7 +109,7 @@ def trace_apertures_data_provider(ext, ui_params):
         start = np.argmax(at.boxcar(spectrum, size=20))
 
         # The coordinates are always returned as (x-coords, y-coords)
-        _, in_coords = tracing.trace_lines(
+        traces = tracing.trace_lines(
             ext,
             axis=dispaxis,
             cwidth=5,
@@ -122,6 +122,10 @@ def trace_apertures_data_provider(ext, ui_params):
             start=start,
             step=ui_params.values['step'],
         )
+
+        # List of traced peak positions
+        in_coords = np.array([coord for trace in traces for
+                              coord in trace.input_coordinates()]).T
 
         assert len(in_coords) == 2,\
             f"No trace was found at {loc} in {ext.filename}."

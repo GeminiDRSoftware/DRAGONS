@@ -379,19 +379,32 @@ class Trace:
 
     starting_point : len-2 iterable
         The starting point of the trace on the array, in (y, x) format.
-    trace : collections.deque
+    points : collections.deque
         A deque holding points (len-2 iterables) found for the trace.
     top_limit : float
         The highest y-value that the trace has reached.
     bottom_limit : float
         The lowest y-value that the trace have reached.
     """
-    def __init__(self, starting_point):
+    def __init__(self, starting_point, reverse_returned_coords=False):
+        """
+        Parameters
+        ----------
+        starting_point : len-2 iterable of numbers
+            The point from which to start the trace, with the tracing axis as
+            the first number.
+        reverse_returned_coords : bool, optional
+            Whether to reversed the coordinates when returning them. The default
+            is False. This is because Trace keeps track of coordinates with the
+            tracing axis first, which means (y, x) order if tracing vertically;
+            but it may be preferable to get the output in (x, y) order.
+        """
         self.starting_point = self._verify_point(starting_point)
         self.points = deque([self.starting_point])
         self.last_point = self.starting_point
         self.steps_missed = 0
         self.active = True
+        self.reversed = reverse_returned_coords
 
     def _as_list(self):
         return list(self.points)
@@ -426,8 +439,15 @@ class Trace:
     def bottom_limit(self):
         return self.points[0][0]
 
+    def input_coordinates(self):
+        if self.reversed:
+            return [(x, y) for y, x in self.points]
+        return [(x, y) for x, y in self.points]
+
     def reference_coordinates(self, reference_coord=None):
         xref = reference_coord or self.starting_point[1]
+        if self.reversed:
+            return [(xref, y) for y, _ in self.points]
         return [(y, xref) for y, _ in self.points]
 
     def add_point(self, point):
@@ -1586,7 +1606,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
     Returns
     -------
-    refcoords, incoords: 2xN arrays (x-first) of coordinates
+    list of Trace objects, or an empty list if no peaks were recoverable
     """
     log = logutils.get_logger(__name__)
 
@@ -1633,6 +1653,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
         peaks = pinpoint_peaks(data, peaks=initial, mask=mask,
                                halfwidth=halfwidth)[0]
+        if not peaks:
+            return []
         initial_peaks = []
         for peak in initial:
             j = np.argmin(abs(np.array(peaks) - peak))
@@ -1663,7 +1685,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             if np.bincount((ext_mask[_slice(s)] & DQ.not_signal).min(axis=1))[0] <= 1:
                 step_centers_down[i] = None
 
-    traces = [Trace((start, peak)) for peak in initial_peaks]
+    reverse = True if axis == 0 else False
+    traces = [Trace((start, peak), reverse_returned_coords=reverse)
+              for peak in initial_peaks]
     for direction, step_centers in zip((1, -1), (step_centers_up, step_centers_down)):
         for trace in traces:
             trace.last_point = trace.starting_point
@@ -1766,13 +1790,4 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     final_traces = [trace for trace in traces if (
             trace.points[-1][0] - trace.points[0][0] >= min_length_pixels)]
 
-    # List of traced peak positions
-    in_coords = np.array([coord for trace in final_traces for coord in trace]).T
-    # List of "reference" positions (i.e., the coordinate perpendicular to
-    # the line remains constant at its initial value
-    ref_coords = np.array([coord for trace in final_traces
-                           for coord in trace.reference_coordinates()]).T
-
-    # Return the coordinate lists, in the form (x-coords, y-coords),
-    # regardless of the dispersion axis
-    return (ref_coords, in_coords) if axis == 1 else (ref_coords[::-1], in_coords[::-1])
+    return final_traces
