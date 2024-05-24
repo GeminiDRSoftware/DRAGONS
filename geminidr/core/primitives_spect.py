@@ -1692,10 +1692,11 @@ class Spect(Resample):
                     # spurious peaks close to the edge of the detector.
                     positions_1 = []
                 else:
-                    positions_1, _ = find_peaks(median_slice_1,
+                    positions_1, _ = find_peaks(at.boxcar(median_slice_1, size=1),
                                                 height=min_height,
-                                                distance=5,
-                                                prominence=2.*std)
+                                                distance=10,
+                                                prominence=2.*std,
+                                                wlen=11)
                     # find_peaks returns integer values, so use pinpoint_peaks
                     # to better describe the positions.
                     positions_1, _ = tracing.pinpoint_peaks(median_slice_1,
@@ -1704,10 +1705,11 @@ class Spect(Resample):
                 if exp_edges_2[0] > ext.shape[1-dispaxis]:
                     positions_2 = []
                 else:
-                    positions_2, _ = find_peaks(median_slice_2,
+                    positions_2, _ = find_peaks(at.boxcar(median_slice_2, size=1),
                                                 height=min_height,
-                                                distance=5,
-                                                prominence=2.*std)
+                                                distance=10,
+                                                prominence=2.*std,
+                                                wlen=11)
                     positions_2, _ = tracing.pinpoint_peaks(median_slice_2,
                                                             peaks=positions_2,
                                                             halfwidth=cwidth//2)
@@ -1717,8 +1719,8 @@ class Spect(Resample):
                           f'  {edge2.capitalize()}: {positions_2}\n')
                 if debug_plots:
                     # Print a diagnostic plot of the profile being fitted.
-                    plt.plot(median_slice_1, label='1st-derivative of flux')
-                    plt.plot(median_slice_2, label='Inverse')
+                    plt.plot(at.boxcar(median_slice_1, size=1), label='1st-derivative of flux')
+                    plt.plot(at.boxcar(median_slice_2, size=1), label='Inverse')
                     plt.xlabel(f'{row_or_col.capitalize()} number')
                     plt.legend()
 
@@ -1742,12 +1744,6 @@ class Spect(Resample):
                 # the expected breadth of the region. If both edges are on,
                 # run match_sources on both to find the closest match to each.
                 if (len(positions_2) != 0) and (len(positions_1) != 0):
-
-                    if observing_mode == 'XD':
-                        if len(positions_2) != len(positions_1):
-                            raise RuntimeError("Numbers of edges do not match:\n"
-                                              f"{len(positions_1)} vs. "
-                                              f"{len(positions_2)}")
 
                     edge_ids_2 = match_sources(positions_2, exp_edges_2,
                                                 radius=search_rad)
@@ -1958,6 +1954,7 @@ class Spect(Resample):
                             # Perform the fit of the coordinates for the traced
                             # edges. Use log-weighting to help ensure valid
                             # points are all considered in the trace.
+                            collapsed[np.where(collapsed < 1)] = 1
                             weights = np.log(collapsed[
                                 in_coords_new[1 - dispaxis].astype(int)])
 

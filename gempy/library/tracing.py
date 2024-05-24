@@ -442,7 +442,7 @@ class Trace:
     def input_coordinates(self):
         if self.reversed:
             return [(x, y) for y, x in self.points]
-        return [(x, y) for x, y in self.points]
+        return [(y, x) for y, x in self.points]
 
     def reference_coordinates(self, reference_coord=None):
         xref = reference_coord or self.starting_point[1]
