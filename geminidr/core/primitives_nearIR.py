@@ -251,7 +251,8 @@ class NearIR(Bookkeeping):
             log.warning("No frames are being removed: data quality may suffer")
         return adinputs
 
-    def _levelQuad(self, masked_data, sig=2.0, smoothing_extent=5, edges=None):
+    def _levelQuad(self, masked_data, sig=2.0, smoothing_extent=5,
+                   intraquad_smooth=50, edges=None):
         """
         Parameters
         ----------
@@ -260,9 +261,11 @@ class NearIR(Bookkeeping):
         sig: float, Default: 2.0
             Sigma-clipping threshold used for both lower and upper limits.
         smoothing_extent: int
-            Width (in pixels) of the region at a given quad interface to be smoothed over
-            on each side of the interface.
-            Note that for intra-quad leveling, this width is broadened by a factor 10.
+            Width (in pixels) of the region at a given quad interface to be
+            smoothed over on each side of the interface.
+        intraquad_smooth: int
+            Height (in pixels) of the region on either side of a bias jump
+            for determining statistics
         edges: dict
             information about the edges of a bias offset at the sub-quad level
             each dict item is keyed by the (y, x) coords of the bottom-left
@@ -292,7 +295,6 @@ class NearIR(Bookkeeping):
         # edges. Work from the top/bottom towards the centre. Be careful to
         # directly modify the 'data' attribute or else the masked pixels will
         # be unaffected
-        intraquad_smooth = smoothing_extent * 10
         for (ystart, xstart), quad_edges in edges.items():
             xslice = slice(xstart, xstart+qxsize)
             for i, edge in enumerate(quad_edges):
@@ -374,6 +376,9 @@ class NearIR(Bookkeeping):
             Width (in pixels) of the region at a given quad interface to be smoothed over
             on each side of the interface.
             Note that for intra-quad leveling, this width is broadened by a factor 10.
+        intraquad_smooth: int
+            Height (in pixels) of the region on either side of a bias jump
+            for determining statistics
         sg_win_size: int
             Smoothing window size for the Savitzky-Golay filter applied during automated
             detection of pattern coverage.
@@ -403,6 +408,7 @@ class NearIR(Bookkeeping):
         clean = params["clean"]
         level_bias_offset = params["level_bias_offset"]
         smoothing_extent = params["smoothing_extent"]
+        intraquad_smooth = params["intraquad_smooth"]
 
         simple_thres = params["simple_thres"]
         pat_strength_thres = params["pat_strength_thres"]
@@ -491,8 +497,12 @@ class NearIR(Bookkeeping):
                         edges[ystart, xstart] = {"pattern": pattern,
                                                  "clean": False}
 
+                        qstr = (f"{ad.filename} extension {ext.id} "
+                                f"{ydesc}-{xdesc} quadrant")
                         # MS: do not touch the quad if pattern strength is weak
                         if pattern.std() >= pat_strength_thres or clean == "force":
+                            if pattern.std() < pat_strength_thres:
+                                log.stdinfo(f"Forcing cleaning on {qstr}")
                             # MS: now finding the applicable roi for pattern subtraction.
                             # Calculate the scaling factors for the pattern in
                             # all pattern boxes and investigate as a fn of row
@@ -512,14 +522,9 @@ class NearIR(Bookkeeping):
                                     axis=1, sigma=2.0)[1].repeat(pysize)
                             pattern_strengths.append(flip(pattern_strength, padding, ystart > 0))
                         else:
-                            qstr = (f"{ad.filename} extension {ext.id} "
-                                    f"{ydesc}-{xdesc} quadrant")
-                            if clean == "force":
-                                log.stdinfo(f"Forcing cleaning on {qstr}")
-                            else:
-                                log.stdinfo(f"Weak pattern for {qstr}, "
-                                            "not applying pattern removal.")
-                                continue
+                            log.stdinfo(f"Weak pattern for {qstr}, "
+                                        "not applying pattern removal.")
+                            continue
                         edges[ystart, xstart]["clean"] = True
                         cleaned_quads += 1
 
@@ -551,7 +556,8 @@ class NearIR(Bookkeeping):
                         edges[ystart, xstart] = []  # no levelling here
                 if level_bias_offset and cleaned_quads > 0:
                     log.stdinfo(f"Leveling quads for {ext.filename}:{ext.id}...")
-                    self._levelQuad(padded_array, smoothing_extent=smoothing_extent, edges=edges)
+                    self._levelQuad(padded_array, smoothing_extent=smoothing_extent,
+                                    intraquad_smooth=intraquad_smooth, edges=edges)
 
                 if padding:  # Remove padding before returning
                     ext.data = padded_array.data[:-padding]

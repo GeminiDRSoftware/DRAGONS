@@ -41,6 +41,12 @@ Improvements
 
 * Improved speed and success rate of wavelength calibration.
 
+Bug fixes
+---------
+**geminidr.ghost**
+
+* Cause data validation to fail for echellograms without exactly 4 extensions.
+
 
 3.2.0
 =====
