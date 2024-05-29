@@ -1685,8 +1685,10 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             if np.bincount((ext_mask[_slice(s)] & DQ.not_signal).min(axis=1))[0] <= 1:
                 step_centers_down[i] = None
 
-    reverse = True if axis == 0 else False
-    traces = [Trace((start, peak), reverse_returned_coords=reverse)
+    # If tracing vertically-dispersed data the coordinates in the Trace will
+    # be in (y, x) order and since we need (x, y) elsewhere we reverse them here.
+    traces = [Trace((start, peak),
+                    reverse_returned_coords=True if axis == 0 else False)
               for peak in initial_peaks]
     for direction, step_centers in zip((1, -1), (step_centers_up, step_centers_down)):
         for trace in traces:
