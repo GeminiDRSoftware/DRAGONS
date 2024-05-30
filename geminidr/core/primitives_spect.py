@@ -53,7 +53,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import tracing, transform, wavecal
-from gempy.library.astrotools import array_from_list, transpose_if_needed
+from gempy.library.astrotools import array_from_list
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter, match_sources, fit_model
@@ -3959,7 +3959,7 @@ class Spect(Resample):
                 extension, sky mask, sky weights yielded for each extension in the `ad`
             """
             for csc_ext in ad:
-                csc_axis = csc_ext.dispersion_axis() - 1  # python sense
+                csc_spataxis = csc_ext.dispersion_axis() - 1  # python sense
 
                 # We want to mask pixels in apertures in addition to the mask.
                 # Should we also leave DQ.cosmic_ray (because sky lines can get
@@ -3968,12 +3968,8 @@ class Spect(Resample):
                                 if csc_ext.mask is None else
                                 (csc_ext.mask & DQ.not_signal).astype(bool))
 
-                # for interactive mode, we aggregate an aperture mask separately
-                # for the UI
+                # Create an aggregated aperture mask
                 csc_aperture_mask = (np.zeros_like(csc_ext.data, dtype=bool))
-
-                # If there's an aperture table, go through it row by row,
-                # masking the pixels
                 try:
                     aptable = csc_ext.APERTURE
                 except AttributeError:
@@ -3992,8 +3988,8 @@ class Spect(Resample):
                 else:
                     csc_sky_weights = np.sqrt(at.divide0(1., csc_ext.variance))
                     # Handle columns were all the weights are zero
-                    zeros = np.sum(csc_sky_weights, axis=csc_axis) == 0
-                    if csc_axis == 0:
+                    zeros = np.sum(csc_sky_weights, axis=csc_spataxis) == 0
+                    if csc_spataxis == 0:
                         csc_sky_weights[:, zeros] = 1
                     else:
                         csc_sky_weights[zeros] = 1
@@ -4002,18 +3998,14 @@ class Spect(Resample):
                 # chip gaps) to avoid a zillion warnings about insufficient
                 # unmasked points.
                 if csc_ext.mask is not None:
-                    no_data = (np.bitwise_and.reduce(csc_ext.mask, axis=csc_axis) &
+                    no_data = (np.bitwise_and.reduce(csc_ext.mask, axis=csc_spataxis) &
                                DQ.no_data).astype(bool)
-                    if csc_axis == 0:
+                    if csc_spataxis == 0:
                         csc_sky_mask ^= no_data
                     else:
                         csc_sky_mask ^= no_data[:, None]
 
-                csc_ext.data, csc_sky_mask, csc_sky_weights = \
-                    transpose_if_needed(csc_ext.data, csc_sky_mask, csc_sky_weights, transpose=csc_axis != 0)
                 if interactive_mode:
-                    csc_aperture_mask = \
-                        transpose_if_needed(csc_aperture_mask, transpose=csc_axis != 0)[0]
                     yield csc_ext, csc_sky_mask, csc_sky_weights, csc_aperture_mask
                 else:
                     yield csc_ext, csc_sky_mask | csc_aperture_mask, csc_sky_weights
@@ -4053,7 +4045,6 @@ class Spect(Resample):
             data = {"x": [], "y": [], "weights": [], "aperture_mask": []}
             for rc_ext, rc_sky_mask, rc_sky_weights, rc_aper_mask in \
                     calc_sky_coords(ad, apgrow=apgrow, interactive_mode=True):
-                # TODO: FIX THIS TO PAY ATTENTION TO ORIENTATION!!!!!
                 if rc_ext.dispersion_axis() == 1:
                     data["weights"].append(None if rc_sky_weights is None else rc_sky_weights[:, c])
                     data["aperture_mask"].append(rc_aper_mask[:, c])
@@ -4075,39 +4066,49 @@ class Spect(Resample):
             config = self.params[self.myself()]
             config.update(**params)
 
-            # Create a 'col' parameter to add to the UI so the user can select the column they
-            # want to fit.
-            # We pass a default column at the 1/3 mark, since dead center is flat
-            axis = adinputs[0].dispersion_axis()[0] - 1  # python sense
-            ncols = adinputs[0].shape[0][1 if axis == 0 else 0]
-            reinit_params = ["col", "aperture_growth"]
-            reinit_extras = {"col": RangeField(doc="Column of data", dtype=int, default=int(ncols / 2),
-                                               min=1, max=ncols)}
-
-            # Build the set of input shapes and count the total extensions while we are at it
             for ad in adinputs:
-                all_shapes = []
-                count = 0
-                for ext in ad:
-                    axis = ext.dispersion_axis() - 1  # python sense
-                    count = count+1
-                    all_shapes.append((0, ext.shape[axis]))  # extracting single line for interactive
+                # CJS: Add code to raise warnings about behaviour.
+                dispersion_axes = ad.dispersion_axis()
+                if len(set(dispersion_axes)) > 1:
+                    log.warning("Labelling will be confusing as there are "
+                                "different dispersion axes.")
 
-                # Get filename to display in visualizer
-                filename_info = getattr(ad, 'filename', '')
+                spataxis_lengths = [ext.shape[ext.dispersion_axis() - 1]
+                                    for ext in ad]
+                all_domains = [(0, length-1) for length in spataxis_lengths]
+
+                # If they're different, pick one!
+                spataxis = dispersion_axes[0] - 1  # python sense
+
+                # Create a 'col' parameter to add to the UI so the user can select the column they
+                # want to fit.
+                dispaxis_lengths = [ext.shape[2 - ext.dispersion_axis()]
+                                    for ext in ad]
+                if len(set(dispaxis_lengths)) > 1:
+                    log.warning("Extensions have different dispersion axis "
+                                "lengths within the same input. Interactive "
+                                "slider may not work as expected.")
+                min_ncols = min(dispaxis_lengths)
+                max_ncols = max(dispaxis_lengths)
+                reinit_params = ["col", "aperture_growth"]
+                reinit_extras = {
+                    "col": RangeField(doc=f"{'Column' if spataxis == 0 else 'Row'} of data",
+                                      dtype=int, default=min_ncols // 2, min=1, max=max_ncols,
+                                      inclusiveMax=True)
+                }
 
                 # get the fit parameters
                 fit1d_params = fit_1D.translate_params(params)
                 ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
                 visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
-                                                   fitting_parameters=[fit1d_params]*count,
+                                                   fitting_parameters=[fit1d_params] * len(ad),
                                                    tab_name_fmt=lambda i: f"Slit {i+1}",
-                                                   xlabel='Row',
+                                                   xlabel='Row' if spataxis == 0 else 'Column',
                                                    ylabel='Signal',
-                                                   domains=all_shapes,
+                                                   domains=all_domains,
                                                    title="Sky Correct From Slit",
-                                                   primitive_name="skyCorrectFromSlit",
-                                                   filename_info=filename_info,
+                                                   primitive_name=self.myself(),
+                                                   filename_info=ad.filename,
                                                    help_text=SKY_CORRECT_FROM_SLIT_HELP_TEXT,
                                                    plot_ratios=False,
                                                    enable_user_masking=False,
@@ -4143,10 +4144,10 @@ class Spect(Resample):
                 # get value for aperture growth from config
                 apg = params["aperture_growth"]
             for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
-                axis = 0  # Note: transposed already
+                spataxis = ext.dispersion_axis() - 1  # python sense
                 sky = np.ma.masked_array(ext.data, mask=sky_mask)
                 sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
-                                   axis=axis, plot=debug_plot).evaluate()
+                                   axis=spataxis, plot=debug_plot).evaluate()
                 ext.data -= sky_model
                 eidx = eidx + 1
 
