@@ -249,10 +249,11 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
 
     # Reorder columns and set datatypes
     table = table[['Id', 'Cat_Id', 'RAJ2000', 'DEJ2000'] + cols[3:]]
+    table['Cat_Id'] = [str(item) for item in table['Cat_Id']]  # force string
     for c in table.colnames[4:]:
         table[c].format = "8.4f"
 
-    table_name = table.meta['name']
+    table_name = table.meta.get('name')
     table.meta = None
     header = add_header_to_table(table)
     header['CATALOG'] = (catalog.upper(), 'Origin of source catalog')
@@ -260,6 +261,7 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
     # Add comments to the header to describe it
     header.add_comment(f'Source catalog derived from the {catalog} catalog')
     header.add_comment(f'Source catalog fetched from server at {url}')
-    header.add_comment(f'Delivered Table name from server:  {table_name}')
+    if table_name:
+        header.add_comment(f'Delivered Table name from server:  {table_name}')
 
     return table
