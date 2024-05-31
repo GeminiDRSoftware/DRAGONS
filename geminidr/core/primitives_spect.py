@@ -4246,20 +4246,21 @@ class Spect(Resample):
                     self.viewer.width = 2
                     self.viewer.color = "blue"
 
-                if interactive:
-                    # Pass the primitive configuration to the interactive object.
-                    _config = self.params[self.myself()]
-                    _config.update(**params)
+                # Set up UIParameters for trace_lines() call
+                _config = self.params[self.myself()]
+                _config.update(**params)
 
-                    title_overrides = {
-                        'max_missed': 'Max Missed',
-                        'max_shift':  'Max Shifted',
-                        'nsum':       'Lines to sum',
-                        'step':       'Tracing step',
-                    }
-                    ui_params = UIParameters(_config,
-                                             reinit_params=["max_missed", "max_shift", "nsum", "step"],
-                                             title_overrides=title_overrides)
+                title_overrides = {
+                    'max_missed': 'Max Missed',
+                    'max_shift':  'Max Shifted',
+                    'nsum':       'Lines to sum',
+                    'step':       'Tracing step',
+                }
+                ui_params = UIParameters(_config,
+                                         reinit_params=["max_missed", "max_shift", "nsum", "step"],
+                                         title_overrides=title_overrides)
+
+                if interactive:
                     aperture_models = interactive_trace_apertures(
                         ext, fit1d_params, ui_params=ui_params)
                 else:
@@ -4274,24 +4275,10 @@ class Spect(Resample):
                     all_ref_coords = np.array([])
                     for i, loc in enumerate(locations):
                         c0 = int(loc + 0.5)
-                        spectrum = ext.data[c0, nsum:-nsum] if dispaxis == 1 else ext.data[nsum:-nsum, c0]
-                        if ext.mask is None:
-                            start = np.argmax(at.boxcar(spectrum, size=20)) + nsum
-                        else:
-                            good = ((ext.mask[c0, nsum:-nsum] if dispaxis == 1 else
-                                     ext.mask[nsum:-nsum, c0]) & DQ.not_signal) == 0
+                        ref_coords, in_coords = tracing.trace_aperture(
+                            ext, loc, ui_params, apnum=i,
+                            viewer=self.viewer if debug else None)
 
-                            start = nsum + np.arange(spectrum.size)[good][np.argmax(
-                                at.boxcar(spectrum[good], size=20))]
-                        log.stdinfo(f"{ad.filename}: Starting trace of "
-                                    f"aperture {i+1} at pixel {start+1}")
-
-                        # The coordinates are always returned as (x-coords, y-coords)
-                        ref_coords, in_coords = tracing.trace_lines(
-                            ext, axis=dispaxis, start=start, initial=[loc],
-                            rwidth=None, cwidth=5, step=step, nsum=nsum,
-                            max_missed=max_missed, initial_tolerance=None,
-                            max_shift=max_shift, viewer=self.viewer if debug else None)
                         if ref_coords.size:
                             if all_ref_coords.size:
                                 all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)

@@ -1602,3 +1602,60 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     # Return the coordinate lists, in the form (x-coords, y-coords),
     # regardless of the dispersion axis
     return (ref_coords, in_coords) if axis == 1 else (ref_coords[::-1], in_coords[::-1])
+
+
+def trace_aperture(ext, location, ui_params, viewer=None, apnum=None):
+    """
+    Trace a single aperture provided its location on the spatial axis
+
+    Parameters
+    ----------
+    ext : AstroData.extension object
+        The extension to trace in.
+    location : float or int
+        The pixel location along the spatial axis where the aperture is located.
+    ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+        Fitting parameters to pass to `trace_lines()`. For interactive use,
+        also contains UI parameters to use as inputs to generate the points.
+    viewer: imexam viewer or None
+        Viewer to draw lines on.
+    apnum : int or None
+        Aperture number (for when tracing multiple apertures in an image).
+
+    Returns
+    -------
+    list of :class:`~gempy.library.tracing.Trace` objects.
+
+    """
+    dispaxis = 2 - ext.dispersion_axis()  # python sense
+
+    c0 = int(location + 0.5)
+    nsum = ui_params.values['nsum']
+    spectrum = ext.data[c0, nsum:-nsum] if dispaxis == 1 else ext.data[nsum:-nsum, c0]
+    if ext.mask is None:
+        start = np.argmax(at.boxcar(spectrum, size=20)) + nsum
+    else:
+        good = ((ext.mask[c0, nsum:-nsum] if dispaxis == 1 else
+                 ext.mask[nsum:-nsum, c0]) & DQ.not_signal) == 0
+
+        start = nsum + np.arange(spectrum.size)[good][np.argmax(
+            at.boxcar(spectrum[good], size=20))]
+    if apnum is not None:
+        log.stdinfo(f"{ext.filename}: Starting trace of "
+                    f"aperture {apnum+1} at pixel {start+1}")
+
+    # The coordinates are always returned as (x-coords, y-coords)
+    return trace_lines(
+        ext,
+        axis=dispaxis,
+        cwidth=5,
+        initial=[location],
+        initial_tolerance=None,
+        max_missed=ui_params.values['max_missed'],
+        max_shift=ui_params.values['max_shift'],
+        nsum=ui_params.values['nsum'],
+        rwidth=None,
+        start=start,
+        step=ui_params.values['step'],
+        viewer=viewer
+    )
