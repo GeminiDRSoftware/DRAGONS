@@ -788,7 +788,7 @@ class BGReport(QAReport):
         results = {}
         if t:
             weights = t['nsamples']
-            results = {'nsamples': weights.sum()}
+            results = {'nsamples': int(weights.sum())}
             for value_key, std_key in (('bg', 'bgerr'), ('mag', 'mag_std'),
                                        ('electrons', 'electrons_std')):
                 try:
