@@ -23,6 +23,7 @@ pinpoint_peaks:      produce more accuate positions for existing peaks by
 reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 
 trace_lines:         trace lines from a set of supplied starting positions
+trace_aperture:      trace a single aperture after finding a starting point
 """
 from collections import deque
 import warnings
@@ -1793,3 +1794,59 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             trace.points[-1][0] - trace.points[0][0] >= min_length_pixels)]
 
     return final_traces
+
+def trace_aperture(ext, location, ui_params, viewer=None, apnum=None):
+    """
+    Trace a single aperture provided its location on the spatial axis
+
+    Parameters
+    ----------
+    ext : AstroData.extension object
+        The extension to trace in.
+    location : float or int
+        The pixel location along the spatial axis where the aperture is located.
+    ui_params : :class:`~geminidr.interactive.interactive.UIParams`
+        Fitting parameters to pass to `trace_lines()`. For interactive use,
+        also contains UI parameters to use as inputs to generate the points.
+    viewer: imexam viewer or None
+        Viewer to draw lines on.
+    apnum : int or None
+        Aperture number (for when tracing multiple apertures in an image).
+
+    Returns
+    -------
+    list of :class:`~gempy.library.tracing.Trace` objects.
+
+    """
+    dispaxis = 2 - ext.dispersion_axis()  # python sense
+
+    c0 = int(location + 0.5)
+    nsum = ui_params.values['nsum']
+    spectrum = ext.data[c0, nsum:-nsum] if dispaxis == 1 else ext.data[nsum:-nsum, c0]
+    if ext.mask is None:
+        start = np.argmax(at.boxcar(spectrum, size=20)) + nsum
+    else:
+        good = ((ext.mask[c0, nsum:-nsum] if dispaxis == 1 else
+                 ext.mask[nsum:-nsum, c0]) & DQ.not_signal) == 0
+
+        start = nsum + np.arange(spectrum.size)[good][np.argmax(
+            at.boxcar(spectrum[good], size=20))]
+    if apnum is not None:
+        log.stdinfo(f"{ext.filename}: Starting trace of "
+                    f"aperture {apnum+1} at pixel {start+1}")
+
+    # The coordinates are always returned as (x-coords, y-coords)
+    return trace_lines(
+        ext,
+        axis=dispaxis,
+        cwidth=5,
+        initial=[location],
+        initial_tolerance=None,
+        max_missed=ui_params.values['max_missed'],
+        max_shift=ui_params.values['max_shift'],
+        nsum=ui_params.values['nsum'],
+        rwidth=None,
+        start=start,
+        step=ui_params.values['step'],
+        viewer=viewer
+    )
