@@ -4704,6 +4704,8 @@ class Spect(Resample):
             Science data as 2D spectral images.
         suffix : str, optional
             Suffix to be added to output files. Default: "_pinholesTraced".
+        debug_plots : bool, Default: False
+            Create a plot of the traces
 
         Returns
         -------
