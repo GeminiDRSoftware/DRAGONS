@@ -1448,7 +1448,7 @@ class Spect(Resample):
 
                 # List of traced peak positions
                 in_coords = np.array([coord for trace in traces for
-                                      coord in trace]).T
+                                      coord in trace.input_coordinates()]).T
                 # List of "reference" positions (i.e., the coordinate
                 # perpendicular to the line remains constant at its initial value
                 ref_coords = np.array([coord for trace in traces for
@@ -4787,7 +4787,7 @@ class Spect(Resample):
 
                 # List of traced peak positions
                 in_coords = np.array([coord for trace in traces for
-                                      coord in trace]).T
+                                      coord in trace.input_coordinates()]).T
                 # List of "reference" positions (i.e., the coordinate
                 # perpendicular to the line remains constant at its initial value
                 ref_coords = np.array([coord for trace in traces for
