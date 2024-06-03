@@ -7,3 +7,9 @@ class cleanReadoutConfig(parameters_nearIR.cleanReadoutConfig):
     # Need a larger extent to cope with a bright spectrum down the middle
     def setDefaults(self):
         self.smoothing_extent = 300
+
+
+class cleanFFTReadoutConfig(parameters_nearIR.cleanFFTReadoutConfig):
+    # Need a larger extent to cope with a bright spectrum down the middle
+    def setDefaults(self):
+        self.smoothing_extent = 300

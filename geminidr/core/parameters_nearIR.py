@@ -74,9 +74,8 @@ class cleanFFTReadoutConfig(config.Config):
     l2thres = config.RangeField("Sigma factor to be used in thresholding for l2clean", float, 4., min=0)
     clean = config.ChoiceField("Cleaning behavior", str,
                                allowed={"default": "perform pattern removal if pattern in strong enough",
-                                        "force": "force pattern removal",
                                         "skip": "skip primitive"},
-                               default="default", optional=False)
+                               default="skip", optional=False)
     smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=1)
 
 
