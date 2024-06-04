@@ -97,9 +97,14 @@ class RecipeMapper(Mapper):
 
     def _generate_recipe_modules(self, pkg, recipedir=RECIPEMARKER):
         ppath = pkg.__path__[0]
-        pkg_importer = pkgutil.ImpImporter(ppath)
-        for pkgname, ispkg in pkg_importer.iter_modules():
-            if ispkg and pkgname == recipedir:
+        # pkg_importer = pkgutil.ImpImporter(ppath)
+        # for pkgname, ispkg in pkg_importer.iter_modules():
+        #     if ispkg and pkgname == recipedir:
+        #         break
+        #     else:
+        #         continue
+        for modinfo in pkgutil.iter_modules([ppath]):
+            if modinfo.ispkg and modinfo.name == recipedir:
                 break
             else:
                 continue
@@ -111,9 +116,15 @@ class RecipeMapper(Mapper):
     def _generate_mode_pkg(self, pkg):
         found = False
         ppath = pkg.__path__[0]
-        pkg_importer = pkgutil.ImpImporter(ppath)
-        for pkgname, ispkg in pkg_importer.iter_modules():
-            if ispkg and pkgname in self.mode:
+        # pkg_importer = pkgutil.ImpImporter(ppath)
+        # for pkgname, ispkg in pkg_importer.iter_modules():
+        #     if ispkg and pkgname in self.mode:
+        #         found = True
+        #         break
+        #     else:
+        #         continue
+        for modinfo in pkgutil.iter_modules([ppath]):
+            if modinfo.ispkg and modinfo.name in self.mode:
                 found = True
                 break
             else:
@@ -129,9 +140,14 @@ class RecipeMapper(Mapper):
 
     def _generate_mode_libs(self, pkg):
         ppath = pkg.__path__[0]
-        pkg_importer = pkgutil.ImpImporter(ppath)
-        for pkgname, ispkg in pkg_importer.iter_modules():
-            if not ispkg:
-                yield pkgname, ispkg
+        # pkg_importer = pkgutil.ImpImporter(ppath)
+        # for pkgname, ispkg in pkg_importer.iter_modules():
+        #     if not ispkg:
+        #         yield pkgname, ispkg
+        #     else:
+        #         continue
+        for modinfo in pkgutil.iter_modules([ppath]):
+            if not modinfo.ispkg:
+                yield modinfo.name, modinfo.ispkg
             else:
                 continue
