@@ -104,7 +104,8 @@ class RecipeMapper(Mapper):
         #     else:
         #         continue
         for modinfo in pkgutil.iter_modules([ppath]):
-            if modinfo.ispkg and modinfo.name == recipedir:
+            pkgname = modinfo.name
+            if modinfo.ispkg and pkgname == recipedir:
                 break
             else:
                 continue
@@ -124,7 +125,8 @@ class RecipeMapper(Mapper):
         #     else:
         #         continue
         for modinfo in pkgutil.iter_modules([ppath]):
-            if modinfo.ispkg and modinfo.name in self.mode:
+            pkgname = modinfo.name
+            if modinfo.ispkg and pkgname in self.mode:
                 found = True
                 break
             else:
