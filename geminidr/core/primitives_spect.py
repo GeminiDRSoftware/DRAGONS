@@ -1431,20 +1431,14 @@ class Spect(Resample):
                         # along the dispersion axis. `extract_info` here is the
                         # polynomial describing that midway line.
                         start = extract_info(peak)
-                        temp_traces = tracing.trace_lines(
+                        traces.extend(tracing.trace_lines(
                             ext, axis=1 - dispaxis,
                             start=start, initial=[peak],
                             rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
                             nsum=nsum, max_missed=max_missed,
                             max_shift=max_shift * ybin / xbin,
                             viewer=self.viewer if debug else None,
-                            min_line_length=0.1)
-                        if temp_traces:
-                            if not traces:
-                                traces = temp_traces
-                            else:
-                                for trace, t_trace in zip(traces, temp_traces):
-                                    trace.points.extend(t_trace.points)
+                            min_line_length=0.1))
 
                 # List of traced peak positions
                 in_coords = np.array([coord for trace in traces for
