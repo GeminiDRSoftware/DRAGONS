@@ -18,15 +18,13 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
 
 class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
     # GNIRS XD has narrow slits with more curvature than the longslit flats
-    # the default values were calibrated to, so adjust the values.
-    debug_max_missed = config.RangeField("Maximum missed steps when tracing edges",
-                                         int, 4, min=1)
-    debug_max_shift = config.RangeField("Maximum perpendicular shift (in pixels) per pixel",
-                                        float, 0.3, min=0.)
-    debug_step = config.RangeField("Step size (in pixels) for fitting edges",
-                                   int, 10, min=5)
-    debug_nsum = config.RangeField("Columns/rows to sum each step when fitting edges",
-                                   int, 10, min=5)
+    # the default values were calibrated to, so adjust some values.
+
+    def setDefaults(self):
+        self.debug_max_missed = 4
+        self.debug_max_shift = 0.3
+        self.debug_step = 10
+        self.debug_nsum = 10
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     order = config.RangeField("Order of fitting function", int, 3, min=0,
@@ -38,6 +36,8 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         self.in_vacuo = True
 
 class findAperturesConfig(parameters_crossdispersed.findAperturesConfig):
+    # For cross-dispersed, allow the user to specify the extension to use for
+    # finding apertures in. Will try to be a "best" one if not provided.
     ext = config.RangeField("Extension (1 - 6) to use for finding apertures",
                             int, None, optional=True, min=1, max=6,
                             inclusiveMin=True, inclusiveMax=True)
@@ -45,8 +45,8 @@ class findAperturesConfig(parameters_crossdispersed.findAperturesConfig):
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     # Set flatfield threshold a little lower to avoid masking a region in
     # order 8.
-    threshold = config.RangeField("Threshold for flagging unilluminated pixels",
-                                  float, 0.005, min=0.005, max=1.0)
+    def setDefaults(self):
+        self.threshold = 0.005
 
 
 class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):
