@@ -1,8 +1,7 @@
 from multiprocessing import Process, Queue
-from subprocess import check_output, STDOUT, CalledProcessError
+from subprocess import STDOUT, CalledProcessError, check_output
 
 from ..utils import logutils
-
 
 log = logutils.get_logger(__name__)
 
@@ -29,7 +28,7 @@ def loop_process(in_queue, out_queue):
                 result = ex
             out_queue.put(result)
         except KeyboardInterrupt:
-            continue
+            break
 
 
 class ETISubprocess:
