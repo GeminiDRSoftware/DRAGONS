@@ -25,7 +25,7 @@ def makeProcessedArc(p):
     p.flatCorrect()
     p.attachPinholeModel()
     p.determineWavelengthSolution()
-    p.determineDistortion(debug=True, spatial_order=1, step=4)
+    p.determineDistortion(spatial_order=1, step=4)
     p.storeProcessedArc()
 
 
