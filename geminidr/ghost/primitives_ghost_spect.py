@@ -2225,7 +2225,6 @@ class GHOSTSpect(GHOST):
         slitflat = params["slitflat"]
         if slitflat is None:
             flat_list = self.caldb.get_processed_slitflat(adinputs)
-            print("GOT", flat_list)
         else:
             flat_list = (slitflat, None)
 
