@@ -2271,7 +2271,7 @@ class GHOSTSpect(GHOST):
 
             # Convolve the flat field with the slit profile
             flat_conv = ghost_arm.slit_flat_convolve(
-                ad[0].data,
+                np.ma.masked_array(ad[0].data, mask=ad[0].mask),
                 slit_profile=slitview.slit_profile(arm=arm),
                 spatpars=spatpars[0].data, microns_pix=slitview.microns_pix,
                 xpars=xpars[0].data
