@@ -21,6 +21,8 @@ Bug fixes
 
 * Cause data validation to fail for echellograms without exactly 4 extensions.
 
+* Fixed an occasional issue with bad pixels causing ``traceFibers`` to fail.
+
 
 3.2.0
 =====
