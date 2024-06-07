@@ -10,6 +10,7 @@ import types
 import logging
 from datetime import time
 from logging import handlers
+from collections.abc import Iterable
 
 STDFMT = '%(asctime)s %(levelname)-8s - %(message)s'
 DBGFMT = '%(asctime)s %(name)-40s - %(levelname)-8s - %(message)s'
@@ -210,7 +211,7 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
 
     # Attach additional handlers if provided.
     if additional_handlers is not None:
-        if isinstance(additional_handlers, list):
+        if isinstance(additional_handlers, Iterable):
             for handler in additional_handlers:
                 rootlog.addHandler(handler)
         else:
