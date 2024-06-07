@@ -121,7 +121,8 @@ def get_logger(name=None):
         customize_log(log)
     return log
 
-def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
+def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
+           additional_handlers=None):
     """
     Controls Dragons logging configuration.
 
@@ -136,8 +137,12 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
     file_name : <atr>
           filename of the logger
 
-    stomp: <bool>
+    stomp : <bool>
           Controls append to logfiles found with same name
+
+    additional_handlers : `logging.Handler` or <list>
+        An initialized handler or a list of initialized handlers to be added to the
+        root logger.
 
     Returns
     -------
@@ -202,6 +207,14 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
         log_handler.setFormatter(formatter)
         log_handler.setLevel(file_lvl)
         rootlog.addHandler(log_handler)
+
+    # Attach additional handlers if provided.
+    if additional_handlers is not None:
+        if isinstance(additional_handlers, list):
+            for handler in additional_handlers:
+                rootlog.addHandler(handler)
+        else:
+            rootlog.addHandler(additional_handlers)
 
     return
 
