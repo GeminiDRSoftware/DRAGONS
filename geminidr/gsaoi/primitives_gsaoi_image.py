@@ -782,7 +782,7 @@ def make_alignment_figure(coords1, coords2, matched, fname1, fname2, radius=1):
     Figure object
     """
     def trim_filename(fname):
-        return re.sub("_(.*)\.(.*)", "", fname)
+        return re.sub(r"_(.*)\.(.*)", "", fname)
 
     fig, ax = plt.subplots()
     ax.set_title(f"{trim_filename(fname1)}[open] / "
