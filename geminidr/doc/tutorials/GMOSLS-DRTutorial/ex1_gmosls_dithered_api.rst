@@ -393,7 +393,7 @@ To activate the interactive mode:
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
-    reduce_flats.uparms = [('interactive', True)]
+    reduce_flats.uparms = dict([('interactive', True)])
     reduce_flats.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
@@ -438,7 +438,7 @@ interactive mode. To activate the interactive mode:
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
-    reduce_arcs.uparms = [('interactive', True)]
+    reduce_arcs.uparms = dict([('interactive', True)])
     reduce_arcs.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
@@ -482,7 +482,7 @@ mode for all four:
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
-    reduce_std.uparms = [('interactive', True)]
+    reduce_std.uparms = dict([('interactive', True)])
     reduce_std.runr()
 
 Since the standard star spectrum is bright and strong, and the exposure short,
@@ -499,7 +499,7 @@ sensitivity function:
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
-    reduce_std.uparms = [('calculateSensitivity:interactive', True)]
+    reduce_std.uparms = dicit([('calculateSensitivity:interactive', True)])
     reduce_std.runr()
 
 Here is an example of what could be adjusted in this particular case.  The
@@ -655,5 +655,5 @@ To use a different format, set the ``format`` parameters.
     writeascii = Reduce()
     writeascii.files = ['S20171022S0087_1D.fits']
     writeascii.recipename = 'write1DSpectra'
-    writeascii.uparms = [('format', 'ascii.ecsv'), ('extension', 'ecsv')]
+    writeascii.uparms = dict([('format', 'ascii.ecsv'), ('extension', 'ecsv')])
     writeascii.runr()

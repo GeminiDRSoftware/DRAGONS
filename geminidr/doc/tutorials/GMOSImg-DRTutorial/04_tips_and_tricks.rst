@@ -193,12 +193,13 @@ done as follows:
 The ``-p`` flag indicates that the following items are parameter changes.  The
 syntax is ``<primitive_name>:<parameter_name>=<value>``
 
-From the API, the ``uparms`` attribute to the ``Reduce`` instance is used.
+From the API, the ``uparms`` attribute (a :class:`dict`) to the ``Reduce``
+instance is used.
 
 .. code-block:: python
     :linenos:
 
-    reduce_science.uparms.append(("stackFrames:scale", True))
+    reduce_science.uparms["stackFrames:scale"] = True
 
 
 Setting the output suffix

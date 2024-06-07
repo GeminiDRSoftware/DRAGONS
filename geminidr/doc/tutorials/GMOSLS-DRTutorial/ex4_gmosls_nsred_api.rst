@@ -459,8 +459,8 @@ configuration file.
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
-    reduce_std.uparms = [('traceApertures:interactive', True),
-                         ('calculateSensitivity:interactive', True)]
+    reduce_std.uparms = dict([('traceApertures:interactive', True),
+                         ('calculateSensitivity:interactive', True)])
     reduce_std.runr()
 
 The interactive tools are introduced in a later chapter: :ref:`interactive`.
@@ -544,7 +544,7 @@ science observations and extract the 1-D spectrum.
 
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
-    reduce_science.uparms = [('traceApertures:interactive', True)]
+    reduce_science.uparms = dict([('traceApertures:interactive', True)])
     reduce_science.runr()
 
 **traceApertures**

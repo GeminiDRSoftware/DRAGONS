@@ -361,13 +361,13 @@ follow:
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
-    reduce_flats.uparms = [('addDQ:user_bpm', bpm)]
+    reduce_flats.uparms = dict([('addDQ:user_bpm', bpm)])
     reduce_flats.runr()
 
 Note how we pass in the BPM we created in the previous step.  The ``addDQ``
 primitive, one of the primitives in the recipe, has an input parameter named
 ``user_bpm``.  We assign our BPM to that input parameter.  The value of
-``uparms`` needs to be a :class:`list` of :class:`Tuples`.
+``uparms`` needs to be a :class:`dict`.
 
 To see the list of available input parameters and their defaults, use the
 command line tool ``showpars`` from a terminal.  It needs the name of a file
@@ -399,8 +399,7 @@ recommended) needs to be specified by the user.
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
-    reduce_std.uparms = [('addDQ:user_bpm', bpm)]
-    reduce_std.uparms.append(('darkCorrect:do_cal', 'skip'))
+    reduce_std.uparms = dict([('addDQ:user_bpm', bpm), ('darkCorrect:do_cal', 'skip')])
     reduce_std.runr()
 
 
@@ -425,15 +424,19 @@ The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
 
+.. todo:: Fix cleanReadout so that we don't have to skip it.
+          For now, add ``cleanReadout:clean=skip`` to uparms.
+
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 65
+    :lineno-start: 64
 
     reduce_target = Reduce()
     reduce_target.files.extend(target)
-    reduce_target.uparms = [('addDQ:user_bpm', bpm)]
-    reduce_target.uparms.append(('skyCorrect:scale_sky', False))
+    reduce_target.uparms = dict([('addDQ:user_bpm', bpm),
+                                ('skyCorrect:scale_sky', False),
+                                ('cleanReadout:clean', 'skip')])
     reduce_target.runr()
 
 .. image:: _graphics/extended_before.png

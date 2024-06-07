@@ -556,5 +556,5 @@ To use a different format, set the ``format`` parameters.
     writeascii = Reduce()
     writeascii.files = ['N20190926S0130_1D.fits']
     writeascii.recipename = 'write1DSpectra'
-    writeascii.uparms = [('format', 'ascii.ecsv'), ('extension', 'ecsv')]
+    writeascii.uparms = dict([('format', 'ascii.ecsv'), ('extension', 'ecsv')])
     writeascii.runr()

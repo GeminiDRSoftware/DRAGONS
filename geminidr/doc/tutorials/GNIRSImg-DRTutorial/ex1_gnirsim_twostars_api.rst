@@ -300,7 +300,7 @@ retrieved automatically.
 
     reduce_target = Reduce()
     reduce_target.files.extend(target)
-    reduce_target.uparms = [('darkCorrect:dark', 'N20120102S0538_dark.fits')]
+    reduce_target.uparms = dict([('darkCorrect:dark', 'N20120102S0538_dark.fits')])
     reduce_target.runr()
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
