@@ -215,7 +215,7 @@ class CrossDispersed(Spect, Preprocess):
             temp_ad.filename = "temporary file"
             temp_ad.append(ad[ext_num])
 
-            log.stdinfo(f"Using extension {ext_num+1}")
+            log.stdinfo(f"Looking in extension {ext_num+1} of {ad.filename}")
 
             # Perform aperture-finding in new AD object with one extension
             ap_found = super().findApertures(adinputs=[temp_ad], **params).pop()
