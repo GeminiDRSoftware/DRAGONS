@@ -29,7 +29,6 @@ def reduceScience(p):
     p.attachPinholeModel()
     p.distortionCorrect()
     p.adjustWCSToReference()
-    p.writeOutputs()
     p.resampleToCommonFrame()
     # p.scaleCountsToReference()  not in NIR LS recipes.
     p.stackFrames(scale=False, zero=False)
