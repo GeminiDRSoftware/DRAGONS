@@ -816,18 +816,23 @@ def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
     if not extrema:
         return []
 
+    # Find the first and last unmasked points in the profile:
+    l_unmasked = prof_mask.argmin()
+    r_unmasked = prof_mask.size - prof_mask[::-1].argmin() - 1
+
     # Delete a maximum if there is no minimum between it and the edge,
     # unless it's the ONLY maximum
     if extrema[0][2]:
         if len(extrema) == 1:
-            extrema = [(1, profile[1], False)] + extrema + [(xpixels[-1], profile[-2], False)]
+            extrema = [(l_unmasked, profile[l_unmasked], False)] + extrema +\
+                [(r_unmasked, profile[r_unmasked], False)]
         elif len(extrema) == 2 or not remove_edge_maxima:
-            extrema = [(1, profile[1], False)] + extrema
+            extrema = [(l_unmasked, profile[l_unmasked], False)] + extrema
         else:
             del extrema[0]
     if extrema and extrema[-1][2]:
         if len(extrema) == 2 or not remove_edge_maxima:
-            extrema = extrema + [(xpixels[-1], profile[-2], False)]
+            extrema = extrema + [(r_unmasked, profile[r_unmasked], False)]
         else:
             del extrema[-1]
 
@@ -1012,7 +1017,8 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
     else:
         prof_mask = None
 
-    extrema = get_extrema(np.nan_to_num(profile), prof_mask, min_snr=min_snr)
+    extrema = get_extrema(np.nan_to_num(profile), prof_mask, min_snr=min_snr,
+                          remove_edge_maxima=False)
 
     # 10 is a good value to capture artifacts
     stddev = at.std_from_pixel_variations(profile if prof_mask is None
