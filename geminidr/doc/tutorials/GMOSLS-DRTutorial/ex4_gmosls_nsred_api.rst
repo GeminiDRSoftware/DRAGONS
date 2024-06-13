@@ -280,7 +280,7 @@ First, let's have a look at the list of objects.
         ad = astrodata.open(sci)
         print(sci, '  ', ad.object())
 
-On line 37, remember that the second argument contains the tags to **include**
+On line 32, remember that the second argument contains the tags to **include**
 (``tags``) and the third argument is the list of tags to **exclude**
 (``xtags``).
 
@@ -421,7 +421,7 @@ be reduced individually.
 
 The wavelength solution is automatically calculated and the algorithm has
 been found to be quite reliable.  There might be cases where it fails; inspect
-the ``*_mosaic.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
+the ``*_wavelengthSolutionDetermined.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
 logs to confirm a good solution.
 
 .. code-block:: python

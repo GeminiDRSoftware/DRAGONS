@@ -189,7 +189,7 @@ Pick the one you prefer, in this case, they all yield the same list.
     .. code-block::
 
         checkwcs = Reduce()
-        checkwcs.files = list_of_science_images
+        checkwcs.files = target
         checkwcs.recipename = 'checkWCS'
         checkwcs.runr()
 

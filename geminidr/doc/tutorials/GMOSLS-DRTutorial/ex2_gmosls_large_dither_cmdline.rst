@@ -409,6 +409,10 @@ to generate new sensitivity data points to fit.
 This is enabled by the ``resampling`` parameter, whose value 
 we update as follows
 
+.. todo:: The trace and the sensfunc plot are different from 3.2.x  For the
+    trace, order might need to be set to 6, though that is the not source of
+    the difference in the sensfunc plot.
+
 ::
 
     reduce @std_795nm.lis -p calculateSensitivity:interactive=True calculateSensitivity:resampling=15.0
@@ -484,7 +488,9 @@ by DRAGONS barring the two most prominent ones (see the left plot; click
 to enlarge). You simply hover over the unwanted peak and press D. Furthermore, 
 we have selected sigma-clipping while tracing the apertures (right plot; 
 click to enlarge). Notice that there is an additional tab for Aperture 2
-in the upper part of the right plot. 
+in the upper part of the right plot.
+
+.. todo:: The trace screenshot appears to be missing.
 
 .. image:: _graphics/LS_ldred_findAp_sci.png
    :width: 325
@@ -512,6 +518,8 @@ This is what the 2-D spectrum looks like.
     ``ds9`` must be launched by the user ahead of running the display primitive.
     (``ds9&`` on the terminal prompt.)
 
+.. todo:: update the screenshot.  It looks much better now.  ???
+
 .. image:: _graphics/LS_ldred_sci_2D.png
    :width: 600
    :alt: 2D stacked spectrum
@@ -523,6 +531,11 @@ are also available in the header of each extracted spectrum: ``XTRACTED``,
 respectively.
 
 The 1-D flux-calibrated spectra of the two apertures are shown below.
+
+.. todo:: update the screenshots.  Again, much cleaner.
+
+.. todo:: Note the drop beyond 960nm is related to the lack of coverage in the
+    sensitivity function.
 
 ::
 
