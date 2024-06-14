@@ -231,7 +231,7 @@ def gwcs_to_fits(ndd, hdr=None):
         elif isinstance(m_this, (models.Tabular1D, models.Tabular2D)):
             ndim = m_this.lookup_table.ndim
             points = m_this.points
-            if not (ndim == 1 and np.allclose(points, np.arange(points.size)) or
+            if not (ndim == 1 and np.allclose(points, np.arange(points[0].size)) or
                     ndim == 2 and np.allclose(points[0], np.arange(points[0].size))
                     and np.allclose(points[1], np.arange(points[1].size))):
                 print("Tabular has different 'points' than expected")
