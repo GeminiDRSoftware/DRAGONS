@@ -60,6 +60,7 @@ def fitswcs_to_gwcs(input):
     try:
         transform = make_fitswcs_transform(input)
     except Exception as e:
+        raise
         return None
     outputs = transform.outputs
     try:
@@ -764,7 +765,7 @@ def fitswcs_other(header, other=None):
             if table is None:
                 raise ValueError(f"Cannot read table for {ctype} for axis {ax}")
             if isinstance(table, Table):
-                other_model = models.Tabular1D(lookup_table=table[f'PS{ax + 1}_1'])
+                other_model = models.Tabular1D(lookup_table=table[header[f'PS{ax + 1}_1']])
             else:
                 other_model = models.Tabular2D(lookup_table=table.T)
             other_model.name = model_name_mapping.get(ctype[:4], ctype[:4])
