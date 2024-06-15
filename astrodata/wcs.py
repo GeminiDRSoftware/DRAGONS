@@ -231,7 +231,7 @@ def gwcs_to_fits(ndd, hdr=None):
         elif isinstance(m_this, (models.Tabular1D, models.Tabular2D)):
             ndim = m_this.lookup_table.ndim
             points = m_this.points
-            if not (ndim == 1 and np.allclose(points, np.arange(points.size)) or
+            if not (ndim == 1 and np.allclose(points, np.arange(points[0].size)) or
                     ndim == 2 and np.allclose(points[0], np.arange(points[0].size))
                     and np.allclose(points[1], np.arange(points[1].size))):
                 print("Tabular has different 'points' than expected")
@@ -764,7 +764,7 @@ def fitswcs_other(header, other=None):
             if table is None:
                 raise ValueError(f"Cannot read table for {ctype} for axis {ax}")
             if isinstance(table, Table):
-                other_model = models.Tabular1D(lookup_table=table[f'PS{ax + 1}_1'])
+                other_model = models.Tabular1D(lookup_table=table[header[f'PS{ax + 1}_1']])
             else:
                 other_model = models.Tabular2D(lookup_table=table.T)
             other_model.name = model_name_mapping.get(ctype[:4], ctype[:4])
