@@ -114,10 +114,10 @@ class AstroDataGnirs(AstroDataGemini):
 
         grating = self._grating(pretty=True, stripID=True)
 
-        if self.pixel_scale() == pixel_scale_shrt:
-            camera = "Short"
-        elif self.pixel_scale() == pixel_scale_long:
-            camera = "Long"
+        if 'Short' in self.camera():
+            camera = 'Short'
+        elif 'Long' in self.camera():
+            camera = 'Long'
         else:
             camera = None
 
