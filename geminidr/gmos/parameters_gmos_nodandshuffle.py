@@ -16,7 +16,14 @@ class combineNodAndShuffleBeamsConfig(config.Config):
     tolerance = config.RangeField("Maximum distance from the header offset "
                                   "for the correlation method (arcsec)",
                                   float, 0.5, min=0., optional=True)
-    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
+    interpolant = config.ChoiceField("Type of interpolant", str,
+                                     allowed={"nearest": "Nearest neighbour",
+                                              "linear": "Linear interpolation",
+                                              "poly3": "Cubic polynomial interpolation",
+                                              "poly5": "Quintic polynomial interpolation",
+                                              "spline3": "Cubic spline interpolation",
+                                              "spline5": "Quintic spline interpolation"},
+                                     default="poly3", optional=False)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
                                      float, 0.001, min=0.)

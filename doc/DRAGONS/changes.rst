@@ -6,6 +6,32 @@
 Change Logs
 ***********
 
+4.0.0
+=====
+
+This release includes new support for longslit spectroscopic data from the
+near-infrared facility instruments F2, GNIRS, and NIRI, as well as the
+cross-dispersed mode of GNIRS.
+
+New Features
+------------
+
+Additional interpolation modes during resampling.
+  Cubic and quintic polynomial interpolation are now available. The "order"
+  parameter that was previously used to designate the order of spline
+  interpolation has been replaced by a string parameter that can take the
+  value "nearest", "linear", "poly3", "poly5", "spline3", or "spline5".
+
+Interface Modifications
+-----------------------
+
+**geminidr.core**
+
+* Rename the "order" parameter in the various resample primitives to
+  "interpolant", as described above.
+* Rename the "threshold" parameter in ``transferObjectMask``
+  to "dq_threshold", in line with other primitives.
+
 3.2.1
 =====
 
@@ -14,6 +40,12 @@ Improvements
 **geminidr & gempy**
 
 * Improved speed and success rate of wavelength calibration.
+
+Bug fixes
+---------
+**geminidr.ghost**
+
+* Cause data validation to fail for echellograms without exactly 4 extensions.
 
 
 3.2.0

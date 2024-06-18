@@ -147,7 +147,7 @@ class AstroDataF2(AstroDataGemini):
         camera = self.lyot_stop()
         if camera is None or not camera.startswith("f/"):
             focus = self.phu.get("FOCUS", "")
-            if not re.match('^f/\d+$', focus):
+            if not re.match('^f/\\d+$', focus):
                 # Use original pixel scale
                 pixscale = (self.phu["PIXSCALE"] if 'PREPARED' in self.tags
                             else self.pixel_scale())

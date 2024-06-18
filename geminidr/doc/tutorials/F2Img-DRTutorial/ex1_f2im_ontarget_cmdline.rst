@@ -224,6 +224,9 @@ of the datasets |descriptors|.
 
    Please see details in :ref:`checkWCS` in the :ref:`tips_and_tricks` chapter.
 
+.. todo:: checkWCS is clear, yet the reduce later crashes at standardizeWCS.
+
+
 .. _process_dark_files:
 
 Create a Master Dark
@@ -320,6 +323,9 @@ Reduce the Science Images
 Now that we have the master dark and the master flat, we can tell |reduce|
 to process our science data. |reduce| will look at the local database
 for calibration files.
+
+.. todo:: The reduce command below is not working. It crashes at standardizeWCS.
+     Add prepare:bad_wcs=fix to the reduce command.   Chris is looking into this.
 
 .. code-block:: bash
 

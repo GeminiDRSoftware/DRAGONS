@@ -104,24 +104,7 @@ def trace_apertures_data_provider(ext, ui_params):
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
     for loc in ext.APERTURE['c0'].data:
-        c0 = int(loc + 0.5)
-        spectrum = ext.data[c0] if dispaxis == 1 else ext.data[:, c0]
-        start = np.argmax(at.boxcar(spectrum, size=20))
-
-        # The coordinates are always returned as (x-coords, y-coords)
-        _, in_coords = tracing.trace_lines(
-            ext,
-            axis=dispaxis,
-            cwidth=5,
-            initial=[loc],
-            initial_tolerance=None,
-            max_missed=ui_params.values['max_missed'],
-            max_shift=ui_params.values['max_shift'],
-            nsum=ui_params.values['nsum'],
-            rwidth=None,
-            start=start,
-            step=ui_params.values['step'],
-        )
+        _, in_coords = tracing.trace_aperture(ext, loc, ui_params)
 
         data["x"].append(in_coords[1 - dispaxis])
         data["y"].append(in_coords[dispaxis])

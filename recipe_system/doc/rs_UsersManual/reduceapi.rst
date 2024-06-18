@@ -79,7 +79,7 @@ The attributes that can be set are discussed in
 ::
 
     >>> myreduce.recipename = 'myrecipelib.myrecipe'
-    >>> myreduce.uparms = [('stackFrames:operation', 'median')]
+    >>> myreduce.uparms = dict([('stackFrames:operation', 'median')])
     >>> myreduce.dkpkg = 'thirdpartydr'
     >>> # rerun with the modified recipe and parameter
     >>> myreduce.runr()
@@ -115,7 +115,7 @@ recipename          <type 'str'>               '_default'
 drpkg               <type 'str'>               'geminidr'
 suffix              <type 'str'>               None
 ucals               <type 'dict'>              None
-uparms              <type 'list' of 'tuple'>   None
+uparms              <type 'dict>               None
 upload              <type 'list' of 'str'>     None
 ================    ========================   =======
 
@@ -214,10 +214,12 @@ upload              <type 'list' of 'str'>     None
 
 **uparms**
     Set primitive parameter values.  This will override the primitive
-    defaults.  This is a list of tuples with the primitive name and parameter
+    defaults.  This is a dict with primitive name and parameter as the key,
+    and the parameter value as the dict entry value. It can be built from
+    a list of tuples with the primitive name and parameter
     in the first element, and the value in the second one.
 
-    ``myreduce.uparms = [('stackFrames:operation', 'median')]``
+    ``myreduce.uparms = dict([('stackFrames:operation', 'median')])``
 
     If the primitive name is omitted all parameters with that name, in any
     primitives will be reset.  Be careful.

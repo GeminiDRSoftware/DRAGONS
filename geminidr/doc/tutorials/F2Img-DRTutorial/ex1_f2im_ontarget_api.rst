@@ -200,6 +200,8 @@ The filter name is not really needed in this case since there are only Y-band
 frames, but it shows how you could have two selection criteria in
 the expression.
 
+.. todo:: checkWCS is clear, yet the reduce later crashes at standardizeWCS.
+
 .. note:: For Flamingos-2 data, it is useful to check the World Coordinate
     System (WCS) of the science data.
 
@@ -308,13 +310,13 @@ We create the master flat field and add it to the calibration manager as follows
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats_Y)
-    reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
+    reduce_flats.uparms = dict([('addDQ:user_bpm', bpm_filename)])
     reduce_flats.runr()
 
 Note how we pass in the BPM we created in the previous step. The ``addDQ``
 primitive, one of the primitives in the recipe, has an input parameter named
 ``user_bpm``. We assign our BPM to that input parameter. The value of
-``uparms`` needs to be a :class:`list` of :class:`Tuples`.
+``uparms`` needs to be a :class:`dict`.
 
 
 .. _api_process_science_files:
@@ -328,6 +330,9 @@ The master dark and the master flat will be retrieved automatically from the
 local calibration database. Again, the user BPM needs to be specified as the
 ``user_bpm`` argument to ``addDQ``.
 
+.. todo:: The reduce command below is not working. It crashes at standardizeWCS.
+     Add prepare:bad_wcs=fix to uparms.   Chris is looking into this.
+
 We use similar commands as before to initiate a new reduction to reduce the
 science data:
 
@@ -337,7 +342,7 @@ science data:
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)
-    reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
+    reduce_target.uparms = dict([('addDQ:user_bpm', bpm_filename), ('prepare:bad_wcs', 'fix')])
     reduce_target.runr()
 
 The final product file will have a ``_image.fits`` suffix and it is shown below.

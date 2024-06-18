@@ -23,7 +23,9 @@ def test_gsaoi_adjust_wcs_no_refcat(change_working_dir, path_to_refs, adinputs):
     with change_working_dir():
         p = GSAOIImage(adinputs)
         p.adjustWCSToReference(order=3, final=0.2)
-        p.resampleToCommonFrame()
+        # To mimic previous behaviour, since we're not interested in
+        # resampleToCommonFrame()
+        p.resampleToCommonFrame(interpolant="linear")
         p.writeOutputs()
         for ad in p.streams['main']:
             ad = astrodata.open(ad.filename)

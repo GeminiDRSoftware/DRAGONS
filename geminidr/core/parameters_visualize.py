@@ -26,7 +26,14 @@ class inspectConfig(displayConfig):
 class mosaicDetectorsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_mosaic")
     sci_only = config.Field("Mosaic only SCI extensions?", bool, False)
-    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
+    interpolant = config.ChoiceField("Type of interpolant", str,
+                                     allowed={"nearest": "Nearest neighbour",
+                                              "linear": "Linear interpolation",
+                                              "poly3": "Cubic polynomial interpolation",
+                                              "poly5": "Quintic polynomial interpolation",
+                                              "spline3": "Cubic spline interpolation",
+                                              "spline5": "Quintic spline interpolation"},
+                                     default="poly3", optional=False)
 
 
 class tileArraysConfig(config.Config):

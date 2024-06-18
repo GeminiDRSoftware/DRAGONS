@@ -1,4 +1,5 @@
 import math
+import os
 import pytest
 import numpy as np
 from numpy.testing import assert_allclose
@@ -250,3 +251,17 @@ def test_loglinear_axis(NIRI_IMAGE):
     ad.write("test.fits", overwrite=True)
     ad2 = astrodata.open("test.fits")
     assert_allclose(ad2[0].wcs(2, 200, 300), new_coords)
+
+
+@pytest.mark.preprocessed_data
+def test_tabular1D_axis(path_to_inputs, change_working_dir):
+    """Check a FITS file with a tabular 1D axis is read correctly and
+    then rewritten to disk and read back in"""
+    ad = astrodata.open(os.path.join(path_to_inputs, "tab1dtest.fits"))
+    assert ad[0].wcs(0) == pytest.approx(3017.51065254)
+    assert ad[0].wcs(1021) == pytest.approx(4012.89510727)
+    with change_working_dir():
+        ad.write("test.fits", overwrite=True)
+        ad2 = astrodata.open("test.fits")
+        assert ad2[0].wcs(0) == pytest.approx(3017.51065254)
+        assert ad2[0].wcs(1021) == pytest.approx(4012.89510727)

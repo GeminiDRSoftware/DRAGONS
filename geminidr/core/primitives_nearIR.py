@@ -251,7 +251,8 @@ class NearIR(Bookkeeping):
             log.warning("No frames are being removed: data quality may suffer")
         return adinputs
 
-    def _levelQuad(self, masked_data, sig=2.0, smoothing_extent=5, edges=None):
+    def _levelQuad(self, masked_data, sig=2.0, smoothing_extent=5,
+                   intraquad_smooth=50, edges=None):
         """
         Parameters
         ----------
@@ -260,9 +261,11 @@ class NearIR(Bookkeeping):
         sig: float, Default: 2.0
             Sigma-clipping threshold used for both lower and upper limits.
         smoothing_extent: int
-            Width (in pixels) of the region at a given quad interface to be smoothed over
-            on each side of the interface.
-            Note that for intra-quad leveling, this width is broadened by a factor 10.
+            Width (in pixels) of the region at a given quad interface to be
+            smoothed over on each side of the interface.
+        intraquad_smooth: int
+            Height (in pixels) of the region on either side of a bias jump
+            for determining statistics
         edges: dict
             information about the edges of a bias offset at the sub-quad level
             each dict item is keyed by the (y, x) coords of the bottom-left
@@ -292,7 +295,6 @@ class NearIR(Bookkeeping):
         # edges. Work from the top/bottom towards the centre. Be careful to
         # directly modify the 'data' attribute or else the masked pixels will
         # be unaffected
-        intraquad_smooth = smoothing_extent * 10
         for (ystart, xstart), quad_edges in edges.items():
             xslice = slice(xstart, xstart+qxsize)
             for i, edge in enumerate(quad_edges):
@@ -374,6 +376,9 @@ class NearIR(Bookkeeping):
             Width (in pixels) of the region at a given quad interface to be smoothed over
             on each side of the interface.
             Note that for intra-quad leveling, this width is broadened by a factor 10.
+        intraquad_smooth: int
+            Height (in pixels) of the region on either side of a bias jump
+            for determining statistics
         sg_win_size: int
             Smoothing window size for the Savitzky-Golay filter applied during automated
             detection of pattern coverage.
@@ -403,6 +408,7 @@ class NearIR(Bookkeeping):
         clean = params["clean"]
         level_bias_offset = params["level_bias_offset"]
         smoothing_extent = params["smoothing_extent"]
+        intraquad_smooth = params["intraquad_smooth"]
 
         simple_thres = params["simple_thres"]
         pat_strength_thres = params["pat_strength_thres"]
@@ -491,8 +497,12 @@ class NearIR(Bookkeeping):
                         edges[ystart, xstart] = {"pattern": pattern,
                                                  "clean": False}
 
+                        qstr = (f"{ad.filename} extension {ext.id} "
+                                f"{ydesc}-{xdesc} quadrant")
                         # MS: do not touch the quad if pattern strength is weak
                         if pattern.std() >= pat_strength_thres or clean == "force":
+                            if pattern.std() < pat_strength_thres:
+                                log.stdinfo(f"Forcing cleaning on {qstr}")
                             # MS: now finding the applicable roi for pattern subtraction.
                             # Calculate the scaling factors for the pattern in
                             # all pattern boxes and investigate as a fn of row
@@ -512,14 +522,9 @@ class NearIR(Bookkeeping):
                                     axis=1, sigma=2.0)[1].repeat(pysize)
                             pattern_strengths.append(flip(pattern_strength, padding, ystart > 0))
                         else:
-                            qstr = (f"{ad.filename} extension {ext.id} "
-                                    f"{ydesc}-{xdesc} quadrant")
-                            if clean == "force":
-                                log.stdinfo(f"Forcing cleaning on {qstr}")
-                            else:
-                                log.stdinfo(f"Weak pattern for {qstr}, "
-                                            "not applying pattern removal.")
-                                continue
+                            log.stdinfo(f"Weak pattern for {qstr}, "
+                                        "not applying pattern removal.")
+                            continue
                         edges[ystart, xstart]["clean"] = True
                         cleaned_quads += 1
 
@@ -551,7 +556,8 @@ class NearIR(Bookkeeping):
                         edges[ystart, xstart] = []  # no levelling here
                 if level_bias_offset and cleaned_quads > 0:
                     log.stdinfo(f"Leveling quads for {ext.filename}:{ext.id}...")
-                    self._levelQuad(padded_array, smoothing_extent=smoothing_extent, edges=edges)
+                    self._levelQuad(padded_array, smoothing_extent=smoothing_extent,
+                                    intraquad_smooth=intraquad_smooth, edges=edges)
 
                 if padding:  # Remove padding before returning
                     ext.data = padded_array.data[:-padding]
@@ -635,74 +641,31 @@ class NearIR(Bookkeeping):
         periodicity = params["periodicity"]
         smoothing_extent = params["smoothing_extent"]
 
-        def debug_levelQuad(ext, sig=2.0, smoothing_extent=5):
-            """
-            Parameters
-            ----------
-            ext: AstroData
-                This is the pattern-corrected AstroData.
-            sig: float, Default: 2.0
-                Sigma-clipping threshold used for both lower and upper limits.
-            smoothing_extent: int
-                Width (in pixels) of the region at a given quad interface to be smoothed over
-                on each side of the interface.
-            """
-            qysize, qxsize = [size // 2 for size in ext.data.shape]
-            clippedstats_lr = partial(sigma_clipped_stats, axis=0, sigma=sig)
-            clippedstats_tb = partial(sigma_clipped_stats, axis=1, sigma=sig)
-
-            def find_offset(ext, arr1_slicers, arr2_slicers, clipper):
-                quad_1 = ext.nddata[arr1_slicers[0], arr1_slicers[1]]
-                quad_2 = ext.nddata[arr2_slicers[0], arr2_slicers[1]]
-                if hasattr(ext, 'OBJMASK'):
-                    objmask_1 = ext.OBJMASK[arr1_slicers[0], arr1_slicers[1]]
-                    objmask_2 = ext.OBJMASK[arr2_slicers[0], arr2_slicers[1]]
-                    mask_1 = quad_1.mask | objmask_1
-                    mask_2 = quad_2.mask | objmask_2
-                else:
-                    mask_1 = quad_1.mask
-                    mask_2 = quad_2.mask
-                arr1 = np.ma.masked_array(quad_1.data, mask_1)
-                arr2 = np.ma.masked_array(quad_2.data, mask_2)
-                if arr1.mask.all() or arr2.mask.all():
-                    return 0.0
-
-                meds_1 = clipper(arr1)[1] # 2nd tuple item is median
-                meds_2 = clipper(arr2)[1] # 2nd tuple item is median
-                offsets = meds_1 - meds_2
-                return np.median(offsets[np.isfinite(offsets)]) # to be added to arr2's quad
-
-            ## stitch along qysize
-            for xstart in [0, qxsize]:
-                arr1_slicers = [slice(qysize,qysize + smoothing_extent), slice(xstart,xstart + qxsize)]
-                arr2_slicers = [slice(qysize - smoothing_extent,qysize), slice(xstart,xstart + qxsize)]
-                offset = find_offset(ext, arr1_slicers, arr2_slicers,
-                                     clippedstats_lr
-                                    )
-                ext.data[0:qysize, xstart:xstart + qxsize] += offset
-
-
-            ## stitch in full along 2 x qxsize
-            arr1_slicers = [slice(0,ext.data.shape[0]), slice(qxsize - smoothing_extent,qxsize)]
-            arr2_slicers = [slice(0,ext.data.shape[0]), slice(qxsize,qxsize + smoothing_extent)]
-            offset = find_offset(ext, arr1_slicers, arr2_slicers,
-                                 clippedstats_tb
-                                )
-            ext.data[:, qxsize:2 * qxsize] += offset
-        
 
         if clean == "skip":
-            log.stdinfo("Skipping cleanReadout since 'clean' is set to 'skip'")
+            log.stdinfo("Skipping cleanFFTReadout since 'clean' is set to 'skip'")
             return adinputs
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning(f"No changes will be made to {ad.filename}, since"
-                            " it has already been processed by cleanReadout")
+                            " it has already been processed by cleanFFTReadout")
                 continue
 
             for ext in ad:
                 qysize, qxsize = [size // 2 for size in ext.data.shape]
+                ## To take care of GNIRS weird quad structure -- where the top quad is really only 510 rows but read out synchronously with the bottom 510 rows,
+                ## but bottom quads are 512 rows, so "pre-pending" 2 dummy rows to the top quads.
+                if ad.instrument() == "GNIRS":
+                    pad_data = np.full((2, ext.data.shape[1]), 0, dtype=ext.data.dtype)
+                    pad_mask = np.full((2, ext.mask.shape[1]), DQ.no_data)
+                    ext.data = np.insert(ext.data, qxsize, pad_data, axis=0)
+                    ext.mask = np.insert(ext.mask, qxsize, pad_mask, axis=0)
+                    if hasattr(ext, 'OBJMASK'):
+                        pad_objmask = np.full((2, ext.OBJMASK.shape[1]), DQ.no_data)
+                        ext.OBJMASK = np.insert(ext.OBJMASK, qxsize, pad_objmask, axis=0)
+                    qysize, qxsize = [size // 2 for size in ext.data.shape]
+                
                 ori_ext = deepcopy(ext)
                 pattern_data = {}
 
@@ -758,7 +721,8 @@ class NearIR(Bookkeeping):
                     collapsed_strength = standardized_collapsed_matrix.median(axis=1)
 
 
-                    MSK = collapsed_strength > pat_thres  #if there is a patch without pattern, then the 'collapsed strength' will be around -1. Can tune this parameter if needed 
+                    MSK = collapsed_strength > pat_thres  #if there is a patch without pattern, then the 'collapsed strength' will be around -1. Can tune this parameter if needed
+                    edges = {} #dummy dict to make use of the _levelQuad function
                     if np.sum(MSK) > 0: 
                         for ystart, tb in zip((0, qysize),('bottom','top')):
                             for xstart, lr in zip((0, qxsize),('left','right')): 
@@ -767,7 +731,7 @@ class NearIR(Bookkeeping):
 
                                 if np.sum(MSK) > np.sum(~MSK): ##to normalize the smaller section to the larger section
                                     MSK = ~MSK
-                                if tb=='bottom':
+                                if tb=='bottom': #undoing the previous flip
                                     mask = np.flipud(MSK)
                                 else:
                                     mask = deepcopy(MSK)
@@ -775,13 +739,22 @@ class NearIR(Bookkeeping):
                                 median_collapsed_signal[mask] = np.NAN
                                 mean_collapsed_signa[mask] = np.NAN
 
+                                ## for intra-quad, level to the same value
                                 for _ind in np.arange(len(median_collapsed_signal))[mask]:
                                     offset = np.nanmean(median_collapsed_signal) - sigma_clipped_stats(quad.data[_ind,:], sigma=2.0)[1]
                                     quad.data[_ind,:] += offset
 
+                                edges[ystart, xstart] = [] # just a dummy to enable call to _levelQuad for inter-quad leveling
+
 
                     ## inter-quad leveling
-                    debug_levelQuad(ext, smoothing_extent=smoothing_extent)
+                    if hasattr(ext, 'OBJMASK'):
+                        MASK = ext.mask | ext.OBJMASK
+                    else:
+                        MASK = ext.mask
+                    masked_data = np.ma.masked_array(ext.data, mask=MASK)
+                    self._levelQuad(masked_data, smoothing_extent=smoothing_extent, edges=edges)
+                    
 
                 if l2clean: 
                     for ystart, tb in zip((0, qysize),('bottom','top')):
@@ -823,6 +796,13 @@ class NearIR(Bookkeeping):
                     temp = np.vstack((temp_bottom, temp_top))            
 
                     ext.data = ori_ext.data[0] - temp
+                    ## remove the dummy rows inserted for GNIRS
+                    if ad.instrument() == "GNIRS":
+                        ext.data = np.delete(ext.data, np.arange(qxsize, qxsize+len(pad_data)), axis=0)
+                        ext.mask = np.delete(ext.mask, np.arange(qxsize, qxsize+len(pad_mask)), axis=0)
+                        if hasattr(ext, 'OBJMASK'):
+                            ext.OBJMASK = np.delete(ext.OBJMASK, np.arange(qxsize, qxsize+len(pad_mask)), axis=0)
+                    
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
