@@ -7,7 +7,8 @@ from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from ..common import build_group_id
 
 from .lookup import detector_properties, nominal_zeropoints, read_modes
-from .lookup import pixel_scale_shrt, pixel_scale_long, dispersion_by_config
+from .lookup import dispersion_by_config
+from .lookup import pixel_scale
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -486,11 +487,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         GNIRS instrument page,
 
-            https://www.gemini.edu/sciops/instruments/gnirs/spectroscopy
-
-        Short camera (0.15"/pix) -- lookup.pixel_scale_shrt
-        Long  camera (0.05"/pix) -- lookup.pixel_scale_long
-
+            https://www.gemini.edu/instrumentation/gnirs/components
 
         Returns
         -------
@@ -504,16 +501,14 @@ class AstroDataGnirs(AstroDataGemini):
 
         """
         try:
-            camera = self.camera().lower()
+            camera = self.camera(pretty=True)
         except AttributeError:
             return None
 
-        if 'short' in camera:
-            return pixel_scale_shrt
-        elif 'long' in camera:
-            return pixel_scale_long
+        if camera in pixel_scale:
+            return pixel_scale[self.camera(pretty=True)]
         else:
-            raise ValueError("Unrecognized GNIRS camera, {}".format(camera))
+            raise ValueError("Unrecognized GNIRS camera, {}".format(self.camera(pretty=True)))
 
     @astro_data_descriptor
     def position_angle(self):
