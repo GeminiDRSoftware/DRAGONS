@@ -48,8 +48,10 @@ from geminidr.f2.primitives_f2_longslit import F2Longslit
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from geminidr.gnirs import primitives_gnirs_longslit
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
+from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
 # -- Tests --------------------------------------------------------------------
 
@@ -104,11 +106,53 @@ def test_extract_1d_spectra_with_sky_lines():
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)
 
+@pytest.mark.parametrize('filename',
+                         [('N20220706S0306_stack.fits'), # GNIRS
+                          ('N20170601S0291_stack.fits'), # GNIRS
+                          ('N20070204S0098_stack.fits'), # NIRI
+                          ('N20061114S0193_stack.fits'), # NIRI
+                          ('S20210430S0138_stack.fits'), # F2
+                          ('S20210709S0035_stack.fits'), # F2
+                          ('N20240102S0010_stack.fits'), # GMOS
+                          ('N20190501S0054_stack.fits')]) # GMOS
+def test_find_apertures(filename, path_to_inputs, change_working_dir):
+    # Set the defaults at the time of test creation
+    params = {'max_apertures': None, 'percentile': 80, 'section': "",
+              'min_sky_region': 50, 'min_snr': 5., 'use_snr': True,
+              'threshold': 0.10, 'max_separation': None}
 
-@pytest.mark.xfail(reason="The fake data needs a DQ plane")
-def test_find_apertures():
-    _p = primitives_spect.Spect([])
-    _p.findApertures()
+    apertures = {'N20220706S0306_stack.fits': (544.8,),
+                 'N20170601S0291_stack.fits': (280.6, 716.9),
+                 'N20070204S0098_stack.fits': (423.7,),
+                 'N20061114S0193_stack.fits': (420.0,),
+                 'S20210430S0138_stack.fits': (1064.6, 105.4, 1330.2,
+                                               306.5, 1182.1),
+                 'S20210709S0035_stack.fits': (959.8, 378.4),
+                 'N20240102S0010_stack.fits': (495.2, 1072.1),
+                 'N20190501S0054_stack.fits': (1066.6,)}
+
+    extra_params = {'S20210430S0138_stack.fits': {'threshold': 0.15, 'min_snr': 10},
+                    'N20070204S0098_stack.fits': {'min_snr': 6},
+                    'N20061114S0193_stack.fits': {'min_snr': 6},
+                    'S20210709S0035_stack.fits': {'min_snr': 10}}
+
+    with change_working_dir(path_to_inputs):
+        ad = astrodata.open(filename)
+
+    try: # Check for custom parameter values for individual tests
+        params.update(extra_params[filename])
+    except KeyError:
+        pass
+
+    pm = PrimitiveMapper(ad.tags, ad.instrument(generic=True).lower(),
+                         mode='sq', drpkg='geminidr')
+    pclass = pm.get_applicable_primitives()
+    p = pclass([ad])
+
+    ad_out = p.findApertures(**params)[0]
+    assert len(ad_out[0].APERTURE) <= len(apertures[filename]) + 2
+    for ref, ap in zip(apertures[filename], ad_out[0].APERTURE['c0']):
+        assert ref == pytest.approx(ap, abs=0.5)
 
 
 @pytest.mark.preprocessed_data
