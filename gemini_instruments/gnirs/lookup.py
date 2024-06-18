@@ -7,23 +7,20 @@ Config = namedtuple("Config", "mdf offsetsection pixscale mode")
 
 detector_properties = {
     'UNKNOWN': { # GNIRS South
-        # Copied from SN7638228.1.2.  Values in Gemini IRAF's array.fits are
-        # incomplete, but similar enough to assume that this is better than
-        # using the incomplete set.  Can be adjusted if the GNIRS team provides
-        # better values.   The values are slightly more conservative than the
-        # ones from Gemini IRAF array.fits.
+        # From an archived web page from 2006.  Found by Andy Stephens.
+        # https://web.archive.org/web/20060901071906/http://www.gemini.edu/sciops/instruments/nirs/nirsIndex.html
         #
         # Dictionary key is the read mode and well depth setting
         # Dictionary values are in the following order:
         # readnoise, gain, well, linearlimit, nonlinearlimit
         # readnoise and well are in units of electrons
-        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
-        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
-        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(145., 13.5, 90000., 0.714286, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(38., 13.5, 90000., 0.714286, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(12., 13.5, 90000., 0.714286, 1.0),
         ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
-        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
-        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
-        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(145., 13.5, 180000., 0.714286, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(38., 13.5, 180000., 0.714286, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(12., 13.5, 180000., 0.714286, 1.0),
         ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
 
     },
