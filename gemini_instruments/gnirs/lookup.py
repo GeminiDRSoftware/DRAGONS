@@ -6,20 +6,80 @@ DetectorConfig = namedtuple("Config", "readnoise gain well linearlimit nonlinear
 Config = namedtuple("Config", "mdf offsetsection pixscale mode")
 
 detector_properties = {
-    # Taken from http://www.gemini.edu/sciops/instruments/gnirs/imaging/detector-properties-and-read-modes
-    # Dictionary key is the read mode and well depth setting
-    # Dictionary values are in the following order:
-    # readnoise, gain, well, linearlimit, nonlinearlimit
-    # readnoise and well are in units of electrons
-    ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
-    ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
-    ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
-    ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
-    ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
-    ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
-    ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
-    ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
-    }
+    'UNKNOWN': { # GNIRS South
+        # Copied from SN7638228.1.2.  Values in Gemini IRAF's array.fits are
+        # incomplete, but similar enough to assume that this is better than
+        # using the incomplete set.  Can be adjusted if the GNIRS team provides
+        # better values.   The values are slightly more conservative than the
+        # ones from Gemini IRAF array.fits.
+        #
+        # Dictionary key is the read mode and well depth setting
+        # Dictionary values are in the following order:
+        # readnoise, gain, well, linearlimit, nonlinearlimit
+        # readnoise and well are in units of electrons
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
+
+    },
+
+    'SN7638228.1': { # GNIRS North - early days
+        # Copied from SN7638228.1.2.  Values in Gemini IRAF's array.fits are
+        # incomplete, but similar enough to assume that this is better than
+        # using the incomplete set.  Can be adjusted if the GNIRS team provides
+        # better values.
+        #
+        # Dictionary key is the read mode and well depth setting
+        # Dictionary values are in the following order:
+        # readnoise, gain, well, linearlimit, nonlinearlimit
+        # readnoise and well are in units of electrons
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
+    },
+    'SN7638228.1.2': {   # GNIRS North - Orginal Detector Controller
+        # Taken from https://www.gemini.edu/instrumentation/gnirs/components [June 2024]
+        #
+        # Dictionary key is the read mode and well depth setting
+        # Dictionary values are in the following order:
+        # readnoise, gain, well, linearlimit, nonlinearlimit
+        # readnoise and well are in units of electrons
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
+    },
+    'SN7638228.1.2+ARC-III': {  # GNIRS North - New Detector Controller [July 2024]
+        # Temporary values (copied from SN7638228.1.2)
+        #
+        # Dictionary key is the read mode and well depth setting
+        # Dictionary values are in the following order:
+        # readnoise, gain, well, linearlimit, nonlinearlimit
+        # readnoise and well are in units of electrons
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
+    },
+}
 
 nominal_zeropoints = {
     # There are none defined...
