@@ -86,6 +86,11 @@ nominal_zeropoints = {
 pixel_scale_shrt = 0.15
 pixel_scale_long = 0.05
 
+# JUST FOR THE config_dict.
+pixel_scale_shrt = 0.15
+pixel_scale_long = 0.05
+
+# NOT USED as far as I can tell. KL [June 2024]
 config_dict = {
     # Dictionary keys are in the following order:
     # prism, decker, grating, camera
