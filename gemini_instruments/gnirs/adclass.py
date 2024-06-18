@@ -83,7 +83,11 @@ class AstroDataGnirs(AstroDataGemini):
         list of str/str
             the array names
         """
-        return self.phu.get(self._keyword_for('array_name'))
+        conid = self.phu.get('CONID')
+        if conid is not None:
+            return f"{self.phu.get(self._keyword_for('array_name'))}+{conid}"
+        else:
+            return self.phu.get(self._keyword_for('array_name'))
 
     @astro_data_descriptor
     def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
@@ -367,7 +371,8 @@ class AstroDataGnirs(AstroDataGemini):
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        return getattr(detector_properties.get((read_mode, well_depth)),
+        arraydict = detector_properties[self.array_name()[0]]
+        return getattr(arraydict.get((read_mode, well_depth)),
                        'gain', None)
 
     @astro_data_descriptor
@@ -447,7 +452,8 @@ class AstroDataGnirs(AstroDataGemini):
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        limit = getattr(detector_properties.get((read_mode, well_depth)),
+        arraydict = detector_properties[self.array_name()[0]]
+        limit = getattr(arraydict.get((read_mode, well_depth)),
                         'linearlimit', None)
         sat_level = self.saturation_level()
 
@@ -621,7 +627,8 @@ class AstroDataGnirs(AstroDataGemini):
         well_depth = self.well_depth_setting()
         coadds = self.coadds()
 
-        read_noise = getattr(detector_properties.get((read_mode, well_depth)),
+        arraydict = detector_properties[self.array_name()[0]]
+        read_noise = getattr(arraydict.get((read_mode, well_depth)),
                              'readnoise', None)
         try:
             return read_noise * math.sqrt(coadds)
@@ -646,8 +653,9 @@ class AstroDataGnirs(AstroDataGemini):
         coadds = self.coadds()
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
-        well = getattr(detector_properties.get((read_mode, well_depth)),
-                       'well', None)
+
+        arraydict = detector_properties[self.array_name()[0]]
+        well = getattr(arraydict.get((read_mode, well_depth)), 'well', None)
 
         if self.is_single:
             try:
