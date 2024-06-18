@@ -1023,7 +1023,7 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         elif style == 'gpp':
             # Fake ID is G-YYYYS-CAL-INST-900-fileno
             #  TODO:  This might need to be revised for SCORPIO
-            semester = re.search('G-(\d+[AB])',  new).group(1)
+            semester = re.search(r"G-(\d+[AB])",  new).group(1)
             instrument = re.sub('-', '', ad.instrument())
             prefix = 'G'
 
