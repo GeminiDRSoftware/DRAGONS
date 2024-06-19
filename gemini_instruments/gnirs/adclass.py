@@ -371,7 +371,9 @@ class AstroDataGnirs(AstroDataGemini):
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        arraydict = detector_properties[self.array_name()[0]]
+        arrayname = self.array_name() if self.is_single else self.array_name()[0]
+
+        arraydict = detector_properties[arrayname]
         return getattr(arraydict.get((read_mode, well_depth)),
                        'gain', None)
 
@@ -452,7 +454,9 @@ class AstroDataGnirs(AstroDataGemini):
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        arraydict = detector_properties[self.array_name()[0]]
+        arrayname = self.array_name() if self.is_single else self.array_name()[0]
+
+        arraydict = detector_properties[arrayname]
         limit = getattr(arraydict.get((read_mode, well_depth)),
                         'linearlimit', None)
         sat_level = self.saturation_level()
@@ -627,7 +631,9 @@ class AstroDataGnirs(AstroDataGemini):
         well_depth = self.well_depth_setting()
         coadds = self.coadds()
 
-        arraydict = detector_properties[self.array_name()[0]]
+        arrayname = self.array_name() if self.is_single else self.array_name()[0]
+
+        arraydict = detector_properties[arrayname]
         read_noise = getattr(arraydict.get((read_mode, well_depth)),
                              'readnoise', None)
         try:
@@ -654,7 +660,9 @@ class AstroDataGnirs(AstroDataGemini):
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        arraydict = detector_properties[self.array_name()[0]]
+        arrayname = self.array_name() if self.is_single else self.array_name()[0]
+
+        arraydict = detector_properties[arrayname]
         well = getattr(arraydict.get((read_mode, well_depth)), 'well', None)
 
         if self.is_single:
