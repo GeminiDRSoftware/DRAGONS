@@ -15,7 +15,9 @@ from .. import gmu
 
 class AstroDataGnirs(AstroDataGemini):
 
-    __keyword_dict = dict(central_wavelength='GRATWAVE',)
+    __keyword_dict = dict(central_wavelength='GRATWAVE',
+                          array_name='ARRAYID',
+                          grating_order='GRATORD')
 
     @staticmethod
     def _matches_data(source):
@@ -81,6 +83,7 @@ class AstroDataGnirs(AstroDataGemini):
             the array names
         """
         conid = self.phu.get('CONID')
+        print(self._keyword_for('array_name'))
         if conid is not None:
             return f"{self.phu.get(self._keyword_for('array_name'))}+{conid}"
         else:
