@@ -373,8 +373,11 @@ class AstroDataGnirs(AstroDataGemini):
 
         arrayname = self.array_name() if self.is_single else self.array_name()[0]
 
-        arraydict = detector_properties[arrayname]
-        return getattr(arraydict.get((read_mode, well_depth)),
+        if arrayname not in detector_properties:
+            return None
+        else:
+            arraydict = detector_properties[arrayname]
+            return getattr(arraydict.get((read_mode, well_depth)),
                        'gain', None)
 
     @astro_data_descriptor
@@ -456,9 +459,13 @@ class AstroDataGnirs(AstroDataGemini):
 
         arrayname = self.array_name() if self.is_single else self.array_name()[0]
 
-        arraydict = detector_properties[arrayname]
-        limit = getattr(arraydict.get((read_mode, well_depth)),
-                        'linearlimit', None)
+        if arrayname not in detector_properties:
+            return None
+        else:
+            arraydict = detector_properties[arrayname]
+            limit = getattr(arraydict.get((read_mode, well_depth)),
+                            'linearlimit', None)
+
         sat_level = self.saturation_level()
 
         if self.is_single:
@@ -633,9 +640,12 @@ class AstroDataGnirs(AstroDataGemini):
 
         arrayname = self.array_name() if self.is_single else self.array_name()[0]
 
-        arraydict = detector_properties[arrayname]
-        read_noise = getattr(arraydict.get((read_mode, well_depth)),
-                             'readnoise', None)
+        if arrayname not in detector_properties:
+            return None
+        else:
+            arraydict = detector_properties[arrayname]
+            read_noise = getattr(arraydict.get((read_mode, well_depth)),
+                                 'readnoise', None)
         try:
             return read_noise * math.sqrt(coadds)
         except TypeError:
@@ -662,8 +672,11 @@ class AstroDataGnirs(AstroDataGemini):
 
         arrayname = self.array_name() if self.is_single else self.array_name()[0]
 
-        arraydict = detector_properties[arrayname]
-        well = getattr(arraydict.get((read_mode, well_depth)), 'well', None)
+        if arrayname not in detector_properties:
+            return None
+        else:
+            arraydict = detector_properties[arrayname]
+            well = getattr(arraydict.get((read_mode, well_depth)), 'well', None)
 
         if self.is_single:
             try:
