@@ -83,7 +83,6 @@ class AstroDataGnirs(AstroDataGemini):
             the array names
         """
         conid = self.phu.get('CONID')
-        print(self._keyword_for('array_name'))
         if conid is not None:
             return f"{self.phu.get(self._keyword_for('array_name'))}+{conid}"
         else:
