@@ -492,7 +492,7 @@ fixture_data = {
     ('GNIRS', 'N20120117S0019.fits'): (
         ('airmass', 1.154),
         ('ao_seeing', None),
-        ('array_name', [None]),
+        ('array_name', ['SN7638228.1']),
         ('array_section', [(0, 1024, 0, 1022)]),
         ('azimuth', -55.4880138888889),
         ('camera', 'ShortBlue_G5538'),
