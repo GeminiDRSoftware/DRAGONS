@@ -582,7 +582,9 @@ class NearIR(Bookkeeping):
         performs equally or better than this Fourier version. For e.g.,
         this Fourier version may not work when applied to an image with
         a strong gradient in background supersposed with a strong pattern
-        noise; there will likely be issues in leveling of signals. 
+        noise; there will likely be issues in leveling of signals.
+        Additionally, this Fourier version DOES NOT work well for cross-
+        dispersed spectra. 
 
         The processing flow of this algorithm is the following. For each 
         quadrant, take the FFT row by row and relying on the known 
