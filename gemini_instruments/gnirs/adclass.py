@@ -7,7 +7,8 @@ from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from ..common import build_group_id
 
 from .lookup import detector_properties, nominal_zeropoints, read_modes
-from .lookup import pixel_scale_shrt, pixel_scale_long, dispersion_by_config
+from .lookup import dispersion_by_config
+from .lookup import pixel_scale
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -113,10 +114,10 @@ class AstroDataGnirs(AstroDataGemini):
 
         grating = self._grating(pretty=True, stripID=True)
 
-        if self.pixel_scale() == pixel_scale_shrt:
-            camera = "Short"
-        elif self.pixel_scale() == pixel_scale_long:
-            camera = "Long"
+        if 'Short' in self.camera():
+            camera = 'Short'
+        elif 'Long' in self.camera():
+            camera = 'Long'
         else:
             camera = None
 
@@ -371,8 +372,13 @@ class AstroDataGnirs(AstroDataGemini):
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        arraydict = detector_properties[self.array_name()[0]]
-        return getattr(arraydict.get((read_mode, well_depth)),
+        arrayname = self.array_name() if self.is_single else self.array_name()[0]
+
+        if arrayname not in detector_properties:
+            return None
+        else:
+            arraydict = detector_properties[arrayname]
+            return getattr(arraydict.get((read_mode, well_depth)),
                        'gain', None)
 
     @astro_data_descriptor
@@ -452,9 +458,15 @@ class AstroDataGnirs(AstroDataGemini):
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        arraydict = detector_properties[self.array_name()[0]]
-        limit = getattr(arraydict.get((read_mode, well_depth)),
-                        'linearlimit', None)
+        arrayname = self.array_name() if self.is_single else self.array_name()[0]
+
+        if arrayname not in detector_properties:
+            return None
+        else:
+            arraydict = detector_properties[arrayname]
+            limit = getattr(arraydict.get((read_mode, well_depth)),
+                            'linearlimit', None)
+
         sat_level = self.saturation_level()
 
         if self.is_single:
@@ -475,11 +487,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         GNIRS instrument page,
 
-            https://www.gemini.edu/sciops/instruments/gnirs/spectroscopy
-
-        Short camera (0.15"/pix) -- lookup.pixel_scale_shrt
-        Long  camera (0.05"/pix) -- lookup.pixel_scale_long
-
+            https://www.gemini.edu/instrumentation/gnirs/components
 
         Returns
         -------
@@ -493,16 +501,14 @@ class AstroDataGnirs(AstroDataGemini):
 
         """
         try:
-            camera = self.camera().lower()
+            camera = self.camera(pretty=True)
         except AttributeError:
             return None
 
-        if 'short' in camera:
-            return pixel_scale_shrt
-        elif 'long' in camera:
-            return pixel_scale_long
+        if camera in pixel_scale:
+            return pixel_scale[self.camera(pretty=True)]
         else:
-            raise ValueError("Unrecognized GNIRS camera, {}".format(camera))
+            raise ValueError("Unrecognized GNIRS camera, {}".format(self.camera(pretty=True)))
 
     @astro_data_descriptor
     def position_angle(self):
@@ -627,9 +633,14 @@ class AstroDataGnirs(AstroDataGemini):
         well_depth = self.well_depth_setting()
         coadds = self.coadds()
 
-        arraydict = detector_properties[self.array_name()[0]]
-        read_noise = getattr(arraydict.get((read_mode, well_depth)),
-                             'readnoise', None)
+        arrayname = self.array_name() if self.is_single else self.array_name()[0]
+
+        if arrayname not in detector_properties:
+            return None
+        else:
+            arraydict = detector_properties[arrayname]
+            read_noise = getattr(arraydict.get((read_mode, well_depth)),
+                                 'readnoise', None)
         try:
             return read_noise * math.sqrt(coadds)
         except TypeError:
@@ -654,8 +665,13 @@ class AstroDataGnirs(AstroDataGemini):
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        arraydict = detector_properties[self.array_name()[0]]
-        well = getattr(arraydict.get((read_mode, well_depth)), 'well', None)
+        arrayname = self.array_name() if self.is_single else self.array_name()[0]
+
+        if arrayname not in detector_properties:
+            return None
+        else:
+            arraydict = detector_properties[arrayname]
+            well = getattr(arraydict.get((read_mode, well_depth)), 'well', None)
 
         if self.is_single:
             try:
