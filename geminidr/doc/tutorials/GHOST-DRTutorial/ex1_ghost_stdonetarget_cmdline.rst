@@ -621,7 +621,7 @@ possible configurations:
     ``-p extractSpectra:sky_subtract=False weighting=uniform`` may help.
 
 
-It is possible to write the spectra to a text file with ``write1DSpectrum``,
+It is possible to write the spectra to a text file with ``write1DSpectra``,
 for example::
 
   reduce -r write1DSpectra S20230416S0079_red001_dragons.fits
