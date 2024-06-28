@@ -3275,9 +3275,9 @@ class Spect(Resample):
             write VAR (variance) plane?
         overwrite : bool
             overwrite existing files?
-        xunits: str
+        wave_units: str
             units of the x (wavelength/frequency) column
-        yunits: str
+        data_units: str
             units of the data column
 
         Returns
