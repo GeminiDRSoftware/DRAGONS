@@ -4,6 +4,7 @@ from astrodata import AstroData
 from gempy.library import config
 from geminidr.core import parameters_spect
 from geminidr.core import parameters_preprocess
+from geminidr.core import parameters_nearIR
 
 
 def list_of_ints_check(value):
@@ -35,6 +36,13 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
                                    default="optimal")
     def setDefaults(self):
         self.in_vacuo = True
+
+class makeBPMConfig(parameters_nearIR.makeBPMConfig):
+    def setDefaults(self):
+        self.dark_lo_thresh = -100.
+        self.dark_hi_thresh = 150.
+        self.flat_lo_thresh = 0.25
+        self.flat_hi_thresh = 1.25
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):

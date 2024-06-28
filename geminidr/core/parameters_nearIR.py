@@ -24,6 +24,7 @@ class makeBPMConfig(config.Config):
     dark_hi_thresh = config.Field("High rejection threshold for dark (ADU)", float, None, optional=True)
     flat_lo_thresh = config.RangeField("Low rejection threshold for normalized flat", float, None, max=1.0, optional=True)
     flat_hi_thresh = config.RangeField("High rejection threshold for normalized flat", float, None, min=1.0, optional=True)
+    keep_unilluminated = config.Field("Keep unilluminated pixels flags?", bool, False)
 
     def validate(self):
         config.Config.validate(self)

@@ -121,6 +121,7 @@ class NearIR(Bookkeeping):
         dark_hi = params['dark_hi_thresh']
         flat_lo = params['flat_lo_thresh']
         flat_hi = params['flat_hi_thresh']
+        keep_unilluminated = params['keep_unilluminated']
 
         if dark_lo is None:
             dark_lo = float('-Inf')
@@ -169,6 +170,9 @@ class NearIR(Bookkeeping):
             data_mask = np.ma.mask_or(np.ma.getmaskarray(dark_mask),
                                       np.ma.getmaskarray(flat_mask),
                                       shrink=False)
+            if keep_unilluminated:
+                data_mask = np.where(flat_ext.mask & 64, 64, data_mask)
+
             flat_ext.reset(data_mask.astype(np.int16), mask=None, variance=None)
 
         flat.update_filename(suffix="_bpm", strip=True)

@@ -50,6 +50,12 @@ class GNIRSSpect(Spect, GNIRS):
         super().standardizeWCS(adinputs, **params)
 
         for ad in adinputs:
+
+            # Exception needed to produce GNIRS BPMs from spec flats and darks.
+            if "DARK" in ad.tags:
+                log.debug(f"Skipping {ad.filename} as it is a DARK")
+                continue
+
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
             cenwave = ad.central_wavelength(asNanometers=True)
             transform.add_longslit_wcs(ad, central_wavelength=cenwave,
