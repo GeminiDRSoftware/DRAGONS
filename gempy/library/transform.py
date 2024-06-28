@@ -1536,20 +1536,28 @@ def add_longslit_wcs(ad, central_wavelength=None, pointing=None):
 
         transform = adwcs.create_new_image_projection(ext.wcs.forward_transform, pointing)
         crpix = transform.inverse(*pointing)
+        # Add back the 'crpixN' names, which would otherwise be lost at this
+        # point (they're used in the various test_adjust_wcs_with_correlation
+        # tests).
+        names = ['crpix1', 'crpix2']
 
         transform.name = None  # so we can reuse "SKY"
-        #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :-crpix})
+        # Pop one of the crpix names (based on the dispersion axis) for the sky
+        # model...
         if dispaxis == 1:
             sky_model = (models.Mapping((0, 0)) |
-                         (models.Const1D(0) & models.Shift(-crpix[1])))
+                         (models.Const1D(0) &
+                          models.Shift(-crpix[1], name=names.pop(1))))
         else:
             sky_model = (models.Mapping((0, 0)) |
-                         (models.Shift(-crpix[0]) & models.Const1D(0)))
+                         (models.Shift(-crpix[0], name=names.pop(0)) &
+                          models.Const1D(0)))
         sky_model |= transform[2:]
         sky_model[-1].lon, sky_model[-1].lat = pointing
         sky_model.name = 'SKY'
-        wave_model = (models.Shift(-crpix[dispaxis-1]) | models.Scale(dw) |
-                      models.Shift(central_wavelength))
+        # ...then we can use the remaining crpix name for the wave model.
+        wave_model = (models.Shift(-crpix[dispaxis-1], name=names[0]) |
+                      models.Scale(dw) | models.Shift(central_wavelength))
         wave_model.name = 'WAVE'
 
         if dispaxis == 1:
