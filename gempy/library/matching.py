@@ -162,11 +162,11 @@ class BruteLandscapeFitter(Fitter):
             if scale:
                 self.grid_model = reduce(Model.__and__, [models.Shift(-_min) |
                                                          models.Scale(scale) for _min in mins])
-                landshape = tuple(int((_max - _min) * scale)
-                                  for _min, _max in zip(mins, maxs))[::-1]
             else:
                 scale = 1
-                landshape = tuple(int(_max) for _max in maxs)[::-1]
+                self.grid_model = reduce(Model.__and__, [models.Shift(-_min) for _min in mins])
+            landshape = tuple(max(int((_max - _min) * scale), 1)
+                              for _min, _max in zip(mins, maxs))[::-1]
 
         # We need to fiddle around a bit here to ensure a 1D output gets
         # returned in a way that can be unpacked (like higher-D outputs)
