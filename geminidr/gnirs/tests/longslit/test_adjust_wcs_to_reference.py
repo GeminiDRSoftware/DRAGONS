@@ -51,7 +51,6 @@ def test_adjust_wcs_with_correlation(files, path_to_inputs, caplog):
 
     # Hack the WCS of all but the first input so they're wrong
     for ad in adinputs[1:]:
-        # breakpoint()
         ad[0].wcs.pipeline[0].transform['crpix1'].offset = 600
     p = GNIRSLongslit(adinputs)
     p.adjustWCSToReference(fallback=None)
@@ -66,8 +65,6 @@ def test_adjust_wcs_with_correlation(files, path_to_inputs, caplog):
     # Then confirm that the sky coordinates are all similar
     skycoords = [ad[0].wcs(center, 0, with_units=True)[1]
                   for ad, center in zip(adinputs, centers)]
-    print(skycoords)
     c0 = skycoords[0]
     for c in skycoords[1:]:
-        print(c0.separation(c).arcsecond)
         assert c0.separation(c).arcsecond < 0.5 * pixel_scale
