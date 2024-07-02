@@ -1032,7 +1032,7 @@ class GHOSTSpect(GHOST):
                     flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
                     variance=variance, min_snr=min_snr, min_sep=5,
                     pinpoint_index=None, reject_bad=False)
-                fit_g = fitting.LevMarLSQFitter()
+                fit_g = fitting.TRFLSQFitter()  # recommended fitter
                 these_peaks = []
                 for x in peaks[0]:
                     good = np.zeros_like(flux, dtype=bool)
@@ -1041,9 +1041,12 @@ class GHOSTSpect(GHOST):
                                                stddev=1.5)
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
-                        g = fit_g(g_init, pixels[good], flux[good])
-                    if g.stddev.value < 5:  # avoid clearly bad fits
-                        these_peaks.append(g)
+                        try:
+                            g = fit_g(g_init, pixels[good], flux[good])
+                            if g.stddev.value < 5:  # avoid clearly bad fits
+                                these_peaks.append(g)
+                        except fitting.NonFiniteValueError:  # unclear why
+                            pass
                 all_peaks.append(these_peaks)
 
             # Find lines based on the extracted flux and the arc wavelengths.
