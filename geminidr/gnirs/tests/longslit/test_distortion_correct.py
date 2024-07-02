@@ -20,7 +20,8 @@ test_files = ['N20220706S0306_readoutCleaned.fits', # LongBlue
               'N20111231S0352_readoutCleaned.fits'] # ShortRed
 
 # -- Tests --------------------------------------------------------------------
-
+@pytest.mark.gnirsls
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize("filename", test_files)
 def test_distortion_correct(filename, path_to_inputs, path_to_refs,
                             change_working_dir):

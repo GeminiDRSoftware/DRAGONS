@@ -106,6 +106,7 @@ def test_extract_1d_spectra_with_sky_lines():
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)
 
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename',
                          [('N20220706S0306_stack.fits'), # GNIRS
                           ('N20170601S0291_stack.fits'), # GNIRS
