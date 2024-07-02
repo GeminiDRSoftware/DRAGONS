@@ -137,9 +137,9 @@ class Photometry(PrimitivesBASE):
             else:
                 log.fullinfo(f"Querying {source} for reference catalog, "
                              f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    refcat = get_fits_table(source, ra, dec, radius)
+                #with warnings.catch_warnings():
+                #    warnings.simplefilter("ignore")
+                refcat = get_fits_table(source, ra, dec, radius)
 
             if refcat is None:
                 log.stdinfo("No reference catalog sources found for {}".

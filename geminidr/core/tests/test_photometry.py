@@ -11,12 +11,12 @@ To run:
     2) From the ??? (location): pytest -v --capture=no
 """
 import pytest
+import logging
 
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 import numpy as np
 
-from astrodata.testing import ad_compare
 from .. import primitives_photometry as prims
 from ...gemini.lookups.timestamp_keywords import timestamp_keys
 
@@ -41,14 +41,25 @@ def niri_image(astrofaker):
 
 
 @pytest.mark.dragons_remote_data
-def test_addReferenceCatalog(niri_image):
+def test_addReferenceCatalog(niri_image, caplog):
+    caplog.set_level(logging.WARNING, logger="geminidr")
+
     adinputs = niri_image.addReferenceCatalog()
     assert len(adinputs) == 1
 
     ad = adinputs[0]
 
     assert timestamp_keys["addReferenceCatalog"] in ad.phu
-    assert hasattr(ad, 'REFCAT')
+
+    # Handle problem with catalogue server being down
+    try:
+        assert hasattr(ad, 'REFCAT')
+    except AssertionError:
+        for record in caplog.records:
+            if (record.levelname == 'WARNING' and
+                    "appears to be down" in record.message):
+                pytest.skip(record.message)
+        raise
 
     # Check all objects in REFCAT are within prescribed radius
     search_radius = niri_image.params['addReferenceCatalog'].radius
