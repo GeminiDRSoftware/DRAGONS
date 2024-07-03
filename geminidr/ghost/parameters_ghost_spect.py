@@ -127,6 +127,11 @@ class combineOrdersConfig(config.Config):
 fluxCalibrateConfig = parameters_spect.fluxCalibrateConfig
 
 
+class makeIRAFCompatibleConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_irafCompatible",
+                              optional=False)
+
+
 class measureBlazeConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_blazeMeasured",
                           optional=True)

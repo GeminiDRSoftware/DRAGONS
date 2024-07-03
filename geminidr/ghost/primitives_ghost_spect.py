@@ -1640,6 +1640,44 @@ class GHOSTSpect(GHOST):
 
         return adinputs
 
+    def makeIRAFCompatible(self, adinputs=None, suffix=None):
+        """
+        Write out the extracted spectra in a format that is compatible with IRAF.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        """
+        log = self.log
+        for ad in adinputs:
+            updated = False
+            hdulist = astrodata.fits.ad_to_hdulist(ad)
+            for hdu in hdulist:
+                if hdu.data is not None and len(hdu.data.shape) == 1:
+                    hdr = hdu.header
+                    if (hdr.get('DC-FLAG') != 1 and
+                            hdr.get('CTYPE1', '').endswith("LOG")):
+                        cdelt1 = hdr['CD1_1']
+                        crval1 = hdr['CRVAL1']
+                        crpix1 = hdr['CRPIX1']
+                        x = np.arange(hdu.data.size)
+                        w = crval1 * np.exp(cdelt1 * (x + 1 - crpix1) / crval1)
+                        dw = np.log10(w[1] / w[0])
+                        new_kws = {"CRPIX1": crpix1, "CRVAL1": np.log10(crval1),
+                                   "CDELT1": dw, "CD1_1": dw, "DC-FLAG": 1}
+                        hdr.update(new_kws)
+                        updated = True
+            if updated:
+                new_filename = filename_updater(ad, suffix=suffix)
+                hdulist.writeto(new_filename, overwrite=True)
+                log.stdinfo(f"{ad.filename} updated and written to disk "
+                            f"as {new_filename}")
+            else:
+                log.stdinfo(f"No changes were made to the header of {ad.filename}")
+
+        return adinputs
+
     def measureBlaze(self, adinputs=None, **params):
         """
         This primitive measures the blaze function in each order by summing
