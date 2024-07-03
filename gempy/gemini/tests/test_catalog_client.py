@@ -52,7 +52,8 @@ def test_get_fits_table_vizier(catalog, ra, dec, radius, nres, caplog):
     except TypeError:  # ret is None
         for record in caplog.records:
             if (record.levelname == 'WARNING' and
-                    "appears to be down" in record.message):
+                    ("appears to be down" in record.message or
+                     "aborted" in record.message)):
                 pytest.skip(record.message)
         raise
 

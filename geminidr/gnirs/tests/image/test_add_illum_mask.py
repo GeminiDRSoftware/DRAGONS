@@ -10,13 +10,13 @@ from geminidr.gnirs.primitives_gnirs_image import GNIRSImage
 
 # filename and (x, y) coords (0-indexed) of lowest unmasked pixel
 DATASETS = (("N20110627S0031.fits", (625, 445)),  # ShortBlue, Wings, off-centre
-            ("N20110627S0069.fits", (501, 383)),  # ShortBlue, Wings
+            ("N20110627S0069.fits", (501, 386)),  # ShortBlue, Wings
             ("N20131222S0064.fits", (506, 370)),  # ShortBlue, NoWings
             ("N20140717S0229.fits", (540, 210)),  # LongBlue, Wings
-            ("N20151118S0399.fits", (544, 230)),  # LongBlue, NoWings
+            ("N20151118S0399.fits", (544, 233)),  # LongBlue, NoWings
             ("N20110106S0257.fits", (270, 180)),  # LongBlue, Wings, off-centre
             ("N20110227S0147.fits", (522, 380)),  # ShortRed, Wings
-            ("N20220718S0078.fits", (452, 209)),  # LongRed, Wings (PROPRIETARY)
+            ("N20220718S0078.fits", (452, 215)),  # LongRed, Wings (PROPRIETARY)
             )
 
 

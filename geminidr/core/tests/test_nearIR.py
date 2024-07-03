@@ -131,13 +131,18 @@ def test_clean_readout(in_file, path_to_inputs, path_to_refs):
 @pytest.mark.regression
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("in_file",
-                         ["N20220902S0145",  # NIRI image, extended source
-                          "N20101227S0040",  # GNIRS LS (par needs tweaking pat_thres=0.1). Only FFT can handle this frame.
-                          "S20060826S0305",  # GNIRS LS
+                         ["S20060826S0305",  # GNIRS LS
+                          "N20231112S0137",  # GNIRS LS
+                          "N20050614S0190",  # NIRI LS
                           "N20170505S0146",  # NIRI image
+                          "N20220902S0145",  # NIRI image, extended source
+                          "N20051120S0378",  # NIRI image
                           "N20060103S0010",  # NIRI image
                           "N20060218S0138",  # NIRI image
-                          "N20051120S0378",  # NIRI image
+                          "S20060501S0081",  # GNIRS XD spectrum
+                          "S20060806S0080",  # GNIRS XD spectrum
+                          "S20070131S0105",  # GNIRS XD spectrum  
+                          "N20101227S0040",  # GNIRS LS (par needs tweaking pat_thres=0.1). Only FFT can handle this frame.
                           "N20231112S0136",  # GNIRS LS
                           ])
 def test_clean_fftreadout(in_file, path_to_inputs, path_to_refs):

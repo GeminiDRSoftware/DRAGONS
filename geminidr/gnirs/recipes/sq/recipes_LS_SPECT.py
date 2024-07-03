@@ -33,6 +33,7 @@ def reduceScience(p):
     # p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
+    p.skyCorrectFromSlit()  # This needs testing.
     p.traceApertures()
     p.storeProcessedScience(suffix="_2D")
     p.extractSpectra()

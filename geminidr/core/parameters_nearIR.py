@@ -24,6 +24,7 @@ class makeBPMConfig(config.Config):
     dark_hi_thresh = config.Field("High rejection threshold for dark (ADU)", float, None, optional=True)
     flat_lo_thresh = config.RangeField("Low rejection threshold for normalized flat", float, None, max=1.0, optional=True)
     flat_hi_thresh = config.RangeField("High rejection threshold for normalized flat", float, None, min=1.0, optional=True)
+    keep_unilluminated = config.Field("Keep unilluminated pixels flags?", bool, False)
 
     def validate(self):
         config.Config.validate(self)
@@ -72,11 +73,13 @@ class cleanFFTReadoutConfig(config.Config):
     lquad = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
     l2clean = config.Field("Clean Fourier artifacts?", bool, True)
     l2thres = config.RangeField("Sigma factor to be used in thresholding for l2clean", float, 4., min=0)
+    smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=1)
+    pad_rows = config.Field("Number of dummy rows to append to the top quads of the image", int, 0)
     clean = config.ChoiceField("Cleaning behavior", str,
                                allowed={"default": "perform pattern removal if pattern in strong enough",
                                         "skip": "skip primitive"},
                                default="skip", optional=False)
-    smoothing_extent = config.RangeField("Width (in pix) of the region at a given quad interface to be smoothed over", int, 5, min=1)
+    
 
 
 class separateFlatsDarksConfig(config.Config):

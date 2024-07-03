@@ -83,9 +83,18 @@ nominal_zeropoints = {
 }
 
 # pixel scales for GNIRS Short and Long cameras
+pixel_scale = {
+    'ShortBlue': 0.15170,  # +/- 0.00012 "/pix
+    'ShortRed': 0.15,
+    'LongBlue': 0.05071,  # +/- 0.0001 "/pix
+    'LongRed': 0.05095,   # +/- 0.0002 "/pix
+}
+
+# JUST FOR THE config_dict.
 pixel_scale_shrt = 0.15
 pixel_scale_long = 0.05
 
+# NOT USED as far as I can tell. KL [June 2024]
 config_dict = {
     # Dictionary keys are in the following order:
     # prism, decker, grating, camera
