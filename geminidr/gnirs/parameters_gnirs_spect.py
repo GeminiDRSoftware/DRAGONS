@@ -5,11 +5,16 @@ from gempy.library import config
 from geminidr.core import parameters_spect
 from geminidr.core import parameters_preprocess
 from geminidr.core import parameters_nearIR
+from geminidr.gnirs import parameters_gnirs
 
 
 def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
     return True
+
+class associateSkyConfig(parameters_gnirs.associateSkyConfig):
+    def setDefaults(self):
+        self.min_skies = 1
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     spectral_order = config.RangeField("Fitting order in spectral direction", int, None, min=1, optional=True)
@@ -46,8 +51,10 @@ class makeBPMConfig(parameters_nearIR.makeBPMConfig):
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):
-        self.scale_sky = False #MS: IF for whatever reason the exposure times are different between frames being subtracted, that case may require a special treatment
-        self.offset_sky = False
+        # self.scale_sky = False #MS: IF for whatever reason the exposure times are different between frames being subtracted, that case may require a special treatment
+        # self.offset_sky = False
+        del self.scale_sky
+        del self.offset_sky
         self.mask_objects = False
         self.dilation = 0.
 
