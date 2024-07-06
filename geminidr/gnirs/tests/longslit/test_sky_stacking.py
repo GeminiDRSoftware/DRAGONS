@@ -10,6 +10,10 @@ import gemini_instruments
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 import pytest
 
+# ---- Parameters -------------------------------------------------------------
+associate_sky_params = {'time': 600., 'min_skies': 3, 'distance': 0,
+                        'max_skies': None, 'use_all': False, 'sky': None}
+
 # ---- Fixtures ---------------------------------------------------------------
 @pytest.fixture
 def gnirs_abba():
@@ -27,7 +31,7 @@ def test_associate_sky_abba(gnirs_abba):
     # slit width is only 0.1", so the WCS needs to be reset.
     p.prepare(bad_wcs="new")
     p.separateSky()
-    p.associateSky()
+    p.associateSky(**associate_sky_params)
 
     a1, b1, b2, a2 = p.showList()
 
@@ -105,7 +109,7 @@ def test_associate_sky_quasi_abcde():
     p = GNIRSLongslit(data)
     p.prepare()
     p.separateSky()
-    p.associateSky()
+    p.associateSky(**associate_sky_params)
 
     for ad in p.showList():
         print(ad.phu['ORIGNAME'])
