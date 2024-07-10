@@ -3891,10 +3891,10 @@ class Spect(Resample):
             as a comma-separated list of pixel ranges. Any pixels outside these
             ranges (and/or included in the source aperture table) will be
             ignored when fitting each row or column.
-        function : {'splineN', 'legendre', 'chebyshev', 'polynomial'}, optional
+        function : {'spline3', 'chebyshev'}, optional
             Type of function/model to be used for fitting rows or columns
             perpendicular to the dispersion axis (default 'spline3', a cubic
-            spline). For spline fits, N may be 1-5 (linear to quintic).
+            spline).
         order : int or None
             Order of fit to each row/column. For spline fits, this
             is the number of spline pieces; if `None`, as many pieces will be
