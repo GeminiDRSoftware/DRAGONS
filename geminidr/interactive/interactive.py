@@ -1086,7 +1086,7 @@ def build_text_slider(
     if value is None:
         # If the value is None/Falsey, set to a default value
         start = min_value or 0
-        end = max_value or 10
+        end = max_value if max_value is not None else 10
         slider_kwargs = {"value": start, "show_value": False}
     else:
         # if min/max value is None/Falsey, use a default.
