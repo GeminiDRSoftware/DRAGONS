@@ -57,6 +57,7 @@ datasets = {
     }
 
 # -- Tests --------------------------------------------------------------------
+@pytest.mark.gnirsls
 @pytest.mark.slow
 @pytest.mark.integration_test
 @pytest.mark.dragons_remote_data
