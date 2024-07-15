@@ -387,7 +387,7 @@ be reduced individually.
 
 The wavelength solution is automatically calculated and the algorithm has
 been found to be quite reliable.  There might be cases where it fails; inspect
-the ``*_mosaic.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
+the ``*_wavelengthSolutionDetermined.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
 logs to confirm a good solution.
 
 .. code-block:: python
@@ -556,5 +556,5 @@ To use a different format, set the ``format`` parameters.
     writeascii = Reduce()
     writeascii.files = ['N20190926S0130_1D.fits']
     writeascii.recipename = 'write1DSpectra'
-    writeascii.uparms = [('format', 'ascii.ecsv'), ('extension', 'ecsv')]
+    writeascii.uparms = dict([('format', 'ascii.ecsv'), ('extension', 'ecsv')])
     writeascii.runr()

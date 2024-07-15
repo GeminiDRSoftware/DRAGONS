@@ -71,6 +71,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
             suffix to be added to output files
         first_pass: float
             search radius (arcsec) for the initial alignment matching
+        final: float
+            search radius (arcsec) for final object matching
         min_sources: int
             minimum number of matched sources required to apply a WCS shift
         cull_sources: bool
@@ -80,6 +82,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
             allow image rotation to align to reference image?
         scale: bool
             allow image scaling to align to reference image?
+        max_iters: int
+            maximum number of iterations for polynomial fit
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -778,7 +782,7 @@ def make_alignment_figure(coords1, coords2, matched, fname1, fname2, radius=1):
     Figure object
     """
     def trim_filename(fname):
-        return re.sub("_(.*)\.(.*)", "", fname)
+        return re.sub(r"_(.*)\.(.*)", "", fname)
 
     fig, ax = plt.subplots()
     ax.set_title(f"{trim_filename(fname1)}[open] / "

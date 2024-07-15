@@ -189,7 +189,7 @@ Pick the one you prefer, in this case, they all yield the same list.
     .. code-block::
 
         checkwcs = Reduce()
-        checkwcs.files = list_of_science_images
+        checkwcs.files = target
         checkwcs.recipename = 'checkWCS'
         checkwcs.runr()
 
@@ -300,7 +300,7 @@ retrieved automatically.
 
     reduce_target = Reduce()
     reduce_target.files.extend(target)
-    reduce_target.uparms = [('darkCorrect:dark', 'N20120102S0538_dark.fits')]
+    reduce_target.uparms = dict([('darkCorrect:dark', 'N20120102S0538_dark.fits')])
     reduce_target.runr()
 
 The output stack units are in electrons (header keyword BUNIT=electrons).

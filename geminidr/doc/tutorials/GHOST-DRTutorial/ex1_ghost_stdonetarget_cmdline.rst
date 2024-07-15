@@ -618,7 +618,7 @@ possible configurations:
     the December 2023 FTrun in two-object mode or with one of the IFUs stowed
     you may see "ripple" artifacts in your data due to contamination of the
     sky fibres by light from the target(s). Using
-    ``-p extractProfile:sky_subtract=False weighting=uniform`` may help.
+    ``-p extractSpectra:sky_subtract=False weighting=uniform`` may help.
 
 
 It is possible to write the spectra to a text file with ``write1DSpectrum``,

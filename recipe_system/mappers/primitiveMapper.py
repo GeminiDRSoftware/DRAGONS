@@ -92,9 +92,14 @@ class PrimitiveMapper(Mapper):
 
     def _generate_primitive_modules(self, pkg):
         ppath = pkg.__path__[0]
-        pkg_importer = pkgutil.ImpImporter(ppath)
-        for pkgname, ispkg in pkg_importer.iter_modules():
-            if ispkg:
+        #pkg_importer = pkgutil.ImpImporter(ppath)
+        #for pkgname, ispkg in pkg_importer.iter_modules():
+            # if ispkg:
+            #     continue
+            # else:
+            #     yield (pkg_importer.path, pkgname)
+        for modinfo in pkgutil.iter_modules([ppath]):
+            if modinfo.ispkg:
                 continue
             else:
-                yield (pkg_importer.path, pkgname)
+                yield (modinfo.module_finder.path, modinfo.name)

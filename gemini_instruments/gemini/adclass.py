@@ -439,8 +439,13 @@ class AstroDataGemini(AstroData):
             Airmass value.
         """
         am = self.phu.get(self._keyword_for('airmass'), -1)
-        if isinstance(am, str) and gmu.isBlank(am):
-            return None
+        if isinstance(am, str):
+            if gmu.isBlank(am):
+                return None
+            try:
+                am = float(am)
+            except ValueError:
+                return None
         return am if am >= 1 else None
 
     @astro_data_descriptor

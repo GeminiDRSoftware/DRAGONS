@@ -17,11 +17,13 @@ priority ordered list of servers if the primary server appears to be down.
 question in a different format to the primary.
 
 """
+import warnings
+
+import numpy as np
 
 from astrodata import add_header_to_table
-from astropy.table import Column, Table
 from astroquery.vo_conesearch.conesearch import conesearch
-from astroquery.vo_conesearch.exceptions import VOSError
+from astroquery.exceptions import NoResultsWarning
 
 from ..utils import logutils
 
@@ -195,30 +197,29 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
     # turn on verbose for debug to stdout.
     # Need verb=3 to get the right cols from vizier
 
-    # astroquery 0.4 removed the pedantic keyword in favor of the config
-    # item, and switched to returning an astropy table by default (hence
-    # return_astropy_table=False below).
     # Another change is that conesearch returns None and issue of
     # NoResultsWarning if no results are found, instead of raising a
     # VOSError: https://github.com/astropy/astroquery/pull/1528
-    try:
-        try:
-            table = conesearch((ra, dec), sr, verb=3, catalog_db=url,
-                               return_astropy_table=False, verbose=False)
-        except TypeError:
-            # astroquery < 0.4
-            table = conesearch((ra, dec), sr, verb=3, catalog_db=url,
-                               pedantic=False, verbose=False)
-    except VOSError:
-        log.stdinfo("VO conesearch produced no results")
-        return
+    with warnings.catch_warnings(record=True) as warning_list:
+        table = conesearch((ra, dec), sr, verb=3, catalog_db=url,
+                           return_astropy_table=True, verbose=False)
 
     # Did we get any results?
-    if table is None or table.is_empty() or len(table.array) == 0:
-        log.stdinfo(f"No results returned from {server}")
+    if not table:
+        try:
+            warning = warning_list[0]
+        except IndexError:
+            log.stdinfo(f"No results returned from {server} but no warning "
+                        "issued")
+        else:
+            if warning.category == NoResultsWarning:
+                log.stdinfo(f"No results returned from {server}")
+            elif "retries" in str(warning.message):
+                log.warning(f"Server {server} appears to be down")
+            else:
+                log.warning(f"Unexpected warning from {server}: "
+                            f"{warning.message}")
         return
-
-    array = table.array
 
     if server == 'sdss9_vizier':
         # Vizier uses the photoObj table from SDSS9, whereas the internal
@@ -234,34 +235,33 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
         # to reproduce here since the cuts apply to extinction-corrected
         # magnitudes, and we don't have the extinction values in the Vizier
         # table.
-        array = array[array['mode'] == 1]
+        table = table[table['mode'] == 1]
 
     # It turns out to be not viable to use UCDs to select the columns,
     # even for the id, ra, and dec. Even with vizier. <sigh>
     # The first column is our running integer column
-    ret_table = Table([list(range(1, len(array)+1))],
-                      names=('Id',), dtype=('i4',))
+    table.keep_columns(server_cols)
+    table.add_column(np.arange(1, len(table)+1, dtype=np.int32),
+                     name='Id', index=0)
+    for old_name, new_name in zip(
+            server_cols, ["Cat_Id", "RAJ2000", "DEJ2000"] + cols[3:]):
+        table.rename_column(old_name, new_name)
 
-    ret_table.add_column(Column(array[server_cols[0]], name='Cat_Id',
-                                dtype='a'))
-    ret_table.add_column(Column(array[server_cols[1]], name='RAJ2000',
-                                dtype='f8', unit='deg'))
-    ret_table.add_column(Column(array[server_cols[2]], name='DEJ2000',
-                                dtype='f8', unit='deg'))
+    # Reorder columns and set datatypes
+    table = table[['Id', 'Cat_Id', 'RAJ2000', 'DEJ2000'] + cols[3:]]
+    table['Cat_Id'] = [str(item) for item in table['Cat_Id']]  # force string
+    for c in table.colnames[4:]:
+        table[c].format = "8.4f"
 
-    # Now the photometry columns
-    for col in range(3, len(cols)):
-        ret_table.add_column(Column(array[server_cols[col]], name=cols[col],
-                                    dtype='f4', unit='mag', format='8.4f'))
-
-    header = add_header_to_table(ret_table)
+    table_name = table.meta.get('name')
+    table.meta = None
+    header = add_header_to_table(table)
     header['CATALOG'] = (catalog.upper(), 'Origin of source catalog')
 
     # Add comments to the header to describe it
     header.add_comment(f'Source catalog derived from the {catalog} catalog')
     header.add_comment(f'Source catalog fetched from server at {url}')
-    header.add_comment(f'Delivered Table name from server:  {table.name}')
-    for col in range(len(cols)):
-        header.add_comment('UCD for field {} is {}'.format(
-            cols[col], table.get_field_by_id(server_cols[col]).ucd))
-    return ret_table
+    if table_name:
+        header.add_comment(f'Delivered Table name from server:  {table_name}')
+
+    return table

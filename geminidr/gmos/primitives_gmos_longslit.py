@@ -355,7 +355,8 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
 
                 log.info("Temporarily mosaicking multi-extension file")
                 mosaicked_ad = transform.resample_from_wcs(
-                    ad, "mosaic", attributes=None, order=1, process_objcat=False)
+                    ad, "mosaic", attributes=None, interpolant="linear",
+                    process_objcat=False)
 
             else:
 

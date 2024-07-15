@@ -1,4 +1,5 @@
 import urllib
+import logging
 
 import pytest
 from astropy import units as u
@@ -39,12 +40,22 @@ def test_get_fits_table(catalog, ra, dec, radius, nres):
     ('2mass', 180., 0., 0.02, 5),
     ('sdss9', 160., 30., 0.02, 21),
 ])
-def test_get_fits_table_vizier(catalog, ra, dec, radius, nres):
+def test_get_fits_table_vizier(catalog, ra, dec, radius, nres, caplog):
     """Tests the same requests but on Vizier this time, specifying explicitly
     the server.
     """
+    caplog.set_level(logging.WARNING, logger="geminidr")
+
     ret = get_fits_table(catalog, ra, dec, radius, server=f'{catalog}_vizier')
-    assert len(ret) == nres
+    try:
+        assert len(ret) == nres
+    except TypeError:  # ret is None
+        for record in caplog.records:
+            if (record.levelname == 'WARNING' and
+                    ("appears to be down" in record.message or
+                     "aborted" in record.message)):
+                pytest.skip(record.message)
+        raise
 
     center = SkyCoord(ra, dec, unit='deg')
     coord = SkyCoord(ret['RAJ2000'], ret['DEJ2000'], unit='deg')

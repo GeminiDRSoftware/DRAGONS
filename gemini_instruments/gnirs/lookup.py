@@ -6,29 +6,95 @@ DetectorConfig = namedtuple("Config", "readnoise gain well linearlimit nonlinear
 Config = namedtuple("Config", "mdf offsetsection pixscale mode")
 
 detector_properties = {
-    # Taken from http://www.gemini.edu/sciops/instruments/gnirs/imaging/detector-properties-and-read-modes
-    # Dictionary key is the read mode and well depth setting
-    # Dictionary values are in the following order:
-    # readnoise, gain, well, linearlimit, nonlinearlimit
-    # readnoise and well are in units of electrons
-    ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
-    ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
-    ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
-    ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
-    ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
-    ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
-    ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
-    ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
-    }
+    'UNKNOWN': { # GNIRS South
+        # From an archived web page from 2006.  Found by Andy Stephens.
+        # https://web.archive.org/web/20060901071906/http://www.gemini.edu/sciops/instruments/nirs/nirsIndex.html
+        #
+        # Dictionary key is the read mode and well depth setting
+        # Dictionary values are in the following order:
+        # readnoise, gain, well, linearlimit, nonlinearlimit
+        # readnoise and well are in units of electrons
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(145., 13.5, 90000., 0.714286, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(38., 13.5, 90000., 0.714286, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(12., 13.5, 90000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(145., 13.5, 180000., 0.714286, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(38., 13.5, 180000., 0.714286, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(12., 13.5, 180000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
+
+    },
+
+    'SN7638228.1': { # GNIRS North - early days
+        # Copied from SN7638228.1.2.  Values in Gemini IRAF's array.fits are
+        # incomplete, but similar enough to assume that this is better than
+        # using the incomplete set.  Can be adjusted if the GNIRS team provides
+        # better values.
+        #
+        # Dictionary key is the read mode and well depth setting
+        # Dictionary values are in the following order:
+        # readnoise, gain, well, linearlimit, nonlinearlimit
+        # readnoise and well are in units of electrons
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
+    },
+    'SN7638228.1.2': {   # GNIRS North - Orginal Detector Controller
+        # Taken from https://www.gemini.edu/instrumentation/gnirs/components [June 2024]
+        #
+        # Dictionary key is the read mode and well depth setting
+        # Dictionary values are in the following order:
+        # readnoise, gain, well, linearlimit, nonlinearlimit
+        # readnoise and well are in units of electrons
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
+    },
+    'SN7638228.1.2+ARC-III': {  # GNIRS North - New Detector Controller [July 2024]
+        # Temporary values (copied from SN7638228.1.2)
+        #
+        # Dictionary key is the read mode and well depth setting
+        # Dictionary values are in the following order:
+        # readnoise, gain, well, linearlimit, nonlinearlimit
+        # readnoise and well are in units of electrons
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.714286, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.714286, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.714286, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.714286, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.714286, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.714286, 1.0),
+        ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
+    },
+}
 
 nominal_zeropoints = {
     # There are none defined...
 }
 
 # pixel scales for GNIRS Short and Long cameras
+pixel_scale = {
+    'ShortBlue': 0.15170,  # +/- 0.00012 "/pix
+    'ShortRed': 0.15,
+    'LongBlue': 0.05071,  # +/- 0.0001 "/pix
+    'LongRed': 0.05095,   # +/- 0.0002 "/pix
+}
+
+# JUST FOR THE config_dict.
 pixel_scale_shrt = 0.15
 pixel_scale_long = 0.05
 
+# NOT USED as far as I can tell. KL [June 2024]
 config_dict = {
     # Dictionary keys are in the following order:
     # prism, decker, grating, camera

@@ -311,15 +311,15 @@ class Visualize(PrimitivesBASE):
             suffix to be added to output files.
         sci_only: bool
             mosaic only SCI image data. Default is False
-        order: int (1-5)
-            order of spline interpolation
+        interpolant: str
+            type of interpolant
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
         suffix = params['suffix']
-        order = params['order']
+        interpolant = params['interpolant']
         attributes = ['data'] if params['sci_only'] else None
         geotable = import_module('.geometry_conf', self.inst_lookups)
 
@@ -350,12 +350,12 @@ class Visualize(PrimitivesBASE):
             # we can catch that, trim, and try again. Don't catch anything else
             try:
                 ad_out = transform.resample_from_wcs(ad, "mosaic", attributes=attributes,
-                                                     order=order, process_objcat=False)
+                                                     interpolant=interpolant, process_objcat=False)
             except ValueError as e:
                 if 'data sections' in repr(e):
                     ad = gt.trim_to_data_section(ad, self.keyword_comments)
                     ad_out = transform.resample_from_wcs(ad, "mosaic", attributes=attributes,
-                                                         order=order, process_objcat=False)
+                                                         interpolant=interpolant, process_objcat=False)
                 else:
                     raise e
 

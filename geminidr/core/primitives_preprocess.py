@@ -323,6 +323,13 @@ class Preprocess(PrimitivesBASE):
                                               if abs(sky_dict[k] - sci_time) <= seconds])
 
                     # Now create a sky list of the appropriate length
+                    if num_matching_skies < min_skies:
+                        log.warning("\nFound fewer skies matching the time criterium"
+                                    " than requested \n"
+                                    "by the min_skies parameter.  "
+                                    "Ignoring the time parameter. \n"
+                                    "Enforcing min_skies.")
+                        log.warning("To enforce the time parameter, set min_skies to 0.")
                     num_skies = min(max_skies or len(sky_list),
                                     max(min_skies or 0, num_matching_skies))
                     sky_list = sky_list[:num_skies]
@@ -334,7 +341,7 @@ class Preprocess(PrimitivesBASE):
                 if sky_list:
                     sky_table = Table(names=('SKYNAME',),
                                       data=[[sky.filename for sky in sky_list]])
-                    log.stdinfo(f"The sky frames associated with {ad.filename} are:")
+                    log.stdinfo(f"\nThe sky frames associated with {ad.filename} are:")
                     for sky in sky_list:
                         log.stdinfo(f"  {sky.filename}")
                     ad.SKYTABLE = sky_table
@@ -1480,8 +1487,8 @@ class Preprocess(PrimitivesBASE):
 
         save_sky = params["save_sky"]
         reset_sky = params["reset_sky"]
-        scale_sky = params["scale_sky"]
-        offset_sky = params["offset_sky"]
+        scale_sky = params.get("scale_sky", False)
+        offset_sky = params.get("offset_sky", False)
         suffix = params["suffix"]
         if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "

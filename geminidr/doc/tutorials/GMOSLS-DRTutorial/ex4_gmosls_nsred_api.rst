@@ -280,7 +280,7 @@ First, let's have a look at the list of objects.
         ad = astrodata.open(sci)
         print(sci, '  ', ad.object())
 
-On line 37, remember that the second argument contains the tags to **include**
+On line 32, remember that the second argument contains the tags to **include**
 (``tags``) and the third argument is the list of tags to **exclude**
 (``xtags``).
 
@@ -421,7 +421,7 @@ be reduced individually.
 
 The wavelength solution is automatically calculated and the algorithm has
 been found to be quite reliable.  There might be cases where it fails; inspect
-the ``*_mosaic.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
+the ``*_wavelengthSolutionDetermined.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
 logs to confirm a good solution.
 
 .. code-block:: python
@@ -459,8 +459,8 @@ configuration file.
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
-    reduce_std.uparms = [('traceApertures:interactive', True),
-                         ('calculateSensitivity:interactive', True)]
+    reduce_std.uparms = dict([('traceApertures:interactive', True),
+                         ('calculateSensitivity:interactive', True)])
     reduce_std.runr()
 
 The interactive tools are introduced in a later chapter: :ref:`interactive`.
@@ -544,7 +544,7 @@ science observations and extract the 1-D spectrum.
 
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
-    reduce_science.uparms = [('traceApertures:interactive', True)]
+    reduce_science.uparms = dict([('traceApertures:interactive', True)])
     reduce_science.runr()
 
 **traceApertures**

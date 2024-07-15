@@ -122,6 +122,16 @@ class combineOrdersConfig(config.Config):
                                                 "scaled": "Scale spectra before stacking",
                                                 "unscaled": "Stack spectra without scaling"},
                                                 default="scaled", optional=True)
+    interpolant = config.ChoiceField("Type of interpolant", str,
+                                     allowed={"nearest": "Nearest neighbour",
+                                              "linear": "Linear interpolation",
+                                              "poly3": "Cubic polynomial interpolation",
+                                              "poly5": "Quintic polynomial interpolation",
+                                              "spline3": "Cubic spline interpolation",
+                                              "spline5": "Quintic spline interpolation"},
+                                     default="linear", optional=False)
+    dq_threshold = config.RangeField("Threshold for flagging pixels", float,
+                                     0.001, min=0., max=1.)
 
 
 fluxCalibrateConfig = parameters_spect.fluxCalibrateConfig

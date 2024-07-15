@@ -24,7 +24,7 @@ the instance. Use the type specified in the type column.)::
  recipename             <type 'str'>         'default'
  suffix                 <type 'str'>         None
  ucals                  <type 'dict'>        None
- uparms                 <type 'list'>        None
+ uparms                 <type 'dict'>        None
  upload                 <type 'list'>        None
 
 Examples
@@ -43,19 +43,19 @@ Or in other pythonic ways::
  >>> myreduce.files
  ['UVW.fits', 'XYZ.fits', 'FOO.fits', 'BAR.fits']
 
-Users wishing to pass primtive parameters to the recipe_system need only set
+Users wishing to pass primitive parameters to the recipe_system need only set
 the one attribute, ``uparms``, on the Reduce instance::
 
- >>> myreduce.uparms = ['nhigh=4']
+ >>> myreduce.uparms = dict([('nhigh=4')])
 
 This is the API equivalent to the command line option::
 
  $ reduce -p nhigh=4 [...]
 
-For muliple primitive parameters, the 'uparms' attribute is a list of 
-'par=val' strings, as in::
+For multiple primitive parameters, the 'uparms' attribute is a `dict` that
+can be built from a list of 'par:val' tuples, as in::
 
- >>> myreduce.uparms = [ 'par1=val1', 'par2=val2', ... ]
+ >>> myreduce.uparms = dict([(par1, val), (par2, val2), ... ]
 
 Example function
 ----------------
@@ -74,7 +74,7 @@ files). Here, each list of ``procfiles`` is then passed to the internal
 
     def reduce_conditions_are_met(procfiles, control_options=None):
         reduce_object = Reduce()
-        reduce_object.uparms = ['nhigh=4']
+        reduce_object.uparms = dict([('nhigh', 4)])
 	
         # write logfile only, no stdout.
         logutils.config(file_name='my_reduce.log', mode='quiet')

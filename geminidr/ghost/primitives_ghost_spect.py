@@ -610,6 +610,10 @@ class GHOSTSpect(GHOST):
             none/None: do not stack spectra
             scaled: scale each new spectrum to the current result
             unscaled: perform no scaling
+        interpolant: str
+            type of resampling interpolant
+        dq_threshold: float
+            threshold for flagging a contaminated pixel as bad
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -617,10 +621,10 @@ class GHOSTSpect(GHOST):
         scale = params["scale"]
         oversample = params["oversample"]
         stacking_mode = params["stacking_mode"] or "none"
+        interpolant = params["interpolant"]
+        dq_threshold = params["dq_threshold"]
 
         # These should probably be exposed as user parameters
-        interp_order = 1
-        dq_threshold = 0.001
         parallel = False
 
         adoutputs = []
@@ -710,7 +714,7 @@ class GHOSTSpect(GHOST):
                     # flux *density* by flatfielding due to different pixel
                     # wavelength extents
                     dg.transform(attributes=['data', 'mask', 'variance'],
-                                 order=interp_order, subsample=1,
+                                 interpolant=interpolant, subsample=1,
                                  threshold=dq_threshold, conserve=False,
                                  parallel=parallel)
                     flux_for_adding = dg.output_dict['data']
@@ -2360,6 +2364,10 @@ class GHOSTSpect(GHOST):
                 ext.hdr['APERTURE'] = i
         Spect.write1DSpectra(self, adinputs, **params)
         return adinputs
+
+    @staticmethod
+    def _has_valid_extensions(ad):
+        return len(ad) == 4
 
 
 ##############################################################################

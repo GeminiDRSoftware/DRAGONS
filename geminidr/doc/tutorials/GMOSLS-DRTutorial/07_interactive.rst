@@ -38,7 +38,7 @@ To activate the interactive mode for **all** the primitives::
    API
      redux = Reduce()
      redux.files = [files_to_reduce]
-     redux.uparms = [('interactive', True)]
+     redux.uparms = dict([('interactive', True)])
 
 To activate the interactive mode for a specific primitive::
 
@@ -48,7 +48,7 @@ To activate the interactive mode for a specific primitive::
    API
      redux = Reduce()
      redux.files = [files_to_reduce]
-     redux.uparms = [('traceApertures:interactive', True)]
+     redux.uparms = dict([('traceApertures:interactive', True)])
 
 
 .. _ui_layout:

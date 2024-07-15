@@ -289,7 +289,7 @@ science data:
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)
-    reduce_target.uparms.append(('skyCorrect:offset_sky', False))
+    reduce_target.uparms['skyCorrect:offset_sky'] = False
     reduce_target.runr()
 
 This will generate flat corrected files, align them,

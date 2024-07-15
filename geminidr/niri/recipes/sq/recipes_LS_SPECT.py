@@ -39,7 +39,7 @@ def reduceScience(p):
     p.storeProcessedScience(suffix="_1D")
 
 
-def  makeWavecalFromSkyEmission(p):
+def makeWavecalFromSkyEmission(p):
     """
     Process NIRI longslist science in order to create wavelength and distortion
     solutions using sky emission lines.
@@ -62,7 +62,8 @@ def  makeWavecalFromSkyEmission(p):
     p.storeProcessedArc(force=True)
     p.writeOutputs()
 
-def  makeWavecalFromSkyAbsorption(p):
+
+def makeWavecalFromSkyAbsorption(p):
     """
     Process NIRI longslist science in order to create wavelength solution
     using telluric absorption in the target spectrum. Copy distortion model

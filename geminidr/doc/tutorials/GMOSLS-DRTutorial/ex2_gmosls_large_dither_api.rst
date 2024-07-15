@@ -429,7 +429,7 @@ To activate the interactive mode:
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
-    reduce_flats.uparms = [('interactive', True)]
+    reduce_flats.uparms = dict([('interactive', True)])
     reduce_flats.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
@@ -474,7 +474,7 @@ interactive mode. To activate the interactive mode:
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
-    reduce_arcs.uparms = [('interactive', True)]
+    reduce_arcs.uparms = dict([('interactive', True)])
     reduce_arcs.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
@@ -523,7 +523,7 @@ mode for all four:
 
     reduce_std_705nm = Reduce()
     reduce_std_705nm.files.extend(stdstar_705nm)
-    reduce_std_705nm.uparms = [('interactive', True)]
+    reduce_std_705nm.uparms = dict([('interactive', True)])
     reduce_std_705nm.runr()
 
 Since the standard star spectrum is bright and strong, and the exposure short,
@@ -540,7 +540,7 @@ sensitivity function:
 
     reduce_std_705nm = Reduce()
     reduce_std_705nm.files.extend(stdstar_705nm)
-    reduce_std_705nm.uparms = [('calculateSensitivity:interactive', True)]
+    reduce_std_705nm.uparms = dict([('calculateSensitivity:interactive', True)])
     reduce_std_705nm.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
@@ -565,9 +565,9 @@ we update as follows
 
     reduce_std_795nm = Reduce()
     reduce_std_795nm.files.extend(stdstar_795nm)
-    reduce_std_795nm.uparms = [('calculateSensitivity:interactive', True),
+    reduce_std_795nm.uparms = dict([('calculateSensitivity:interactive', True),
         ('calculateSensitivity:resampling', 15.0)
-    ]
+    ])
     reduce_std_795nm.runr()
 
 .. image:: _graphics/LS_ldred_sens_before.png
@@ -631,7 +631,7 @@ science observations and extract the 1-D spectrum.
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
     reduce_science.recipename = 'reduceWithMultipleStandards'
-    reduce_science.uparms = [('interactive', True)]
+    reduce_science.uparms = dict([('interactive', True)])
     reduce_science.runr()
     
 Here we use a different science reduction recipe ``reduceWithMultipleStandards`` (line 97) 
@@ -772,5 +772,5 @@ To use a different format, set the ``format`` parameters.
     writeascii = Reduce()
     writeascii.files = ['S20220611S0716_1D.fits']
     writeascii.recipename = 'write1DSpectra'
-    writeascii.uparms = [('format', 'ascii.ecsv'), ('extension', 'ecsv')]
+    writeascii.uparms = dict([('format', 'ascii.ecsv'), ('extension', 'ecsv')])
     writeascii.runr()

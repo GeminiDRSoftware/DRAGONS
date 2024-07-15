@@ -83,7 +83,7 @@ class LineList:
         filename : str
             name of text file
         """
-        r = re.compile(".*\sunits\s+(.+)")
+        r = re.compile(r".*\sunits\s+(.+)")
         is_air = False
         is_vacuo = False
         data_lines = []

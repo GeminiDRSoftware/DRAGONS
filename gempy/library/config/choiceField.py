@@ -34,7 +34,7 @@ class ChoiceField(Field):
     All allowed must be of the same type.
     Allowed values should be provided as a dict of value, doc string pairs
     """
-    def __init__(self, doc, dtype, allowed, default=None, optional=True):
+    def __init__(self, doc, dtype, allowed, default=None, optional=False):
         self.allowed = dict(allowed)
         if optional and None not in self.allowed:
             self.allowed[None] = "Field is optional"
