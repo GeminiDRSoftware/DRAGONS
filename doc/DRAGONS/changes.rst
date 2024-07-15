@@ -15,6 +15,11 @@ Improvements
 
 * Improved speed and success rate of wavelength calibration.
 
+**geminidr.ghost**
+
+* Added ``makeIRAFCompatible`` primitive to write order-combined GHOST
+  spectra in a non-FITS-standard format that is compatible with IRAF.
+
 Bug fixes
 ---------
 **geminidr.ghost**
