@@ -816,9 +816,14 @@ def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
     if not extrema:
         return []
 
-    # Find the first and last unmasked points in the profile:
-    l_unmasked = prof_mask.argmin()
-    r_unmasked = prof_mask.size - prof_mask[::-1].argmin() - 1
+    if prof_mask is not None:
+        # Find the first and last unmasked points in the profile
+        l_unmasked = prof_mask.argmin()
+        r_unmasked = prof_mask.size - prof_mask[::-1].argmin() - 1
+    else:
+        # If no prof_mask, just get the ends of the profile
+        l_unmasked = 0
+        r_unmasked = len(profile) - 1
 
     # Delete a maximum if there is no minimum between it and the edge,
     # unless it's the ONLY maximum
