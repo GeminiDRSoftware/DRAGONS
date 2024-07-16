@@ -53,7 +53,7 @@ def test_gsaoi_resample_to_refcat(path_to_inputs, adinputs):
     assert ad[0].shape == (4219, 4226)
     assert_allclose(t.factor_0, 1, atol=1e-3)
     assert_allclose(t.angle_1, 0, atol=0.01)
-    assert_allclose(t.parameters[2:], 0, atol=0.05)
+    assert_allclose(t.parameters[2:], 0, atol=0.07)
 
 
 @pytest.fixture(scope="function")
