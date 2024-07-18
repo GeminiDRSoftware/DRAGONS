@@ -103,7 +103,7 @@ def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrof
         ext.mask = np.zeros_like(ext.data, dtype=np.uint)
 
     p = GMOSSpect([ad])
-    _ad = p.findApertures(max_apertures=1)[0]
+    _ad = p.findApertures(max_apertures=1, min_snr=3)[0]
 
     for _ext in _ad:
         # ToDo - Could we improve the primitive to have atol=0.50 or less?
