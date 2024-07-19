@@ -22,7 +22,8 @@ from astropy.io.ascii.core import InconsistentTableError
 from astropy.io.registry import IORegistryError
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
-from astropy.modeling import Model, models
+from astropy.modeling import Model, fitting, models
+from astropy.stats import sigma_clip
 from astropy.table import Table, hstack, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -40,6 +41,8 @@ from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
+from astrodata.utils import Section
+from geminidr.core.primitives_preprocess import _attach_rectification_model
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
@@ -51,7 +54,7 @@ from geminidr.interactive.fit.wavecal import WavelengthSolutionVisualizer
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
-from gempy.library import tracing, transform, wavecal
+from gempy.library import peak_finding, tracing, transform, wavecal
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter, match_sources, fit_model
@@ -342,7 +345,7 @@ class Spect(Resample):
         log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
         if any('sources' in m for m in methods):
-            ref_profile_dict = {i: tracing.stack_slit(refad[i], section=region)
+            ref_profile_dict = {i: peak_finding.stack_slit(refad[i], section=region)
                                 for i in range(len(refad))}
         if 'sources_wcs' in methods:
             # World coords are the same for each slit.
@@ -410,7 +413,7 @@ class Spect(Resample):
                                         found_peak = peak
                                         break
                             if found_peak:
-                                # found_peak = tracing.pinpoint_peaks(corr, None, found_peak)[0]
+                                # found_peak = peak_finding.pinpoint_peaks(corr, None, found_peak)[0]
                                 offset = found_peak - ref_profile_dict[iext].shape[0] + 1
                             else:
                                 log.warning("No cross-correlation peak found for "
@@ -1406,12 +1409,12 @@ class Spect(Resample):
 
                 # This is identical to the code in determineWavelengthSolution()
                 if fwidth is None:
-                    data, _, _, _ = tracing.average_along_slit(ext, center=start, nsum=nsum)
-                    fwidth = tracing.estimate_peak_width(data, boxcar_size=30)
+                    data, _, _, _ = peak_finding.average_along_slit(ext, center=start, nsum=nsum)
+                    fwidth = peak_finding.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 if initial_peaks is None:
-                    data, mask, variance, extract_info = tracing.average_along_slit(
+                    data, mask, variance, extract_info = peak_finding.average_along_slit(
                         ext, center=start, nsum=nsum)
                     if constant_slit:
                         # For (basically) straight slits, `extract_info` is a
@@ -1430,7 +1433,7 @@ class Spect(Resample):
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                    initial_peaks, _ = tracing.find_wavelet_peaks(
+                    initial_peaks, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
                     log.stdinfo(f"Found {len(initial_peaks)} peaks")
@@ -2295,7 +2298,7 @@ class Spect(Resample):
             Expected width of arc lines in pixels. It tells how far the
             KDTreeFitter should look for when matching detected peaks with
             reference arcs lines. If None, `fwidth` is determined using
-            `tracing.estimate_peak_width`.
+            `peak_finding.estimate_peak_width`.
 
         min_sep : float
             Minimum separation (in pixels) for peaks to be considered distinct
@@ -2838,7 +2841,7 @@ class Spect(Resample):
                         ext_oriented, ui_params=ui_params, filename=filename, **aper_params,
                         direction="column" if dispaxis == 0 else "row")
                 else:
-                    locations, all_limits, _, _ = tracing.find_apertures(
+                    locations, all_limits, _, _ = peak_finding.find_apertures(
                         ext_oriented, **aper_params)
 
                 if locations is None or len(locations) == 0:
@@ -3580,7 +3583,7 @@ class Spect(Resample):
                     direction = "row" if dispaxis == 1 else "column"
                     constant_slit = 'LS' in ext.tags
 
-                    data, mask, variance, extract_info = tracing.average_along_slit(
+                    data, mask, variance, extract_info = peak_finding.average_along_slit(
                         ext, center=ui_params.center, nsum=ui_params.nsum,
                         offset_from_center=ui_params.offset_from_center)
                     if constant_slit:
@@ -4676,6 +4679,7 @@ class Spect(Resample):
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                 # These are returned sorted by pixel coordinate
                 initial_peaks, _ = tracing.find_wavelet_peaks(
+                initial_peaks, _ = peak_finding.find_wavelet_peaks(
                     data, widths=widths, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)
@@ -5312,8 +5316,9 @@ class Spect(Resample):
         best_peaks = trim_peaks(peaks_with_weights, inverse_atran_spec.shape[0], nbins=nbins,
                                 nlargest=model_params["nlines"]//nbins, sort=True)
         # Pinpoint peak positions
-        final_peaks, peak_values = pinpoint_peaks(inverse_atran_spec, peaks=best_peaks[:,0],
-                                                  halfwidth=1, keep_bad=True)
+        final_peaks, peak_values = peak_finding.pinpoint_peaks(
+            inverse_atran_spec, peaks=best_peaks[:,0],
+            halfwidth=1, keep_bad=True)
 
         atran_linelist = np.empty([len(final_peaks),3])
         # wavelenghts

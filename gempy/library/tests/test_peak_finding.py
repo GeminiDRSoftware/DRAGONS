@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from astropy.modeling import models
-from gempy.library import tracing
+from gempy.library import peak_finding
 
 
 @pytest.mark.parametrize("fwhm", [2, 4, 6, 8, 12])
@@ -31,7 +31,7 @@ def test_estimate_peak_width(fwhm):
     np.random.seed(0)
     y += (np.random.random(x.size) - 0.5) * noise
 
-    measured_fwhm = tracing.estimate_peak_width(y)
+    measured_fwhm = peak_finding.estimate_peak_width(y)
 
     np.testing.assert_allclose(fwhm, measured_fwhm, atol=1)
 
@@ -55,7 +55,7 @@ def test_find_peaks(noise):
     np.random.seed(0)
     y += (np.random.random(x.size) - 0.5) * noise
 
-    peaks_detected, _ = tracing.find_wavelet_peaks(y, np.ones_like(y) * stddev)
+    peaks_detected, _ = peak_finding.find_wavelet_peaks(y, np.ones_like(y) * stddev)
 
     np.testing.assert_allclose(peaks_detected, peaks, atol=1)
 
@@ -65,7 +65,7 @@ def test_get_limits():
     x = np.arange(CENT * 2)
     y = 100 * np.exp(-0.5 * ((x - CENT) / SIG) ** 2)
 
-    limits = np.asarray(tracing.get_limits(y, mask=None, peaks=[CENT],
+    limits = np.asarray(peak_finding.get_limits(y, mask=None, peaks=[CENT],
                                            threshold=0.05)[0])
     np.testing.assert_allclose(abs(limits - CENT),
                                SIG * np.sqrt(2 * np.log(20)),
