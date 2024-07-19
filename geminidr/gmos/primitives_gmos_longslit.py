@@ -23,7 +23,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.fitting import fit_1D
-from gempy.library import astromodels, tracing, transform
+from gempy.library import astromodels, peak_finding, transform
 from gempy.library import astrotools as at
 
 from gwcs import coordinate_frames
@@ -228,7 +228,7 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
 
                     # Only keep maxima if the fitted peak value is close to
                     # the actual peak (should remove single-pixel peaks)
-                    extrema = tracing.get_extrema(xcorr, remove_edge_maxima=False)
+                    extrema = peak_finding.get_extrema(xcorr, remove_edge_maxima=False)
                     if debug_plot:
                         print(extrema)
                     maxima = [int(x[0] + 0.5) for x in extrema if x[2]]

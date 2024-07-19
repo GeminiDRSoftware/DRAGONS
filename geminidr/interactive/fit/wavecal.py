@@ -25,7 +25,7 @@ from geminidr.interactive.styles import dragons_styles
 
 
 from gempy.library.matching import match_sources
-from gempy.library.tracing import cwt_ricker, pinpoint_peaks
+from gempy.library.peak_finding import cwt_ricker, pinpoint_peaks
 from gempy.library.fitting import fit_1D
 
 from .fit1d import (

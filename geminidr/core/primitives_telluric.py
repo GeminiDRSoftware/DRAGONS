@@ -19,7 +19,7 @@ from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from geminidr.interactive.interactive import UIParameters
 import geminidr.interactive.server
-from gempy.library import astromodels as am, convolution, tracing
+from gempy.library import astromodels as am, convolution, peak_finding
 
 #from .calibrator import TelluricCalibrator
 #from .fit import TelluricSpectrum
@@ -43,7 +43,7 @@ class Telluric(Spect):
         self._param_update(parameters_telluric)
 
         lsf_module = import_module('.lsf', self.inst_lookups)
-        self._lsf = lsf_module.lsf_factory(self.__class__.__name__)
+        self._line_spread_function = lsf_module.lsf_factory(self.__class__.__name__)
 
     def fitTelluric(self, adinputs=None, **params):
         """
@@ -171,7 +171,7 @@ class Telluric(Spect):
                         if len(ext.shape) > 1:
                             continue
 
-                        pixel_shift = tracing.cross_correlate_subpixels(
+                        pixel_shift = peak_finding.cross_correlate_subpixels(
                             tspek.nddata, tspek.pca.evaluate(None, pca_coeffs),
                             sampling)
                         if pixel_shift is None:
@@ -410,7 +410,7 @@ class Telluric(Spect):
 
                     # Now that we have the best model, let's cross-correlate!
                     if xcorr:
-                        pixel_shift = tracing.cross_correlate_subpixels(
+                        pixel_shift = peak_finding.cross_correlate_subpixels(
                             ext.data, trans, sampling)
                         if pixel_shift is None:
                             log.warning("Cannot determine cross-correlation"

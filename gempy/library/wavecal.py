@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 
 from astrodata import wcs as adwcs
 
-from . import matching, tracing
+from . import matching, tracing, peak_finding
 from .fitting import fit_1D
 from . import astromodels as am
 
@@ -211,7 +211,7 @@ def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
     """
     # Find peaks; convert width FWHM to sigma
     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-    peaks, peak_snrs = tracing.find_wavelet_peaks(
+    peaks, peak_snrs = peak_finding.find_wavelet_peaks(
         data, widths=widths, mask=mask, variance=variance, min_snr=min_snr,
         min_sep=min_sep, reject_bad=reject_bad)
     fit_this_peak = peak_snrs > min_snr
@@ -498,7 +498,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
         const_slit = 'LS' in ext.tags
-        data, mask, variance, extract_info = tracing.average_along_slit(
+        data, mask, variance, extract_info = peak_finding.average_along_slit(
             ext, center=config["center"], nsum=config["nsum"],
             combiner=config["combine_method"])
         if const_slit:
@@ -533,14 +533,14 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         data[mask > 0] = 0.
 
     if config["fwidth"] is None:
-        fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30)
+        fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30)
         logit(f"Estimated feature width: {fwidth:.2f} pixels")
     else:
         fwidth = config["fwidth"]
 
     # If we are doing wavecal from sky absorption lines in object spectrum,
     # the most realistic variance estimation comes from pixel-to-pixel
-    # variations, as done in `tracing.find_wavelet_peaks`.
+    # variations, as done in `peak_finding.find_wavelet_peaks`.
     # The variance estimations coming from `tracing.average_along_slit` don't
     # provide sensible values in this particular case.
     if config.get("absorption") is True:
@@ -557,7 +557,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends
     # to be too high.
     if config["fwidth"] is None:
-        fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
+        fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
         log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,

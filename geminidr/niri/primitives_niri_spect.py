@@ -99,7 +99,7 @@ class NIRISpect(Spect, NIRI):
             Expected width of arc lines in pixels. It tells how far the
             KDTreeFitter should look for when matching detected peaks with
             reference arcs lines. If None, `fwidth` is determined using
-            `tracing.estimate_peak_width`.
+            `peak_finding.estimate_peak_width`.
 
         min_sep : float
             Minimum separation (in pixels) for peaks to be considered distinct

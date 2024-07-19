@@ -7,7 +7,7 @@ from astropy.stats import sigma_clipped_stats
 
 import astrodata, gemini_instruments
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
-from gempy.library import tracing, wavecal
+from gempy.library import peak_finding, wavecal
 
 # NB N20210622S0320.fits is NOT the raw file; it has had its pixels
 # replaced with those from the CS region of N20210622S0318.fits, to
@@ -74,7 +74,7 @@ def test_spectral_wcs_stability(science, arc, save_and_reload,
         dw: float
             disperion (nm/pixel)
         """
-        spectrum = tracing.average_along_slit(ad[0], center=y, nsum=10)
+        spectrum = peak_finding.average_along_slit(ad[0], center=y, nsum=10)
         peaks, _ = wavecal.find_line_peaks(*spectrum[:3], fwidth=fwidth, min_snr=5)
         wave_peaks = ad[0].wcs(peaks, y)[0]
 
