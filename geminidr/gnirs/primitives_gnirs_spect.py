@@ -7,7 +7,7 @@ import os
 
 from importlib import import_module
 
-from geminidr.core import Spect
+from geminidr.core import Spect, Telluric
 
 from .primitives_gnirs import GNIRS
 from . import parameters_gnirs_spect
@@ -20,7 +20,7 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 
 @parameter_override
 @capture_provenance
-class GNIRSSpect(Spect, GNIRS):
+class GNIRSSpect(Telluric, GNIRS):
     """
     This is the class containing all of the preprocessing primitives
     for the GNIRSSpect level of the type hierarchy tree. It inherits all

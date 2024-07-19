@@ -8,6 +8,7 @@ from .primitives_preprocess import Preprocess
 from .primitives_spect import Spect
 from .primitives_stack import Stack
 from .primitives_standardize import Standardize
+from .primitives_telluric import Telluric
 from .primitives_visualize import Visualize
 
 # These are currently inherited by Image

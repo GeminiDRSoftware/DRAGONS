@@ -1861,3 +1861,52 @@ def trace_aperture(ext, location, ui_params, viewer=None, apnum=None):
         step=ui_params.values['step'],
         viewer=viewer
     )
+
+
+def cross_correlate_subpixels(data, template, sampling=10):
+    """
+    Cross-correlate two arrays to find the shift between them after
+    subsampling each of them.
+
+    Parameters
+    ----------
+    data : numpy.ndarray or maskedarray or NDData
+        The data array.
+    template : numpy.ndarray (no mask)
+        The template array.
+    sampling : int
+        The number of subpixels to use for the cross-correlation.
+
+    Returns
+    -------
+    float
+        The shift between the two arrays.
+    """
+    has_mask = hasattr(data, 'mask')
+    if has_mask:
+        goodpix = ~data.mask.astype(bool)
+        data = data.data
+    else:
+        goodpix = np.ones_like(data, dtype=bool)
+
+    subpixels = np.arange(0, data.size - 0.01, 1. / sampling)
+    spline = interpolate.interp1d(np.arange(data.size)[goodpix], data[goodpix],
+                                  kind='cubic', copy=False, bounds_error=False,
+                                  fill_value=np.nan)
+    subsampled_data = spline(subpixels)
+
+    subsampled_template = interpolate.interp1d(
+        np.arange(data.size), template, kind='cubic', copy=False,
+        bounds_error=False, fill_value=np.nan)(subpixels)
+
+    # If the ends of the data array are masked, these will become NaNs in
+    # the subsampled version and we need to ignore them
+    goodpix = ~np.isnan(subsampled_data)  # same for subsampled_template
+    xcorr = np.correlate(subsampled_template[goodpix],
+                         subsampled_data[goodpix], mode="full")
+    xpeaks, _ = pinpoint_peaks(xcorr, [xcorr.argmax()], halfwidth=5)
+    if xpeaks:
+        return (xpeaks[0] - xcorr.size // 2) / sampling
+    return None
+
+
