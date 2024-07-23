@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 import os
@@ -17,7 +18,10 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename):
                          mode='sq', drpkg='geminidr')
     pclass = pm.get_applicable_primitives()
     p = pclass([ad])
-    adout = p.fitTelluric(magnitude="K=5.241", bbtemp=9650, shift_tolerance=None).pop()
+    adout = p.fitTelluric(magnitude="K=5.241", bbtemp=9650,
+                          shift_tolerance=None).pop()
 
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
     assert ad_compare(adout, adref)
+    assert np.allclose(adout[0].TELLFIT['PCA coefficients'].data,
+                       adref[0].TELLFIT['PCA coefficients'].data)
