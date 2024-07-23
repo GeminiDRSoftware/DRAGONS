@@ -1,12 +1,11 @@
 from gempy.library import config
 from . import parameters_generic, parameters_spect
 from astrodata import AstroData
-#from telluric.utils.physics import parse_magnitude
+from gempy.library.telluric import parse_magnitude
 
 
 def validate_magstr(value):
-    #return None not in parse_magnitude(value)
-    return True
+    return None not in parse_magnitude(value)
 
 
 class fitTelluricConfig(config.core_1Dfitting_config):

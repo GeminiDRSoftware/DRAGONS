@@ -21,11 +21,10 @@ from geminidr.interactive.interactive import UIParameters
 import geminidr.interactive.server
 from gempy.library import astromodels as am, convolution, peak_finding
 
-#from .calibrator import TelluricCalibrator
-#from .fit import TelluricSpectrum
+from gempy.library.calibrator import TelluricCalibrator
+from gempy.library.telluric import TelluricSpectrum
 #from .interactive.fit.telluric import TelluricVisualizer
 
-#from . import lsf_classes
 from . import parameters_telluric
 
 from datetime import datetime
@@ -76,10 +75,8 @@ class Telluric(Spect):
         other parameters define the Line Spread Function scaling
         """
         log = self.log
-        print("LSF", self._lsf)
-        return adinputs
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = "TELLFIT"  # self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         weighting = params["weighting"]
         interactive = params["interactive"]
