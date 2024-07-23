@@ -81,52 +81,6 @@ def convolve(w, y, func, dw, sampling=1):
     return yout
 
 
-def downsample(wout, w, data):
-    """
-    Resample a high-resolution "spectrum" to a lower resolution. The sampling
-    must be to a significantly lower resolution because there is no splitting
-    of input pixels. The input pixels which overlap with a given output pixel
-    are simply averaged. This is no longer used, as it has been replaced by
-    "resample()".
-
-    Parameters
-    ----------
-    wout: array
-        output wavelength array
-    w: array
-        input wavelength array (*must* be in increasing order)
-    data: array
-        data to be resampled
-
-    Returns
-    -------
-    resampled array of same size as wout
-    """
-    raise RuntimeError("Running downsample()")
-    diffs = np.diff(w)
-    if any(diffs <= 0):
-        raise ValueError("Wavelength array must be monotonically increasing")
-
-    if len(data.shape) > 1:
-        output = np.empty((data.shape[0], wout.size), dtype=data.dtype)
-    else:
-        output = np.empty_like(wout, dtype=data.dtype)
-    indices = np.arange(w.size)
-    edges = np.r_[[1.5 * wout[0] - 0.5 * wout[1]],
-                  np.array([wout[:-1], wout[1:]]).mean(axis=0),
-                  [1.5 * wout[-1] - 0.5 * wout[-2]]]
-
-    # have to do some flipping if wavelengths are in descending order
-    if wout[1] > wout[0]:
-        xedges = np.interp(edges, w, indices)
-    else:
-        xedges = np.interp(edges[::-1], w, indices)
-    for i in range(wout.size):
-        x1, x2 = xedges[i:i+2]
-        output[..., i] = data[..., int(x1+1):int(x2+1)].mean(axis=-1)
-    return output if wout[1] > wout[0] else output[..., ::-1]
-
-
 def resample(wout, w, data):
     """
     Resample a spectrum to a different output wavelength array. This follows
