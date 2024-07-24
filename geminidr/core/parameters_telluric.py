@@ -28,6 +28,8 @@ class fitTelluricConfig(config.core_1Dfitting_config):
         "Tolerance (pixels) for ignoring cross-correlation shift",
         float, None, min=0, max=5, inclusiveMax=True, optional=True)
     apply_shift = config.Field("Permanently apply pixel shift?", bool, True)  # debug?
+    debug_lsf_sampling = config.RangeField("Number of sample points for each LSF parameter",
+                                           int, 5, min=3, optional=False)
 
     def setDefaults(self):
         self.niter = 1

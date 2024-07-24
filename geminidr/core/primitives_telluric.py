@@ -23,7 +23,7 @@ from gempy.library import astromodels as am, convolution, peak_finding
 
 from gempy.library.calibrator import TelluricCalibrator
 from gempy.library.telluric import TelluricSpectrum
-#from .interactive.fit.telluric import TelluricVisualizer
+from geminidr.interactive.fit.telluric import TelluricVisualizer
 
 from . import parameters_telluric
 
@@ -72,6 +72,8 @@ class Telluric(Spect):
             maximum pixel shift to ignore (None means ignore)
         apply_shift: bool
             permanently apply the pixel shift?
+        debug_lsf_sampling: int
+            number of sampling points to cover each LSF parameter
         other parameters define the Line Spread Function scaling
         """
         log = self.log
@@ -82,6 +84,7 @@ class Telluric(Spect):
         interactive = params["interactive"]
         shift_tolerance = params["shift_tolerance"]
         apply_shift = params["apply_shift"]
+        lsf_sampling = params["debug_lsf_sampling"]
         iter_list = [(False, interactive)]
         if shift_tolerance is not None:
             iter_list = [(True, False)] + iter_list
@@ -126,7 +129,7 @@ class Telluric(Spect):
                                     [pname for pname in lsf_param_names
                                      if pname not in uiparams.reinit_params]
                                 )
-                                lsf_params = {k: np.logspace(np.log10(v.min), np.log10(v.max), 5)
+                                lsf_params = {k: np.logspace(np.log10(v.min), np.log10(v.max), lsf_sampling)
                                               for k, v in zip(config.keys(), config.iterfields())
                                               if k in lsf_param_names}
                                 tspek.set_pca(lsf_params=lsf_params)
