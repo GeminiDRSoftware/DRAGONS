@@ -26,7 +26,20 @@ from datetime import datetime
 
 PATH = os.path.split(tel_lookups.__file__)[0]
 
+
 log = logutils.get_logger(__name__)
+
+
+VEGA_INFO = {
+    "Y": (1030.5, 0.634),
+    "J": (1250., 0.943),
+    "H": (1644., 1.38),
+    "K'": (2121., 1.84),
+    "Ks": (2149., 1.96),
+    "K": (2198., 1.90),
+    "L'": (3754., 2.94),
+    "M'": (4702., 3.40),
+}
 
 
 class TelluricModels:
@@ -324,17 +337,6 @@ def parse_magnitude(magstr, abmag=False):
     -------
     wavelength, flux density: Quantities
     """
-    VEGA_INFO = {
-        "Y": (1030.5, 0.634),
-        "J": (1250., 0.943),
-        "H": (1644., 1.38),
-        "K'": (2121., 1.84),
-        "Ks": (2149., 1.96),
-        "K": (2198., 1.90),
-        "L'": (3754., 2.94),
-        "M'": (4702., 3.40),
-    }
-
     try:
         fields = magstr.split("=")
         assert len(fields) == 2

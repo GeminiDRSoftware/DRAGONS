@@ -16,8 +16,8 @@ from .fit1d import (
     prep_fit1d_params_for_fit1d, FittingParametersUI, InteractiveModel, InteractiveModel1D)
 from ..styles import dragons_styles
 
-from telluric.utils.models import Planck
-from telluric.utils import physics
+from gempy.library.telluric_models import Planck
+from gempy.library.telluric import parse_magnitude, VEGA_INFO
 
 from .help import TELLURIC_CORRECT_HELP_TEXT
 
@@ -209,7 +209,6 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
                     for callback in v._callbacks.get('value_throttled', []):
                         callback("value", old, v.value)
 
-            print("RE-ENABLING L201")
             vis.modal_widget.disabled = False
 
         vis.do_later(fn)
@@ -531,12 +530,9 @@ class TelluricVisualizer(Fit1DVisualizer):
 
         # Hacky fix to sort out the widgets in the left panel;
         # but at least it's agnostic to the order of the widgets
-        print("REINIT WIDGET CALLBACKS")
         for widget in self.reinit_panel.children:
             if isinstance(widget, bm.layouts.Row):
                 widget_title = getattr(widget.children[0], 'title', None)
-                print(widget.children[0])
-                print(widget.children[0]._callbacks)
                 widget = widget.children[-1]
             else:
                 widget_title = getattr(widget, 'title', None)
@@ -571,9 +567,6 @@ class TelluricVisualizer(Fit1DVisualizer):
                 if "temp" in widget_title:
                     self.modal_widget = widget
                     self.make_modal(widget, "Refitting all data")
-            print(widget)
-            print(widget._callbacks)
-            print("-"*60)
 
         # We need to do this here (it performs *all* the fits) because we
         # suppressed fitting when creating the Panels (special for Telluric)
@@ -588,8 +581,8 @@ class TelluricVisualizer(Fit1DVisualizer):
         spectrum and modify the fit coefficients.
         """
         if isinstance(new, str):
-            w0old, f0old = physics.parse_magnitude(old, self.widgets['abmag'])
-            w0new, f0new = physics.parse_magnitude(new, self.widgets['abmag'])
+            w0old, f0old = parse_magnitude(old, self.widgets['abmag'])
+            w0new, f0new = parse_magnitude(new, self.widgets['abmag'])
             if w0old is None:
                 # means we've just reset the "magstr" TextInput after an
                 # invalid value was entered
@@ -604,7 +597,7 @@ class TelluricVisualizer(Fit1DVisualizer):
         else:
             # "ABmag" checkbox has changed, so we know the magstr is OK
             filt = self.widgets['magnitude'].value.split("=")[0]
-            dmag = physics.VEGA_INFO[filt][1]
+            dmag = VEGA_INFO[filt][1]
             if not new:  # unchecked, so AB->Vega
                 dmag *= -1  # which means it gets fainterf
             scaling = 10 ** (0.4 * dmag)
