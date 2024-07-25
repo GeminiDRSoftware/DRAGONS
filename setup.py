@@ -47,7 +47,8 @@ SCRIPTS += [
 suffix = 'pyx' if use_cython else 'c'
 EXTENSIONS = [
     Extension("gempy.library.cython_utils",
-              [os.path.join('gempy', 'library', 'cython_utils.' + suffix)])
+              [os.path.join('gempy', 'library', 'cython_utils.' + suffix)],
+              extra_compile_args=["-std=c99"])
 ]
 if use_cython:
     EXTENSIONS = cythonize(EXTENSIONS)
