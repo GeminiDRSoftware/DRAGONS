@@ -158,6 +158,7 @@ class InteractiveModel1D(InteractiveModel):
         extra_masks=None,
         initial_fit=None,
         default_model=None,
+        visualizer=None
     ):
         """Create base class with given parameters as initial model inputs.
 
@@ -1007,6 +1008,7 @@ class Fit1DPanel:
         y=None,
         weights=None,
         idx=0,
+        interactive_model_class=InteractiveModel1D,
         xlabel="x",
         ylabel="y",
         plot_width=600,
@@ -1097,7 +1099,7 @@ class Fit1DPanel:
         # Avoids having to check whether this is None all the time
         band_model = GIRegionModel(domain=domain)
 
-        self.model = InteractiveModel1D(
+        self.model = interactive_model_class(
             fitting_parameters,
             domain,
             x,
@@ -1107,7 +1109,15 @@ class Fit1DPanel:
             extra_masks=extra_masks,
             default_model=default_model,
             initial_fit=initial_fit,
+            visualizer=visualizer
         )
+        # Hack for Telluric code to pass additional data to the GUI model
+        # Should use visualizer.get_auxiliary_data(idx) once idx is properly
+        # used!
+        try:
+            self.model.aux_data = self.aux_data
+        except AttributeError:
+            pass
 
         self.model.add_listener(self.model_change_handler)
 

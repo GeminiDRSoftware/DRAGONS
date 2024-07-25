@@ -1,8 +1,6 @@
 import numpy as np
 
 from bokeh import models as bm
-from bokeh.models import Div
-from bokeh.layouts import row, column
 from bokeh.plotting import figure
 
 from gempy.library import astrotools as at
@@ -38,7 +36,7 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
 
     def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
                  section=None, listeners=None, band_model=None, extra_masks=None,
-                 visualizer=None):
+                 visualizer=None, **kwargs):
 
         # I think these class attributes of InteractiveModel1D should be
         # defined with INPUT_MASK_NAMES = [] (so the "[:-1]" isn't needed)
@@ -311,97 +309,23 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
 
 class TelluricPanel(Fit1DPanel):
     """
-    Copying Fit1DPanel.__init__() since we need to abstract InteractiveModel1D
-
-    While that method calls perform_fit() when each panel is created, we can
-    stop this by setting visualizer.actively_fitting=True
-
-    So this should basically just be something like:
-        visualizer.actively_fitting = True
-        self.aux_data = bm.ColumnDataSource(visualizer.get_auxiliary_data(idx))
-        super().__init__(model_class=TelluricInteractiveModel1D,
-                         *args, **kwargs)
-        visualizer.actively_fitting = False
+    Very little to see here. The class of InteractiveModel1D panel is
+    abstracted and auxiliary data is passed to it.
     """
-    def __init__(self, visualizer, fitting_parameters, domain=None,
-                 x=None, y=None, weights=None, idx=0, xlabel='x', ylabel='y',
-                 plot_width=600, plot_height=400, plot_residuals=True, plot_ratios=True,
-                 enable_user_masking=True, enable_regions=True, central_plot=True,
-                 extra_masks=None):
-        self.visualizer = visualizer
-        self.index = idx
-
-        self.width = plot_width
-        self.height = plot_height
-        self.xlabel = xlabel
-        self.ylabel = ylabel
-        self.enable_regions = enable_regions
-        self.enable_user_masking = enable_user_masking
-        self.xpoint = 'x'
-        self.ypoint = 'y'
-        self.p_main = None
-
-        prep_fit1d_params_for_fit1d(fitting_parameters)
-
-        # Avoids having to check whether this is None all the time
-        band_model = GIRegionModel(domain=domain)
-        self.model = TelluricInteractiveModel1D(
-            fitting_parameters, domain, x, y, weights,
-            band_model=band_model, visualizer=visualizer
-        )
-        self.model.add_listener(self.model_change_handler)
-
-        # Needs to be a new ColumnDataSource because it includes
-        # init-masked points, which the regular bokeh CDSs don't.
-        # Again, this should be using "idx"
-        self.model.aux_data = bm.ColumnDataSource(
-            self.visualizer.get_auxiliary_data(self.model.my_fit_index)
-        )
-
-        self.fitting_parameters_ui = FittingParametersUI(visualizer, self.model,
-                                                         fitting_parameters)
-        controls_column = self.fitting_parameters_ui.get_bokeh_components()
-
-        reset_button = bm.Button(label="Reset", align='center',
-                                 button_type='warning', width_policy='min')
-        self.reset_dialog = self.visualizer.make_ok_cancel_dialog(
-            reset_button, 'Reset will change all inputs for this tab back '
-            'to their original values.  Proceed?', self.reset_dialog_handler)
-
-        controller_div = Div(margin=(20, 0, 0, 0), width=220,
-                             styles={"color": "gray", "padding": "5px"})
-        controls = column(*controls_column, reset_button, controller_div,
-                          width=220)
-
-        fig_column = self.build_figures(domain=domain, controller_div=controller_div,
-                                        plot_residuals=plot_residuals,
-                                        plot_ratios=plot_ratios)
-
-        # Initializing regions here ensures the listeners are notified of the region(s)
-        if fitting_parameters.get("regions") is not None:
-            region_tuples = at.cartesian_regions_to_slices(fitting_parameters["regions"])
-            band_model.load_from_tuples(region_tuples)
-
-        # TODO refactor? this is dupe from band_model_handler
-        # hacking it in here so I can account for the initial
-        # state of the band model (which used to be always empty)
-        mask = [BAND_MASK_NAME if not band_model.contains(x) and m == 'good' else m
-                for x, m in zip(self.model.x, self.model.mask)]
-        self.model.data.data['mask'] = mask
-        #self.model.perform_fit()
-
-        if enable_regions:
-            region_editor = RegionEditor(band_model)
-            fig_column.append(region_editor.get_widget())
-        col = column(*fig_column)
-        col.sizing_mode = 'scale_width'
-
-        col_order = [col, controls] if central_plot else [controls, col]
-        self.component = row(*col_order, css_classes=["tab-content"],
-                             spacing=10)
+    def __init__(self, visualizer, fitting_parameters, idx=0, **kwargs):
+        # This will stymie the perform_fit() call in the parent
+        visualizer.actively_fitting = True
+        # This gets passed down to the TelluricInteractiveModel1D instance
+        # in a very clunky way
+        self.aux_data = bm.ColumnDataSource(visualizer.get_auxiliary_data(idx))
+        super().__init__(visualizer, fitting_parameters,
+                         interactive_model_class=TelluricInteractiveModel1D,
+                         **kwargs)
+        visualizer.actively_fitting = False
 
     def build_figures(self, domain=None, controller_div=None,
-                      plot_residuals=True, plot_ratios=True):
+                      plot_residuals=True, plot_ratios=True,
+                      extra_masks=None):
         p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
                                       xpoint=self.xpoint, ypoint=self.ypoint,
                                       xlabel=self.xlabel, ylabel=self.ylabel,
