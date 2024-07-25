@@ -1,11 +1,15 @@
 from gempy.library import config
 from . import parameters_generic, parameters_spect
 from astrodata import AstroData
-from gempy.library.telluric import parse_magnitude
+from gempy.library.astrotools import Magnitude
 
 
 def validate_magstr(value):
-    return None not in parse_magnitude(value)
+    try:
+        Magnitude(value)
+    except (IndexError, ValueError):
+        return False
+    return True
 
 
 class fitTelluricConfig(config.core_1Dfitting_config):
