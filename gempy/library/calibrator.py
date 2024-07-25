@@ -8,7 +8,7 @@ from astropy import units as u
 from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 
-from .telluric import A0Spectrum, TelluricSpectrum, parse_magnitude
+from .telluric import A0Spectrum, TelluricSpectrum
 from .telluric_models import MultipleTelluricModels, Planck
 
 from datetime import datetime
@@ -170,7 +170,7 @@ class TelluricCalibrator(Calibrator):
     def reconstruct_points(self, *args, **kwargs):
         print("REINIT", self.reinit_params)
         magnitude = self.reinit_params["magnitude"]
-        w0, f0 = parse_magnitude(magnitude, abmag=self.reinit_params["abmag"])
+        w0, f0 = at.Magnitude(magnitude, abmag=self.reinit_params["abmag"]).properties()
         if w0 is None:
             raise RuntimeError(f"Cannot parse magnitude '{magnitude}'")
         wspek, fspek = self.create_stellar_spectrum(w0, f0, self.reinit_params["bbtemp"])

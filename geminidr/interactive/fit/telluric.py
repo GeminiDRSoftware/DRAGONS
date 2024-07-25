@@ -15,7 +15,6 @@ from .fit1d import (
 from ..styles import dragons_styles
 
 from gempy.library.telluric_models import Planck
-from gempy.library.telluric import parse_magnitude, VEGA_INFO
 
 from .help import TELLURIC_CORRECT_HELP_TEXT
 
@@ -505,25 +504,30 @@ class TelluricVisualizer(Fit1DVisualizer):
         spectrum and modify the fit coefficients.
         """
         if isinstance(new, str):
-            w0old, f0old = parse_magnitude(old, self.widgets['abmag'])
-            w0new, f0new = parse_magnitude(new, self.widgets['abmag'])
-            if w0old is None:
+            try:
+                oldmag = at.Magnitude(old, abmag=self.widgets['abmag'])
+            except (IndexError, ValueError):
                 # means we've just reset the "magstr" TextInput after an
                 # invalid value was entered
                 return
-            if w0new is None:
+            try:
+                newmag = at.Magnitude(new, abmag=self.widgets['abmag'])
+            except (IndexError, ValueError):
                 self.show_user_message("Invalid magnitude; reverting")
                 self.widgets['magnitude'].value = old
                 return
             planck = Planck(self.widgets['bbtemp'].value)
-            scaling = (f0new / f0old * planck(w0old.value) /
-                       planck(w0new.value) * (w0old / w0new) ** 2).value
+
+            w0old = oldmag.wavelength(units="nm")
+            w0new = newmag.wavelength(units="nm")
+            scaling = (newmag.flux_density() / oldmag.flux_density() *
+                       planck(w0old) / planck(w0new) * (w0old / w0new) ** 2).value
         else:
             # "ABmag" checkbox has changed, so we know the magstr is OK
             filt = self.widgets['magnitude'].value.split("=")[0]
-            dmag = VEGA_INFO[filt][1]
+            dmag = at.Magnitude.VEGA_INFO[filt][1]
             if not new:  # unchecked, so AB->Vega
-                dmag *= -1  # which means it gets fainterf
+                dmag *= -1  # which means it gets fainter
             scaling = 10 ** (0.4 * dmag)
 
         # Update the plotted data

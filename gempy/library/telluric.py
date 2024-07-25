@@ -30,18 +30,6 @@ PATH = os.path.split(tel_lookups.__file__)[0]
 log = logutils.get_logger(__name__)
 
 
-VEGA_INFO = {
-    "Y": (1030.5, 0.634),
-    "J": (1250., 0.943),
-    "H": (1644., 1.38),
-    "K'": (2121., 1.84),
-    "Ks": (2149., 1.96),
-    "K": (2198., 1.90),
-    "L'": (3754., 2.94),
-    "M'": (4702., 3.40),
-}
-
-
 class TelluricModels:
     """A class to store the full, unconvolved telluric models in a way that
     only requires them to be read from disk the first time they are needed"""
@@ -320,29 +308,3 @@ class TelluricSpectrum:
 
         print("MADE MASK", datetime.now()-start)
         return stellar_mask
-
-
-def parse_magnitude(magstr, abmag=False):
-    """
-    Parse a magnitude string
-
-    Parameters
-    ----------
-    magstr: str
-        string indicating filter and magnitude, e.g., "K=12.5"
-    abmag: bool
-        is this an AB (rather than Vega) magnitude?
-
-    Returns
-    -------
-    wavelength, flux density: Quantities
-    """
-    try:
-        fields = magstr.split("=")
-        assert len(fields) == 2
-        wavelength, aboffset = VEGA_INFO[fields[0]]
-        mag = float(fields[1]) + (0 if abmag else aboffset)
-    except (AssertionError, AttributeError, KeyError, ValueError):
-        return None, None
-    fluxden = 3630 * u.Jy / 10 ** (0.4 * mag)
-    return wavelength * u.nm, fluxden
