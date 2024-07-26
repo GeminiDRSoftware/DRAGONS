@@ -5009,13 +5009,13 @@ class Spect(Resample):
                     # the slits.
                     pad = 2
                     if dispaxis == 0: # vertical
-                        y1, y2 = 0, ext.data.shape[1 - dispaxis]
+                        y1, y2 = 0, ext.data.shape[0]
                         x1 = max(int(np.floor(model1(y1))) - pad, 0)
                         x2 = min(int(np.ceil(model2(y2))) + pad,
                                  ext.data.shape[dispaxis])
 
                     elif dispaxis == 1: # horizontal
-                        x1, x2 = 0, ext.data.shape[dispaxis]
+                        x1, x2 = 0, ext.data.shape[1]
                         y1 = max(int(np.floor(model1(x1))) - pad, 0)
                         y2 = min(int(np.ceil(model2(x2))) + pad,
                                  ext.data.shape[1 - dispaxis])
