@@ -10,7 +10,7 @@ import gemini_instruments
 from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 from gempy.utils import logutils
 
-# Test paremeters ------------------------------------------------------
+# Test parameters ------------------------------------------------------
 test_datasets = (
     # Standard star observations
     "S20060507S0048_distortionCorrected.fits",
