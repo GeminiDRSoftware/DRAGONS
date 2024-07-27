@@ -23,5 +23,5 @@ class GNIRSLineSpreadFunction(LineSpreadFunction):
         gaussian_func = partial(convolution.gaussian_constant_r, r=resolution)
         gaussian_dw = 3 * self.all_waves.max() / resolution
         convolutions = [(gaussian_func, gaussian_dw)]
-        print("CONVOLUTIONS", convolutions)
+        #print("CONVOLUTIONS", convolutions)
         return convolutions

@@ -26,14 +26,12 @@ from geminidr.interactive.styles import dragons_styles
 
 from gempy.library.matching import match_sources
 from gempy.library.peak_finding import cwt_ricker, pinpoint_peaks
-from gempy.library.fitting import fit_1D
 
 from .fit1d import (
     Fit1DPanel,
     Fit1DVisualizer,
     InfoPanel,
     fit1d_figure,
-    USER_MASK_NAME,
 )
 
 from .help import DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
@@ -1236,7 +1234,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         """The image for each fit as a list."""
         image = []
         for model in self.fits:
-            goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
+            goodpix = np.array([m != model.UserMasked.name for m in model.mask])
             image.append(model.y[goodpix])
         return image
 

@@ -6,12 +6,11 @@ from bokeh.plotting import figure
 from gempy.library import astrotools as at
 
 from geminidr.interactive.interactive import (
-    GIRegionModel, RegionEditor, connect_region_model, FitQuality, do_later)
+    connect_region_model, FitQuality)
 from ..controls import Controller
 from .fit1d import (
-    Fit1DPanel, Fit1DVisualizer, InfoPanel, fit1d_figure, USER_MASK_NAME,
-    BAND_MASK_NAME, SIGMA_MASK_NAME, Fit1DRegionListener,
-    prep_fit1d_params_for_fit1d, FittingParametersUI, InteractiveModel, InteractiveModel1D)
+    Fit1DPanel, Fit1DVisualizer, InfoPanel, fit1d_figure, Fit1DRegionListener,
+    InteractiveModel, InteractiveModel1D)
 from ..styles import dragons_styles
 
 from gempy.library.telluric_models import Planck
@@ -20,9 +19,6 @@ from .help import TELLURIC_CORRECT_HELP_TEXT
 
 
 class TelluricInteractiveModel1D(InteractiveModel1D):
-    #MASK_TYPE = [BAND_MASK_NAME, USER_MASK_NAME, 'good', SIGMA_MASK_NAME] + INPUT_MASK_NAMES
-    #MARKERS = ['triangle', 'inverted_triangle', 'circle', 'square', 'inverted_triangle']
-    #PALETTE = ['lightsteelblue', 'lightskyblue', 'black', 'darksalmon', 'red']  # Category10[4]
 
     # Mapping widget titles to the UI params names
     # TODO: should be in parent class in case it's needed
@@ -31,20 +27,11 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
                       'Sigma (Upper)': 'sigma_upper',
                       'Grow': 'grow'}
 
-    extra_masks = ['stellar']
-
     def __init__(self, fitting_parameters, domain, x=None, y=None, weights=None, mask=None,
                  section=None, listeners=None, band_model=None, extra_masks=None,
                  visualizer=None, **kwargs):
 
-        # I think these class attributes of InteractiveModel1D should be
-        # defined with INPUT_MASK_NAMES = [] (so the "[:-1]" isn't needed)
-        # and things like SIGMA_MASK_NAME should also be attributes
-        self.MASK_TYPE = self.MASK_TYPE[:-1] + self.extra_masks
-        self.MARKERS = self.MARKERS[:-1] + ['inverted_triangle']
-        self.PALETTE = self.PALETTE[:-1] + ['red']
-
-        InteractiveModel.__init__(self)
+        InteractiveModel.__init__(self, visualizer.mask_glyphs)
 
         # We keep 'weights' in the call signature for consistency
         if weights is not None:
@@ -136,7 +123,8 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
         # Update the user mask. Since this method is called as soon as
         # a mask is updated in one panel, we know that changes could only
         # have happened to this panel
-        mask = [m not in ('good', SIGMA_MASK_NAME) for m in self.mask]
+        mask = [m not in ('good', self.SigmaClipped.name) for m in self.mask]
+        print("STARTING PERFORM FIT")
         vis.calibrator.user_mask[self.my_fit_index][~vis.calibrator.mask[self.my_fit_index]] = np.asarray(mask)
 
         # This is where we diverge because of the complexity of Telluric
@@ -155,7 +143,13 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
                 ngoodpix = (~vis.calibrator.mask[i]).sum()
                 # Obviously this naming is ridiculous!
                 fit.fit = m_final.models[i]
-                fit.fit.mask = new_mask[start_pix:start_pix+ngoodpix]
+                # The mask being returned is the size of the originally good
+                # data points, and ignores any points that were masked by the
+                # user in the UI. But the update_mask() method only wants
+                # points that were used in the fit, i.e., not those that
+                # had been masked by the user/stellar absorption features.
+                user_masked = np.asarray([m in (self.UserMasked.name, "stellar") for m in fit.mask])
+                fit.fit.mask = new_mask[start_pix:start_pix+ngoodpix][~user_masked]
                 #print(i, start_pix, start_pix+ngoodpix, new_mask.size)
                 fit.update_mask()
                 start_pix += ngoodpix
@@ -243,64 +237,17 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
 
     def populate_bokeh_objects(self):
         """
-        THIS IS HERE ONLY BECAUSE THE PARENT METHOD HAS ITS OWN
-        "INPUT_MASK_NAMES" which is not an attribute;
-        IT CAN GO ONCE ADDITIONAL MASKS ARE PROPERLY ABSTRACTED!
-        Actually, INPUT_MASK_NAMES should be self.extra_masks
-
-        Work needs to be done on the core code which requires extra mask names
-        to be defined there in INPUT_MASK_NAMES
+        This method exists because the data are obtained from the Calibrator
+        instead of needing to be passed as parameters, so it just grabs the
+        data and calls the parent method.
         """
         data = self.visualizer.get_data(self.my_fit_index)
         x = data['x']
         y = data['y']
         init_mask = data['mask']
-        extra_masks = {k: data[f"{k}_mask"] for k in self.extra_masks}
+        extra_masks = {k: data[f"{k}_mask"] for k in self.extra_mask_names}
         super().populate_bokeh_objects(x, y, None, mask=init_mask,
                                        extra_masks=extra_masks)
-
-        mask = self.mask
-        if extra_masks is not None:
-            for k, v in extra_masks.items():
-                mask = [k if vv else m for m, vv in zip(mask, v[~init_mask])]
-        for i in np.arange(len(mask)):
-            if self.band_model.contains(x[i]):
-                # User mask takes preference
-                if mask[i] not in [USER_MASK_NAME] + self.extra_masks:
-                    mask[i] = 'good'
-            elif mask[i] not in [USER_MASK_NAME] + self.extra_masks:
-                mask[i] = BAND_MASK_NAME
-        self.data.data['mask'] = mask
-
-    def band_model_handler(self):
-        """
-        THIS IS HERE ONLY BECAUSE THE PARENT METHOD HAS ITS OWN
-        "INPUT_MASK_NAMES"; IT CAN GO ONCE ADDITIONAL MASKS ARE
-        PROPERLY ABSTRACTED!
-
-        Respond when the band model changes.
-
-        When the band model has changed, we
-        brute force a new band mask by checking
-        each x coordinate against the band model
-        for inclusion.  The band model handles
-        the case where there are no bands by
-        marking all points as included.
-        """
-        x_data = self.data.data['x']
-        mask = self.data.data['mask'].copy()
-        for i in np.arange(len(x_data)):
-            if self.band_model.contains(x_data[i]):
-                # User mask takes preference
-                if mask[i] not in [USER_MASK_NAME] + self.extra_masks:
-                    mask[i] = 'good'
-            elif mask[i] not in [USER_MASK_NAME] + self.extra_masks:
-                mask[i] = BAND_MASK_NAME
-        self.data.data['mask'] = mask
-        # Band operations can come in through the keypress URL
-        # so we defer the fit back onto the Bokeh IO event loop
-
-        do_later(self.perform_fit)
 
     def evaluate(self, x):
         return self.fit(x)
@@ -323,8 +270,7 @@ class TelluricPanel(Fit1DPanel):
         visualizer.actively_fitting = False
 
     def build_figures(self, domain=None, controller_div=None,
-                      plot_residuals=True, plot_ratios=True,
-                      extra_masks=None):
+                      plot_residuals=True, plot_ratios=True):
         p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
                                       xpoint=self.xpoint, ypoint=self.ypoint,
                                       xlabel=self.xlabel, ylabel=self.ylabel,
@@ -348,8 +294,7 @@ class TelluricPanel(Fit1DPanel):
                    "While the mouse is over the upper plot, "
                    "choose from the following commands:")
 
-        info_panel = InfoPanel(self.enable_regions, self.enable_user_masking,
-                               extra_masks=self.model.extra_masks)
+        info_panel = InfoPanel(self.enable_regions, self.enable_user_masking)
         self.model.add_listener(info_panel.model_change_handler)
 
         # Plot showing the intrinsic spectrum
@@ -442,7 +387,9 @@ class TelluricVisualizer(Fit1DVisualizer):
         super().__init__(init_data, all_fp_init,
                          **kwargs, panel_class=TelluricPanel,
                          help_text=TELLURIC_CORRECT_HELP_TEXT,
-                         turbo_tabs=True)
+                         turbo_tabs=True,
+                         mask_glyphs={"stellar": ("inverted_triangle", "red")}
+                         )
         self.reconstruct_points_fn = tcal.reconstruct_points
         self.actively_fitting = False
 
@@ -497,6 +444,8 @@ class TelluricVisualizer(Fit1DVisualizer):
         for lsf_param in self.calibrator.lsf_parameter_bounds:
             print("LSF_PARAM", lsf_param, getattr(self.fitted_model, lsf_param))
             self.ui_params.values[lsf_param] = getattr(self.fitted_model, lsf_param).value
+        # Ensures that the calibrator knows the lsf_scaling params have been set
+        self.calibrator.set_fitting_params(self.ui_params)
 
     def rescale_intrinsic_spectrum(self, old, new):
         """
