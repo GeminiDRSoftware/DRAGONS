@@ -12,6 +12,8 @@ This is also used across modules such as
 :mod:`~geminidr.interactive.fit.wavecal` to manage specific fitting tasks.
 """
 from abc import ABC, abstractmethod
+from collections import namedtuple
+import inspect
 import logging
 import warnings
 
@@ -40,12 +42,7 @@ from gempy.library.astrotools import cartesian_regions_to_slices
 from gempy.library.fitting import fit_1D
 
 
-# Names to use for masks.  You can change these to change the label that gets
-# displayed in the legend
-SIGMA_MASK_NAME = "rejected (sigma)"
-USER_MASK_NAME = "rejected (user)"
-BAND_MASK_NAME = "excluded"
-INPUT_MASK_NAMES = ["aperture", "threshold"]
+Glyph = namedtuple("Glyph", "name marker palette")
 
 
 class InteractiveModel(ABC):
@@ -55,41 +52,27 @@ class InteractiveModel(ABC):
     (c) the way the fitting is performed
     (d) the input and output coordinates, mask, and weights
     """
+    BandMasked = Glyph("excluded", "triangle", "lightsteelblue")
+    UserMasked = Glyph("rejected (user)", "inverted_triangle", "lightskyblue")
+    Good = Glyph("good", "circle", interactive_conf().bokeh_data_color)
+    SigmaClipped = Glyph("rejected (sigma)", "square", "darksalmon")
 
-    MASK_TYPE = [
-        BAND_MASK_NAME,
-        USER_MASK_NAME,
-        "good",
-        SIGMA_MASK_NAME,
-    ] + INPUT_MASK_NAMES
-
-    MARKERS = [
-        "triangle",
-        "inverted_triangle",
-        "circle",
-        "square",
-        "inverted_triangle",
-        "square",
-    ]
-
-    PALETTE = [
-        "lightsteelblue",
-        "lightskyblue",
-        "black",
-        "darksalmon",
-        "lightgray",
-        "orange",
-    ]  # Category10[4]
-
-    def __init__(self):
+    def __init__(self, mask_glyphs):
         """Initializes the model with default values."""
-        bokeh_data_color = interactive_conf().bokeh_data_color
-        InteractiveModel.PALETTE[2] = bokeh_data_color
 
         self.listeners = []
         self.data = None
         self.quality = FitQuality.BAD  # no fit yet
         self.allow_poor_fits = True
+
+        self.glyphs = [v for k, v in inspect.getmembers(self)
+                       if isinstance(v, Glyph)]
+        if mask_glyphs is None:
+            self.extra_mask_names = []
+        else:
+            for k, v in mask_glyphs.items():
+                self.glyphs.append(Glyph(k, *v))
+            self.extra_mask_names = list(mask_glyphs.keys())
 
     def add_listener(self, listener):
         """Add a function to call when the model is updated
@@ -135,9 +118,10 @@ class InteractiveModel(ABC):
         -------
         dict : Returns a dict for bokeh that describes the markers and pallete
         """
+        mask_types = [g.name for g in self.glyphs]
         return {
-            "marker": bt.factor_mark("mask", self.MARKERS, self.MASK_TYPE),
-            "color": bt.factor_cmap("mask", self.PALETTE, self.MASK_TYPE),
+            "marker": bt.factor_mark("mask", [g.marker for g in self.glyphs], mask_types),
+            "color": bt.factor_cmap("mask", [g.palette for g in self.glyphs], mask_types),
         }
 
 
@@ -191,7 +175,7 @@ class InteractiveModel1D(InteractiveModel):
         default_model : callable
             function to evaluate model if self.fit is None
         """
-        super().__init__()
+        super().__init__(visualizer.mask_glyphs)
 
         if not listeners:
             listeners = []
@@ -321,7 +305,7 @@ class InteractiveModel1D(InteractiveModel):
         # "section" is the valid section provided by the user,
         # i.e., points not in this region(s) are user-masked
         if self.section is None:
-            mask = ["good"] * len(x)
+            mask = [self.Good.name] * len(x)
 
         else:
             user_mask = np.array(np.ones_like(x, dtype=bool))
@@ -329,7 +313,7 @@ class InteractiveModel1D(InteractiveModel):
             for slice_ in self.section:
                 user_mask[slice_.start < x < slice_.stop] = False
 
-            mask = list(np.where(user_mask, USER_MASK_NAME, "good"))
+            mask = list(np.where(user_mask, self.UserMasked.name, self.Good.name))
 
         # If we are showing masked points as user-masked, set that up here
         if extra_masks:
@@ -344,11 +328,11 @@ class InteractiveModel1D(InteractiveModel):
         for i in np.arange(len(x)):
             if self.band_model.contains(x[i]):
                 # User mask takes preference
-                if mask[i] not in [USER_MASK_NAME] + INPUT_MASK_NAMES:
-                    mask[i] = "good"
+                if mask[i] not in [self.UserMasked.name] + self.extra_mask_names:
+                    mask[i] = self.Good.name
 
-            elif mask[i] not in [USER_MASK_NAME] + INPUT_MASK_NAMES:
-                mask[i] = BAND_MASK_NAME
+            elif mask[i] not in [self.UserMasked.name] + self.extra_mask_names:
+                mask[i] = self.BandMasked.name
 
         bokeh_data = {"x": x, "y": y, "mask": mask}
 
@@ -374,11 +358,11 @@ class InteractiveModel1D(InteractiveModel):
         for i in np.arange(len(x_data)):
             if self.band_model.contains(x_data[i]):
                 # User mask takes preference
-                if mask[i] not in [USER_MASK_NAME] + INPUT_MASK_NAMES:
-                    mask[i] = "good"
+                if mask[i] not in [self.UserMasked.name] + self.extra_mask_names:
+                    mask[i] = self.Good.name
 
-            elif mask[i] not in [USER_MASK_NAME] + INPUT_MASK_NAMES:
-                mask[i] = BAND_MASK_NAME
+            elif mask[i] not in [self.UserMasked.name] + self.extra_mask_names:
+                mask[i] = self.BandMasked.name
 
         self.data.data["mask"] = mask
         # Band operations can come in through the keypress URL
@@ -475,7 +459,7 @@ class InteractiveModel1D(InteractiveModel):
             }
 
         goodpix = np.array(
-            [m not in [USER_MASK_NAME] + INPUT_MASK_NAMES for m in self.mask]
+            [m not in [self.UserMasked.name] + self.extra_mask_names for m in self.mask]
         )
 
         self.quality = FitQuality.BAD
@@ -530,9 +514,11 @@ class InteractiveModel1D(InteractiveModel):
         self.notify_listeners()
 
     def update_mask(self):
-        """Update the mask based on the current fit."""
+        """Update the mask based on the current fit. The mask in the bokeh
+        object is the size of the input data, but the mask returned by the
+        fit is only the size of the non-user/band/other-masked pixels."""
         goodpix = np.array(
-            [m not in [USER_MASK_NAME] + INPUT_MASK_NAMES for m in self.mask]
+            [m not in [self.UserMasked.name] + self.extra_mask_names for m in self.mask]
         )
 
         mask = self.mask.copy()
@@ -542,11 +528,11 @@ class InteractiveModel1D(InteractiveModel):
             fit_mask[goodpix] = self.fit.mask
 
         for i in range(fit_mask.size):
-            if fit_mask[i] and mask[i] == "good":
-                mask[i] = SIGMA_MASK_NAME
+            if fit_mask[i] and mask[i] == self.Good.name:
+                mask[i] = self.SigmaClipped.name
 
-            elif not fit_mask[i] and mask[i] == SIGMA_MASK_NAME:
-                mask[i] = "good"
+            elif not fit_mask[i] and mask[i] == self.SigmaClipped.name:
+                mask[i] = self.Good.name
 
         self.data.data["mask"] = mask
 
@@ -899,7 +885,7 @@ class FittingParametersUI:
 class InfoPanel:
     """Panel class for displaying information about the fit."""
 
-    def __init__(self, enable_regions, enable_user_masking, extra_masks=None):
+    def __init__(self, enable_regions, enable_user_masking):
         """Build an informational panel to hold statistics about the fit.
 
         This shows the user the RMS of the fit to the data.  It also lists
@@ -919,9 +905,6 @@ class InfoPanel:
         self.component = Div(text="", stylesheets=dragons_styles())
         self.enable_regions = enable_regions
         self.enable_user_masking = enable_user_masking
-        self.extra_masks = extra_masks
-        if self.extra_masks is None:
-            self.extra_masks = list()
 
     def model_change_handler(self, model):
         """Respond to a model change by updating the displayed statistics.
@@ -944,12 +927,12 @@ class InfoPanel:
             f'<div class="info_text">{rms_str}</div>'
         )
 
-        band_count = model.mask.count(BAND_MASK_NAME)
-        user_count = model.mask.count(USER_MASK_NAME)
-        fit_count = model.mask.count(SIGMA_MASK_NAME)
+        band_count = model.mask.count(model.BandMasked.name)
+        user_count = model.mask.count(model.UserMasked.name)
+        fit_count = model.mask.count(model.SigmaClipped.name)
 
         extra_counts = dict()
-        for extra_mask in self.extra_masks:
+        for extra_mask in model.extra_mask_names:
             extra_counts[extra_mask] = model.mask.count(extra_mask)
 
         total_count = model.x.size
@@ -982,7 +965,7 @@ class InfoPanel:
             [
                 f'<div class="info_header">{em.capitalize()}:</div>'
                 f'<div class="info_text">{extra_counts[em]}</div>'
-                for em in self.extra_masks
+                for em in model.extra_mask_names
             ]
         )
 
@@ -1162,7 +1145,6 @@ class Fit1DPanel:
             controller_div=controller_div,
             plot_residuals=plot_residuals,
             plot_ratios=plot_ratios,
-            extra_masks=extra_masks,
         )
 
         # Initializing regions here ensures the listeners are notified of the
@@ -1178,7 +1160,7 @@ class Fit1DPanel:
         # here so I can account for the initial state of the band model (which
         # used to be always empty)
         mask = [
-            BAND_MASK_NAME if not band_model.contains(x) and m == "good" else m
+            self.BandMasked.name if not band_model.contains(x) and m == self.model.Good.name else m
             for x, m in zip(self.model.x, self.model.mask)
         ]
 
@@ -1211,7 +1193,6 @@ class Fit1DPanel:
         controller_div=None,
         plot_residuals=True,
         plot_ratios=True,
-        extra_masks=None,
     ):
         """Construct the figures containing the various plots needed for this
         Visualizer.
@@ -1226,8 +1207,6 @@ class Fit1DPanel:
             make a ratios plot?
         plot_residuals : bool
             make a residuals plot?
-        extra_masks : dict/list/None
-            names of additional masks to inform the user about
 
         Returns
         -------
@@ -1276,7 +1255,6 @@ class Fit1DPanel:
         info_panel = InfoPanel(
             self.enable_regions,
             self.enable_user_masking,
-            extra_masks=extra_masks,
         )
 
         self.model.add_listener(info_panel.model_change_handler)
@@ -1395,7 +1373,7 @@ class Fit1DPanel:
             self.model.data.selected.update(indices=[])
             mask = self.model.mask.copy()
             for i in indices:
-                mask[i] = USER_MASK_NAME
+                mask[i] = self.model.UserMasked.name
 
             self.model.data.data["mask"] = mask
             self.model.perform_fit()
@@ -1427,11 +1405,11 @@ class Fit1DPanel:
             mask = self.model.mask.copy()
 
             for i in indices:
-                if mask[i] == USER_MASK_NAME:
+                if mask[i] == self.model.UserMasked.name:
                     mask[i] = (
-                        "good"
+                        self.model.Good.name
                         if self.model.band_model.contains(x_data[i])
-                        else BAND_MASK_NAME
+                        else self.model.BandMasked.name
                     )
 
             self.model.data.data["mask"] = mask
@@ -1469,7 +1447,7 @@ class Fit1DPanel:
             action = None
 
         for i, (xdata, ydata) in enumerate(zip(xarr, yarr)):
-            is_masked = (action == "mask") ^ (mask[i] == USER_MASK_NAME)
+            is_masked = (action == "mask") ^ (mask[i] == self.model.UserMasked.name)
 
             if action is None or is_masked:
                 if xdata is not None and ydata is not None:
@@ -1480,15 +1458,15 @@ class Fit1DPanel:
 
         if sel is not None:
             # we have a closest point, toggle the user mask
-            if mask[sel] == USER_MASK_NAME:
+            if mask[sel] == self.model.UserMasked.name:
                 if self.model.band_model.contains(xarr[sel]):
-                    mask[sel] = "good"
+                    mask[sel] = self.model.Good.name
 
                 else:
-                    mask[sel] = BAND_MASK_NAME
+                    mask[sel] = self.model.BandMasked.name
 
             else:
-                mask[sel] = USER_MASK_NAME
+                mask[sel] = self.model.UserMasked.name
 
         self.model.perform_fit()
 
@@ -1608,6 +1586,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         turbo_tabs=False,
         panel_class=Fit1DPanel,
         reinit_live=False,
+        mask_glyphs=None,
         **kwargs,
     ):
         """Initializes the Fit1DVisualizer and its parent class.
@@ -1684,6 +1663,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             If True, some buttons and parameters will recalculate the data
             points immediately.  If False, the reinit button will be disabled
             until the user clicks the "Recalculate" button. Default is False.
+        mask_glyphs: dict/None
+            glyphs for rendering additional masks
         """
         super().__init__(
             title=title,
@@ -1696,6 +1677,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         )
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
+        self.mask_glyphs = mask_glyphs
 
         if "pad_buttons" in kwargs:
             # Deprecation warning
@@ -1829,8 +1811,6 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             tab_name_fmt = lambda i: f"Extension {i+1}"
 
         for i in range(self.nfits):
-            extra_masks = {}
-
             if self.returns_list:
                 this_dict = {k: v[i] for k, v in data.items()}
                 domain = domains[i] if domains else None
@@ -1841,9 +1821,13 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 domain = domains
                 fitting_params = fitting_parameters
 
-            for k in list(this_dict.keys()):
-                if k.endswith("_mask"):
-                    extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
+            # Glyphs need to be provided for extra masks, so we
+            # know what they're called
+            extra_masks = ({} if mask_glyphs is None else
+                           {k: this_dict.pop(f"{k}_mask") for k in mask_glyphs})
+            #for k in list(this_dict.keys()):
+            #    if k.endswith("_mask"):
+            #        extra_masks[k.replace("_mask", "")] = this_dict.pop(k)
 
             # making the fit panel
             tui = panel_class(
@@ -1852,7 +1836,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 domain=domain,
                 **this_dict,
                 **kwargs,
-                extra_masks=extra_masks,
+                extra_masks=extra_masks
             )
 
             # tab_name_fmt is expected to be a callable, which traditionally is

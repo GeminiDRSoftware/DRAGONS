@@ -106,11 +106,12 @@ class TelluricCalibrator(Calibrator):
         fixed = fixed[0]
         self.lsf_parameter_bounds = {}
         if not fixed:
-            points = [t.pca.interpolation_points for t in telluric_spectra]
-            assert points == [points[0]] * len(points)
+            if len(telluric_spectra) > 1:
+                points = [np.hstack(t.pca.interpolation_points) for t in telluric_spectra]
+                assert np.allclose(points, [points[0]] * len(points))
             lsf_params = telluric_spectra[0].lsf.parameters
             self.lsf_parameter_bounds = {param: (np.min(pts), np.max(pts))
-                                 for param, pts in zip(lsf_params, points[0])}
+                                 for param, pts in zip(lsf_params, telluric_spectra[0].pca.interpolation_points)}
         self.npixels = np.array([tspek.waves.size for tspek in self.spectra])
 
         # Concatenate the PCA models into a single array now
@@ -215,7 +216,6 @@ class TelluricCalibrator(Calibrator):
         """
         # Extract the fitting parameters for this panel
         params = {k: v[index] for k, v in self.fit_params.items()}
-        print(params)
 
         # Start by updating fitting parameters to the value in the
         # panel that called this method
@@ -227,6 +227,7 @@ class TelluricCalibrator(Calibrator):
 
     def perform_all_fits(self, sigma_clipping=None):
         """"""
+        print("CALIBRATOR.PERFORM"+"-"*40)
         data = self.concatenate('data')
         mask = self.concatenate('mask').astype(bool)
         original_masks = [tspek.mask.copy() for tspek in self.spectra]
@@ -243,8 +244,9 @@ class TelluricCalibrator(Calibrator):
         # is NOT to modify the LSF scaling parameters once the GUI is active
         # or if the user has provided values.
         m_init.bounds.update(self.lsf_parameter_bounds)
+        print("REINIT PARAMS", self.reinit_params)
         for k, v in self.lsf_parameter_bounds.items():
-            print("INITIALIZING FIT", k, self.reinit_params[k])
+            print("INITIALIZING FIT", k, v, self.reinit_params[k])
             if self.reinit_params[k] is None:
                 setattr(m_init, k, v[0])
             else:

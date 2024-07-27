@@ -2308,6 +2308,9 @@ class UIParameters:
         except RecursionError:
             return object.__getattribute__(self, attr)
 
+    def __repr__(self):
+        return self.toDict().__repr__()
+
     def toDict(self):
         """
         Return a dict of field name: value

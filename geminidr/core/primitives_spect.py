@@ -3776,7 +3776,8 @@ class Spect(Resample):
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=False,
                                                    # modal_message="Recalculating",
-                                                   ui_params=uiparams)
+                                                   ui_params=uiparams,
+                                                   mask_glyphs={"threshold": ("square", "orange")})
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fit1d_arr = visualizer.results()
             else:
@@ -4437,7 +4438,8 @@ class Spect(Resample):
                                                    enable_user_masking=False,
                                                    recalc_inputs_above=True,
                                                    ui_params=ui_params,
-                                                   reinit_live=True)
+                                                   reinit_live=True,
+                                                   mask_glyphs={"aperture": ("inverted_triangle", "lightgray")})
 
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
