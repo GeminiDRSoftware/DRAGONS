@@ -818,26 +818,34 @@ def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
 
     if prof_mask is not None:
         # Find the first and last unmasked points in the profile
-        l_unmasked = prof_mask.argmin()
-        r_unmasked = prof_mask.size - prof_mask[::-1].argmin() - 1
+        l_ind = prof_mask.argmin()
+        r_ind = prof_mask.size - prof_mask[::-1].argmin() - 1
     else:
         # If no prof_mask, just get the ends of the profile
-        l_unmasked = 0
-        r_unmasked = len(profile) - 1
+        l_ind = 0
+        r_ind = len(profile) - 1
+
+    # If the first of last pixel of the profile has been marked as a maximum,
+    # delete the first or last extremum (a maximum) as it doesn't represent a
+    # peak we can do anything with, physically-speaking.
+    if l_ind in max_locations:
+        extrema = extrema[1:]
+    if r_ind + 1 in max_locations:
+        extrema = extrema[:-1]
 
     # Delete a maximum if there is no minimum between it and the edge,
     # unless it's the ONLY maximum
     if extrema[0][2]:
         if len(extrema) == 1:
-            extrema = [(l_unmasked, profile[l_unmasked], False)] + extrema +\
-                [(r_unmasked, profile[r_unmasked], False)]
+            extrema = [(l_ind, profile[l_ind], False)] + extrema +\
+                [(r_ind, profile[r_ind], False)]
         elif len(extrema) == 2 or not remove_edge_maxima:
-            extrema = [(l_unmasked, profile[l_unmasked], False)] + extrema
+            extrema = [(l_ind, profile[l_ind], False)] + extrema
         else:
             del extrema[0]
     if extrema and extrema[-1][2]:
         if len(extrema) == 2 or not remove_edge_maxima:
-            extrema = extrema + [(r_unmasked, profile[r_unmasked], False)]
+            extrema = extrema + [(r_ind, profile[r_ind], False)]
         else:
             del extrema[-1]
 
