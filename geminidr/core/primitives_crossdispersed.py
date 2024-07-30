@@ -63,7 +63,7 @@ class CrossDispersed(Spect, Preprocess):
 
         adinputs = super()._cut_slits(adinputs=adinputs, **params)
 
-        columns = ('central_wavelength', 'dispersion', 'center_offset')
+        columns = ('central_wavelength', 'dispersion')
         order_key_parts = self._get_order_information_key()
 
         adoutputs = []
