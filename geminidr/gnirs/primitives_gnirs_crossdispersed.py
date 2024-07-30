@@ -15,7 +15,6 @@ from .primitives_gnirs_spect import GNIRSSpect
 from . import parameters_gnirs_crossdispersed
 from geminidr.core.primitives_crossdispersed import CrossDispersed
 from .lookups.MDF_XD_GNIRS import slit_info
-from .lookups.orders_XD_GNIRS import order_info
 
 # -----------------------------------------------------------------------------
 @parameter_override
