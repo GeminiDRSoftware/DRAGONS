@@ -290,6 +290,7 @@ class TelluricCalibrator(Calibrator):
         for tspek, orig_mask in zip(self.spectra, original_masks):
             tspek.nddata.mask = orig_mask
 
+        m_final.update_individual_models()
         return m_final, new_mask
 
     # Methods above should be common to all classes

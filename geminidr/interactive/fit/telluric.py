@@ -134,7 +134,7 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
                 self.my_fit_index, sigma_clipping=self.sigma_clip)
             #for k, v in zip(m_final.param_names, m_final.parameters):
             #    print(k, v)
-            m_final.update_individual_models()
+            #m_final.update_individual_models()
 
             # Ensure points are correctly marked as "sigma" or "good"
             # based on sigma-clipping
