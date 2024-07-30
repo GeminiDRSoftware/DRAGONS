@@ -37,3 +37,12 @@ slit_info['Gemini-North_LXD_G5535_LCXD_G5531_10/mm_G5532_LongBlue_G5542'] = (
     (5.0, 5.0, 5.0, 5.0, 5.0, 5.0),     # width_arcsec
     (104, 106, 104, 105, 105, 105)      # width_pixels
 )
+
+slit_info['Gemini-North_SXD_G5536_SCXD_G5531_111/mm_G5534_ShortBlue_G5540'] = (
+    (1, 2, 3, 4, 5, 6),                 # slit ID
+    (275, 389, 466, 534, 607, 685),     # x_ccd
+    (175, 175, 175, 175, 175, 175),     # y_ccd
+    (3, 4, 5, 6, 7, 8),                 # specorder
+    (5.0, 5.0, 5.0, 5.0, 5.0, 5.0),     # width_arcsec
+    (46, 47, 47, 47, 47, 47)            # width_pixels
+)
