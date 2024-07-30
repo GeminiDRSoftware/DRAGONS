@@ -1810,11 +1810,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         if tab_name_fmt is None:
             tab_name_fmt = lambda i: f"Extension {i+1}"
 
-        for i in range(self.nfits):
+        for idx in range(self.nfits):
             if self.returns_list:
-                this_dict = {k: v[i] for k, v in data.items()}
-                domain = domains[i] if domains else None
-                fitting_params = fitting_parameters[i]
+                this_dict = {k: v[idx] for k, v in data.items()}
+                domain = domains[idx] if domains else None
+                fitting_params = fitting_parameters[idx]
 
             else:
                 this_dict = data
@@ -1834,6 +1834,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 self,
                 fitting_params,
                 domain=domain,
+                idx=idx,
                 **this_dict,
                 **kwargs,
                 extra_masks=extra_masks
@@ -1860,11 +1861,11 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
                 raise ValueError(msg)
 
             if turbo_tabs:
-                self.turbo.add_tab(tui.component, title=str(tab_name_fmt(i)))
+                self.turbo.add_tab(tui.component, title=str(tab_name_fmt(idx)))
 
             else:
                 tab = bm.TabPanel(
-                    child=tui.component, title=str(tab_name_fmt(i))
+                    child=tui.component, title=str(tab_name_fmt(idx))
                 )
 
                 self.tabs.tabs.append(tab)
