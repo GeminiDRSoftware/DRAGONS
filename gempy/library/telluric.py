@@ -37,8 +37,8 @@ class TelluricModels:
     _models = None
     in_vacuo = True
     pca_file = None
-    #latest_filename = "pca_components_v1.0"
-    latest_filename = "pca_components_20240612"
+    latest_filename = "pca_components_v1.0"
+    #latest_filename = "pca_components_20240612"
 
     @classmethod
     def data(cls, pca_file=None, in_vacuo=True):
@@ -204,14 +204,32 @@ class TelluricSpectrum:
             parameters for the LSF convolution method
         """
         w_pca, t_pca = TelluricModels.data(in_vacuo=self.in_vacuo, pca_file=pca_file)
-        print("SETTING PCA", lsf_params)
         if lsf_params:
-            pca_data = np.stack([self.lsf.convolve_and_resample(
-                self.waves, w_pca, t_pca, **dict(zip(lsf_params.keys(), params)))
-                for params in itertools.product(*lsf_params.values())])
-            print("PCA DATA SHAPE", pca_data.shape)
-            self.pca = PCA(ArrayInterpolator(lsf_params.values(), pca_data),
-                           name=TelluricModels.pca_file)
+            # We only need an ArrayInterpolator if some of the params have
+            # multiple values. Otherwise we might be constructing a model for
+            # telluricCorrect9) from single parameter values, for example.
+            fixed_params, interp_params = {}, {}
+            for k, v in lsf_params.items():
+                try:
+                    if len(v) == 1:
+                        fixed_params[k] = v[0]
+                    else:
+                        interp_params[k] = v
+                except TypeError:
+                    fixed_params[k] = v
+            print("FIXED ", fixed_params)
+            print("INTERP", interp_params)
+            if interp_params:
+                pca_data = np.stack([self.lsf.convolve_and_resample(
+                    self.waves, w_pca, t_pca, **fixed_params,
+                    **dict(zip(interp_params.keys(), params)))
+                    for params in itertools.product(*interp_params.values())])
+                self.pca = PCA(ArrayInterpolator(interp_params.values(), pca_data),
+                               name=TelluricModels.pca_file)
+            else:
+                convolved_models = self.lsf.convolve_and_resample(
+                    self.waves, w_pca, t_pca, **fixed_params)
+                self.pca = PCA(convolved_models, name=TelluricModels.pca_file)
         else:
             convolved_models = self.lsf.convolve_and_resample(
                 self.waves, w_pca, t_pca)
@@ -306,5 +324,4 @@ class TelluricSpectrum:
             ax.plot(self.waves, m_planck(self.waves), 'b-', label="Planck fit")
             plt.show()
 
-        print("MADE MASK", datetime.now()-start)
         return stellar_mask

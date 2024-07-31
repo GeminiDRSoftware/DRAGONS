@@ -439,7 +439,7 @@ def polyinterp(float [:] array_in, int [:] inlengths, int ndim,
 def get_unmasked(float [:] waves, float [:] x, int x_size, unsigned short [:] good):
     """
     Determine which elements of waves[] are in x[] and returns the good pixels.
-    good[] should be set to an array of zeros before calling
+    good[] should be set to an array of zeros (same size as waves) before calling
     """
     cdef int i=0, j=0
     for j in range(x_size):
