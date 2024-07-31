@@ -8,7 +8,7 @@ from importlib import import_module
 
 import numpy as np
 
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, make_interp_spline
 
 from astropy.modeling import models
 from astropy.table import Table
@@ -91,7 +91,7 @@ class Telluric(Spect):
         sampling = 10
 
         for ad in adinputs:
-            log.stdinfo(f"Processing {ad.filename}")
+            log.stdinfo(f"Processing {ad.filename} (this can be slow)")
 
             # We do this "interactive" stuff here because we want to
             # call create_interactive_inputs() to set the intrinsic_spectrum
@@ -118,11 +118,14 @@ class Telluric(Spect):
                     for i, ext in enumerate(ad):
                         if len(ext.shape) == 1:
                             lsf = self._line_spread_function(ext)
-
+                            axis_name = ext.wcs.output_frame.axes_names[0]
+                            in_vacuo = axis_name == "WAVE"
                             tspek = TelluricSpectrum(
                                 ext.nddata, line_spread_function=lsf,
-                                name=f"Extension {ext.id}")
+                                name=f"Extension {ext.id}", in_vacuo=in_vacuo)
 
+                            if len(ad) > 1:
+                                log.stdinfo(f"    Convolving models for extension {ext.id}")
                             lsf_param_names = getattr(lsf, 'parameters', None)
                             if lsf_param_names:
                                 uiparams.reinit_params.extend(
@@ -159,6 +162,8 @@ class Telluric(Spect):
                     geminidr.interactive.server.interactive_fitter(visualizer)
                     m_final = visualizer.results()
                 else:
+                    # Before measuring the wavelength shift, we perform a fit
+                    # so that we have the best model for cross-correlation
                     if modify:
                         log.stdinfo("Calculating wavelength shift(s)")
                     m_final, mask = tcal.perform_all_fits()
@@ -210,6 +215,8 @@ class Telluric(Spect):
             # Versioning and other useful stuff
             tellfit_table.meta = {'airmass': ad.airmass(),
                                   'pca_name': tcal.spectra[0].pca.name}
+            lsf_param_dict = {k: getattr(m_final, k).value for k in lsf_param_names}
+            tellfit_table.meta.update(lsf_param_dict)
             ad.TELLFIT = tellfit_table
 
             # Also attach data divided by continuum?
@@ -217,10 +224,9 @@ class Telluric(Spect):
             for ext, tspek, stellar_mask, tmodel in zip(ad, tcal.spectra, tcal.stellar_mask, m_final.models):
                 absorption = tspek.data / tmodel.continuum(tspek.waves)
                 goodpix = ~(tspek.mask | stellar_mask).astype(bool)
-                spline = interp1d(tspek.waves[goodpix],
-                                  absorption[goodpix], kind='cubic',
-                                  copy=False, bounds_error=False,
-                                  fill_value=np.nan)
+                spline = make_interp_spline(tspek.waves[goodpix],
+                                            absorption[goodpix], k=3)
+                spline.extrapolate = False  # will return np.nan outside range
                 ext.TELLABS = spline(tspek.waves)
                 #ext.TELLABS2 = absorption
 
@@ -376,16 +382,24 @@ class Telluric(Spect):
                                 # Assume vacuum because we're probably in the IR
                                 log.warning("Cannot determine whether wavelength scale is "
                                             "calibrated to vacuum or air from name "
-                                            f"'{axis_name}'. Assuming vaccum.")
+                                            f"'{axis_name}'. Assuming vacuum.")
 
                         if pixel_shift:
                             ext.wcs.insert_transform(
                                 ext.wcs.input_frame, models.Shift(pixel_shift),
                                 after=True)
+                        lsf = self._line_spread_function(ext)
                         tspek = TelluricSpectrum(
-                            ext.nddata, line_spread_function=self._line_spread_function(ext),
-                            name=f"Extension {ext.id}", pca_file=pca_name,
-                            in_vacuo=in_vacuo)
+                            ext.nddata, line_spread_function=lsf,
+                            name=f"Extension {ext.id}", in_vacuo=in_vacuo)
+
+                        lsf_param_names = getattr(lsf, 'parameters', None)
+                        if lsf_param_names:
+                            lsf_params = {k: header[k] for k in lsf_param_names}
+                            tspek.set_pca(lsf_params=lsf_params)
+                        else:
+                            tspek.set_pca()
+
                         trans = tspek.pca.evaluate(tspek.waves, pca_coeffs)
                         #fig, ax = plt.subplots()
                         #ax.plot(tspek.waves, trans, 'k-')
@@ -464,11 +478,6 @@ class Telluric(Spect):
                          "shifts. Not shifting data.")
         return None
 
-    def _line_spread_function(self, ext):
-        cls_name = f"{ext.instrument().upper()}LineSpreadFunction"
-        instance = getattr(lsf_classes, cls_name)(ext)
-        return instance
-
 
 def find_outliers(data, sigma=3, cenfunc=np.median):
     """
@@ -516,6 +525,36 @@ class LineSpreadFunction(ABC):
     def convolutions(self):
         """Returns list of (convolution function, kernel size in nm)"""
 
+    def convolve(self, waves, w, data, **kwargs):
+        """
+        Convolve a spectrum/spectra with a kernel
+
+        Parameters
+        ----------
+        waves: array
+            output wavelength scale
+        w: array
+            wavelengths of thing to be convolved
+        data: array
+            data to be convolved; last dimension must match w
+        kwargs: dict
+            list of parameters to be passed to the convolutions() method
+
+        Returns
+        -------
+        w: (N,) array of wavelengths of convolved spectra (a subset of w)
+        spectra: (..., N) array of convolved spectra
+        """
+        convolution_list = self.convolutions(**kwargs)
+        dw = sum(x[1] for x in convolution_list)
+        w1, w2 = waves.min() - 1.05 * dw, waves.max() + 1.05 * dw
+        windices = np.logical_and(w > w1, w < w2)
+        spectra = data[..., windices]
+        for conv_func, dw in convolution_list:
+            spectra = convolution.convolve(w[windices], spectra,
+                                           conv_func, dw=dw)
+        return w[windices], spectra
+
     def convolve_and_resample(self, waves, w, data, **kwargs):
         """
         Convolve and resample a spectrum/spectra to the same resolution and
@@ -537,15 +576,22 @@ class LineSpreadFunction(ABC):
         array of shape of "m", but last dimension of shape "self.nwaves"
             the convolved and resampled models
         """
-        convolution_list = self.convolutions(**kwargs)
-        dw = sum(x[1] for x in convolution_list)
-        w1, w2 = waves.min() - 1.05 * dw, waves.max() + 1.05 * dw
-        windices = np.logical_and(w > w1, w < w2)
-        spectra = data[..., windices]
-        for conv_func, dw in convolution_list:
-            spectra = convolution.convolve(w[windices], spectra,
-                                           conv_func, dw=dw)
-        return convolution.resample(waves, w[windices], spectra)
+        w, spectra = self.convolve(waves, w, data, **kwargs)
+        results = convolution.resample(waves, w, spectra)
+        return results
+        spline = make_interp_spline(w, spectra, axis=-1, k=3)
+        spline.extrapolate = False
+        integral = spline.antiderivative()
+        dw_in = np.diff(w)
+        if any(dw_in < 0):
+            raise ValueError("Wavelength array must be monotonically increasing")
+
+        edges = np.r_[[1.5 * waves[0] - 0.5 * waves[1]],
+                      np.array([waves[:-1], waves[1:]]).mean(axis=0),
+                      [1.5 * waves[-1] - 0.5 * waves[-2]]]
+        dw_out = abs(np.diff(edges))
+        result2 = abs(np.diff(integral(edges)))
+        return result2 / dw_out
 
 
 class GaussianLineSpreadFunction(LineSpreadFunction):

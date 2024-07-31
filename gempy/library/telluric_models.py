@@ -254,9 +254,9 @@ class SingleTelluricModel(Fittable1DModel):
 
         # Fitter can try parameters which cause the continuum to overflow,
         # so suppress such RuntimeWarnings
-        #with warnings.catch_warnings():
-        #    warnings.simplefilter("ignore", category=RuntimeWarning)
-        continuum = 10 ** (0.4 * continuum_model(self.waves[good]))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            continuum = 10 ** (0.4 * continuum_model(self.waves[good]))
         #if not self.pca.fixed:
         #    self.pca.set_interpolation_parameters(np.asarray(params[self.lsf_params]).flatten())
         #transmission = (np.dot(np.asarray(params[self.pca_params]).flatten(),
