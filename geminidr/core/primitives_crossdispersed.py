@@ -225,7 +225,7 @@ class CrossDispersed(Spect, Preprocess):
             # Now need to translate the pixel coordinates found for the aperture
             # to world -> back to pixels for each other extension, since the
             # extensions may have different dimensions.
-            for iext, ext in enumerate(ad):
+            for ext in ad:
                 # The upper and lower edges should be the same in each order
                 # (since they're relative to the center and the pixel scale
                 # is the same in each order), so copy the whole APERTURE table
@@ -233,7 +233,7 @@ class CrossDispersed(Spect, Preprocess):
                 ext.APERTURE = deepcopy(ap_table)
 
                 for i, source in enumerate(source_pos):
-                    log.debug(f"Copying source {i} to order {iext}.")
+                    log.debug(f"Copying source {i} to extension {ext.id}.")
                     if dispaxis == 0:
                         x, y = source, ap_found[0].shape[0] / 2
                     else:
