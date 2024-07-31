@@ -155,7 +155,7 @@ Python 3.10.
 
 ::
 
-    $ conda create -n dragons python=3.10 numpy<2 dragons ds9
+    $ conda create -n dragons python=3.10 "numpy<2" dragons ds9
 
 .. note:: DRAGONS is not currently compatible with the recent release of `numpy`
           version 2.  We're working on it.  In the meantime, ensure that
