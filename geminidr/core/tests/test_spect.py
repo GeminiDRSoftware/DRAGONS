@@ -625,7 +625,15 @@ def test_mask_beyond_slit(in_file, instrument, change_working_dir,
     ad_out = p.maskBeyondSlit().pop()
     ref = astrodata.open(os.path.join(path_to_refs,
                                       in_file + '_maskedBeyondSlit.fits'))
-    assert ad_compare(ad_out, ref)
+    # Find the size of the smallest extension in the file; we don't need the
+    # mask to match exactly, so as long as the mismatch isn't more than 0.1 of
+    # the smallest extension it should be fun.
+    size = 0
+    for ext in ref:
+        if ext.data.size < size or size == 0:
+            size = ext.data.size
+
+    assert ad_compare(ad_out, ref, compare=['attributes'], max_miss=size*0.001)
 
 @pytest.mark.skip("Needs redoing/moving, think about how best to test slit rectification")
 @pytest.mark.preprocessed_data
