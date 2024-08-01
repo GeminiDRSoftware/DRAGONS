@@ -219,7 +219,12 @@ class CrossDispersed(Spect, Preprocess):
 
             # Perform aperture-finding in new AD object with one extension
             ap_found = super().findApertures(adinputs=[temp_ad], **params).pop()
-            ap_table = ap_found[0].APERTURE
+            try:
+                ap_table = ap_found[0].APERTURE
+            except AttributeError:
+                # No apertures found, just continue (warning handled by
+                # Spect.findApertures)
+                continue
             source_pos = ap_table['c0']
 
             # Now need to translate the pixel coordinates found for the aperture
