@@ -28,9 +28,14 @@ order_info['Gemini-North_LXD_G5535_LCXD_G5531_10/mm_G5532_LongBlue_G5542'] = (
     (-0.64504, -0.4847, -0.3895, -0.322, -0.273, -0.244),
 )
 
-
 # Gemini North, Short camera, 111 l/mm grating
 order_info['Gemini-North_SXD_G5536_SCXD_G5531_111/mm_G5534_ShortBlue_G5540'] = (
     (2210, 1660, 1330, 1110, 950, 830),
     (-0.1853, -0.13882, -0.11117, -0.09242, -0.08, -0.0694),
+)
+
+# Gemini North, Long camera, 32 l/mm grating
+order_info['Gemini-North_LXD_G5535_LCXD_G5531_32/mm_G5533_LongBlue_G5542'] = (
+    (2210, 1660, 1330, 1110),
+    (-0.1853, -0.13882, -0.11117, -0.09242),
 )
