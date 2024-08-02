@@ -238,7 +238,6 @@ class CrossDispersed(Spect, Preprocess):
                 ext.APERTURE = deepcopy(ap_table)
 
                 for i, source in enumerate(source_pos):
-                    log.debug(f"Copying source {i} to extension {ext.id}.")
                     if dispaxis == 0:
                         x, y = source, ap_found[0].shape[0] / 2
                     else:
@@ -246,6 +245,8 @@ class CrossDispersed(Spect, Preprocess):
 
                     new_source_pos = ext.wcs.backward_transform(
                         *ap_found[0].wcs.forward_transform(x, y))[0 - dispaxis]
+                    log.fullinfo(f"Copying aperture {i} to extension {ext.id} "
+                                 f"at position {new_source_pos}.")
 
                     ext.APERTURE['c0'][i] = new_source_pos
 
