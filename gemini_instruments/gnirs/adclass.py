@@ -533,8 +533,11 @@ class AstroDataGnirs(AstroDataGemini):
         str
             Read mode for the observation.
         """
-        return read_modes.get((self.phu.get('LNRS'), self.phu.get('NDAVGS')),
-                              "Unknown")
+        readmode = self.phu.get('READMODE')
+        if readmode is None:
+            readmode = read_modes.get((self.phu.get('LNRS'), self.phu.get('NDAVGS')),
+                           "Unknown")
+        return readmode
 
     @returns_list
     @use_keyword_if_prepared
