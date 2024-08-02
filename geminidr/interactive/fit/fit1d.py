@@ -306,7 +306,7 @@ class InteractiveModel1D(InteractiveModel):
             init_mask = mask
 
         # Check if the data has been fully masked; if so, raise a ValueError.
-        if init_mask.all():
+        if init_mask.size and init_mask.all():
             raise ValueError(
                 "All data points are masked. Cannot perform a fit."
             )
