@@ -143,6 +143,8 @@ class determineSlitEdgesConfig(config.Config):
     edges2 = config.ListField("List of right edges of illuminated region(s)",
                               float, default=None, minLength=1,
                               optional=True, single=True)
+    search_radius = config.RangeField("Radius (in pixels) to search for edges",
+                                      float, 60, min=5)
     debug_plots = config.Field("Plot fits of edges and print extra information",
                                bool, False)
     debug_max_missed = config.RangeField("Maximum missed steps when tracing edges",
