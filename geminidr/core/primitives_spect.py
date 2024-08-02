@@ -1516,6 +1516,9 @@ class Spect(Resample):
             List (of matching length) of the pixel locations of the edges of
             illuminated regions in the image. `edges1` should be all the top or
             left edges, `edges2` the bottom or right edges.
+        search_radius : float
+            Distance (in pixels) within which to search for the edges of
+            illuminated regions.
         debug_plots : bool, Default: False
             Generate plots of several aspects of the fitting process.
         debug_max_missed : int
@@ -1549,6 +1552,10 @@ class Spect(Resample):
         spectral_order = params['spectral_order']
         edges1 = params['edges1']
         edges2 = params['edges2']
+        # How far to search (in pixels) to match expected and detected
+        # peaks.
+        search_rad = params['search_radius']
+        print(f'{search_rad=}')
         if edges1 is not None and not isinstance(edges1, list):
             edges1 = [edges1]
         if edges2 is not None and not isinstance(edges2, list):
@@ -1617,10 +1624,6 @@ class Spect(Resample):
             # XD slits can be much more tilted/curved, so need a smaller cut to
             # prevent the edges being too wide.
             offset = 20 if observing_mode == 'LS' else 3
-
-            # How far to search (in pixels) to match expected and detected
-            # peaks.
-            search_rad = 60
 
             for ext in ad:
 
