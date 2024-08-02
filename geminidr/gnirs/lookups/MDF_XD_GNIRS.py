@@ -3,7 +3,9 @@
 # This file contains a look-up table for GNIRS cross-dispersed (XD) data,
 # with information on the locations and widths of the various slits visible
 # on the detector. It is added to files in prepare(), from
-# GNIRSCrossDispersed.addMDF().
+# GNIRSCrossDispersed.addMDF(). x_ccd refers to the middle of the slit at the
+# row y_ccd, which is where tracing of the edges begins in determineSlitEdges()
+# (this may need to be other than the center of the array for some configurations)
 
 # primitives_gnirs_crossdispersed imports this dictionary to find the slit
 # definitions based on a key generated from the 'telescope', '_prism', 'decker',
@@ -45,4 +47,13 @@ slit_info['Gemini-North_SXD_G5536_SCXD_G5531_111/mm_G5534_ShortBlue_G5540'] = (
     (3, 4, 5, 6, 7, 8),                 # specorder
     (5.0, 5.0, 5.0, 5.0, 5.0, 5.0),     # width_arcsec
     (46, 47, 47, 47, 47, 47)            # width_pixels
+)
+
+slit_info['Gemini-North_LXD_G5535_LCXD_G5531_32/mm_G5533_LongBlue_G5542'] = (
+    (1, 2, 3, 4),                       # slit ID
+    (265, 468, 621, 764),               # x_ccd
+    (50, 50, 50, 50),                   # y_ccd
+    (3, 4, 5, 6),                       # specorder
+    (5.0, 5.0, 5.0, 5.0),               # width_arcsec
+    (100, 100, 100, 100)                # width_pixels
 )
