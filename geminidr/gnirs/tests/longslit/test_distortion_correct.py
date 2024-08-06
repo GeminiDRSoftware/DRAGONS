@@ -41,3 +41,11 @@ def test_distortion_correct(filename, path_to_inputs, path_to_refs,
 
     for ext_out, ext_ref in zip(ad_out, ad_ref):
         np.testing.assert_allclose(ext_out.data, ext_ref.data)
+
+        # Check that pixel coordinates remain (roughly) the same after being
+        # converted to world coordinates and back.
+        mix_x = ext_out.shape[1] / 2.
+        mid_y = ext.out.shape[0] / 2.
+        assert ext_out.wcs.backward_transform(
+            *ext_out.wcs.forward_transform(mid_x, mid_y)) == approx((mid_x, mid_y),
+                                                                    rel=1e-3)
