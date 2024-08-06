@@ -326,7 +326,7 @@ class InteractiveModel1D(InteractiveModel):
 
         # need to setup the mask
         for i in np.arange(len(x)):
-            if self.band_model.contains(x[i]):
+            if self.band_model is None or self.band_model.contains(x[i]):
                 # User mask takes preference
                 if mask[i] not in [self.UserMasked.name] + self.extra_mask_names:
                     mask[i] = self.Good.name
@@ -1213,7 +1213,6 @@ class Fit1DPanel:
         fig_column : list
             list of bokeh objects with attached listeners
         """
-
         p_main, p_supp = fit1d_figure(
             width=self.width,
             height=self.height,
