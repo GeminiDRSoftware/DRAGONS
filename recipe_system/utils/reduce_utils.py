@@ -246,7 +246,7 @@ def set_btypes(userparams):
     upars = []
     if userparams:
         for upar in userparams:
-            tmp = upar.split("=")
+            tmp = upar.split("=", 1)
             spec, val = tmp[0].strip(), tmp[1].strip()
             if val == 'None':
                 val = None
