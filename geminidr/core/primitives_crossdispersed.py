@@ -71,7 +71,7 @@ class CrossDispersed(Spect, Preprocess):
             order_key = "_".join(getattr(ad, desc)() for desc in order_key_parts)
             # order_info contains central wavelength and dispersion for each slit.
             order_info = Table(import_module(
-                '.orders_XD_GNIRS', self.inst_lookups).order_info[order_key],
+                '.orders_XD', self.inst_lookups).order_info[order_key],
                 names=columns)
 
             for i, ext in enumerate(ad):
