@@ -1967,7 +1967,7 @@ class Spect(Resample):
                             _fit_1d = fit_1D(
                                 in_coords_new[dispaxis],
                                 weights=weights,
-                                domain=[0, ext.shape[1 - dispaxis] - 1],
+                                domain=[0, ext.shape[dispaxis] - 1],
                                 points=in_coords_new[1 - dispaxis],
                                 plot=debug_plots,
                                 **fit1d_params,)
