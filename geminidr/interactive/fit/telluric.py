@@ -1,6 +1,7 @@
 import numpy as np
 
 from bokeh import models as bm
+from bokeh.layouts import column
 from bokeh.plotting import figure
 
 from gempy.library import astrotools as at
@@ -15,8 +16,12 @@ from ..styles import dragons_styles
 
 from gempy.library.telluric_models import Planck
 
+from datetime import datetime
+
 from .help import TELLURIC_CORRECT_HELP_TEXT
 
+
+############################ stuff for fitTelluric ############################
 
 class TelluricInteractiveModel1D(InteractiveModel1D):
 
@@ -345,7 +350,7 @@ class TelluricPanel(Fit1DPanel):
 
 class TelluricVisualizer(Fit1DVisualizer):
     """
-    A Visualizer specific to telluricCorrect
+    A Visualizer specific to fitTelluric
     """
     def __init__(self, tcal, **kwargs):
         self.calibrator = tcal
@@ -396,7 +401,8 @@ class TelluricVisualizer(Fit1DVisualizer):
         # Some stuff so we can get the desired behaviour in fit.perform_fit()
         self.actively_fitting = False
         for i, fit in enumerate(self.fits):
-            fit.my_fit_index = i
+            #fit.my_fit_index = i
+            assert fit.my_fit_index == i
 
         # Hacky fix to sort out the widgets in the left panel;
         # but at least it's agnostic to the order of the widgets
@@ -552,5 +558,133 @@ class TelluricVisualizer(Fit1DVisualizer):
                 "intrinsic_spectrum": this_tspek.intrinsic_spectrum,
                 "continuum": np.zeros_like(this_tspek.data),
                 "corrected": np.zeros_like(this_tspek.data)
+                }
+        return data
+
+
+############################ stuff for telluricCorrect ############################
+
+class InteractiveTelluricCorrection(InteractiveModel1D):
+    def __init__(self, visualizer):
+        self.visualizer = visualizer
+        self.my_fit_index = len(visualizer.fits)
+        data = visualizer.get_data(self.my_fit_index)
+        super().__init__(fitting_parameters={}, domain=None,
+                         x=data['x'], y=data['y'], visualizer=visualizer)
+        self.quality = FitQuality.GOOD  # everything is awesome!
+
+        self.evaluation = bm.ColumnDataSource({'xlinspace': self.x,
+                                               'model': self.evaluate(self.x)})
+
+    def perform_fit(self, *args):
+        self.fit = self.visualizer.calibrator.perform_fit(self.my_fit_index)
+        print("NOTIFYING", self.fit.lookup_table)
+        self.notify_listeners()
+
+
+class TelluricCorrectPanel(Fit1DPanel):
+    def __init__(self, visualizer, fitting_parameters,
+                 idx=0, xlabel="x", ylabel="y", plot_width=600, plot_height=400,
+                 **kwargs):
+        # We don't super().__init__() because we don't want most of the code
+        # and Fit1DPanel doesn't have a parent class that needs to be called
+        self.visualizer = visualizer
+        self.index = idx
+
+        self.width = plot_width
+        self.height = plot_height
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+        self.xpoint = "x"
+        self.ypoint = "y"
+        self.p_main = None
+
+        self.model = InteractiveTelluricCorrection(self.visualizer)
+        self.model.add_listener(self.model_change_handler)
+
+        fig_column = self.build_figures()
+        self.component = column(*fig_column, stylesheets=dragons_styles(),
+                                sizing_mode="stretch_width")
+
+    def build_figures(self):
+        p_main, _ = fit1d_figure(width=self.width, height=self.height,
+                                 xpoint=self.xpoint, ypoint=self.ypoint,
+                                 xlabel=self.xlabel, ylabel=self.ylabel,
+                                 model=self.model, plot_residuals=False,
+                                 plot_ratios=False, enable_user_masking=False)
+        # Since we only have "good" points, we don't need a legend
+        p_main.legend.visible = False
+        self.p_main = p_main
+        self.reset_view()
+        return [p_main]
+
+    # def model_change_handler(self, model):
+    #     """If the model changes, this gets called to evaluate the fit and save
+    #     the results. A bespoke method is needed here to update "xlinspace"
+    #
+    #     Parameters
+    #     ----------
+    #     model : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
+    #         The model that changed.
+    #     """
+    #     print("model_change_handler")
+    #     #model.evaluation.data["xlinspace"] = model.x
+    #     model.evaluation.data["model"] = model.evaluate(
+    #         model.evaluation.data["xlinspace"]
+    #     )
+
+
+class TelluricCorrectVisualizer(Fit1DVisualizer):
+    def __init__(self, tcal, **kwargs):
+        self.calibrator = tcal
+
+        init_data = self.get_data(None)
+        # This is a required parameter for the Fit1DVisualizer.__init__()
+        # but it gets passed to the panel_class object, which can ignore it
+        all_fp_init = [{}] * len(self.calibrator)
+
+        super().__init__(init_data, all_fp_init,
+                         **kwargs, panel_class=TelluricCorrectPanel,
+                         turbo_tabs=True, reinit_live=True,
+                         )
+
+        # Hacky fix to sort out the widgets in the left panel,
+        # because everything causes an immediate update. The
+        # airmass slides just require perform_fit() to be called,
+        # while the pixel slider and model toggle need reconstruct_points()
+        def _reconstruct_points(attr, old, new):
+            print(datetime.now(), "RECONSTRUCT POINTS HANDLER")
+            self.reconstruct_points()
+
+        # print("WIDGETS")
+        # for widget in self.reinit_panel.children:
+        #     if isinstance(widget, bm.layouts.Row):
+        #         widget_title = getattr(widget.children[0], 'title', None)
+        #         widget = widget.children[-1]
+        #     else:
+        #         widget_title = getattr(widget, 'title', None)
+        #     if "Airmass" in widget_title:
+        #         pass
+        #     elif isinstance(widget, bm.CheckboxGroup):
+        #         pass
+        #         #widget._callbacks['active'] = []
+        #         #widget.on_change('active', _reconstruct_points)
+        #     else:
+        #         widget.on_change('value', _reconstruct_points)
+
+    def reconstruct_points(self):
+        print(datetime.now(), "Visualizer.reconstruct_points()")
+        print(self.ui_params)
+        self.calibrator.set_fitting_params(ui_params=self.ui_params)
+        self.calibrator.reconstruct_points()
+        for fit in self.fits:
+            fit.perform_fit()
+
+    def get_data(self, index):
+        if index is None:  # allow this to return everything in one call
+            index = slice(None)
+        data = {'x': self.calibrator.x[index],
+                'y': self.calibrator.y[index],
+                'mask': ['good'] * len(self.calibrator.x[index]),
                 }
         return data
