@@ -46,7 +46,8 @@ class telluricCorrectConfig(parameters_generic.calRequirementConfig):
                                 optional=True, single=True)
     apply_model = config.Field("Apply the absorption model rather than the data?",
                                bool, True, optional=False)
-    manual_shift = config.RangeField("Manual shift in pixels", float, None, min=-5, max=5,
+    interactive = config.Field("Tweak correction interactively?", bool, False)
+    pixel_shift = config.RangeField("Shift in pixels", float, None, min=-5, max=5,
                                      inclusiveMin=True, inclusiveMax=True, optional=True)
     delta_airmass = config.RangeField("Airmass difference", float, None, min=-1, max=1,
                                       inclusiveMin=True, inclusiveMax=True, optional=True)

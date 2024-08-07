@@ -8,7 +8,7 @@ from importlib import import_module
 
 import numpy as np
 
-from scipy.interpolate import interp1d, make_interp_spline
+from scipy.interpolate import make_interp_spline
 
 from astropy.modeling import models
 from astropy.table import Table
@@ -20,10 +20,12 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 from geminidr.interactive.interactive import UIParameters
 import geminidr.interactive.server
 from gempy.library import astromodels as am, convolution, peak_finding
+from gempy.library.config import RangeField
 
-from gempy.library.calibrator import TelluricCalibrator
-from gempy.library.telluric import TelluricSpectrum
-from geminidr.interactive.fit.telluric import TelluricVisualizer
+from gempy.library.calibrator import TelluricCalibrator, TelluricCorrector
+from gempy.library.telluric import TelluricModels, TelluricSpectrum
+from gempy.library.telluric_models import PCA
+from geminidr.interactive.fit.telluric import TelluricCorrectVisualizer, TelluricVisualizer
 
 from . import parameters_telluric
 
@@ -140,7 +142,7 @@ class Telluric(Spect):
                                 tspek.set_pca()
 
                             # The NDData object is deepcopied, so we can
-                            # modify it without any side effects
+                            # modify it without any unwanted side effects
                             if weighting == "uniform":
                                 tspek.nddata.variance = None
 
@@ -154,7 +156,7 @@ class Telluric(Spect):
                     visualizer = TelluricVisualizer(
                         tcal, tab_name_fmt=lambda i: f"Order {i+1}",
                         xlabel="Wavelength (nm)", ylabel=f"Signal ({data_units})",
-                        title="TITLE",
+                        title="Fit Telluric",
                         primitive_name=self.myself(),
                         filename_info=ad.filename,
                         ui_params=uiparams
@@ -282,9 +284,10 @@ class Telluric(Spect):
         sfx = params["suffix"]
         std = params["telluric"]
         apply_model = params["apply_model"]
+        interactive = params["interactive"]
         shift_tolerance = params["shift_tolerance"]
         apply_shift = params["apply_shift"]
-        manual_shift = params["manual_shift"]
+        manual_shift = params["pixel_shift"]
         user_airmass = params["delta_airmass"]
         sampling = 10
 
@@ -321,12 +324,12 @@ class Telluric(Spect):
             except AttributeError:
                 if apply_model:
                     log.warning(f"{ad.filename}: no TELLFIT table on standard"
-                                f" {std.filename}. Continuing.")
+                                f" {std.filename} so cannot apply correction.")
                     continue
                 header = {}  # can still progress
             else:
                 header = tellfit.meta['header']
-                pca_name = header['PCA_NAME']
+                pca_name = header['pca_name']
                 pca_coeffs = tellfit['PCA coefficients'].data
             if not apply_model:
                 if not all(hasattr(ext_std, "TELLABS") for ext_std in std
@@ -336,129 +339,157 @@ class Telluric(Spect):
                                 "TELLABS spectrum. Continuing.")
                     continue
 
-            std_airmass = header.get('AIRMASS', std.airmass())
-            if std_airmass is None:
-                std_airmass = 1.58
-            if user_airmass is None:
-                sci_airmass = ad.airmass()
-                try:
-                    delta_airmass = sci_airmass - std_airmass
-                except TypeError:  # if either airmass() returns None
-                    log.warning("Cannot determine airmass of target "
-                                f"{ad.filename} and/or standard {std.filename}. "
-                                "Not performing airmass correction.")
-                    delta_airmass = None
-                else:
-                    log.stdinfo(f"{ad.filename}: Correcting for difference of "
-                                f"{delta_airmass:5.3f} airmasses")
+            # We're hot to go! (as Chappell Roan would say)
+            # First is to get a cross-correlation estimate, unless one has
+            # been provided or the user has said not to (we don't apply an
+            # airmass correction here). We loop through the AD even if we're
+            # not cross-correlating, so we can construct the TelluricSpectrum
+            # objects
+            if manual_shift is not None:
+                pixel_shift = manual_shift
+            elif shift_tolerance is None:
+                pixel_shift = 0
             else:
-                delta_airmass = user_airmass
-                if std_airmass is None:
-                    log.warning("Cannot determine airmass of standard "
-                                f"{std.filename} so cannot correct {ad.filename}")
-                else:
-                    log.stdinfo(f"{ad.filename}: Applying user-supplied "
-                                f"difference of {delta_airmass:5.3f} airmasses")
-
+                pixel_shift = None
+            tspek_list = []
             pixel_shifts = []
-            pixel_shift = manual_shift
-            if manual_shift:
-                log.stdinfo(f"Applying user-provided shift of {manual_shift} pixels")
+            tell_int_splines = []
+            tellabs_data = []
+            for ext, ext_std in zip(ad, std):
+                if len(ext.shape) > 1:
+                    continue
 
-            # Loop twice if we're cross-correlating
-            for xcorr in range(shift_tolerance is not None and manual_shift is None, -1, -1):
-                for ext, ext_std in zip(ad, std):
-                    if len(ext.data.shape) != 1:
-                        continue
+                axis_name = ext.wcs.output_frame.axes_names[0]
+                in_vacuo = axis_name != "WAVE"
+                if axis_name not in ("AWAV", "WAVE"):
+                    log.warning("Cannot determine whether wavelength "
+                                "scale is calibrated to vacuum or air "
+                                "from name '{axis_name}'on extension "
+                                f"{ext.id}. Assuming vacuum.")
 
-                    axis_name = ext.wcs.output_frame.axes_names[0]
+                lsf = self._line_spread_function(ext)
+                tspek = TelluricSpectrum(
+                    ext.nddata, line_spread_function=lsf,
+                    name=f"Extension {ext.id}", in_vacuo=in_vacuo)
+                tspek_list.append(tspek)
+
+                # Has to be here because of in_vacuo
+                # TODO? Create multiple int_splines for different lsf_params?
+                if apply_model or interactive:
+                    w_pca, t_pca = TelluricModels.data(pca_file=pca_name,
+                                                       in_vacuo=True)
+                    tellabs_model = PCA(t_pca).evaluate(tspek.waves, pca_coeffs)
+                    lsf_param_names = getattr(lsf, 'parameters', [])
+                    lsf_params = {k: header[k] for k in lsf_param_names}
+                    wconv, tconv = lsf.convolve(tspek.waves, w_pca,
+                                                tellabs_model, **lsf_params)
+                    tell_int_splines.append(lsf.make_integral_spline(wconv, tconv))
+                    print("TELL INT SPLINE", wconv.min(), wconv.max())
+
+                if pixel_shift is None:
                     if apply_model:
-                        if axis_name == "AWAV":
-                            in_vacuo = False
-                        else:
-                            in_vacuo = True
-                            # Only report on the first pass
-                            if axis_name != "WAVE" and pixel_shift is None:
-                                # Assume vacuum because we're probably in the IR
-                                log.warning("Cannot determine whether wavelength scale is "
-                                            "calibrated to vacuum or air from name "
-                                            f"'{axis_name}'. Assuming vacuum.")
-
-                        if pixel_shift:
-                            ext.wcs.insert_transform(
-                                ext.wcs.input_frame, models.Shift(pixel_shift),
-                                after=True)
-                        lsf = self._line_spread_function(ext)
-                        tspek = TelluricSpectrum(
-                            ext.nddata, line_spread_function=lsf,
-                            name=f"Extension {ext.id}", in_vacuo=in_vacuo)
-
-                        lsf_param_names = getattr(lsf, 'parameters', None)
-                        if lsf_param_names:
-                            lsf_params = {k: header[k] for k in lsf_param_names}
-                            tspek.set_pca(lsf_params=lsf_params)
-                        else:
-                            tspek.set_pca()
-
-                        trans = tspek.pca.evaluate(tspek.waves, pca_coeffs)
-                        #fig, ax = plt.subplots()
-                        #ax.plot(tspek.waves, trans, 'k-')
-                        #pixels = np.arange(trans.size)
-                        #trans2 = np.interp(pixels + pixel_shift,
-                        #                  pixels, ext_std.TELLABS, left=np.nan,
-                        #                  right=np.nan)
-                        #ax.plot(tspek.waves, trans2, 'b-')
-                        #plt.show()
+                        trans = convolution.resample(tspek.waves, wconv, tconv)
                     else:
                         trans = ext_std.TELLABS
-                        if pixel_shift:
-                            pixels = np.arange(trans.size)
-                            trans = np.interp(pixels + pixel_shift,
-                                              pixels, trans, left=np.nan,
-                                              right=np.nan)
 
-                    if delta_airmass:
-                        pix_to_correct = np.logical_and(trans > 0, trans < 1)
-                        tau = -np.log(trans[pix_to_correct]) / std_airmass
-                        trans[pix_to_correct] *= np.exp(-tau * delta_airmass)
+                    pixel_shift = peak_finding.cross_correlate_subpixels(
+                        ext.data, trans, sampling)
+                    if pixel_shift is None:
+                        log.warning("Cannot determine cross-correlation"
+                                    f"peak for {ext.id}")
+                        pixel_shift = None  # needs to exist for later
+                    else:
+                        log.stdinfo(f"Shift for extension {ext.id} is "
+                                    f"{pixel_shift:.2f} pixels")
+                        pixel_shifts.append(pixel_shift)
 
-                    # Now that we have the best model, let's cross-correlate!
-                    if xcorr:
-                        pixel_shift = peak_finding.cross_correlate_subpixels(
-                            ext.data, trans, sampling)
-                        if pixel_shift is None:
-                            log.warning("Cannot determine cross-correlation"
-                                        f"peak for {ext.id}")
-                            pixel_shift = None  # needs to exist for later
-                        else:
-                            log.stdinfo(f"Shift for extension {ext.id} is "
-                                        f"{pixel_shift:.2f} pixels")
-                            pixel_shifts.append(pixel_shift)
+                tellabs_data.append(ext_std.TELLABS)
 
-                    else:  # means we're actually correcting!
-                        fig, ax = plt.subplots()
-                        w = ext.wcs(np.arange(ext.data.size))
-                        ax.plot(w, ext.data, 'b-')
-                        ax.plot(w, trans*1e6, 'r-')
-                        ax.plot(w, ext.data / trans, 'k-')
-                        plt.show()
+            if len(pixel_shifts) > 1:
+                pixel_shift = self._calaculate_mean_pixel_shift(pixel_shifts)
+            # i.e., pixel shift has been calculated
+            if (pixel_shift and manual_shift is None and
+                    abs(pixel_shift) < shift_tolerance):
+                pixel_shift = 0
+                log.stdinfo(f"Shift is within {shift_tolerance}"
+                            " tolerance so will not be applied")
 
-                        ext.divide(trans)
+                # Get LSF parameters from first 1D spectrum extension
+                #lsf = self._line_spread_function(
+                #    [ext for ext in ad if len(ext.shape) == 1][0])
+                #lsf_param_names = getattr(lsf, 'parameters', None)
 
-                        # We've only modified the WCS if using the model
-                        if pixel_shift and apply_model and not apply_shift:
-                            from_frame = ext.wcs.input_frame
-                            to_frame = ext.wcs.available_frames[1]
-                            ext.wcs.set_transform(from_frame, to_frame,
-                                                  ext.wcs.get_transform(from_frame, to_frame)[1:])
+            std_airmass = header.get('AIRMASS', std.airmass())
+            sci_airmass = ad.airmass()
+            if user_airmass is None:
+                try:
+                    sci_airmass - std_airmass
+                except TypeError:  # if either airmass() returns None
+                    log.warning("Cannot determine airmass of target "
+                                f"{ad.filename} and/or standard {std.filename}." +
+                                ("" if interactive else " Not performing airmass correction."))
+                    # Set values for UI, or ones that will allow a calculation
+                    if sci_airmass is None:
+                        sci_airmass = std_airmass or 1.2
+                    if std_airmass is None:
+                        std_airmass = sci_airmass
+            else:
+                if std_airmass is None:
+                    if sci_airmass:
+                        std_airmass = sci_airmass - user_airmass
+                    else:
+                        std_airmass = 1.2
+                        sci_airmass = std_airmass + user_airmass
+                        log.warning("Cannot determine airmass of standard "
+                                    f"{std.filename} so assuming {std_airmass}.")
+                else:
+                    sci_airmass = std_airmass + user_airmass
 
-                if xcorr and len(ad) > 1:
-                    pixel_shift = self._calaculate_mean_pixel_shift(pixel_shifts)
-                    if (pixel_shift is not None and
-                            abs(pixel_shift) < shift_tolerance):
-                        pixel_shift = 0
-                        log.stdinfo(f"Shift is within {shift_tolerance}"
-                                    " tolerance so will not be applied")
+            config = copy(self.params[self.myself()])
+            config.update(**params)
+            config.update(pixel_shift=pixel_shift)
+            reinit_extras = {
+                "sci_airmass": RangeField(
+                    doc="Airmass of target", dtype=float, default=sci_airmass,
+                    min=1, max=2.5, inclusiveMax=True),
+                "std_airmass": RangeField(
+                    doc=f"Airmass of telluric", dtype=float, default=std_airmass,
+                    min=1, max=2.5, inclusiveMax=True)
+            }
+            uiparams = UIParameters(
+                config, reinit_params=["pixel_shift", "sci_airmass",
+                                       "std_airmass", "apply_model"],
+                extras=reinit_extras)
+
+            tcal = TelluricCorrector(tspek_list, ui_params=uiparams,
+                                     tellabs_data=tellabs_data,
+                                     tell_int_splines=tell_int_splines)
+
+            print("REINIT PARAMS")
+            print(tcal.reinit_params)
+
+            if interactive:
+                data_units = "adu" if ad.is_in_adu() else "electron"
+                visualizer = TelluricCorrectVisualizer(
+                    tcal, tab_name_fmt=lambda i: f"Order {i+1}",
+                    xlabel="Wavelength (nm)", ylabel=f"Signal ({data_units})",
+                    title="Telluric Correct",
+                    primitive_name=self.myself(),
+                    filename_info=ad.filename,
+                    ui_params=uiparams
+                )
+                geminidr.interactive.server.interactive_fitter(visualizer)
+                # We don't need to grab the results because they're in "tcal"
+            else:
+                tcal.perform_all_fits()
+
+            i_model = 0
+            for ext in ad:
+                if len(ext.shape) > 1:
+                    continue
+
+                ext.divide(tcal.abs_final[i_model])
+                i_model += 1
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
@@ -532,7 +563,7 @@ class LineSpreadFunction(ABC):
         Parameters
         ----------
         waves: array
-            output wavelength scale
+            provides min and max wavelengths for output convolved spectra
         w: array
             wavelengths of thing to be convolved
         data: array
@@ -579,9 +610,29 @@ class LineSpreadFunction(ABC):
         w, spectra = self.convolve(waves, w, data, **kwargs)
         results = convolution.resample(waves, w, spectra)
         return results
+
+    @staticmethod
+    def make_integral_spline(w, spectra):
+        """
+        Interpolate a spectrum and calculate its antiderivative (integral)
+        and return that, so it is easy to calculate the flux in any wavelength
+        range, as represented by a pixel.
+
+        Parameters
+        ----------
+        w: array
+            wavelengths of spectra
+        spectra: array
+            data; last dimension must match w
+
+        Returns
+        -------
+        BSpline object representing the integral of the interpolated spectra
+        """
         spline = make_interp_spline(w, spectra, axis=-1, k=3)
         spline.extrapolate = False
-        integral = spline.antiderivative()
+        return spline.antiderivative()
+
         dw_in = np.diff(w)
         if any(dw_in < 0):
             raise ValueError("Wavelength array must be monotonically increasing")

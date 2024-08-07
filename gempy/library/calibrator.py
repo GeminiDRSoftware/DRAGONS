@@ -8,7 +8,7 @@ from astropy import units as u
 from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 
-from .telluric import A0Spectrum, TelluricSpectrum
+from .telluric import A0Spectrum, TelluricModels, TelluricSpectrum
 from .telluric_models import MultipleTelluricModels, Planck
 
 from datetime import datetime
@@ -86,8 +86,7 @@ class Calibrator(ABC):
 
     def perform_all_fits(self):
         """Likely default behaviour"""
-        for i in range(len(self)):
-            self.perform_fit(i)
+        return [self.perform_fit(i) for i in range(len(self))]
 
 
 class TelluricCalibrator(Calibrator):
@@ -155,7 +154,6 @@ class TelluricCalibrator(Calibrator):
     def __len__(self):
         return len(self.spectra)
 
-    # I don't think I should have to redecorate these??
     @property
     def x(self):
         return [tspek.waves for tspek in self.spectra]
@@ -331,3 +329,94 @@ class TelluricCalibrator(Calibrator):
                                            equivalencies=u.spectral_density(wavelength))
         scaling = fluxden_in_flam_units / np.interp(wavelength.to(u.nm).value, a0w, a0f)
         return a0w, f * scaling
+
+
+class TelluricCorrector(Calibrator):
+    def __init__(self, telluric_spectra, ui_params=None, tellabs_data=None,
+                 tell_int_splines=None):
+        # Lots of checking that all the TelluricSpectra have similar PCA models
+        assert all(isinstance(t, TelluricSpectrum) for t in telluric_spectra)
+        self.spectra = telluric_spectra
+        self.npixels = np.array([tspek.waves.size for tspek in self.spectra])
+
+        # The pixel data of the absorption models
+        self.tellabs_data = tellabs_data
+        # And the integral splines, pre-convolved
+        self.tell_int_splines = tell_int_splines
+
+        # The absorption models from the telluric standard
+        self.std_abs = [np.ones((npix,), dtype=np.float32)
+                        for npix in self.npixels]
+        self.abs_final = [np.ones((npix,), dtype=np.float32)
+                        for npix in self.npixels]
+
+        if ui_params is not None:
+            self.set_fitting_params(ui_params)
+            self.reconstruct_points()
+
+    def __len__(self):
+        return len(self.spectra)
+
+    @property
+    def x(self):
+        return [tspek.nddata.wcs(np.arange(npix) + self.reinit_params["pixel_shift"])
+                for tspek, npix in zip(self.spectra, self.npixels)]
+
+    @property
+    def y(self):
+        return [tspek.data for tspek in self.spectra]
+
+    def set_fitting_params(self, ui_params):
+        """Override because we don't have fitting parameters"""
+        self.reinit_params = {p: getattr(ui_params, p)
+                              for p in ui_params.reinit_params}
+
+    def reconstruct_points(self, *args, **kwargs):
+        """We need to calculate the absorption model if we're resampling.
+        If we're just changing the airmass, we should be able to do that in the UI"""
+        for i, tspek in enumerate(self.spectra):
+            if self.reinit_params["apply_model"]:
+                # Calculate the absorption model by integrating the spline
+                # between the wavelength limits of each pixel
+                edges = np.r_[[1.5 * (waves := self.x[i])[0] - 0.5 * waves[1]],
+                              np.array([waves[:-1], waves[1:]]).mean(axis=0),
+                              [1.5 * waves[-1] - 0.5 * waves[-2]]]
+                dw_out = abs(np.diff(edges))
+                result = abs(np.diff(self.tell_int_splines[i](edges)))
+                self.std_abs[i][:] = result / dw_out
+            else:
+                # Interpolate the data from the TELLABS extension
+                pixels = np.arange(self.npixels[i])
+                self.std_abs[i][:] = np.interp(
+                    pixels + self.reinit_params["pixel_shift"],
+                    pixels, self.tellabs_data[i], left=np.nan, right=np.nan)
+
+    def perform_fit(self, index, sigma_clipping=None):
+        """No fitting, this just divides each spectrum by the absorption model"""
+        delta_airmass = (self.reinit_params["sci_airmass"] -
+                         self.reinit_params["std_airmass"])
+        trans = self.std_abs[index]
+        pix_to_correct = np.logical_and(trans > 0, trans < 1)
+        tau = -np.log(trans[pix_to_correct]) / self.reinit_params["std_airmass"]
+        trans[pix_to_correct] *= np.exp(-tau * delta_airmass)
+        self.abs_final[index][:] = trans
+        corrected_data = models.Tabular1D(
+            points=self.x[index], lookup_table=at.divide0(self.spectra[index].data, trans))
+        return corrected_data
+
+    # def perform_all_fits(self):
+    #     # This needs to return a model that describes the "fit" for each
+    #     # spectrum; this needs to be a Tabular1D. But what we want the
+    #     # Calibrator to return is the absorption model so let's store that
+    #     # as well
+    #     delta_airmass = (self.reinit_params["sci_airmass"] -
+    #                      self.reinit_params["std_airmass"])
+    #     for i, trans in enumerate(self.std_abs):
+    #         pix_to_correct = np.logical_and(trans > 0, trans < 1)
+    #         tau = -np.log(trans[pix_to_correct]) / self.reinit_params["std_airmass"]
+    #         trans[pix_to_correct] *= np.exp(-tau * delta_airmass)
+    #         self.abs_final[i][:] = trans
+    #
+    #     corrected_data = [models.Tabular1D(points=x, lookup_table=at.divide0(tspek.data, model))
+    #                       for x, tspek, model in zip(self.x, self.spectra, self.abs_final)]
+    #     return corrected_data
