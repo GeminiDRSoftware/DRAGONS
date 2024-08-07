@@ -16,7 +16,7 @@ from gemini_instruments.f2.lookup import dispersion_offset_mask
 from . import parameters_f2_longslit
 from geminidr.core.primitives_longslit import Longslit
 from .primitives_f2_spect import F2Spect
-from .lookups.MDF_LS_F2 import slit_info
+from .lookups.MDF_LS import slit_info
 
 # -----------------------------------------------------------------------------
 
