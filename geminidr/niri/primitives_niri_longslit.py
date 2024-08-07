@@ -14,7 +14,7 @@ from recipe_system.utils.decorators import (parameter_override,
 from .primitives_niri_spect import NIRISpect
 from geminidr.core.primitives_longslit import Longslit
 from . import parameters_niri_longslit
-from .lookups.MDF_LS_NIRI import slit_info
+from .lookups.MDF_LS import slit_info
 
 # -----------------------------------------------------------------------------
 

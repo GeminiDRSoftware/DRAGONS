@@ -14,7 +14,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from .primitives_gnirs_spect import GNIRSSpect
 from . import parameters_gnirs_crossdispersed
 from geminidr.core.primitives_crossdispersed import CrossDispersed
-from .lookups.MDF_XD_GNIRS import slit_info
+from .lookups.MDF_XD import slit_info
 
 # -----------------------------------------------------------------------------
 @parameter_override
