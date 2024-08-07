@@ -28,6 +28,36 @@ Bug fixes
 
 * Fixed an occasional issue with bad pixels causing ``traceFibers`` to fail.
 
+**geminidr.interactive**
+
+* Fixed issues where certain values were not initialized correctly.
+
+* Fixed stylesheet issues
+
+New Features
+------------
+
+**gemini_instruments.gnirs**
+
+* Preemptively added support for handling GNIRS data produced with the new
+  detector controller software that will be installed in coming months.  An
+  additional patch release will be issued once the gain, read noise, and other
+  detector properties are known.
+
+Documentation
+-------------
+* Several updates to the GHOST tutorials to fix errors and improve clarity.
+
+Interface Modifications
+-----------------------
+**gemini_instruments.gnirs**
+
+* New prims_motor_steps descriptor to support flat association with HR-IFU
+and SciOps prism mechanism reproducibility workarounds adopted in Apr-2024.
+
+**gemini_instruments.ghost**
+
+* Change GHOST fast/low read mode from "fast" to "rapid".
 
 3.2.0
 =====

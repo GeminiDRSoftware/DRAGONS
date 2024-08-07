@@ -8,7 +8,7 @@ and to be used in the documentation.
 API = 3
 FEATURE = 2
 BUG = 1
-TAG = 'dev'
+TAG = ''
 
 
 def version(short=False, tag=TAG):
