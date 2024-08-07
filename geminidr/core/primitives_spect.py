@@ -5049,15 +5049,12 @@ class Spect(Resample):
                     # Create values to evaluate the slit edge models at along
                     # the array. Every 20 pixels is fine, as that's the default
                     # interval that the edge tracing uses.
-                    eval_coords = [n for n in range(
-                                   0, ext.data.shape[dispaxis]+1, 20)]
+                    eval_coords = np.arange(0, ext.data.shape[dispaxis]+1, 20)
                     # Stack them together to represent both edges.
                     eval_coords_temp = np.concatenate((eval_coords, eval_coords))
 
-                    in_coords1 = np.array(np.array([model1(n) for n in
-                                          eval_coords]))
-                    in_coords2 = np.array(np.array([model2(n) for n in
-                                          eval_coords]))
+                    in_coords1 = model1(eval_coords)
+                    in_coords2 = model2(eval_coords)
                     in_coords_temp = np.concatenate((in_coords1, in_coords2))
 
                     # Find the edges of the slit half-way in the spectral direction
