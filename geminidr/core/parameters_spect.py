@@ -60,7 +60,7 @@ class adjustWCSToReferenceConfig(config.Config):
 
 
 class attachPinholeModelConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_pinholeModelAdded", optional=True)
+    suffix = config.Field("Filename suffix", str, "_pinholeModelAttached", optional=True)
     pinhole = config.Field("Pinhole frame", (str, AstroData), None, optional=True)
 
 
