@@ -1555,7 +1555,6 @@ class Spect(Resample):
         # How far to search (in pixels) to match expected and detected
         # peaks.
         search_rad = params['search_radius']
-        print(f'{search_rad=}')
         if edges1 is not None and not isinstance(edges1, list):
             edges1 = [edges1]
         if edges2 is not None and not isinstance(edges2, list):
