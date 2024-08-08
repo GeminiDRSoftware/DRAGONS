@@ -28,6 +28,7 @@ test_data = [
 ]
 
 
+@pytest.mark.gmosimage
 @pytest.mark.integration_test
 @pytest.mark.parametrize("master_bias, flat_fnames", test_data)
 def test_make_processed_flat(
