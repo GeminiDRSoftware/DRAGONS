@@ -1456,7 +1456,7 @@ class Spect(Resample):
                                             y_domain=[0, ext.shape[0]-1])
 
                 fixed_linear = (spectral_order == 0)
-                model, m_final, m_inverse = create_distortion_model(
+                model, m_final, m_inverse = am.create_distortion_model(
                     m_init, 1-dispaxis, in_coords, ref_coords, fixed_linear)
 
                 # TODO: Some logging about quality of fit
@@ -2116,7 +2116,7 @@ class Spect(Resample):
                     # Create the distortion model from the available coords.
                     log.stdinfo("Creating rectification model.")
                     fixed = (spatial_order == 0)
-                    model, m_final_2d, m_inverse_2d = create_distortion_model(
+                    model, m_final_2d, m_inverse_2d = am.create_distortion_model(
                         m_init_2d, dispaxis, in_coords, ref_coords, fixed)
                     model.name = 'RECT'
 
@@ -4801,7 +4801,7 @@ class Spect(Resample):
                     y_domain=[0, ext.shape[0]-1])
                 # The `fixed_linear` parameter is False because we should
                 # have both edges for each slit.
-                model, m_final_2d, m_inverse_2d = create_distortion_model(
+                model, m_final_2d, m_inverse_2d = am.create_distortion_model(
                     m_init_2d, dispaxis, in_coords, ref_coords, False)
                 model.name = "PNHLRECT"
 
@@ -4962,215 +4962,6 @@ class Spect(Resample):
                     log.warning(f"{filename} already exists - cannot write")
 
         return adinputs
-
-    def _cut_slits(self, adinputs=None, **params):
-        """
-        Extract slits in images into individual extensions.
-
-        Parameters
-        ----------
-        adinputs : list of :class:`~astrodata.AstroData`
-            Data as 2D spectral images with slits defined in a SLITEDGE table.
-        Returns
-        -------
-        list of :class:`~astrodata.AstroData`
-
-        """
-        log = self.log
-        adoutputs = []
-
-        for ad in adinputs:
-
-            log.fullinfo(f"Cutting slits in {ad.filename}")
-            adout = astrodata.create(ad.phu)
-            adout.filename = ad.filename
-            adout.orig_filename = ad.orig_filename
-            for ext in ad:
-                try:
-                    slitedge = ext.SLITEDGE
-                    orig_wcs = ext.wcs
-                except AttributeError:
-                    log.warning(f"No slits to cut in extension {ext.id}")
-                    adout.append(ext)
-                    continue
-
-                dispaxis = 2 - ext.dispersion_axis()  # Python Sense
-
-                # Create pairs of slit edge models by zipping consecutive
-                # pairs of entries from the table.
-                pairs = [(m, n) for m, n in zip(islice(slitedge, 0, None, 2),
-                                                islice(slitedge, 1, None, 2))]
-
-                for i, slit in enumerate(pairs):
-
-                    model1 = am.table_to_model(slit[0])
-                    model2 = am.table_to_model(slit[1])
-
-                    # Get the coordinates of the bounding box surrounding
-                    # the slit. Add a few pixels of padding, since the edge
-                    # detection doesn't quite happen at the outermost edges of
-                    # the slits.
-                    pad = 2
-                    if dispaxis == 0: # vertical
-                        y1, y2 = 0, ext.data.shape[0]
-                        x1 = max(int(np.floor(model1(y1))) - pad, 0)
-                        x2 = min(int(np.ceil(model2(y2))) + pad,
-                                 ext.data.shape[dispaxis])
-
-                    elif dispaxis == 1: # horizontal
-                        x1, x2 = 0, ext.data.shape[1]
-                        y1 = max(int(np.floor(model1(x1))) - pad, 0)
-                        y2 = min(int(np.ceil(model2(x2))) + pad,
-                                 ext.data.shape[1 - dispaxis])
-
-                    midpoint_x = (x2 - x1) / 2
-                    midpoint_y = (y2 - y1) / 2
-                    mid_spect = midpoint_y if dispaxis == 0 else midpoint_x
-                    mid_spat = midpoint_x if dispaxis == 0 else midpoint_y
-
-                    # Create a Section to cut out, and append that section as
-                    # the new data plane of the new `adout`.
-                    cut_section = Section(x1=x1, x2=x2, y1=y1, y2=y2)
-                    adout.append(ext.nddata[cut_section.asslice()])
-                    log.fullinfo(f"Cutting slit {i+1} in extension {ext.id} "
-                                 "with corners at "
-                                 f"({x1}, {y1}) & ({x2}, {y2})")
-
-                    # Add the correct pair of rows from the SLITEDGE table.
-                    adout[-1].SLITEDGE = slitedge[2*i:2*i+2]
-                    # Shift the c0 coefficient by the correct offset.
-                    offset = x1 if dispaxis == 0 else y1
-                    adout[-1].SLITEDGE["c0"] -= offset
-                    adout[-1].SLITEDGE["slit"] = 0  # reset slit number in ext
-
-                    # Create a slit rectification model for the slit and add it
-                    # to the WCS in this next section. ------------------------
-
-                    # Create values to evaluate the slit edge models at along
-                    # the array. Every 20 pixels is fine, as that's the default
-                    # interval that the edge tracing uses.
-                    eval_coords = np.arange(0, ext.data.shape[dispaxis]+1, 20)
-                    # Stack them together to represent both edges.
-                    eval_coords_temp = np.concatenate((eval_coords, eval_coords))
-
-                    in_coords1 = model1(eval_coords)
-                    in_coords2 = model2(eval_coords)
-                    in_coords_temp = np.concatenate((in_coords1, in_coords2))
-
-                    # Find the edges of the slit half-way in the spectral direction
-                    # so we can find the offset to correct the slit by to make
-                    # the center line up with the target RA and DEC. These
-                    # are in slit-coordinates.
-                    edge1_mid = model1(mid_spect)
-                    edge2_mid = model2(mid_spect)
-                    mid = (x2 - x1) / 2
-                    slit_center = (edge1_mid + edge2_mid) / 2 - offset
-
-                    # Need to update both forward and backward transforms
-                    # together in sync.
-                    forward_shift, backward_shift = False, False
-                    f_transform = adout[-1].wcs.get_transform('pixels', 'world')
-                    b_transform = adout[-1].wcs.get_transform('world', 'pixels')
-
-                    for j in range(f_transform.n_submodels):
-                        if (isinstance(f_transform[j], models.Shift) and
-                            isinstance(f_transform[j+1], models.Const1D)):
-                            # This sets the center of the slit to be where the
-                            # WCS sky coordinates point.
-                            f_transform[j].offset = -slit_center
-                            forward_shift = True
-                            break
-
-                    for k in range(b_transform.n_submodels):
-                        if (isinstance(b_transform[k], models.Shift) and
-                            isinstance(b_transform[k+1], models.Shift)):
-                            b_transform[k].offset = slit_center
-                            backward_shift = True
-                            break
-
-                    # When regions are cut out of a larger frame, Shift models
-                    # are added to keep the WCS the same. We want the WCS to
-                    # instead point to the center of the slit, so zero out these
-                    # auto-added Shifts, which will be in the first/last two
-                    # submodels of the forward and backward transforms.
-                    # Since we cut the entire array in the spectral direction,
-                    # there will be one Shift (in the spatial direction) and
-                    # one Identity model here, so we can break after finding the
-                    # Shift.
-                    for m in range(0, 2, 1):
-                        if isinstance(f_transform[m], models.Shift):
-                            f_transform[m].offset = 0
-                            break
-
-                    for n in range(-2, 0, 1):
-                        if isinstance(b_transform[n], models.Shift):
-                            b_transform[n].offset = 0
-                            break
-
-                    if not (forward_shift and backward_shift):
-                        log.debug(f"{f_transform=}")
-                        log.debug(f"{b_transform=}")
-                        raise RuntimeError("Couldn't find Shift model in WCS")
-
-                    # Set the reference coordinates to the value of the models
-                    # half-way across the detector in the dispersion direction.
-                    # This "rotates" the shift around that point, rather than
-                    # around one end of the slit.
-                    ref_coords1 = np.full_like(in_coords1, edge1_mid)
-                    ref_coords2 = np.full_like(in_coords2, edge2_mid)
-                    ref_coords_temp = np.concatenate((ref_coords1, ref_coords2))
-
-                    # Create lists of coordinates; they are always given as a
-                    # list of x-coordinates and y-coordinates, so this `if`
-                    # clause handles both detector orientations.
-                    if dispaxis == 0:
-                        in_coords = [in_coords_temp, eval_coords_temp]
-                        ref_coords = [ref_coords_temp, eval_coords_temp]
-                        x_ord, y_ord = 1, model1.degree
-                    else:
-                        in_coords = [eval_coords_temp, in_coords_temp]
-                        ref_coords = [eval_coords_temp, ref_coords_temp]
-                        x_ord, y_ord = model1.degree, 1
-
-                    m_init_2d = models.Chebyshev2D(
-                        x_degree=x_ord, y_degree=y_ord,
-                        x_domain=[0, ext.shape[1]-1],
-                        y_domain=[0, ext.shape[0]-1])
-                    log.stdinfo("  Creating distortion model for slit "
-                                f"rectification for slit {i+1}")
-                    # The `fixed_linear` parameter is False because we should
-                    # have both edges for each slit.
-                    model, m_final_2d, m_inverse_2d = create_distortion_model(
-                        m_init_2d, dispaxis, in_coords, ref_coords, False)
-                    model.name = "RECT"
-
-                    if adout[-1].wcs is None:
-                        adout[-1].wcs = gWCS([(ext.wcs.input_frame, model),
-                                              (cf.Frame2D(name="rectified"),
-                                               None)])
-                    else:
-                        adout[-1].wcs.insert_frame(ext.wcs.input_frame, model,
-                                                   cf.Frame2D(name="rectified"))
-
-                    # TODO: this updates the detector_section keyword, which
-                    # is fine for instruments with only one array in the
-                    # detector. NEEDS UPDATING for multi-array instruments
-                    # (e.g., MOS data from MOS), and will need to update
-                    # the array_section keyword then as well.
-                    det_sec_kw = ad._keyword_for('detector_section')
-                    binnings = (ext.detector_x_bin(),
-                                ext.detector_y_bin())
-                    adout[-1].hdr[det_sec_kw] = cut_section.asIRAFsection(
-                        binning=binnings)
-                    adout.hdr.set_comment(
-                        det_sec_kw, self.keyword_comments.get(det_sec_kw))
-
-                    # Add a keyword for the spectral order, the mapping for which
-                    # should be defined in the instrument/mode class.
-                    adout[-1].hdr['SPECORDR'] = self._map_spec_order(adout[-1].id)
-            adoutputs.append(adout)
-
-        return adoutputs
 
     def _get_arc_linelist(self, ext, waves=None):
         """
@@ -6069,74 +5860,6 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
                         f"units of {ext_str} are {ext_unit}")
         this_conserve = user_conserve  # but do what we're told
     return this_conserve
-
-
-def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
-                            fixed_linear):
-    """
-    This helper function creates a distortion model given an input model,
-    input and reference coordinates,
-
-    Parameters
-    ----------
-    m_init : astropy.modeling.models.Chebyshev2D
-        A blank initial model covering the region of interest.
-    transform_axis : int (0 or 1)
-        The axis to transform the image along; alternatively, the axis along
-        which tracing.trace_lines() performed the trace which produced the
-        `in_coords` and `ref_coords` used. (This is in the Python sense, 0 or 1,
-        not the value returned by the dispaxis() descriptor).
-    in_coords, ref_coords : iterable
-        Lists of coordinates for the model fitting.
-    fixed_linear : bool
-        Fix the linear term? (For instance, if creating a distortion model for
-        rectifying a slit when only one edge of a flat is traceable.)
-
-    Returns
-    -------
-    model : astropy.modeling.models.Model
-        The output model, with forward and backward transformations
-    m_final, m_inverse : astropy.modeling.models.Chebyshev2D instances
-        describing the forward and inverse transformations used in `model`.
-    """
-    # Rather than fit to the reference coords, fit to the
-    # *shift* we want in the spectral direction and then add a
-    # linear term which will produce the desired model. This
-    # allows us to use spectral_order=0 if there's only a single
-    # traceable line.
-    if transform_axis == 0:
-        domain_start, domain_end = m_init.x_domain
-        param_names = [f'c1_{i}' for i in range(m_init.y_degree + 1)]
-    else:
-        domain_start, domain_end = m_init.y_domain
-        param_names = [f'c{i}_1' for i in range(m_init.x_degree + 1)]
-    domain_centre = 0.5 * (domain_start + domain_end)
-    if fixed_linear:
-        for pn in param_names:
-            getattr(m_init, pn).fixed = True
-    shifts = ref_coords[transform_axis] - in_coords[transform_axis]
-
-    # Find model to transform actual (x,y) locations to the
-    # value of the reference pixel along the dispersion axis
-    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                               sigma_clip, sigma=3)
-    m_final, _ = fit_it(m_init, *in_coords, shifts)
-    m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
-
-    # Add the linear term: the coordinate perpendicular to the trace direction
-    for m in (m_final, m_inverse):
-        m.c0_0 += domain_centre
-        # param_names[0] will be 'c1_0' (transform_axis == 0) or 'c0_1'.
-        getattr(m, param_names[0]).value += domain_end - domain_centre
-
-    if transform_axis == 0:
-        model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
-        model.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
-    else:
-        model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
-        model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
-
-    return model, m_final, m_inverse
 
 
 def make_aperture_table(apmodels, existing_table=None, limits=None):

@@ -9,6 +9,8 @@ from copy import deepcopy
 from importlib import import_module
 
 import astrodata, gemini_instruments
+from astrodata.utils import Section
+
 from astropy.modeling import models
 from astropy.table import Table
 from gwcs import coordinate_frames as cf
@@ -31,6 +33,7 @@ class CrossDispersed(Spect, Preprocess):
 
     """
     tagset = {'GEMINI', 'SPECT', 'XD'}
+
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_crossdispersed)
@@ -58,55 +61,69 @@ class CrossDispersed(Spect, Preprocess):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-
         sfx = params["suffix"]
 
-        adinputs = super()._cut_slits(adinputs=adinputs, **params)
-
-        columns = ('central_wavelength', 'dispersion')
         order_key_parts = self._get_order_information_key()
+
+        order_info = import_module('.orders_XD', self.inst_lookups).order_info
 
         adoutputs = []
         for ad in adinputs:
             order_key = "_".join(getattr(ad, desc)() for desc in order_key_parts)
-            # order_info contains central wavelength and dispersion for each slit.
-            order_info = Table(import_module(
-                '.orders_XD', self.inst_lookups).order_info[order_key],
-                names=columns)
+            cenwaves, dispersions = order_info[order_key]
+
+            ad = self._cut_slits(ad, padding=2)
 
             for i, ext in enumerate(ad):
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
+                specaxis_middle = 0.5 * (ext.shape[dispaxis] - 1)
+                slit_center = np.mean([am.table_to_model(row)(specaxis_middle)
+                                       for row in ext.SLITEDGE])
+                if i == 0:
+                    world_refpos = ext.wcs(slit_center, specaxis_middle)
+                    print("WORLD", world_refpos)
 
                 # Update the WCS by adding a "first guess" wavelength scale
                 # for each slit.
+                new_wave_model = (models.Shift(-specaxis_middle) |
+                                  models.Scale(dispersions[i]) |
+                                  models.Shift(cenwaves[i]))
+                new_wave_model.name = "WAVE"
+
                 for idx, step in enumerate(ext.wcs.pipeline):
-                    if ext.wcs.pipeline[idx+1].frame.name == 'world':
-                        # Need to find a sequence of Shift + Scale models, which
-                        # collectively represent the wavecal model.
-                        _, m_wave_sky = step
-                        found_wavecal_model, found_sky_model = False, False
-                        for j in range(m_wave_sky.n_submodels):
-                            if (isinstance(m_wave_sky[j], models.Shift) and
-                                isinstance(m_wave_sky[j+1], models.Scale) and
-                                isinstance(m_wave_sky[j+2], models.Shift)):
-
-                                found_wavecal_model = True
-                                break
-
-                        if found_wavecal_model:
-                            # The first shift is the offset to the center of the
-                            # array, don't modify it.
-                            # Dispersion (nm/pixel)
-                            step.transform[j+1].factor = order_info[i]['dispersion']
-                            # Central wavelength offset (nm)
-                            step.transform[j+2].offset = order_info[i]['central_wavelength']
-
-                            log.fullinfo(f"Updated WCS for extension {ext.id}")
-                            break
-                        else:
-                            log.warning("No initial wavelength model found - "
-                                        "not modifying the WCS")
+                    try:
+                        ext.wcs.pipeline[idx] = step.__class__(
+                            step.frame, step.transform.replace_submodel(
+                                "WAVE", new_wave_model))
+                    except (AttributeError, ValueError):  # not in this step
+                        pass
+                    else:
+                        # Update the SKY model so all slit centers point to
+                        # the same location
+                        if i > 0:
+                            print(f"EXTENSION {i}----------")
+                            print(cenwaves[i], world_refpos[1:])
+                            coords = ext.wcs.invert(cenwaves[i], *world_refpos[1:])
+                            print(ext.wcs(*coords))
+                            shift = coords[dispaxis] - slit_center
+                            print(f"SLIT_CENTER={slit_center} SHIFT={shift}")
+                            sky_model = am.get_named_submodel(step.transform, "SKY")
+                            new_sky_model = models.Shift(shift) | sky_model
+                            # "step" hasn't been updated with the new WAVE model
+                            ext.wcs.pipeline[idx] = step.__class__(
+                                step.frame, ext.wcs.pipeline[idx].transform.replace_submodel(
+                                    "SKY", new_sky_model))
+                            sky_model.name = None
+                            new_sky_model.name = "SKY"
                         break
+                else:
+                    log.warning("No initial wavelength model found - "
+                                "not updating the wavelength model")
+
+                ext.hdr['SPECORDR'] = self._map_spec_order(ext.id)
+                print(slit_center, specaxis_middle, ext.wcs(slit_center, specaxis_middle))
+                t = ext.wcs.get_transform('pixels', 'rectified')
+                print(t(slit_center, specaxis_middle))
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -115,6 +132,136 @@ class CrossDispersed(Spect, Preprocess):
             adoutputs.append(ad)
 
         return adoutputs
+
+    def _cut_slits(self, ad, padding=0):
+        # TODO: This should move to Spect but it's left here for now to
+        # ease code maintenance since it's only used by XD
+        """
+        This method cuts a 2D spectral image into individual slits based on
+        an existing SLITEDGE table. The slits are then stored in individual
+        extensions. A Chebyshev2D model is created to represent the slit
+        distortion and this is inserted into the WCS. No work is performed
+        to modify the astrometry since this is the responsibility of the
+        calling primitive and will depend on the type of data (XD/MOS/IFU).
+
+        Parameters
+        ----------
+        ad: AstroData object
+            2D spectral image with slits defined in a SLITEDGE table
+        padding: int
+            additional padding to put beyond edges of slits when cutting
+            (to account for possible misalignments)
+
+        Returns
+        -------
+        modified AstroData object with multiple extensions
+        """
+        log = self.log
+        log.stdinfo(f"Calling {self.myself()} on {ad.filename}")
+
+        adout = astrodata.create(ad.phu)
+        adout.filename = ad.filename
+        adout.orig_filename = ad.orig_filename
+        detsec_kw = ad._keyword_for('detector_section')
+        binnings = ad.detector_x_bin(), ad.detector_y_bin()
+
+        for ext in ad:
+            try:
+                slitedge = ext.SLITEDGE
+            except AttributeError:
+                log.warning(f"No slits to cut in extension {ext.id}")
+                adout.append(ext)
+                continue
+
+            orig_wcs = ext.wcs
+            dispaxis = 2 - ext.dispersion_axis()  # Python Sense
+
+            # Iterate over pairs of edges in the SLITEDGE table
+            # In the following code, "x" is going to be used to represent
+            # the location along the spectral axis, and "y" the orthogonal
+            # direction. This is opposite to F2 and GNIRS.
+            for i, (slit1, slit2) in enumerate(zip(_ := iter(slitedge), _)):
+                model1 = am.table_to_model(slit1)
+                model2 = am.table_to_model(slit2)
+
+                xpixels = np.arange(ext.shape[dispaxis])
+                ypixels1, ypixels2 = model1(xpixels), model2(xpixels)
+                y1 = int(max(np.floor(ypixels1.min() - padding), 0))
+                y2 = int(min(np.ceil(ypixels2.max() + padding),
+                             ext.shape[1 - dispaxis]))
+
+                # Add cut rectangle and a modified SLITEDGE table with
+                # the single slit for this extension
+                if dispaxis == 0:
+                    cut_section = Section(x1=y1, x2=y2, y1=0, y2=ext.shape[0])
+                else:
+                    cut_section = Section(x1=0, x2=ext.shape[1], y1=y1, y2=y2)
+                # REMOVE!
+                log.stdinfo(f"Cutting slit {i+1} in extension {ext.id} "
+                            f"from {cut_section.asIRAFsection()}")
+                adout.append(ext.nddata[cut_section.asslice()])
+
+                adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
+                adout[-1].SLITEDGE["c0"] -= y1
+                adout[-1].SLITEDGE["slit"] = 0  # reset slit number in ext
+
+                # Calculate a Chebyshev2D model that represents both slit
+                # edges. This requires coordinates be fed with the detector
+                # x-coordinate first
+                xcenter = 0.5 * (ext.shape[dispaxis] - 1)
+                y1ref = np.full_like(ypixels1, model1(xcenter) - y1)
+                y2ref = np.full_like(ypixels2, model2(xcenter) - y1)
+                log.stdinfo(f"Slit at {xcenter} from {y1ref[0]} to {y2ref[0]}")
+
+                if dispaxis == 0:
+                    incoords = [np.r_[ypixels1 - y1, ypixels2 - y1],
+                                np.r_[xpixels, xpixels]]
+                    refcoords = [np.r_[y1ref, y2ref], np.r_[xpixels, xpixels]]
+                    xorder, yorder = 1, model1.degree
+                else:
+                    incoords = [np.r_[xpixels, xpixels],
+                                np.r_[ypixels1 - y1, ypixels2 - y1]]
+                    refcoords = [np.r_[xpixels, xpixels], np.r_[y1ref, y2ref]]
+                    xorder, yorder = model1.degree, 1
+
+                m_init_2d = models.Chebyshev2D(
+                    x_degree=xorder, y_degree=yorder,
+                    x_domain=[0, ext.shape[1]-1],
+                    y_domain=[0, ext.shape[0]-1])
+                log.stdinfo("  Creating distortion model for slit "
+                            f"rectification for slit {i+1}")
+                # The `fixed_linear` parameter is False because we should
+                # have both edges for each slit.
+                model, m_final_2d, m_inverse_2d = am.create_distortion_model(
+                    m_init_2d, dispaxis, incoords, refcoords,
+                    fixed_linear=False, debug=(i==5))
+                model.name = "RECT"
+                print(f"RECT MODEL for {i+1}")
+                print(f"({y1ref[0]},{xcenter}) -> {model(y1ref[0],xcenter)}")
+                print(f"({y2ref[0]},{xcenter}) -> {model(y2ref[0],xcenter)}")
+
+                # Remove the shift that was prepended when the data were
+                # sliced -- the easiest way to do this is just to use the
+                # original WCS (this will mess up the astrometry)
+                adout[-1].wcs = deepcopy(orig_wcs)
+                if adout[-1].wcs is None:
+                    adout[-1].wcs = gWCS([(ext.wcs.input_frame, model),
+                                          (cf.Frame2D(name="rectified"),
+                                           None)])
+                else:
+                    adout[-1].wcs.insert_frame(ext.wcs.input_frame, model,
+                                               cf.Frame2D(name="rectified"))
+
+                # TODO: this updates the detector_section keyword, which
+                # is fine for instruments with only one array in the
+                # detector. NEEDS UPDATING for multi-array instruments
+                # (e.g., MOS data from MOS), and will need to update
+                # the array_section keyword then as well.
+                adout[-1].hdr[detsec_kw] = (
+                    cut_section.asIRAFsection(binning=binnings),
+                    self.keyword_comments.get(detsec_kw))
+
+        return adout
 
     def findApertures(self, adinputs=None, **params):
         """
