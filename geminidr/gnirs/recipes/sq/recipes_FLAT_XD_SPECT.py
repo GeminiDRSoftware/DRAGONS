@@ -32,6 +32,7 @@ def makeProcessedFlat(p):
     p.removeFromInputs(tags='GCAL_IR_OFF,LAMPOFF')
     p.stackFlats(stream='main')
     p.stackFlats(stream='QHLamp')
+    p.writeOutputs(stream='QHLamp')
     # Illumination of all orders from QH lamp is sufficient to find edges.
     p.determineSlitEdges(stream='QHLamp', search_radius=30)
     # Transfer SLITEDGE table and slit rectification model (in WCS) back over.

@@ -12,7 +12,7 @@ import astrodata, gemini_instruments
 from astrodata.utils import Section
 
 from astropy.modeling import models
-from astropy.table import Table
+from astropy.table import Table, vstack
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 import numpy as np
@@ -64,7 +64,6 @@ class CrossDispersed(Spect, Preprocess):
         sfx = params["suffix"]
 
         order_key_parts = self._get_order_information_key()
-
         order_info = import_module('.orders_XD', self.inst_lookups).order_info
 
         adoutputs = []
@@ -177,15 +176,21 @@ class CrossDispersed(Spect, Preprocess):
             dispaxis = 2 - ext.dispersion_axis()  # Python Sense
 
             # Iterate over pairs of edges in the SLITEDGE table
-            # In the following code, "x" is going to be used to represent
-            # the location along the spectral axis, and "y" the orthogonal
-            # direction. This is opposite to F2 and GNIRS.
+            # In the following code, "x"  represents the location along the
+            # spectral axis, and "y" the orthogonal direction (which is a
+            # function of x). This is opposite to F2 and GNIRS.
             for i, (slit1, slit2) in enumerate(zip(_ := iter(slitedge), _)):
                 model1 = am.table_to_model(slit1)
                 model2 = am.table_to_model(slit2)
 
+                # Reconstruct the slit edges from the models and identify
+                # which parts are on the detector
                 xpixels = np.arange(ext.shape[dispaxis])
                 ypixels1, ypixels2 = model1(xpixels), model2(xpixels)
+                ypix1_on = np.logical_and(
+                    ypixels1 >= padding, ypixels1 <= ext.shape[1 - dispaxis] - padding - 1)
+                ypix2_on = np.logical_and(
+                    ypixels2 >= padding, ypixels2 <= ext.shape[1 - dispaxis] - padding - 1)
                 y1 = int(max(np.floor(ypixels1.min() - padding), 0))
                 y2 = int(min(np.ceil(ypixels2.max() + padding),
                              ext.shape[1 - dispaxis]))
@@ -196,32 +201,30 @@ class CrossDispersed(Spect, Preprocess):
                     cut_section = Section(x1=y1, x2=y2, y1=0, y2=ext.shape[0])
                 else:
                     cut_section = Section(x1=0, x2=ext.shape[1], y1=y1, y2=y2)
-                # REMOVE!
                 log.stdinfo(f"Cutting slit {i+1} in extension {ext.id} "
                             f"from {cut_section.asIRAFsection()}")
                 adout.append(ext.nddata[cut_section.asslice()])
-
                 adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
                 adout[-1].SLITEDGE["c0"] -= y1
                 adout[-1].SLITEDGE["slit"] = 0  # reset slit number in ext
 
                 # Calculate a Chebyshev2D model that represents both slit
-                # edges. This requires coordinates be fed with the detector
+                # edges. This requires coordinates be fed with the *detector*
                 # x-coordinate first
                 xcenter = 0.5 * (ext.shape[dispaxis] - 1)
-                y1ref = np.full_like(ypixels1, model1(xcenter) - y1)
-                y2ref = np.full_like(ypixels2, model2(xcenter) - y1)
+                y1ref = np.full_like(ypixels1, model1(xcenter) - y1)[ypix1_on]
+                y2ref = np.full_like(ypixels2, model2(xcenter) - y1)[ypix2_on]
                 log.stdinfo(f"Slit at {xcenter} from {y1ref[0]} to {y2ref[0]}")
 
                 if dispaxis == 0:
-                    incoords = [np.r_[ypixels1 - y1, ypixels2 - y1],
-                                np.r_[xpixels, xpixels]]
-                    refcoords = [np.r_[y1ref, y2ref], np.r_[xpixels, xpixels]]
+                    incoords = [np.r_[ypixels1[ypix1_on] - y1, ypixels2[ypix2_on] - y1],
+                                np.r_[xpixels[ypix1_on], xpixels[ypix2_on]]]
+                    refcoords = [np.r_[y1ref, y2ref], np.r_[xpixels[ypix1_on], xpixels[ypix2_on]]]
                     xorder, yorder = 1, model1.degree
                 else:
-                    incoords = [np.r_[xpixels, xpixels],
-                                np.r_[ypixels1 - y1, ypixels2 - y1]]
-                    refcoords = [np.r_[xpixels, xpixels], np.r_[y1ref, y2ref]]
+                    incoords = [np.r_[xpixels[ypix1_on], xpixels[ypix2_on]],
+                                np.r_[ypixels1[ypix1_on] - y1, ypixels2[ypix2_on] - y1]]
+                    refcoords = [np.r_[xpixels[ypix1_on], xpixels[ypix2_on]], np.r_[y1ref, y2ref]]
                     xorder, yorder = model1.degree, 1
 
                 m_init_2d = models.Chebyshev2D(
@@ -233,8 +236,7 @@ class CrossDispersed(Spect, Preprocess):
                 # The `fixed_linear` parameter is False because we should
                 # have both edges for each slit.
                 model, m_final_2d, m_inverse_2d = am.create_distortion_model(
-                    m_init_2d, dispaxis, incoords, refcoords,
-                    fixed_linear=False, debug=(i==5))
+                    m_init_2d, dispaxis, incoords, refcoords, fixed_linear=False)
                 model.name = "RECT"
                 print(f"RECT MODEL for {i+1}")
                 print(f"({y1ref[0]},{xcenter}) -> {model(y1ref[0],xcenter)}")
@@ -433,21 +435,18 @@ class CrossDispersed(Spect, Preprocess):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        flat = params['flat']
-        do_flat = params.get('do_flat', None)
-        sfx = params["suffix"]
+        flat = params.pop('flat')
+        do_cal = params['do_cal']
 
         if flat is None:
             flat_list = self.caldb.get_processed_flat(adinputs)
         else:
             flat_list = (flat, None)
 
-        cut_ads = []
         for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
                                     force_ad=(1,))):
             if flat is None:
-                if 'sq' in self.mode or do_flat == 'force':
+                if 'sq' in self.mode or do_cal == 'force':
                    raise OSError("No processed flat listed for "
                                  f"{ad.filename}")
                 else:
@@ -455,33 +454,35 @@ class CrossDispersed(Spect, Preprocess):
                                "since no flatfield has been specified")
                    continue
 
-            # Cut the science frames to match the flats, which have already
-            # been cut in the flat reduction.
-            cut_ad = gt.cut_to_match_auxiliary_data(adinput=ad, aux=flat)
-            # Need to update the WCS in each extension by replacing its WAVE
-            # model with the one from the corresponding extension in the flat.
-            # To do that, recreate the WCS with the original input and output
-            # frames and the new wavecal mode taken from the flat.
-            for ext, auxext in zip(cut_ad, flat):
-                aux_wave_model = am.get_named_submodel(auxext.wcs.forward_transform,
-                                                       'WAVE')
-                new_wave_model = ext.wcs.forward_transform.replace_submodel(
-                    "WAVE", aux_wave_model)
-                ext.wcs = gWCS([(ext.wcs.input_frame, new_wave_model),
-                                (ext.wcs.output_frame, None)])
-                log.fullinfo(f'WCS wavecal model updated in ext {ext.id}')
+            if len(ad) != 1:
+                log.warning(f"{ad.filename} has more than one extension and "
+                            "will not be flatfielded")
+                continue
 
-            cut_ads.append(cut_ad)
+            # CJS: For speed of getting something working, we're going to
+            # reconstruct the original SLITEDGE model from the flatfield
+            # and then use it to cut the science data. So, rather than copy
+            # the rectification model from the flat, a completely new one
+            # will be constructed, but it will be identical to that one in
+            # the flat, since it is calculated from the same SLITEDGE table.
+            # cutSlits() will also sort out the WCS for each cut extension.
+            slitedge = vstack([flat_ext.SLITEDGE for flat_ext in flat],
+                              metadata_conflicts='silent')
+            for i, (flat_detsec, dispaxis) in enumerate(zip(flat.detector_section(),
+                                                            flat.dispersion_axis())):
+                offset = flat_detsec.x1 if dispaxis == 2 else flat_detsec.y1
+                slitedge[i*2:i*2+2]["c0"] += offset
+            ad[0].SLITEDGE = slitedge
 
-        adoutputs = super().flatCorrect(adinputs=cut_ads, **params)
-        for ad in adoutputs:
-            try:
-                ad[0].wcs.get_transform("pixels", "rectified")
-            except:
-                log.warning(f"No rectification model found for {ad.filename}")
+        adinputs = self.cutSlits(adinputs, suffix=None)
 
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+        # Since we've already worked out the flats to use, send them along to
+        # avoid needing to re-query the Caldb
+        try:
+            flat_files = flat_list.files
+        except AttributeError:  # not a CalReturn object
+            flat_files = flat_list[0]
+        # This will timestamp and update the suffix
+        adinputs = super().flatCorrect(adinputs, flat=flat_files, **params)
 
-        return adoutputs
+        return adinputs

@@ -6,7 +6,6 @@
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
 from copy import copy, deepcopy
-import tempfile
 from itertools import islice
 import os
 import re
@@ -22,8 +21,7 @@ from astropy.io.ascii.core import InconsistentTableError
 from astropy.io.registry import IORegistryError
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
-from astropy.modeling import Model, fitting, models
-from astropy.stats import sigma_clip
+from astropy.modeling import Model, models
 from astropy.table import Table, hstack, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -41,8 +39,6 @@ from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
-from astrodata.utils import Section
-from geminidr.core.primitives_preprocess import _attach_rectification_model
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
@@ -3692,7 +3688,7 @@ class Spect(Resample):
                     slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
                     masked_data = np.ma.masked_array(data, mask=mask)
-                    weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
+                    weights = np.sqrt(at.divide0(1., variance))
                     # uncomment this to use if we want to calculate the waves as our x inputs
                     # and wire it up appropriately
                     # center = (extract_info.start + extract_info.stop) // 2
@@ -6019,3 +6015,63 @@ def plot_cosmics(ext, objfit, skyfit, crmask, axes=None):
     if axes is None:
         plt.show()
         plt.close(fig)
+
+
+def _attach_rectification_model(target, source, log=None):
+    """
+    Copy a slit rectification model from source to target file.
+
+    Copies the transform step in an Astropy gWCS object corresponding to a
+    slit rectification model from the given source file to a given target
+    file. The source file must have either one extension, or the same
+    number of extensions as the target, in which case the model in each
+    extension in the source will be copied to the corresponding extension
+    in the target. This function will either add a rectification model if
+    one is not present in the target, or replaces an existing one. If no
+    rectification model is found in the source, logs a warning and returns
+    the target file unmodified.
+
+    Parameters
+    ----------
+    target : `Astrodata object`
+        The file to copy the rectification model to.
+    source : `Astrodata object`
+        The file to get the rectification model from.
+    log : logger instance
+        An optional logger instance to write log messages to.
+
+    Returns
+    -------
+    `Astrodata object`
+        The target file; either modified with the new rectification model
+        in each extenstion, or unmodified if no model was found in `source`.
+
+    """
+    if len(target) != len(source):
+        raise ValueError("Target image and source image have different "
+                         f"number of extensions, {len(target)} vs. "
+                         f"{len(source)}, {target.filename} not modified.")
+
+    for ext_t, ext_s in zip(target, source):
+        # Check that a transform exists, else return `target` unmodified.
+        try:
+            new_transform = ext_s.wcs.get_transform("pixels", "rectified")
+        except CoordinateFrameError:
+            # Silently no-op. If it's important to know if a model has been
+            # attached, run this same check on the output where this function
+            # is called, since the severity of it happening varies by context.
+            # (For longslit, it's not a big deal; for e.g. cross-dispersed it's
+            # a major problem.)
+            return target
+
+        # If a 'rectified' frame exists, just replace the transform.
+        # Otherwise add a new frame with the transform.
+        try:
+            ext_t.wcs.set_transform('pixels', 'rectified', new_transform)
+        except CoordinateFrameError:
+            ext_t.wcs.insert_frame(ext_t.wcs.input_frame, new_transform,
+                                   cf.Frame2D(name='rectified'))
+        log.fullinfo(f"Rectification model found in {source.filename}. "
+                     f"Attaching to {target.filename}")
+
+    return target

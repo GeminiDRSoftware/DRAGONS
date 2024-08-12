@@ -22,7 +22,7 @@ class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
 
     def setDefaults(self):
         self.debug_max_missed = 4
-        self.debug_max_shift = 0.3
+        self.debug_max_shift = 0.4
         self.debug_step = 10
         self.debug_nsum = 10
 
