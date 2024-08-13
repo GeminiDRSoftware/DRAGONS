@@ -3519,14 +3519,10 @@ class Spect(Resample):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         sfx = params["suffix"]
 
-        # Parse parameters
-        debug_plots = params['debug_plots']
-
         for ad in adinputs:
             log.stdinfo(f"Masking unilluminated regions in {ad.filename}")
 
             for ext in ad:
-
                 # If there's no SLITEDGE table from determineSlitEdge, we can't
                 # create a mask, so just pass.
                 try:
@@ -3541,40 +3537,32 @@ class Spect(Resample):
                 # of entries from the table.
                 pairs = [(m, n) for m, n in zip(islice(slittab, 0, None, 2),
                                                 islice(slittab, 1, None, 2))]
-                mask = np.ones_like(ext.mask, dtype=np.uint64)
+                slits = np.zeros_like(ext.data, dtype=bool)
 
                 for edge_pair in pairs:
-
                     model1 = am.table_to_model(edge_pair[0])
                     model2 = am.table_to_model(edge_pair[1])
 
                     # Create a NumPy mesh grid to hold the mask.
-                    y, x = np.mgrid[0:ext.data.shape[0],
-                                    0:ext.data.shape[1]]
+                    y, x = np.mgrid[0:ext.shape[0], 0:ext.shape[1]]
 
                     # This line handles both dispersion directions.
                     grid = (y, x) if dispaxis == 0 else (x, y)
                     # Compute the two edges.
                     edge1, edge2 = model1(grid[0]), model2(grid[0])
                     # Mask the area between them.
-                    slit_mask = (grid[1] > edge1) & (grid[1] < edge2)
+                    slit = np.logical_and(grid[1] > edge1, grid[1] < edge2)
 
-                    # Bitwise XOR the slit mask together with the main mask.
-                    # This produces a strip of zeros where the slit is.
-                    mask ^= slit_mask
+                    # Add this slit to the image of slits
+                    slits |= slit
 
                 # The mask at this point should be an array of 1s outside the
                 # slit(s), with 0s inside. Multiply by the value of unilluminated
                 # pixels (64), and bitwise OR composite with the existing DQ mask.
-                ext.mask |= mask * DQ.unilluminated
-
-                if debug_plots:
-                    # Show a plot of the DQ plane after applying the mask
-                    plt.subplot(111)
-                    plt.imshow(ext.mask, origin='lower', cmap='gray')
-                    plt.xlabel('X')
-                    plt.ylabel('Y')
-                    plt.show()
+                if ext.mask is None:
+                    ext.mask = (~slits).astype(DQ.datatype) * DQ.unilluminated
+                else:
+                    ext.mask[~slits] |= DQ.unilluminated
 
             # Update the filename.
             ad.update_filename(suffix=sfx, strip=True)

@@ -501,9 +501,8 @@ class linearizeSpectraConfig(config.Config):
 
 
 class maskBeyondSlitConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit", optional=True)
-    debug_plots = config.Field("Plot the mask created.",
-                               bool, False)
+    suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit",
+                          optional=True)
 
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)

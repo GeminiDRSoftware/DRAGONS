@@ -26,7 +26,7 @@ def reduceScience(p):
     p.cleanReadout()
     p.flatCorrect()
     p.attachWavelengthSolution()
-    p.attachPinholeModel()
+    #p.attachPinholeModel()
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()

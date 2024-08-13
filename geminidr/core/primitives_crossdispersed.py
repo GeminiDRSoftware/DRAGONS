@@ -203,7 +203,7 @@ class CrossDispersed(Spect, Preprocess):
                     cut_section = Section(x1=0, x2=ext.shape[1], y1=y1, y2=y2)
                 log.stdinfo(f"Cutting slit {i+1} in extension {ext.id} "
                             f"from {cut_section.asIRAFsection()}")
-                adout.append(ext.nddata[cut_section.asslice()])
+                adout.append(deepcopy(ext.nddata[cut_section.asslice()]))
                 adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
                 adout[-1].SLITEDGE["c0"] -= y1
                 adout[-1].SLITEDGE["slit"] = 0  # reset slit number in ext

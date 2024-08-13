@@ -23,7 +23,7 @@ def makeProcessedArc(p):
     p.stackFrames()
     # p.makeIRAFCompatible()  # no need for XD
     p.flatCorrect()
-    p.attachPinholeModel()
+    #p.attachPinholeModel()
     p.determineWavelengthSolution()
     p.determineDistortion(spatial_order=1, step=4)
     p.storeProcessedArc()
