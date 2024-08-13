@@ -13,12 +13,13 @@ from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 
 # -- Test datasets ------------------------------------------------------------
 files = (
-    'N20210129S0304_stack.fits', # 32 l/mm ShortBlue
-    'S20060507S0128_stack.fits', # 32 l/mm ShortBlue
-    'N20130821S0302_stack.fits', # 10 l/mm LongBlue
+    'N20210129S0304_attributeTransferred.fits', # 32 l/mm ShortBlue
+    'S20060507S0128_attributeTransferred.fits', # 32 l/mm ShortBlue
+    'N20130821S0302_attributeTransferred.fits', # 10 l/mm LongBlue
     )
 
 # -- Tests --------------------------------------------------------------------
+@pytest.mark.skip("Needs fix for saving and reconstructing WCS giving different structure")
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('adinputs', files)
