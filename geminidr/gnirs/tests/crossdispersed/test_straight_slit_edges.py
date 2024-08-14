@@ -17,8 +17,7 @@ from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 @pytest.mark.preprocessed_data
 @pytest.mark.gnirsxd
 @pytest.mark.parametrize('filename', ["N20130821S0308_stack.fits"])
-def test_edges_and_slit_centers(filename):
-    path_to_inputs = "/Users/csimpson/gemini_python/daniel/Long camera data/"
+def test_edges_and_slit_centers(filename, path_to_inputs):
     ad = astrodata.open(os.path.join(path_to_inputs, filename))
     # Clear the mask so only pixels beyond the edge are masked
     for ext in ad:

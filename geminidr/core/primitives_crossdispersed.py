@@ -76,8 +76,12 @@ class CrossDispersed(Spect, Preprocess):
             for i, ext in enumerate(ad):
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
                 specaxis_middle = 0.5 * (ext.shape[dispaxis] - 1)
-                slit_center = np.mean([am.table_to_model(row)(specaxis_middle)
-                                       for row in ext.SLITEDGE])
+                try:
+                    slit_center = np.mean([am.table_to_model(row)(specaxis_middle)
+                                           for row in ext.SLITEDGE])
+                except AttributeError:
+                    continue
+
                 if i == 0:
                     world_refpos = ext.wcs(slit_center, specaxis_middle)
                     print("WORLD", world_refpos)
@@ -168,7 +172,7 @@ class CrossDispersed(Spect, Preprocess):
             try:
                 slitedge = ext.SLITEDGE
             except AttributeError:
-                log.warning(f"No slits to cut in extension {ext.id}")
+                log.warning(f"No slits to cut in {ad.filename}:{ext.id}")
                 adout.append(ext)
                 continue
 

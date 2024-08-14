@@ -4748,14 +4748,21 @@ class Spect(Resample):
                 # Find peaks; convert width FWHM to sigma. Copied from
                 # determineDistortion
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
+                # These are returned sorted by pixel coordinate
                 initial_peaks, _ = tracing.find_wavelet_peaks(
                     data, widths=widths, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)
 
+                if min_trace_pos is not None and min_trace_pos > len(initial_peaks):
+                    log.warning(f"'min_trace_pos' is set to {min_trace_pos} but "
+                                f"there are only {len(initial_peaks)} peaks. Using "
+                                "only the last peak.")
+                    min_trace_pos = len(initial_peaks) - 1
+
                 log.fullinfo(f"  Found {len(initial_peaks)} peaks in extension "
                              f"{ext.id}, tracing "
-                             f"numbers {min_trace_pos or 0} to "
+                             f"numbers {min_trace_pos or 1} to "
                              f"{max_trace_pos or len(initial_peaks)} "
                              f"starting at {direction} {start}")
 
@@ -4773,10 +4780,17 @@ class Spect(Resample):
                 # List of traced peak positions
                 in_coords = np.array([coord for trace in traces for
                                       coord in trace.input_coordinates()]).T
-                # List of "reference" positions (i.e., the coordinate
-                # perpendicular to the line remains constant at its initial value
-                ref_coords = np.array([coord for trace in traces for
-                                       coord in trace.reference_coordinates()]).T
+                # List of "reference" positions. These should be equally spaced
+                # in pixel coordinates, so set them to be equally spaced between
+                # the first and last.
+                equispaced_coords = np.linspace(traces[0].starting_point[1],
+                                                traces[-1].starting_point[1],
+                                                len(traces))
+                log.debug("Initial coords are "
+                          f"{[trace.starting_point[1] for trace in traces]}")
+                log.debug(f"Equispaced coords are {equispaced_coords}")
+                ref_coords = np.array([coord for trace, equi_coord in zip(traces, equispaced_coords) for
+                                       coord in trace.reference_coordinates(reference_coord=equi_coord)]).T
 
                 # Create the 2D slit rectification model:
                 m_init_2d = models.Chebyshev2D(
