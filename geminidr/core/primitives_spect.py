@@ -1639,8 +1639,8 @@ class Spect(Resample):
                     cut = collapsed[offset:-offset].argmax()
                     cut += offset
                 elif observing_mode == 'XD':
-                    # For XD the illumination doesn't vary so much, we can just
-                    # use a predefined row.
+                    # For XD the illumination would be a combination from all
+                    # orders, so just use a predefined row.
                     cut = ad.MDF['y_ccd'][0]
 
                 row_or_col = ['row', 'column'][dispaxis]
@@ -1651,8 +1651,8 @@ class Spect(Resample):
                              f" ± {offset} {row_or_col}s.")
 
                 # Take the first derivative of flux to find the slit edges.
-                # Left edges will be peaks, right edges troughs, so make a
-                # second negative copy to find right edges separately.
+                # Left/top edges will be peaks, right/bottom edges troughs, so
+                # make a second negative copy to find right edges separately.
                 diffarr_1 = np.diff(ext.data, axis=1-dispaxis)
                 diffarr_2 = -diffarr_1
 
@@ -1719,10 +1719,8 @@ class Spect(Resample):
                     plt.xlabel(f'{row_or_col.capitalize()} number')
                     plt.legend()
 
-                # Check if both edges have been located; if the list returned
-                # by find_peaks is empty, fill in the position by assuming
-                # the other edge is at the length of the slit away. (This may
-                # be off the edge of the detector.)
+                # Check if any edges have been located. If not, print a warning
+                # and continue.
                 if (len(positions_1) == 0) and (len(positions_2) == 0):
                     log.warning("No edges could be found for "
                                 f"{ad.orig_filename}.\n"
@@ -1734,10 +1732,8 @@ class Spect(Resample):
                 # Lists to hold positions of edges found.
                 edges_1, edges_2 = [], []
 
-                # Handlle cases where one edge of the illuminated region is off
-                # the side of the detector by constructing an "edge" based on
-                # the expected breadth of the region. If both edges are on,
-                # run match_sources on both to find the closest match to each.
+
+                # Match the edges found to where we expect the edges to be.
                 if (len(positions_2) != 0) and (len(positions_1) != 0):
 
                     edge_ids_2 = match_sources(positions_2, exp_edges_2,
@@ -1754,6 +1750,7 @@ class Spect(Resample):
                     elif len(edges_2) == 0 and len(edges_1) != 0:
                         edges_2 = [l + slit_widths[0] for l in edges_1]
 
+                # Handle cases in LS where one edge wasn't found.
                 elif observing_mode == 'LS':
                     if (len(positions_1) == 0) and (len(positions_2) != 0):
                         edge_ids_2 = match_sources(positions_2,
@@ -1948,7 +1945,8 @@ class Spect(Resample):
 
                             # Perform the fit of the coordinates for the traced
                             # edges. Use log-weighting to help ensure valid
-                            # points are all considered in the trace.
+                            # points are all considered in the trace without
+                            # over-relying on bright points.
                             collapsed[np.where(collapsed < 1)] = 1
                             weights = np.log(collapsed[
                                 in_coords_new[1 - dispaxis].astype(int)])
