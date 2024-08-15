@@ -1439,6 +1439,16 @@ class Spect(Resample):
                 # List of traced peak positions
                 in_coords = np.array([coord for trace in traces for
                                       coord in trace.input_coordinates()]).T
+                # If there's a "rectified" frame, we want to use the pixel
+                # coordinates in *that* frame as input so that the pixels
+                # -> rectified -> distortion_corrected transform works
+                # correctly.
+                try:
+                    t = ext.wcs.get_transform(ext.wcs.input_frame, 'rectified')
+                except CoordinateFrameError:
+                    pass
+                else:
+                    in_coords = np.array(t(*in_coords))
                 # List of "reference" positions (i.e., the coordinate
                 # perpendicular to the line remains constant at its initial value
                 ref_coords = np.array([coord for trace in traces for

@@ -15,6 +15,7 @@ def reduceScience(p):
 
     """
     p.prepare()
+    p.writeOutputs()
     p.addDQ()
     # p.nonlinearityCorrect() # non-linearity correction tbd
     p.ADUToElectrons()
@@ -26,7 +27,7 @@ def reduceScience(p):
     p.cleanReadout()
     p.flatCorrect()
     p.attachWavelengthSolution()
-    #p.attachPinholeModel()
+    p.attachPinholeModel()
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()

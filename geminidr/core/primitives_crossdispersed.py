@@ -71,6 +71,10 @@ class CrossDispersed(Spect, Preprocess):
             order_key = "_".join(getattr(ad, desc)() for desc in order_key_parts)
             cenwaves, dispersions = order_info[order_key]
 
+            # This is the presumed pointing location and the centres of
+            # each cut slit should recover these sky coordinates
+            world_refpos = ad[0].wcs(*list(0.5 * (length - 1)
+                                           for length in ad[0].shape[::-1]))
             ad = self._cut_slits(ad, padding=2)
 
             for i, ext in enumerate(ad):
@@ -81,10 +85,6 @@ class CrossDispersed(Spect, Preprocess):
                                            for row in ext.SLITEDGE])
                 except AttributeError:
                     continue
-
-                if i == 0:
-                    world_refpos = ext.wcs(slit_center, specaxis_middle)
-                    print("WORLD", world_refpos)
 
                 # Update the WCS by adding a "first guess" wavelength scale
                 # for each slit.
@@ -103,30 +103,22 @@ class CrossDispersed(Spect, Preprocess):
                     else:
                         # Update the SKY model so all slit centers point to
                         # the same location
-                        if i > 0:
-                            print(f"EXTENSION {i}----------")
-                            print(cenwaves[i], world_refpos[1:])
-                            coords = ext.wcs.invert(cenwaves[i], *world_refpos[1:])
-                            print(ext.wcs(*coords))
-                            shift = coords[dispaxis] - slit_center
-                            print(f"SLIT_CENTER={slit_center} SHIFT={shift}")
-                            sky_model = am.get_named_submodel(step.transform, "SKY")
-                            new_sky_model = models.Shift(shift) | sky_model
-                            # "step" hasn't been updated with the new WAVE model
-                            ext.wcs.pipeline[idx] = step.__class__(
-                                step.frame, ext.wcs.pipeline[idx].transform.replace_submodel(
-                                    "SKY", new_sky_model))
-                            sky_model.name = None
-                            new_sky_model.name = "SKY"
+                        coords = ext.wcs.invert(cenwaves[i], *world_refpos[1:])
+                        shift = coords[dispaxis] - slit_center
+                        sky_model = am.get_named_submodel(step.transform, "SKY")
+                        new_sky_model = models.Shift(shift) | sky_model
+                        # "step" hasn't been updated with the new WAVE model
+                        ext.wcs.pipeline[idx] = step.__class__(
+                            step.frame, ext.wcs.pipeline[idx].transform.replace_submodel(
+                                "SKY", new_sky_model))
+                        sky_model.name = None
+                        new_sky_model.name = "SKY"
                         break
                 else:
                     log.warning("No initial wavelength model found - "
                                 "not updating the wavelength model")
 
                 ext.hdr['SPECORDR'] = self._map_spec_order(ext.id)
-                print(slit_center, specaxis_middle, ext.wcs(slit_center, specaxis_middle))
-                t = ext.wcs.get_transform('pixels', 'rectified')
-                print(t(slit_center, specaxis_middle))
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -214,10 +206,13 @@ class CrossDispersed(Spect, Preprocess):
 
                 # Calculate a Chebyshev2D model that represents both slit
                 # edges. This requires coordinates be fed with the *detector*
-                # x-coordinate first
+                # x-coordinate first. The rectified slit will be as wide in
+                # pixels as it is halfway up the unrectified image, and the
+                # left edge will be "padding" pixels in from the left edge of
+                # the image.
                 xcenter = 0.5 * (ext.shape[dispaxis] - 1)
-                y1ref = np.full_like(ypixels1, model1(xcenter) - y1)[ypix1_on]
-                y2ref = np.full_like(ypixels2, model2(xcenter) - y1)[ypix2_on]
+                y1ref = np.full_like(ypixels1, padding)[ypix1_on]
+                y2ref = np.full_like(ypixels2, model2(xcenter) - model1(xcenter) + padding)[ypix2_on]
                 log.stdinfo(f"Slit at {xcenter} from {y1ref[0]} to {y2ref[0]}")
 
                 if dispaxis == 0:
@@ -242,9 +237,6 @@ class CrossDispersed(Spect, Preprocess):
                 model, m_final_2d, m_inverse_2d = am.create_distortion_model(
                     m_init_2d, dispaxis, incoords, refcoords, fixed_linear=False)
                 model.name = "RECT"
-                print(f"RECT MODEL for {i+1}")
-                print(f"({y1ref[0]},{xcenter}) -> {model(y1ref[0],xcenter)}")
-                print(f"({y2ref[0]},{xcenter}) -> {model(y2ref[0],xcenter)}")
 
                 # Remove the shift that was prepended when the data were
                 # sliced -- the easiest way to do this is just to use the
