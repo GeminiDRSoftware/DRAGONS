@@ -1745,10 +1745,13 @@ class Spect(Resample):
                     edges_2 = [positions_2[i] for i, j in
                                 enumerate(edge_ids_2) if j > -1]
 
-                    if len(edges_1) == 0 and len(edges_2) != 0:
-                        edges_1 = [r - slit_widths[0] for r in edges_2]
-                    elif len(edges_2) == 0 and len(edges_1) != 0:
-                        edges_2 = [l + slit_widths[0] for l in edges_1]
+                    # If either set of edges is empty (generally for longslit
+                    # where one edge is off the detector), fill in from the other
+                    # set of edges.
+                    if len(edges_1) == 0:
+                        edges_1 = [e2 - slit_widths[edges_2.index(e2)] for e2 in edges_2]
+                    elif len(edges_2) == 0:
+                        edges_2 = [e1 + slit_widths[edges_1.index(e1)] for e1 in edges_1]
 
                 # Handle cases in LS where one edge wasn't found.
                 elif observing_mode == 'LS':
