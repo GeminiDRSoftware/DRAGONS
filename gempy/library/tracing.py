@@ -1142,7 +1142,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     Returns
     -------
-    2D array: peak pixels and SNRs (sorted by pixel value)
+    2D array: peak pixels and SNRs (sorted by pixel coordinate)
     """
     mask = mask.astype(bool) if mask is not None else np.zeros_like(data, dtype=bool)
 

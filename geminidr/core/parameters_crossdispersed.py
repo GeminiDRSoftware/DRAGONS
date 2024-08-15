@@ -14,9 +14,6 @@ class findAperturesConfig(parameters_spect.findAperturesConfig):
     comp_method = config.Field("Comparison method to find 'best' order ('sum', 'median')",
                                str, "sum", optional=True)
 
-class flatCorrectConfig(parameters_generic.calRequirementConfig):
-    suffix = config.Field("Filename suffix", str, "_flatCorrected", optional=True)
-    flat = config.ListField("Flatfield frame", (str, AstroData), None, optional=True, single=True)
 
 class resampleToCommonFrameConfig(parameters_spect.resampleToCommonFrameConfig):
     """

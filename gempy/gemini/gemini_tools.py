@@ -1144,6 +1144,7 @@ def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
     list/AD:
         science frame file(s), appropriately cut into multiple extensions
     """
+    raise RuntimeError("cut_to_match_auxiliary_data() should not be used")
     log = logutils.get_logger(__name__)
     ad_output_list = []
 

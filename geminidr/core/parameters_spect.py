@@ -501,9 +501,8 @@ class linearizeSpectraConfig(config.Config):
 
 
 class maskBeyondSlitConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit", optional=True)
-    debug_plots = config.Field("Plot the mask created.",
-                               bool, False)
+    suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit",
+                          optional=True)
 
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
@@ -621,11 +620,17 @@ class tracePinholeAperturesConfig(config.Config):
     # These exist in case excluding some of the pinhole traces is desired. This
     # is important for GNIRS but may not be the case for other instruments/
     # modes, so the defaults here are to use all traces found.
-    debug_min_trace_pos = config.Field("Use traces above this number",
-                                       dtype=int, default=None, optional=True)
-    debug_max_trace_pos = config.Field("Use traces below this number",
-                                       dtype=int, default=None, optional=True)
+    debug_min_trace_pos = config.RangeField("First pinhole trace to use",
+                                            dtype=int, default=None, min=1, optional=True)
+    debug_max_trace_pos = config.RangeField("Last pinhole trace to use",
+                                            dtype=int, default=None, min=1, optional=True)
     debug_plots = config.Field("Create diagnostic plots of traces", bool, False)
+
+    def validate(self):
+        if (self.debug_max_trace_pos is not None and
+                self.debug_min_trace_pos is not None and
+                self.debug_max_trace_pos < self.debug_min_trace_pos):
+            raise ValueError("debug_max_trace_pos cannot be less than debug_min_trace_pos")
 
 
 def wavelength_units_check(value):

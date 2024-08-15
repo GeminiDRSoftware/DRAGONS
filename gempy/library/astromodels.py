@@ -639,6 +639,78 @@ def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
     return m_inverse
 
 
+def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
+                            fixed_linear=False, debug=False):
+    """
+    This helper function creates a distortion model given an input model,
+    input and reference coordinates,
+
+    Parameters
+    ----------
+    m_init : astropy.modeling.models.Chebyshev2D
+        A blank initial model covering the region of interest.
+    transform_axis : int (0 or 1)
+        The axis to transform the image along; alternatively, the axis along
+        which tracing.trace_lines() performed the trace which produced the
+        `in_coords` and `ref_coords` used. (This is in the Python sense, 0 or 1,
+        not the value returned by the dispaxis() descriptor).
+    in_coords, ref_coords : iterable
+        Lists of coordinates for the model fitting.
+    fixed_linear : bool
+        Fix the linear term? (For instance, if creating a distortion model for
+        rectifying a slit when only one edge of a flat is traceable.)
+
+    Returns
+    -------
+    model : astropy.modeling.models.Model
+        The output model, with forward and backward transformations
+    m_final, m_inverse : astropy.modeling.models.Chebyshev2D instances
+        describing the forward and inverse transformations used in `model`.
+    """
+    # Rather than fit to the reference coords, fit to the
+    # *shift* we want in the spectral direction and then add a
+    # linear term which will produce the desired model. This
+    # allows us to use spectral_order=0 if there's only a single
+    # traceable line.
+    if transform_axis == 0:
+        domain_start, domain_end = m_init.x_domain
+        param_names = [f'c1_{i}' for i in range(m_init.y_degree + 1)]
+    else:
+        domain_start, domain_end = m_init.y_domain
+        param_names = [f'c{i}_1' for i in range(m_init.x_degree + 1)]
+    domain_centre = 0.5 * (domain_start + domain_end)
+    if fixed_linear:
+        for pn in param_names:
+            getattr(m_init, pn).fixed = True
+    shifts = ref_coords[transform_axis] - in_coords[transform_axis]
+
+    if debug:
+        print("DEBUG: shifts")
+        for i in range(in_coords[0].size):
+            print(in_coords[0][i], in_coords[1][i], shifts[i])
+
+    # Find model to transform actual (x,y) locations to the
+    # value of the reference pixel along the dispersion axis
+    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                               sigma_clip, sigma=3)
+    m_final, _ = fit_it(m_init, *in_coords, shifts)
+    m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
+
+    # Add the linear term: the coordinate perpendicular to the trace direction
+    for m in (m_final, m_inverse):
+        m.c0_0 += domain_centre
+        # param_names[0] will be 'c1_0' (transform_axis == 0) or 'c0_1'.
+        getattr(m, param_names[0]).value += domain_end - domain_centre
+
+    if transform_axis == 0:
+        model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
+        model.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
+    else:
+        model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
+        model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
+
+    return model, m_final, m_inverse
+
 def get_named_submodel(model, name):
     """
     Extracts a named submodel from a CompoundModel. astropy allows

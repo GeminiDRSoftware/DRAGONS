@@ -1070,8 +1070,8 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         ext.wcs.set_transform(ext.wcs.input_frame,
                               new_spectral_frame, m_final)
     else:
-        # Write out a simplified WCS model so it's easier to
-        # extract what we need later
+        # Write out a simplified WCS model with a new "world" frame
+        # so it's easier to extract what we need later
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         spatial_frame = cf.CoordinateFrame(
             naxes=1, axes_type="SPATIAL", axes_order=(1,),
@@ -1086,7 +1086,10 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         transform = m_final & slit_model
         if dispaxis == 0:
             transform = models.Mapping((1, 0)) | transform
-        ext.wcs = gWCS([(ext.wcs.input_frame, transform),
+        #ext.wcs = gWCS([(ext.wcs.input_frame, transform),
+        #                (output_frame, None)])
+        ext.wcs = gWCS(ext.wcs.pipeline[:-2] +
+                       [(ext.wcs.available_frames[-2], transform),
                         (output_frame, None)])
 
 

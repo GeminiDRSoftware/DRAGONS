@@ -3,8 +3,9 @@
 #
 #                                            primitives_gnirs_crossdispersed.py
 # -----------------------------------------------------------------------------
+import astrodata, gemini_instruments
 
-from astropy.table import Table, hstack
+from astropy.table import Table
 
 from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import (parameter_override,
@@ -88,6 +89,63 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
 
         return adinputs
 
+    def distortionCorrect(self, adinputs=None, **params):
+        """
+        Corrects optical distortion in science frames, using a distortion map
+        (a Chebyshev2D model, usually from a processed arc) that has previously
+        been attached to each input's WCS by attachWavelengthSolution.
+
+        If the input image requires mosaicking, then this is done as part of
+        the resampling, to ensure one, rather than two, interpolations.
+
+        This GNIRS XD version of this primitive adds a further step where the
+        real estate of the distortion-corrected image is trimmed down to the
+        minimum required to contain the data.
+
+        Parameters
+        ----------
+        suffix : str/None
+            Suffix to be added to output files.
+        interpolant : str
+            Type of interpolant
+        subsample : int
+            Pixel subsampling factor.
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
+        """
+        log = self.log
+        adinputs = super().distortionCorrect(adinputs=adinputs, **params)
+
+        # CJS 20240814: distortion-corrected XD data can have a lot of
+        # unnecessary real estate, so trim this down. By constructing the
+        # distortion model well, we can ensure that all this real estate is
+        # on the right/top of the frame.
+        # TODO: This is probably not the correct place for this and it may
+        # need to be moved as other instrument modes are supported. It can
+        # probably go in the main primitive in Spect but let's wait and see.
+        adoutputs = []
+        for ad in adinputs:
+            adout = astrodata.create(ad.phu)
+            adout.filename = ad.filename
+            adout.orig_filename = ad.orig_filename
+            for ext in ad:
+                # Code generically for the dispersion axis
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                fully_masked = (ext.mask & (DQ.no_data | DQ.unilluminated)).astype(
+                    bool).all(axis=dispaxis)
+                first_masked = ext.shape[1-dispaxis] - fully_masked[::-1].argmin()
+                if dispaxis == 0:
+                    adout.append(ext.nddata[:, :first_masked])
+                    log.debug(f"Cutting {ad.filename}:{ext.id} right of "
+                              f"column {first_masked}")
+                else:
+                    adout.append(ext.nddata[:first_masked])
+                    log.debug(f"Cutting {ad.filename}:{ext.id} above row"
+                              f" {first_masked}")
+            adoutputs.append(adout)
+
+        return adoutputs
 
     def tracePinholeApertures(self, adinputs=None, **params):
         """

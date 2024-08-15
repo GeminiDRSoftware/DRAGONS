@@ -9,8 +9,10 @@ from copy import deepcopy
 from importlib import import_module
 
 import astrodata, gemini_instruments
+from astrodata.utils import Section
+
 from astropy.modeling import models
-from astropy.table import Table
+from astropy.table import Table, vstack
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 import numpy as np
@@ -31,6 +33,7 @@ class CrossDispersed(Spect, Preprocess):
 
     """
     tagset = {'GEMINI', 'SPECT', 'XD'}
+
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_crossdispersed)
@@ -58,55 +61,64 @@ class CrossDispersed(Spect, Preprocess):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-
         sfx = params["suffix"]
 
-        adinputs = super()._cut_slits(adinputs=adinputs, **params)
-
-        columns = ('central_wavelength', 'dispersion')
         order_key_parts = self._get_order_information_key()
+        order_info = import_module('.orders_XD', self.inst_lookups).order_info
 
         adoutputs = []
         for ad in adinputs:
             order_key = "_".join(getattr(ad, desc)() for desc in order_key_parts)
-            # order_info contains central wavelength and dispersion for each slit.
-            order_info = Table(import_module(
-                '.orders_XD', self.inst_lookups).order_info[order_key],
-                names=columns)
+            cenwaves, dispersions = order_info[order_key]
+
+            # This is the presumed pointing location and the centres of
+            # each cut slit should recover these sky coordinates
+            world_refpos = ad[0].wcs(*list(0.5 * (length - 1)
+                                           for length in ad[0].shape[::-1]))
+            ad = self._cut_slits(ad, padding=2)
 
             for i, ext in enumerate(ad):
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
+                specaxis_middle = 0.5 * (ext.shape[dispaxis] - 1)
+                try:
+                    slit_center = np.mean([am.table_to_model(row)(specaxis_middle)
+                                           for row in ext.SLITEDGE])
+                except AttributeError:
+                    continue
 
                 # Update the WCS by adding a "first guess" wavelength scale
                 # for each slit.
+                new_wave_model = (models.Shift(-specaxis_middle) |
+                                  models.Scale(dispersions[i]) |
+                                  models.Shift(cenwaves[i]))
+                new_wave_model.name = "WAVE"
+
                 for idx, step in enumerate(ext.wcs.pipeline):
-                    if ext.wcs.pipeline[idx+1].frame.name == 'world':
-                        # Need to find a sequence of Shift + Scale models, which
-                        # collectively represent the wavecal model.
-                        _, m_wave_sky = step
-                        found_wavecal_model, found_sky_model = False, False
-                        for j in range(m_wave_sky.n_submodels):
-                            if (isinstance(m_wave_sky[j], models.Shift) and
-                                isinstance(m_wave_sky[j+1], models.Scale) and
-                                isinstance(m_wave_sky[j+2], models.Shift)):
-
-                                found_wavecal_model = True
-                                break
-
-                        if found_wavecal_model:
-                            # The first shift is the offset to the center of the
-                            # array, don't modify it.
-                            # Dispersion (nm/pixel)
-                            step.transform[j+1].factor = order_info[i]['dispersion']
-                            # Central wavelength offset (nm)
-                            step.transform[j+2].offset = order_info[i]['central_wavelength']
-
-                            log.fullinfo(f"Updated WCS for extension {ext.id}")
-                            break
-                        else:
-                            log.warning("No initial wavelength model found - "
-                                        "not modifying the WCS")
+                    try:
+                        ext.wcs.pipeline[idx] = step.__class__(
+                            step.frame, step.transform.replace_submodel(
+                                "WAVE", new_wave_model))
+                    except (AttributeError, ValueError):  # not in this step
+                        pass
+                    else:
+                        # Update the SKY model so all slit centers point to
+                        # the same location
+                        coords = ext.wcs.invert(cenwaves[i], *world_refpos[1:])
+                        shift = coords[dispaxis] - slit_center
+                        sky_model = am.get_named_submodel(step.transform, "SKY")
+                        new_sky_model = models.Shift(shift) | sky_model
+                        # "step" hasn't been updated with the new WAVE model
+                        ext.wcs.pipeline[idx] = step.__class__(
+                            step.frame, ext.wcs.pipeline[idx].transform.replace_submodel(
+                                "SKY", new_sky_model))
+                        sky_model.name = None
+                        new_sky_model.name = "SKY"
                         break
+                else:
+                    log.warning("No initial wavelength model found - "
+                                "not updating the wavelength model")
+
+                ext.hdr['SPECORDR'] = self._map_spec_order(ext.id)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -115,6 +127,139 @@ class CrossDispersed(Spect, Preprocess):
             adoutputs.append(ad)
 
         return adoutputs
+
+    def _cut_slits(self, ad, padding=0):
+        # TODO: This should move to Spect but it's left here for now to
+        # ease code maintenance since it's only used by XD
+        """
+        This method cuts a 2D spectral image into individual slits based on
+        an existing SLITEDGE table. The slits are then stored in individual
+        extensions. A Chebyshev2D model is created to represent the slit
+        distortion and this is inserted into the WCS. No work is performed
+        to modify the astrometry since this is the responsibility of the
+        calling primitive and will depend on the type of data (XD/MOS/IFU).
+
+        Parameters
+        ----------
+        ad: AstroData object
+            2D spectral image with slits defined in a SLITEDGE table
+        padding: int
+            additional padding to put beyond edges of slits when cutting
+            (to account for possible misalignments)
+
+        Returns
+        -------
+        modified AstroData object with multiple extensions
+        """
+        log = self.log
+        log.stdinfo(f"Calling {self.myself()} on {ad.filename}")
+
+        adout = astrodata.create(ad.phu)
+        adout.filename = ad.filename
+        adout.orig_filename = ad.orig_filename
+        detsec_kw = ad._keyword_for('detector_section')
+        binnings = ad.detector_x_bin(), ad.detector_y_bin()
+
+        for ext in ad:
+            try:
+                slitedge = ext.SLITEDGE
+            except AttributeError:
+                log.warning(f"No slits to cut in {ad.filename}:{ext.id}")
+                adout.append(ext)
+                continue
+
+            orig_wcs = ext.wcs
+            dispaxis = 2 - ext.dispersion_axis()  # Python Sense
+
+            # Iterate over pairs of edges in the SLITEDGE table
+            # In the following code, "x"  represents the location along the
+            # spectral axis, and "y" the orthogonal direction (which is a
+            # function of x). This is opposite to F2 and GNIRS.
+            for i, (slit1, slit2) in enumerate(zip(_ := iter(slitedge), _)):
+                model1 = am.table_to_model(slit1)
+                model2 = am.table_to_model(slit2)
+
+                # Reconstruct the slit edges from the models and identify
+                # which parts are on the detector
+                xpixels = np.arange(ext.shape[dispaxis])
+                ypixels1, ypixels2 = model1(xpixels), model2(xpixels)
+                ypix1_on = np.logical_and(
+                    ypixels1 >= padding, ypixels1 <= ext.shape[1 - dispaxis] - padding - 1)
+                ypix2_on = np.logical_and(
+                    ypixels2 >= padding, ypixels2 <= ext.shape[1 - dispaxis] - padding - 1)
+                y1 = int(max(np.floor(ypixels1.min() - padding), 0))
+                y2 = int(min(np.ceil(ypixels2.max() + padding),
+                             ext.shape[1 - dispaxis]))
+
+                # Add cut rectangle and a modified SLITEDGE table with
+                # the single slit for this extension
+                if dispaxis == 0:
+                    cut_section = Section(x1=y1, x2=y2, y1=0, y2=ext.shape[0])
+                else:
+                    cut_section = Section(x1=0, x2=ext.shape[1], y1=y1, y2=y2)
+                log.stdinfo(f"Cutting slit {i+1} in extension {ext.id} "
+                            f"from {cut_section.asIRAFsection()}")
+                adout.append(deepcopy(ext.nddata[cut_section.asslice()]))
+                adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
+                adout[-1].SLITEDGE["c0"] -= y1
+                adout[-1].SLITEDGE["slit"] = 0  # reset slit number in ext
+
+                # Calculate a Chebyshev2D model that represents both slit
+                # edges. This requires coordinates be fed with the *detector*
+                # x-coordinate first. The rectified slit will be as wide in
+                # pixels as it is halfway up the unrectified image, and the
+                # left edge will be "padding" pixels in from the left edge of
+                # the image.
+                xcenter = 0.5 * (ext.shape[dispaxis] - 1)
+                y1ref = np.full_like(ypixels1, padding)[ypix1_on]
+                y2ref = np.full_like(ypixels2, model2(xcenter) - model1(xcenter) + padding)[ypix2_on]
+                log.stdinfo(f"Slit at {xcenter} from {y1ref[0]} to {y2ref[0]}")
+
+                if dispaxis == 0:
+                    incoords = [np.r_[ypixels1[ypix1_on] - y1, ypixels2[ypix2_on] - y1],
+                                np.r_[xpixels[ypix1_on], xpixels[ypix2_on]]]
+                    refcoords = [np.r_[y1ref, y2ref], np.r_[xpixels[ypix1_on], xpixels[ypix2_on]]]
+                    xorder, yorder = 1, model1.degree
+                else:
+                    incoords = [np.r_[xpixels[ypix1_on], xpixels[ypix2_on]],
+                                np.r_[ypixels1[ypix1_on] - y1, ypixels2[ypix2_on] - y1]]
+                    refcoords = [np.r_[xpixels[ypix1_on], xpixels[ypix2_on]], np.r_[y1ref, y2ref]]
+                    xorder, yorder = model1.degree, 1
+
+                m_init_2d = models.Chebyshev2D(
+                    x_degree=xorder, y_degree=yorder,
+                    x_domain=[0, ext.shape[1]-1],
+                    y_domain=[0, ext.shape[0]-1])
+                log.stdinfo("  Creating distortion model for slit "
+                            f"rectification for slit {i+1}")
+                # The `fixed_linear` parameter is False because we should
+                # have both edges for each slit.
+                model, m_final_2d, m_inverse_2d = am.create_distortion_model(
+                    m_init_2d, dispaxis, incoords, refcoords, fixed_linear=False)
+                model.name = "RECT"
+
+                # Remove the shift that was prepended when the data were
+                # sliced -- the easiest way to do this is just to use the
+                # original WCS (this will mess up the astrometry)
+                adout[-1].wcs = deepcopy(orig_wcs)
+                if adout[-1].wcs is None:
+                    adout[-1].wcs = gWCS([(ext.wcs.input_frame, model),
+                                          (cf.Frame2D(name="rectified"),
+                                           None)])
+                else:
+                    adout[-1].wcs.insert_frame(ext.wcs.input_frame, model,
+                                               cf.Frame2D(name="rectified"))
+
+                # TODO: this updates the detector_section keyword, which
+                # is fine for instruments with only one array in the
+                # detector. NEEDS UPDATING for multi-array instruments
+                # (e.g., MOS data from MOS), and will need to update
+                # the array_section keyword then as well.
+                adout[-1].hdr[detsec_kw] = (
+                    cut_section.asIRAFsection(binning=binnings),
+                    self.keyword_comments.get(detsec_kw))
+
+        return adout
 
     def findApertures(self, adinputs=None, **params):
         """
@@ -286,21 +431,18 @@ class CrossDispersed(Spect, Preprocess):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        flat = params['flat']
-        do_flat = params.get('do_flat', None)
-        sfx = params["suffix"]
+        flat = params.pop('flat')
+        do_cal = params['do_cal']
 
         if flat is None:
             flat_list = self.caldb.get_processed_flat(adinputs)
         else:
             flat_list = (flat, None)
 
-        cut_ads = []
         for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
                                     force_ad=(1,))):
             if flat is None:
-                if 'sq' in self.mode or do_flat == 'force':
+                if 'sq' in self.mode or do_cal == 'force':
                    raise OSError("No processed flat listed for "
                                  f"{ad.filename}")
                 else:
@@ -308,33 +450,35 @@ class CrossDispersed(Spect, Preprocess):
                                "since no flatfield has been specified")
                    continue
 
-            # Cut the science frames to match the flats, which have already
-            # been cut in the flat reduction.
-            cut_ad = gt.cut_to_match_auxiliary_data(adinput=ad, aux=flat)
-            # Need to update the WCS in each extension by replacing its WAVE
-            # model with the one from the corresponding extension in the flat.
-            # To do that, recreate the WCS with the original input and output
-            # frames and the new wavecal mode taken from the flat.
-            for ext, auxext in zip(cut_ad, flat):
-                aux_wave_model = am.get_named_submodel(auxext.wcs.forward_transform,
-                                                       'WAVE')
-                new_wave_model = ext.wcs.forward_transform.replace_submodel(
-                    "WAVE", aux_wave_model)
-                ext.wcs = gWCS([(ext.wcs.input_frame, new_wave_model),
-                                (ext.wcs.output_frame, None)])
-                log.fullinfo(f'WCS wavecal model updated in ext {ext.id}')
+            if len(ad) != 1:
+                log.warning(f"{ad.filename} has more than one extension and "
+                            "will not be flatfielded")
+                continue
 
-            cut_ads.append(cut_ad)
+            # CJS: For speed of getting something working, we're going to
+            # reconstruct the original SLITEDGE model from the flatfield
+            # and then use it to cut the science data. So, rather than copy
+            # the rectification model from the flat, a completely new one
+            # will be constructed, but it will be identical to that one in
+            # the flat, since it is calculated from the same SLITEDGE table.
+            # cutSlits() will also sort out the WCS for each cut extension.
+            slitedge = vstack([flat_ext.SLITEDGE for flat_ext in flat],
+                              metadata_conflicts='silent')
+            for i, (flat_detsec, dispaxis) in enumerate(zip(flat.detector_section(),
+                                                            flat.dispersion_axis())):
+                offset = flat_detsec.x1 if dispaxis == 2 else flat_detsec.y1
+                slitedge[i*2:i*2+2]["c0"] += offset
+            ad[0].SLITEDGE = slitedge
 
-        adoutputs = super().flatCorrect(adinputs=cut_ads, **params)
-        for ad in adoutputs:
-            try:
-                ad[0].wcs.get_transform("pixels", "rectified")
-            except:
-                log.warning(f"No rectification model found for {ad.filename}")
+        adinputs = self.cutSlits(adinputs, suffix=None)
 
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+        # Since we've already worked out the flats to use, send them along to
+        # avoid needing to re-query the Caldb
+        try:
+            flat_files = flat_list.files
+        except AttributeError:  # not a CalReturn object
+            flat_files = flat_list[0]
+        # This will timestamp and update the suffix
+        adinputs = super().flatCorrect(adinputs, flat=flat_files, **params)
 
-        return adoutputs
+        return adinputs
