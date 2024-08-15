@@ -21,6 +21,7 @@ def runtests_gsaoi   = 1
 def runtests_gnirs   = 1
 def runtests_wavecal = 1
 def runtests_ghost   = 1
+def runtests_gmos    = 1
 
 pipeline {
 
@@ -118,40 +119,6 @@ pipeline {
         //                }
                     }
                 }
-
-                stage('Integration tests') {
-                    agent { label "centos7" }
-                    environment {
-                        MPLBACKEND = "agg"
-                        DRAGONS_TEST_OUT = "./integ_tests_outputs/"
-                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        TMPDIR = "${env.WORKSPACE}/.tmp/integ/"
-                    }
-                    steps {
-                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                        checkout scm
-                        echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_dirs.sh'
-                        sh '.jenkins/scripts/setup_dirs.sh'
-                        echo "Integration tests"
-                        sh 'tox -e py310-integ -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/integration_results.xml ${TOX_ARGS}'
-                        echo "Reporting coverage"
-                        sh 'tox -e codecov -- -F integration'
-                    } // end steps
-                    post {
-                        always {
-                            junit (
-                                allowEmptyResults: true,
-                                testResults: '.tmp/py310-integ/reports/*_results.xml'
-                            )
-                            echo "Deleting Integration tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
-                        }
-                    } // end post
-                } // end stage
 
                 stage('Regression Tests') {
                     agent { label "master" }
@@ -339,6 +306,43 @@ pipeline {
                         }  // end always
                     }  // end post
                 }  // end stage
+                stage('GMOS Tests') {
+                    when {
+                        expression { runtests_gmos  == 1 }
+                    }
+
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        DRAGONS_TEST_OUT = "gmos_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/gmos/"
+                    }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_dirs.sh'
+                        echo "Running tests"
+                        sh 'tox -e py310-gmos -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmos_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F gmos'
+                    }  // end steps
+                    post {
+                        always {
+                            echo "Running 'archivePlots' from inside GMOS Tests"
+                            archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py310-gmos/reports/*_results.xml'
+                            )
+                            echo "Deleting GMOS Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }  // end always
+                    }  // end post
+                }  // end stage
             } // end parallel
         }
 
@@ -460,7 +464,7 @@ pipeline {
 
                 stage('GHOST Tests') {
                     when {
-                        expression { runtests_gnirs == 1 }
+                        expression { runtests_ghost == 1 }
                     }
 
                     agent { label "master" }
