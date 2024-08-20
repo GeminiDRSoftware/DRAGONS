@@ -543,9 +543,12 @@ class InteractiveModel1D(InteractiveModel):
             if isinstance(retval, float):
                 return np.array([retval])
             return retval
-        print("Evaluating fit", min(x), max(x))
-        print("POINTS", self.fit.points[0].min(), self.fit.points[0].max())
-        print("CALIB", self.visualizer.calibrator.x[0].min(), self.visualizer.calibrator.x[0].max())
+        try:
+            print("Evaluating fit", min(x), max(x))
+            print("POINTS", self.fit.points[0].min(), self.fit.points[0].max())
+            print("CALIB", self.visualizer.calibrator.x[0].min(), self.visualizer.calibrator.x[0].max())
+        except AttributeError:
+            pass
         return self.fit.evaluate(x)
 
 
