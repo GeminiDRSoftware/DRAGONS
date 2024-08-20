@@ -618,20 +618,24 @@ class TelluricCorrectPanel(Fit1DPanel):
         self.reset_view()
         return [p_main]
 
-    # def model_change_handler(self, model):
-    #     """If the model changes, this gets called to evaluate the fit and save
-    #     the results. A bespoke method is needed here to update "xlinspace"
-    #
-    #     Parameters
-    #     ----------
-    #     model : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
-    #         The model that changed.
-    #     """
-    #     print("model_change_handler")
-    #     #model.evaluation.data["xlinspace"] = model.x
-    #     model.evaluation.data["model"] = model.evaluate(
-    #         model.evaluation.data["xlinspace"]
-    #     )
+    def model_change_handler(self, model):
+        """If the model changes, this gets called to evaluate the fit and save
+        the results. A bespoke method is needed here to update "xlinspace"
+
+        Parameters
+        ----------
+        model : :class:`~geminidr.interactive.fit.fit1d.InteractiveModel1D`
+            The model that changed.
+        """
+        # Update the new wavelength values in both the data and the
+        # model evaluation
+        print("MODEL CHANGE HANDLER", self.index)
+        model.data.data["x"] = self.visualizer.calibrator.x[self.index]
+        #model.data.data["x"] = self.fit.points[0]
+        model.evaluation.data["xlinspace"] = model.x
+        model.evaluation.data["model"] = model.evaluate(
+            model.evaluation.data["xlinspace"]
+        )
 
 
 class TelluricCorrectVisualizer(Fit1DVisualizer):
@@ -673,7 +677,7 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
         #         widget.on_change('value', _reconstruct_points)
 
     def reconstruct_points(self):
-        print(datetime.now(), "Visualizer.reconstruct_points()")
+        print(datetime.now(), "TelluricCorrectVisualizer.reconstruct_points()")
         print(self.ui_params)
         self.calibrator.set_fitting_params(ui_params=self.ui_params)
         self.calibrator.reconstruct_points()
