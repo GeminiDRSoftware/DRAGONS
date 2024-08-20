@@ -440,6 +440,12 @@ class Trace:
     def bottom_limit(self):
         return self.points[0][0]
 
+    @property
+    def start_coordinates(self):
+        """Return the starting point in the same coordinate order as the
+        input_coordinates() and reference_coordinates()"""
+        return self.starting_point[::-1] if self.reversed else self.starting_point
+
     def input_coordinates(self):
         if self.reversed:
             return [(x, y) for y, x in self.points]
