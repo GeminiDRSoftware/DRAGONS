@@ -15,7 +15,6 @@ def reduceScience(p):
 
     """
     p.prepare()
-    p.writeOutputs()
     p.addDQ()
     # p.nonlinearityCorrect() # non-linearity correction tbd
     p.ADUToElectrons()

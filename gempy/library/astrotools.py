@@ -424,6 +424,40 @@ def get_center_of_projection(wcs):
             return (m.lon.value, m.lat.value)
 
 
+def find_outliers(data, sigma=3, cenfunc=np.median):
+    """
+    Examine a list for individual outlying points and flag them.
+    This operates better than sigma-clip for small lists as it sequentially
+    removes a single point from the list and determined whether it is an
+    outlier based on the statistics of the remaining points.
+
+    Parameters
+    ----------
+    data: array-like
+        array to be searched for outliers
+    sigma: float
+        number of standard deviations for rejection
+    cenfunc: callable (np.median/np.mean usually)
+        function for deriving average
+
+    Returns
+    -------
+    mask: bool array
+        outlying points are flagged
+    """
+    mask = np.zeros_like(data, dtype=bool)
+    if mask.size < 3:  # doesn't work with 1 or 2 elements
+        return mask
+
+    for i in range(mask.size):
+        omitted_data = list(set(data) - {data[i]})
+        average = cenfunc(omitted_data)
+        stddev = np.std(omitted_data)
+        if abs(data[i] - average) > sigma * stddev:
+            mask[i] = True
+    return mask
+
+
 def get_corners(shape):
     """
     This is a recursive function to calculate the corner indices

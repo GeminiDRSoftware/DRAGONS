@@ -354,12 +354,14 @@ class Spect(Resample):
         adinputs[0].update_filename(suffix=params["suffix"], strip=True)
 
         for ad in adinputs[1:]:
+            # Go through the slices and record all the offsets
+            offsets = []
             for iext, ext in enumerate(ad):
+                offset = None
                 for method in methods:
                     if method is None:
                         break
 
-                    adjust = False
                     dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
                     # Calculate offset determined by header (WCS or offsets)
@@ -379,8 +381,11 @@ class Spect(Resample):
                         corr = np.correlate(ref_profile_dict[iext],
                                             profile, mode='full')
                         expected_peak = corr.size // 2 + hdr_offset
+                        # It's reasonable to assume that if the source is
+                        # significantly narrower than the size of the slit
+                        max_peak_width = min(0.25 * profile.size, 10)
                         peaks, snrs = tracing.find_wavelet_peaks(
-                            corr, widths=np.arange(3, 20),
+                            corr, widths=10**np.arange(-0.2, np.log10(max_peak_width), 0.1),
                             reject_bad=False, pinpoint_index=0)
                         if peaks.size:
                             if tolerance is None:
@@ -399,54 +404,59 @@ class Spect(Resample):
                             if found_peak:
                                 # found_peak = tracing.pinpoint_peaks(corr, None, found_peak)[0]
                                 offset = found_peak - ref_profile_dict[iext].shape[0] + 1
-                                adjust = True
                             else:
                                 log.warning("No cross-correlation peak found for "
-                                            f"{ad.filename} within tolerance")
+                                            f"{ad.filename}:{ext.id} within tolerance")
                         else:
-                            log.warning(f"{ad.filename}: Cross-correlation failed")
+                            log.warning(f"{ad.filename}:{ext.id} Cross-correlation failed")
 
                     elif method == 'offsets':
                         offset = hdr_offset
-                        adjust = True
 
-                    if adjust:
-                        wcs = ad[iext].wcs
-                        frames = wcs.available_frames
-                        if integer_offsets:
-                            offset = np.round(offset)
-                        for input_frame, output_frame in zip(frames[:-1], frames[1:]):
-                            t = wcs.get_transform(input_frame, output_frame)
-                            try:
-                                sky_model = am.get_named_submodel(t, 'SKY')
-                            except IndexError:
-                                pass
-                            else:
-                                new_sky_model = models.Shift(offset) | ref_sky_model_dict[iext]
-                                new_sky_model.name = 'SKY'
-                                ad[iext].wcs.set_transform(
-                                    input_frame, output_frame, t.replace_submodel(
-                                        'SKY', new_sky_model))
-                                break
-                        else:
-                            raise OSError("Cannot find 'SKY' model in WCS for "
-                                          f"{ad.filename}")
-
-                        log.stdinfo("Offset for image {} (ext {}) : {:.2f} pixels"
-                                    .format(ad.filename, ext.id, offset))
-                        ad.phu['SLITOFF'] = offset
+                    if offset is not None:
+                        log.debug(f"{ad.filename}:{ext.id} offset of {offset:.2f}")
+                        offsets.append(offset)
                         break
 
-                if not adjust:
-                    no_offset_msg = f"Cannot determine offset for {ad.filename}"
-                    if 'sq' in self.mode:
-                        raise OSError(no_offset_msg)
+            if offsets:
+                offset_mask = at.find_outliers(offsets)
+                if np.any(offset_mask):
+                    log.debug("Ignoring shift(s) of " +
+                              ", ".join(str(x) for x in np.array(offsets)[offset_mask]))
+                offset = np.mean(np.asarray(offsets)[~offset_mask])
+                if integer_offsets:
+                    offset = np.round(offset)
+                log.stdinfo(f"{ad.filename}: applying offset of {offset:.2f} pixels")
+                for iext, ext in enumerate(ad):
+                    wcs = ext.wcs
+                    frames = wcs.available_frames
+                    for input_frame, output_frame in zip(frames[:-1], frames[1:]):
+                        t = wcs.get_transform(input_frame, output_frame)
+                        try:
+                            sky_model = am.get_named_submodel(t, 'SKY')
+                        except IndexError:
+                            pass
+                        else:
+                            new_sky_model = models.Shift(offset) | ref_sky_model_dict[iext]
+                            new_sky_model.name = 'SKY'
+                            ext.wcs.set_transform(
+                                input_frame, output_frame, t.replace_submodel(
+                                    'SKY', new_sky_model))
+                            break
                     else:
-                        log.warning(no_offset_msg)
+                        raise OSError("Cannot find 'SKY' model in WCS for "
+                                      f"{ad.filename}:{ext.id}")
+                ad.phu['SLITOFF'] = offset
+            else:
+                no_offset_msg = f"Cannot determine offset for {ad.filename}"
+                if 'sq' in self.mode:
+                    raise OSError(no_offset_msg)
                 else:
-                    # Timestamp and update filename
-                    gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-                    ad.update_filename(suffix=params["suffix"], strip=True)
+                    log.warning(no_offset_msg)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
 
@@ -498,6 +508,9 @@ class Spect(Resample):
                 continue
 
             # Attach the model here.
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the pinhole mask "
+                        f"{pinhole.filename}{origin_str}")
             ad = _attach_rectification_model(ad, pinhole, log=self.log)
             try:
                 ad[0].wcs.get_transform("pixels", "rectified")
@@ -4792,9 +4805,19 @@ class Spect(Resample):
                                       coord in trace.input_coordinates()]).T
                 # List of "reference" positions. These should be equally spaced
                 # in pixel coordinates, so set them to be equally spaced between
-                # the first and last.
-                equispaced_coords = np.linspace(traces[0].starting_point[1],
-                                                traces[-1].starting_point[1],
+                # the first and last. "trace.starting_point[1]" *always* returns
+                # the coordinate orthogonal to the tracing direction, but if we
+                # want to use the rectified coordinates they must be x-first.
+                try:
+                    t = ext.wcs.get_transform(ext.wcs.input_frame, 'rectified')
+                except CoordinateFrameError:
+                    rectified_pinholes = [trace.starting_point[1]
+                                          for trace in traces]
+                else:
+                    rectified_pinholes = [t(*trace.start_coordinates)[dispaxis]
+                                          for trace in traces]
+                equispaced_coords = np.linspace(rectified_pinholes[0],
+                                                rectified_pinholes[-1],
                                                 len(traces))
                 log.debug("Initial coords are "
                           f"{[trace.starting_point[1] for trace in traces]}")
