@@ -21,8 +21,8 @@ def makeProcessedArc(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     # p.makeIRAFCompatible()  # no need for XD
-    p.flatCorrect()
     p.stackFrames()
+    p.flatCorrect()
     p.attachPinholeModel()
     p.determineWavelengthSolution()
     p.determineDistortion(spatial_order=1, step=4)
