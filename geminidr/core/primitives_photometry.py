@@ -476,7 +476,7 @@ def _estimate_seeing(objcat):
                                   objcat['ELLIPTICITY'] < 0.5,
                                   objcat['CLASS_STAR'] > 0.8,
                                   objcat['FLUX_AUTO'] > 25*objcat['FLUXERR_AUTO'],
-                                  objcat['FLAGS'] & 65528 == 0,
+                                  objcat['FLAGS'] & ~7 == 0,
                                   objcat['FWHM_WORLD'] > 0,
                                   badpix < 0.2*objcat['ISOAREA_IMAGE']])
 
