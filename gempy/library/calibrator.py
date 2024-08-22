@@ -344,9 +344,10 @@ class TelluricCorrector(Calibrator):
         # And the integral splines, pre-convolved
         self.tell_int_splines = tell_int_splines
 
-        # The absorption models from the telluric standard
+        # The absorption spectra being used: at the standard's airmass
         self.std_abs = [np.ones((npix,), dtype=np.float32)
                         for npix in self.npixels]
+        # at the object's airmass
         self.abs_final = [np.ones((npix,), dtype=np.float32)
                         for npix in self.npixels]
 
