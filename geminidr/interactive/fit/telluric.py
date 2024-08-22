@@ -578,7 +578,6 @@ class InteractiveTelluricCorrection(InteractiveModel1D):
 
     def perform_fit(self, *args):
         self.fit = self.visualizer.calibrator.perform_fit(self.my_fit_index)
-        print("NOTIFYING", self.fit.lookup_table)
         self.notify_listeners()
 
 
@@ -629,7 +628,6 @@ class TelluricCorrectPanel(Fit1DPanel):
         """
         # Update the new wavelength values in both the data and the
         # model evaluation
-        print("MODEL CHANGE HANDLER", self.index)
         model.data.data["x"] = self.visualizer.calibrator.x[self.index]
         #model.data.data["x"] = self.fit.points[0]
         model.evaluation.data["xlinspace"] = model.x
@@ -656,9 +654,9 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
         # because everything causes an immediate update. The
         # airmass slides just require perform_fit() to be called,
         # while the pixel slider and model toggle need reconstruct_points()
-        def _reconstruct_points(attr, old, new):
-            print(datetime.now(), "RECONSTRUCT POINTS HANDLER")
-            self.reconstruct_points()
+        #def _reconstruct_points(attr, old, new):
+        #    print(datetime.now(), "RECONSTRUCT POINTS HANDLER")
+        #    self.reconstruct_points()
 
         # print("WIDGETS")
         # for widget in self.reinit_panel.children:
@@ -677,8 +675,9 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
         #         widget.on_change('value', _reconstruct_points)
 
     def reconstruct_points(self):
-        print(datetime.now(), "TelluricCorrectVisualizer.reconstruct_points()")
-        print(self.ui_params)
+        # The Checkbox callback only updates self.extras for an unknown
+        # reason, so make sure we update it in ui_params
+        self.ui_params.values.update(self.extras)
         self.calibrator.set_fitting_params(ui_params=self.ui_params)
         self.calibrator.reconstruct_points()
         for fit in self.fits:
