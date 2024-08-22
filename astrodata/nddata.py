@@ -398,9 +398,9 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
                 return ret
             elif hasattr(source, 'shape'):
                 if section is None or source.shape != self.shape:
-                    return np.array(source, copy=False)
+                    return np.asarray(source)
                 else:
-                    return np.array(source, copy=False)[section]
+                    return np.asarray(source)[section]
             else:
                 return source
 
