@@ -1155,7 +1155,8 @@ class DataGroup:
                 # Set up the functions to call to transform this attribute
                 jobs = []
                 if np.issubdtype(arr.dtype, np.unsignedinteger):
-                    for j in range(0, 16):
+                    nbits = arr.itemsize * 8
+                    for j in range(0, nbits):
                         bit = 2 ** j
                         if bit == cval or np.sum(arr & bit) > 0:
                             key = ((attr,bit), output_corners)
