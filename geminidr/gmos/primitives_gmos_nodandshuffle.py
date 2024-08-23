@@ -70,6 +70,8 @@ class GMOSNodAndShuffle(GMOS):
         dq_threshold : float
             The fraction of a pixel's contribution from a DQ-flagged pixel to
             be considered 'bad' and also flagged.
+        debug_plots: bool
+            Plot the cross-correlation results for each extension?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -81,6 +83,7 @@ class GMOSNodAndShuffle(GMOS):
         interpolant = params["interpolant"]
         subsample = params["subsample"]
         dq_threshold = params["dq_threshold"]
+        debug_plots = params["debug_plots"]
 
         for ad in adinputs:
             nod_arcsec = np.diff(ad.nod_offsets())[0]
@@ -114,7 +117,7 @@ class GMOSNodAndShuffle(GMOS):
 
                     ad2 = self.adjustWCSToReference(
                         [ad, ad2], method="sources_offsets", fallback="offsets",
-                        tolerance=tolerance, region=region)[1]
+                        tolerance=tolerance, region=region, debug_plots=debug_plots)[1]
                     beamshift = (models.Shift(0) &
                                  (am.get_named_submodel(ad2[0].wcs.forward_transform, 'SKY')[0]))
                     del ad2

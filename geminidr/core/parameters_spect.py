@@ -57,6 +57,7 @@ class adjustWCSToReferenceConfig(config.Config):
                                   "for the correlation method (arcsec)",
                                   float, 1, min=0., optional=True)
     debug_block_resampling = config.Field("Block resampling in the spatial direction?", bool, False)
+    debug_plots = config.Field("Plot the cross-correlation function?", bool, False)
 
 
 class attachPinholeModelConfig(config.Config):

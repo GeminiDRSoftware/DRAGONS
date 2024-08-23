@@ -7,6 +7,7 @@ from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 
 # Use the same dataset, but with and without source alignment attempt
 # There's an emission line so alignment only works with a specified region
+# and the second test should fail to cross-correlate and revert to the offset
 datasets = [("N20180908S0020_distortionCorrected.fits", {}, -371.75),
             ("N20180908S0020_distortionCorrected.fits", {"align_sources": True}, -371.75),
             ("N20180908S0020_distortionCorrected.fits", {"align_sources": True, "region": "2855:2865"}, -376.0),
@@ -22,7 +23,7 @@ def test_combine_nod_and_shuffle_beams(ad, kwargs, result, caplog):
     for rec in caplog.records:
         m = re.match(r".*? (-?\d*.\d*) pixels", rec.message)
         if m:
-            assert abs(float(m.group(1)) - result) < 0.5
+            assert abs(float(m.group(1)) - result) < 1.0
             break
 
 

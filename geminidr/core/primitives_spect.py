@@ -307,7 +307,11 @@ class Spect(Resample):
             Maximum distance from the header offset, for the correlation
             method (arcsec). If the correlation computed offset is too
             different from the header offset, then the latter is used.
-
+        debug_block_resampling: bool
+            prevent resampling in the spatial direction by rounding shifts
+            to integer pixels?
+        debug_plots: bool
+            Plot the cross-correlation results for each extension?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -316,6 +320,7 @@ class Spect(Resample):
         region = slice(*at.parse_user_regions(params["region"])[0])
         tolerance = params["tolerance"]
         integer_offsets = params["debug_block_resampling"]
+        debug_plots = params["debug_plots"]
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least two "
@@ -383,9 +388,13 @@ class Spect(Resample):
                         expected_peak = corr.size // 2 + hdr_offset
                         # It's reasonable to assume that if the source is
                         # significantly narrower than the size of the slit
-                        max_peak_width = min(0.25 * profile.size, 10)
+                        # remember these widths are "sigma", not FWHM!
+                        min_peak_width = (0.05 if ad.is_ao() else 0.25) / ext.pixel_scale()
+                        max_peak_width = min(0.25 * profile.size, 20)
+                        widths = 10**np.arange(np.log10(min_peak_width),
+                                               np.log10(max_peak_width), 0.05)
                         peaks, snrs = tracing.find_wavelet_peaks(
-                            corr, widths=10**np.arange(-0.2, np.log10(max_peak_width), 0.1),
+                            corr, widths=widths,
                             reject_bad=False, pinpoint_index=0)
                         if peaks.size:
                             if tolerance is None:
@@ -409,6 +418,17 @@ class Spect(Resample):
                                             f"{ad.filename}:{ext.id} within tolerance")
                         else:
                             log.warning(f"{ad.filename}:{ext.id} Cross-correlation failed")
+
+                        if debug_plots:
+                            fig, ax = plt.subplots()
+                            print(f"Using {len(widths)} sigma widths {min_peak_width} to {max_peak_width}")
+                            print("Peaks at ", np.asarray(peaks) - corr.size // 2)
+                            print(f"Using {offset}")
+                            ax.plot(np.arange(corr.size) - corr.size // 2, corr, 'b-')
+                            for peak in peaks:
+                                ax.axvline(peak - corr.size // 2, color='r', linestyle='--')
+                            ax.set_title(f"{ad.filename}:{ext.id}")
+                            plt.show()
 
                     elif method == 'offsets':
                         offset = hdr_offset
@@ -1507,10 +1527,12 @@ class Spect(Resample):
                                     (cf.Frame2D(name="world"), None)])
                 else:
                     # TODO: use insert_frame here
-                    ext.wcs = gWCS([(ext.wcs.input_frame, model),
-                                    (cf.Frame2D(name="distortion_corrected"),
-                                     ext.wcs.pipeline[0][1])]
-                                   + ext.wcs.pipeline[1:])
+                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                         cf.Frame2D(name="distortion_corrected"))
+                    #ext.wcs = gWCS([(ext.wcs.input_frame, model),
+                    #                (cf.Frame2D(name="distortion_corrected"),
+                    #                 ext.wcs.pipeline[0][1])]
+                    #               + ext.wcs.pipeline[1:])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
