@@ -27,6 +27,7 @@ def validate_regions_int(value, multiple=False):
     ranges = at.parse_user_regions(value, dtype=int, allow_step=True)
     return multiple or len(ranges) == 1
 
+
 class adjustWavelengthZeroPointConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthZeroPointAdjusted",
                           optional=True)
@@ -38,6 +39,7 @@ class adjustWavelengthZeroPointConfig(config.Config):
                            optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
                                         float, 5, min=0)
+
 
 class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",
@@ -60,10 +62,9 @@ class adjustWCSToReferenceConfig(config.Config):
     debug_plots = config.Field("Plot the cross-correlation function?", bool, False)
 
 
-class attachPinholeModelConfig(config.Config):
+class attachPinholeModelConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_pinholeModelAttached", optional=True)
     pinhole = config.Field("Pinhole frame", (str, AstroData), None, optional=True)
-
 
 
 class attachWavelengthSolutionConfig(config.Config):

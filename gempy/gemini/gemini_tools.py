@@ -23,6 +23,9 @@ from astropy.table import vstack, Table, Column
 from scipy.ndimage import distance_transform_edt
 from scipy.special import erf
 
+from gwcs import coordinate_frames as cf
+from gwcs.utils import CoordinateFrameError
+
 from ..library import astromodels, tracing, astrotools as at
 from ..library.nddops import NDStacker
 from ..utils import logutils
@@ -194,6 +197,66 @@ def array_information(adinput=None):
         array_info_list.append(ArrayInfo(detshape, sorted_origins,
                                          array_shapes, arrays_list))
     return array_info_list
+
+
+def attach_rectification_model(target, source, log=None):
+    """
+    Copy a slit rectification model from source to target file.
+
+    Copies the transform step in an Astropy gWCS object corresponding to a
+    slit rectification model from the given source file to a given target
+    file. The source file must have either one extension, or the same
+    number of extensions as the target, in which case the model in each
+    extension in the source will be copied to the corresponding extension
+    in the target. This function will either add a rectification model if
+    one is not present in the target, or replaces an existing one. If no
+    rectification model is found in the source, logs a warning and returns
+    the target file unmodified.
+
+    Parameters
+    ----------
+    target : `Astrodata object`
+        The file to copy the rectification model to.
+    source : `Astrodata object`
+        The file to get the rectification model from.
+    log : logger instance
+        An optional logger instance to write log messages to.
+
+    Returns
+    -------
+    `Astrodata object`
+        The target file; either modified with the new rectification model
+        in each extenstion, or unmodified if no model was found in `source`.
+
+    """
+    if len(target) != len(source):
+        raise ValueError("Target image and source image have different "
+                         f"number of extensions, {len(target)} vs. "
+                         f"{len(source)}, {target.filename} not modified.")
+
+    for ext_t, ext_s in zip(target, source):
+        # Check that a transform exists, else return `target` unmodified.
+        try:
+            new_transform = ext_s.wcs.get_transform("pixels", "rectified")
+        except CoordinateFrameError:
+            # Silently no-op. If it's important to know if a model has been
+            # attached, run this same check on the output where this function
+            # is called, since the severity of it happening varies by context.
+            # (For longslit, it's not a big deal; for e.g. cross-dispersed it's
+            # a major problem.)
+            return target
+
+        # If a 'rectified' frame exists, just replace the transform.
+        # Otherwise add a new frame with the transform.
+        try:
+            ext_t.wcs.set_transform('pixels', 'rectified', new_transform)
+        except CoordinateFrameError:
+            ext_t.wcs.insert_frame(ext_t.wcs.input_frame, new_transform,
+                                   cf.Frame2D(name='rectified'))
+        log.fullinfo(f"Rectification model found in {source.filename}. "
+                     f"Attaching to {target.filename}")
+
+    return target
 
 
 def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,

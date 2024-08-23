@@ -461,6 +461,7 @@ class CrossDispersed(Spect, Preprocess):
             # the rectification model from the flat, a completely new one
             # will be constructed, but it will be identical to that one in
             # the flat, since it is calculated from the same SLITEDGE table.
+            # (although, as noted below, the one from the flat gets copied).
             # cutSlits() will also sort out the WCS for each cut extension.
             slitedge = vstack([flat_ext.SLITEDGE for flat_ext in flat],
                               metadata_conflicts='silent')
@@ -478,7 +479,10 @@ class CrossDispersed(Spect, Preprocess):
             flat_files = flat_list.files
         except AttributeError:  # not a CalReturn object
             flat_files = flat_list[0]
-        # This will timestamp and update the suffix
+
+        # flatCorrect() will actually copy the rectification model from the
+        # flat, overwriting the identical model we created above.
+        # This will timestamp and update the suffix for us
         adinputs = super().flatCorrect(adinputs, flat=flat_files, **params)
 
         return adinputs
