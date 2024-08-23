@@ -52,4 +52,12 @@ slit_info = {
     (5.0, 5.0, 5.0, 5.0),               # width_arcsec
     (100, 100, 100, 100)                # width_pixels
     ),
+'Gemini-North_LXD_G5535_LCXD_G5531_111/mm_G5534_LongBlue_G5542': (
+    (1, 2, 3, 4),                       # slit ID
+    (267, 462, 620, 775),               # x_ccd
+    (256, 256, 256, 256),               # y_ccd
+    (3, 4, 5, 6),                       # specorder
+    (5.0, 5.0, 5.0, 5.0),               # width_arcsec
+    (100, 100, 100, 100)                # width_pixels
+    ),
 }
