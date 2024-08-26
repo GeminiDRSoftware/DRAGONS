@@ -19,7 +19,8 @@ from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from geminidr.interactive.interactive import UIParameters
 import geminidr.interactive.server
-from gempy.library import astromodels as am, convolution, peak_finding
+from gempy.library import astromodels as am, astrotools as at
+from gempy.library import convolution, peak_finding
 from gempy.library.config import RangeField
 
 from gempy.library.calibrator import TelluricCalibrator, TelluricCorrector
@@ -383,7 +384,9 @@ class Telluric(Spect):
                     lsf_params = {k: header[k] for k in lsf_param_names}
                     wconv, tconv = lsf.convolve(tspek.waves, w_pca,
                                                 tellabs_model, **lsf_params)
-                    tell_int_splines.append(lsf.make_integral_spline(wconv, tconv))
+                    spline = make_interp_spline(wconv, tconv, axis=-1, k=3)
+                    spline.extrapolate = False
+                    tell_int_splines.append(spline.antiderivative())
                     print("TELL INT SPLINE", wconv.min(), wconv.max())
 
                 if pixel_shift is None:
@@ -577,6 +580,8 @@ class LineSpreadFunction(ABC):
         spectra: (..., N) array of convolved spectra
         """
         convolution_list = self.convolutions(**kwargs)
+        print("CONVOLUTIONS")
+        print(convolution_list)
         dw = sum(x[1] for x in convolution_list)
         w1, w2 = waves.min() - 1.05 * dw, waves.max() + 1.05 * dw
         windices = np.logical_and(w > w1, w < w2)
@@ -593,9 +598,9 @@ class LineSpreadFunction(ABC):
 
         Parameters
         ----------
-        waves: array
+        waves: array (1D)
             output wavelength scale
-        w: array
+        w: array (can be 2D)
             wavelengths of thing to be convolved
         data: array
             data to be convolved; last dimension must match w
@@ -604,45 +609,11 @@ class LineSpreadFunction(ABC):
 
         Returns
         -------
-        array of shape of "m", but last dimension of shape "self.nwaves"
-            the convolved and resampled models
+        array of shape of (data.shape[0], waves.size) of resampled spectra
         """
         w, spectra = self.convolve(waves, w, data, **kwargs)
         results = convolution.resample(waves, w, spectra)
         return results
-
-    @staticmethod
-    def make_integral_spline(w, spectra):
-        """
-        Interpolate a spectrum and calculate its antiderivative (integral)
-        and return that, so it is easy to calculate the flux in any wavelength
-        range, as represented by a pixel.
-
-        Parameters
-        ----------
-        w: array
-            wavelengths of spectra
-        spectra: array
-            data; last dimension must match w
-
-        Returns
-        -------
-        BSpline object representing the integral of the interpolated spectra
-        """
-        spline = make_interp_spline(w, spectra, axis=-1, k=3)
-        spline.extrapolate = False
-        return spline.antiderivative()
-
-        dw_in = np.diff(w)
-        if any(dw_in < 0):
-            raise ValueError("Wavelength array must be monotonically increasing")
-
-        edges = np.r_[[1.5 * waves[0] - 0.5 * waves[1]],
-                      np.array([waves[:-1], waves[1:]]).mean(axis=0),
-                      [1.5 * waves[-1] - 0.5 * waves[-2]]]
-        dw_out = abs(np.diff(edges))
-        result2 = abs(np.diff(integral(edges)))
-        return result2 / dw_out
 
 
 class GaussianLineSpreadFunction(LineSpreadFunction):

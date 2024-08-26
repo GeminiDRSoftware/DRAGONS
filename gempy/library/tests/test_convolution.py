@@ -19,10 +19,10 @@ def test_resample_simple():
 def test_resample2():
     # Resample a Gaussian every other pixel
     w = np.linspace(500, 600, 1001)
-    w2 = w[:-1:2]
+    w2 = w[1:-1:2]
     y = np.exp(-0.5 * ((w - w[500]) / 4) ** 2)
     y2 = resample(w2, w, y)
-    assert np.allclose(y2, y[:-1:2], atol=2e-4)
+    assert np.allclose(y2, y[1:-1:2], atol=2e-4)
 
 
 def test_resample_log_wavelength():

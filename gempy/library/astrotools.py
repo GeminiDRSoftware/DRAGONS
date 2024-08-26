@@ -149,6 +149,26 @@ def boxcar(data, operation=np.ma.median, size=1):
     return boxarray
 
 
+def calculate_pixel_edges(centers):
+    """
+    Calculate the world coordinates of the edges of pixels in a 1D array,
+    given their centers. This is achieved by fitting a cubic spline to the
+    centers and evaluating it at half-pixel locations.
+
+    Parameters
+    ----------
+    centers: array-like, shape (N,)
+        locations of centers of pixels
+
+    Returns
+    -------
+    edges: array, shape (N+1,)
+        locations of edges of pixels
+    """
+    spline = interpolate.CubicSpline(np.arange(len(centers)), centers)
+    return spline(np.arange(len(centers)+1) - 0.5)
+
+
 def calculate_scaling(x, y, sigma_x=None, sigma_y=None, sigma=3, niter=2):
     """
     Determine the optimum value by which to scale inputs so that they match

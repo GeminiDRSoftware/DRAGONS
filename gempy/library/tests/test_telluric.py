@@ -64,7 +64,7 @@ def test_set_pca_without_lsf_params(tspek, resolution):
     tspek.set_pca()
     m_init = models.Const1D(1) + models.Gaussian1D(
         amplitude=-0.05, mean=458.8, stddev=0.1)
-    indices = np.logical_and(tspek.waves>=458.7, tspek.waves<458.9)
+    indices = np.logical_and(tspek.waves>=458.5, tspek.waves<458.9)
     fit_it = fitting.TRFLSQFitter()
     m_final = fit_it(m_init, tspek.waves[indices],
                      tspek.pca.components[0][indices])
