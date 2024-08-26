@@ -1,7 +1,8 @@
-from functools import partial
-
 import numpy as np
-from datetime import datetime
+
+from scipy.interpolate import make_interp_spline
+
+from gempy.library import astrotools as at
 
 """
 Various convolution functions should go here. They can have as many parameters
@@ -19,7 +20,7 @@ def gaussian_constant_r(w0, dw, r):
 
 
 def boxcar(w0, dw, width):
-    """A boxcar of full width width nm"""
+    """A boxcar of full-width width nm"""
     z = abs(dw) <= 0.5 * width
     return z / z.sum()
 
@@ -83,10 +84,11 @@ def convolve(w, y, func, dw, sampling=1):
 
 def resample(wout, w, data):
     """
-    Resample a spectrum to a different output wavelength array. This follows
-    the method of nddops.sum1d() in DRAGONS by taking fractional pixels. There
-    will be uncertain (possibly fatal) edge effects if the input array does
-    not fully cover the wavelength regime of the output array.
+    Resample a spectrum to a different output wavelength array. This is done
+    by interpolating the data with a cubic spline and integrating this between
+    the edges of the pixels. There will be uncertain (possibly fatal) edge
+    effects if the input array does not fully cover the wavelength regime of
+    the output array.
 
     Parameters
     ----------
@@ -101,35 +103,9 @@ def resample(wout, w, data):
     -------
     resampled array of same size as wout
     """
-    dw_in = np.diff(w)
-    if any(dw_in < 0):
-        raise ValueError("Wavelength array must be monotonically increasing")
-
-    if len(data.shape) > 1:
-        output = np.empty((data.shape[0], wout.size), dtype=data.dtype)
-    else:
-        output = np.empty_like(wout, dtype=data.dtype)
-    indices = np.arange(w.size)
-    edges = np.r_[[1.5 * wout[0] - 0.5 * wout[1]],
-                  np.array([wout[:-1], wout[1:]]).mean(axis=0),
-                  [1.5 * wout[-1] - 0.5 * wout[-2]]]
-    dw_out = abs(np.diff(edges))
-
-    # have to do some flipping if wavelengths are in descending order
-    if wout[1] > wout[0]:
-        xedges = np.interp(edges, w, indices)
-    else:
-        xedges = np.interp(edges[::-1], w, indices)
-    for i in range(wout.size):
-        x1, x2 = xedges[i:i+2]
-        ix1 = int(np.floor(x1 + 0.5))
-        ix2 = int(np.ceil(x2 - 0.5))
-        fx1 = ix1 - x1 + 0.5
-        fx2 = x2 - ix2 + 0.5
-        #output[..., i] = (fx1 * data[..., ix1] + data[..., ix1+1:ix2].sum(axis=-1) +
-        #                  fx2 * data[..., ix2]) / (x2 - x1)
-        output[..., i] = (fx1 * data[..., ix1] * dw_in[ix1] +
-                          (data[..., ix1 + 1:ix2] * dw_in[ix1 + 1:ix2]).sum(axis=-1) +
-                          fx2 * data[..., ix2] * dw_in[ix2]) / dw_out[i]
-    return output if wout[1] > wout[0] else output[..., ::-1]
-
+    spline = make_interp_spline(w, data, axis=-1, k=3)
+    spline.extrapolate = False
+    edges = at.calculate_pixel_edges(wout)
+    int_spline = spline.antiderivative()(edges)
+    assert np.all(np.isfinite(int_spline)), "Error in resampling"
+    return np.diff(int_spline) / abs(np.diff(edges))

@@ -379,9 +379,7 @@ class TelluricCorrector(Calibrator):
             if self.reinit_params["apply_model"]:
                 # Calculate the absorption model by integrating the spline
                 # between the wavelength limits of each pixel
-                edges = np.r_[[1.5 * (waves := self.x[i])[0] - 0.5 * waves[1]],
-                              np.array([waves[:-1], waves[1:]]).mean(axis=0),
-                              [1.5 * waves[-1] - 0.5 * waves[-2]]]
+                edges = at.calculate_pixel_edges(self.x[i])
                 dw_out = abs(np.diff(edges))
                 result = abs(np.diff(self.tell_int_splines[i](edges)))
                 self.std_abs[i][:] = result / dw_out

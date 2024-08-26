@@ -146,20 +146,9 @@ class TelluricSpectrum:
         if ndd.mask is None:
             self.nddata.mask = np.zeros_like(ndd.data, dtype=bool)
         self.waves = ndd.wcs(np.arange(ndd.shape[0]))
-        try:
-            # gWCS seems to catch the ValueError exception and return NaNs
-            self.dwaves = np.diff(ndd.wcs(np.arange(-0.5, ndd.shape[0])))
-            assert not np.isnan(self.dwaves).any()
-        except (AssertionError, ValueError):  # Tabular1D
-            # Try to do something sensible
-            self.dwaves = np.empty_like(self.waves)
-            self.dwaves[1:-1] = 0.5 * (self.waves[2:] - self.waves[:-2])
-            self.dwaves[0] = 2 * self.dwaves[1] - self.dwaves[2]
-            self.dwaves[-1] = 2 * self.dwaves[-2] - self.dwaves[-3]
-
         # dwaves is only used as the width of a pixel so should be +ve
-        self.dwaves = abs(self.dwaves)
-        self.absolute_dispersion = abs(np.median(self.dwaves))
+        self.dwaves = abs(np.diff(at.calculate_pixel_edges(self.waves)))
+        self.absolute_dispersion = np.median(self.dwaves)
 
         # Convert units to nm to make life easier
         wave_unit = ndd.wcs.output_frame.unit[0]
