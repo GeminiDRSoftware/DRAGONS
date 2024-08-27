@@ -650,29 +650,19 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
                          turbo_tabs=True, reinit_live=True,
                          )
 
-        # Hacky fix to sort out the widgets in the left panel,
-        # because everything causes an immediate update. The
-        # airmass slides just require perform_fit() to be called,
-        # while the pixel slider and model toggle need reconstruct_points()
-        #def _reconstruct_points(attr, old, new):
-        #    print(datetime.now(), "RECONSTRUCT POINTS HANDLER")
-        #    self.reconstruct_points()
+        def _get_children(obj):
+            # Recursively return all bokeh objects in a layout
+            try:
+                for x in obj.children:
+                    for y in _get_children(x):
+                        yield y
+            except AttributeError:
+                yield obj
 
-        # print("WIDGETS")
-        # for widget in self.reinit_panel.children:
-        #     if isinstance(widget, bm.layouts.Row):
-        #         widget_title = getattr(widget.children[0], 'title', None)
-        #         widget = widget.children[-1]
-        #     else:
-        #         widget_title = getattr(widget, 'title', None)
-        #     if "Airmass" in widget_title:
-        #         pass
-        #     elif isinstance(widget, bm.CheckboxGroup):
-        #         pass
-        #         #widget._callbacks['active'] = []
-        #         #widget.on_change('active', _reconstruct_points)
-        #     else:
-        #         widget.on_change('value', _reconstruct_points)
+        # Change the step of the pixel slider to 0.01 (from 0.1 default)
+        for widget in _get_children(self.reinit_panel):
+            if 'pixels' in getattr(widget, 'title', ''):
+                widget.step = 0.01
 
     def reconstruct_points(self):
         # The Checkbox callback only updates self.extras for an unknown
@@ -688,6 +678,9 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
             index = slice(None)
         data = {'x': self.calibrator.x[index],
                 'y': self.calibrator.y[index],
-                'mask': ['good'] * len(self.calibrator.x[index]),
                 }
+        if index is None:
+            data['mask'] = [['good'] * len(x) for x in data['x']]
+        else:
+            data['mask'] = ['good'] * len(data['x'])
         return data
