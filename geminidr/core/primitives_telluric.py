@@ -494,6 +494,11 @@ class Telluric(Spect):
                 ext.divide(tcal.abs_final[i_model])
                 i_model += 1
 
+                if apply_shift:
+                    ext.wcs.insert_transform(
+                        ext.wcs.input_frame, models.Shift(pixel_shift),
+                        after=True)
+
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
@@ -580,8 +585,6 @@ class LineSpreadFunction(ABC):
         spectra: (..., N) array of convolved spectra
         """
         convolution_list = self.convolutions(**kwargs)
-        print("CONVOLUTIONS")
-        print(convolution_list)
         dw = sum(x[1] for x in convolution_list)
         w1, w2 = waves.min() - 1.05 * dw, waves.max() + 1.05 * dw
         windices = np.logical_and(w > w1, w < w2)
