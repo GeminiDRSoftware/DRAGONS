@@ -146,9 +146,7 @@ pipeline {
             }
         }
 
-        for kv in mapToList(test_structure) {
-            run_test_group(kv.key, kv.value, true)
-        }
+        test_structure.each { k, v -> run_test_group(k, v, true) }
 
     }
 
