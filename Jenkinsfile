@@ -51,7 +51,7 @@ def run_test_group(name, group, in_parallel) {
 }
 
 
-def run_single_test(name, mark, environment) {
+def run_single_test(name, mark, environ) {
     stage(name) {
 
         agent{
@@ -69,7 +69,7 @@ def run_single_test(name, mark, environment) {
             sh '.jenkins/scripts/setup_dirs.sh'
             sh '.jenkins/scripts/setup_dirs.sh'
             echo "Running tests with Python 3.10"
-            sh "tox -e ${environment} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml ${TOX_ARGS}"
+            sh "tox -e ${environ} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml ${TOX_ARGS}"
             echo "Reportint coverage to CodeCov"
             sh "tox -e codecov -- -F ${mark}"
         }
