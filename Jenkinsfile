@@ -66,16 +66,14 @@ def run_single_test(name, mark, environ) {
             TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
             TMPDIR = "${env.WORKSPACE}/.tmp/${mark}/"
         }
-        steps {
-            echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-            checkout scm
-            sh '.jenkins/scripts/setup_dirs.sh'
-            sh '.jenkins/scripts/setup_dirs.sh'
-            echo "Running tests with Python 3.10"
-            sh "tox -e ${environ} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml ${TOX_ARGS}"
-            echo "Reportint coverage to CodeCov"
-            sh "tox -e codecov -- -F ${mark}"
-        }
+        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+        checkout scm
+        sh '.jenkins/scripts/setup_dirs.sh'
+        sh '.jenkins/scripts/setup_dirs.sh'
+        echo "Running tests with Python 3.10"
+        sh "tox -e ${environ} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml ${TOX_ARGS}"
+        echo "Reportint coverage to CodeCov"
+        sh "tox -e codecov -- -F ${mark}"
         post {
             always {
                 junit (
@@ -152,7 +150,7 @@ pipeline {
         }
 
         stage('Test suite') {
-            stages {
+            steps {
                 script {
                     test_structure.each { k, v -> run_test_group(k, v, true) }
                 }
