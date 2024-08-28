@@ -51,7 +51,7 @@ def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
 }*/
 
 def run_test_group(name, group, in_parallel) {
-    //echo "Running test group ${name}"
+    println("Running test group ${name}")
 }
 
 
@@ -153,8 +153,10 @@ pipeline {
         }
 
         stage('Junk') {
-            script {
-                test_structure.each { k, v -> run_test_group(k, v, true) }
+            steps {
+                script {
+                    test_structure.each { k, v -> run_test_group(k, v, true) }
+                }
             }
         }
 
