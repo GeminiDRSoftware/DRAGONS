@@ -152,14 +152,14 @@ pipeline {
         }
 
         stage('Test suite') {
-            script {
-                test_structure.each { k, v -> run_test_group(k, v, true) }
+            stages {
+                script {
+                    test_structure.each { k, v -> run_test_group(k, v, true) }
+                }
             }
         }
 
     }
-
-
 
     post {
         success {
