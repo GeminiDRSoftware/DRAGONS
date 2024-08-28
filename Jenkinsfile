@@ -54,6 +54,7 @@ def run_test_group(name, group, in_parallel) {
 
 
 def run_single_test(name, mark, environ) {
+    println("Running single test ${name} ${mark} ${environ}")
     stage(name) {
 
         agent{
