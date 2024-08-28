@@ -77,7 +77,7 @@ def run_single_test(name, mark, environ) {
             always {
                 junit (
                     allowEmptyResults: true,
-                    testResults: ".tmp/py310-${mark}/reports/*_results.xml"
+                    testResults: ".tmp/${environ}/reports/*_results.xml"
                 )
                 echo "Deleting ${name} workspace ${env.WORKSPACE}"
                 cleanWs()
@@ -148,7 +148,7 @@ pipeline {
             }
         }
 
-        // test_structure.each { k, v -> run_test_group(k, v, true) }
+        test_structure.each { k, v -> run_test_group(k, v, true) }
 
     }
 
