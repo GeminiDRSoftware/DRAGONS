@@ -29,15 +29,17 @@ def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
                      ]
 
 
-/*def run_test_group(name, group, in_parallel) {
+def run_test_group(name, group, in_parallel) {
     if (group.size() > 1) {
         if (in_parallel) {
+            println("PARALLEL ${name}")
             stage(name) {
                 def work = [:]
                 group.each { k, v -> work[k] = { run_test_group(k, v, false) } }
                 parallel work
             }
         } else {
+            println("SERIAL ${name}")
             stage(name) {
                 group.each { k, v -> run_test_group(k, v, true) }
             }
@@ -45,13 +47,9 @@ def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
     } else {
         // There's only one key/value pair here
         // group.each { k, v -> run_single_test(name, k, v) }
-        echo "Running test group ${name}"
+        println("Running test group ${name}")
     }
 
-}*/
-
-def run_test_group(name, group, in_parallel) {
-    println("Running test group ${name}")
 }
 
 
@@ -152,7 +150,7 @@ pipeline {
             }
         }
 
-        stage('Junk') {
+        stage('Test suite') {
             steps {
                 script {
                     test_structure.each { k, v -> run_test_group(k, v, true) }
