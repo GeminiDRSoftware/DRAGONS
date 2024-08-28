@@ -12,6 +12,24 @@
 
 // @Library('dragons_ci@master') _
 
+def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
+                                        "Integration tests": [integration: "py310-integ"],
+                                        "Regression tests": [regression: "py310-reg"],
+                                        ],
+                      "Instrument tests": ["F2 Tests": [f2: "py310-f2"],
+                                           "GSAOI Tests": [gsaoi: "py310-gsaoi"],
+                                           "NIRI Tests": [niri: "py310-niri"],
+                                           "GNIRS Tests": [gnirs, "py310-gnirs"],
+                                           ],
+                      "WaveCal Tests": [wavecal: "py310-wavecal"],
+                      "Slower tests": ["GMOS LS Tests": [gmosls: "py310-gmosls"],
+                                       "Slow Tests": [slow: "py310-slow"],
+                                       "GHOST Tests": [ghost: "py310-ghost"],
+                                       ],
+                     ]
+
+
+
 pipeline {
 
     agent any
