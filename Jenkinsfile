@@ -67,6 +67,10 @@ def run_single_test(name, mark, environ) {
             TMPDIR = "${env.WORKSPACE}/.tmp/${mark}/"
         }
 
+        steps {
+            echo "ECHO: Running test ${name} ${mark} ${environ}"
+        }
+
     }
 }
 
