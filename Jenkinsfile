@@ -52,7 +52,9 @@ def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
 
 def run_test_group(name, group, in_parallel) {
     stage(name) {
-        echo "Running test group ${name}"
+        steps {
+            echo "Running test group ${name}"
+        }
     }
 }
 
