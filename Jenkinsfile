@@ -19,7 +19,7 @@ def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
                       "Instrument tests": ["F2 Tests": [f2: "py310-f2"],
                                            "GSAOI Tests": [gsaoi: "py310-gsaoi"],
                                            "NIRI Tests": [niri: "py310-niri"],
-                                           "GNIRS Tests": [gnirs, "py310-gnirs"],
+                                           "GNIRS Tests": [gnirs: "py310-gnirs"],
                                            ],
                       "WaveCal Tests": [wavecal: "py310-wavecal"],
                       "Slower tests": ["GMOS LS Tests": [gmosls: "py310-gmosls"],
@@ -28,6 +28,69 @@ def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
                                        ],
                      ]
 
+
+def run_test_group(name, group, in_parallel) {
+    if (group.size() > 1) {
+        if (in_parallel) {
+            stage {name} {
+                def work = [:]
+                group.each { k, v -> work[k] = { run_test_group(k, v, false) } }
+                parallel work
+            }
+        } else {
+            stage {name} {
+                group.each { k, v -> run_test_group(k, v, true) }
+            }
+        }
+    } else {
+        run_single_test(name, *(mapToList(group)[0]))
+    }
+
+}
+
+
+def run_single_test(name, mark, environment) {
+    stage(name) {
+
+        agent{
+            label "centos7"
+        }
+        environment {
+            MPLBACKEND = "agg"
+            DRAGONS_TEST_OUT = "${mark}_tests_outputs/"
+            TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+            TMPDIR = "${env.WORKSPACE}/.tmp/${mark}/"
+        }
+        steps {
+            echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+            checkout scm
+            sh '.jenkins/scripts/setup_dirs.sh'
+            sh '.jenkins/scripts/setup_dirs.sh'
+            echo "Running tests with Python 3.10"
+            sh "tox -e ${environment} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml ${TOX_ARGS}"
+            echo "Reportint coverage to CodeCov"
+            sh "tox -e codecov -- -F ${mark}"
+        }
+        post {
+            always {
+                junit (
+                    allowEmptyResults: true,
+                    testResults: ".tmp/py310-${mark}/reports/*_results.xml"
+                )
+                echo "Deleting ${name} workspace ${env.WORKSPACE}"
+                cleanWs()
+                dir("${env.WORKSPACE}@tmp") {
+                  deleteDir()
+                }
+            }
+//          failure {
+//              echo "Archiving tests results for Unit Tests"
+//              sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+//                       archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
+//          }
+        }
+    }
+}
 
 
 pipeline {
