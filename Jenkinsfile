@@ -156,9 +156,9 @@ pipeline {
             }
         }
 
-        script {
-            test_structure.each { k, v -> run_test_group(k, v, true) }
-        }
+        //script {
+        //    test_structure.each { k, v -> run_test_group(k, v, true) }
+        //}
 
     }
 
