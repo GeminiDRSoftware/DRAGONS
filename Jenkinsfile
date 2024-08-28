@@ -146,9 +146,9 @@ pipeline {
             }
         }
 
-        // for kv in mapToList(test_structure) {
-        //     run_test_group(kv.key, kv.value, true)
-        // }
+        for kv in mapToList(test_structure) {
+            run_test_group(kv.key, kv.value, true)
+        }
 
     }
 
