@@ -43,7 +43,8 @@ def run_test_group(name, group, in_parallel) {
             }
         }
     } else {
-        run_single_test(name, *(mapToList(group)[0]))
+        // There's only one key/value pair here
+        group.each { k, v -> run_single_test(name, k, v) }
     }
 
 }
