@@ -32,13 +32,13 @@ def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
 def run_test_group(name, group, in_parallel) {
     if (group.size() > 1) {
         if (in_parallel) {
-            stage {name} {
+            stage(name) {
                 def work = [:]
                 group.each { k, v -> work[k] = { run_test_group(k, v, false) } }
                 parallel work
             }
         } else {
-            stage {name} {
+            stage(name) {
                 group.each { k, v -> run_test_group(k, v, true) }
             }
         }
