@@ -34,13 +34,9 @@ def run_test_group(name, group, in_parallel) {
         if (in_parallel) {
             stage(name) {
                 println("PARALLEL ${name}")
-                steps {
-                    script {
-                        def work = [:]
-                        group.each { k, v -> work[k] = { run_test_group(k, v, false) } }
-                        parallel work
-                    }
-                }
+                def work = [:]
+                group.each { k, v -> work[k] = { run_test_group(k, v, false) } }
+                parallel work
             }
         } else {
             stage(name) {
