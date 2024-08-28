@@ -34,9 +34,13 @@ def run_test_group(name, group, in_parallel) {
         if (in_parallel) {
             stage(name) {
                 println("PARALLEL ${name}")
-                def work = [:]
-                group.each { k, v -> work[k] = { run_test_group(k, v, false) } }
-                parallel work
+                steps {
+                    script {
+                        def work = [:]
+                        group.each { k, v -> work[k] = { run_test_group(k, v, false) } }
+                        parallel work
+                    }
+                }
             }
         } else {
             stage(name) {
@@ -55,6 +59,19 @@ def run_test_group(name, group, in_parallel) {
 
 def run_single_test(name, mark, environ) {
     println("Running single test ${name} ${mark} ${environ}")
+    stage(name) {
+
+        agent{
+            label "centos7"
+        }
+        environment {
+            MPLBACKEND = "agg"
+            DRAGONS_TEST_OUT = "${mark}_tests_outputs/"
+            TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+            TMPDIR = "${env.WORKSPACE}/.tmp/${mark}/"
+        }
+
+    }
 }
 
 
