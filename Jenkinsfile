@@ -66,11 +66,34 @@ def run_single_test(name, mark, environ) {
             TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
             TMPDIR = "${env.WORKSPACE}/.tmp/${mark}/"
         }
-
         steps {
-            echo "ECHO: Running test ${name} ${mark} ${environ}"
+            echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+            checkout scm
+            sh '.jenkins/scripts/setup_dirs.sh'
+            sh '.jenkins/scripts/setup_dirs.sh'
+            echo "Running tests with Python 3.10"
+            sh "tox -e ${environ} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml ${TOX_ARGS}"
+            echo "Reportint coverage to CodeCov"
+            sh "tox -e codecov -- -F ${mark}"
         }
-
+        post {
+            always {
+                junit (
+                    allowEmptyResults: true,
+                    testResults: ".tmp/${environ}/reports/*_results.xml"
+                )
+                echo "Deleting ${name} workspace ${env.WORKSPACE}"
+                cleanWs()
+                dir("${env.WORKSPACE}@tmp") {
+                  deleteDir()
+                }
+            }
+//          failure {
+//              echo "Archiving tests results for Unit Tests"
+//              sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
+//                       archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
+//          }
+        }
     }
 }
 
@@ -129,10 +152,8 @@ pipeline {
         }
 
         stage('Test suite') {
-            steps {
-                script {
-                    test_structure.each { k, v -> run_test_group(k, v, true) }
-                }
+            script {
+                test_structure.each { k, v -> run_test_group(k, v, true) }
             }
         }
 
