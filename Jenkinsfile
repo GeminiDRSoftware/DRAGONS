@@ -67,7 +67,7 @@ def run_single_test(name, mark, environ) {
             TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
             TMPDIR = "${env.WORKSPACE}/.tmp/${mark}/"
         }
-        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME} in ${env.WORKSPACE}"
         checkout scm
         sh '.jenkins/scripts/setup_dirs.sh'
         echo "Running tests with Python 3.10"
@@ -151,6 +151,7 @@ pipeline {
 
         stage('Test suite') {
             steps {
+                echo "Test suite WORKSPACE is ${env.WORKSPACE}"
                 script {
                     test_structure.each { k, v -> run_test_group(k, v, true) }
                 }
