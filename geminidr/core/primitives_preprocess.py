@@ -14,13 +14,10 @@ import astrodata
 import gemini_instruments  # noqa
 import matplotlib.pyplot as plt
 import numpy as np
-from astrodata import NDAstroData
 from astrodata.provenance import add_provenance
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
-from gwcs import coordinate_frames as cf
-from gwcs.utils import CoordinateFrameError
 from scipy.interpolate import interp1d
 from scipy.ndimage import binary_dilation
 
@@ -764,8 +761,7 @@ class Preprocess(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-
-    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=True):
+    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=None):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
@@ -783,7 +779,7 @@ class Preprocess(PrimitivesBASE):
             suffix to be added to output files
         flat: str
             name of flatfield to use
-        do_flat: bool
+        do_cal: str [procmode|force|skip]
             perform flatfield correction?
         """
         log = self.log
@@ -834,6 +830,10 @@ class Preprocess(PrimitivesBASE):
             log.stdinfo(f"{ad.filename}: dividing by the flat "
                          f"{flat.filename}{origin_str}")
             ad.divide(flat)
+
+            # Try to get a slit rectification model from the flat, and, if one
+            # exists, insert it before the pixels-to-world transform.
+            ad = gt.attach_rectification_model(ad, flat, log=self.log)
 
             # Update the header and filename, copying QECORR keyword from flat
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])

@@ -1089,7 +1089,7 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         #ext.wcs = gWCS([(ext.wcs.input_frame, transform),
         #                (output_frame, None)])
         ext.wcs = gWCS(ext.wcs.pipeline[:-2] +
-                       [(ext.wcs.available_frames[-2], transform),
+                       [(ext.wcs.pipeline[-2].frame, transform),
                         (output_frame, None)])
 
 

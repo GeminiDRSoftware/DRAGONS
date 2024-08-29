@@ -1199,7 +1199,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     # Turn into array and remove those too close to the edges
     peaks = np.array(new_peaks)
-    edge = 2.35482 * max_width
+    edge = 2.35482 * np.median(widths)
     peaks = peaks[np.logical_and(peaks > edge, peaks < len(data) - 1 - edge)]
 
     # Remove peaks very close to unilluminated/no-data pixels

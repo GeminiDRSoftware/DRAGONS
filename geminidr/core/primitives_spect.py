@@ -51,8 +51,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from gempy.library import astrotools as at
 from gempy.library import tracing, transform, wavecal
-from gempy.library.astrotools import (array_from_list, transpose_if_needed,
-                                      std_from_pixel_variations)
+from gempy.library.astrotools import array_from_list, std_from_pixel_variations
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter, match_sources, fit_model
@@ -307,7 +306,11 @@ class Spect(Resample):
             Maximum distance from the header offset, for the correlation
             method (arcsec). If the correlation computed offset is too
             different from the header offset, then the latter is used.
-
+        debug_block_resampling: bool
+            prevent resampling in the spatial direction by rounding shifts
+            to integer pixels?
+        debug_plots: bool
+            Plot the cross-correlation results for each extension?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -316,6 +319,7 @@ class Spect(Resample):
         region = slice(*at.parse_user_regions(params["region"])[0])
         tolerance = params["tolerance"]
         integer_offsets = params["debug_block_resampling"]
+        debug_plots = params["debug_plots"]
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least two "
@@ -383,9 +387,13 @@ class Spect(Resample):
                         expected_peak = corr.size // 2 + hdr_offset
                         # It's reasonable to assume that if the source is
                         # significantly narrower than the size of the slit
-                        max_peak_width = min(0.25 * profile.size, 10)
+                        # remember these widths are "sigma", not FWHM!
+                        min_peak_width = (0.05 if ad.is_ao() else 0.25) / ext.pixel_scale()
+                        max_peak_width = min(0.25 * profile.size, 20)
+                        widths = 10**np.arange(np.log10(min_peak_width),
+                                               np.log10(max_peak_width), 0.05)
                         peaks, snrs = tracing.find_wavelet_peaks(
-                            corr, widths=10**np.arange(-0.2, np.log10(max_peak_width), 0.1),
+                            corr, widths=widths,
                             reject_bad=False, pinpoint_index=0)
                         if peaks.size:
                             if tolerance is None:
@@ -409,6 +417,17 @@ class Spect(Resample):
                                             f"{ad.filename}:{ext.id} within tolerance")
                         else:
                             log.warning(f"{ad.filename}:{ext.id} Cross-correlation failed")
+
+                        if debug_plots:
+                            fig, ax = plt.subplots()
+                            print(f"Using {len(widths)} sigma widths {min_peak_width} to {max_peak_width}")
+                            print("Peaks at ", np.asarray(peaks) - corr.size // 2)
+                            print(f"Using {offset}")
+                            ax.plot(np.arange(corr.size) - corr.size // 2, corr, 'b-')
+                            for peak in peaks:
+                                ax.axvline(peak - corr.size // 2, color='r', linestyle='--')
+                            ax.set_title(f"{ad.filename}:{ext.id}")
+                            plt.show()
 
                     elif method == 'offsets':
                         offset = hdr_offset
@@ -460,30 +479,31 @@ class Spect(Resample):
 
         return adinputs
 
-    def attachPinholeModel(self, adinputs=None, **params):
+    def attachPinholeModel(self, adinputs=None, suffix=None, pinhole=None,
+                           do_cal=None):
         """
         Attach slit rectification models from a processed pinhole file.
 
         Parameters
         ----------
-        adinputs : list of :class:`~astrodata.AstroData`
-            Data as 2D spectral images.
         pinhole : str
             Name of pinhole file to use.
         suffix : str
             Suffix to be added to output files.
+        do_cal: str [procmode|force|skip]
+            attach the pinhole mask?
 
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        sfx = params["suffix"]
-        pinhole = params["pinhole"]
+        if do_cal == 'skip':
+            log.warning("Reduction proceeding without a pinhole mask.")
+            return adinputs
 
         # Get a suitable pinhole frame (with slit rectification model) for each
         # science AD
@@ -502,7 +522,7 @@ class Spect(Resample):
             # replacing a previous rectification model from the slit edges.
             if pinhole is None:
                 log.warning(f"{ad.filename}: no pinhole was specified")
-                if 'sq' in self.mode:
+                if 'sq' in self.mode or do_cal == 'force':
                     fail = True
                 adoutputs.append(ad)
                 continue
@@ -511,7 +531,7 @@ class Spect(Resample):
             origin_str = f" (obtained from {origin})" if origin else ""
             log.stdinfo(f"{ad.filename}: using the pinhole mask "
                         f"{pinhole.filename}{origin_str}")
-            ad = _attach_rectification_model(ad, pinhole, log=self.log)
+            ad = gt.attach_rectification_model(ad, pinhole, log=self.log)
             try:
                 ad[0].wcs.get_transform("pixels", "rectified")
             except:
@@ -520,7 +540,7 @@ class Spect(Resample):
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
             adoutputs.append(ad)
             if pinhole.path:
                 add_provenance(ad, pinhole.filename, md5sum(pinhole.path) or "",
@@ -1507,10 +1527,12 @@ class Spect(Resample):
                                     (cf.Frame2D(name="world"), None)])
                 else:
                     # TODO: use insert_frame here
-                    ext.wcs = gWCS([(ext.wcs.input_frame, model),
-                                    (cf.Frame2D(name="distortion_corrected"),
-                                     ext.wcs.pipeline[0][1])]
-                                   + ext.wcs.pipeline[1:])
+                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                         cf.Frame2D(name="distortion_corrected"))
+                    #ext.wcs = gWCS([(ext.wcs.input_frame, model),
+                    #                (cf.Frame2D(name="distortion_corrected"),
+                    #                 ext.wcs.pipeline[0][1])]
+                    #               + ext.wcs.pipeline[1:])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -6050,63 +6072,3 @@ def plot_cosmics(ext, objfit, skyfit, crmask, axes=None):
     if axes is None:
         plt.show()
         plt.close(fig)
-
-
-def _attach_rectification_model(target, source, log=None):
-    """
-    Copy a slit rectification model from source to target file.
-
-    Copies the transform step in an Astropy gWCS object corresponding to a
-    slit rectification model from the given source file to a given target
-    file. The source file must have either one extension, or the same
-    number of extensions as the target, in which case the model in each
-    extension in the source will be copied to the corresponding extension
-    in the target. This function will either add a rectification model if
-    one is not present in the target, or replaces an existing one. If no
-    rectification model is found in the source, logs a warning and returns
-    the target file unmodified.
-
-    Parameters
-    ----------
-    target : `Astrodata object`
-        The file to copy the rectification model to.
-    source : `Astrodata object`
-        The file to get the rectification model from.
-    log : logger instance
-        An optional logger instance to write log messages to.
-
-    Returns
-    -------
-    `Astrodata object`
-        The target file; either modified with the new rectification model
-        in each extenstion, or unmodified if no model was found in `source`.
-
-    """
-    if len(target) != len(source):
-        raise ValueError("Target image and source image have different "
-                         f"number of extensions, {len(target)} vs. "
-                         f"{len(source)}, {target.filename} not modified.")
-
-    for ext_t, ext_s in zip(target, source):
-        # Check that a transform exists, else return `target` unmodified.
-        try:
-            new_transform = ext_s.wcs.get_transform("pixels", "rectified")
-        except CoordinateFrameError:
-            # Silently no-op. If it's important to know if a model has been
-            # attached, run this same check on the output where this function
-            # is called, since the severity of it happening varies by context.
-            # (For longslit, it's not a big deal; for e.g. cross-dispersed it's
-            # a major problem.)
-            return target
-
-        # If a 'rectified' frame exists, just replace the transform.
-        # Otherwise add a new frame with the transform.
-        try:
-            ext_t.wcs.set_transform('pixels', 'rectified', new_transform)
-        except CoordinateFrameError:
-            ext_t.wcs.insert_frame(ext_t.wcs.input_frame, new_transform,
-                                   cf.Frame2D(name='rectified'))
-        log.fullinfo(f"Rectification model found in {source.filename}. "
-                     f"Attaching to {target.filename}")
-
-    return target

@@ -27,6 +27,7 @@ class combineNodAndShuffleBeamsConfig(config.Config):
     subsample = config.RangeField("Subsampling", int, 1, min=1)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
                                      float, 0.001, min=0.)
+    debug_plots = config.Field("Plot the cross-correlation function?", bool, False)
 
 
 class skyCorrectNodAndShuffleConfig(config.Config):
