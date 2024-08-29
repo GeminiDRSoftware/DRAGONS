@@ -80,6 +80,7 @@ def run_single_test(name, mark, environ) {
         sh "tox -e ${environ} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml astrodata geminidr gemini_instruments gempy recipe_system"
         echo "Reportint coverage to CodeCov"
         sh "tox -e codecov -- -F ${mark}"
+        // fails here because "post" isn't allowed within {steps} (from main pipeline)
         post {
             always {
                 junit (
