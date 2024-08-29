@@ -12,6 +12,8 @@
 
 // @Library('dragons_ci@master') _
 
+
+/*
 def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
                                         "Integration tests": [integration: "py310-integ"],
                                         "Regression tests": [regression: "py310-reg"],
@@ -26,6 +28,10 @@ def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
                                        "Slow Tests": [slow: "py310-slow"],
                                        "GHOST Tests": [ghost: "py310-ghost"],
                                        ],
+                     ]
+*/
+
+def test_structure = ["WaveCal Tests": [wavecal: "py310-wavecal"],
                      ]
 
 
@@ -68,30 +74,30 @@ def run_single_test(name, mark, environ) {
             TMPDIR = "${env.WORKSPACE}/.tmp/${mark}/"
         }
         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME} in ${env.WORKSPACE}"
-        //checkout scm
-        //sh '.jenkins/scripts/setup_dirs.sh'
-        //echo "Running tests with Python 3.10"
-        //sh "tox -e ${environ} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml astrodata geminidr gemini_instruments gempy recipe_system"
-        //echo "Reportint coverage to CodeCov"
-        //sh "tox -e codecov -- -F ${mark}"
-        //post {
-        //    always {
-        //        junit (
-        //            allowEmptyResults: true,
-        //            testResults: ".tmp/${environ}/reports/*_results.xml"
-        //        )
-        //        echo "Deleting ${name} workspace ${env.WORKSPACE}"
-        //        cleanWs()
-        //        dir("${env.WORKSPACE}@tmp") {
-        //          deleteDir()
-        //        }
-        //    }
+        checkout scm
+        sh '.jenkins/scripts/setup_dirs.sh'
+        echo "Running tests with Python 3.10"
+        sh "tox -e ${environ} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml astrodata geminidr gemini_instruments gempy recipe_system"
+        echo "Reportint coverage to CodeCov"
+        sh "tox -e codecov -- -F ${mark}"
+        post {
+            always {
+                junit (
+                    allowEmptyResults: true,
+                    testResults: ".tmp/${environ}/reports/*_results.xml"
+                )
+                echo "Deleting ${name} workspace ${env.WORKSPACE}"
+                cleanWs()
+                dir("${env.WORKSPACE}@tmp") {
+                  deleteDir()
+                }
+            }
 //          failure {
 //              echo "Archiving tests results for Unit Tests"
 //              sh "find ${DRAGONS_TEST_OUT} -not -name \\*.bz2 -type f -print0 | xargs -0 -n1 -P4 bzip2"
 //                       archiveArtifacts artifacts: "${DRAGONS_TEST_OUT}/**"
 //          }
-        //}
+        }
     }
 }
 
