@@ -30,6 +30,7 @@ def test_structure = ["Quicker tests": ["Unit tests": [unit: "py310-unit"],
 
 
 def run_test_group(name, group, in_parallel) {
+    // not good enough, needs to check if the first value is a map
     if (group.size() > 1) {
         if (in_parallel) {
             stage(name) {
@@ -58,7 +59,7 @@ def run_single_test(name, mark, environ) {
     stage(name) {
 
         agent{
-            label "centos7"
+            label "master"
         }
         environment {
             MPLBACKEND = "agg"
@@ -69,9 +70,8 @@ def run_single_test(name, mark, environ) {
         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
         checkout scm
         sh '.jenkins/scripts/setup_dirs.sh'
-        sh '.jenkins/scripts/setup_dirs.sh'
         echo "Running tests with Python 3.10"
-        sh "tox -e ${environ} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml ${env.TOX_ARGS}"
+        sh "tox -e ${environ} -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/${mark}_results.xml astrodata geminidr gemini_instruments gempy recipe_system"
         echo "Reportint coverage to CodeCov"
         sh "tox -e codecov -- -F ${mark}"
         post {
