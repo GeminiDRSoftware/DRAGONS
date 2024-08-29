@@ -11,6 +11,13 @@
 # definitions based on a key generated from the 'telescope', '_prism', 'decker',
 # '_grating', and 'camera' attributes of a file.
 slit_info = {
+
+# Not all configurations have data present in the archive - some notes:
+#  * Long camera can be used with the SXD prism, but not the reverse.
+#  * There's no reason to use the 10 l/mm grating with the Short camera.
+#  * Using the Long camera is best with AO, so it was not used while GNIRS was
+#    at Gemini South.
+
 # ------------------------------- Gemini North --------------------------------
 # -------------------------------  Short camera
 # North, Short, 10 l/mm, SXD
@@ -37,6 +44,14 @@ slit_info = {
 # North, Short, 111 l/mm, LXD
 # --------------------------------- Long camera -------------------------------
 # North, Long, 10 l/mm, SXD
+'Gemini-North_SXD_G5536_SCXD_G5531_10/mm_G5532_LongBlue_G5542': (
+    (1, 2, 3, 4),                       # slit ID
+    (103, 455, 683, 884),               # x_ccd
+    (300, 300, 300, 300),               # y_ccd
+    (3, 4, 5, 6),                       # specorder
+    (7.0, 7.0, 7.0, 7.0),               # width_arcsec
+    (140, 140, 140, 140)                # width_pixels
+    ),
 # North, Long, 10 l/mm, LXD
 'Gemini-North_LXD_G5535_LCXD_G5531_10/mm_G5532_LongBlue_G5542': (
     (1, 2, 3, 4, 5, 6),                 # slit ID
@@ -106,6 +121,9 @@ slit_info = {
 # South, Long, 32 l/mm, LXD
 # South, Long, 111 l/mm, SXD
 # South, Long, 111 l/mm, LXD
-
-
 }
+
+# In some cases changes of components mean the generated keys will be different,
+# but the configuration isn't meaningfully affected. Define such cases here.
+slit_info['Gemini-South_SXD_G5509_SC_XD_111/mm_G5505_ShortBlue_G5521']  =\
+    slit_info['Gemini-South_SXD_G5509_SC_XD_111/mm_G5505_ShortBlue_G5513']

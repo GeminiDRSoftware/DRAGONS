@@ -23,6 +23,10 @@ order_info= {
 # North, Short, 111 l/mm, LXD
 # --------------------------------- Long camera -------------------------------
 # North, Long, 10 l/mm, SXD
+'Gemini-North_SXD_G5536_SCXD_G5531_10/mm_G5532_LongBlue_G5542': (
+    (2210, 1660, 1330, 1110),
+    (-0.645, -0.4847, -0.3895, -0.324),
+    ),
 # North, Long, 10 l/mm, LXD
 'Gemini-North_LXD_G5535_LCXD_G5531_10/mm_G5532_LongBlue_G5542': (
     (2210, 1660, 1330, 1110, 950, 830),
