@@ -29,7 +29,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy.ma.extras import _ezclump
 from scipy import optimize
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, correlate
 from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
@@ -1608,6 +1608,34 @@ class Spect(Resample):
 
         fit1d_params = fit_1D.translate_params({"function": "chebyshev",
                                                 "order": spectral_order})
+
+        def find_slits(ad, ystep=50):
+            exp_edges1, exp_edges2 = [], []
+            for ext in ad:
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                data = ext.data if dispaxis == 0 else ext.data.T
+                xcorr = np.sum([correlate(data[y+ystep], data[y], mode="same")
+                                for y in range(data.shape[0]-ystep)], axis=0)
+                # Horizontal shift in / direction per row
+                xshift = (xcorr.argmax() - 0.5 * ext.shape[1-dispaxis]) / ystep
+
+                y, x = np.ogrid[:data.shape[0], :data.shape[1]]
+                xname, yname = ('x_ccd', 'y_ccd') if dispaxis == 0 else ('y_ccd', 'x_ccd')
+                model = np.sum([abs(x - (row[xname] + xshift * (y - row[yname])))
+                                < 0.5 * row['slitlength_pixels'] for row in ad.MDF],
+                               axis=0)
+
+                ycorr = np.sum([correlate(col1, col2, mode="same")
+                                for col1, col2 in zip(data.T, model.T)], axis=0)
+                yshift = ycorr.argmax() - 0.5 * data.shape[0]
+                for row in ad.MDF:
+                    print(row[yname] + yshift,
+                          row[xname] - 0.5 * row['slitlength_pixels'],
+                          row[xname] + 0.5 * row['slitlength_pixels'])
+                    exp_edges1.append(row[xname] - 0.5 * row['slitlength_pixels'])
+                    exp_edges2.append(row[xname] + 0.5 * row['slitlength_pixels'])
+            return int(row[yname] + yshift), exp_edges1, exp_edges2
+
         for ad in adinputs:
 
             try:
@@ -1647,6 +1675,8 @@ class Spect(Resample):
             mdf_edge_guesses = [(a, b) for a, b in zip(exp_edges_1,
                                                        exp_edges_2)]
 
+            cut, exp_edges_1, exp_edges_2 = find_slits(ad)
+
 
             edge1, edge2 = ("left", "right") if ad.dispersion_axis()[0] == 2\
                             else ("bottom", "top")
@@ -1679,10 +1709,10 @@ class Spect(Resample):
                 if observing_mode == 'LS':
                     cut = collapsed[offset:-offset].argmax()
                     cut += offset
-                elif observing_mode == 'XD':
-                    # For XD the illumination would be a combination from all
-                    # orders, so just use a predefined row.
-                    cut = ad.MDF['y_ccd'][0]
+                # elif observing_mode == 'XD':
+                #     # For XD the illumination would be a combination from all
+                #     # orders, so just use a predefined row.
+                #     cut = ad.MDF['y_ccd'][0]
 
                 row_or_col = ['row', 'column'][dispaxis]
                 col_or_row = ['row', 'column'][dispaxis-1]
@@ -3550,8 +3580,6 @@ class Spect(Resample):
             Spectra with unilluminated regions.
         suffix : str
             Suffix to append to the filename.
-        debug_plots : bool, Default: False
-            Create a plot of the mask created.
 
         Returns
         -------
