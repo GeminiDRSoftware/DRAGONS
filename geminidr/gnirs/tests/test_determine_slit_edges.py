@@ -167,7 +167,7 @@ def test_determine_slit_edges_longslit(ad, params, ref_vals):
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad,params,ref_vals", input_pars_xd, indirect=['ad'])
-def test_determine_slit_edges_longslit(ad, params, ref_vals):
+def test_determine_slit_edges_crossdispersed(ad, params, ref_vals):
 
     p = GNIRSCrossDispersed([ad])
     ad_out = p.determineSlitEdges(**params).pop()
