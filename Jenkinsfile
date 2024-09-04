@@ -43,7 +43,7 @@ pipeline {
         MPLBACKEND = "agg"
         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
         // TODO: Remove this when numpy 2 migration is complete
-        NPY_PROMOTION_STATE=weak_and_warn  // Numpy type promotions -> warnings
+        NPY_PROMOTION_STATE="weak_and_warn"  // Numpy type promotions -> warnings
     }
 
     stages {
