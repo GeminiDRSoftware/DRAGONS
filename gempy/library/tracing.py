@@ -441,19 +441,20 @@ class Trace:
         return self.points[0][0]
 
     @property
-    def start_coordinates(self):
+    def start_coordinates(self, reverse=None):
         """Return the starting point in the same coordinate order as the
         input_coordinates() and reference_coordinates()"""
-        return self.starting_point[::-1] if self.reversed else self.starting_point
+        return self.starting_point[::-1] if (
+                reverse or reverse is None and self.reversed) else self.starting_point
 
-    def input_coordinates(self):
-        if self.reversed:
+    def input_coordinates(self, reverse=None):
+        if reverse or reverse is None and self.reversed:
             return [(x, y) for y, x in self.points]
         return [(y, x) for y, x in self.points]
 
-    def reference_coordinates(self, reference_coord=None):
+    def reference_coordinates(self, reference_coord=None, reverse=None):
         xref = reference_coord or self.starting_point[1]
-        if self.reversed:
+        if reverse or reverse is None and self.reversed:
             return [(xref, y) for y, _ in self.points]
         return [(y, xref) for y, _ in self.points]
 
@@ -1287,9 +1288,9 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
 
     Returns
     -------
-    peaks: list of more accurate locations of the peaks that converged
+    peaks: array of more accurate locations of the peaks that converged
           (may be shorter than the input list of peaks)
-    values: list of the fitted peak values (same length as peaks)
+    values: array of the fitted peak values (same length as peaks)
     """
     halfwidth = max(halfwidth, 2)  # Need at least 5 pixels to constrain spline
     int_limits = np.array([-1, -0.5, 0.5, 1])
@@ -1375,7 +1376,7 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
             if keep_bad:
                 final_peaks.append(None)
                 peak_values.append(None)
-    return final_peaks, peak_values
+    return np.asarray(final_peaks), np.asarray(peak_values)
 
 
 def reject_bad_peaks(peaks):
@@ -1714,7 +1715,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     # If tracing vertically-dispersed data the coordinates in the Trace will
     # be in (y, x) order and since we need (x, y) elsewhere we reverse them here.
     traces = [Trace((start, peak),
-                    reverse_returned_coords=True if axis == 0 else False)
+                    reverse_returned_coords=(axis == 0))
               for peak in initial_peaks]
     for direction, step_centers in zip((1, -1), (step_centers_up, step_centers_down)):
         for trace in traces:

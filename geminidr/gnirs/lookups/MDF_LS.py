@@ -9,26 +9,26 @@
 # definitions based on a key generated from the 'telescope', '_grating', and
 # 'camera' attributes of a file.
 
-# columns are x-position of center of slit, width in arcsec, width in pixels
+# columns are x-position of center of slit, length in pixels
 slit_info = {
-    'South_111/mm_LongBlue':  (474, 49, 980),
-    'South_111/mm_LongRed':   (474, 49, 980), # no data in archive
-    'South_111/mm_ShortBlue': (474, 99, 660),
-    'South_111/mm_ShortRed':  (485, 99, 660),
-    'South_32/mm_LongBlue':   (411, 49, 980), # no data in archive
-    'South_32/mm_LongRed':    (411, 49, 980),
-    'South_32/mm_ShortBlue':  (459, 99, 660),
-    'South_32/mm_ShortRed':   (504, 99, 660),
-    'North_111/mm_LongBlue':  (525, 49.75, 980),
-    'North_111/mm_LongRed':   (471.5, 46.65, 935),
-    'North_111/mm_ShortBlue': (474, 99, 660),
-    'North_111/mm_ShortRed':  (480, 99, 660),
-    'North_32/mm_LongBlue':   (520.5, 49.65, 993),
-    'North_32/mm_LongRed':    (492, 49.3, 986),
-    'North_32/mm_ShortBlue':  (496, 99, 660),
-    'North_32/mm_ShortRed':   (504, 99, 660),
-    'North_10/mm_LongBlue':   (541, 49, 980),
-    'North_10/mm_LongRed':    (465, 49, 980)
+    'South_111/mm_LongBlue':  (474, 980),
+    'South_111/mm_LongRed':   (474, 980), # no data in archive
+    'South_111/mm_ShortBlue': (474, 660),
+    'South_111/mm_ShortRed':  (485, 660),
+    'South_32/mm_LongBlue':   (411, 980), # no data in archive
+    'South_32/mm_LongRed':    (411, 980),
+    'South_32/mm_ShortBlue':  (459, 660),
+    'South_32/mm_ShortRed':   (504, 660),
+    'North_111/mm_LongBlue':  (525, 980),
+    'North_111/mm_LongRed':   (471.5, 935),
+    'North_111/mm_ShortBlue': (474, 660),
+    'North_111/mm_ShortRed':  (480, 660),
+    'North_32/mm_LongBlue':   (520.5, 993),
+    'North_32/mm_LongRed':    (492, 986),
+    'North_32/mm_ShortBlue':  (496, 660),
+    'North_32/mm_ShortRed':   (504, 660),
+    'North_10/mm_LongBlue':   (541, 980),
+    'North_10/mm_LongRed':    (465, 980)
     }
 
 # For the LongRed camera on Gemini-North, at least for the 10/mm grating but

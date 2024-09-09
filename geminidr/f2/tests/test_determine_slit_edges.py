@@ -36,7 +36,10 @@ input_pars = [
 @pytest.mark.parametrize("ad,params,ref_vals", input_pars, indirect=['ad'])
 def test_determine_slit_edges_longslit(ad, params, ref_vals):
 
+    # We do this so we don't need to remake the input files if the MDF changes
+    del ad.MDF
     p = F2Longslit([ad])
+    p.addMDF()
     ad_out = p.determineSlitEdges(**params).pop()
 
     for midpoints in ref_vals:
@@ -44,7 +47,6 @@ def test_determine_slit_edges_longslit(ad, params, ref_vals):
         for i, midpoint in enumerate(midpoints):
             model1 = am.table_to_model(ad_out[0].SLITEDGE[2*i])
             model2 = am.table_to_model(ad_out[0].SLITEDGE[2*i+1])
-            print(f"The midpoint at {refrow} is {(model1(refrow) + model2(refrow)) / 2:.1f}")
             assert midpoint == pytest.approx(
                 (model1(refrow) + model2(refrow)) / 2, abs=2.)
 

@@ -24,70 +24,50 @@ slit_info = {
 # North, Short, 10 l/mm, LXD
 # North, Short, 32 l/mm, SXD
 'Gemini-North_SXD_G5536_SCXD_G5531_32/mm_G5533_ShortBlue_G5540': (
-    (1, 2, 3, 4, 5, 6),                 # slit ID
     (290, 400, 477, 550, 624, 707),     # x_ccd
-    (512, 512, 512, 512, 512, 512),     # y_ccd
-    (3, 4, 5, 6, 7, 8),                 # specorder
-    (7.0, 7.0, 7.0, 7.0, 7.0, 7.0),     # width_arcsec
-    (46, 47, 47, 47, 47, 47)            # width_pixels
+    512,     # y_ccd
+    47            # width_pixels
     ),
 # North, Short, 32 l/mm, LXD
 # North, Short, 111 l/mm, SXD
 'Gemini-North_SXD_G5536_SCXD_G5531_111/mm_G5534_ShortBlue_G5540': (
-    (1, 2, 3, 4, 5, 6),                 # slit ID
     (275, 389, 466, 534, 607, 685),     # x_ccd
-    (175, 175, 175, 175, 175, 175),     # y_ccd
-    (3, 4, 5, 6, 7, 8),                 # specorder
-    (5.0, 5.0, 5.0, 5.0, 5.0, 5.0),     # width_arcsec
-    (46, 47, 47, 47, 47, 47)            # width_pixels
+    175,     # y_ccd
+    47            # width_pixels
     ),
 # North, Short, 111 l/mm, LXD
 # --------------------------------- Long camera -------------------------------
 # North, Long, 10 l/mm, SXD
 'Gemini-North_SXD_G5536_SCXD_G5531_10/mm_G5532_LongBlue_G5542': (
-    (1, 2, 3, 4),                       # slit ID
     (103, 455, 683, 884),               # x_ccd
-    (300, 300, 300, 300),               # y_ccd
-    (3, 4, 5, 6),                       # specorder
-    (7.0, 7.0, 7.0, 7.0),               # width_arcsec
-    (140, 140, 140, 140)                # width_pixels
+    300,               # y_ccd
+    140                # width_pixels
     ),
 # North, Long, 10 l/mm, LXD
 'Gemini-North_LXD_G5535_LCXD_G5531_10/mm_G5532_LongBlue_G5542': (
-    (1, 2, 3, 4, 5, 6),                 # slit ID
     (145, 381, 531, 657, 778, 916),     # x_ccd
-    (175, 175, 175, 175, 175, 175),     # y_ccd
-    (3, 4, 5, 6, 7, 8),                 # specorder
-    (5.0, 5.0, 5.0, 5.0, 5.0, 5.0),     # width_arcsec
-    (104, 106, 104, 105, 105, 105)      # width_pixels
+    175,     # y_ccd
+    105      # width_pixels
     ),
 # North, Long, 32 l/mm, SXD
 'Gemini-North_SXD_G5536_SCXD_G5531_32/mm_G5533_LongBlue_G5542': (
-    (1, 2, 3, 4),                       # slit ID
+    # There are only 3 slits in the IRAF MDF; the 4th is mostly off-detector
     (208, 563, 792, 995),               # x_ccd
-    (50, 50, 50, 50),                   # y_ccd
-    (3, 4, 5, 6),                       # specorder
-    (7.0, 7.0, 7.0, 7.0),               # width_arcsec
-    (140, 140, 140, 140)                # width_pixels
+    50,                   # y_ccd
+    140                # width_pixels
     ),
 # North, Long, 32 l/mm, LXD
 'Gemini-North_LXD_G5535_LCXD_G5531_32/mm_G5533_LongBlue_G5542': (
-    (1, 2, 3, 4),                       # slit ID
-    (265, 468, 621, 764),               # x_ccd
-    (50, 50, 50, 50),                   # y_ccd
-    (3, 4, 5, 6),                       # specorder
-    (5.0, 5.0, 5.0, 5.0),               # width_arcsec
-    (100, 100, 100, 100)                # width_pixels
+    (220, 430, 580, 714, 857),               # x_ccd
+    512,                   # y_ccd
+    100                # width_pixels
     ),
 # North, Long, 111 l/mm, SXD
 # North, Long, 111 l/mm, LXD
 'Gemini-North_LXD_G5535_LCXD_G5531_111/mm_G5534_LongBlue_G5542': (
-    (1, 2, 3, 4),                       # slit ID
-    (267, 462, 620, 775),               # x_ccd
-    (256, 256, 256, 256),               # y_ccd
-    (3, 4, 5, 6),                       # specorder
-    (5.0, 5.0, 5.0, 5.0),               # width_arcsec
-    (100, 100, 100, 100)                # width_pixels
+    (198, 410, 560, 699, 850),               # x_ccd
+    512,               # y_ccd
+    100                # width_pixels
     ),
 
 # ------------------------------- Gemini South --------------------------------
@@ -96,22 +76,16 @@ slit_info = {
 # South, Short, 10 l/mm, LXD
 # South, Short, 32 l/mm, SXD
 'Gemini-South_SXD_G5509_SC_XD_32/mm_G5506_ShortBlue_G5521': (
-    (1, 2, 3, 4, 5, 6),                 # slit ID
     (325, 435, 512, 584, 659, 742.5),   # x_ccd
-    (512, 512, 512, 512, 512, 512),     # y_ccd
-    (3, 4, 5, 6, 7, 8),                 # specorder
-    (7.0, 7.0, 7.0, 7.0, 7.0, 7.0),     # width_arcsec
-    (43.8, 42.8, 42.8, 43, 43, 43)      # width_pixels
+    512,     # y_ccd
+    43      # width_pixels
     ),
 # South, Short, 32 l/mm, LXD
 # South, Short, 111 l/mm, SXD
 'Gemini-South_SXD_G5509_SC_XD_111/mm_G5505_ShortBlue_G5513': (
-    (1, 2, 3, 4, 5),                    # slit ID
-    (326, 436, 512, 586, 667),          # x_ccd
-    (512, 512, 512, 512, 512),          # y_ccd
-    (3, 4, 5, 6, 7),                    # specorder
-    (7.8, 7.7, 7.5, 7.0, 7.0),          # width_arcsec
-    (52, 51, 49, 46, 46)                # width_pixels
+    (326, 436, 512, 586, 667, 756),          # x_ccd
+    512,          # y_ccd
+    48                # width_pixels
     ),
 # South, Short, 111 l/mm, LXD
 # --------------------------------- Long camera -------------------------------

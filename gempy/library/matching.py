@@ -387,9 +387,9 @@ class KDTreeFitter(Fitter):
         if 'method' in arg_names:
             kwargs['method'] = self._method
 
-        #if 'minimizer_kwargs' in arg_names:
-        #    kwargs['minimizer_kwargs'] = {'args': farg,
-        #                                  'method': 'Nelder-Mead'}
+        if 'minimizer_kwargs' in arg_names:
+            kwargs['minimizer_kwargs'] = {'args': farg,
+                                          'method': 'Nelder-Mead'}
 
         result = self._opt_method(*args, **kwargs)
 

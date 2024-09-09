@@ -654,7 +654,7 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
         which tracing.trace_lines() performed the trace which produced the
         `in_coords` and `ref_coords` used. (This is in the Python sense, 0 or 1,
         not the value returned by the dispaxis() descriptor).
-    in_coords, ref_coords : iterable
+    in_coords, ref_coords : arrays (2,N) for 2D data
         Lists of coordinates for the model fitting.
     fixed_linear : bool
         Fix the linear term? (For instance, if creating a distortion model for

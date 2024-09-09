@@ -43,49 +43,38 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
     # TODO: handle _fields_overlap()
 
 
-    def addMDF(self, adinputs=None, suffix=None, mdf=None):
+    def addMDF(self, adinputs=None, suffix=None):
         """
         This GNIRS XD-specific implementation of addMDF() calls
         primitives_gemini._addMDF() on each astrodata object to attach the MDFs.
         It also attaches two columns, 'slitlength_arcsec' and 'slitlength_pixels',
         with the length of the slit in arcseconds and pixels, respectively.
 
-        Any parameters given will be passed to primitives_gemini._addMDF().
-
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        mdf: str/None
-            name of MDF to add (None => use default)
         """
-
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
-        mdf_list = mdf or self.caldb.get_calibrations(adinputs,
-                                                      caltype="mask").files
+        for ad in adinputs:
+            mdf_key_parts = ('telescope', '_prism', 'decker',
+                             '_grating', 'camera')
+            mdf_key = "_".join(getattr(ad, desc)()
+                               for desc in mdf_key_parts)
+            x_ccd, y_ccd, length_pix = slit_info[mdf_key]
+            mdf_table = Table([range(1, len(x_ccd) + 1), x_ccd], names=['slit_id', 'x_ccd'])
+            mdf_table['y_ccd'] = y_ccd
+            mdf_table['specorder'] = mdf_table['slit_id'] + 2
+            mdf_table['slitlength_asec'] = length_pix * ad.pixel_scale()
+            mdf_table['slitlength_pixels'] = length_pix
+            ad.MDF = mdf_table
+            log.stdinfo(f"Added MDF table for {ad.filename}")
 
-        columns = ('slit_id', 'x_ccd', 'y_ccd', 'specorder',
-                   'slitlength_asec', 'slitlength_pixels')
-
-        for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
-
-            # GNIRS XD doesn't use mask definition files, so this won't add
-            # anything, but it will check if the file already has an MDF table.
-            self._addMDF(ad, suffix, mdf)
-
-            if hasattr(ad, 'MDF'):
-                log.fullinfo(f"{ad.filename} already has an MDF table.")
-                continue
-            else:
-                mdf_key_parts = ('telescope', '_prism', 'decker',
-                                 '_grating', 'camera')
-                mdf_key = "_".join(getattr(ad, desc)()
-                                   for desc in mdf_key_parts)
-                ad.MDF = Table(slit_info[mdf_key],
-                               names=columns)
-                log.stdinfo(f"Added MDF table for {ad.filename}")
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 

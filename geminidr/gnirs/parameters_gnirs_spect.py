@@ -3,8 +3,11 @@
 from astrodata import AstroData
 from gempy.library import config
 from geminidr.core import parameters_preprocess
-from geminidr.core import parameters_nearIR
-from geminidr.gnirs import parameters_gnirs
+
+
+class addMDFConfig(config.Config):
+    # Does not use MDF files
+    suffix = config.Field("Filename suffix", str, "_mdfAdded", optional=True)
 
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):

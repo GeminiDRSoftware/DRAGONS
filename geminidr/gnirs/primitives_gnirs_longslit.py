@@ -132,7 +132,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
         return adinputs
 
 
-    def addMDF(self, adinputs=None, suffix=None, mdf=None):
+    def addMDF(self, adinputs=None, suffix=None):
         """
         This GNIRS-specific implementation of addMDF() corrects for various
         instances of the GNIRS MDFs not corresponding to reality. It calls
@@ -141,46 +141,32 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
         columns, 'slitlength_arcsec' and 'slitlength_pixels' with the length of
         the slit in arcseconds and pixels, respectively.
 
-        Any parameters given will be passed to primitives_gemini._addMDF().
-
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        mdf: str/None
-            name of MDF to add (None => use default)
         """
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
-        mdf_list = mdf or self.caldb.get_calibrations(adinputs,
-                                                      caltype="mask").files
+        for ad in adinputs:
+            telescope = ad.telescope().split('-')[1] # 'North' or 'South'
+            grating = ad._grating(pretty=True)
+            camera = ad.camera(pretty=True)
+            mdf_key = "_".join((telescope, grating, camera))
+            x_ccd, length_pix = slit_info[mdf_key]
 
-        # This is the conversion factor from arcseconds to millimeters of
-        # slit width for f/16 on an 8m telescope.
-        # arcsec_to_mm = 1.61144
+            mdf_table = Table([[x_ccd], [511.5],
+                               [length_pix*ad.pixel_scale()], [length_pix]],
+                              names=('x_ccd', 'y_ccd',
+                                     'slitlength_arcsec', 'slitlength_pixels'))
+            ad.MDF = mdf_table
+            log.fullinfo(f"Added MDF table for {ad.filename}")
 
-        for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
-
-            # GNIRS LS doesn't use mask definition files, so this won't add
-            # anything, but it will check if the file already has an MDF table.
-            self._addMDF(ad, suffix, mdf)
-
-            if hasattr(ad, 'MDF'):
-                log.fullinfo(f"{ad.filename} already has an MDF table.")
-                continue
-            else:
-                telescope = ad.telescope().split('-')[1] # 'North' or 'South'
-                grating = ad._grating(pretty=True)
-                camera = ad.camera(pretty=True)
-                mdf_key = "_".join((telescope, grating, camera))
-
-                mdf_table = Table(np.array(slit_info[mdf_key]),
-                                  names=('x_ccd', 'slitlength_arcsec',
-                                         'slitlength_pixels'))
-                ad.MDF = mdf_table
-                log.stdinfo(f"Added MDF table for {ad.filename}")
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 

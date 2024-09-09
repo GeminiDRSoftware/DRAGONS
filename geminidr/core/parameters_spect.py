@@ -139,14 +139,12 @@ class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
     spectral_order = config.RangeField("Fitting order in spectral direction",
                                        int, 3, min=1)
-    edges1 = config.ListField("List of left edges of illuminated region(s)",
-                              float, default=None, minLength=1,
-                              optional=True, single=True)
-    edges2 = config.ListField("List of right edges of illuminated region(s)",
-                              float, default=None, minLength=1,
-                              optional=True, single=True)
+    edge1 = config.RangeField("Left/lower edge of illuminated region",
+                              float, None, min=1)
+    edge2 = config.RangeField("Right/upper edge of illuminated region",
+                              float, None, min=1)
     search_radius = config.RangeField("Radius (in pixels) to search for edges",
-                                      float, 60, min=5)
+                                      float, 30, min=5)
     debug_plots = config.Field("Plot fits of edges and print extra information",
                                bool, False)
     debug_max_missed = config.RangeField("Maximum missed steps when tracing edges",
@@ -157,6 +155,13 @@ class determineSlitEdgesConfig(config.Config):
                                    int, 20, min=5)
     debug_nsum = config.RangeField("Columns/rows to sum each step when fitting edges",
                                    int, 10, min=5)
+
+    def validate(self):
+        if hasattr(self, 'edge1'):
+            if [self.edge1, self.edge2].count(None) == 1:
+                raise ValueError("Both edges or neither edges must be specified")
+            if self.edge1 is not self.edge2 <= self.edge1:
+                raise ValueError("Right/upper edge must be greater than left/lower edge")
 
 
 class determineWavelengthSolutionConfig(config.core_1Dfitting_config):

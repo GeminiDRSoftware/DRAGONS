@@ -16,6 +16,7 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True
 
+
 class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
     # GNIRS XD has narrow slits with more curvature than the longslit flats
     # the default values were calibrated to, so adjust some values.
@@ -25,6 +26,8 @@ class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
         self.debug_max_shift = 0.4
         self.debug_step = 10
         self.debug_nsum = 10
+        del self.edge1
+        del self.edge2
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     order = config.RangeField("Order of fitting function", int, 3, min=0,
