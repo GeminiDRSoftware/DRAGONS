@@ -1376,7 +1376,7 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
             if keep_bad:
                 final_peaks.append(None)
                 peak_values.append(None)
-    return np.asarray(final_peaks), np.asarray(peak_values)
+    return final_peaks, peak_values
 
 
 def reject_bad_peaks(peaks):
