@@ -38,10 +38,6 @@ class CrossDispersed(Spect, Preprocess):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_crossdispersed)
 
-    @abstractmethod
-    def _map_spec_order(self, ext_id):
-        pass
-
     def cutSlits(self, adinputs=None, **params):
         """
         Extract slits in images into individual extensions.
@@ -118,7 +114,16 @@ class CrossDispersed(Spect, Preprocess):
                     log.warning("No initial wavelength model found - "
                                 "not updating the wavelength model")
 
-                ext.hdr['SPECORDR'] = self._map_spec_order(ext.id)
+                try:
+                    spec_order = set(ext.SLITEDGE["order"])
+                except KeyError:
+                    if 'XD' in ad.tags:
+                        raise RuntimeError("No order information found in "
+                                           f"SLITEDGE for {ad.filename}")
+                else:
+                    if len(spec_order) > 1:
+                        raise RuntimeError("Multiple orders found in SLITEDGE")
+                    ext.hdr['SPECORDR'] = spec_order.pop()
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -202,7 +207,7 @@ class CrossDispersed(Spect, Preprocess):
                 adout.append(deepcopy(ext.nddata[cut_section.asslice()]))
                 adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
                 adout[-1].SLITEDGE["c0"] -= y1
-                adout[-1].SLITEDGE["slit"] = 0  # reset slit number in ext
+                adout[-1].SLITEDGE["slit"] = 1  # reset slit number in ext
 
                 # Calculate a Chebyshev2D model that represents both slit
                 # edges. This requires coordinates be fed with the *detector*

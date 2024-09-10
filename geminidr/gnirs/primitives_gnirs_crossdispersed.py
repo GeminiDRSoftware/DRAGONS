@@ -31,15 +31,6 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs_crossdispersed)
 
-    def _map_spec_order(self, ext_id):
-        """Return the spectral order corresponding to the given extension ID
-
-        This provides a mapping between extension ID and spectral order; for
-        GNIRS cross-dispersed this is a simple linear relation. The orders that
-        are traced are 3-8.
-        """
-        return ext_id + 2
-
     # TODO: handle _fields_overlap()
 
 
