@@ -1897,8 +1897,8 @@ class Spect(Resample):
                 model_fits = []
                 weights = np.log(np.where(collapsed < 1, 1, collapsed))
                 for slit_num, (mdf_row, *edges) in enumerate(zip(mdf, edges_1, edges_2)):
-                    if slit_name == "order" and 'order' in mdf.colnames:
-                        this_slit = f"order {mdf_row['order']}"
+                    if slit_name == "order" and 'specorder' in mdf.colnames:
+                        this_slit = f"order {mdf_row['specorder']}"
                     else:
                         this_slit = f"{slit_name} {mdf_row['slit_id']}"
                     # Trace the edges individually. This isn't the most
@@ -1972,7 +1972,7 @@ class Spect(Resample):
                             model_fit['slit'] = mdf_row['slit_id']
                             model_fit['edge'] = edge_id
                             try:
-                                model_fit['order'] = mdf_row['order']
+                                model_fit['specorder'] = mdf_row['specorder']
                             except KeyError:
                                 pass
 

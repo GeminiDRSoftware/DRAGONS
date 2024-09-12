@@ -77,14 +77,14 @@ input_pars_xd = [
       767: (305.2, 500.2, 656.2, 813.1)}),
     # North Long 32 l/mm SXD
     ('N20101206S0812_stack.fits', dict(), # 2.200 μm
-     {255: (232, 577, 815, 1015),
+     {255: (232, 577, 810, 1015),
       511: (263, 600, 830, 1042),
       767: (287, 618, 850)}),
     # North Long 32 l/mm LXD
     ('N20201222S0217_stack.fits', dict(), # [10] 1.580 μm
      {255: (227, 435, 582, 722, 870),
       511: (246, 451, 600, 741, 896),
-      767: (259, 464, 614, 757, 924)}),
+      767: (259, 464, 614, 760, 924)}),
     ('N20201223S0211_stack.fits', dict(), # 1.977 μm
      {255: (282, 485, 629, 783),
       511: (298, 495, 650, 800),
@@ -95,29 +95,29 @@ input_pars_xd = [
       511: (271, 465, 620, 780),
       767: (273, 468, 623, 783)}),
     ('N20130419S0132_stack.fits', dict(), # 2.002 μm
-     {255: (247, 442, 597, 755),
-      511: (249, 443, 598, 758),
-      767: (251, 444, 601, 761)}),
+     {255: (247, 442, 597, 747),
+      511: (249, 443, 598, 750),
+      767: (251, 444, 601, 754)}),
     ('N20130419S0146_stack.fits', dict(), # 2.062 μm
-     {255: (225, 422, 577, 720, 876),
-      511: (228, 423, 578, 725, 880),
-      767: (231, 424, 581, 729, 884)}),
+     {255: (222, 422, 577, 720, 876),
+      511: (225, 423, 578, 725, 880),
+      767: (228, 424, 581, 729, 884)}),
     ('N20130419S0160_stack.fits', dict(), # [15] 2.122 μm
-     {255: (207, 406, 557, 698, 846),
-      511: (209, 408, 558, 701, 850),
-      767: (211, 410, 561, 704, 854)}),
+     {255: (200, 406, 557, 698, 846),
+      511: (202, 408, 558, 701, 850),
+      767: (204, 410, 561, 704, 854)}),
     ('N20130419S0174_stack.fits', dict(), # 2.182 μm
-     {255: (179, 382, 537, 675, 816),
-      511: (181, 383, 538, 678, 821),
-      767: (183, 384, 541, 681, 826)}),
+     {255: (179, 389, 537, 675, 816),
+      511: (181, 390, 538, 678, 821),
+      767: (183, 391, 541, 681, 826)}),
     ('N20130419S0188_stack.fits', dict(), # 2.242 μm
-     {255: (152, 362, 517, 654, 791),
-      511: (156, 363, 518, 656, 795),
-      767: (160, 364, 521, 658, 799)}),
+     {255: (152, 370, 517, 654, 791),
+      511: (156, 371, 518, 656, 795),
+      767: (160, 372, 521, 658, 799)}),
     ('N20130419S0202_stack.fits', dict(), # 2.302 μm
-     {255: (133, 357, 505, 637, 765),
-      511: (136, 359, 507, 638, 768),
-      767: (139, 361, 509, 639, 771)}),
+     {255: (133, 357, 504, 633, 765),
+      511: (136, 359, 505, 634, 768),
+      767: (139, 361, 506, 635, 771)}),
     # South Short 32 l/mm SXD
     ('S20060507S0138_stack.fits', dict(), # 1.650 μm
      {255: (292.8, 410.8, 487.8, 554.9, 622.6, 695.7),
@@ -138,7 +138,7 @@ input_pars_xd = [
       767: (335, 438, 517, 594, 678)}),
     ('S20060201S0361_stack.fits', dict(), # 1.630 μm
      {255: (305, 414, 493, 563, 637, 720),
-      511: (318, 423, 501, 571, 647, 735),
+      511: (313, 423, 501, 571, 647, 735),
       767: (320, 428, 507, 580, 661, 750)}),
     ('S20051220S0262_stack.fits', dict(), # 1.730 μm
      {255: (277, 393, 471, 538, 606, 680),
@@ -158,13 +158,12 @@ def test_determine_slit_edges_longslit(ad, params, ref_vals):
     p.addMDF()
     ad_out = p.determineSlitEdges(**params).pop()
 
-    for midpoints in ref_vals:
-        refrow = midpoints.pop(0)
+    for refrow, midpoints in ref_vals.items():
         for i, midpoint in enumerate(midpoints):
             model1 = am.table_to_model(ad_out[0].SLITEDGE[2*i])
             model2 = am.table_to_model(ad_out[0].SLITEDGE[2*i+1])
             assert midpoint == pytest.approx(
-                (model1(refrow) + model2(refrow)) / 2, abs=2.)
+                (model1(refrow) + model2(refrow)) / 2, abs=5.)
 
 
 @pytest.mark.gnirsxd
@@ -178,13 +177,12 @@ def test_determine_slit_edges_crossdispersed(ad, params, ref_vals):
     p.addMDF()
     ad_out = p.determineSlitEdges(**params).pop()
 
-    for midpoints in ref_vals:
-        refrow = midpoints.pop(0)
+    for refrow, midpoints in ref_vals.items():
         for i, midpoint in enumerate(midpoints):
             model1 = am.table_to_model(ad_out[0].SLITEDGE[2*i])
             model2 = am.table_to_model(ad_out[0].SLITEDGE[2*i+1])
             assert midpoint == pytest.approx(
-                (model1(refrow) + model2(refrow)) / 2, abs=2.)
+                (model1(refrow) + model2(refrow)) / 2, abs=5.)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------

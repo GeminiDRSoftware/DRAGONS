@@ -33,7 +33,10 @@ input_pars = [
 @pytest.mark.parametrize("ad,params,ref_vals", input_pars, indirect=['ad'])
 def test_determine_slit_edges_longslit(ad, params, ref_vals):
 
+    # We do this so we don't need to remake the input files if the MDF changes
+    del ad.MDF
     p = NIRILongslit([ad])
+    p.addMDF()
     ad_out = p.determineSlitEdges(**params).pop()
 
     for midpoints in ref_vals:

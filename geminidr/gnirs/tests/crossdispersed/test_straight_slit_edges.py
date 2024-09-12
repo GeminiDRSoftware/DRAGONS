@@ -22,8 +22,12 @@ def test_edges_and_slit_centers(filename, path_to_inputs):
     # Clear the mask so only pixels beyond the edge are masked
     for ext in ad:
         ext.mask = None
+    # Delete the MDF so we can add a new one, in case this primitive
+    # changes, without needing to remake the input files
+    del ad.MDF
     p = GNIRSCrossDispersed([ad])
-    p.determineSlitEdges(search_radius=30)
+    p.addMDF()
+    p.determineSlitEdges()
     p.cutSlits()
     ad_masked = p.maskBeyondSlit().pop()
 
