@@ -17,7 +17,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy import ndimage
 
-import astrodata
+import astrodata, gemini_instruments
 
 import geminidr
 from astropy.modeling import models

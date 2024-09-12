@@ -7,7 +7,7 @@ import os
 import pytest
 
 from astropy.stats import sigma_clipped_stats
-import astrodata
+import astrodata, gemini_instruments
 import geminidr
 from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 from recipe_system.testing import ref_ad_factory
