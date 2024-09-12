@@ -60,7 +60,7 @@ def fitswcs_to_gwcs(input):
     try:
         transform = make_fitswcs_transform(input)
     except Exception as e:
-        return None
+        raise
     outputs = transform.outputs
     try:
         wcs_info = read_wcs_from_header(input.meta['header'])
@@ -468,8 +468,15 @@ def read_wcs_from_header(header):
     crpix = []
     crval = []
     cdelt = []
+    # Handle more than 1 undefined (i.e., not CTYPEi) axis
+    untyped_axes = 0
     for i in range(1, wcsaxes + 1):
-        ctype.append(header.get(f'CTYPE{i}', 'LINEAR'))
+        try:
+            this_ctype = header[f'CTYPE{i}']
+        except KeyError:
+            this_ctype = f"LINEAR{untyped_axes+1 if untyped_axes else ''}"
+            untyped_axes += 1
+        ctype.append(this_ctype)
         cunit.append(header.get(f'CUNIT{i}', None))
         crpix.append(header.get(f'CRPIX{i}', 0.0))
         crval.append(header.get(f'CRVAL{i}', 0.0))
@@ -525,6 +532,7 @@ def get_axes(header):
         wcs_info = header
     else:
         raise TypeError("Expected a FITS Header or a dict.")
+    print("WCS_INFO:", wcs_info)
 
     # Split each CTYPE value at "-" and take the first part.
     # This should represent the coordinate system.
@@ -632,6 +640,11 @@ def make_fitswcs_transform(input):
     all_models = other_models
     if sky_model:
         all_models.append(sky_model)
+
+    for m in all_models:
+        print("-" * 60)
+        print(m)
+        print(m.meta)
 
     # Now arrange the models so the inputs and outputs are in the right places
     all_models.sort(key=lambda m: m.meta['output_axes'][0])
@@ -750,6 +763,8 @@ def fitswcs_other(header, other=None):
     sky_axes, spec_axes, unknown = get_axes(wcs_info)
     #if not sky_axes and len(unknown) == 2:
     #    unknown = []
+
+    print("*", get_axes(wcs_info))
 
     other_models = []
     for ax in spec_axes + unknown:
