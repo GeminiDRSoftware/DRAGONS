@@ -640,6 +640,7 @@ def make_fitswcs_transform(input):
     other_models = fitswcs_other(wcs_info, other=other)
     all_models = other_models
     if sky_model:
+        i = -1
         for i, m in enumerate(all_models):
             m.meta['output_axes'] = [i]
         all_models.append(sky_model)
