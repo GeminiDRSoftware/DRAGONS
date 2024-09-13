@@ -112,8 +112,6 @@ def fitswcs_to_gwcs(input):
                                       axes_names=axes_names, axes_order=axes_order)
         out_frames.append(cel_frame)
 
-    print(out_frames)
-
     out_frame = (out_frames[0] if len(out_frames) == 1
                  else cf.CompositeFrame(out_frames, name='world'))
     return gWCS([(in_frame, transform),
