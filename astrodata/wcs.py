@@ -112,6 +112,8 @@ def fitswcs_to_gwcs(input):
                                       axes_names=axes_names, axes_order=axes_order)
         out_frames.append(cel_frame)
 
+    print(out_frames)
+
     out_frame = (out_frames[0] if len(out_frames) == 1
                  else cf.CompositeFrame(out_frames, name='world'))
     return gWCS([(in_frame, transform),
@@ -638,7 +640,10 @@ def make_fitswcs_transform(input):
     other_models = fitswcs_other(wcs_info, other=other)
     all_models = other_models
     if sky_model:
+        for i, m in enumerate(all_models):
+            m.meta['output_axes'] = [i]
         all_models.append(sky_model)
+        sky_model.meta['output_axes'] = [i+1, i+2]
 
     # Now arrange the models so the inputs and outputs are in the right places
     all_models.sort(key=lambda m: m.meta['output_axes'][0])
