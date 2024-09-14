@@ -963,11 +963,11 @@ def remove_unused_world_axis(ext):
     new_pipeline = []
     for step in reversed(ext.wcs.pipeline):
         frame, transform = step.frame, step.transform
-        if axis < frame.naxes:
-            frame = remove_axis_from_frame(frame, axis)
         if transform is not None:
             if axis < transform.n_outputs:
                 transform, axis = remove_axis_from_model(transform, axis)
+        if axis is not None and axis < frame.naxes:
+            frame = remove_axis_from_frame(frame, axis)
         new_pipeline = [(frame, transform)] + new_pipeline
 
     if axis not in (ndim, None):
