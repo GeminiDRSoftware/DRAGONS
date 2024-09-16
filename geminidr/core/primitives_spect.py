@@ -22,9 +22,8 @@ from astropy.io.ascii.core import InconsistentTableError
 from astropy.io.registry import IORegistryError
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
-from astropy.modeling import Model, fitting, models
-from astropy.stats import sigma_clip
-from astropy.table import Table, hstack, vstack, MaskedColumn
+from astropy.modeling import Model, models
+from astropy.table import Table, vstack, MaskedColumn
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
@@ -41,8 +40,6 @@ from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
-from astrodata.utils import Section
-from geminidr.core.primitives_preprocess import _attach_rectification_model
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
@@ -57,10 +54,9 @@ from gempy.library import astrotools as at
 from gempy.library import peak_finding, tracing, transform, wavecal
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
-from gempy.library.matching import KDTreeFitter, match_sources, fit_model
+from gempy.library.matching import KDTreeFitter
 from gempy.library.spectral import Spek1D
 from gwcs.utils import CoordinateFrameError
-from gempy.library.tracing import pinpoint_peaks
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
 
@@ -4680,7 +4676,6 @@ class Spect(Resample):
                 # determineDistortion
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                 # These are returned sorted by pixel coordinate
-                initial_peaks, _ = tracing.find_wavelet_peaks(
                 initial_peaks, _ = peak_finding.find_wavelet_peaks(
                     data, widths=widths, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
