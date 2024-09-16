@@ -2090,19 +2090,19 @@ class GHOSTSpect(GHOST):
                                  if parent == bundle])
         else:
             # Sort the input arc files by DATE-OBS/UTSTART
-            adinputs.sort(key=lambda x: _construct_datetime(x.phu))
+            adinputs.sort(key=lambda x: x.ut_datetime())
 
             # Cluster the inputs
             for ad in adinputs:
                 try:
-                    ref_time = _construct_datetime(clusters[-1][-1].phu)
+                    ref_time = clusters[-1][-1].ut_datetime()
                 except IndexError:
                     # Start a new cluster
                     clusters.append([ad, ])
                     continue
 
-                if np.abs((_construct_datetime(ad.phu) - ref_time).total_seconds()
-                          < time_delta):
+                if (np.abs(ad.ut_datetime() - ref_time).total_seconds()
+                           < time_delta):
                     # Append to the last cluster
                     clusters[-1].append(ad)
                 else:
@@ -2494,16 +2494,6 @@ class GHOSTSpect(GHOST):
             correct_timing = before == (arc_ad.ut_datetime() < ad.ut_datetime())
             return arc_ad if correct_timing else None
         return None
-
-
-def _construct_datetime(hdr):
-    """
-    Construct a datetime object from DATE-OBS and UTSTART.
-    """
-    return datetime.combine(
-        datetime.strptime(hdr.get('DATE-OBS'), '%Y-%m-%d').date(),
-        datetime.strptime(hdr.get('UTSTART'), '%H:%M:%S').time(),
-    )
 
 
 def plot_extracted_spectra(ad, arm, all_peaks, lines_out, mask=None, nrows=4):
