@@ -60,7 +60,7 @@ def fitswcs_to_gwcs(input):
     try:
         transform = make_fitswcs_transform(input)
     except Exception as e:
-        raise
+        return
     outputs = transform.outputs
     try:
         wcs_info = read_wcs_from_header(input.meta['header'])
