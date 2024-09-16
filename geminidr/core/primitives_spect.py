@@ -380,7 +380,7 @@ class Spect(Resample):
                     # Cross-correlate to find real offset and compare. Only look
                     # for a peak in the range defined by "tolerance".
                     if 'sources' in method:
-                        profile = tracing.stack_slit(ad[iext], section=region)
+                        profile = peak_finding.stack_slit(ad[iext], section=region)
                         corr = np.correlate(ref_profile_dict[iext],
                                             profile, mode='full')
                         expected_peak = corr.size // 2 + hdr_offset
@@ -391,7 +391,7 @@ class Spect(Resample):
                         max_peak_width = min(0.25 * profile.size, 20)
                         widths = 10**np.arange(np.log10(min_peak_width),
                                                np.log10(max_peak_width), 0.05)
-                        peaks, snrs = tracing.find_wavelet_peaks(
+                        peaks, snrs = peak_finding.find_wavelet_peaks(
                             corr, widths=widths,
                             reject_bad=False, pinpoint_index=0)
                         if peaks.size:
@@ -1747,17 +1747,15 @@ class Spect(Resample):
                                             wlen=21)
                 # find_peaks returns integer values, so use pinpoint_peaks
                 # to better describe the positions.
-                positions_1, _ = tracing.pinpoint_peaks(median_slice,
-                                                        peaks=positions_1,
-                                                        halfwidth=cwidth//2)
+                positions_1, _ = peak_finding.pinpoint_peaks(
+                    median_slice, peaks=positions_1, halfwidth=cwidth//2)
                 positions_2, _ = find_peaks(at.boxcar(-median_slice, size=1),
                                             height=min_height,
                                             distance=10,
                                             prominence=min_height,
                                             wlen=21)
-                positions_2, _ = tracing.pinpoint_peaks(-median_slice,
-                                                        peaks=positions_2,
-                                                        halfwidth=cwidth//2)
+                positions_2, _ = peak_finding.pinpoint_peaks(
+                    -median_slice, peaks=positions_2, halfwidth=cwidth//2)
 
                 log.fullinfo('Found edge candidates at:\n'
                              f'  {name_edge1.capitalize()}: {positions_1}\n'
