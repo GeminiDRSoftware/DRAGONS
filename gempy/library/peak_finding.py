@@ -74,7 +74,7 @@ def average_along_slit(ext, center=None, offset_from_center=None,
     slit_polynomial : `Chebyshev1D` model
         Chebyshev polynomial representing the center of the extracted aperture.
     """
-    constant_slit = 'LS' in ext.tags
+    constant_slit = not hasattr(ext, 'SLITEDGE')
     npix, mpix = ext.shape[1 - dispersion_axis], ext.shape[dispersion_axis]
     if nsum is None:
         nsum = npix
@@ -232,9 +232,8 @@ def estimate_peak_width(data, mask=None, boxcar_size=None, nlines=None):
     if boxcar_size:
         data = data - at.boxcar(data, size=boxcar_size)
     num = 10
-    if nlines != None:
-        if nlines > num:
-            num = nlines
+    if nlines is not None and nlines > num:
+        num = nlines
     while len(widths) < num and niters < 100:
         index = np.argmax(data * goodpix)
         with warnings.catch_warnings():  # width=0 warnings
@@ -312,26 +311,34 @@ def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
 
     if prof_mask is not None:
         # Find the first and last unmasked points in the profile
-        l_unmasked = prof_mask.argmin()
-        r_unmasked = prof_mask.size - prof_mask[::-1].argmin() - 1
+        l_ind = prof_mask.argmin()
+        r_ind = prof_mask.size - prof_mask[::-1].argmin() - 1
     else:
         # If no prof_mask, just get the ends of the profile
-        l_unmasked = 0
-        r_unmasked = len(profile) - 1
+        l_ind = 0
+        r_ind = len(profile) - 1
+
+    # If the first of last pixel of the profile has been marked as a maximum,
+    # delete the first or last extremum (a maximum) as it doesn't represent a
+    # peak we can do anything with, physically-speaking.
+    if l_ind in max_locations:
+        extrema = extrema[1:]
+    if r_ind + 1 in max_locations:
+        extrema = extrema[:-1]
 
     # Delete a maximum if there is no minimum between it and the edge,
     # unless it's the ONLY maximum
     if extrema[0][2]:
         if len(extrema) == 1:
-            extrema = [(l_unmasked, profile[l_unmasked], False)] + extrema +\
-                [(r_unmasked, profile[r_unmasked], False)]
+            extrema = [(l_ind, profile[l_ind], False)] + extrema +\
+                [(r_ind, profile[r_ind], False)]
         elif len(extrema) == 2 or not remove_edge_maxima:
-            extrema = [(l_unmasked, profile[l_unmasked], False)] + extrema
+            extrema = [(l_ind, profile[l_ind], False)] + extrema
         else:
             del extrema[0]
     if extrema and extrema[-1][2]:
         if len(extrema) == 2 or not remove_edge_maxima:
-            extrema = extrema + [(r_unmasked, profile[r_unmasked], False)]
+            extrema = extrema + [(r_ind, profile[r_ind], False)]
         else:
             del extrema[-1]
 
@@ -628,7 +635,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     Returns
     -------
-    2D array: peak pixels and SNRs (sorted by pixel value)
+    2D array: peak pixels and SNRs (sorted by pixel coordinate)
     """
     mask = mask.astype(bool) if mask is not None else np.zeros_like(data, dtype=bool)
 
@@ -679,7 +686,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     # Turn into array and remove those too close to the edges
     peaks = np.array(new_peaks)
-    edge = 2.35482 * max_width
+    edge = 2.35482 * np.median(widths)
     peaks = peaks[np.logical_and(peaks > edge, peaks < len(data) - 1 - edge)]
 
     # Remove peaks very close to unilluminated/no-data pixels
