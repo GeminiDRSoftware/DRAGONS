@@ -74,7 +74,7 @@ def average_along_slit(ext, center=None, offset_from_center=None,
     slit_polynomial : `Chebyshev1D` model
         Chebyshev polynomial representing the center of the extracted aperture.
     """
-    constant_slit = not hasattr(ext, 'SLITEDGE')
+    constant_slit = 'LS' in ext.tags
     npix, mpix = ext.shape[1 - dispersion_axis], ext.shape[dispersion_axis]
     if nsum is None:
         nsum = npix
