@@ -208,7 +208,6 @@ class CrossDispersed(Spect, Preprocess):
                 adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
                 adout[-1].SLITEDGE["c0"] -= y1
                 adout[-1].SLITEDGE["slit"] = 1  # reset slit number in ext
-                print(adout[-1].SLITEDGE.colnames)
 
                 # Calculate a Chebyshev2D model that represents both slit
                 # edges. This requires coordinates be fed with the *detector*
