@@ -6,7 +6,7 @@ import numpy as np
 import astrodata, gemini_instruments
 
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
-from gempy.library import tracing
+from gempy.library import peak_finding
 
 
 datasets = [
@@ -44,7 +44,7 @@ def test_adjust_wcs_with_correlation(files, path_to_inputs, caplog):
     # at the same point in the recipe, so we have to find them manually here.
     for ad in adinputs:
         for ext in ad:
-            locations, _, _, _ = tracing.find_apertures(
+            locations, _, _, _ = peak_finding.find_apertures(
                 ext.__class__(nddata=ext.nddata.T, phu=ad.phu, is_single=True),
                 **params)
             centers.append(locations[0])

@@ -19,8 +19,10 @@ cimport cython
 from libc.math cimport sqrt
 from libc.stdlib cimport malloc, free
 
+
 # These functions are used by nddops.py for combining images, especially
 # in the stackFrames() primitive
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -268,6 +270,7 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
 
     return np.asarray(data), np.asarray(mask), np.asarray(variance)
 
+
 ##############################################################
 # The following function is used by the BruteLandscapeFitter()
 
@@ -295,6 +298,7 @@ def landstat(double [:] landscape, int [:] coords, int [:] len_axes,
             sum += landscape[l]
 
     return sum
+
 
 ##############################################################
 # The following code is used by polynomial interpolators
@@ -425,3 +429,23 @@ def polyinterp(float [:] array_in, int [:] inlengths, int ndim,
                 coords[j] = 0
                 if j > 0:
                     coords[j - 1] += 1
+
+
+##############################################################
+# The following function is used by the telluric code
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_unmasked(float [:] waves, float [:] x, int x_size, unsigned short [:] good):
+    """
+    Determine which elements of waves[] are in x[] and returns the good pixels.
+    good[] should be set to an array of zeros (same size as waves) before calling
+    """
+    cdef int i=0, j=0
+    for j in range(x_size):
+        if waves[i] == x[j]:
+            good[i] = 1
+        else:
+            while waves[i] != x[j]:
+                i += 1
+            good[i] = 1

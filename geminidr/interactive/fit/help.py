@@ -350,3 +350,25 @@ SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
 </dd>
 </dl>
 """ + PLOT_TOOLS_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
+
+
+TELLURIC_CORRECT_HELP_TEXT = """
+<h2>Help</h2>
+<p>
+    This primitive calculates the sensitivity of the instrument and the
+    transmission of the atmosphere by fitting a combination of a sensitivity
+    curve and a telluric absorption model to the data. For cross-dispersed
+    data with multiple orders, the sensitivity curves are calculated
+    independently, but a single absorption model applies to all the data.
+</p>
+<h3>Fitting parameters</h3>
+<dl>""" + FIT1D_PARAMETERS_HELP_WITH_GROW + """
+<dt>Regions</dt>
+<dd>
+    Comma-separated list of colon-separated wavelength (not pixel) pairs
+    indicating the region(s) over which the input data should be
+    used. The first and last values can be blank, indicating to
+    continue to the end of the data.
+</dd>
+</dl>
+""" + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT

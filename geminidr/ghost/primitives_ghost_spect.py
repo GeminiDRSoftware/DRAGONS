@@ -21,7 +21,6 @@ from scipy import interpolate
 from scipy.ndimage import measurements
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
-#from pysynphot import observation, spectrum
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from importlib import import_module
@@ -35,7 +34,7 @@ from geminidr.core.primitives_spect import Spect
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
 from gempy.library.nddops import NDStacker
-from gempy.library import tracing, transform, astrotools as at
+from gempy.library import peak_finding, transform, astrotools as at
 from gempy.adlibrary.manipulate_ad import rebin_data
 from gempy.gemini import gemini_tools as gt
 
@@ -1032,7 +1031,7 @@ class GHOSTSpect(GHOST):
                         abs(flux - median_filter(flux, size=2*radius+1)),
                         size=2*radius+1)
                     variance = nmad * nmad
-                peaks = tracing.find_wavelet_peaks(
+                peaks = peak_finding.find_wavelet_peaks(
                     flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
                     variance=variance, min_snr=min_snr, min_sep=5,
                     pinpoint_index=None, reject_bad=False)

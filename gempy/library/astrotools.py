@@ -5,7 +5,6 @@ The astroTools module contains astronomy specific utility functions
 """
 
 import os
-import re
 import numpy as np
 from scipy import interpolate, optimize
 
@@ -13,6 +12,92 @@ from astropy import units as u
 from astropy import stats
 from astropy.coordinates import Angle
 from astropy.modeling import models, fitting
+
+
+class Magnitude:
+    # Wavelength (nm) and AB-Vega offsets
+    # Optical data from Bessell et al. (1998; A&A 333, 231)
+    # MK Filter set info from Tokunaga & Vacca (2005; PASP 117, 421)
+    # except Y from Hewett et al. (2006; MNRAS 367, 454)
+    VEGA_INFO = {
+        "U": (366., 0.768),
+        "B": (438., -0.122),
+        "V": (545., 0.),
+        "R": (641., 0.184),
+        "I": (798., 0.442),
+        "Y": (1030.5, 0.634),
+        "J": (1250., 0.943),
+        "H": (1644., 1.38),
+        "K'": (2121., 1.84),
+        "Ks": (2149., 1.96),
+        "K": (2198., 1.90),
+        "L'": (3754., 2.94),
+        "M'": (4702., 3.40),
+    }
+
+    def __init__(self, valuestr, abmag=False):
+        """
+        Create a magnitude object from a string
+
+        Parameters
+        ----------
+        valuestr: str
+            the string representation of the magnitude
+        """
+        try:
+            self._filter, value = valuestr.split("=")
+            self._value = float(value)
+        except (IndexError, ValueError):
+            raise ValueError("Magnitude string must be of the form 'filter=value'")
+        if self._filter not in self.VEGA_INFO:
+            raise ValueError(f"Filter {self._filter} not recognized")
+        self.abmag = abmag
+
+    def __str__(self):
+        return f"{self._filter}={self._value}"
+
+    def wavelength(self, units=None):
+        """
+        Return the wavelength of the filter. This is a Quantity if no units
+        are specified, otherwise a float.
+
+        Parameters
+        ----------
+        units: astropy.units.Unit/None
+            units of the wavelength
+
+        Returns
+        -------
+        astropy.units.Quantity/float: the wavelength
+        """
+        w = self.VEGA_INFO[self._filter][0] * u.nm
+        if units is None:
+            return w
+        return w.to(units).value
+
+    def flux_density(self, units=None):
+        """
+        Return the flux density of the filter. This is a Quantity if no units
+        are specified, otherwise a float.
+
+        Parameters
+        ----------
+        units: astropy.units.Unit/None
+            units of the flux density
+
+        Returns
+        -------
+        astropy.units.Quantity/float: the flux density
+        """
+        mag = self._value + (0 if self.abmag else self.VEGA_INFO[self._filter][1])
+        fluxden = 3630 * u.Jy / 10 ** (0.4 * mag)
+        if units is None:
+            return fluxden
+        return fluxden.to(units, equivalencies=u.spectral_density(self.wavelength())).value
+
+    def properties(self, wave_units=None, fluxden_units=None):
+        """Convenience method to return wavelength and flux density"""
+        return self.wavelength(units=wave_units), self.flux_density(units=fluxden_units)
 
 
 def array_from_list(list_of_quantities, unit=None):
@@ -62,6 +147,26 @@ def boxcar(data, operation=np.ma.median, size=1):
         boxarray = np.array([operation.reduce(data[max(i-size, 0):i+size+1])
                              for i in range(len(data))])
     return boxarray
+
+
+def calculate_pixel_edges(centers):
+    """
+    Calculate the world coordinates of the edges of pixels in a 1D array,
+    given their centers. This is achieved by fitting a cubic spline to the
+    centers and evaluating it at half-pixel locations.
+
+    Parameters
+    ----------
+    centers: array-like, shape (N,)
+        locations of centers of pixels
+
+    Returns
+    -------
+    edges: array, shape (N+1,)
+        locations of edges of pixels
+    """
+    spline = interpolate.CubicSpline(np.arange(len(centers)), centers)
+    return spline(np.arange(len(centers)+1) - 0.5)
 
 
 def calculate_scaling(x, y, sigma_x=None, sigma_y=None, sigma=3, niter=2):
