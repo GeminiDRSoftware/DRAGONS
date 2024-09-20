@@ -1,13 +1,15 @@
+from functools import partial
+
 import numpy as np
 
 from bokeh import models as bm
-from bokeh.layouts import column
+from bokeh.layouts import column, row
 from bokeh.plotting import figure
 
 from gempy.library import astrotools as at
 
 from geminidr.interactive.interactive import (
-    connect_region_model, FitQuality)
+    connect_region_model, FitQuality, PrimitiveVisualizer)
 from ..controls import Controller
 from .fit1d import (
     Fit1DPanel, Fit1DVisualizer, InfoPanel, fit1d_figure, Fit1DRegionListener,
@@ -245,6 +247,9 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
         This method exists because the data are obtained from the Calibrator
         instead of needing to be passed as parameters, so it just grabs the
         data and calls the parent method.
+
+        It then re-tags points classified as stellar-masked as user-masked so
+        that the user can modify them.
         """
         data = self.visualizer.get_data(self.my_fit_index)
         x = data['x']
@@ -253,6 +258,8 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
         extra_masks = {k: data[f"{k}_mask"] for k in self.extra_mask_names}
         super().populate_bokeh_objects(x, y, None, mask=init_mask,
                                        extra_masks=extra_masks)
+        self.data.data['mask'] = [self.UserMasked.name if m == 'stellar' else m
+                                  for m in self.data.data['mask']]
 
     def evaluate(self, x):
         return self.fit(x)
@@ -542,6 +549,11 @@ class TelluricVisualizer(Fit1DVisualizer):
                 'mask': self.calibrator.mask[index],
                 'stellar_mask': self.calibrator.stellar_mask[index]
                 }
+        # We fold the stellar mask into the user mask
+        #if index is None:
+        #    data['mask'] = [m | sm for m, sm in zip(data['mask'], data['stellar_mask'])]
+        #else:
+        #    data['mask'] |= data['stellar_mask']
         return data
 
     def get_auxiliary_data(self, index):
@@ -663,6 +675,41 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
         for widget in _get_children(self.reinit_panel):
             if 'pixels' in getattr(widget, 'title', ''):
                 widget.step = 0.01
+
+    def visualize(self, doc):
+        # Override the Fit1DVisualizer method to add buttons to the
+        # reinit panel before rendering
+        shiftpixel_row = None
+        for i, widget in enumerate(self.reinit_panel.children):
+            if isinstance(widget, bm.layouts.Row):
+                if 'pixels' in getattr(widget.children[0], 'title', None):
+                    shiftpixel_row = i
+                    break
+
+        def _shift_pixels(row, shift):
+            # Update the pixel shift value in the TextInput widget, which
+            # will update the Slider and the model
+            row.children[-1].value = self.calibrator.reinit_params["pixel_shift"] + shift
+
+        if shiftpixel_row is not None:
+            buttons = []
+            for label, shift in zip(("<<", "<", ">", ">>"),
+                                    (-0.05, -0.01, 0.01, 0.05)):
+                b = bm.Button(label=label+f" {abs(shift):.2f}"
+                              if shift < 0 else f"{shift:.2f} "+label,
+                              sizing_mode="stretch_width",
+                              stylesheets=dragons_styles(),
+                              )
+                b.on_click(partial(_shift_pixels,
+                                   row=self.reinit_panel.children[shiftpixel_row],
+                                   shift=shift))
+                buttons.append(b)
+            reinit_widgets = (self.reinit_panel.children[:shiftpixel_row+1] +
+                              [row(*buttons, sizing_mode="stretch_width")] +
+                              self.reinit_panel.children[shiftpixel_row+1:])
+            self.reinit_panel = column(*reinit_widgets, stylesheets=dragons_styles())
+
+        super().visualize(doc)
 
     def reconstruct_points(self):
         # The Checkbox callback only updates self.extras for an unknown

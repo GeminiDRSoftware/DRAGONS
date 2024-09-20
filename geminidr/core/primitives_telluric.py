@@ -397,6 +397,7 @@ class Telluric(Spect):
 
                     pixel_shift = peak_finding.cross_correlate_subpixels(
                         ext.data, trans, sampling)
+                    pixel_shift = 0.01 * np.round(pixel_shift * 100)
                     if pixel_shift is None:
                         log.warning("Cannot determine cross-correlation"
                                     f"peak for {ext.id}")
