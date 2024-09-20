@@ -69,3 +69,6 @@ order_info= {
 # South, Long, 111 l/mm, SXD
 # South, Long, 111 l/mm, LXD
 }
+
+order_info['Gemini-South_SXD_G5509_SC_XD_111/mm_G5505_ShortBlue_G5521'] =\
+    order_info['Gemini-South_SXD_G5509_SC_XD_111/mm_G5505_ShortBlue_G5513']
