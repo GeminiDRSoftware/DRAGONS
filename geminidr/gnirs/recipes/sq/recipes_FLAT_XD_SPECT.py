@@ -28,19 +28,18 @@ def makeProcessedFlat(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
-    p.selectFromInputs(tags='GCAL_IR_OFF,LAMPOFF', outstream='QHLamp')
-    p.removeFromInputs(tags='GCAL_IR_OFF,LAMPOFF')
+    p.selectFromInputs(tags='GCAL_IR_ON,LAMPON', outstream='IRHigh')
+    p.removeFromInputs(tags='GCAL_IR_ON,LAMPON')
     p.stackFlats(stream='main')
-    p.stackFlats(stream='QHLamp')
+    p.stackFlats(stream='IRHigh')
     # Illumination of all orders from QH lamp is sufficient to find edges.
-    p.determineSlitEdges(stream='QHLamp', search_radius=30)
-    # Transfer SLITEDGE table and slit rectification model (in WCS) back over.
-    p.transferAttribute(stream='main', source='QHLamp', attribute='SLITEDGE')
+    p.determineSlitEdges(stream='main', search_radius=30)
+    p.transferAttribute(stream='IRHigh', source='main', attribute='SLITEDGE')
     p.cutSlits(stream='main')
-    p.cutSlits(stream='QHLamp')
-    # Bring slts 2-6 from QHLamp stream to main (1-indexed).
-    p.combineSlices(from_stream='QHLamp', ids='2,3,4,5,6')
-    p.clearStream(stream='QHLamp')
+    p.cutSlits(stream='IRHigh')
+    # Bring slit 1 from IRHigh stream to main (1-indexed).
+    p.combineSlices(from_stream='IRHigh', ids='1')
+    p.clearStream(stream='IRHigh')
     p.maskBeyondSlit()
     p.normalizeFlat()
     p.thresholdFlatfield()
