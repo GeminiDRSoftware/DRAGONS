@@ -6,6 +6,13 @@
 Release Notes
 *************
 
+V3.2.2
+======
+
+This is bug fix release in support of GHOST.  Unplanned changes in
+header values led to GHOST reduction to fail in some cases.  This release
+offers a more resilient implementation.
+
 V3.2.1
 ======
 

@@ -6,6 +6,14 @@
 Change Logs
 ***********
 
+3.2.2
+=====
+
+**geminidr.ghost**
+
+* Fix an issue where the GHOST reduction would fail if specific header
+  values were not in the expected format.
+
 3.2.1
 =====
 
