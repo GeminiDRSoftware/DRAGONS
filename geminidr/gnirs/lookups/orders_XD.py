@@ -58,7 +58,7 @@ order_info= {
 # South, Short, 111 l/mm, SXD
 'Gemini-South_SXD_G5509_SC_XD_111/mm_G5505_ShortBlue_G5513': (
     (2210, 1660, 1330, 1110, 950),                     # central wavelength, nm
-    (-0.645, -0.479, -0.381, -0.322, -0.273),          # dispersion, nm/pixel
+    (-0.1854, -0.139, -0.1112, -0.0927, -0.08, -0.0694), # dispersion, nm/pixel
     ),
 # South, Short, 111 l/mm, LXD
 # --------------------------------- Long camera -------------------------------
