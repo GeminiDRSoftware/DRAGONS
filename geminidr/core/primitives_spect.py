@@ -2431,10 +2431,13 @@ class Spect(Resample):
                 reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
 
+                label_fn = (lambda i: f"Order {ad.hdr['SPECORDR'][i]}"
+                            if 'XD' in ad.tags else lambda i: f"Slit {i+1}")
+
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
-                    tab_name_fmt=lambda i: f"Slit {i+1}",
+                    tab_name_fmt=label_fn,
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
                     absorption=absorption,
@@ -2446,8 +2449,9 @@ class Spect(Resample):
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 for ext, fit1d, image, other in zip(ad, visualizer.results(),
                                                     visualizer.image, visualizer.meta):
-                    fit1d.image = image
-                    wavecal.update_wcs_with_solution(ext, fit1d, other, config)
+                    if image is not None:
+                        fit1d.image = image
+                        wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
                 for ext, calc_ext in zip(ad, calc_ad):
                     if len(ad) > 1:

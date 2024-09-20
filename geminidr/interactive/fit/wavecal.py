@@ -1201,6 +1201,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
                          help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
                          absorption=absorption)
+        self.can_exit_with_bad_fits = True
+
         #self.widgets["in_vacuo"] = bm.RadioButtonGroup(
         #    labels=["Air", "Vacuum"], active=0)
         #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
@@ -1235,7 +1237,10 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         image = []
         for model in self.fits:
             goodpix = np.array([m != model.UserMasked.name for m in model.mask])
-            image.append(model.y[goodpix])
+            try:
+                image.append(model.y[goodpix])
+            except IndexError:  # a bad fit
+                image.append(None)
         return image
 
     def make_widgets_from_parameters(self, params,
