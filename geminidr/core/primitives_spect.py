@@ -1352,9 +1352,11 @@ class Spect(Resample):
         debug = params["debug"]
 
         orders = (max(spectral_order, 1), spatial_order)
+        fail = False
 
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            nsuccess = 0
             for ext in ad:
                 # Need to handle straight slits (longslit for now) and "curved"
                 # slits (currently cross-dispersed).
@@ -1471,6 +1473,13 @@ class Spect(Resample):
                 # List of traced peak positions
                 in_coords = np.array([coord for trace in traces for
                                       coord in trace.input_coordinates()]).T
+
+                # We can't do anything if we have no coordinates
+                if in_coords.size == 0:
+                    log.warning("Failed to trace any lines for "
+                                f"{ad.filename}:{ext.id}")
+                    continue
+
                 # If there's a "rectified" frame, we want to use the pixel
                 # coordinates in *that* frame as input so that the pixels
                 # -> rectified -> distortion_corrected transform works
@@ -1500,19 +1509,19 @@ class Spect(Resample):
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
 
-                self.viewer.color = "red"
-                spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
-                                             ext.shape[1 - dispaxis] // (step * 10))
-                spectral_coords = np.unique(ref_coords[1 - dispaxis])
-                for coord in spectral_coords:
-                    if dispaxis == 1:
-                        xref = [coord] * len(spatial_coords)
-                        yref = spatial_coords
-                    else:
-                        xref = spatial_coords
-                        yref = [coord] * len(spatial_coords)
-                    mapped_coords = np.array(model.inverse(xref, yref)).T
-                    if debug:
+                if debug:
+                    self.viewer.color = "red"
+                    spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
+                                                ext.shape[1 - dispaxis] // (step * 10))
+                    spectral_coords = np.unique(ref_coords[1 - dispaxis])
+                    for coord in spectral_coords:
+                        if dispaxis == 1:
+                            xref = [coord] * len(spatial_coords)
+                            yref = spatial_coords
+                        else:
+                            xref = spatial_coords
+                            yref = [coord] * len(spatial_coords)
+                        mapped_coords = np.array(model.inverse(xref, yref)).T
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
                 # This is all we need for the new FITCOORD table
@@ -1528,9 +1537,19 @@ class Spect(Resample):
                     ext.wcs.insert_frame(ext.wcs.input_frame, model,
                                          cf.Frame2D(name="distortion_corrected"))
 
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+                nsuccess += 1
+
+            if nsuccess == 0:
+                log.warning(f"No distortion maps created for {ad.filename}")
+                fail = True
+            else:
+                # Timestamp and update the filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=sfx, strip=True)
+
+        if fail:
+            raise RuntimeError("Failed to create a distortion model for any "
+                               "extensions on at least one input file")
 
         return adinputs
 
