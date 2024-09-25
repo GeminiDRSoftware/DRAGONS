@@ -651,11 +651,6 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     arc_weights = linelist.weights
     # This allows suppression of the terminal log output by calling the function
     # with loglevel='debug'.
-    loglevel = "stdinfo" if "verbose" in config else "fullinfo"
-    logit = getattr(log, loglevel)
-
-    # This allows suppression of the terminal log output by calling the function
-    # with loglevel='debug'.
     loglevel = "stdinfo" if config["verbose"] else "fullinfo"
     logit = getattr(log, loglevel)
 
@@ -664,28 +659,34 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     # don't get a better solution. Since we can't create a fit_1D object
     # easily we evaluate the model at all pixels and fit. We do this by
     # fitting increasing orders until we hit the order requested by the
-    # user or reach a low rms.
-    model = init_models[0]
-    domain = model.meta["domain"]
-    x = np.arange(*domain)
-    dw = abs(np.diff(model(domain))[0] / np.diff(domain)[0])
-    order = 0
-    while order < config["order"]:
-        order += 1
-        fit1d = fit_1D(model(x), points=x, function="chebyshev",
-                       order=order, domain=domain,
-                       niter=config["niter"], sigma_lower=config["lsigma"],
-                       sigma_upper=config["hsigma"])
-        if fit1d.rms < 0.001 * dw:
-            break
-    fit1d.image = np.array([])
-    fit1d.points = np.array([])
-    fit1d.mask = np.array([], dtype=bool)
-    initial_model_fit = fit1d
+    # user or reach a low rms. We also construct 1D models for the other
+    # initial_models in the same way.
+    init_models_1d = []
+    for i, model in enumerate(init_models):
+        domain = model.meta["domain"]
+        x = np.arange(*domain)
+        dw = abs(np.diff(model(domain))[0] / np.diff(domain)[0])
+        order = 0
+        while order < config["order"]:
+            order += 1
+            fit1d = fit_1D(model(x), points=x, function="chebyshev",
+                           order=order, domain=domain,
+                           niter=config["niter"], sigma_lower=config["lsigma"],
+                           sigma_upper=config["hsigma"])
+            if fit1d.rms < 0.001 * dw:
+                break
+        fit1d.model.meta["domain"] = domain
+        init_models_1d.append(fit1d.model)
+        if i == 0:
+            fit1d.image = np.array([])
+            fit1d.points = np.array([])
+            fit1d.mask = np.array([], dtype=bool)
+            initial_model_fit = fit1d
 
+    best_fit1d = None
     # Iterate over start position models most rapidly
     for min_lines_per_fit, model, loc_start in cart_product(
-            min_lines, init_models, (0.5, 0.3, 0.7)):
+            min_lines, init_models_1d, (0.5, 0.3, 0.7)):
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
@@ -698,15 +699,19 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         # We perform a regular least-squares fit to all the matches
         # we've made. This allows a high polynomial order to be
         # used without the risk of it going off the rails
-        fit_it = fitting.LinearLSQFitter()
-        if len(matches) > 1:  # need at least 2 lines, right?
+        matched = np.where(matches > -1)[0]
+        fit_it = fitting.TRFLSQFitter()  # bounds not supported by LinearLSQ
+        if len(matched) > 1:  # need at least 2 lines, right?
             m_init = models.Chebyshev1D(degree=config["order"], domain=domain)
             for p, v in zip(model.param_names, model.parameters):
                 if p in m_init.param_names:
                     setattr(m_init, p, v)
-            matched = np.where(matches > -1)
+            bounds_setter(m_init)
+            for i in range(len(matched), m_init.degree + 1):
+                m_init.fixed[f"c{i}"] = True
             matched_peaks = peaks[matched]
             matched_arc_lines = arc_lines[matches[matched]]
+            m_init.linear = False  # to suppress warning
             m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
 
             # We're close to the correct solution, perform a KDFit
@@ -728,7 +733,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 # Probably incoords and outcoords as defined here should go to
                 # the interactive fitter, but cull to derive the "best" model
                 fit1d = fit_1D(outcoords, points=incoords, function="chebyshev",
-                               order=m_final.degree, domain=m_final.domain,
+                               order=min(m_final.degree, len(incoords)-1),
+                               domain=m_final.domain,
                                niter=config["niter"], sigma_lower=config["lsigma"],
                                sigma_upper=config["hsigma"])
                 fit1d.image = np.asarray(outcoords)
@@ -745,15 +751,22 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             min_matches_required = max(config["order"] + min(nfittable_lines // 2, 3), 2)
 
             # Trial and error suggests this criterion works well
-            if fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and nmatched >= min_matches_required:
+            if (fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and
+                    nmatched >= min_matches_required):
                 return fit1d, True
 
             # This seems to be a reasonably ranking for poor models
-            score = fit1d.rms / max(nmatched - config["order"] - 1, np.finfo(float).eps)
-            if score < best_score:
+            if nmatched > config["order"] + 1:
+                score = fit1d.rms / (nmatched - config["order"] - 1)
+            else:
+                score = np.inf
+            if score < best_score or np.isinf(score) and (best_fit1d is None or fit1d.model.degree > best_fit1d.model.degree):
                 best_score = score
+                best_fit1d = fit1d
 
-    return initial_model_fit, False
+    if best_fit1d is None:
+        best_fit1d = initial_model_fit
+    return best_fit1d, True
 
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
@@ -857,6 +870,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                 if p0 - p1 <= p <= p0 + p1:
                     # automatically removes old (bad) match
                     matches[i] = m
+                    #print(f"Pixel {p} => {arc_lines[m]}")
         try:
             p_lo = peaks[matches > -1].min()
         except ValueError:
