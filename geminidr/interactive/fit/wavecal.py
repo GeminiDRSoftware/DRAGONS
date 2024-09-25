@@ -157,12 +157,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
 
+        # Stuff to cope with underconstrained fits
+        these_fitting_parameters = fitting_parameters.copy()
+        these_fitting_parameters["order"] = max(min(fitting_parameters["order"], len(x) - 1), 1)
         if len(x) == 0:
             kwargs["initial_fit"] = meta["fit"]
 
         super().__init__(
             visualizer,
-            fitting_parameters,
+            these_fitting_parameters,
             domain,
             x,
             y,
