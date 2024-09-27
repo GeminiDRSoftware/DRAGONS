@@ -3,6 +3,7 @@
 #
 #                                                        primtives_gmos_spect.py
 # ------------------------------------------------------------------------------
+import gc
 import os
 
 import numpy as np
@@ -191,6 +192,10 @@ class GMOSSpect(Spect, GMOS):
             log.warning("QE correction has been turned off.")
             return adinputs
 
+        taper_locut, taper_losig = 350, 25  # nm
+        taper_hicut, taper_hisig = 1200, 200
+        xgrid = np.array([])
+
         for ad in adinputs:
 
             if ad.phu.get(timestamp_key):
@@ -224,7 +229,9 @@ class GMOSSpect(Spect, GMOS):
                 if index in ccd2_indices:
                     continue
 
-                trans = ext.wcs.forward_transform
+                # astropy issue #17094: need to copy the WCS to avoid
+                # enormous memory usag
+                trans = deepcopy(ext.wcs.forward_transform)
 
                 # There should always be a wavelength model (even if it's an
                 # approximation) as long as the data have been prepared, but
@@ -250,24 +257,25 @@ class GMOSSpect(Spect, GMOS):
                         raise ValueError(msg)
                     log.warning(msg)
 
-                ygrid, xgrid = np.indices(ext.shape)
-                # TODO: want with_units
-                waves = trans(xgrid, ygrid)[0] * u.nm  # Wavelength always axis 0
+                if xgrid.shape != ext.shape:
+                    ygrid, xgrid = np.mgrid[:ext.shape[0], :ext.shape[1]]
+                    taper = np.ones_like(ext.data)
+                    waves = trans(xgrid, ygrid)[0]  # Wavelength always axis 0
+                    qe_correction = np.empty_like(ext.data)
+                else:
+                    taper[:] = 1.
+                    waves[:] = trans(xgrid, ygrid)[0]  # Wavelength always axis 0
 
                 # Tapering required to prevent QE correction from blowing up
                 # at the extremes (remember, this is a ratio, not the actual QE)
                 # We use half-Gaussians to taper
-                taper = np.ones_like(ext.data)
-                taper_locut, taper_losig = 350 * u.nm, 25 * u.nm
-                taper_hicut, taper_hisig = 1200 * u.nm, 200 * u.nm
-                taper[waves < taper_locut] = np.exp(-((waves[waves < taper_locut]
-                                                       - taper_locut) / taper_losig) ** 2)
-                taper[waves > taper_hicut] = np.exp(-((waves[waves > taper_hicut]
-                                                       - taper_hicut) / taper_hisig) ** 2)
+                taper[waves < taper_locut] = np.exp(-((waves
+                                                       - taper_locut) / taper_losig) ** 2)[waves < taper_locut]
+                taper[waves > taper_hicut] = np.exp(-((waves
+                                                       - taper_hicut) / taper_hisig) ** 2)[waves > taper_hicut]
                 try:
-                    qe_correction = (qeModel(ext, use_iraf=use_iraf)(
-                        (waves / u.nm).to(u.dimensionless_unscaled).value).astype(
-                        np.float32) - 1) * taper + 1
+                    qe_correction[:] = (qeModel(ext, use_iraf=use_iraf)(
+                        waves).astype(np.float32) - 1) * taper + 1
                 except TypeError:  # qeModel() returns None
                     msg = f"No QE correction found for {ad.filename} extension {ext.id}"
                     if 'sq' in self.mode:
@@ -278,8 +286,12 @@ class GMOSSpect(Spect, GMOS):
                 log.stdinfo(f"Mean relative QE of extension {ext.id} is "
                             f"{qe_correction.mean():.5f}")
                 if not is_flat:
-                    qe_correction = 1. / qe_correction
+                    qe_correction[:] = 1. / qe_correction
                 ext.multiply(qe_correction)
+
+            # The other half of preventing enormous memory usage
+            del trans
+            gc.collect()
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -505,7 +517,6 @@ class GMOSSpect(Spect, GMOS):
         spectral_order_param = params.pop('spectral_order')
         spatial_order_param = params.pop('spatial_order')
 
-        adoutputs = []
         for ad in adinputs:
             spectral_order = 9 if spectral_order_param is None else spectral_order_param
 
@@ -526,18 +537,18 @@ class GMOSSpect(Spect, GMOS):
             else:  # custom ROI?  Use the generic flagCR default.
                 spatial_order = None
 
+            # flagCosmicRays() modifies in-place so just call it
             if spatial_order is None:
-                adoutputs.extend(super().flagCosmicRays([ad],
-                                         spectral_order=spectral_order,
-                                         **params))
+                super().flagCosmicRays([ad],
+                                       spectral_order=spectral_order,
+                                       **params)
             else:
-                adoutputs.extend(super().flagCosmicRays([ad],
-                                         spectral_order=spectral_order,
-                                         spatial_order=spatial_order,
-                                         **params))
+                super().flagCosmicRays([ad],
+                                       spectral_order=spectral_order,
+                                       spatial_order=spatial_order,
+                                       **params)
 
-        # ?? delete adinputs ??
-        return adoutputs
+        return adinputs
 
     def standardizeWCS(self, adinputs=None, suffix=None):
         """

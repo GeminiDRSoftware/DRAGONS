@@ -5,6 +5,7 @@
 #
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
+import gc
 import os
 import re
 import warnings
@@ -1895,11 +1896,13 @@ class Spect(Resample):
         log.fullinfo(f"  sigfrac: {params['sigfrac']}\m")
 
         for ad in adinputs:
-            is_in_adu = ad[0].is_in_adu()
-            if not is_in_adu:
-                # astroscrappy takes data in adu
-                for ext in ad:
-                    ext.divide(ext.gain())
+            # For data in electrons, gain() returns 1.0
+            # TODO: It's unclear *why* astroscrappy needs data in ADU
+            #is_in_adu = ad[0].is_in_adu()
+            #if not is_in_adu:
+            #    # astroscrappy takes data in adu
+            #    for ext in ad:
+            #        ext.divide(ext.gain())
 
             # tile extensions by CCD to limit the number of edges
             array_info = gt.array_information(ad)
@@ -1928,14 +1931,14 @@ class Spect(Resample):
                 if ext.mask is not None:
                     data = np.ma.array(ext.data, mask=ext.mask != 0)
                     mask = (ext.mask & bitmask) > 0
-                    weights = (ext.mask == 0).astype(int)
+                    weights = (ext.mask == 0).astype(np.float32)
                 else:
                     data = ext.data
                     mask = None
                     weights = None
 
                 # Set up the background and models to be blank initially:
-                background = np.zeros(ext.shape)
+                background = np.zeros_like(ext.data)
 
                 # Fit the object spectrum:
                 if bkgmodel in ('both', 'object'):
@@ -1945,16 +1948,15 @@ class Spect(Resample):
                                     order=spectral_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                    background += objfit
+                    # If fitting both models, subtracting objfit from the data
+                    # ensures sky background isn't fitted twice:
+                    skyfit_input = data - objfit
+                    if debug:
+                        ext.OBJFIT = objfit.copy()
                 else:
-                    objfit = np.zeros(ext.shape)
-                if debug:
-                    ext.OBJFIT = objfit.copy()
-
-                background += objfit
-
-                # If fitting both models, subtracting objfit from the data
-                # ensures sky background isn't fitted twice:
-                skyfit_input = data - objfit
+                    objfit = None
+                    skyfit_input = data
 
                 # Fit sky lines:
                 if bkgmodel in('both', 'skyline'):
@@ -1964,12 +1966,11 @@ class Spect(Resample):
                                     order=spatial_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                    background += skyfit
+                    if debug:
+                        ext.SKYFIT = skyfit
                 else:
-                    skyfit = np.zeros(ext.shape)
-                if debug:
-                    ext.SKYFIT = skyfit
-
-                background += skyfit
+                    skyfit = None
 
                 # Run astroscrappy's detect_cosmics. We use the variance array
                 # because it takes into account the different read noises if
@@ -1981,6 +1982,7 @@ class Spect(Resample):
                                            gain=ext.gain(),
                                            satlevel=ext.saturation_level(),
                                            **params)
+                del _
 
                 # Set the cosmic_ray flags, and create the mask if needed
                 if ext.mask is None:
@@ -1994,7 +1996,8 @@ class Spect(Resample):
                 plot_cosmics(ext, objfit, skyfit, crmask, axes=axes[:, i])
 
                 # Free up memory.
-                skyfit, objfit, skyfit_input = None, None, None
+                del crmask, skyfit, objfit, skyfit_input
+                gc.collect()
 
             # Save the figure
             figy, figx = ext.data.shape
@@ -2024,14 +2027,22 @@ class Spect(Resample):
                         ext.mask = ext_tiled.mask[slice_]
 
                         if debug:
-                            ext.OBJFIT = ext_tiled.OBJFIT[slice_]
-                            ext.SKYFIT = ext_tiled.SKYFIT[slice_]
+                            try:
+                                ext.OBJFIT = ext_tiled.OBJFIT[slice_]
+                            except AttributeError:
+                                pass
+                            try:
+                                ext.SKYFIT = ext_tiled.SKYFIT[slice_]
+                            except AttributeError:
+                                pass
 
             # convert back to electron if needed
-            if not is_in_adu:
-                for ext in ad:
-                    ext.multiply(ext.gain())
+            #if not is_in_adu:
+            #    for ext in ad:
+            #        ext.multiply(ext.gain())
 
+            del ad_tiled
+            gc.collect()
             ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
@@ -3763,11 +3774,14 @@ def plot_cosmics(ext, objfit, skyfit, crmask, axes=None):
                                  sharey=True,
                                  tight_layout=True)
     imgs = (ext.data, objfit, skyfit,
-            ext.data - (objfit + skyfit), crmask)
+            ext.data - ((0 if objfit is None else objfit) +
+                        (0 if skyfit is None else skyfit)), crmask)
     titles = ('data', 'object fit', 'sky fit', 'residual', 'crmask')
     mask = ext.mask & (DQ.max ^ DQ.cosmic_ray)
 
     for ax, data, title in zip(axes, imgs, titles):
+        if data is None:
+            data = np.zeros_like(ext.data)
         if title != 'crmask':
             cmap = 'Greys_r'
             interval = ZScaleInterval()
