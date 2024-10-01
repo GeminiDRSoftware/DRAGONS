@@ -17,6 +17,10 @@ order_info= {
 # North, Short, 10 l/mm, SXD
 # North, Short, 10 l/mm, LXD
 # North, Short, 32 l/mm, SXD
+'Gemini-North_SXD_G5536_SCXD_G5531_32/mm_G5533_ShortBlue_G5540': (
+    (2210, 1660, 1330, 1110, 950, 830),
+    (-0.645, -0.479, -0.381, -0.322, -0.273, -0.244),
+    ),
 # North, Short, 32 l/mm, LXD
 # North, Short, 111 l/mm, SXD
 'Gemini-North_SXD_G5536_SCXD_G5531_111/mm_G5534_ShortBlue_G5540': (
@@ -36,9 +40,9 @@ order_info= {
     (-0.64504, -0.4847, -0.3895, -0.322, -0.273, -0.244),
     ),
 # North, Long, 32 l/mm, SXD
-'Gemini-North_SXD_G5536_SCXD_G5531_32/mm_G5533_ShortBlue_G5540': (
-    (2210, 1660, 1330, 1110, 950, 830),
-    (-0.645, -0.479, -0.381, -0.322, -0.273, -0.244),
+'Gemini-North_SXD_G5536_SCXD_G5531_32/mm_G5533_LongBlue_G5542': (
+    (2210, 1660, 1330, 1110),
+    (-0.1853, -0.13882, -0.11117, -0.09242),
     ),
 # North, Long, 32 l/mm, LXD
 'Gemini-North_LXD_G5535_LCXD_G5531_32/mm_G5533_LongBlue_G5542': (
