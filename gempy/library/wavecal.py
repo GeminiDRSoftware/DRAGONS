@@ -700,22 +700,24 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         # we've made. This allows a high polynomial order to be
         # used without the risk of it going off the rails
         matched = np.where(matches > -1)[0]
-        fit_it = fitting.TRFLSQFitter()  # bounds not supported by LinearLSQ
+        fit_it = fitting.LinearLSQFitter()
         if len(matched) > 1:  # need at least 2 lines, right?
-            m_init = models.Chebyshev1D(degree=config["order"], domain=domain)
+            m_init = models.Chebyshev1D(degree=min(config["order"], len(matched)-1),
+                                        domain=domain)
             for p, v in zip(model.param_names, model.parameters):
                 if p in m_init.param_names:
                     setattr(m_init, p, v)
-            bounds_setter(m_init)
-            for i in range(len(matched), m_init.degree + 1):
-                m_init.fixed[f"c{i}"] = True
+            #bounds_setter(m_init)
+            #for i in range(len(matched), m_init.degree + 1):
+            #    m_init.fixed[f"c{i}"] = True
             matched_peaks = peaks[matched]
             matched_arc_lines = arc_lines[matches[matched]]
-            m_init.linear = False  # to suppress warning
             m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
 
             # We're close to the correct solution, perform a KDFit
-            m_init = m_final.copy()
+            m_init = models.Chebyshev1D(degree=config["order"], domain=domain)
+            for p, v in zip(m_final.param_names, m_final.parameters):
+                setattr(m_init, p, v)
             dw = abs(np.diff(m_final(m_final.domain))[0] / np.diff(m_final.domain)[0])
             fit_it = matching.KDTreeFitter(sigma=2 * abs(dw), maxsig=5,
                                            k=k, method='Nelder-Mead')
@@ -751,8 +753,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             min_matches_required = max(config["order"] + min(nfittable_lines // 2, 3), 2)
 
             # Trial and error suggests this criterion works well
-            if (fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and
-                    nmatched >= min_matches_required):
+            if fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and nmatched >= min_matches_required:
                 return fit1d, True
 
             # This seems to be a reasonably ranking for poor models
