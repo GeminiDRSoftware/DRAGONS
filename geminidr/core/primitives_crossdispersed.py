@@ -235,7 +235,9 @@ class CrossDispersed(Spect, Preprocess):
                 xcenter = 0.5 * (ext.shape[dispaxis] - 1)
                 y1ref = np.full_like(ypixels1, padding)[ypix1_on]
                 y2ref = np.full_like(ypixels2, model2(xcenter) - model1(xcenter) + padding)[ypix2_on]
-                log.stdinfo(f"Slit at {xcenter} from {y1ref[0]} to {y2ref[0]}")
+                log.debug(f"Slit at {xcenter} from "
+                          f"{y1ref[0] if len(y1ref) else 'edge'} to "
+                          f"{y2ref[0] if len(y2ref) else 'edge'}")
 
                 if dispaxis == 0:
                     incoords = [np.r_[ypixels1[ypix1_on] - y1, ypixels2[ypix2_on] - y1],
