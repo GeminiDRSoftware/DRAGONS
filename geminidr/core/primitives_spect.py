@@ -1908,15 +1908,6 @@ class Spect(Resample):
             array_info = gt.array_information(ad)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
 
-            # Create a modified version of the debug plot for inspection
-            fig, axes = plt.subplots(5, 3, sharex=True, sharey=True,
-                                     tight_layout=True)
-            if debug:
-                # This counter-intuitive step prevents the empty figure from
-                # being shown by calls to pyplot.show(), but still allows it to
-                # be drawn to and modified (somehow...).
-                plt.close(fig)
-
             for i, ext in enumerate(ad_tiled):
                 dispaxis = 2 - ext.dispersion_axis()
 
@@ -1953,9 +1944,9 @@ class Spect(Resample):
                     # ensures sky background isn't fitted twice:
                     skyfit_input = data - objfit
                     if debug:
-                        ext.OBJFIT = objfit.copy()
+                        ext.OBJFIT = objfit
+                    del objfit
                 else:
-                    objfit = None
                     skyfit_input = data
 
                 # Fit sky lines:
@@ -1969,8 +1960,7 @@ class Spect(Resample):
                     background += skyfit
                     if debug:
                         ext.SKYFIT = skyfit
-                else:
-                    skyfit = None
+                    del skyfit
 
                 # Run astroscrappy's detect_cosmics. We use the variance array
                 # because it takes into account the different read noises if
@@ -1990,26 +1980,31 @@ class Spect(Resample):
                 else:
                     ext.mask[crmask] = DQ.cosmic_ray
 
-                if debug:
-                    plot_cosmics(ext, objfit, skyfit, crmask)
-
-                plot_cosmics(ext, objfit, skyfit, crmask, axes=axes[:, i])
-
                 # Free up memory.
-                del crmask, skyfit, objfit, skyfit_input
+                del crmask, skyfit_input
                 gc.collect()
 
-            # Save the figure
-            figy, figx = ext.data.shape
-            fig.set_size_inches(figx*3/300, figy*5/300)
-            figname, _ = os.path.splitext(ad.orig_filename)
-            figname = figname + '_flagCosmicRays.pdf'
-            # This context manager prevents two harmless RuntimeWarnings from
-            # image normalization if bkgmodel != 'both' (due to empty panels)
-            # which we don't want to worry users with.
-            with np.errstate(divide='ignore', invalid='ignore'):
-                fig.savefig(figname, bbox_inches='tight', dpi=300)
-            plt.close(fig)
+            if debug:
+                fig, axes = plt.subplots(5, 3, sharex=True, sharey=True,
+                                         tight_layout=True)
+                for i, ext in enumerate(ad_tiled):
+                        plot_cosmics(ext, getattr(ext, "OBJFIT", None),
+                                     getattr(ext, "SKYFIT", None),
+                                     ext.mask & DQ.cosmic_ray, axes=axes[:, i])
+
+                # Save the figure
+                figy, figx = ext.data.shape
+                fig.set_size_inches(figx*3/300, figy*5/300)
+                figname, _ = os.path.splitext(ad.orig_filename)
+                figname = figname + '_flagCosmicRays.pdf'
+                # This context manager prevents two harmless RuntimeWarnings from
+                # image normalization if bkgmodel != 'both' (due to empty panels)
+                # which we don't want to worry users with.
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    fig.savefig(figname, bbox_inches='tight', dpi=300)
+                plt.close(fig)
+                del fig
+                gc.collect()
 
             # Set flags in the original (un-tiled) ad
             if ad_tiled is not ad:
@@ -2026,15 +2021,14 @@ class Spect(Resample):
 
                         ext.mask = ext_tiled.mask[slice_]
 
-                        if debug:
-                            try:
-                                ext.OBJFIT = ext_tiled.OBJFIT[slice_]
-                            except AttributeError:
-                                pass
-                            try:
-                                ext.SKYFIT = ext_tiled.SKYFIT[slice_]
-                            except AttributeError:
-                                pass
+                        try:
+                            ext.OBJFIT = ext_tiled.OBJFIT[slice_]
+                        except AttributeError:
+                            pass
+                        try:
+                            ext.SKYFIT = ext_tiled.SKYFIT[slice_]
+                        except AttributeError:
+                            pass
 
             # convert back to electron if needed
             #if not is_in_adu:
