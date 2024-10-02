@@ -28,7 +28,7 @@ rtdurl = 'v'+release
 #release = '3.2.x'
 #rtdurl = 'release-'+release
 
-today = 'September 2024'
+today = 'October 2024'
 
 # -- General configuration ---------------------------------------------------
 
