@@ -746,10 +746,14 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             nmatched = np.sum(~fit1d.mask)
             logit(f"{filename} {repr(fit1d.model)} {nmatched} {fit1d.rms}")
 
+            # Wavelength solution models need to be monotonic. Make that check.
+            waves = fit1d.evaluate(np.arange(len_data))
+            if not (np.all(np.diff(waves) > 0) or np.all(np.diff(waves) < 0)):
+                continue
+
             # Calculate how many lines *could* be fit. We require a constrained
             # fit but also that it fits some reasonable number of lines
-            wmin, wmax = sorted(fit1d.evaluate(points=(0, len_data)))
-            nfittable_lines = np.sum(np.logical_and(arc_lines > wmin, arc_lines < wmax))
+            nfittable_lines = np.sum(np.logical_and(arc_lines > waves.min(), arc_lines < waves.max()))
             min_matches_required = max(config["order"] + min(nfittable_lines // 2, 3), 2)
 
             # Trial and error suggests this criterion works well
