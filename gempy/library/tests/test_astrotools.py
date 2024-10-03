@@ -120,6 +120,16 @@ def test_std_from_pixel_variations(separation, subtract, limit):
         data, separation=separation, subtract_linear_fits=subtract) - 1) < limit
 
 
+@pytest.mark.parametrize("data,reference",
+                         [([15.2, 15.6, 14.9, 25.4], np.array([False, False, False, True])),
+                          ([0, 17, 0, 0], np.array([False, True, False, False])),
+                          ([0, 0, 0, 0], np.array([False, False, False, False])),
+                          ([1, 1.1, 1.1, 1], np.array([False, False, False, False]))])
+def test_find_outliers(data, reference):
+    # Test that it works correctly when some values are repeated.
+    assert np.allclose(at.find_outliers(data), reference)
+
+
 def test_get_corners_2d():
     corners = at.get_corners((300, 500))
     assert corners == [(0, 0), (299, 0), (0, 499), (299, 499)]
