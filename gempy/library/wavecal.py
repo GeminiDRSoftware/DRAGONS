@@ -683,10 +683,15 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             fit1d.mask = np.array([], dtype=bool)
             initial_model_fit = fit1d
 
+        print("MAKING INIT MODELS")
+        print(model)
+        print(fit1d.evaluate([0, 1021]))
+
     best_fit1d = None
     # Iterate over start position models most rapidly
     for min_lines_per_fit, model, loc_start in cart_product(
             min_lines, init_models_1d, (0.5, 0.3, 0.7)):
+        print("STARTING", model.parameters, loc_start)
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
@@ -713,6 +718,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             matched_peaks = peaks[matched]
             matched_arc_lines = arc_lines[matches[matched]]
             m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
+            for p, l in zip(matched_peaks, matched_arc_lines):
+                print(f"{p:.2f} => {l:.2f}")
 
             # We're close to the correct solution, perform a KDFit
             m_init = models.Chebyshev1D(degree=config["order"], domain=domain)
@@ -722,7 +729,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             fit_it = matching.KDTreeFitter(sigma=2 * abs(dw), maxsig=5,
                                            k=k, method='Nelder-Mead')
             m_final = fit_it(m_init, peaks, arc_lines, in_weights=peak_weights,
-                             ref_weights=arc_weights, matches=matches)
+                             ref_weights=arc_weights)
             logit(f'{repr(m_final)} {fit_it.statistic}')
 
             # And then recalculate the matches
@@ -758,6 +765,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
             # Trial and error suggests this criterion works well
             if fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and nmatched >= min_matches_required:
+                print("RETURNING", fit1d.model.parameters)
                 return fit1d, True
 
             # This seems to be a reasonably ranking for poor models
@@ -828,7 +836,6 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     while fits_to_do:
         start = datetime.now()
         p0, c0, dw = fits_to_do.pop()
-        #print(f"Pixel={p0:7.2f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_per_fit}")
         if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
             p1 = p0
         else:
@@ -844,6 +851,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             i2 = bisect(arc_lines, c0 + p1 * abs(dw))
             narc_lines = i2 - i1
         c1 = p1 * dw
+        print(f"Pixel={p0:6.1f} p1={p1:6.1f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_per_fit}")
 
         if p1 > 0.25 * len_data and order >= 2:
             m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
@@ -854,9 +862,9 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         bounds_setter(m_init)
         if not first:
             m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
-        #print("INPUT MODEL")
-        #print(m_init.parameters)
-        #print(m_init.bounds)
+        print("INPUT MODEL")
+        print(m_init.parameters)
+        print(m_init.bounds)
         #print(datetime.now() - start)
 
         # Need to set in_weights=None as there aren't many lines so
@@ -875,7 +883,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                 if p0 - p1 <= p <= p0 + p1:
                     # automatically removes old (bad) match
                     matches[i] = m
-                    #print(f"Pixel {p} => {arc_lines[m]}")
+                    print(f"Pixel {p} => {arc_lines[m]}")
         try:
             p_lo = peaks[matches > -1].min()
         except ValueError:
