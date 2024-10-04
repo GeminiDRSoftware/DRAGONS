@@ -157,6 +157,10 @@ class PrimitiveVisualizer(ABC):
         self.extras = dict()
         self.ui_params = ui_params
 
+        # If the user is "improving" an exisiting fit (e.g., in wavecal), we
+        # may allow them to exit without a new fit.
+        self.can_exit_with_bad_fits = False
+
         self.user_satisfied = False
 
         legend_html = (
@@ -406,23 +410,27 @@ class PrimitiveVisualizer(ABC):
             if fit.quality == FitQuality.POOR
         )
 
-        if bad_fits:
+        if bad_fits and not self.can_exit_with_bad_fits:
             # popup message
             self.show_user_message(
                 f"Failed fit(s) on {bad_fits}. Please "
                 "modify the parameters and try again."
             )
 
-        elif poor_fits:
+        elif poor_fits or bad_fits:
             def cb(accepted):
                 if accepted:
                     # Trigger the exit/fit, otherwise we do nothing
                     self.submit_button.disabled = True
 
+            if bad_fits:
+                msg = (f"Failed fit(s)s on {bad_fits}. Click OK to "
+                       "proceed with the original wavelength model(s)")
+            else:
+                msg = (f"Poor quality fit(s)s on {poor_fits}. Click "
+                       "OK to proceed anyway")
             self.show_ok_cancel(
-                f"Poor quality fit(s)s on {poor_fits}. Click "
-                "OK to proceed anyway, or Cancel to return to "
-                "the fitter.",
+                f"{msg}, or Cancel to return to the fitter.",
                 cb,
             )
 

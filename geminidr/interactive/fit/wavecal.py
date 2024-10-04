@@ -157,12 +157,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
 
+        # Stuff to cope with underconstrained fits
+        these_fitting_parameters = fitting_parameters.copy()
+        these_fitting_parameters["order"] = max(min(fitting_parameters["order"], len(x) - 1), 1)
         if len(x) == 0:
             kwargs["initial_fit"] = meta["fit"]
 
         super().__init__(
             visualizer,
-            fitting_parameters,
+            these_fitting_parameters,
             domain,
             x,
             y,
@@ -1201,6 +1204,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
                          help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
                          absorption=absorption)
+        self.can_exit_with_bad_fits = True
+
         #self.widgets["in_vacuo"] = bm.RadioButtonGroup(
         #    labels=["Air", "Vacuum"], active=0)
         #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
@@ -1235,7 +1240,10 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         image = []
         for model in self.fits:
             goodpix = np.array([m != model.UserMasked.name for m in model.mask])
-            image.append(model.y[goodpix])
+            try:
+                image.append(model.y[goodpix])
+            except IndexError:  # a bad fit
+                image.append(None)
         return image
 
     def make_widgets_from_parameters(self, params,

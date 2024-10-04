@@ -542,7 +542,8 @@ class Bookkeeping(PrimitivesBASE):
             if found:
                 ad1.update_filename(suffix=suffix, strip=True)
 
-        if not found:
+        # Do not report this if the above loop never ran because of no adinputs!
+        if not found and len(adinputs):
             log.warning(f"Did not find any {attribute} attributes to transfer")
 
         return adinputs
