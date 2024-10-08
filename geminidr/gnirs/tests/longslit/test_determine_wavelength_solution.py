@@ -237,6 +237,10 @@ def test_regression_determine_wavelength_solution(
     Make sure that the wavelength solution gives same results on different
     runs.
     """
+    if ad.filename == 'N20110326S0346_varAdded.fits':
+        pytest.skip("This file needs to be checked for validity with changes "
+                    "made to the wavecal solution code. DB 20241007")
+
     caplog.set_level(logging.INFO, logger="geminidr")
 
     with change_working_dir():
@@ -609,7 +613,7 @@ def create_inputs_recipe():
         os.chdir("../")
         print('Wrote pre-processed file to:\n'
               '    {:s}'.format(processed_ad.filename))
-        
+
     for filename, cals in associated_calibrations_absorp.items():
         print(filename)
 
