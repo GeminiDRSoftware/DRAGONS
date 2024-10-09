@@ -22,6 +22,7 @@ from recipe_system.utils.decorators import (parameter_override,
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from geminidr.core import Spect, Preprocess
+from geminidr.gnirs.lookups import dispersion_dict
 from . import parameters_crossdispersed
 
 
@@ -59,17 +60,20 @@ class CrossDispersed(Spect, Preprocess):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
-        order_key_parts = self._get_order_information_key()
-        order_info = import_module('.orders_XD', self.inst_lookups).order_info
-
         adoutputs = []
         for ad in adinputs:
-            order_key = "_".join(getattr(ad, desc)() for desc in order_key_parts)
-            _, dispersions = order_info[order_key]
-
             # Get the central wavelength setting and order it occurs in.
             central_wavelength = ad.central_wavelength(asNanometers=True)
             grating_order = ad._grating_order()
+
+            # Get the appropriate dispersion. This is GNIRS-specific right now
+            # and will need to be abstracted into a more general system
+            # if/when we add another cross-dispersed instrument. DB 20241009
+            camera = ad.camera().split("_")[0][:-4]
+            disperser = ad.disperser().split("_")[0]
+            dispersion = dispersion_dict[', '.join([disperser, camera])]["K"]
+            dispersion /= 10 # Convert from Å in the LUT to nm
+            disp_order = 3
 
             # This is the presumed pointing location and the centres of
             # each cut slit should recover these sky coordinates
@@ -107,11 +111,12 @@ class CrossDispersed(Spect, Preprocess):
                 # the header, so we can find the central wavelength in any
                 # other order.
                 centwl = grating_order * central_wavelength / spec_order
+                disp = disp_order * dispersion / spec_order
 
                 # Update the WCS by adding a "first guess" wavelength scale
                 # for each slit.
                 new_wave_model = (models.Shift(-specaxis_middle) |
-                                  models.Scale(dispersions[i]) |
+                                  models.Scale(disp) |
                                   models.Shift(centwl))
                 new_wave_model.name = "WAVE"
 

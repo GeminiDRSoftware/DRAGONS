@@ -1,0 +1,1 @@
+from gemini_instruments.gnirs.lookup import dispersion_by_config as dispersion_dict
