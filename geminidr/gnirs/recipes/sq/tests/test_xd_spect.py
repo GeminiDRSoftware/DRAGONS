@@ -25,7 +25,7 @@ datasets = {
         "sci": [f"N20210129S{i:04d}.fits" for i in range(296, 304)],
         "user_pars": []
         },
-    # 10 l/mm Longblue SXD
+    # 10 l/mm Longblue LXD
     "GN-2013B-Q-41": {
         "arcs": ["N20130821S0301_arc.fits"],
         "flats": [f"N20130821S{i:04d}.fits" for i in range(302, 318)],

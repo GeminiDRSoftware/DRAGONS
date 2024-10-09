@@ -41,42 +41,46 @@ determine_wavelength_solution_parameters = {
     }
 
 datasets = {
+    # 10 l/mm Longblue SXD
+    "GN-2016A-Q-7": {
+        "arc": ["N20170511S0269.fits"],
+        "flats": [f"N20170511S{i:04d}.fits" for i in range(271, 282)],
+        "user_pars": {}
+        },
+    # 10 l/mm Longblue LXD
+    "GN-2013B-Q-41": {
+        "arc": ["N20130821S0301.fits"],
+        "flats": [f"N20130821S{i:04d}.fits" for i in range(302, 318)],
+        "user_pars": {}
+        },
     # 32 l/mm Shortblue SXD
     "GN-2021A-Q-215": {
         "arc": ["N20210129S0324.fits"],
         "flats": [f"N20210129S{i:04d}.fits" for i in range(304, 324)],
-        # "pinholes": [f"N20210129S{i:04d}.fits" for i in (386, 388, 390, 391, 393)],
-        # "sci": [f"N20210129S{i:04d}.fits" for i in range(296, 304)],
-        "user_pars": []
+        "user_pars": {}
         },
-    # 10 l/mm Longblue SXD
-    "GN-2013B-Q-41": {
-        "arc": ["N20130821S0301.fits"],
-        "flats": [f"N20130821S{i:04d}.fits" for i in range(302, 318)],
-        # "pinholes": ["N20130821S0556.fits"],
-        # "sci": [f"N20130821S{i:04d}.fits" for i in range(322, 326)],
-        "user_pars": []
-        },
-    # 111 l/mm Shortblue SXD
+    # 111 l/mm Shortblue SXD (south)
     "GS-2006A-Q-9": {
         "arc": ["S20060311S0321.fits"],
         "flats": [f"S20060311S{i:04d}.fits" for i in (323, 324, 325, 326, 327,
                                                       333, 334, 335, 336, 337)],
-        # "pinholes": [], # No pinhole for this dataset
-        # "sci": [f"S20060311S{i:04d}.fits" for i in range(237, 241)],
-        "user_pars": {'attachPinholeModel:do_cal': 'skip',
-                      'findApertures:ext': '4'}}
+        "user_pars": {}
+        },
+    # 111 l/mm Shortblue SXD (north)
+    "GN-2020B-Q-323": {
+        "arc": ["N20210131S0104.fits"],
+        "flats": [f"N20210131S{i:04d}.fits" for i in range(92, 101)]
+        "user_pars": {}
+        },
     }
 
 # Format is flat, arc, user_pars
 input_pars = [
-    # ("N20210131S0100_flat.fits", "N20210131S0104_arc.fits", dict()), # 111, Short, SXD
-    # ("N20210129S0323_flat.fits", "N20210129S0324_arc.fits", dict()), # 32, Short, SXD
-    # ("N20210129S0314_flat.fits", "N20210129S0324_arc.fits", dict()),
-
-    ("N20130821S0308_flat.fits", "N20130821S0301_arc.fits", dict()), # 10 l/mm Longblue SXD
-    ("N20210129S0314_flat.fits", "N20210129S0324_arc.fits", dict()),
-    ("S20060311S0333_flat.fits", "S20060311S0321_arc.fits", dict()),
+    ("N20170511S0274_flat.fits", "N20170511S0269_arc.fits", dict()), # 10 l/mm Longblue SXD
+    ("N20130821S0308_flat.fits", "N20130821S0301_arc.fits", dict()), # 10 l/mm Longblue LXD
+    ("N20210129S0314_flat.fits", "N20210129S0324_arc.fits", dict()), # 32 l/mm Shortblue SXD
+    ("S20060311S0333_flat.fits", "S20060311S0321_arc.fits", dict()), # 111 l/mm Shortblue SXD
+    ("N20210131S0096_flat.fits", "N20210131S0104_arc.fits", dict()), # 111 l/mm Shortblue SXD
     ]
 
 # -- Test definitions ---------------------------------------------------------
@@ -125,20 +129,8 @@ def test_regression_determine_wavelength_solution(
                                       ref_wavelength < lines.max()))
     tolerance = 0.5 * (slit_size_in_px * dispersion)
 
-    # write_report = request.config.getoption('--do-report', False)
-    failed = False
-    try:
-        np.testing.assert_allclose(wavelength[indices], ref_wavelength[indices],
-                               atol=tolerance)
-    except AssertionError:
-        failed = True
-        raise
-    # finally:
-    #     if write_report:
-    #         do_report(wcalibrated_ad, ref_ad, failed=failed)
-
-    # if request.config.getoption("--do-plots"):
-    #     do_plots(wcalibrated_ad)
+    np.testing.assert_allclose(wavelength[indices], ref_wavelength[indices],
+                           atol=tolerance)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
@@ -263,7 +255,6 @@ def create_refs_recipe():
         p = GNIRSCrossDispersed([ad_arc])
         p.flatCorrect(flat=ad_flat)
         # p.attachPinholeModel() Shouldn't need this for the test
-        p.writeOutputs()
         p.determineWavelengthSolution(**{**determine_wavelength_solution_parameters,
                                          **params})
         os.chdir('refs/')
