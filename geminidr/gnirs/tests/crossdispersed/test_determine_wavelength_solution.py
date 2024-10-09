@@ -69,7 +69,7 @@ datasets = {
     # 111 l/mm Shortblue SXD (north)
     "GN-2020B-Q-323": {
         "arc": ["N20210131S0104.fits"],
-        "flats": [f"N20210131S{i:04d}.fits" for i in range(92, 101)]
+        "flats": [f"N20210131S{i:04d}.fits" for i in range(92, 101)],
         "user_pars": {}
         },
     }
