@@ -53,7 +53,7 @@ class NearIR(Bookkeeping):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        flags = DQ.saturated | (DQ.non_linear if params["non_linear"] else 0)
+        flags = DQ.saturated | (DQ.non_linear if params["non_linear"] else 0) # NUMPY_2: OK
         # Create a timedelta object using the value of the "time" parameter
         seconds = datetime.timedelta(seconds=params["time"])
 
