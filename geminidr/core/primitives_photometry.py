@@ -340,16 +340,16 @@ def _calculate_magnitudes(refcat, formulae):
                 if type(term) is str:
 
                     if term+'mag' in refcat.columns:
-                        mag += row[term+'mag']
-                        mag_err_sq += row[term+'mag_err']**2
+                        mag += row[term+'mag'] # NUMPY_2: OK
+                        mag_err_sq += row[term+'mag_err']**2 # NUMPY_2: OK
                     else:
                         # Will ensure this magnitude is not used
                         mag = np.nan
 
                 # constant (with uncertainty)
                 elif len(term) == 2:
-                    mag += float(term[0])
-                    mag_err_sq += float(term[1])**2
+                    mag += float(term[0]) # NUMPY_2: OK
+                    mag_err_sq += float(term[1])**2 # NUMPY_2: OK
 
                 # color term (factor, uncertainty, color)
                 elif len(term) == 3:
@@ -359,7 +359,8 @@ def _calculate_magnitudes(refcat, formulae):
                             and len(filters) == 2:
 
                         col = row[filters[0] + 'mag'] - row[filters[1] + 'mag']
-                        mag += float(term[0]) * col
+                        mag += float(term[0]) * col  # NUMPY_2: OK
+                        # NUMPY_2: OK
                         dmagsq = row[filters[0]+'mag_err']**2 + \
                             row[filters[1]+'mag_err']**2
 
@@ -369,6 +370,7 @@ def _calculate_magnitudes(refcat, formulae):
                         if np.isnan(dmagsq):
                             mag -= 1.645*np.sqrt(mag_err_sq)
 
+                        # NUMPY_2: OK
                         mag_err_sq += ((term[1]/term[0])**2 + dmagsq/col**2) * \
                             (float(term[0])*col)**2
 
@@ -525,7 +527,7 @@ def _profile_sources(ad, seeing_estimate=None):
         elif seeing_estimate is None:
             stamp_size = max(10, int(0.5 / pixscale))
         else:
-            stamp_size = max(10, int(1.2 * seeing_estimate / pixscale))
+            stamp_size = max(10, int(1.2 * seeing_estimate / pixscale))  # NUMPY_2: OK
 
         # Make a default grid to use for distance measurements
         dist = np.mgrid[-stamp_size:stamp_size,-stamp_size:stamp_size]+0.5
@@ -536,8 +538,8 @@ def _profile_sources(ad, seeing_estimate=None):
 
         for i in range(0, len(objcat)):
 
-            xc = catx[i] - 0.5
-            yc = caty[i] - 0.5
+            xc = catx[i] - 0.5 # NUMPY_2: OK
+            yc = caty[i] - 0.5 # NUMPY_2: OK
             bg = catbg[i]
             tf = cattotalflux[i]
             mf = catmaxflux[i]
@@ -566,8 +568,8 @@ def _profile_sources(ad, seeing_estimate=None):
 
             # Reset grid to correct center coordinates
             shift_dist = dist.copy()
-            shift_dist[0] += int(yc)-yc
-            shift_dist[1] += int(xc)-xc
+            shift_dist[0] += int(yc)-yc # NUMPY_2: OK
+            shift_dist[1] += int(xc)-xc # NUMPY_2: OK
 
             # Square root of the sum of the squares of the distances
             rdistsq = np.sum(shift_dist**2, axis=0)
@@ -583,7 +585,7 @@ def _profile_sources(ad, seeing_estimate=None):
 
             # Count pixels above half flux and circularize this area
             # Do one iteration in case there's a neighbouring object
-            halfflux = 0.5 * mf
+            halfflux = 0.5 * mf # NUMPY_2: OK
             hwhmsq = np.sum(flux > halfflux)/np.pi
             hwhm = np.sqrt(np.sum(flux[radsq < 1.5*hwhmsq] > halfflux)/np.pi)
 
@@ -594,7 +596,7 @@ def _profile_sources(ad, seeing_estimate=None):
 
             # Find the first radius that encircles half the total flux
             sumflux = np.cumsum(flux)
-            halfflux = 0.5 * tf
+            halfflux = 0.5 * tf  # NUMPY_2: OK
             first_50pflux = np.where(sumflux >= halfflux)[0]
 
             if first_50pflux.size > 0:
