@@ -125,7 +125,7 @@ class Standardize(PrimitivesBASE):
                     log.fullinfo('Flagging saturated pixels in {} extension '
                                  '{} above level {:.2f}'.format(
                                      ad.filename, ext.id, saturation_level))
-                    ext.mask |= np.where(ext.data >= saturation_level,
+                    ext.mask |= np.where(ext.data >= saturation_level,  # NUMPY_2: OK (0 -> uint16)
                                          DQ.saturated, 0).astype(DQ.datatype)
 
                 if non_linear_level:
@@ -135,7 +135,7 @@ class Standardize(PrimitivesBASE):
                                          'extension {} above level {:.2f}'
                                          .format(ad.filename, ext.id,
                                                  non_linear_level))
-                            ext.mask |= np.where((ext.data >= non_linear_level) &
+                            ext.mask |= np.where((ext.data >= non_linear_level) & # NUMPY_2: OK (0 -> uint16)
                                                  (ext.data < saturation_level),
                                                  DQ.non_linear, 0).astype(DQ.datatype)
                             # Readout modes of IR detectors can result in
@@ -243,7 +243,7 @@ class Standardize(PrimitivesBASE):
             for ext, illum_ext in zip(ad, final_illum):
                 if illum_ext is not None:
                     # Ensure we're only adding the unilluminated bit
-                    iext = np.where(illum_ext.data > 0, DQ.unilluminated,
+                    iext = np.where(illum_ext.data > 0, DQ.unilluminated, # NUMPY_2: OK (0 -> uint16)
                                     0).astype(DQ.datatype)
                     ext.mask = iext if ext.mask is None else ext.mask | iext
 
