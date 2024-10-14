@@ -290,12 +290,12 @@ class CCD(PrimitivesBASE):
                     # science and then overscanCorrects the result
                     previous_overscan = ext.hdr.get('OVERSCAN', 0)
                     bias_level = np.median(data)
-                    ext.hdr.set('OVERSCAN', previous_overscan + bias_level,
+                    ext.hdr.set('OVERSCAN', previous_overscan + bias_level,  # NUMPY_2: OK
                                 self.keyword_comments['OVERSCAN'])
                     ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
                     for desc in ('saturation_level', 'non_linear_level'):
                         with suppress(AttributeError, KeyError):
-                            ext.hdr[ad._keyword_for(desc)] -= bias_level
+                            ext.hdr[ad._keyword_for(desc)] -= bias_level  # NUMPY_2: OK
 
 
             # Timestamp, and update filename
