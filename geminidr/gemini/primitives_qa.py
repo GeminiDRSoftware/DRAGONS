@@ -739,14 +739,14 @@ class BGReport(QAReport):
                 except TypeError:  # exptime or pixscale is None
                     pass
                 else:
-                    bgmag = zpt - 2.5 * math.log10(bg * fak)
-                    bgmagerr = 2.5 * math.log10(1 + bgerr / bg)
+                    bgmag = zpt - 2.5 * math.log10(bg * fak)  # NUMPY_2: OK
+                    bgmagerr = 2.5 * math.log10(1 + bgerr / bg)  # NUMPY_2: OK
 
                     # Need to report to FITSstore in electrons
                     if self.bunit == 'ADU':
                         fak *= ext.gain()
-                    bg *= fak
-                    bgerr *= fak
+                    bg *= fak  # NUMPY_2: OK
+                    bgerr *= fak  # NUMPY_2: OK
 
                     measurement['mag'] = [bgmag]
                     measurement['mag_std'] = [bgmagerr]

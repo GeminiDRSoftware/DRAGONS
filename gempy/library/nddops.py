@@ -33,7 +33,7 @@ NDD = namedtuple("NDD", "data mask variance")
 # be "bad" when rejecting pixels from the input data. If one takes multiple
 # images of an object and one of those images is saturated, it would clearly
 # be wrong statistically to reject the saturated one.
-BAD = 65535 ^ (DQ.non_linear | DQ.saturated)
+BAD = 65535 ^ (DQ.non_linear | DQ.saturated)  # NUMPY_2: OK
 
 # A hierarchy of "badness". Pixels in the inputs are considered to be as
 # bad as the worst bit set, so a "bad_pixel" will only be used if there are
@@ -68,7 +68,7 @@ def stack_nddata(fn):
         dtype = np.float32
         data = np.empty((len(nddata_list),)+nddata_list[0].data.shape, dtype=dtype)
         for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
-            data[i] = ndd.data * s + z
+            data[i] = ndd.data * s + z  # NUMPY_2: OK
 
         if any(ndd.mask is None for ndd in nddata_list):
             mask = None
@@ -640,12 +640,13 @@ def sum1d(ndd, x1, x2, proportional_variance=True):
     mask = var = None
 
     try:
-        data = fx1*ndd.data[ix1] + ndd.data[ix1+1:ix2].sum() + fx2*ndd.data[ix2]
+        data = fx1*ndd.data[ix1] + ndd.data[ix1+1:ix2].sum() + fx2*ndd.data[ix2]  # NUMPY_2: OK
     except IndexError:  # catches the *entire* aperture being off the image
         return NDD(0, DQ.no_data, 0)
     if ndd.mask is not None:
         mask = np.bitwise_or.reduce(ndd.mask[ix1:ix2+1])
     if ndd.variance is not None:
+        # NUMPY_2: OK
         var = ((fx1 if proportional_variance else fx1*fx1)*ndd.variance[ix1] +
                ndd.variance[ix1:ix2].sum() +
                (fx2 if proportional_variance else fx2*fx2)*ndd.variance[ix2])

@@ -456,13 +456,13 @@ def test_scale_by_exposure_time(niri_images):
     ad1, ad2 = niri_images.scaleByExposureTime(time=None)
 
     # Check that ad2 had its data doubled
-    assert abs(ad2[0].data.mean() - ad2_orig_value * 2) < 0.001
+    assert abs(ad2[0].data.mean() - ad2_orig_value * 2) < 0.001  # NUMPY_2: OK
 
     ad1, ad2 = niri_images.scaleByExposureTime(time=1)
 
     # Check that ad2 has been rescaled to 1-second
     print(ad2[0].data.mean(), ad2_orig_value, ad2.phu["ORIGTEXP"])
-    assert abs(ad2[0].data.mean() - ad2_orig_value / ad2.phu["ORIGTEXP"]) < 0.001
+    assert abs(ad2[0].data.mean() - ad2_orig_value / ad2.phu["ORIGTEXP"]) < 0.001  # NUMPY_2: OK
 
 
 # @pytest.mark.xfail(reason="Test needs revision", run=False)

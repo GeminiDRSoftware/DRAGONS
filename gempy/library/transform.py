@@ -275,7 +275,7 @@ class Block:
                 continue
             for col_names, coord in zip(col_name_list, corner):
                 for col_name in col_names:
-                    t[col_name] += coord
+                    t[col_name] += coord  # NUMPY_2: OK
             tables.append(t)
         return table.vstack(tables, metadata_conflicts='silent')
 
@@ -1162,6 +1162,7 @@ class DataGroup:
                             key = ((attr,bit), output_corners)
                             # Convert bit plane to float32 so the output
                             # will be float32 and we can threshold
+                            # NUMPY_2: OK
                             jobs.append((key, (arr & bit).astype(np.float32),
                                          {'cval': bit & cval,
                                           'threshold': threshold * bit}))
@@ -1273,6 +1274,7 @@ class DataGroup:
             if attr[1] != cval:
                 output_region |= (arr * attr[1]).astype(dtype, copy=False)
             else:
+                # NUMPY_2: OK
                 self.output_dict[attr[0]][slice_] = ((output_region & (65535 ^ cval)) |
                                                 (output_region & (arr * attr[1]))).astype(dtype, copy=False)
         else:
@@ -1343,7 +1345,7 @@ class DataGroup:
             jfactor = 1  # Since we've done it
 
         if threshold is None:
-            self.output_arrays[output_key] = (out_array * jfactor).astype(dtype, copy=False)
+            self.output_arrays[output_key] = (out_array * jfactor).astype(dtype, copy=False)  # NUMPY_2: OK
         else:
             self.output_arrays[output_key] = np.where(abs(out_array) > threshold,
                                                       True, False)

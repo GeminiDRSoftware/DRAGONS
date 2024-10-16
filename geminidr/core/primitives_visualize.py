@@ -514,7 +514,7 @@ class Visualize(PrimitivesBASE):
                     if ccdx < detshape[1] - 1:
                         max_xshift = max(xshifts.max(), ext.shape[1] -
                                          (xorigins[ccdy, ccdx+1] - xorigins[ccdy, ccdx]))
-                        xorigins[ccdy, ccdx+1:] += max_xshift + xgap // xbin
+                        xorigins[ccdy, ccdx+1:] += max_xshift + xgap // xbin  # NUMPY_2: OK
                     if ccdy < detshape[0] - 1:
                         max_yshift = max(yshifts.max(), ext.shape[0] -
                                          (yorigins[ccdy+1, ccdx] - yorigins[ccdy, ccdx]))

@@ -92,7 +92,7 @@ def test_detectSources(niri_image):
     for (realx, realy), (catx, caty) in zip(catsort(STAR_POSITIONS),
                                             catsort(cat_positions)):
         # 0-index vs 1-index
-        assert abs(realx + 1 - catx) < 0.5 and abs(realy + 1 - caty) < 0.5
+        assert abs(realx + 1 - catx) < 0.5 and abs(realy + 1 - caty) < 0.5  # NUMPY_2: OK
 
 
 def test_calculate_magnitudes():
@@ -150,7 +150,7 @@ def test_estimate_seeing(niri_image):
     ad = niri_image.detectSources()[0]
     seeing = prims._estimate_seeing(ad[0].OBJCAT)
 
-    assert abs(seeing - ad.seeing) / ad.seeing < 0.05
+    assert abs(seeing - ad.seeing) / ad.seeing < 0.05  # NUMPY_2: OK
 
 
 def test_estimate_seeing_stats():

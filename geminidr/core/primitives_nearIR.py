@@ -315,11 +315,11 @@ class NearIR(Bookkeeping):
                 if ystart:
                     log.debug(f"Adding {-offset} to row {edge} and above "
                               f"in (X{xstart}, Y{ystart}) quad")
-                    masked_data.data[slice(edge, None), xslice] -= offset
+                    masked_data.data[slice(edge, None), xslice] -= offset  # NUMPY_2: CHECK
                 else:
                     log.debug(f"Adding {offset} below row {edge} "
                               f"in (X{xstart}, Y{ystart}) quad")
-                    masked_data.data[slice(0, edge), xslice] += offset
+                    masked_data.data[slice(0, edge), xslice] += offset  # NUMPY_2: CHECK (ABOVE TOO)
 
         # match top and bottom halves of left and right separately
         for xslice in (slice(0, qxsize), slice(qxsize, None)):
@@ -328,7 +328,7 @@ class NearIR(Bookkeeping):
             offset = find_offset(masked_data, arr1_slicers, arr2_slicers,
                                  clippedstats_tb)
             log.debug(f"Adding {offset} to bottom of X{xslice.start} quad")
-            masked_data.data[slice(0, qysize), xslice] += offset
+            masked_data.data[slice(0, qysize), xslice] += offset  # NUMPY_2: CHECK (ABOVE TOO)
 
         # match left and right halves
         arr1_slicers = (slice(None), slice(qxsize - smoothing_extent,qxsize))
@@ -337,7 +337,7 @@ class NearIR(Bookkeeping):
                              clippedstats_lr)
         # xslice still set to right half from previous loop
         log.debug(f"Adding {offset} to right half")
-        masked_data.data[slice(None), xslice] += offset
+        masked_data.data[slice(None), xslice] += offset  # NUMPY_2: CHECK (ABOVE TOO)
 
     def cleanReadout(self, adinputs=None, **params):
         """
