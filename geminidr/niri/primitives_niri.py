@@ -83,7 +83,7 @@ class NIRI(Gemini, NearIR):
                                 "no correction applied")
                     continue
 
-                raw_mean_value = np.mean(ext.data) / coadds
+                raw_mean_value = np.mean(ext.data) / coadds # NUMPY_2: OK
                 log.fullinfo("The mean value of the raw pixel data in " \
                              "{} is {:.8f}".format(ext.filename, raw_mean_value))
 

@@ -967,6 +967,7 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
             continue
 
         lower, upper = extrema[i-1][0], extrema[i+1][0]
+        # NUMPY_2: OK
         targets = [threshold * extrema[i][1] +
                    (1 - threshold) * extrema[j][1] for j in (i-1, i+1)]
         i1, i2, p = int(lower), int(upper+1), int(true_peak+0.5)

@@ -1249,6 +1249,7 @@ class Spect(Resample):
                     new_row['aper_upper'] = aper_upper
                 aplo, aphi = new_row['aper_lower', 'aper_upper']
 
+                # NUMPY_2: OK
                 new_apnum = min(set(range(1, max(existing_apnums) + 2)) -
                                 set(existing_apnums))
                 log.stdinfo(f"Adding new aperture {apnum} to {ad.filename} "
