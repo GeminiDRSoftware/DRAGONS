@@ -638,7 +638,11 @@ def make_fitswcs_transform(input):
     other_models = fitswcs_other(wcs_info, other=other)
     all_models = other_models
     if sky_model:
+        i = -1
+        for i, m in enumerate(all_models):
+            m.meta['output_axes'] = [i]
         all_models.append(sky_model)
+        sky_model.meta['output_axes'] = [i+1, i+2]
 
     # Now arrange the models so the inputs and outputs are in the right places
     all_models.sort(key=lambda m: m.meta['output_axes'][0])
@@ -959,11 +963,11 @@ def remove_unused_world_axis(ext):
     new_pipeline = []
     for step in reversed(ext.wcs.pipeline):
         frame, transform = step.frame, step.transform
-        if axis < frame.naxes:
-            frame = remove_axis_from_frame(frame, axis)
         if transform is not None:
             if axis < transform.n_outputs:
                 transform, axis = remove_axis_from_model(transform, axis)
+        if axis is not None and axis < frame.naxes:
+            frame = remove_axis_from_frame(frame, axis)
         new_pipeline = [(frame, transform)] + new_pipeline
 
     if axis not in (ndim, None):
