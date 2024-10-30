@@ -530,7 +530,7 @@ class Polyspect(object):
 
         Parameters
         ----------
-        data: :obj:`numpy.ndarray`
+        data: :obj:`numpy.ndarray` or :obj:`numpy.ma.MaskedArray`
             The image of a single reference fiber to fit to. Typically
             the result of the convolution.
         xparams: :obj:`numpy.ndarray`
@@ -583,7 +583,7 @@ class Polyspect(object):
         # and make sure the fit is faster.
         image_med = image.reshape((image.shape[0] // decrease_dim,
                                    decrease_dim, image.shape[1]))
-        image_med = np.mean(image_med, axis=1)
+        image_med = image_med.mean(axis=1)
         order_y = np.meshgrid(np.arange(xbase.shape[1]), # pylint: disable=maybe-no-member
                               np.arange(xbase.shape[0]) + self.m_min)  # pylint: disable=maybe-no-member
         y_values = order_y[0]
@@ -607,12 +607,17 @@ class Polyspect(object):
                 lpix = max(0, self.szx // 2 + xind - search_pix)
                 rpix = min(self.szx // 2 + xind + search_pix + 1,
                            image_med.shape[1] - 1)
-                peakpix = lpix + np.argmax(image_med[j, lpix:rpix])
+                cutout = image_med[j, lpix:rpix]
+                if np.ma.count_masked(cutout) > 0 or cutout.max() <= 0:
+                    sigma[i, j] = 1E5
+                    continue
+                peakpix = lpix + np.argmax(cutout)
                 new_peak = 0.5 * ((image_med[j, peakpix+1] - image_med[j, peakpix-1]) /
                                   (3 * image_med[j, peakpix] - image_med[j, peakpix-1:peakpix+2].sum()))
+                peak_value = image_med[j, peakpix]
                 if abs(new_peak) < 1:
                     x_values[i, j] = new_peak + peakpix - self.szx // 2
-                    sigma[i, j] = 1. / np.sqrt(image_med[j, peakpix])
+                    sigma[i, j] = 1. / np.sqrt(peak_value)
                 else:
                     sigma[i, j] = 1E5
                 #if i == 12 and sigma[i, j] < 1e5:

@@ -1035,7 +1035,7 @@ class GHOSTSpect(GHOST):
                     flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
                     variance=variance, min_snr=min_snr, min_sep=5,
                     pinpoint_index=None, reject_bad=False)
-                fit_g = fitting.LevMarLSQFitter()
+                fit_g = fitting.TRFLSQFitter()  # recommended fitter
                 these_peaks = []
                 for x in peaks[0]:
                     good = np.zeros_like(flux, dtype=bool)
@@ -1044,9 +1044,12 @@ class GHOSTSpect(GHOST):
                                                stddev=1.5)
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
-                        g = fit_g(g_init, pixels[good], flux[good])
-                    if g.stddev.value < 5:  # avoid clearly bad fits
-                        these_peaks.append(g)
+                        try:
+                            g = fit_g(g_init, pixels[good], flux[good])
+                            if g.stddev.value < 5:  # avoid clearly bad fits
+                                these_peaks.append(g)
+                        except fitting.NonFiniteValueError:  # unclear why
+                            pass
                 all_peaks.append(these_peaks)
 
             # Find lines based on the extracted flux and the arc wavelengths.
@@ -1640,6 +1643,44 @@ class GHOSTSpect(GHOST):
 
         return adinputs
 
+    def makeIRAFCompatible(self, adinputs=None, suffix=None):
+        """
+        Write out the extracted spectra in a format that is compatible with IRAF.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        """
+        log = self.log
+        for ad in adinputs:
+            updated = False
+            hdulist = astrodata.fits.ad_to_hdulist(ad)
+            for hdu in hdulist:
+                if hdu.data is not None and len(hdu.data.shape) == 1:
+                    hdr = hdu.header
+                    if (hdr.get('DC-FLAG') != 1 and
+                            hdr.get('CTYPE1', '').endswith("LOG")):
+                        cdelt1 = hdr['CD1_1']
+                        crval1 = hdr['CRVAL1']
+                        crpix1 = hdr['CRPIX1']
+                        x = np.arange(hdu.data.size)
+                        w = crval1 * np.exp(cdelt1 * (x + 1 - crpix1) / crval1)
+                        dw = np.log10(w[1] / w[0])
+                        new_kws = {"CRPIX1": crpix1, "CRVAL1": np.log10(crval1),
+                                   "CDELT1": dw, "CD1_1": dw, "DC-FLAG": 1}
+                        hdr.update(new_kws)
+                        updated = True
+            if updated:
+                new_filename = filename_updater(ad, suffix=suffix)
+                hdulist.writeto(new_filename, overwrite=True)
+                log.stdinfo(f"{ad.filename} updated and written to disk "
+                            f"as {new_filename}")
+            else:
+                log.stdinfo(f"No changes were made to the header of {ad.filename}")
+
+        return adinputs
+
     def measureBlaze(self, adinputs=None, **params):
         """
         This primitive measures the blaze function in each order by summing
@@ -2052,19 +2093,19 @@ class GHOSTSpect(GHOST):
                                  if parent == bundle])
         else:
             # Sort the input arc files by DATE-OBS/UTSTART
-            adinputs.sort(key=lambda x: _construct_datetime(x.phu))
+            adinputs.sort(key=lambda x: x.ut_datetime())
 
             # Cluster the inputs
             for ad in adinputs:
                 try:
-                    ref_time = _construct_datetime(clusters[-1][-1].phu)
+                    ref_time = clusters[-1][-1].ut_datetime()
                 except IndexError:
                     # Start a new cluster
                     clusters.append([ad, ])
                     continue
 
-                if np.abs((_construct_datetime(ad.phu) - ref_time).total_seconds()
-                          < time_delta):
+                if (np.abs(ad.ut_datetime() - ref_time).total_seconds()
+                           < time_delta):
                     # Append to the last cluster
                     clusters[-1].append(ad)
                 else:
@@ -2228,7 +2269,6 @@ class GHOSTSpect(GHOST):
         slitflat = params["slitflat"]
         if slitflat is None:
             flat_list = self.caldb.get_processed_slitflat(adinputs)
-            print("GOT", flat_list)
         else:
             flat_list = (slitflat, None)
 
@@ -2275,7 +2315,7 @@ class GHOSTSpect(GHOST):
 
             # Convolve the flat field with the slit profile
             flat_conv = ghost_arm.slit_flat_convolve(
-                ad[0].data,
+                np.ma.masked_array(ad[0].data, mask=ad[0].mask),
                 slit_profile=slitview.slit_profile(arm=arm),
                 spatpars=spatpars[0].data, microns_pix=slitview.microns_pix,
                 xpars=xpars[0].data
@@ -2350,9 +2390,9 @@ class GHOSTSpect(GHOST):
             write VAR (variance) plane?
         overwrite : bool
             overwrite existing files?
-        xunits: str
+        wave_units: str
             units of the x (wavelength/frequency) column
-        yunits: str
+        data_units: str
             units of the data column
         """
         log = self.log
@@ -2457,16 +2497,6 @@ class GHOSTSpect(GHOST):
             correct_timing = before == (arc_ad.ut_datetime() < ad.ut_datetime())
             return arc_ad if correct_timing else None
         return None
-
-
-def _construct_datetime(hdr):
-    """
-    Construct a datetime object from DATE-OBS and UTSTART.
-    """
-    return datetime.combine(
-        datetime.strptime(hdr.get('DATE-OBS'), '%Y-%m-%d').date(),
-        datetime.strptime(hdr.get('UTSTART'), '%H:%M:%S').time(),
-    )
 
 
 def plot_extracted_spectra(ad, arm, all_peaks, lines_out, mask=None, nrows=4):

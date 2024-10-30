@@ -6,11 +6,31 @@
 Release Notes
 *************
 
+V3.2.2
+======
+
+This is bug fix release in support of GHOST.  Unplanned changes in
+header values led to GHOST reduction to fail in some cases.  This release
+offers a more resilient implementation.
+
+We also include memory usage optimizations to the ``flagCosmicRays`` and
+``QECorrect`` primitives.
+
 V3.2.1
 ======
 
+Not compatible with Numpy v2.  Add "numpy<2" when you create a new conda
+environment.
+
 This patch release includes improvements to speed up and increase the success
-rate of wavelength calibration.
+rate of wavelength calibration and includes important fixes to the GHOST
+data reduction software and documentation.
+
+Preemptive support for the new GNIRS detector controller has been included,
+thought not yet tested, also the gain, read noise and other similar values are
+known to be incorrect for the new detector controller in this release.  A patch
+release will be issued once the new values are known.  GNIRS data not using the
+new controllers are not impacted.
 
 V3.2.0
 ======

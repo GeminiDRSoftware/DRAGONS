@@ -50,7 +50,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'DRAGONS'
-copyright = '2023, Association of Universities for Research in Astronomy'
+copyright = '2024, Association of Universities for Research in Astronomy'
 
 # Note that AURA owns the Copyright, not you.
 
@@ -59,9 +59,9 @@ copyright = '2023, Association of Universities for Research in Astronomy'
 # built documents.
 #
 # The short X.Y version.
-version = '3.2'
+version = '4.0-dev'
 # The full version, including alpha/beta/rc tags.
-#release = '3.2.0'
+#release = '3.2.2'
 #rtdurl = 'v'+release
 #release = '3.2.x'
 #rtdurl = 'release-'+release
@@ -73,7 +73,7 @@ rtdurl = 'latest'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2024'
+today = '2025'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 

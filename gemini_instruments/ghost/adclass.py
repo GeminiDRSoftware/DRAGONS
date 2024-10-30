@@ -636,7 +636,7 @@ class AstroDataGhost(AstroDataGemini):
         # TODO: get appropriate return values
         _read_mode_dict = {("slow", "low"): "slow",
                            ("medium", "low"): "medium",
-                           ("fast", "low"): "fast",
+                           ("fast", "low"): "rapid",
                            ("fast", "high"): "bright",
                            ("standard", "standard"): "standard"}  # SLITV
         return _read_mode_dict.get((self.read_speed_setting(),
