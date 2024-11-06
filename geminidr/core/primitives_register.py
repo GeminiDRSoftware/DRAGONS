@@ -158,6 +158,7 @@ class Register(PrimitivesBASE):
                 msg += warnings[fallback]
                 log.stdinfo(msg)
                 _create_wcs_from_offsets(ad, adref)
+                adoutputs.append(ad)
                 continue
 
             # GNIRS WCS is dubious, so update WCS by using the ref
