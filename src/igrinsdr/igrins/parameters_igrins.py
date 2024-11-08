@@ -109,3 +109,8 @@ class saveTwodspecConfig(config.Config):
 class saveDebugImageConfig(config.Config):
     save_debug =  config.Field("save the debug image if True. Default is True",
                                                 bool, True)
+
+class make_hotpix_maskConfig(config.Config):
+    sigma_clip1 = config.Field("Sigma criterion to mask in + shape", float)
+    sigma_clip2 = config.Field("Sigma criterion to mask in . shape", float)
+
