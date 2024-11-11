@@ -54,15 +54,19 @@ def makeProcessedFlat(p: Igrins):
     """
 
     p.prepare()
-    p.addDQ()
-    p.addVAR(read_noise=True)
+    p.addDQ() # FIXME : will use non_linear_level and saturation_level for
+              # additional masking.
+    p.addVAR(read_noise=True) # FIXME read readout noise from header? Make sure
+                              # a correct value is used.
+
     # ADUToElectrons requires saturation_level and nonlinearity_level in the
     # header. Since IGRINS does not have these values defined, we add them
     # here.
-    p.fixIgrinsHeader()
-    p.referencePixelsCorrect()
-
-    p.ADUToElectrons()
+    p.fixIgrinsHeader() # FIXME descriptor needed for saturation_level and nonlinear_level.
+    p.referencePixelsCorrect() # FIXME For now, this does nothing as the
+                               # reference pixel correction cannot be correctly
+                               # done with IGRINS2 data.
+    p.ADUToElectrons() # FIXME make sure gains are read from the header.
     #p.nonlinearityCorrect()
     p.makeLampFlat() # This separates the lamp-on and lamp-off flats, stacks
                      # them, subtracts one from the other, and returns that
