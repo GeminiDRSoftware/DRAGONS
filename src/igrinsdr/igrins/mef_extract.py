@@ -8,7 +8,7 @@ from astropy.io import fits
 from pathlib import Path
 
 def unbundle(indir: Path, utdate: str, outdir: Path):
-    fn_list = sorted(indir.glob(f"N{utdate}*.fits"))
+    fn_list = sorted(indir.glob(f"N{utdate}*.fits*")) # ".fits*" to include gz, bz2 files
 
     if len(fn_list) == 0:
         print("no matching files are found")
@@ -18,9 +18,8 @@ def unbundle(indir: Path, utdate: str, outdir: Path):
 
     for fi_ in fn_list:
         fi = fi_.name
-        print(fi)
-        obsdate = fi[-18:-10]
-        obsid = fi[-9:-5]
+        obsdate = fi[1:9]
+        obsid = fi[10:14]
 
         hdu = fits.open(indir / fi)
 
