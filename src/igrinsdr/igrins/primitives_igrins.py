@@ -1110,7 +1110,8 @@ class Igrins(Gemini, NearIR):
         #     variance_map0 = obsset.load_fits_sci_hdu("combined_variance0",
         #                                              postfix=postfix).data
 
-        variance_map = ad[0].variance
+        variance_map = ad[0].variance + 2**2 # FIXME figure out the readout
+                                             # noize and properly update it
         variance_map0 = None # FIXME original plp used this to update variance
                              # while doing the iterationin optima extraction. We
                              # simply ignore this by setting it to NaN.
