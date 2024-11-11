@@ -61,6 +61,7 @@ def makeProcessedFlat(p: Igrins):
     # here.
     p.fixIgrinsHeader()
     p.referencePixelsCorrect()
+
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
     p.makeLampFlat() # This separates the lamp-on and lamp-off flats, stacks
@@ -72,23 +73,26 @@ def makeProcessedFlat(p: Igrins):
     # # version that support multiple aperture.
     p.maskBeyondSlit()
     # # very primitive implementation for multiple apertures
+
     # FIXME : maybe incorporate PLP version of algorithm.
     p.normalizeFlat()
     # We are using dragons's version of thresholdFlatfield. Do we need to mask
     # out low value pixels from the un-normarlized flat too? This will set DQ
     # with DQ.unilluminated for pixels whose value outsied the range.
+
     p.thresholdFlatfield()
     p.storeProcessedFlat()
+
     return
 
-#_default = makeProcessedFlat
+_default = makeProcessedFlat
 
 # We set 'estimateNoise' as a default recipe for temporary, just for testing
 # purpose.
 # _default = estimateNoise
 
 
-def makeProcessedBPM(p):
+def makeProcessedBPM(p: Igrins):
     """
     This recipe requires flats and uses the lamp-off as short darks.
     """
@@ -98,19 +102,14 @@ def makeProcessedBPM(p):
     p.fixIgrinsHeader()
     p.referencePixelsCorrect()
     p.ADUToElectrons()
-    # p.selectFromInputs(tags="LAMPOFF")
+
     p.selectFromInputs(tags="LAMPOFF", outstream="darks")
     p.stackFrames(stream="darks")
-    p.selectFromInputs(tags="FLAT")
-    # makeBPM require darks stream which should be a single stacked dark.
-    p.stackFrames()
-    # p.makeLampFlat()
-    # p.determineSlitEdges()
-    # p.maskBeyondSlit()
-    # p.normalizeFlat()
-    # Using the DRAGON version for now. We need to find out good parameters.
+
     p.make_hotpix_mask(sigma_clip1 = 100., sigma_clip2 = 10.)
-    #p.storeBPM()
+    # It will use "darks" stream to make a hotpix_maxk.
+
+    p.storeBPM()
     return
 
-_default = makeProcessedBPM
+# _default = makeProcessedBPM
