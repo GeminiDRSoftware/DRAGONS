@@ -441,7 +441,7 @@ class Igrins(Gemini, NearIR):
 
     def selectStream(self, adinputs=None, **params):
         stream_name = params["stream_name"]
-        return self.streams[f"RPC_{stream_name}"]
+        return self.streams[stream_name]
 
     def addNoiseTable(self, adinputs=None, **params):
         """
