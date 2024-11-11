@@ -529,11 +529,13 @@ class Igrins(Gemini, NearIR):
 
             pp = table_to_poly(tbl)
 
-            mask = np.zeros((2048, 2048), dtype=bool)
+            from geminidr.gemini.lookups import DQ_definitions as DQ
+            mask = np.empty((2048, 2048), dtype=DQ.datatype)
+            mask.fill(DQ.unilluminated)
             for o, sl, m in iter_order(pp):
-                mask[sl][m] = True
+                mask[sl][m] = 0
 
-            ext.mask |= ~mask * DQ.unilluminated
+            ext.mask |= mask
 
         return adinputs
 
