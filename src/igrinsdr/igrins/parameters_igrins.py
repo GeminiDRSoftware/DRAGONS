@@ -58,7 +58,7 @@ class fixIgrinsHeaderConfig(config.Config):
     pass
 
 class referencePixelsCorrectConfig(config.Config):
-    pass
+    apply_reference_pixels_correction = config.Field("Whether to apply reference pixel corrections", bool, False)
 
 class extractSimpleSpecConfig(config.Config):
     pass

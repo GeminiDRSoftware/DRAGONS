@@ -579,7 +579,9 @@ class Igrins(Gemini, NearIR):
     def referencePixelsCorrect(self, adinputs, **params):
         for ad in adinputs:
             for ext in ad:
-                ext.data = fix_pattern_using_reference_pixel(ext.data)
+                # FIXME we may want different default behavior btw IG1 and IG2
+                if params["apply_reference_pixels_correction"]:
+                    ext.data = fix_pattern_using_reference_pixel(ext.data)
 
         return adinputs
 
