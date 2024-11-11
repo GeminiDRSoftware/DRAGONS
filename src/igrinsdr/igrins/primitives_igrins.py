@@ -1311,4 +1311,3 @@ class Igrins(Gemini, NearIR):
         # save fits with updated header
 
         return [dark]
-                         

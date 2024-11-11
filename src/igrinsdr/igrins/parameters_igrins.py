@@ -2,7 +2,11 @@
 # define in the primitives_igrins.py file
 
 from gempy.library import config
-from geminidr.core import parameters_nearIR
+from geminidr.core import parameters_nearIR, parameters_standardize
+
+class prepareConfig(parameters_standardize.prepareConfig):
+    def setDefaults(self):
+        self.require_wcs = False
 
 class addDQConfig(parameters_nearIR.addDQConfig):
     def setDefaults(self):

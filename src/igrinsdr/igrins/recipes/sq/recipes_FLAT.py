@@ -53,7 +53,7 @@ def makeProcessedFlat(p: Igrins):
         A primitive set matching the recipe_tags.
     """
 
-    p.prepare(require_wcs=False)
+    p.prepare()
     p.addDQ()
     p.addVAR(read_noise=True)
     # ADUToElectrons requires saturation_level and nonlinearity_level in the
