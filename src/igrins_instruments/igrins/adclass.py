@@ -146,6 +146,9 @@ class AstroDataIGRINSBase(_AstroDataIGRINS):
         """
         return lookup.array_properties.get('read_noise')
 
+    # FIXME We are hardcoding array_section, detector_section, data_section.
+    # Not sure if this is wise thing to do.
+
     # copied from f2
     @returns_list
     @astro_data_descriptor
@@ -181,6 +184,23 @@ class AstroDataIGRINSBase(_AstroDataIGRINS):
 
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
+
+    # copied from f2
+    @returns_list
+    @astro_data_descriptor
+    def data_section(self, pretty=False):
+
+        value_filter = (str if pretty else Section.from_string)
+        return value_filter('[1:2048,1:2048]')
+
+    # copied from f2
+    @returns_list
+    @astro_data_descriptor
+    def detector_section(self, pretty=False):
+
+        value_filter = (str if pretty else Section.from_string)
+        return value_filter('[1:2048,1:2048]')
+
 
     @astro_data_descriptor
     def wcs_ra(self):
