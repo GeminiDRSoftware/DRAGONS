@@ -1,3 +1,4 @@
+import numpy as np
 from astrodata import (astro_data_tag, astro_data_descriptor,
                        returns_list, TagSet)
 from gemini_instruments import gmu
@@ -144,7 +145,10 @@ class AstroDataIGRINSBase(_AstroDataIGRINS):
         float/list
             readnoise
         """
-        return lookup.array_properties.get('read_noise')
+        fowler_samp = self.phu.get('NSAMP')
+        read_noise_fit = lookup.array_properties.get("read_noise_fit")[self.band()]
+        read_noise = np.polyval(read_noise_fit, 1/fowler_samp)
+        return read_noise
 
     # FIXME We are hardcoding array_section, detector_section, data_section.
     # Not sure if this is wise thing to do.
