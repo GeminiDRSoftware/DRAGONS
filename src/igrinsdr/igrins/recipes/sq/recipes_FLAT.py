@@ -41,11 +41,15 @@ def estimateNoise(p: Igrins):
 
 def makeProcessedFlat(p: Igrins):
     """
-    This recipe performs the standardization and corrections needed to convert
-    the raw input dark images into a single stacked dark image. This output
-    processed dark is stored on disk and its information added to the calibration
-    database using storeProcessedDark and has a name
-    equal to the name of the first input bias image with "_bias.fits" appended.
+    This recipe takes flat images and reduce them to prepare a processed flat image.
+    The raw input should have both flat on and off images. The flat off and images are
+    separatedly combined into a single stacked flat off and a stacked flat on image,
+    then subtracted. For each order, an average spectrum is estimated as
+    a function of columns (x-pixels) and the pixels belong in that order are nomarlized
+    by the average spectrum. This is saved as a processed flat. The recipe will
+    identify upp and lower boundary of each order and which is added to the processed flat
+    with an extention of a "SLITEDGE" as a table. The combined flat before the normalization
+    is also stored with an extension name of "FLAT_ORIGINAL".
 
     Parameters
     ----------
@@ -54,35 +58,42 @@ def makeProcessedFlat(p: Igrins):
     """
 
     p.prepare()
+
+    p.referencePixelsCorrect() # FIXME For now, this does nothing as the
+                               # reference pixel correction is not correctly
+                               # done for IGRINS2 data dues to issues with
+                               # detector tuning (a workaround is needed.) This
+                               # recipe needs to be applied before addVar as we will
+                               # add poisson_noise.
+
     p.addDQ() # FIXME : will use non_linear_level and saturation_level for
               # additional masking.
-    p.addVAR(read_noise=True) # FIXME read readout noise from header? Make sure
-                              # a correct value is used.
+    p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
 
     # ADUToElectrons requires saturation_level and nonlinearity_level in the
     # header. Since IGRINS does not have these values defined, we add them
     # here.
     p.fixIgrinsHeader() # FIXME descriptor needed for saturation_level and nonlinear_level.
-    p.referencePixelsCorrect() # FIXME For now, this does nothing as the
-                               # reference pixel correction cannot be correctly
-                               # done with IGRINS2 data.
-    p.ADUToElectrons() # FIXME make sure gains are read from the header.
+    p.ADUToElectrons()
     #p.nonlinearityCorrect()
     p.makeLampFlat() # This separates the lamp-on and lamp-off flats, stacks
                      # them, subtracts one from the other, and returns that
                      # single frame. It requires LAMPON/LAMPOFF tags.
 
-    # # ported IGRINS's version of slit edge detection
     p.determineSlitEdges()
-    # # version that support multiple aperture.
-    p.maskBeyondSlit()
-    # # very primitive implementation for multiple apertures
+    # ported IGRINS's version of slit edge detection.
+    # Will create SLITEDGE table.
 
-    # FIXME : maybe incorporate PLP version of algorithm.
+    p.maskBeyondSlit()
+    # set unilluminated flags for the pixel not illuminated by the slit.
+
     p.normalizeFlat()
+    # The primitive will store the original flat in as 'FLAT_ORIGINAL'
+
     # We are using dragons's version of thresholdFlatfield. Do we need to mask
     # out low value pixels from the un-normarlized flat too? This will set DQ
     # with DQ.unilluminated for pixels whose value outsied the range.
+    # FIXME : maybe we incorporate PLP version of algorithm.
 
     p.thresholdFlatfield()
     p.storeProcessedFlat()

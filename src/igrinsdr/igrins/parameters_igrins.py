@@ -9,8 +9,7 @@ class prepareConfig(parameters_standardize.prepareConfig):
         self.require_wcs = False
 
 class addDQConfig(parameters_nearIR.addDQConfig):
-    def setDefaults(self):
-        self.add_illum_mask = True
+    pass
 
 class selectFrameConfig(config.Config):
     frmtype = config.Field("frametype to filter", str)
