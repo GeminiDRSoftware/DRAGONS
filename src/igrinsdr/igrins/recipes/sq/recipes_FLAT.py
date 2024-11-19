@@ -113,18 +113,48 @@ def makeProcessedBPM(p: Igrins):
     """
 
     p.prepare(require_wcs=False)
+    p.referencePixelsCorrect()
+
     p.addDQ()
     p.fixIgrinsHeader()
-    p.referencePixelsCorrect()
     p.ADUToElectrons()
 
-    p.selectFromInputs(tags="LAMPOFF", outstream="darks")
-    p.stackFrames(stream="darks")
+    p.selectFromInputs(tags="LAMPOFF", outstream="flat-off")
+    p.stackFrames(stream="flat-off")
 
-    p.make_hotpix_mask(sigma_clip1 = 100., sigma_clip2 = 10.)
-    # It will use "darks" stream to make a hotpix_maxk.
+    p.selectFromInputs(tags="LAMPON", outstream="flat-on")
+    p.stackFrames(stream="flat-on")
+
+    p.makeIgrinsBPM() # hotpix mask is created from the flat-off stream and the
+                      # deadpix mask is from flat-on stream.
 
     p.storeBPM()
     return
+
+
+def makeTestBadpix(p: Igrins):
+
+    p.prepare(require_wcs=False)
+    p.referencePixelsCorrect()
+
+    p.addDQ()
+    p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
+    p.fixIgrinsHeader()
+    p.ADUToElectrons()
+
+    p.selectFromInputs(tags="LAMPOFF", outstream="flatoff")
+    p.stackFrames(stream="flatoff")
+
+    p.selectFromInputs(tags="LAMPON", outstream="flaton")
+    p.stackFrames(stream="flaton")
+
+
+    adlist = p.selectStream(stream_name="flatoff")
+    adlist[0].write(overwrite=True)
+    adlist = p.selectStream(stream_name="flaton")
+    adlist[0].write(overwrite=True)
+
+    return
+
 
 # _default = makeProcessedBPM

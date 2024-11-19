@@ -112,8 +112,8 @@ class saveTwodspecConfig(config.Config):
 class saveDebugImageConfig(config.Config):
     save_debug =  config.Field("save the debug image if True. Default is True",
                                                 bool, True)
-
-class make_hotpix_maskConfig(config.Config):
-    sigma_clip1 = config.Field("Sigma criterion to mask in + shape", float)
-    sigma_clip2 = config.Field("Sigma criterion to mask in . shape", float)
-
+class makeIgrinsBPMConfig(config.Config):
+    hotpix_sigma_clip1 = config.Field("Sigma criterion to mask in + shape", float, 100)
+    hotpix_sigma_clip2 = config.Field("Sigma criterion to mask in . shape", float, 10)
+    deadpix_thresh = config.Field("Threshold to flat deadpixels", float, 0.6)
+    deadpix_smooth_size = config.Field("Kernel size of the median filter", int, 9)

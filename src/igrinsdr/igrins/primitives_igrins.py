@@ -78,7 +78,7 @@ from .procedures.iraf_helper import invert_order
 
 from .procedures.correct_distortion import get_rectified_2dspec
 from .procedures.shifted_images import ShiftedImages
-from .procedures.badpixel_mask import badpixel_mask
+from .procedures.badpixel_mask import make_igrins_hotpixel_mask, make_igrins_deadpixel_mask
 
 def _get_wavelength_solutions(affine_tr_matrix, zdata,
                               new_orders):
@@ -1286,31 +1286,37 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
+    # For FLAT recipes : make_hotpix_mask, make_deadpix_mask
 
-    def make_hotpix_mask(self, adinputs=None, **params):
-
+    def makeIgrinsBPM(self, adinputs, **params):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        sigma_clip1 = params['sigma_clip1']
-        sigma_clip2 = params['sigma_clip2']
-        try:
-            dark = self.streams['darks'][0]
-        except (KeyError, TypeError, IndexError):
-            raise OSError("A SET OF DARKS IS REQUIRED INPUT")
+        sigma_clip1 = params['hotpix_sigma_clip1']
+        sigma_clip2 = params['hotpix_sigma_clip2']
+        deadpix_thresh = params['deadpix_thresh']
+        smooth_size = params['deadpix_smooth_size']
 
-        for dark_ext in dark:
-            flat_off = dark_ext.data
+        ad_flatoff = self.streams['flat-off'][0]
+        ad_flaton = self.streams['flat-on'][0]
 
-            bg_std, hotpix_mask = badpixel_mask(flat_off,
-                                               sigma_clip1=sigma_clip1,
-                                               sigma_clip2=sigma_clip2,
-                                               medfilter_size=None)
-            dark_ext.reset(hotpix_mask.astype(np.int16), mask=None, variance=None)
+        for flatoff_ext, flaton_ext in zip(ad_flatoff, ad_flaton):
+            flat_off = flatoff_ext.data
+
+            bg_std, hotpix_mask = make_igrins_hotpixel_mask(flat_off,
+                                                            sigma_clip1=sigma_clip1,
+                                                            sigma_clip2=sigma_clip2,
+                                                            medfilter_size=None)
+
+            flat_on = flaton_ext.data
+            flat_std = flaton_ext.variance**.5
+
+            deadpix_mask = make_igrins_deadpixel_mask(flat_on, flat_std, deadpix_thresh, smooth_size)
 
 
-        dark.update_filename(suffix="_hotpixel", strip=True)
-        dark.phu.set('OBJECT', 'HotPixel')
-        # save fits with updated header
+            flatoff_ext.reset((hotpix_mask | deadpix_mask).astype(np.int16), mask=None, variance=None)
 
-        return [dark]
+        ad_flatoff.update_filename(suffix="_badpixel", strip=True)
+        ad_flatoff.phu.set('OBJECT', 'BadPixel')
+
+        return [ad_flatoff]

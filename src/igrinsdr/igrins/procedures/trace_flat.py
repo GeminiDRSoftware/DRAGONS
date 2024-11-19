@@ -789,6 +789,55 @@ def table_to_poly(tbl):
     return kk
 
 
+# for deadpix from flat on
+
+def get_flat_mask_auto(flat_bpix):
+    # now we try to build a reasonable mask
+    # start with a simple thresholded mask
+
+    bg_mean, bg_fwhm = estimate_bg_mean_std(flat_bpix, pad=4,
+                                            smoothing_length=150)
+    with np.errstate(invalid="ignore"):
+        flat_mask = (flat_bpix > bg_mean + bg_fwhm*3)
+
+    # remove isolated dots by doing binary erosion
+    m_opening = ni.binary_opening(flat_mask, iterations=2)
+    # try to extend the mask with dilation
+    m_dilation = ni.binary_dilation(m_opening, iterations=5)
+
+    return m_dilation
+
+
+def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
+
+    flat = flat[pad:-pad, pad:-pad]
+
+    flat_flat = flat[np.isfinite(flat)].flat
+    flat_sorted = np.sort(flat_flat)
+
+    flat_gradient = ni.gaussian_filter1d(flat_sorted,
+                                         smoothing_length, order=1)
+
+    flat_sorted = flat_sorted[smoothing_length:]
+    flat_dist = 1. / flat_gradient[smoothing_length:]
+
+    over_half_mask = flat_dist > 0.5 * max(flat_dist)
+    max_width_slice = max((sl.stop-sl.start, sl) for sl,
+                          in ni.find_objects(over_half_mask))[1]
+
+    flat_selected = flat_sorted[max_width_slice]
+
+    l = len(flat_selected)
+    indm = int(0.5 * l)
+    # ind1, indm, ind2 = map(int, [0.05 * l, 0.5 * l, 0.95 * l])
+
+    flat_bg = flat_selected[indm]
+
+    fwhm = flat_selected[-1] - flat_selected[0]
+
+    return flat_bg, fwhm
+
+
 # def table_to_poly(tbl):
 #     from numpy.polynomial.chebyshev import Chebyshev
 #     poly_dict = dict(cheb=Chebyshev)
