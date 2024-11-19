@@ -70,12 +70,12 @@ def makeProcessedFlat(p: Igrins):
               # additional masking.
     p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
 
-    # ADUToElectrons requires saturation_level and nonlinearity_level in the
-    # header. Since IGRINS does not have these values defined, we add them
-    # here.
-    p.fixIgrinsHeader() # FIXME descriptor needed for saturation_level and nonlinear_level.
-    p.ADUToElectrons()
-    #p.nonlinearityCorrect()
+    p.ADUToElectrons() # It tries to use saturation_level and nonlinear_level
+                       # values in the header. However, if those keys are not
+                       # difined in the `__keyword_dict` of IGRINS adclass,
+                       # they are simply ignored, which is the case.
+
+    # p.nonlinearityCorrect()
     p.makeLampFlat() # This separates the lamp-on and lamp-off flats, stacks
                      # them, subtracts one from the other, and returns that
                      # single frame. It requires LAMPON/LAMPOFF tags.
@@ -116,7 +116,7 @@ def makeProcessedBPM(p: Igrins):
     p.referencePixelsCorrect()
 
     p.addDQ()
-    p.fixIgrinsHeader()
+    # p.fixIgrinsHeader()
     p.ADUToElectrons()
 
     p.selectFromInputs(tags="LAMPOFF", outstream="flat-off")
