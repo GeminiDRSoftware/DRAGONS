@@ -2451,8 +2451,8 @@ class Spect(Resample):
                 reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
 
-                label_fn = (lambda i: f"Order {ad.hdr['SPECORDR'][i]}"
-                            if 'XD' in ad.tags else lambda i: f"Slit {i+1}")
+                label_fn = ((lambda i: f"Order {ad.hdr['SPECORDR'][i]}")
+                            if 'XD' in ad.tags else (lambda i: f"Slit {i+1}"))
 
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
