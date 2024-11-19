@@ -830,18 +830,18 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     wave_start = model(pixel_start)
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
-    fits_to_do = [(pixel_start, wave_start, dw_start)]
+    fits_to_do = [(pixel_start, wave_start, dw_start, min_lines_per_fit)]
 
     first = True
     while fits_to_do:
         start = datetime.now()
-        p0, c0, dw = fits_to_do.pop()
-        if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
+        p0, c0, dw, min_lines_this_fit = fits_to_do.pop()
+        if min(len(arc_lines), len(peaks)) <= min_lines_this_fit:
             p1 = p0
         else:
             p1 = 0
         npeaks = narc_lines = 0
-        while (min(npeaks, narc_lines) < min_lines_per_fit and
+        while (min(npeaks, narc_lines) < min_lines_this_fit and
                not (p0 - p1 < 0 and p0 + p1 >= len_data)):
             p1 += 1
             i1 = bisect(peaks, p0 - p1)
@@ -851,7 +851,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             i2 = bisect(arc_lines, c0 + p1 * abs(dw))
             narc_lines = i2 - i1
         c1 = p1 * dw
-        print(f"Pixel={p0:6.1f} p1={p1:6.1f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_per_fit}")
+        print(f"Pixel={p0:6.1f} p1={p1:6.1f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_this_fit}")
 
         if p1 > 0.25 * len_data and order >= 2:
             m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
@@ -878,11 +878,13 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         # Add new matches to the list
         new_matches = matching.match_sources(m_this(peaks), arc_lines,
                                              radius=match_radius)
+        found_new_matches = False
         for i, (m, p) in enumerate(zip(new_matches, peaks)):
             if matches[i] == -1 and m > -1:
                 if p0 - p1 <= p <= p0 + p1:
                     # automatically removes old (bad) match
                     matches[i] = m
+                    found_new_matches = True
                     print(f"Pixel {p} => {arc_lines[m]}")
         try:
             p_lo = peaks[matches > -1].min()
@@ -894,12 +896,14 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             # if min(len(arc_lines), len(peaks)) > min_lines_per_fit:
                 if p_lo < p0 <= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
-                    fits_to_do.append((p_lo, arc_line, dw))
+                    fits_to_do.append((p_lo, arc_line, dw, min_lines_per_fit))
                 p_hi = peaks[matches > -1].max()
                 if p_hi > p0 >= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
-                    fits_to_do.append((p_hi, arc_line, dw))
+                    fits_to_do.append((p_hi, arc_line, dw, min_lines_per_fit))
         #dc0 = 5 * abs(dw)
+        if not found_new_matches and min_lines_this_fit < 2 * min_lines_per_fit:
+            fits_to_do.append((p0, c0, dw, 2 * min_lines_this_fit))
         first = False
 
     return matches
