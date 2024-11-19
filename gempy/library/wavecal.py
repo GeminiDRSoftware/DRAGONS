@@ -846,10 +846,12 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             p1 += 1
             i1 = bisect(peaks, p0 - p1)
             i2 = bisect(peaks, p0 + p1)
-            npeaks = i2 - i1
+            #npeaks = i2 - i1
+            npeaks = (matches[i1:i2] > -1).sum()  # only count unmatched peaks
             i1 = bisect(arc_lines, c0 - p1 * abs(dw))
             i2 = bisect(arc_lines, c0 + p1 * abs(dw))
-            narc_lines = i2 - i1
+            #narc_lines = i2 - i1
+            narc_lines = [x not in matches for x in range(i1, i2)].count(True)
         c1 = p1 * dw
         print(f"Pixel={p0:6.1f} p1={p1:6.1f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_this_fit}")
 
@@ -902,8 +904,8 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                     arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
                     fits_to_do.append((p_hi, arc_line, dw, min_lines_per_fit))
         #dc0 = 5 * abs(dw)
-        if not found_new_matches and min_lines_this_fit < 2 * min_lines_per_fit:
-            fits_to_do.append((p0, c0, dw, 2 * min_lines_this_fit))
+        #if not found_new_matches and min_lines_this_fit < 2 * min_lines_per_fit:
+        #    fits_to_do.append((p0, c0, dw, 2 * min_lines_this_fit))
         first = False
 
     return matches
