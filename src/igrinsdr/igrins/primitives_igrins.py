@@ -29,7 +29,7 @@ from .json_helper import dict_to_table
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
-from .procedures.readout_pattern_helper import remove_readout_pattern_flat_off
+from .procedures.readout_pattern.readout_pattern_helper import remove_readout_pattern_flat_off
 
 from .procedures.procedure_dark import (make_guard_n_bg_subtracted_images,
                                         estimate_amp_wise_noise)
@@ -62,7 +62,7 @@ from .procedures.process_wvlsol_volume_fit import (_append_offset,
 from .procedures.nd_poly import NdPolyNamed
 from .procedures.process_derive_wvlsol import fit_wvlsol, _convert2wvlsol
 
-from .procedures.readout_pattern_helper import remove_pattern
+from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
 
 
 from .procedures.slit_profile import (extract_slit_profile,

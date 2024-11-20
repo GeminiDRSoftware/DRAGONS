@@ -2,7 +2,7 @@ import numpy as np
 import scipy.ndimage as ni
 
 from .image_combine import image_median
-from . import destripe_helper as dh
+from .readout_pattern import destripe_helper as dh
 
 
 def _make_background_mask(dark1):

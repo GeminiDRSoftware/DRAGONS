@@ -1,8 +1,9 @@
 import numpy as np
 
-from .image_combine import image_median
+from ..image_combine import image_median
+from ..bg_mask_helper import make_background_mask_from_combined
+
 from .readout_pattern import pipes, apply as apply_pipe
-from .bg_mask_helper import make_background_mask_from_combined
 
 # from igrins.procedures.procedure_dark import (apply_rp_2nd_phase,
 #                                               apply_rp_1st_phase)

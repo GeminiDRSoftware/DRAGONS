@@ -1,6 +1,6 @@
 import numpy as np
 
-from .image_combine import image_median
+from ..image_combine import image_median
 
 # basic routines
 
