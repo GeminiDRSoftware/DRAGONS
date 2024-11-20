@@ -847,7 +847,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             i1 = bisect(peaks, p0 - p1)
             i2 = bisect(peaks, p0 + p1)
             #npeaks = i2 - i1
-            npeaks = (matches[i1:i2] > -1).sum()  # only count unmatched peaks
+            npeaks = (matches[i1:i2] == -1).sum()  # only count unmatched peaks
             i1 = bisect(arc_lines, c0 - p1 * abs(dw))
             i2 = bisect(arc_lines, c0 + p1 * abs(dw))
             #narc_lines = i2 - i1
