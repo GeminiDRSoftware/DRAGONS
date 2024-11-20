@@ -29,6 +29,8 @@ from .json_helper import dict_to_table
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
+from .procedures.readout_pattern_helper import remove_readout_pattern_flat_off
+
 from .procedures.procedure_dark import (make_guard_n_bg_subtracted_images,
                                         estimate_amp_wise_noise)
 
@@ -573,6 +575,32 @@ class Igrins(Gemini, NearIR):
                         ext.hdr[kw] = (1.e5, "Test")
                         # print ("FIX", kw, ext.hdr.comments[kw])
 
+
+        return adinputs
+
+    def readoutPatternCorrectFlatOff(self, adinputs, **params):
+        lamp_off_list = self.selectFromInputs(adinputs, tags='LAMPOFF')
+
+        # We assume that ad instance has only a single extension.
+        data_list = [ad[0].data for ad in lamp_off_list]
+        band = lamp_off_list[0].band()
+        assert band in "HK"
+
+        flat_off_1st_pattern_removal_mode = params["flat_off_1st_pattern_removal_mode"]
+        flat_off_2nd_pattern_removal_mode = params["flat_off_2nd_pattern_removal_mode"]
+        if flat_off_2nd_pattern_removal_mode == "auto":
+           rp_remove_mode = None
+        else:
+           rp_remove_mode = int(flat_off_2nd_pattern_removal_mode)
+
+
+        data_list_fixed = remove_readout_pattern_flat_off(data_list, band=band,
+                                                          flat_off_pattern_removal=flat_off_1st_pattern_removal_mode,
+                                                          rp_remove_mode=rp_remove_mode)
+
+        for ad, d in zip(lamp_off_list, data_list_fixed):
+            ad[0].data = d
+            ad.update_filename(suffix="rp_corrected", strip=True)
 
         return adinputs
 

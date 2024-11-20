@@ -209,6 +209,32 @@ class PatternBase(object):
 
         return d5 - k
 
+from .destriper import get_stack_subrows
+
+def get_horizontal_stack(d, dy, mask=None, alt_sign=False):
+    if mask is None:
+        mask = ~np.isfinite(d)
+    else:
+        mask = ~np.isfinite(d) | mask
+
+    dd, msk = get_stack_subrows(d, dy, mask=mask, alt_sign=alt_sign)
+    h = np.hstack(dd)
+    p64 = np.nanmedian(h, axis=1)
+
+    return p64
+
+
+class PatternP64GlobalMedian(PatternBase):
+    @classmethod
+    def get(cls, d, mask=None):
+        p64 = get_horizontal_stack(d, 64, mask=mask, alt_sign=True)
+        return p64
+
+    @classmethod
+    def broadcast(cls, d1, p64):
+        k = dh.concat(p64, [1, -1], 16)
+        return k[:, np.newaxis]
+
 
 class PatternP64Zeroth(PatternBase):
     @classmethod
@@ -441,6 +467,7 @@ def apply(d, p_list, mask=None, draw_hist_ax=None):
 
 
 pipes = OrderedDict(amp_wise_bias_r2=PatternAmpP2,
+                    p64_global_median=PatternP64GlobalMedian,
                     p64_0th_order=PatternP64Zeroth,
                     col_wise_bias_c64=PatternColWiseBiasC64,
                     p64_1st_order=PatternP64First,

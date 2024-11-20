@@ -4,6 +4,40 @@ from .image_combine import image_median
 
 # basic routines
 
+def get_stack_subrows(d, dy, mask=None, alt_sign=False):
+
+    if len(d.shape) == 1:
+        ny, = d.shape
+    elif len(d.shape) == 2:
+        ny, nx = d.shape
+    else:
+        raise ValueError("unsupported shape: {}", d.shape)
+
+    n_dy = ny//dy
+    dy_slices = [slice(iy*dy, (iy+1)*dy) for iy in range(n_dy)]
+
+    from itertools import cycle
+    if mask is not None:
+        if alt_sign:
+            _sign = cycle([1, -1])
+            dd = [d[sl][::next(_sign)] for sl in dy_slices]
+            _sign = cycle([1, -1])
+            msk = [mask[sl][::next(_sign)] for sl in dy_slices]
+        else:
+            dd = [d[sl] for sl in dy_slices]
+            msk = [mask[sl] for sl in dy_slices]
+
+        return dd, msk
+
+    else:
+        if alt_sign:
+            _sign = cycle([1, -1])
+            dd = [d[sl][::next(_sign)] for sl in dy_slices]
+        else:
+            dd = [d[sl] for sl in dy_slices]
+
+        return dd
+
 
 def stack_subrows(d, dy, mask=None, alt_sign=False, op="median"):
     if mask is None:

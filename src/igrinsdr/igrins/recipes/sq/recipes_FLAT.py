@@ -59,23 +59,19 @@ def makeProcessedFlat(p: Igrins):
 
     p.prepare()
 
-    p.referencePixelsCorrect() # FIXME For now, this does nothing as the
-                               # reference pixel correction is not correctly
-                               # done for IGRINS2 data dues to issues with
-                               # detector tuning (a workaround is needed.) This
-                               # recipe needs to be applied before addVar as we will
-                               # add poisson_noise.
+    p.readoutPatternCorrectFlatOff() # This recipe needs to be applied before
+                                     # addVar as we will add poisson_noise.
 
     p.addDQ() # FIXME : will use non_linear_level and saturation_level for
               # additional masking.
     p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
 
+    # p.nonlinearityCorrect()
     p.ADUToElectrons() # It tries to use saturation_level and nonlinear_level
                        # values in the header. However, if those keys are not
                        # difined in the `__keyword_dict` of IGRINS adclass,
                        # they are simply ignored, which is the case.
 
-    # p.nonlinearityCorrect()
     p.makeLampFlat() # This separates the lamp-on and lamp-off flats, stacks
                      # them, subtracts one from the other, and returns that
                      # single frame. It requires LAMPON/LAMPOFF tags.
@@ -113,7 +109,8 @@ def makeProcessedBPM(p: Igrins):
     """
 
     p.prepare(require_wcs=False)
-    p.referencePixelsCorrect()
+    p.readoutPatternCorrectFlatOff() # This recipe needs to be applied before
+                                     # addVar as we will add poisson_noise.
 
     p.addDQ()
     # p.fixIgrinsHeader()
