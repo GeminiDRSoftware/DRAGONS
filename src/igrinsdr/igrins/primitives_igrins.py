@@ -531,7 +531,6 @@ class Igrins(Gemini, NearIR):
 
             pp = table_to_poly(tbl)
 
-            from geminidr.gemini.lookups import DQ_definitions as DQ
             mask = np.empty((2048, 2048), dtype=DQ.datatype)
             mask.fill(DQ.unilluminated)
             for o, sl, m in iter_order(pp):
@@ -543,24 +542,50 @@ class Igrins(Gemini, NearIR):
 
     def normalizeFlat(self, adinputs=None, **params):
 
+        from .procedures.normalize_flat import (get_initial_spectrum_for_flaton,
+                                                get_normalize_spectrum_for_flaton)
+
         ad = adinputs[0]
 
         for ext in ad:
             tbl = ext.SLITEDGE
 
-            pp = table_to_poly(tbl)
+            slitedge_polyfit = table_to_poly(tbl)
 
             ext.FLAT_ORIGINAL = ext.data.copy()
-            d = ext.data
-            dq_mask = (ext.mask & DQ.unilluminated).astype(bool)
-            d[dq_mask] = np.nan
 
-            # Very primitive normarlization. Should be improved.
-            for o, sl, m in iter_order(pp):
-                dn = np.ma.array(d[sl], mask=~m).filled(np.nan)
-                s = np.nanmedian(dn,
-                                 axis=0)
-                d[sl][m] = (dn / s)[m]
+            # dq_mask = (ext.mask & DQ.unilluminated).astype(bool)
+            # d[dq_mask] = np.nan
+
+            d = ext.data
+            mask = ext.mask > 0
+
+            s = get_initial_spectrum_for_flaton(d, mask, slitedge_polyfit)
+            s_list, i1i2_list, s2_list = get_normalize_spectrum_for_flaton(s)
+
+            flat_im = np.ones(d.shape, "d")
+
+            for (o, sl, m), s2 in zip(iter_order(slitedge_polyfit), s2_list):
+                if s2 is None:  # some order may have little valid pixels and
+                                # spectrum is None. We just skip these.
+                    continue
+
+                # subim = np.ma.array(d[sl], mask=~m).filled(np.nan)
+                # d_div = subim / s2
+                subim = d[sl]
+                flat_im[sl][m] = (subim / s2)[m]
+
+            with np.errstate(invalid="ignore"):
+                flat_im[flat_im < 0.5] = np.nan
+
+            order_flat_dict = dict(#orders=orders,
+                                   fitted_responses=s2_list,
+                                   i1i2_list=i1i2_list,
+                                   mean_order_specs=s)
+
+            tbl = dict_to_table(order_flat_dict)
+
+            ad.FLATNORM = tbl
 
         return adinputs
 
