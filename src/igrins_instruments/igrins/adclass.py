@@ -31,15 +31,15 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
     )
 
     @astro_data_tag
-    def _tag_spect(self):
-        return TagSet(['SPECT'])
+    def _tag_bundle(self):
+        # Gets blocked by tags created by split files
+        return TagSet(['BUNDLE'])
 
     @astro_data_tag
-    def _tag_band(self):
-        band = self.phu.get('BAND')
-
-        if band:
-            return TagSet([band])
+    def _tag_spect(self):
+        bands = set(self.hdr.get('BAND'))
+        if len(bands) == 1:
+            return TagSet([bands.pop(), 'SPECT'], blocks=['BUNDLE'])
 
     # LAMPON/lAMPOFF tags are inccorectly set by AstroDataGemini._type_gacl_alp
     # method. We simply override this to return nothing.
@@ -298,6 +298,10 @@ class AstroDataIGRINS(AstroDataIGRINSBase):
 
 class AstroDataIGRINS2(AstroDataIGRINSBase):
 
+    __keyword_dict = dict(
+        wavelength_band = 'FILTER',
+    )
+
     @staticmethod
     def _matches_data(source):
         igrins = source[0].header.get('INSTRUME', '').upper() == 'IGRINS-2'
@@ -333,11 +337,10 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
         return tags
 
     @astro_data_tag
-    def _tag_band(self):
-        band = self.phu.get('FILTER')
-
-        if band:
-            return TagSet([band])
+    def _tag_spect(self):
+        bands = set(self.hdr.get('FILTER'))
+        if len(bands) == 1:
+            return TagSet([bands.pop(), 'SPECT'], blocks=['BUNDLE'])
 
     @astro_data_descriptor
     def instrument(self, generic=False):
