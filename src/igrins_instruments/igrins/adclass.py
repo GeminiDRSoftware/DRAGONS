@@ -145,9 +145,13 @@ class AstroDataIGRINSBase(_AstroDataIGRINS):
         float/list
             readnoise
         """
-        fowler_samp = self.phu.get('NSAMP')
-        read_noise_fit = lookup.array_properties.get("read_noise_fit")[self.band()]
-        read_noise = np.polyval(read_noise_fit, 1/fowler_samp)
+        if self.is_single:
+            fowler_samp =self.hdr.get('NSAMP') 
+            read_noise_fit = lookup.array_properties.get("read_noise_fit")[self.band()]
+            read_noise = np.polyval(read_noise_fit, 1/fowler_samp)
+        else:
+            read_noise = [ext.read_noise() for ext in self]
+
         return read_noise
 
     # FIXME We are hardcoding array_section, detector_section, data_section.
@@ -362,4 +366,4 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
 
     @astro_data_descriptor
     def band(self):
-        return self.phu.get('FILTER')
+        return self.hdr.get('FILTER')
