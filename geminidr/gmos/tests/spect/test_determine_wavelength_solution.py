@@ -230,7 +230,7 @@ def test_consistent_air_and_vacuum_solutions(ad, params):
     wair = wave_air(x)
     wvac = air_to_vac(wair * u.nm).to(u.nm).value
     dw = wvac - wave_vac(x)
-    assert abs(dw).max() < 0.001
+    assert abs(dw).max() < 0.005  # 1/20 pixel
 
 
 # We only need to test this with one input
