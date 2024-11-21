@@ -59,8 +59,9 @@ def makeProcessedFlat(p: Igrins):
 
     p.prepare()
 
-    p.readoutPatternCorrectFlatOff() # This recipe needs to be applied before
-                                     # addVar as we will add poisson_noise.
+    p.readoutPatternCorrectFlatOff() # This primitive needs to be applied
+                                     # before addVar as we will add
+                                     # poisson_noise.
 
     p.addDQ() # FIXME : will use non_linear_level and saturation_level for
               # additional masking.
