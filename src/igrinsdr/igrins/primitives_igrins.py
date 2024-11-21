@@ -626,12 +626,13 @@ class Igrins(Gemini, NearIR):
 
     def identifyOrders(self, adinputs):
         ad = adinputs[0]
-        spec1d = ad[0].SPEC1D
+        ext = ad[0]
+        spec1d = ext.SPEC1D
 
         s_list_ = spec1d["specs"]
         s_list = [np.array(s, dtype=np.float64) for s in s_list_]
 
-        band = ad.band() # phu["BAND"]
+        band = ext.band() # phu["BAND"]
 
         ref_spectra = get_ref_data(band)["ref_spec"]
         # ref_spectra = json.load(open(f"SKY_{band}.oned_spec.json"))
@@ -645,17 +646,17 @@ class Igrins(Gemini, NearIR):
 
         spec1d["orders"] = new_orders
         order_map = dict(zip(spec1d["orders_initial"], new_orders))
-        ad[0].SLITEDGE["order"] = [order_map[o] for o in ad[0].SLITEDGE["order"]]
+        ext.SLITEDGE["order"] = [order_map[o] for o in ext.SLITEDGE["order"]]
 
         # ad[0].SPEC1D_NEW = spec1d
         return adinputs
 
     def identifyLinesAndGetWvlsol(self, adinputs, **params):
         ad = adinputs[0]
+        ext = ad[0]
+        tgt_spec = ext.SPEC1D
 
-        tgt_spec = ad[0].SPEC1D
-
-        band = ad.band() # phu["BAND"]
+        band = ext.band() # phu["BAND"]
 
         ref_data = get_ref_data(band)
 
