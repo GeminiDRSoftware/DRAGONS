@@ -125,7 +125,7 @@ class AstroDataIGRINSBase(_AstroDataIGRINS):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(['IGRINS', 'VERSION1'])
+        return TagSet(['IGRINS', 'IGRINS-1'])
 
     # ------------------
     # Common descriptors
@@ -156,6 +156,10 @@ class AstroDataIGRINSBase(_AstroDataIGRINS):
 
     # FIXME We are hardcoding array_section, detector_section, data_section.
     # Not sure if this is wise thing to do.
+
+    @astro_data_descriptor
+    def arm(self):
+        return self.phu.get(self._keyword_for('wavelength_band'))
 
     # copied from f2
     @returns_list
@@ -258,7 +262,7 @@ class AstroDataIGRINS(AstroDataIGRINSBase):
     # single keyword mapping.  add only the ones that are different
     # from what's already defined in AstroDataGemini.
 
-    @astro_data_tag
+    #@astro_data_tag
     def _tag_caltype(self):
         if self.phu.get('OBJTYPE') == 'SKY' or self[0].hdr.get('OBJTYPE') == 'SKY':
             return TagSet(['SKY', 'ARC'])
@@ -316,9 +320,42 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(['IGRINS', 'VERSION2'])
+        return TagSet(['IGRINS', 'IGRINS-2'])
 
     @astro_data_tag
+    def _tag_arc(self):
+        if (self.phu.get("OBSTYPE") == "OBJECT" and
+                "sky" in self.phu.get("OBJECT").lower()):
+            return TagSet(['ARC', 'CAL'], if_present=['PROCESSED'])
+
+    @astro_data_tag
+    def _tag_flat(self):
+        if self.phu.get('OBSTYPE').strip() == 'FLAT':
+            return TagSet(['FLAT', 'CAL'])
+
+    @astro_data_tag
+    def _type_gcal_lamp(self):
+        # When flats are processed, they're neither "on" nor "off"
+        if self.phu.get('GCALLAMP') == 'QH' and self.phu.get('GCALSHUT') == 'CLOSED':
+            return TagSet(['LAMPON'], blocked_by=['PROCESSED'])
+        elif self.phu.get('GCALLAMP') == 'IRhigh' and self.phu.get('GCALSHUT') == 'CLOSED':
+            return TagSet(['LAMPOFF'], blocked_by=['PROCESSED'])
+
+    @astro_data_tag
+    def _tag_sky(self):
+        if (self.phu.get("OBSTYPE") == "OBJECT" and
+                "sky" in self.phu.get("OBJECT").lower()):
+            # We don't want "SKY" if it's become a processed arc
+            return TagSet(['SKY', 'CAL'], blocks=['STANDARD'],
+                          blocked_by=['PROCESSED'])
+
+    @astro_data_tag
+    def _tag_std(self):
+        if (self.phu.get("OBSTYPE") == "OBJECT" and
+                self.phu.get("OBSCLASS") == "partnerCal"):
+            return TagSet(['STANDARD', 'CAL'])
+
+    #@astro_data_tag -- commented out so not run
     def _tag_caltype(self):
         tags = TagSet()
 
@@ -342,9 +379,9 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
 
     @astro_data_tag
     def _tag_spect(self):
-        bands = set(self.hdr.get('FILTER'))
-        if len(bands) == 1:
-            return TagSet([bands.pop(), 'SPECT'], blocks=['BUNDLE'])
+        band = self.phu.get('FILTER')
+        if band:
+            return TagSet([band, 'SPECT'], blocks=['BUNDLE'])
 
     @astro_data_descriptor
     def instrument(self, generic=False):
@@ -366,4 +403,4 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
 
     @astro_data_descriptor
     def band(self):
-        return self.hdr.get('FILTER')
+        return self.phu.get('FILTER')

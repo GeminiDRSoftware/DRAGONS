@@ -49,5 +49,6 @@ def makeStd(p: Igrins):
 
     makeStellar(p)
     # normalize the spectra
+    #p.storeProcessedStandard()
 
 _default = makeStd
