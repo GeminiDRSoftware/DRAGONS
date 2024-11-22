@@ -121,5 +121,8 @@ class makeIgrinsBPMConfig(config.Config):
 class readoutPatternCorrectFlatOffConfig(config.Config):
     flat_off_1st_pattern_removal_mode = config.Field("initial correction method for flat off", str,
                                                      "global_median")
-    flat_off_2nd_pattern_removal_mode = config.Field("initial correction method for flat off", str,
+    flat_off_2nd_pattern_removal_mode = config.Field("2nd stage correction method for flat off", str,
                                                      "auto")
+
+class readoutPatternCorrectFlatOnConfig(config.Config):
+    pass

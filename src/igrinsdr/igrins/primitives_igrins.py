@@ -29,7 +29,8 @@ from .json_helper import dict_to_table
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
-from .procedures.readout_pattern.readout_pattern_helper import remove_readout_pattern_flat_off
+from .procedures.readout_pattern.readout_pattern_helper import (remove_readout_pattern_flat_off,
+                                                                remove_readout_pattern_from_guard)
 
 from .procedures.procedure_dark import (make_guard_n_bg_subtracted_images,
                                         estimate_amp_wise_noise)
@@ -628,6 +629,21 @@ class Igrins(Gemini, NearIR):
             ad.update_filename(suffix="rp_corrected", strip=True)
 
         return adinputs
+
+    def readoutPatternCorrectFlatOn(self, adinputs, **params):
+
+        if "IGRINS-2" in adinputs[0].tags:
+            # do nothing for IGRINS-2. The reference pixel values in IGRINS-2
+            # detectors can make things worse. FIXME The data taken after
+            # 202410 can be okay. Need to check.
+            return adinputs
+
+        lamp_on_list = self.selectFromInputs(adinputs, tags='LAMPON')
+        for ad in lamp_on_list:
+            ad.data = remove_readout_pattern_from_guard(ad.data)
+
+        return adinputs
+
 
     def referencePixelsCorrect(self, adinputs, **params):
         for ad in adinputs:

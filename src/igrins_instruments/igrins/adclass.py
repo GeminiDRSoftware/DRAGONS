@@ -125,7 +125,7 @@ class AstroDataIGRINSBase(_AstroDataIGRINS):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(['IGRINS', 'VERSION1'])
+        return TagSet(['IGRINS', 'IGRINS-1'])
 
     # ------------------
     # Common descriptors
@@ -308,7 +308,7 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(['IGRINS', 'VERSION2'])
+        return TagSet(['IGRINS', 'IGRINS-2'])
 
     @astro_data_tag
     def _tag_caltype(self):

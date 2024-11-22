@@ -110,12 +110,11 @@ def makeProcessedBPM(p: Igrins):
     """
 
     p.prepare(require_wcs=False)
+    p.addDQ() # FIXME : While I don't think this is required, we still need
+              # this. Otherwise, it will raise error in stackFrames.
+
     p.readoutPatternCorrectFlatOff() # This recipe needs to be applied before
                                      # addVar as we will add poisson_noise.
-
-    p.addDQ()
-    # p.fixIgrinsHeader()
-    p.ADUToElectrons()
 
     p.selectFromInputs(tags="LAMPOFF", outstream="flat-off")
     p.stackFrames(stream="flat-off")
@@ -133,7 +132,9 @@ def makeProcessedBPM(p: Igrins):
 def makeTestBadpix(p: Igrins):
 
     p.prepare(require_wcs=False)
-    p.referencePixelsCorrect()
+    p.readoutPatternCorrectFlatOff() # This primitive needs to be applied
+                                     # before addVar as we will add
+                                     # poisson_noise.
 
     p.addDQ()
     p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header

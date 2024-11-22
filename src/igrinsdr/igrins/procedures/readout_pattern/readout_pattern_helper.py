@@ -110,7 +110,7 @@ def make_initial_flat_cube(data_list, mode, bg_y_slice):
 
     return cards, cube3
 
-from .readout_pattern_guard import remove_pattern_from_guard
+from .readout_pattern_guard import remove_pattern_from_guard as remove_readout_pattern_from_guard
 from .ro_pattern_fft import (get_amp_wise_rfft,
                              make_model_from_rfft)
 
@@ -148,7 +148,7 @@ def select_k_to_remove(c, n=2):
 def remove_pattern(data_minus, mask=None, remove_level=1,
                    remove_amp_wise_var=True):
 
-    d1 = remove_pattern_from_guard(data_minus)
+    d1 = remove_readout_pattern_from_guard(data_minus)
 
     if remove_level == 2:
         d2 = apply_rp_2nd_phase(d1, mask=mask)
@@ -236,7 +236,7 @@ def remove_readout_pattern_flat_off(data_list, band,
         pass
     elif flat_off_pattern_removal == "guard":
         # subtract patterns using the guard column
-        data_list = [remove_pattern_from_guard(d) for d in data_list]
+        data_list = [remove_readout_pattern_from_guard(d) for d in data_list]
     elif flat_off_pattern_removal == "global_median":
         p = [pipes["p64_global_median"]]
         data_list = [apply_pipe(d, p) for d in data_list]
