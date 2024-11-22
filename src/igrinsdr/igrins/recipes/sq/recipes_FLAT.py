@@ -87,11 +87,6 @@ def makeProcessedFlat(p: Igrins):
     p.normalizeFlat()
     # The primitive will store the original flat in as 'FLAT_ORIGINAL'
 
-    # We are using dragons's version of thresholdFlatfield. Do we need to mask
-    # out low value pixels from the un-normarlized flat too? This will set DQ
-    # with DQ.unilluminated for pixels whose value outsied the range.
-    # FIXME : maybe we incorporate PLP version of algorithm.
-
     p.thresholdFlatfield()
     p.storeProcessedFlat()
 
@@ -115,6 +110,7 @@ def makeProcessedBPM(p: Igrins):
 
     p.readoutPatternCorrectFlatOff() # This recipe needs to be applied before
                                      # addVar as we will add poisson_noise.
+    p.readoutPatternCorrectFlatOn() # This recipe needs to be applied before
 
     p.selectFromInputs(tags="LAMPOFF", outstream="flat-off")
     p.stackFrames(stream="flat-off")

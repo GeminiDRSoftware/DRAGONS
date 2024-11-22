@@ -579,6 +579,8 @@ class Igrins(Gemini, NearIR):
             with np.errstate(invalid="ignore"):
                 flat_im[flat_im < 0.5] = np.nan
 
+            ext.data = flat_im
+
             order_flat_dict = dict(#orders=orders,
                                    fitted_responses=s2_list,
                                    i1i2_list=i1i2_list,
@@ -609,7 +611,7 @@ class Igrins(Gemini, NearIR):
 
         # We assume that ad instance has only a single extension.
         data_list = [ad[0].data for ad in lamp_off_list]
-        band = lamp_off_list[0].band()
+        band = lamp_off_list[0][0].band()
         assert band in "HK"
 
         flat_off_1st_pattern_removal_mode = params["flat_off_1st_pattern_removal_mode"]
