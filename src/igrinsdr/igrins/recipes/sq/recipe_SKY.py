@@ -23,11 +23,14 @@ def makeProcessedArc(p: Igrins):
     p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
-    # ADUToElectrons requires saturation_level and nonlinearity_level in the
-    # header. Since IGRINS does not have these values defined, we add them
-    # here.
-    p.fixIgrinsHeader()
-    p.referencePixelsCorrect()
+    # # ADUToElectrons requires saturation_level and nonlinearity_level in the
+    # # header. Since IGRINS does not have these values defined, we add them
+    # # here.
+    # p.fixIgrinsHeader()
+    # p.referencePixelsCorrect()
+
+    # FIXME Somewhere here we need to copy mask from the flat to the self.
+
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
 

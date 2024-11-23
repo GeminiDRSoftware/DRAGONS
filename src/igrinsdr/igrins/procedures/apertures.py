@@ -50,7 +50,13 @@ class Apertures(object):
         self.orders_to_extract = range(start_order, end_order+1)
 
     def extract_spectra_simple(self, data, f1=0., f2=1.):
+        """
+        extract spectrum by doing nanmedian along the y-direction. So apply badpixel mask
+        to the data before calling this function.
 
+        For each column, it calculates start and end indices, thus this can be slower. Use this
+        if you do not have the slitpos map ready yet.
+        """
         xx = np.arange(2048)
 
         s_list = []

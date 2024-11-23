@@ -703,8 +703,9 @@ class Igrins(Gemini, NearIR):
         tbl = ad_flat[0].SLITEDGE
         ap = Apertures(tbl)
 
-        # FIXME we need to apply the badpixel mask.
-        s = ap.extract_spectra_simple(ad[0].data, f1=0., f2=1.)
+        # FIXME we simply apply mask from ad_flat. Maybe we should we have flatCorrect prmitive?
+        d = np.ma.array(ad[0].data, mask=(ad[0].mask | ad_flat[0].mask) > 0).filled(np.nan)
+        s = ap.extract_spectra_simple(d, f1=0.1, f2=0.9)
 
         # t = Table(s,
         #           names=(f"{o}" for o in ap.orders_to_extract))
@@ -727,11 +728,7 @@ class Igrins(Gemini, NearIR):
 
         band = ext.band() # phu["BAND"]
 
-        ref_spectra = get_ref_data(band)["ref_spec"]
-        # ref_spectra = json.load(open(f"SKY_{band}.oned_spec.json"))
-
-        orders_ref = ref_spectra["orders"]
-        s_list_ref = ref_spectra["specs"]
+        orders_ref, s_list_ref = get_ref_spectra(band)
 
         # match the orders of s_list_src & s_list_dst
         delta_indx, new_orders = match_orders(orders_ref, s_list_ref,
