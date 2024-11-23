@@ -138,16 +138,38 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
 
 
 def get_ref_data(band):
-    pkgroot = files("igrinsdr") # FIXME okay to use hardcoded module name?
-    dataroot = pkgroot / "igrins/lookups/ref_data"
+
+    from . import lookups
+    dataroot = files(lookups) / "ref_data"
 
     # FIXME use hardcoded file names for now.
     j = dict(
-        ref_spec=json.load(open(dataroot / f"SDC{band}_20140525_0029.oned_spec.json")),
-        identified_lines_v0=json.load(open(dataroot / f"SKY_SDC{band}_20140525.identified_lines_v0.json")),
-        echellogram_data=json.load(open(dataroot / f"SDC{band}_20140525.echellogram.json")),
+        ref_spec=json.load((dataroot / f"SDC{band}_20140525_0029.oned_spec.json").open()),
+        identified_lines_v0=json.load((dataroot / f"SKY_SDC{band}_20140525.identified_lines_v0.json").open()),
+        echellogram_data=json.load((dataroot / f"SDC{band}_20140525.echellogram.json").open()),
     )
     return j
+
+
+def get_ref_spectra(band, source="__package__"):
+    # The default is to fetch the reference spectra that is included in the package.
+    # We may support using a reduced sky spectra from the other night.
+
+    if source == "__package__":
+        ref_spectra = get_ref_data(band)["ref_spec"]
+
+        orders_ref = ref_spectra["orders"]
+        s_list_ref = ref_spectra["specs"]
+    else:
+        # using the output of sky recipe.
+        ad = astrodata.open(source)
+        spec1d = ad[0].SPEC1D
+
+        orders_ref = spec1d["orders"]
+        s_list_ref = spec1d["specs"]
+
+    return orders_ref, s_list_ref
+
 
 def get_ref_line_path():
     pkgroot = files("igrinsdr") # FIXME okay to use hardcoded module name?
