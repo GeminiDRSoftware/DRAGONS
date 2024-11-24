@@ -1,6 +1,5 @@
-
-
 import numpy as np
+import pandas as pd
 from scipy.interpolate import interp1d
 
 class StripBase(object):
@@ -79,6 +78,10 @@ class Echellogram(object):
 
         return xy1
 
+    def get_xy_from_wvl(self, o, wvl):
+        zz = self.zdata[o]
+        x, y = zz.interp_x(wvl), zz.interp_y(wvl)
+        return x, y
 
     def get_xy_list_filtered(self, lines_list):
 
@@ -129,6 +132,12 @@ class Echellogram(object):
         obj = cls(d["orders"], wvl_x_y_list)
 
         return obj
+
+    def get_df(self):
+        df_echellogram = pd.concat([pd.DataFrame(dict(order=o, x=z.x, y=z.y, wvl=z.wvl))
+                                    for o, z in self.zdata.items()])
+
+        return df_echellogram
 
 
 if __name__ == "__main__":

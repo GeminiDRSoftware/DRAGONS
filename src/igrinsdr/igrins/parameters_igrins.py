@@ -65,7 +65,10 @@ class extractSimpleSpecConfig(config.Config):
 class identifyOrdersConfig(config.Config):
     pass
 
-class identifyLinesAndGetWvlsolConfig(config.Config):
+class identifyLinesConfig(config.Config):
+    pass
+
+class getInitialWvlsolConfig(config.Config):
     suffix = config.Field("Initial Wavelength solution attached", str, "_wvl0")
 
 class extractSpectraMultiConfig(config.Config):

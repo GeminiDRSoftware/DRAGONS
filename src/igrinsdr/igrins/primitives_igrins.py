@@ -47,7 +47,7 @@ from .procedures.match_orders import match_orders
 import matplotlib
 import warnings
 
-from .procedures.procedures_register import _get_offset_transform_between_2spec
+from .procedures.procedures_register import _get_offset_transform_between_two_specs
 from .procedures.line_identify_simple import match_lines1_pix
 from .procedures.identified_lines import IdentifiedLines
 from .procedures.echellogram import Echellogram
@@ -83,7 +83,10 @@ from .procedures.correct_distortion import get_rectified_2dspec
 from .procedures.shifted_images import ShiftedImages
 from .procedures.badpixel_mask import make_igrins_hotpixel_mask, make_igrins_deadpixel_mask
 
-def _get_wavelength_solutions(affine_tr_matrix, zdata,
+from .procedures.procedures_register import get_offset_transform_between_two_specs
+
+
+def _get_wavelength_solutions(zdata, affine_tr_matrix,
                               new_orders):
     """
     new_orders : output orders
@@ -202,6 +205,57 @@ def identify_lines_from_spec(orders, spec_data, wvlsol,
                               axis=0)
 
     return fitted_pixels
+
+
+def get_xy_of_ref_n_tgt(df_identified_lines, tgt_ap: Apertures, ref_echellogram: Echellogram):
+    df = df_identified_lines.loc[df_identified_lines["xpos"] >= 0]
+
+    dfout = df.copy()
+    for o, grouped in dfout.groupby("order"):
+        dfout.loc[grouped.index, "ypos"] = tgt_ap.get_y(o, grouped["xpos"])
+
+    # Using the wavelength, get the original x,y from the echellogram.
+    for o, grouped in dfout.groupby("order"):
+        xpos0, ypos0 = ref_echellogram.get_xy_from_wvl(o, grouped["wvl"])
+
+        dfout.loc[grouped.index, "xpos0"] = xpos0
+        dfout.loc[grouped.index, "ypos0"] = ypos0
+
+    return dfout
+
+
+def get_wvlsol_from_transformed_echellogram(echellogram: Echellogram, affine_tr_matrix,
+                                            new_orders):
+    """
+    new_orders : output orders
+
+    convert (x, y) of zdata (where x, y are pixel positions and z
+    is wavelength) with affine transform, then derive a new wavelength
+    solution.
+
+    """
+
+    # zdata is basically, x, y and wvl by o.
+
+    from matplotlib.transforms import Affine2D
+    affine_tr = Affine2D()
+    affine_tr.set_matrix(affine_tr_matrix)
+
+    df_echellogram = echellogram.get_df()
+
+    transformed_x = affine_tr.transform(df_echellogram[["x", "y"]].values)[:, 0]
+
+    p, m = fit_2dspec(transformed_x,
+                      df_echellogram["order"].values,
+                      df_echellogram["wvl"].values * df_echellogram["order"].values,
+                      x_degree=4, y_degree=3,
+                      x_domain=[0, 2047], y_domain=[new_orders[0], new_orders[-1]])
+
+    xx, oo = np.meshgrid(np.arange(2048), new_orders)
+    wvl_sol = p(xx, oo) / oo
+
+    return wvl_sol
+
 
 # for spliiting A & B
 def groupby_pq(pql):
@@ -719,6 +773,21 @@ class Igrins(Gemini, NearIR):
 
 
     def identifyOrders(self, adinputs):
+        # given the extracted spectrum, we compare this with reference spectrum
+        # to figure which aperture corresponds to which order. We basically
+        # cross-correlat the spectrum of a given aperture with all the spectra
+        # in the reference spectra, and found the order that gives a maximum
+        # cross-correlation. To preven the spectrum to sensitive to the bright
+        # lines, we filter the spectrum before the cross-correlation. The
+        # filtering basically clips large values. For each aperture, what we
+        # get is an delta order from the initial guess. The delta order is
+        # estimated for about ~10 aperture near the center, and we delta order
+        # with maximum occurence given that number of occurence is larger than
+        # the threshold. As a result, we identify which aperture corresponds to
+        # which order and how much shift need to be applied to the reference
+        # spectra to match the given spectra. The shift is measure for the ~10 order
+        # in the center, though.
+
         ad = adinputs[0]
         ext = ad[0]
         spec1d = ext.SPEC1D
@@ -731,17 +800,28 @@ class Igrins(Gemini, NearIR):
         orders_ref, s_list_ref = get_ref_spectra(band)
 
         # match the orders of s_list_src & s_list_dst
-        delta_indx, new_orders = match_orders(orders_ref, s_list_ref,
-                                              s_list)
+        new_orders, indx_shift_dict = match_orders(orders_ref, s_list_ref,
+                                                   s_list)
 
+        # indx in indx_shift_dict should be a real order
         spec1d["orders"] = new_orders
+        # to make it a shift from the reference spectrum, we negate the shift.
+        spec1d["shift_from_ref"] = [-indx_shift_dict.get(o, np.nan) for o in spec1d["orders"]]
+
         order_map = dict(zip(spec1d["orders_initial"], new_orders))
         ext.SLITEDGE["order"] = [order_map[o] for o in ext.SLITEDGE["order"]]
 
         # ad[0].SPEC1D_NEW = spec1d
         return adinputs
 
-    def identifyLinesAndGetWvlsol(self, adinputs, **params):
+
+    def identifyLines(self, adinputs, **params):
+        # Given the already identified line in position and wavelength per order,
+        # we try to reidentify lines from the spectrum. To do this, we need to
+        # provide an initial transform function that transform pixel axis in the
+        # reference spectra to that of target spectrum. For now, we use
+        # cross-corrlation of reference spectra to that of the target spectra.
+
         ad = adinputs[0]
         ext = ad[0]
         tgt_spec = ext.SPEC1D
@@ -752,71 +832,63 @@ class Igrins(Gemini, NearIR):
 
         ref_spec = ref_data["ref_spec"]
 
-        intersected_orders, d = _get_offset_transform_between_2spec(ref_spec,
-                                                                    tgt_spec)
+        tr_ref_to_tgt = get_offset_transform_between_two_specs(ref_spec, tgt_spec)
+        # a dictionary of transforms by orders.
 
         l = ref_data["identified_lines_v0"]
-        offsetfunc_map = dict(zip(intersected_orders, d["sol_list"]))
-
         identified_lines_ref = IdentifiedLines(l)
-        ref_map = identified_lines_ref.get_dict()
 
-        identified_lines_tgt = IdentifiedLines(l)
-        identified_lines_tgt.update(dict(wvl_list=[], ref_indices_list=[],
-                                         pixpos_list=[], orders=[]))
+        identified_lines_tgt = identified_lines_ref.reidentify_specs(tgt_spec["orders"],
+                                                                     tgt_spec["specs"],
+                                                                     tr_ref_to_tgt)
 
-        for o, s in zip(tgt_spec["orders"], tgt_spec["specs"]):
-            if (o not in ref_map) or (o not in offsetfunc_map):
-                wvl, indices, pixpos = [], [], []
-            else:
-                pixpos, indices, wvl = ref_map[o]
-                pixpos = np.array(pixpos)
-                msk = (pixpos >= 0)
+        tbl = Table.from_pandas(identified_lines_tgt.get_df())
+        ad[0].LINEID = tbl
 
-                ref_pix_list = offsetfunc_map[o](pixpos[msk])
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('ignore', r'Degrees of freedom')
-                    pix_list, dist = match_lines1_pix(np.array(s), ref_pix_list)
+        return adinputs
 
-                pix_list[dist > 1] = -1
-                pixpos[msk] = pix_list
+    def getInitialWvlsol(self, adinputs, **params):
+        ad = adinputs[0]
+        ext = ad[0]
+        tgt_spec = ext.SPEC1D
 
-            identified_lines_tgt.append_order_info(int(o), wvl, indices, pixpos)
-
-        # We now fit affine transform
+        df_identified_lines = ad[0].LINEID.to_pandas()
 
         ap = Apertures(ad[0].SLITEDGE)
 
-        xy_list_tgt = identified_lines_tgt.get_xy_list_from_pixlist(ap)
+        band = ext.band() # phu["BAND"]
 
-        # echellogram_data = json.load(open(f"echellogram_{band}.json"))
+        ref_data = get_ref_data(band)
         echellogram_data = ref_data["echellogram_data"]
-
         echellogram = Echellogram.from_dict(echellogram_data)
 
-        xy_list_ref = identified_lines_tgt.get_xy_list_from_wvllist(echellogram)
+        # We may use the xpos and ypos to fit the wavelength solution. However,
+        # it is assumed that we do not have many lines to cover whole detector
+        # area thus doing that will may give unstable wavelength solution.
+        # Therefore, we fit affine transform from reference to the target,
+        # transform each orders' x, y position of echellogram (length of 2048;
+        # y position is not actually used), and then fit that to derive a new
+        # wavelength solution.
 
-        assert len(xy_list_tgt) == len(xy_list_ref)
+        dfout = get_xy_of_ref_n_tgt(df_identified_lines, ap, echellogram)
+        xy_list_ref = dfout[["xpos0", "ypos0"]].values # from reference echellogram
+        xy_list_tgt = dfout[["xpos", "ypos"]].values # idntified from the target.
 
-        affine_tr, mm = fit_affine_clip(np.array(xy_list_ref),
-                                        np.array(xy_list_tgt))
+        # find the affine transform.
+        affine_tr, mm = fit_affine_clip(xy_list_ref, xy_list_tgt)
 
-        d = dict(xy1f=xy_list_ref, xy2f=xy_list_tgt,
-                 affine_tr_matrix=affine_tr.get_matrix(),
-                 affine_tr_mask=mm)
+        affine_tr_matrix = affine_tr.get_matrix()
 
-        # we now get new wavelength solution
-        affine_tr_matrix = d["affine_tr_matrix"]
+        # we now transform the echellogram with the affine transform.
 
         orders = tgt_spec["orders"]
-        wvl_sol = _get_wavelength_solutions(affine_tr_matrix,
-                                            echellogram.zdata,
-                                            orders)
+        wvl_sol = get_wvlsol_from_transformed_echellogram(echellogram,
+                                                          affine_tr_matrix,
+                                                          orders)
 
         ad[0].WVLSOL0 = Table([orders, wvl_sol], names=['orders', 'wavelengths'])
 
         ad.update_filename(suffix=params['suffix'], strip=True)
-
         return adinputs
 
     def extractSpectraMulti(self, adinputs, **params):

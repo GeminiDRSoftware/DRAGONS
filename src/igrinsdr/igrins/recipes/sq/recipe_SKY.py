@@ -38,7 +38,9 @@ def makeProcessedArc(p: Igrins):
     p.extractSimpleSpec()
 
     p.identifyOrders()
-    p.identifyLinesAndGetWvlsol()
+    p.identifyLines()
+    p.getInitialWvlsol()
+    # p.identifyLinesAndGetWvlsol()
 
     # we are skipping save_orderflat step.
 

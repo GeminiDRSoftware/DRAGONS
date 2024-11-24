@@ -75,12 +75,12 @@ def _check_thresh(unique, counts, frac_thresh=0.5):
     return None
 
 
-def _match_specs_w_shift(s_list_ref, s_list, frac_thresh=0.3):
+def match_specs_w_shift(s_list_ref, s_list, frac_thresh=0.3):
     center_indx0 = len(s_list_ref) // 2
 
     delta_indx_list = []
     shift_list = []
-    dstep = 5
+    dstep = center_indx0 // 2
 
     s_list = get_filtered_s_list(s_list)
 
@@ -119,19 +119,20 @@ def match_specs(s_list_src, s_list_dst, frac_thresh=0.3):
     frac_thresh: raise error if the fraction of the convered d_order is less than this value.
     """
 
-    delta_indx, _ = _match_specs_w_shift(s_list_src, s_list_dst,
+    delta_indx, _ = match_specs_w_shift(s_list_src, s_list_dst,
                                                 frac_thresh=frac_thresh)
 
     return delta_indx
 
 
 def match_orders(orders, s_list_src, s_list_dst, frac_thresh=0.3):
-    do = match_specs(s_list_src, s_list_dst, frac_thresh=frac_thresh)
+    # do = match_specs(s_list_src, s_list_dst, frac_thresh=frac_thresh)
+    order_offset, indx_shift_list = match_specs_w_shift(s_list_src, s_list_dst, frac_thresh=frac_thresh)
     center_indx0 = 0
-    center_indx_dst0 = center_indx0 + do
+    center_indx_dst0 = center_indx0 + order_offset
     orders_dst = (np.arange(len(s_list_dst))
                   + orders[center_indx0] + center_indx_dst0)
 
-    return do, orders_dst
+    return orders_dst, dict((orders[indx], shift) for indx, shift in indx_shift_list)
 
 

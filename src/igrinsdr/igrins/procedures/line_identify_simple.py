@@ -41,6 +41,7 @@ def match_lines1_pix(s, ref_pix_list):
     """
 
     # find centroids of s
+    s = np.asarray(s)
     from .find_peak import find_peaks
     sol_list = find_peaks(s, sigma=3)
     cent_list = np.array([sol[0] for sol in sol_list if np.isfinite(sol[0])])

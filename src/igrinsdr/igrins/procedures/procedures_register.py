@@ -76,7 +76,7 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
                 offsets_revised=offsets2)
 
 
-def _get_offset_transform_between_2spec(ref_spec, tgt_spec):
+def _get_offset_transform_between_two_specs(ref_spec, tgt_spec):
 
     orders_ref = ref_spec["orders"]
     s_list_ref = ref_spec["specs"]
@@ -103,6 +103,15 @@ def _get_offset_transform_between_2spec(ref_spec, tgt_spec):
                                              s_list_tgt_filtered)
 
     return orders_intersection, offset_transform
+
+
+def get_offset_transform_between_two_specs(ref_spec, tgt_spec):
+    intersected_orders, d = _get_offset_transform_between_two_specs(ref_spec,
+                                                                    tgt_spec)
+
+    offsetfunc_map = dict(zip(intersected_orders, d["sol_list"]))
+
+    return offsetfunc_map
 
 
 def identify_lines(obsset):

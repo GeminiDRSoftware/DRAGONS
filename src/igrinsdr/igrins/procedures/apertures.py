@@ -78,6 +78,10 @@ class Apertures(object):
 
         return s_list
 
+    def get_y(self, o, x):
+        y = self.apcoeffs[o](x)
+        return y
+
     def get_xy_list(self, pixels_list, nan_filter=None):
         """
         pixel_list : dict of tuples of (pixel coord list)
