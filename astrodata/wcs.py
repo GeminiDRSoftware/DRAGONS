@@ -951,6 +951,8 @@ def remove_unused_world_axis(ext):
     ext: single-slice AstroData object
     """
     ndim = len(ext.shape)
+    if ext.wcs is None:
+        raise ValueError("The input has no WCS")
     affine = calculate_affine_matrices(ext.wcs.forward_transform, ext.shape)
     # Check whether there's a single output that isn't affected by the input
     removable_axes = np.all(affine.matrix == 0, axis=1)[::-1]  # xyz order
