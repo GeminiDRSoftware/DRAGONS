@@ -325,7 +325,7 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
     @astro_data_tag
     def _tag_arc(self):
         if (self.phu.get("OBSTYPE") == "OBJECT" and
-                "sky" in self.phu.get("OBJECT").lower()):
+                "sky" in self.phu.get("OBJECT", '').lower()):
             return TagSet(['ARC', 'CAL'], if_present=['PROCESSED'])
 
     @astro_data_tag
@@ -346,14 +346,14 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
         if (self.phu.get("OBSTYPE") == "OBJECT" and
                 "sky" in self.phu.get("OBJECT").lower()):
             # We don't want "SKY" if it's become a processed arc
-            return TagSet(['SKY', 'CAL'], blocks=['STANDARD'],
-                          blocked_by=['PROCESSED'])
+            return TagSet(['SKY', 'CAL'], blocked_by=['PROCESSED'])
 
     @astro_data_tag
     def _tag_std(self):
         if (self.phu.get("OBSTYPE") == "OBJECT" and
-                self.phu.get("OBSCLASS") == "partnerCal"):
-            return TagSet(['STANDARD', 'CAL'])
+                self.phu.get("OBSCLASS") == "partnerCal" and
+                not "sky" in self.phu.get('OBJECT', '').lower()):
+            return TagSet(['STANDARD', 'CAL'], blocked_by=['SKY', 'CAL'])
 
     #@astro_data_tag -- commented out so not run
     def _tag_caltype(self):
