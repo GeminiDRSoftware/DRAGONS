@@ -5,7 +5,8 @@ from igrinsdr.igrins.primitives_igrins import Igrins
 recipe_tags = {'IGRINS', 'SKY'}
 # recipe_tags = {'IGRINS'}
 
-def makeSky(p: Igrins):
+
+def makeProcessedArc(p: Igrins):
     """
     This recipe performs the standardization and corrections needed to convert
     the raw input dark images into a single stacked dark image. This output
@@ -49,4 +50,5 @@ def makeSky(p: Igrins):
 
     return
 
-_default = makeSky
+
+_default = makeProcessedArc

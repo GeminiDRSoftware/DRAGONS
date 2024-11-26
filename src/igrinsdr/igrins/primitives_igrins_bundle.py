@@ -40,9 +40,9 @@ class IgrinsBundle(Igrins):
 
         adoutputs = {'H': [], 'K': []}
         for ad in adinputs:
+            kw = ad._keyword_for('wavelength_band')
             log.stdinfo(f"Splitting {ad.filename}")
-            for ext, band in zip(ad, ad.hdr.get(
-                    ad._keyword_for('wavelength_band'))):
+            for ext, band in zip(ad, ad.hdr.get(kw)):
                 if band in adoutputs:
                     adout = astrodata.create(ad.phu)  # deepcopied
                     new_filename = ad.filename.replace('.fits',
@@ -50,6 +50,10 @@ class IgrinsBundle(Igrins):
                     adout.phu['ORIGNAME'] = new_filename
                     adout.filename = new_filename
                     adout.append(ext)
+
+                    # Add filter to PHU
+                    adout.phu[kw] = band
+
                     gt.mark_history(adout, primname=self.myself(),
                                     keyword=timestamp_key)
                     adoutputs[band].append(adout)
