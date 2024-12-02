@@ -42,6 +42,7 @@ For more information, see the DRAGONS developer documentation.
 import nox
 
 
-@nox.session
+@nox.session(venv_backend="venv")
 def devenv(session: nox.Session):
     """Generate a new development environment."""
+    session.run("python", "-m", "venv", *session.posargs)
