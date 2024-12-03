@@ -39,29 +39,31 @@ this file:
 For more information, see the DRAGONS developer documentation.
 """
 
+from pathlib import Path
+
 import nox
 
 
 def create_venv(session: nox.Session):
     """Create a new virtual environment using a running session."""
     default_venv_path = "venv/"
+    default_venv_prompt = "dragons_venv"
 
-    # Create the virtual environment
-    if session.posargs:
-        if "--prompt" in session.posargs and len(session.posargs) == 2:
-            # Assume no path given in positional args.
-            session.run("python", "-m", "venv", default_venv_path, *session.posargs)
-            return
+    session.run(
+        "python", "-m", "venv", default_venv_path, "--prompt", default_venv_prompt
+    )
 
-        # Assume user has it right and fail if they don't.
-        session.run("python", "-m", "venv", *session.posargs)
-        return
 
-    # Default behavior
-    session.run("python", "-m", "venv", default_venv_path)
+def install_dependencies(
+    session: nox.Session,
+    *,
+    target_python: Path | None = None,
+):
+    """Install dependencies using a running session."""
 
 
 @nox.session(venv_backend="venv")
 def devenv(session: nox.Session):
     """Generate a new development environment."""
     create_venv(session)
+    install_dependencies(session)
