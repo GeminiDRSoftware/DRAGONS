@@ -67,8 +67,6 @@ def install_dependencies(
     if target_python is None:
         target_python = Path(session.virtualenv.bin) / "python"
 
-    session.run(str(target_python), "-m", "pip", "install", "-e", ".", external=True)
-
     # Install development dependencies from pyproject.toml
     # TODO: This must be changed when the dependency manager is changed.
     pyproject_toml_path = Path("pyproject.toml")
@@ -77,7 +75,24 @@ def install_dependencies(
 
     dev_dependencies = pyproject_toml_contents["development"]["dependencies"]
 
-    session.install(*dev_dependencies)
+    session.run(
+        str(target_python),
+        "-m",
+        "pip",
+        "install",
+        "-e",
+        ".",
+        external=True,
+    )
+
+    session.run(
+        str(target_python),
+        "-m",
+        "pip",
+        "install",
+        *dev_dependencies,
+        external=True,
+    )
 
 
 @nox.session(venv_backend="venv")
