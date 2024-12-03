@@ -46,7 +46,14 @@ import nox
 def devenv(session: nox.Session):
     """Generate a new development environment."""
     if session.posargs:
+        if "--prompt" in session.posargs and len(session.posargs) == 2:
+            # Assume no path given in positional args.
+            session.run("python", "-m", "venv", "venv/", *session.posargs)
+            return
+
+        # Assume user has it right and fail if they don't.
         session.run("python", "-m", "venv", *session.posargs)
         return
 
+    # Default behavior
     session.run("python", "-m", "venv", "venv/")
