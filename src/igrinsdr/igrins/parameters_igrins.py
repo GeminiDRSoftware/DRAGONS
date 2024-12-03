@@ -129,3 +129,6 @@ class readoutPatternCorrectFlatOffConfig(config.Config):
 
 class readoutPatternCorrectFlatOnConfig(config.Config):
     pass
+
+class readoutPatternCorrectSkyConfig(config.Config):
+    pass

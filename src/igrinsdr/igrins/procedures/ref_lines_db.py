@@ -287,7 +287,7 @@ class SkyLinesDB(RefLinesDBBase):
 
     def _load_refdata(self):
 
-        tbl = Table.read(self._ref_file) # "ref_lines_oh.fits"
+        tbl = Table.read(self._ref_file, format="fits") # "ref_lines_oh.fits"
         df = tbl.to_pandas()
 
         ref_wvl_dict = {}

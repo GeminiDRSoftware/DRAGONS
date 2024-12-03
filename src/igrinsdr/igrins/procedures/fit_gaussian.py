@@ -19,6 +19,9 @@ def _gauss_w_dcenters(xx, yy, params, dcenters):
 
 
 def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
+                        max_sigma_scale=2,
+                        drange_scale=5,
+                        fitrange_scale=None,
                         do_plot=False):
     """
     sigma_init : initial sigma. A single value is given which will be shared with multiple lines. 
@@ -29,9 +32,13 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
     if not np.all(np.isfinite(lines)):  # if any of the position has nan
         return [np.nan] * 4, None, None
 
+    max_sigma = max_sigma_scale * sigma_init
+    if fitrange_scale is None:
+        fitrange_scale = drange_scale - 2.5
+
     if xminmax is None:
-        xmin = min(lines) - 5*sigma_init
-        xmax = max(lines) + 5*sigma_init
+        xmin = min(lines) - drange_scale*max_sigma
+        xmax = max(lines) + drange_scale*max_sigma
     else:
         xmin, xmax = xminmax
 
@@ -57,8 +64,8 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
         return _gauss_w_dcenters(xx, yy, params, dcenters0)
 
     params0 = np.array([lines[0], sigma_init, yheight, ymin])
-    params_min = np.array([xmin, 0., 0, ymin])
-    params_max = np.array([xmax, 6*sigma_init, 2*yheight, ymax])
+    params_min = np.array([lines[0]-fitrange_scale*max_sigma, 0., 0, ymin])
+    params_max = np.array([lines[0]+fitrange_scale*max_sigma, max_sigma, 2*yheight, ymax])
 
     # def _gauss0(params, xx=xx):
     #     """ Returns a gaussian function with the given parameters"""

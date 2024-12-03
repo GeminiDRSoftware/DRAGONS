@@ -31,6 +31,16 @@ def reidentify(s, x_list, x=None, sigma_init=1.5):
                                    sigma_init=sigma,
                                    do_plot=False)
 
+        # if fit result is not good (for example, initial position of the line is off too much),
+        # we redo the file by increasing the fit range.
+        if sol_[-1] not in [0, 1, 2, 3]:
+            sol_ = fit_gaussian_simple(x, s, lines_pixel,
+                                       sigma_init=sigma,
+                                       drange_scale=10,
+                                       do_plot=False)
+            if sol_[-1 not in [0, 1, 2, 3]]:
+                sol_[0][0] = np.nan
+
         fit_results.append(sol_)
 
     return fit_results

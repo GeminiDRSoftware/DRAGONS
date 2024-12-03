@@ -139,19 +139,26 @@ def _get_wavelength_solutions(zdata, affine_tr_matrix,
 
     return wvl_sol
 
-
-def get_ref_data(band):
-
+def get_ref_path(band, kind):
+    "returns a path-like object returned by importlib.resources.files"
     from . import lookups
     dataroot = files(lookups) / "ref_data"
 
-    # FIXME use hardcoded file names for now.
-    j = dict(
-        ref_spec=json.load((dataroot / f"SDC{band}_20140525_0029.oned_spec.json").open()),
-        identified_lines_v0=json.load((dataroot / f"SKY_SDC{band}_20140525.identified_lines_v0.json").open()),
-        echellogram_data=json.load((dataroot / f"SDC{band}_20140525.echellogram.json").open()),
+    k = dict(
+        ref_spec=dataroot / f"SDC{band}_20140525_0029.oned_spec.json",
+        identified_lines_v0=dataroot / f"SKY_SDC{band}_20140525.identified_lines_v0.json",
+        # echellogram_data=json.load((dataroot / f"SDC{band}_20140525.echellogram.json").open()),
+        echellogram_data=dataroot / f"SDC{band}_20240721.echellogram.json",
+        ref_lines_oh=dataroot / "ref_lines_oh.fits"
     )
-    return j
+
+    return k[kind]
+
+def get_ref_data(band, kind):
+
+    p = get_ref_path(band, kind)
+
+    return json.load(p.open())
 
 
 def get_ref_spectra(band, source="__package__"):
@@ -159,7 +166,8 @@ def get_ref_spectra(band, source="__package__"):
     # We may support using a reduced sky spectra from the other night.
 
     if source == "__package__":
-        ref_spectra = get_ref_data(band)["ref_spec"]
+        # ref_spectra = get_ref_data(band)["ref_spec"]
+        ref_spectra = get_ref_data(band, "ref_spec")
 
         orders_ref = ref_spectra["orders"]
         s_list_ref = ref_spectra["specs"]
@@ -173,10 +181,6 @@ def get_ref_spectra(band, source="__package__"):
 
     return orders_ref, s_list_ref
 
-
-def get_ref_line_path():
-    pkgroot = files("igrinsdr") # FIXME okay to use hardcoded module name?
-    return pkgroot / "igrins/lookups/ref_data" / "ref_lines_oh.fits"
 
 Spec = namedtuple("Spec", ["s_map", "wvl_map"])
 
@@ -682,6 +686,23 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
+    def readoutPatternCorrectSky(self, adinputs, **params):
+
+        # We assume that ad instance has only a single extension.
+        data_list = [ad[0].data for ad in adinputs]
+        band = adinputs[0][0].band()
+        assert band in "HK"
+
+        data_list_fixed = remove_readout_pattern_flat_off(data_list, band=band,
+                                                          rp_remove_mode=0)
+
+        for ad, d in zip(adinputs, data_list_fixed):
+            ad[0].data = d
+            ad.update_filename(suffix="_rpc", strip=True)
+
+        return adinputs
+
+
     def readoutPatternCorrectFlatOff(self, adinputs, **params):
         lamp_off_list = self.selectFromInputs(adinputs, tags='LAMPOFF')
 
@@ -828,14 +849,12 @@ class Igrins(Gemini, NearIR):
 
         band = ext.band() # phu["BAND"]
 
-        ref_data = get_ref_data(band)
-
-        ref_spec = ref_data["ref_spec"]
+        ref_spec = get_ref_data(band, "ref_spec")
 
         tr_ref_to_tgt = get_offset_transform_between_two_specs(ref_spec, tgt_spec)
         # a dictionary of transforms by orders.
 
-        l = ref_data["identified_lines_v0"]
+        l = get_ref_data(band, "identified_lines_v0")
         identified_lines_ref = IdentifiedLines(l)
 
         identified_lines_tgt = identified_lines_ref.reidentify_specs(tgt_spec["orders"],
@@ -858,8 +877,7 @@ class Igrins(Gemini, NearIR):
 
         band = ext.band() # phu["BAND"]
 
-        ref_data = get_ref_data(band)
-        echellogram_data = ref_data["echellogram_data"]
+        echellogram_data = get_ref_data(band, "echellogram_data")
         echellogram = Echellogram.from_dict(echellogram_data)
 
         # We may use the xpos and ypos to fit the wavelength solution. However,
@@ -936,7 +954,8 @@ class Igrins(Gemini, NearIR):
 
 
         # ref_lines_db = SkyLinesDB(config=obsset.get_config())
-        ref_file = get_ref_line_path() # "ref_lines_oh.fits"
+        # ref_file = get_ref_line_path() # "ref_lines_oh.fits"
+        ref_file = get_ref_path(ad.band, "ref_lines_oh")
         ref_lines_db = SkyLinesDB(ref_file)
 
         ref_lines_db_hitrans = None

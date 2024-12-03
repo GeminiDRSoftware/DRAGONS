@@ -28,6 +28,7 @@ def makeProcessedArc(p: Igrins):
     # # here.
     # p.fixIgrinsHeader()
     # p.referencePixelsCorrect()
+    p.readoutPatternCorrectSky()
 
     # FIXME Somewhere here we need to copy mask from the flat to the self.
 
