@@ -1,0 +1,125 @@
+"""Configurations and fixtures for package-level testing.
+
+Most of this is for development testing. Be aware that using some of these
+fixtures can add significant time to test runs, as they are hefty (but
+necessary) operations.
+"""
+
+import os
+from contextlib import chdir
+from pathlib import Path
+import shutil
+import subprocess
+
+import pytest
+
+
+class Helpers:
+    @staticmethod
+    def validate_result(
+        result: subprocess.CompletedProcess,
+        expected_returncode: int = 0,
+    ):
+        """Raises an exception if the returncode is not as expected."""
+        if not result.returncode == 0:
+            divider = 80 * "-"
+            stdout = result.stdout.decode("utf-8")
+            stderr = result.stderr.decode("utf-8")
+            message = (
+                f"    Command: {result.args}\n"
+                f"    stdout:\n{divider}\n{stdout}"
+                f"    stderr:\n{divider}\n{stderr}"
+            )
+
+            raise Exception(message)
+
+
+@pytest.fixture(scope="session")
+def helpers() -> Helpers:
+    return Helpers()
+
+
+@pytest.fixture(scope="session")
+def session_DRAGONS(tmp_path_factory, helpers) -> Path:
+    """Create a clean copy of the repo.
+
+    The steps for this fixture are:
+    1. Creates a new directory caching a clean DRAGONS version, if
+       it doesn't exist.
+    2. Clones the repository into the temporary dir.
+    3. Checks out the same branch that this repo is running on, if available.
+    4. Return path to the session DRAGONS.
+
+    WARNING: Do not modify the sssion DRAGONS. If you need a clean dragons
+    dir, use the ``fresh_dragons_dir`` fixture.
+    """
+    tmp_path = tmp_path_factory.mktemp("cached_DRAGONS")
+
+    dragons_path = tmp_path / "DRAGONS"
+    local_repo_path = Path(__file__).parent.parent
+
+    # Cloning the local repo
+    clone_command = [
+        "git",
+        "clone",
+        str(local_repo_path.absolute()),
+        str(dragons_path.absolute()),
+    ]
+
+    branch_command = ["git", "branch", "--show-current"]
+
+    with chdir(tmp_path):
+        result = subprocess.run(clone_command, capture_output=True)
+
+    try:
+        helpers.validate_result(result)
+
+    except Exception as err:
+        message = "Could not clone dragons repo."
+        raise Exception(message) from err
+
+    with chdir(dragons_path):
+        branch_result = subprocess.run(
+            branch_command,
+            capture_output=True,
+        )
+
+        helpers.validate_result(branch_result)
+
+    return dragons_path
+
+
+@pytest.fixture(scope="function")
+def fresh_dragons_dir(
+    tmp_path,
+    monkeypatch,
+    session_DRAGONS,
+    helpers,
+) -> Path:
+    """Copy a new unmodified DRAGONS dir to a tempoary directory.
+
+    This is meant to be used with development environment tests, not
+    other DRAGONS tests (without good reason).
+
+    This will be periodically cleaned up by pytest, but may store <~10 clones
+    during normal execution.
+    """
+    dragons_dir = tmp_path / "DRAGONS"
+
+    assert not dragons_dir.exists()
+
+    shutil.copytree(session_DRAGONS, dragons_dir)
+
+    monkeypatch.chdir(dragons_dir)
+
+    return dragons_dir
+
+
+@pytest.fixture()
+def clear_devconda_environment(helpers) -> bool:
+    """Clear the conda development environment, if it exists."""
+    conda_remove_command = ["conda", "remove", "--name", "dragons_dev", "--all", "-y"]
+
+    result = subprocess.run(conda_remove_command, capture_output=True)
+
+    helpers.validate_result(result)
