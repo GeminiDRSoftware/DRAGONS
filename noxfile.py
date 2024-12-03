@@ -38,6 +38,7 @@ this file:
 For more information, see the DRAGONS developer documentation.
 """
 
+import tomllib
 from pathlib import Path
 
 import nox
@@ -67,6 +68,16 @@ def install_dependencies(
         target_python = Path(session.virtualenv.bin) / "python"
 
     session.run(str(target_python), "-m", "pip", "install", "-e", ".", external=True)
+
+    # Install development dependencies from pyproject.toml
+    # TODO: This must be changed when the dependency manager is changed.
+    pyproject_toml_path = Path("pyproject.toml")
+    with pyproject_toml_path.open("r") as infile:
+        pyproject_toml_contents = tomllib.load(infile)
+
+    dev_dependencies = pyproject_toml_contents["development"]["dependencies"]
+
+    session.install(*dev_dependencies)
 
 
 @nox.session(venv_backend="venv")
