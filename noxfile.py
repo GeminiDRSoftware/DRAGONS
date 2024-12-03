@@ -42,11 +42,11 @@ For more information, see the DRAGONS developer documentation.
 import nox
 
 
-@nox.session(venv_backend="venv")
-def devenv(session: nox.Session):
-    """Generate a new development environment."""
+def create_venv(session: nox.Session):
+    """Create a new virtual environment using a running session."""
     default_venv_path = "venv/"
 
+    # Create the virtual environment
     if session.posargs:
         if "--prompt" in session.posargs and len(session.posargs) == 2:
             # Assume no path given in positional args.
@@ -59,3 +59,9 @@ def devenv(session: nox.Session):
 
     # Default behavior
     session.run("python", "-m", "venv", default_venv_path)
+
+
+@nox.session(venv_backend="venv")
+def devenv(session: nox.Session):
+    """Generate a new development environment."""
+    create_venv(session)
