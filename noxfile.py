@@ -45,4 +45,8 @@ import nox
 @nox.session(venv_backend="venv")
 def devenv(session: nox.Session):
     """Generate a new development environment."""
-    session.run("python", "-m", "venv", *session.posargs)
+    if session.posargs:
+        session.run("python", "-m", "venv", *session.posargs)
+        return
+
+    session.run("python", "-m", "venv", "venv/")
