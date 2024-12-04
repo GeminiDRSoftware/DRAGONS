@@ -40,6 +40,7 @@ For more information, see the DRAGONS developer documentation.
 
 import tomllib
 from pathlib import Path
+import re
 
 import nox
 
@@ -109,12 +110,25 @@ def devconda(session: nox.Session):
     extra_args = ["--force", "-y"]
 
     if all(name_flag not in session.posargs for name_flag in ["-n", "--name"]):
-        extra_args.extend(["--name", "dragons_dev"])
+        env_name = "dragons_dev"
+        extra_args.extend(["--name", env_name])
+
+    else:
+        name_flag_index = [c in ["-n", "--name"] for c in session.posargs].index(True)
+        env_name = session.posargs[name_flag_index + 1]
 
     if all("python" not in arg for arg in session.posargs):
         extra_args.extend(["python=3.12"])
 
     session.run("conda", "create", *extra_args, *session.posargs, external=True)
+
+    result = session.run("conda", "env", "list", silent=True, external=True)
+
+    env_re = re.compile(r"^({env})\s+(.*)$".format(env=env_name), re.MULTILINE)
+
+    python_path = Path(env_re.search(result).group(2)) / "bin" / "python"
+
+    install_dependencies(session, target_python=python_path)
 
 
 @nox.session(venv_backend="none")
