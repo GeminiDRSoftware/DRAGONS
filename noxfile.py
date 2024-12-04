@@ -97,7 +97,12 @@ def install_dependencies(
 
 @nox.session(venv_backend="venv")
 def devenv(session: nox.Session):
-    """Generate a new development environment."""
+    """Generate a new venv development environment."""
     venv_path = create_venv(session)
     venv_python = venv_path / "bin" / "python"
     install_dependencies(session, target_python=venv_python)
+
+
+@nox.session(venv_backend="conda")
+def devconda(session: nox.Session):
+    """Generate a new conda development environment."""
