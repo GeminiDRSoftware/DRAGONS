@@ -111,6 +111,9 @@ def devconda(session: nox.Session):
     if all(name_flag not in session.posargs for name_flag in ["-n", "--name"]):
         extra_args.extend(["--name", "dragons_dev"])
 
+    if all("python" not in arg for arg in session.posargs):
+        extra_args.extend(["python=3.12"])
+
     session.run("conda", "create", *extra_args, *session.posargs, external=True)
 
 
