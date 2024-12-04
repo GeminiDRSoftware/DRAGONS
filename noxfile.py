@@ -106,3 +106,9 @@ def devenv(session: nox.Session):
 @nox.session(venv_backend="conda")
 def devconda(session: nox.Session):
     """Generate a new conda development environment."""
+    extra_args = ["--force", "-y"]
+
+    if all(name_flag not in session.posargs for name_flag in ["-n", "--name"]):
+        extra_args.extend(["--name", "dragons_dev"])
+
+    session.run("conda", "create", *extra_args, *session.posargs)
