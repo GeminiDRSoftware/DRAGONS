@@ -17,6 +17,7 @@ datasets = [
     #GNIRS XD pinhole files
     "S20060507S0125_flatCorrected.fits", # 32 l/mm, ShortBlue
     "N20130821S0556_flatCorrected.fits", # 10 l/mm, LongBlue
+    "N20231029S0343_stack.fits",         # 111 l/mm, ShortBlue
     ]
 
 

@@ -609,7 +609,7 @@ def create_inputs_recipe():
         os.chdir("../")
         print('Wrote pre-processed file to:\n'
               '    {:s}'.format(processed_ad.filename))
-        
+
     for filename, cals in associated_calibrations_absorp.items():
         print(filename)
 

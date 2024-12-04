@@ -4,6 +4,7 @@
 The astroTools module contains astronomy specific utility functions
 """
 
+from copy import deepcopy
 import os
 import numpy as np
 from scipy import interpolate, optimize
@@ -555,7 +556,8 @@ def find_outliers(data, sigma=3, cenfunc=np.median):
         return mask
 
     for i in range(mask.size):
-        omitted_data = list(set(data) - {data[i]})
+        omitted_data = list(deepcopy(data))
+        omitted_data.pop(i) # Remove one point
         average = cenfunc(omitted_data)
         stddev = np.std(omitted_data)
         if abs(data[i] - average) > sigma * stddev:

@@ -7,6 +7,7 @@
 # ------------------------------------------------------------------------------
 from copy import copy, deepcopy
 from itertools import islice
+import gc
 import os
 import re
 import warnings
@@ -1352,9 +1353,11 @@ class Spect(Resample):
         debug = params["debug"]
 
         orders = (max(spectral_order, 1), spatial_order)
+        fail = False
 
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            nsuccess = 0
             for ext in ad:
                 # Need to handle straight slits (longslit for now) and "curved"
                 # slits (currently cross-dispersed).
@@ -1471,6 +1474,13 @@ class Spect(Resample):
                 # List of traced peak positions
                 in_coords = np.array([coord for trace in traces for
                                       coord in trace.input_coordinates()]).T
+
+                # We can't do anything if we have no coordinates
+                if in_coords.size == 0:
+                    log.warning("Failed to trace any lines for "
+                                f"{ad.filename}:{ext.id}")
+                    continue
+
                 # If there's a "rectified" frame, we want to use the pixel
                 # coordinates in *that* frame as input so that the pixels
                 # -> rectified -> distortion_corrected transform works
@@ -1500,19 +1510,19 @@ class Spect(Resample):
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
 
-                self.viewer.color = "red"
-                spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
-                                             ext.shape[1 - dispaxis] // (step * 10))
-                spectral_coords = np.unique(ref_coords[1 - dispaxis])
-                for coord in spectral_coords:
-                    if dispaxis == 1:
-                        xref = [coord] * len(spatial_coords)
-                        yref = spatial_coords
-                    else:
-                        xref = spatial_coords
-                        yref = [coord] * len(spatial_coords)
-                    mapped_coords = np.array(model.inverse(xref, yref)).T
-                    if debug:
+                if debug:
+                    self.viewer.color = "red"
+                    spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
+                                                ext.shape[1 - dispaxis] // (step * 10))
+                    spectral_coords = np.unique(ref_coords[1 - dispaxis])
+                    for coord in spectral_coords:
+                        if dispaxis == 1:
+                            xref = [coord] * len(spatial_coords)
+                            yref = spatial_coords
+                        else:
+                            xref = spatial_coords
+                            yref = [coord] * len(spatial_coords)
+                        mapped_coords = np.array(model.inverse(xref, yref)).T
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
                 # This is all we need for the new FITCOORD table
@@ -1528,9 +1538,19 @@ class Spect(Resample):
                     ext.wcs.insert_frame(ext.wcs.input_frame, model,
                                          cf.Frame2D(name="distortion_corrected"))
 
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+                nsuccess += 1
+
+            if nsuccess == 0:
+                log.warning(f"No distortion maps created for {ad.filename}")
+                fail = True
+            else:
+                # Timestamp and update the filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=sfx, strip=True)
+
+        if fail:
+            raise RuntimeError("Failed to create a distortion model for any "
+                               "extensions on at least one input file")
 
         return adinputs
 
@@ -2431,10 +2451,13 @@ class Spect(Resample):
                 reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
 
+                label_fn = ((lambda i: f"Order {ad.hdr['SPECORDR'][i]}")
+                            if 'XD' in ad.tags else (lambda i: f"Slit {i+1}"))
+
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
-                    tab_name_fmt=lambda i: f"Slit {i+1}",
+                    tab_name_fmt=label_fn,
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
                     absorption=absorption,
@@ -2446,8 +2469,9 @@ class Spect(Resample):
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 for ext, fit1d, image, other in zip(ad, visualizer.results(),
                                                     visualizer.image, visualizer.meta):
-                    fit1d.image = image
-                    wavecal.update_wcs_with_solution(ext, fit1d, other, config)
+                    if image is not None:
+                        fit1d.image = image
+                        wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
                 for ext, calc_ext in zip(ad, calc_ad):
                     if len(ad) > 1:
@@ -2992,24 +3016,17 @@ class Spect(Resample):
         log.fullinfo(f"  sigfrac: {params['sigfrac']}\n")
 
         for ad in adinputs:
-            is_in_adu = ad[0].is_in_adu()
-            if not is_in_adu:
-                # astroscrappy takes data in adu
-                for ext in ad:
-                    ext.divide(ext.gain())
+            # For data in electrons, gain() returns 1.0
+            # TODO: It's unclear *why* astroscrappy needs data in ADU
+            #is_in_adu = ad[0].is_in_adu()
+            #if not is_in_adu:
+            #    # astroscrappy takes data in adu
+            #    for ext in ad:
+            #        ext.divide(ext.gain())
 
             # tile extensions by CCD to limit the number of edges
             array_info = gt.array_information(ad)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
-
-            # Create a modified version of the debug plot for inspection
-            fig, axes = plt.subplots(5, 3, sharex=True, sharey=True,
-                                     tight_layout=True)
-            if debug:
-                # This counter-intuitive step prevents the empty figure from
-                # being shown by calls to pyplot.show(), but still allows it to
-                # be drawn to and modified (somehow...).
-                plt.close(fig)
 
             for i, ext in enumerate(ad_tiled):
                 dispaxis = 2 - ext.dispersion_axis()
@@ -3025,14 +3042,14 @@ class Spect(Resample):
                 if ext.mask is not None:
                     data = np.ma.array(ext.data, mask=ext.mask != 0)
                     mask = (ext.mask & bitmask) > 0
-                    weights = (ext.mask == 0).astype(int)
+                    weights = (ext.mask == 0).astype(np.float32)
                 else:
                     data = ext.data
                     mask = None
                     weights = None
 
                 # Set up the background and models to be blank initially:
-                background = np.zeros(ext.shape)
+                background = np.zeros_like(ext.data)
 
                 # Fit the object spectrum:
                 if bkgmodel in ('both', 'object'):
@@ -3042,16 +3059,15 @@ class Spect(Resample):
                                     order=spectral_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
+                    background += objfit
+                    # If fitting both models, subtracting objfit from the data
+                    # ensures sky background isn't fitted twice:
+                    skyfit_input = data - objfit
+                    if debug:
+                        ext.OBJFIT = objfit
+                    del objfit
                 else:
-                    objfit = np.zeros(ext.shape)
-                if debug:
-                    ext.OBJFIT = objfit.copy()
-
-                background += objfit
-
-                # If fitting both models, subtracting objfit from the data
-                # ensures sky background isn't fitted twice:
-                skyfit_input = data - objfit
+                    skyfit_input = data
 
                 # Fit sky lines:
                 if bkgmodel in('both', 'skyline'):
@@ -3061,12 +3077,10 @@ class Spect(Resample):
                                     order=spatial_order,
                                     weights=weights,
                                     **fit_1D_params).evaluate()
-                else:
-                    skyfit = np.zeros(ext.shape)
-                if debug:
-                    ext.SKYFIT = skyfit
-
-                background += skyfit
+                    background += skyfit
+                    if debug:
+                        ext.SKYFIT = skyfit
+                    del skyfit
 
                 # Run astroscrappy's detect_cosmics. We use the variance array
                 # because it takes into account the different read noises if
@@ -3078,6 +3092,7 @@ class Spect(Resample):
                                            gain=ext.gain(),
                                            satlevel=ext.saturation_level(),
                                            **params)
+                del _
 
                 # Set the cosmic_ray flags, and create the mask if needed
                 if ext.mask is None:
@@ -3085,25 +3100,31 @@ class Spect(Resample):
                 else:
                     ext.mask[crmask] = DQ.cosmic_ray
 
-                if debug:
-                    plot_cosmics(ext, objfit, skyfit, crmask)
-
-                plot_cosmics(ext, objfit, skyfit, crmask, axes=axes[:, i])
-
                 # Free up memory.
-                skyfit, objfit, skyfit_input = None, None, None
+                del crmask, skyfit_input
+                gc.collect()
 
-            # Save the figure
-            figy, figx = ext.data.shape
-            fig.set_size_inches(figx*3/300, figy*5/300)
-            figname, _ = os.path.splitext(ad.orig_filename)
-            figname = figname + '_flagCosmicRays.pdf'
-            # This context manager prevents two harmless RuntimeWarnings from
-            # image normalization if bkgmodel != 'both' (due to empty panels)
-            # which we don't want to worry users with.
-            with np.errstate(divide='ignore', invalid='ignore'):
-                fig.savefig(figname, bbox_inches='tight', dpi=300)
-            plt.close(fig)
+            if debug:
+                fig, axes = plt.subplots(5, 3, sharex=True, sharey=True,
+                                         tight_layout=True)
+                for i, ext in enumerate(ad_tiled):
+                        plot_cosmics(ext, getattr(ext, "OBJFIT", None),
+                                     getattr(ext, "SKYFIT", None),
+                                     ext.mask & DQ.cosmic_ray, axes=axes[:, i])
+
+                # Save the figure
+                figy, figx = ext.data.shape
+                fig.set_size_inches(figx*3/300, figy*5/300)
+                figname, _ = os.path.splitext(ad.orig_filename)
+                figname = figname + '_flagCosmicRays.pdf'
+                # This context manager prevents two harmless RuntimeWarnings from
+                # image normalization if bkgmodel != 'both' (due to empty panels)
+                # which we don't want to worry users with.
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    fig.savefig(figname, bbox_inches='tight', dpi=300)
+                plt.close(fig)
+                del fig
+                gc.collect()
 
             # Set flags in the original (un-tiled) ad
             if ad_tiled is not ad:
@@ -3120,15 +3141,22 @@ class Spect(Resample):
 
                         ext.mask = ext_tiled.mask[slice_]
 
-                        if debug:
+                        try:
                             ext.OBJFIT = ext_tiled.OBJFIT[slice_]
+                        except AttributeError:
+                            pass
+                        try:
                             ext.SKYFIT = ext_tiled.SKYFIT[slice_]
+                        except AttributeError:
+                            pass
 
             # convert back to electron if needed
-            if not is_in_adu:
-                for ext in ad:
-                    ext.multiply(ext.gain())
+            #if not is_in_adu:
+            #    for ext in ad:
+            #        ext.multiply(ext.gain())
 
+            del ad_tiled
+            gc.collect()
             ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
@@ -4781,9 +4809,9 @@ class Spect(Resample):
             write VAR (variance) plane?
         overwrite : bool
             overwrite existing files?
-        xunits: str
+        wave_units: str
             units of the x (wavelength/frequency) column
-        yunits: str
+        data_units: str
             units of the data column
 
         Returns
@@ -5900,11 +5928,14 @@ def plot_cosmics(ext, objfit, skyfit, crmask, axes=None):
                                  sharey=True,
                                  tight_layout=True)
     imgs = (ext.data, objfit, skyfit,
-            ext.data - (objfit + skyfit), crmask)
+            ext.data - ((0 if objfit is None else objfit) +
+                        (0 if skyfit is None else skyfit)), crmask)
     titles = ('data', 'object fit', 'sky fit', 'residual', 'crmask')
     mask = ext.mask & (DQ.max ^ DQ.cosmic_ray)
 
     for ax, data, title in zip(axes, imgs, titles):
+        if data is None:
+            data = np.zeros_like(ext.data)
         if title != 'crmask':
             cmap = 'Greys_r'
             interval = ZScaleInterval()

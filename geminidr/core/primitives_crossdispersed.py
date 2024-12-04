@@ -65,7 +65,11 @@ class CrossDispersed(Spect, Preprocess):
         adoutputs = []
         for ad in adinputs:
             order_key = "_".join(getattr(ad, desc)() for desc in order_key_parts)
-            cenwaves, dispersions = order_info[order_key]
+            _, dispersions = order_info[order_key]
+
+            # Get the central wavelength setting and order it occurs in.
+            central_wavelength = ad.central_wavelength(asNanometers=True)
+            grating_order = ad._grating_order()
 
             # This is the presumed pointing location and the centres of
             # each cut slit should recover these sky coordinates
@@ -82,11 +86,33 @@ class CrossDispersed(Spect, Preprocess):
                 except AttributeError:
                     continue
 
+                # Get the spectral order for this extension
+                try:
+                    spec_order = set(ext.SLITEDGE["specorder"])
+                except KeyError:
+                    if 'XD' in ad.tags:
+                        raise RuntimeError("No order information found in "
+                                           f"SLITEDGE for {ad.filename}")
+                else:
+                    if len(spec_order) > 1:
+                        raise RuntimeError("Multiple orders found in SLITEDGE")
+                    spec_order = spec_order.pop()
+                    ext.hdr['SPECORDR'] = spec_order
+
+                # Update the central wavelength for this order using the
+                # following formula:
+                #   order_X * cent_wavelength_X = order_Y * cent_wavelength_Y
+                # e.g., 3 * 2.3 = 4 * central_wavelength_4 -> 3/4 * 2.2 = 1.65
+                # We have the central wavelength and number of one order from
+                # the header, so we can find the central wavelength in any
+                # other order.
+                centwl = grating_order * central_wavelength / spec_order
+
                 # Update the WCS by adding a "first guess" wavelength scale
                 # for each slit.
                 new_wave_model = (models.Shift(-specaxis_middle) |
                                   models.Scale(dispersions[i]) |
-                                  models.Shift(cenwaves[i]))
+                                  models.Shift(centwl))
                 new_wave_model.name = "WAVE"
 
                 for idx, step in enumerate(ext.wcs.pipeline):
@@ -99,7 +125,7 @@ class CrossDispersed(Spect, Preprocess):
                     else:
                         # Update the SKY model so all slit centers point to
                         # the same location
-                        coords = ext.wcs.invert(cenwaves[i], *world_refpos[1:])
+                        coords = ext.wcs.invert(centwl, *world_refpos[1:])
                         shift = coords[dispaxis] - slit_center
                         sky_model = am.get_named_submodel(step.transform, "SKY")
                         new_sky_model = models.Shift(shift) | sky_model
@@ -114,16 +140,7 @@ class CrossDispersed(Spect, Preprocess):
                     log.warning("No initial wavelength model found - "
                                 "not updating the wavelength model")
 
-                try:
-                    spec_order = set(ext.SLITEDGE["specorder"])
-                except KeyError:
-                    if 'XD' in ad.tags:
-                        raise RuntimeError("No order information found in "
-                                           f"SLITEDGE for {ad.filename}")
-                else:
-                    if len(spec_order) > 1:
-                        raise RuntimeError("Multiple orders found in SLITEDGE")
-                    ext.hdr['SPECORDR'] = spec_order.pop()
+
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -208,7 +225,6 @@ class CrossDispersed(Spect, Preprocess):
                 adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
                 adout[-1].SLITEDGE["c0"] -= y1
                 adout[-1].SLITEDGE["slit"] = 1  # reset slit number in ext
-                print(adout[-1].SLITEDGE.colnames)
 
                 # Calculate a Chebyshev2D model that represents both slit
                 # edges. This requires coordinates be fed with the *detector*
@@ -219,7 +235,9 @@ class CrossDispersed(Spect, Preprocess):
                 xcenter = 0.5 * (ext.shape[dispaxis] - 1)
                 y1ref = np.full_like(ypixels1, padding)[ypix1_on]
                 y2ref = np.full_like(ypixels2, model2(xcenter) - model1(xcenter) + padding)[ypix2_on]
-                log.stdinfo(f"Slit at {xcenter} from {y1ref[0]} to {y2ref[0]}")
+                log.debug(f"Slit at {xcenter} from "
+                          f"{y1ref[0] if len(y1ref) else 'edge'} to "
+                          f"{y2ref[0] if len(y2ref) else 'edge'}")
 
                 if dispaxis == 0:
                     incoords = [np.r_[ypixels1[ypix1_on] - y1, ypixels2[ypix2_on] - y1],
