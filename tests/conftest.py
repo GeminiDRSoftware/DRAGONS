@@ -8,6 +8,7 @@ necessary) operations.
 import os
 from contextlib import chdir
 from pathlib import Path
+import re
 import shutil
 import subprocess
 
@@ -32,6 +33,44 @@ class Helpers:
             )
 
             raise Exception(message)
+
+    @staticmethod
+    def clear_conda_environment(env_name: str = "dragons_dev", *, strict: bool = False):
+        """Clear a conda environment, raise exception if it exists after."""
+        conda_remove_command = [
+            "conda",
+            "remove",
+            "--name",
+            env_name,
+            "--all",
+            "-y",
+        ]
+
+        if strict and Helpers.check_for_conda_environment(env_name):
+            raise Exception(f"Could not find env with name: {env_name}")
+
+        result = subprocess.run(conda_remove_command, capture_output=True)
+
+        if Helpers.check_for_conda_environment(env_name):
+            raise Exception(f"Could not remove env: {env_name}")
+
+        Helpers.validate_result(result)
+
+    @staticmethod
+    def check_for_conda_environment(env_name: str) -> bool:
+        """Return True if conda environment is found locally."""
+        fetch_conda_envs_command = ["conda", "info", "-e"]
+        fetch_envs_result = subprocess.run(
+            fetch_conda_envs_command, capture_output=True
+        )
+
+        env_match_re = re.compile(r"^\b({env})\b.*$".format(env=env_name), re.MULTILINE)
+
+        Helpers.validate_result(fetch_envs_result)
+
+        stdout = fetch_envs_result.stdout.decode("utf-8")
+
+        return bool([match for match in env_match_re.finditer(stdout)])
 
 
 @pytest.fixture(scope="session")
@@ -118,8 +157,4 @@ def fresh_dragons_dir(
 @pytest.fixture()
 def clear_devconda_environment(helpers) -> bool:
     """Clear the conda development environment, if it exists."""
-    conda_remove_command = ["conda", "remove", "--name", "dragons_dev", "--all", "-y"]
-
-    result = subprocess.run(conda_remove_command, capture_output=True)
-
-    helpers.validate_result(result)
+    helpers.clear_conda_environment()
