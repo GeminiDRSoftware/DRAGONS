@@ -1,5 +1,7 @@
 from functools import partial
 
+from scipy.interpolate import make_interp_spline
+
 import numpy as np
 
 from bokeh import models as bm
@@ -276,9 +278,11 @@ class TelluricPanel(Fit1DPanel):
         # This gets passed down to the TelluricInteractiveModel1D instance
         # in a very clunky way
         self.aux_data = bm.ColumnDataSource(visualizer.get_auxiliary_data(idx))
+        self.aux_data.data['telluric_data'] = np.zeros_like(self.aux_data.data['waves'])
         super().__init__(visualizer, fitting_parameters,
                          interactive_model_class=TelluricInteractiveModel1D,
                          **kwargs)
+
         visualizer.actively_fitting = False
 
     def build_figures(self, domain=None, controller_div=None,
@@ -317,13 +321,13 @@ class TelluricPanel(Fit1DPanel):
         else:
             self.model.aux_data.data['intrinsic_spectrum'] = self.model.aux_data.data['intrinsic_spectrum'].value
         p_intrinsic = figure(width=self.width, height=int(0.8 * self.height),
-                            min_width=400, title='Model Spectrum',
-                            x_axis_label=self.xlabel,
-                            y_axis_label=f"Flux density ({intrinsic_units})",
-                            tools = "pan,wheel_zoom,box_zoom,reset",
-                            output_backend="webgl",
-                            x_range=p_main.x_range,
-                            min_border_left=80, stylesheets=dragons_styles())
+                             min_width=400, title='Model Spectrum',
+                             x_axis_label=self.xlabel,
+                             y_axis_label=f"Flux density ({intrinsic_units})",
+                             tools = "pan,wheel_zoom,box_zoom,reset",
+                             output_backend="webgl",
+                             x_range=p_main.x_range,
+                             min_border_left=80, stylesheets=dragons_styles())
         p_intrinsic.height_policy = 'fixed'
         p_intrinsic.width_policy = 'fit'
         p_intrinsic.sizing_mode = 'stretch_width'
@@ -334,12 +338,29 @@ class TelluricPanel(Fit1DPanel):
         # We only want to scale to the intrinsic spectrum
         p_intrinsic.y_range.renderers = [intrinsic_line]
 
+        # Plot showing only the telluric absorption
+        p_telluric = figure(width=self.width, height=int(0.8 * self.height),
+                            min_width=400, title='Telluric Absorption Model',
+                            x_axis_label=self.xlabel,
+                            y_axis_label=f"Transmission",
+                            tools = "pan,wheel_zoom,box_zoom,reset",
+                            output_backend="webgl",
+                            x_range=p_main.x_range,
+                            min_border_left=80, stylesheets=dragons_styles())
+        p_telluric.height_policy = 'fixed'
+        p_telluric.width_policy = 'fit'
+        p_telluric.sizing_mode = 'stretch_width'
+        p_telluric.step(x='waves', y='telluric_model', source=self.model.aux_data,
+                        line_width=2, color="green", legend_label="model")
+        p_telluric.step(x='waves', y='telluric_data', source=self.model.aux_data,
+                        line_width=2, color="blue", legend_label="data")
+
         self.p_main = p_main
 
         # Do a custom padding for the ranges
         self.reset_view()
 
-        return [p_main, info_panel.component, p_supp, p_intrinsic]
+        return [p_main, info_panel.component, p_supp, p_telluric, p_intrinsic]
 
     def model_change_handler(self, model):
         """
@@ -353,6 +374,15 @@ class TelluricPanel(Fit1DPanel):
         model.evaluation.data['model'] = model.evaluate(model.evaluation.data['xlinspace'])
         model.aux_data.data['continuum'] = model.fit.continuum(model.aux_data.data['waves'])
         model.aux_data.data['corrected'] = model.aux_data.data['spectrum'] * model.fit.self_correction()
+        model.aux_data.data['telluric_model'] = model.fit.pca.evaluate(
+            None, np.asarray(model.fit.parameters[model.fit.pca_params]).flatten())
+
+        absorption = model.y / model.aux_data.data['continuum']
+        goodpix = [m == 'good' for m in model.mask]
+        spline = make_interp_spline(model.x[goodpix],
+                                    absorption[goodpix], k=3)
+        spline.extrapolate = False  # will return np.nan outside range
+        model.aux_data.data['telluric_data'] = spline(model.aux_data.data['waves'])
 
 
 class TelluricVisualizer(Fit1DVisualizer):
