@@ -80,7 +80,7 @@ def assert_python_version(
 
     assert version_match, f"Didn't get version: {python_version_str}."
 
-    major, minor, patch = (version_match.group(n) for n in (1, 2, 3))
+    major, minor, patch = (int(version_match.group(n)) for n in (1, 2, 3))
 
     for expected, found in zip([major, minor, patch], version):
         if found < 0:
@@ -101,7 +101,7 @@ def install_dependencies(
     if target_python is None:
         target_python = Path(session.virtualenv.bin) / "python"
 
-    assert_python_version(session, target_python, "3.12")
+    assert_python_version(session, target_python, (3, 12))
 
     # Install development dependencies from pyproject.toml
     # TODO: This must be changed when the dependency manager is changed.
