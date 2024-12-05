@@ -15,3 +15,4 @@ This documentation covers specific components of the DRAGONS development process
    :maxdepth: 2
 
    development_environments.rst
+   testing.rst

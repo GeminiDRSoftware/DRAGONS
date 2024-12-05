@@ -55,11 +55,11 @@ the following in mind:
    path `venv/`. If you have anything there you want to keep, save it before
    proceeding.
 
-New `venv`_ environments can be generated using the ``devshell`` session:
+New `venv`_ environments can be generated using the ``devenv`` session:
 
 .. code-block:: console
 
-   nox -s devshell
+   nox -s devenv
 
 This will not activate the environment for you. `venv` environments are created
 in a new local directory, ``venv/``. To activate a `venv`, you run ``source
