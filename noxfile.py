@@ -59,6 +59,37 @@ def create_venv(session: nox.Session) -> Path:
     return default_venv_path
 
 
+def assert_python_version(
+    session: nox.Session,
+    target_python: Path,
+    version: tuple[int, ...],
+    *,
+    lowest_version: bool = True,
+):
+    """Assert that the python version of the target python matches a given version.
+
+    The tuple should be te major, minor, and patch version. Any omitted values
+    or values set to < 0 will act as wildcard.
+    """
+
+    python_version_str = session.run(str(target_python), "--version", silent=True)
+
+    version_match = re.match(r"Python\s* ([0-9]+)\.([0-9]+)\.([0-9]+)")
+
+    assert version_match, f"Didn't get version: {python_version_str}."
+
+    major, minor, patch = (version_match.group(n) for n in (1, 2, 3))
+
+    for expected, found in zip([major, minor, patch], version):
+        if found < 0:
+            continue
+
+        valid_version = expected == found if not lowest_version else expected >= found
+        assert (
+            valid_version
+        ), f"Mismatched versions: {(major, minor, patch)} != {version}"
+
+
 def install_dependencies(
     session: nox.Session,
     *,
@@ -67,6 +98,8 @@ def install_dependencies(
     """Install dependencies using a running session."""
     if target_python is None:
         target_python = Path(session.virtualenv.bin) / "python"
+
+    assert_python_version(session, target_python, "3.12")
 
     # Install development dependencies from pyproject.toml
     # TODO: This must be changed when the dependency manager is changed.
