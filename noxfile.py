@@ -74,7 +74,9 @@ def assert_python_version(
 
     python_version_str = session.run(str(target_python), "--version", silent=True)
 
-    version_match = re.match(r"Python\s* ([0-9]+)\.([0-9]+)\.([0-9]+)")
+    version_match = re.match(
+        r"Python\s* ([0-9]+)\.([0-9]+)\.([0-9]+)", python_version_str
+    )
 
     assert version_match, f"Didn't get version: {python_version_str}."
 
