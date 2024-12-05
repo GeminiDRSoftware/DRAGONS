@@ -102,6 +102,7 @@ def devenv(session: nox.Session):
     venv_path = create_venv(session)
     venv_python = venv_path / "bin" / "python"
     install_dependencies(session, target_python=venv_python)
+    session.notify("install_pre_commit_hooks")
 
 
 @nox.session(venv_backend="none")
@@ -130,6 +131,8 @@ def devconda(session: nox.Session):
 
     install_dependencies(session, target_python=python_path)
 
+    session.notify("install_pre_commit_hooks")
+
 
 @nox.session(venv_backend="none")
 def remove_devconda_environment(session: nox.Session):
@@ -137,3 +140,11 @@ def remove_devconda_environment(session: nox.Session):
     session.run(
         "conda", "remove", "--name", "dragons_dev", "--all", "-y", external=True
     )
+
+
+@nox.session
+def install_pre_commit_hooks(session: nox.Session):
+    """Install pre-commit hooks; happens after devshell/devconda runs."""
+    session.install("pre-commit")
+
+    session.run("pre-commit", "install")
