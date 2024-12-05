@@ -45,5 +45,39 @@ def test_create_developer_conda_with_custom_name(
         expected_conda_env_name
     ), f"Conda env {expected_conda_env_name} not found."
 
-    # Cleanup!
+    # Cleanup! This line cleans up the conda environment generated during the
+    # test. The environment is automatically cleaned
     helpers.clear_conda_environment(env_name)
+
+
+def test_installed_packages_conda(clean_conda_env, helpers):
+    """Test that dependencies are installed as expected in the conda
+    environment.
+    """
+    _env_name, python_bin = clean_conda_env
+
+    # Try running a script that just contains imports for packages that
+    # should now be in the environment.
+    #
+    # In the future, this should be a helper function or fixture.
+    expected_packages = (
+        "astrodata",
+        "geminidr",
+        "gempy",
+        "gemini_instruments",
+        "recipe_system",
+        "numpy",
+        "astropy",
+        "scipy",
+        "pytest",
+    )
+
+    python_imports_command = [
+        str(python_bin.absolute()),
+        "-c",
+        "\n".join(f"import {name}" for name in expected_packages),
+    ]
+
+    python_script_result = subprocess.run(python_imports_command, capture_output=True)
+
+    helpers.validate_result(python_script_result)

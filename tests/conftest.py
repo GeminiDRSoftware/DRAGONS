@@ -37,6 +37,7 @@ class Helpers:
     @staticmethod
     def clear_conda_environment(env_name: str = "dragons_dev", *, strict: bool = False):
         """Clear a conda environment, raise exception if it exists after."""
+
         conda_remove_command = [
             "conda",
             "remove",
@@ -51,10 +52,10 @@ class Helpers:
 
         result = subprocess.run(conda_remove_command, capture_output=True)
 
+        Helpers.validate_result(result)
+
         if Helpers.check_for_conda_environment(env_name):
             raise Exception(f"Could not remove env: {env_name}")
-
-        Helpers.validate_result(result)
 
     @staticmethod
     def check_for_conda_environment(env_name: str) -> bool:
@@ -71,6 +72,39 @@ class Helpers:
         stdout = fetch_envs_result.stdout.decode("utf-8")
 
         return bool([match for match in env_match_re.finditer(stdout)])
+
+    @staticmethod
+    def get_conda_environments() -> list[str]:
+        """Determine the names of all conda environments current available."""
+        return [k for k in Helpers.get_conda_python_paths()]
+
+    @staticmethod
+    def get_conda_python_paths() -> dict[str, Path]:
+        """Get conda envs and their corresponding python paths."""
+        command = ["conda", "env", "list"]
+
+        result = subprocess.run(command, capture_output=True)
+
+        Helpers.validate_result(result)
+
+        stdout = result.stdout.decode("utf-8")
+
+        paths = {}
+
+        for line in (l.strip() for l in stdout.splitlines()):
+            if not line or line[0] == "#":
+                continue
+
+            cols = line.split()
+            if len(cols) >= 2:
+                python_bin = Path(cols[1]) / "bin" / "python"
+
+                if "envs" not in str(python_bin) or not python_bin.exists():
+                    continue
+
+                paths[cols[0]] = python_bin
+
+        return paths
 
 
 @pytest.fixture(scope="session")
@@ -157,4 +191,42 @@ def fresh_dragons_dir(
 @pytest.fixture()
 def clear_devconda_environment(helpers) -> bool:
     """Clear the conda development environment, if it exists."""
+    helpers.clear_conda_environment()
+
+    yield
+
+    # Cleanup
+    helpers.clear_conda_environment()
+
+
+@pytest.fixture()
+def clean_conda_env(helpers, fresh_dragons_dir) -> tuple[str, Path]:
+    """Create a clean conda environment for the test, returns name and path to
+    the python binary.
+    """
+    devconda_command = ["nox", "-s", "devconda"]
+
+    helpers.clear_conda_environment()
+
+    prev_conda_envs = helpers.get_conda_environments()
+
+    result = subprocess.run(devconda_command, capture_output=True)
+
+    helpers.validate_result(result)
+
+    new_conda_envs = helpers.get_conda_environments()
+
+    env_diffs = [k for k in new_conda_envs if k not in prev_conda_envs]
+
+    assert len(env_diffs) > 0, "No new environments created."
+
+    assert (
+        len(env_diffs) == 1
+    ), "Multiple new environments detected, This is not thread safe!"
+
+    new_env = env_diffs[0]
+    env_pythons = helpers.get_conda_python_paths()
+
+    yield [new_env, env_pythons[new_env]]
+
     helpers.clear_conda_environment()
