@@ -72,7 +72,9 @@ def assert_python_version(
     or values set to < 0 will act as wildcard.
     """
 
-    python_version_str = session.run(str(target_python), "--version", silent=True)
+    python_version_str = session.run(
+        str(target_python), "--version", silent=True, external=True
+    )
 
     version_match = re.match(
         r"Python\s* ([0-9]+)\.([0-9]+)\.([0-9]+)", python_version_str
