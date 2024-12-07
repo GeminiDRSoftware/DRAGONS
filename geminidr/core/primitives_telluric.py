@@ -395,14 +395,27 @@ class Telluric(Spect):
                     else:
                         trans = ext_std.TELLABS
 
-                    pixel_shift = peak_finding.cross_correlate_subpixels(
-                        ext.data, trans, sampling)
-                    pixel_shift = 0.01 * np.round(pixel_shift * 100)
-                    if pixel_shift is None:
+                    # Old cross-correlation method
+                    #pixel_shift = peak_finding.cross_correlate_subpixels(
+                    #    ext.data, trans, sampling)
+                    #pixel_shift = 0.01 * np.round(pixel_shift * 100)
+
+                    pixels = np.arange(ext.shape[0])
+                    dx_all = np.arange(-10, 10.001, 0.05)
+                    fft_all = np.zeros_like(dx_all)
+                    for i, dx in enumerate(dx_all):
+                        shift_trans = np.interp(pixels + dx, pixels, trans,
+                                                left=np.nan, right=np.nan)
+                        fft_all[i] = abs(np.fft.fft(at.divide0(ext.data,
+                                                               shift_trans))[0])
+                    try:
+                        best = peak_finding.pinpoint_peaks(-fft_all, [fft_all.argmin()])[0]
+                    except IndexError:
                         log.warning("Cannot determine cross-correlation"
                                     f"peak for {ext.id}")
                         pixel_shift = None  # needs to exist for later
                     else:
+                        pixel_shift = 0.01 * np.round(np.interp(best, np.arange(fft_all.size), dx_all))
                         log.stdinfo(f"Shift for extension {ext.id} is "
                                     f"{pixel_shift:.2f} pixels")
                         pixel_shifts.append(pixel_shift)
