@@ -36,14 +36,14 @@ Linting, formatting, and quick checks (``pre-commit``)
 
 
 
-We perform quick operations---specifically, formatting, linting, and validating
-changes---when you try to commit your changes.
+We perform quick conformance operations---specifically, formatting, linting,
+and validating changes---when you try to commit your changes.
 
 .. _pre-commit_docs: https://pre-commit.com/
 
 The following tools are used to accomplish this through :ref:`pre-commit
 <pre-commit_docs>`_. It runs the following other tools (with *no need to install
-yourself*):
+them yourself*):
 
 .. _ruff_docs: https://docs.astral.sh/ruff/
 .. _black_docs: https://black.readthedocs.io/en/stable/
