@@ -8,7 +8,7 @@
 __version__      = '$Revision$'[11:-2]
 __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
-""" Initial AstroData API tests. 
+""" Initial AstroData API tests.
 
     To run theses tests w/ pytest:
 
@@ -39,7 +39,7 @@ GEM0 = os.environ.get("ADTESTDATA")
 if GEM0 is None:
     for path in sys.path:
         if 'gemini_python' in path:
-            GEM1 = os.path.join(path.split('gemini_python')[0], 
+            GEM1 = os.path.join(path.split('gemini_python')[0],
                                'gemini_python', 'test_data')
             break
 
@@ -80,7 +80,7 @@ header2 = pfob[2].header         # <'Header'>
 # ==================================== tests  ==================================
 xfail = pytest.mark.xfail
 # ==============================================================================
-# Constructor 
+# Constructor
 def test_constructor_0():
     """ Good filename """
     assert AstroData(dataset=TESTFILE)
@@ -104,7 +104,7 @@ def test_constructor_4():
     """ dataset as bad URL """
     with pytest.raises(AstroDataError):
         assert AstroData(dataset=TESTURL)
- 
+
 def test_constructor_5():
     """ HDUList """
     assert AstroData(dataset=pfob)
@@ -371,7 +371,7 @@ def test_method_append_3():
     ad = AstroData(TESTFILE)
     initial_len = len(ad)
     ad.append(moredata=pfob, auto_number=True)
-    assert len(ad) == initial_len + len(pfob) - 1 
+    assert len(ad) == initial_len + len(pfob) - 1
 
 def test_method_append_4():
     ad = AstroData(TESTFILE)
@@ -383,7 +383,7 @@ def test_method_append_5():
     ad = AstroData(TESTFILE)
     ad.append(moredata=hdu1, auto_number=True)
     assert ad.hdulist[-1] == hdu1
-    
+
 def test_method_append_6():
     ad = AstroData(TESTFILE)
     initial_len = len(ad)
@@ -568,7 +568,7 @@ def test_attr_types_1():
 
 def test_attr_types_2():
     ad = AstroData(TESTFILE)
-    assert KNOWNTYPE in ad.types 
+    assert KNOWNTYPE in ad.types
 
 def test_attr_types_3():
     ad = AstroData(TESTFILE)
@@ -675,13 +675,13 @@ def test_method_ext_index_3():
     assert ad.ext_index(('SCI',3)) == 2
 
 #   rename_ext()
-def test_method_rename_ext_1():    # Raise on multi-ext 
+def test_method_rename_ext_1():    # Raise on multi-ext
     ad = AstroData(TESTFILE)
     with pytest.raises(SingleHDUMemberExcept):
         ad.rename_ext("SCI", ver=99)
 
 def test_method_rename_ext_2():
-    ad = AstroData(TESTFILE)      
+    ad = AstroData(TESTFILE)
     with pytest.raises(SingleHDUMemberExcept):
         ad.rename_ext("FOO")
 
@@ -707,7 +707,7 @@ def test_method_extname_1():
     assert isinstance(ad.extname(), str)
 
 def test_method_extname_2():
-    ad = AstroData(TESTFILE2)      
+    ad = AstroData(TESTFILE2)
     assert ad.extname() == 'SCI'
 
 def test_method_extname_3():
@@ -721,7 +721,7 @@ def test_method_extver_1():
     assert isinstance(ad.extver(), int)
 
 def test_method_extver_2():
-    ad = AstroData(TESTFILE2)      
+    ad = AstroData(TESTFILE2)
     assert ad.extver() == 1
 
 def test_method_extver_3():
@@ -753,7 +753,7 @@ def test_method_info_3():
     ad.info(oid=True)
     sys.stdout = old_stdout
     assert isinstance(mystdout.getvalue(), str)
- 
+
 def test_method_info_4():
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()

@@ -26,6 +26,7 @@ repos:
   - id: check-json
   - id: check-toml
   - id: check-docstring-first
+    exclude: "archived/"
   - id: check-case-conflict
   - id: trailing-whitespace
   - id: end-of-file-fixer
