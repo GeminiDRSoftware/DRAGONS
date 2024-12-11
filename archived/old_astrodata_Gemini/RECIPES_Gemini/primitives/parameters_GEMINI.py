@@ -86,7 +86,7 @@
         "default"       : 0.067,
         "type"          : "float",
         "recipeOverride": True,
-        "userOverride"  : True, 
+        "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
     "source":{  # gmos catalog is combination of sdss9, vstatlas and apass7
@@ -378,7 +378,7 @@
         "default"       : None,
         "type"          : "float",
         "recipeOverride": True,
-        "userOverride"  : True, 
+        "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
     "mask":{
@@ -424,7 +424,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "display":{ 
+ "display":{
     "extname":{
         "default"       : "SCI",
         "type"          : "str",
@@ -725,7 +725,7 @@
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
-        }, 
+        },
     "nhigh":{
         "default"       : 1,
         "type"          : "int",
@@ -769,7 +769,7 @@
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
-        }, 
+        },
     "nhigh":{
         "default"       : 1,
         "type"          : "int",
@@ -816,7 +816,7 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    }, 
+    },
  "storeProcessedBias":{
     "suffix":{
         "default"       : "_bias",
@@ -825,7 +825,7 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    }, 
+    },
  "storeProcessedDark":{
     "suffix":{
         "default"       : "_dark",
@@ -834,7 +834,7 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    }, 
+    },
  "storeProcessedFlat":{
     "suffix":{
         "default"       : "_flat",
@@ -843,7 +843,7 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    }, 
+    },
  "storeProcessedStandard":{
     "suffix":{
         "default"       : "_standard",
@@ -852,7 +852,7 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    }, 
+    },
  "storeProcessedSlitIllum":{
     "suffix":{
         "default"       : "_slitillum",
@@ -895,7 +895,7 @@
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
-        },        
+        },
     },
  "writeOutputs":{
     "suffix":{
