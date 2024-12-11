@@ -146,6 +146,7 @@ def devenv(session: nox.Session):
 def devconda(session: nox.Session):
     """Generate a new conda development environment."""
     extra_args = ["--force", "-y"]
+    channels = ["--channel", "conda-forge"]
 
     if all(name_flag not in session.posargs for name_flag in ["-n", "--name"]):
         env_name = "dragons_dev"
@@ -155,10 +156,15 @@ def devconda(session: nox.Session):
         name_flag_index = [c in ["-n", "--name"] for c in session.posargs].index(True)
         env_name = session.posargs[name_flag_index + 1]
 
+    if any(channel_arg in session.posargs for channel_arg in ["-c", "--channel"]):
+        channels = []
+
     if all("python" not in arg for arg in session.posargs):
         extra_args.extend(["python=3.12"])
 
-    session.run("conda", "create", *extra_args, *session.posargs, external=True)
+    session.run(
+        "conda", "create", *extra_args, *channels, *session.posargs, external=True
+    )
 
     result = session.run("conda", "env", "list", silent=True, external=True)
 
@@ -185,3 +191,11 @@ def install_pre_commit_hooks(session: nox.Session):
     session.install("pre-commit")
 
     session.run("pre-commit", "install")
+
+
+@nox.session
+def run_dev_tests(session: nox.Session):
+    """Run the tests for this file, developer environments, etc."""
+    session.install("pytest")
+
+    session.run("pytest", "tests/", *session.posargs)
