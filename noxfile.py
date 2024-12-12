@@ -200,6 +200,7 @@ def run_dev_tests(session: nox.Session):
 
     session.run("pytest", "tests/", *session.posargs)
 
+
 @nox.session
 def lint(session: nox.Session):
     """Runs formattiing/linting, using pre-commit.
@@ -213,6 +214,6 @@ def lint(session: nox.Session):
 
         nox -s lint -- --all
     """
-    session.install('pre-commit')
+    session.install("pre-commit")
 
-    session.run('pre-commit', 'run', *session.posargs)
+    session.run("pre-commit", "run", *session.posargs)
