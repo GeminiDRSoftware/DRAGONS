@@ -199,3 +199,20 @@ def run_dev_tests(session: nox.Session):
     session.install("pytest")
 
     session.run("pytest", "tests/", *session.posargs)
+
+@nox.session
+def lint(session: nox.Session):
+    """Runs formattiing/linting, using pre-commit.
+
+    Note: these will already be run before a commit is accepted.
+
+    Positional arguments that pre-commit accepts will be passed to pre-commit.
+    For example, to run over all files, use
+
+    .. code-block:: terminal
+
+        nox -s lint -- --all
+    """
+    session.install('pre-commit')
+
+    session.run('pre-commit', 'run', *session.posargs)
