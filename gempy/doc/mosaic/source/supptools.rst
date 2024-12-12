@@ -28,7 +28,7 @@ Example
 ::
 
  $ reduce -r mosaicDetectors N20170913S0209_prepared.fits
-   
+
 	--- reduce, vv2.0.8 ---
  All submitted files appear valid
  Found 'mosaicDetectors' as a primitive.
@@ -44,20 +44,20 @@ Example
     Working on DQ arrays ...
     Working on OBJMASK arrays ...
     Keeping REFCAT ...
-    Updated filename: N20170913S0209_mosaic.fits 
+    Updated filename: N20170913S0209_mosaic.fits
     .
  Wrote N20170913S0209_mosaic.fits in output directory
 
  reduce completed successfully.
 
- 
+
 2) Run tiling on a full dataset, i.e., SCI, VAR, DQ arrays, plus any OBJMASK
    and reference catalog.
 
 ::
 
  $ reduce -r tileArrays N20170913S0209_prepared.fits
- 
+
           --- reduce, vv2.0.8 ---
  All submitted files appear valid
  Found 'tileArrays' as a primitive.
@@ -66,7 +66,7 @@ Example
  ===========================================================
    PRIMITIVE: tileArrays
    ---------------------
-   Tile arrays parameter, tile_all is False 
+   Tile arrays parameter, tile_all is False
       PRIMITIVE: mosaicDetectors
       --------------------------
          MosaicAD Working on GMOS IMAGE
@@ -77,7 +77,7 @@ Example
       Working on OBJMASK arrays ...
       Tiling OBJCATS ...
       Keeping REFCAT ...
-      Updated filename: N20170913S0209_tiled.fits 
+      Updated filename: N20170913S0209_tiled.fits
    .
  .
  Wrote N20170913S0209_tiled.fits in output directory
@@ -90,7 +90,7 @@ the ``tile_all`` parameter, which can be passed on the command line as well.
 ::
 
  $ reduce -p tile_all=True -r tileArrays N20170913S0209_prepared.fits
- 
+
           --- reduce, vv2.0.8 ---
  All submitted files appear valid
  Found 'tileArrays' as a primitive.
@@ -110,7 +110,7 @@ the ``tile_all`` parameter, which can be passed on the command line as well.
       Working on OBJMASK arrays ...
       Tiling OBJCATS ...
       Keeping REFCAT ...
-      Updated filename: N20170913S0209_tiled.fits 
+      Updated filename: N20170913S0209_tiled.fits
    .
  .
  Wrote N20170913S0209_tiled.fits in output directory

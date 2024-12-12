@@ -97,5 +97,3 @@ class GemcombineETI(PyrafETI):
             else:
                 fil.recover()
         return ad
-
-

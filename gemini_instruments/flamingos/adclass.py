@@ -33,7 +33,7 @@ class AstroDataFlamingos(AstroDataGemini):
     @astro_data_tag
     def _tag_twilight(self):
         if 'twilight' in self.phu.get('OBJECT', '').lower():
-            return TagSet(['TWILIGHT', 'CAL'])    
+            return TagSet(['TWILIGHT', 'CAL'])
 
     @astro_data_tag
     def _tag_dark(self):
@@ -138,7 +138,7 @@ class AstroDataFlamingos(AstroDataGemini):
 
     @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
-        return self.phu.get(self._keyword_for('filter_name'))    
+        return self.phu.get(self._keyword_for('filter_name'))
 
     @astro_data_descriptor
     def ra(self):

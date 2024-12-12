@@ -32,4 +32,3 @@ equal to the name of the first input bias image with "_dark.fits" appended.
         p.makeIRAFCompatible()
         p.storeProcessedDark()
         return
-

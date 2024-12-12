@@ -1,5 +1,5 @@
 """
-Collection of functions to make pipeline-processed and 
+Collection of functions to make pipeline-processed and
 IRAF-processed files compatible with the other system.
 
 """
@@ -8,7 +8,7 @@ IRAF-processed files compatible with the other system.
 import re
 
 def pipeline2iraf(ad, verbose=False):
-        
+
     if "GMOS" in ad.tags:
         compat_with_iraf_GMOS(ad, verbose)
     elif "F2" in ad.tags:
@@ -16,7 +16,7 @@ def pipeline2iraf(ad, verbose=False):
     else:
         if verbose:
             print("Data type not supported, {}".format(ad.filename))
-         
+
     return
 
 def compat_with_iraf_GMOS(ad, verbose):
@@ -26,7 +26,7 @@ def compat_with_iraf_GMOS(ad, verbose):
     if verbose:
         print("Add OBSMODE {} to PHU.".format(obsmode))
     ad.phu.set('OBSMODE', obsmode, "Observing mode (IMAGE|IFU|MOS|LONGSLIT)")
-    
+
     # The other keywords required by the Gemini IRAF tasks.
     if "PREPARED" in ad.tags:
         if verbose:
@@ -105,7 +105,7 @@ def _get_gmos_obsmode(ad):
     masktype = ad.phu['MASKTYP']
     maskname = ad.phu['MASKNAME']
     grating = ad.phu['GRATING']
-        
+
     if obstype == "BIAS" or obstype == "DARK" or masktype == 0:
         obsmode = "IMAGE"
     elif masktype == -1:
@@ -131,7 +131,7 @@ def _get_gmos_obsmode(ad):
     else:
         print("WARNING: Headers not standard, assuming OBSMODE=IMAGE.")
         obsmode = "IMAGE"
-    
+
     if grating == "MIRROR" and obsmode != "IMAGE":
         print("WARNING: Mask or IFU used without grating, setting OBSMODE to IMAGE.")
         obsmode = "IMAGE"

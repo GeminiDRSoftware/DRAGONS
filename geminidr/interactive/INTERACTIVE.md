@@ -7,19 +7,19 @@ user interface.
 
 ## Quick Start
 
-The visualization is done in bokeh with an embedded web server.  
-In the primitive, the code will call out to the visualization 
-API with the input values/parameters.  From there, the user will 
-be interacting with the data in bokeh.  Once the user hits a 
-submit button, the code will return to the calling primitive and 
-it can extract the final fit/parameters from the visualization.  
+The visualization is done in bokeh with an embedded web server.
+In the primitive, the code will call out to the visualization
+API with the input values/parameters.  From there, the user will
+be interacting with the data in bokeh.  Once the user hits a
+submit button, the code will return to the calling primitive and
+it can extract the final fit/parameters from the visualization.
 There is also a pre-done 1-D Visualizer provided to use the
 fit_1D fitter.
 
 ## Fit1DVisualizer
 
 This first section will outline the `Fit1DVisualizer`.  For
-many primitives, this will be sufficient.  Using this 
+many primitives, this will be sufficient.  Using this
 `Visualizer` implementation will save time and lead to a
 consistent interface with other interactive fits.
 
@@ -28,8 +28,8 @@ consistent interface with other interactive fits.
 ### Identify Coordinate inputs, Fit inputs
 
 Look over the primitive and see what inputs are used to
-generate the initial set of coordinates to be fit.  This 
-may be an expensive operation and we want to 
+generate the initial set of coordinates to be fit.  This
+may be an expensive operation and we want to
 separate out the needed inputs accordingly in the UI.
 These inputs will be UI widgets on the far left used
 to generate the full set of coordinates/weights.
@@ -55,7 +55,7 @@ then you can just pass a list of (x, y, weights) tuples
 
 This should be a list of dictionaries that will
 be sent to each `fit_1D` when doing the fits.  Essentially, this will
-have the initial `order`, etc that will be used for each tab.  This 
+have the initial `order`, etc that will be used for each tab.  This
 can be easily generated from the primitive parameters using:
 
 ```python
@@ -69,7 +69,7 @@ This is the same approach you will take with a custom
 
 First you instantiate the `Fit1DVisualizer` with the
 coordinates or coordinate function and other parameters.
-Then you start the bokeh UI by calling 
+Then you start the bokeh UI by calling
 
 ```python
 geminidr.interactive.server.interactive_fitter(visualizer)
@@ -78,7 +78,7 @@ geminidr.interactive.server.interactive_fitter(visualizer)
 The call will block until the user hits the *Submit* button or
 closes the tab.  Then the function will return and resulting
 fits are available from the `visualizer`.  You can get the list
-of final `fit_1D` fits by calling the `results()` method like 
+of final `fit_1D` fits by calling the `results()` method like
 this:
 
 ```python
@@ -87,7 +87,7 @@ all_m_final = visualizer.results()
 
 ### calculateSensitivity
 
-The `calculateSensitivty` primitive is a good example of the common case and 
+The `calculateSensitivty` primitive is a good example of the common case and
 how to use the pre-done `Fit1DVisualizer` UI.  The code ends up like this:
 
 ```python
@@ -123,7 +123,7 @@ if interactive:
                                        title="Calculate Sensitivity")
     # This bit spins up bokeh and waits for the user to click 'Submit' or close the window
     geminidr.interactive.server.interactive_fitter(visualizer)
-    
+
     # Grab the fit_1D outputs and do something
     all_m_final = visualizer.results()
     for ext, fit in zip(all_exts, all_m_final):
@@ -137,13 +137,13 @@ else:
 
 The `normalizeFlat` primitive is quite expensive, so we modify the basic UI a bit.  This
 primitive passes a function to access the x, y, weights.  What this will do is create extra
-UI controls on the left side of the UI, outside the per-extension tabs.  These controls can 
+UI controls on the left side of the UI, outside the per-extension tabs.  These controls can
 be modified to alter values of the `config`.  You can also add additional parameters via the
-`reinit_extras` dictionary of name, Field pairs.  The config and the values of the extras are 
-then passed into the function you provided to recalculate the x, y, weights for all 
+`reinit_extras` dictionary of name, Field pairs.  The config and the values of the extras are
+then passed into the function you provided to recalculate the x, y, weights for all
 extensions.
 
-In the case of normalizeFlat, this capability was used to pull out a single row from each 
+In the case of normalizeFlat, this capability was used to pull out a single row from each
 extension to be fit.  When the user selects a row, say `100`, the UI will call back into the
 supplied function from `normalizeFlat`.  It will then extract x, y, weights for all extensions
 by pulling that row out.
@@ -170,7 +170,7 @@ The `title` is used in the top of the HTML template shown to the user.  The `con
 will be available to your primitive as a field on the visualizer.
 
 It also creates a `submit_button` field that is a bokeh `Button` to submit the results.
-You will want to add this `Button` in your custom UI for the user to submit their final 
+You will want to add this `Button` in your custom UI for the user to submit their final
 fit.
 
 ### do_later
@@ -182,7 +182,7 @@ post your function onto the bokeh event loop to be executed in that context.
 ### visualize(doc)
 
 The method you need to implement to provide a custom UI is `visualize`.  It will take
-a bokeh `Document` as it's argument and should add whatever widgets and figures you 
+a bokeh `Document` as it's argument and should add whatever widgets and figures you
 need.  Don't forget to add the `submit_button` from the base class.
 
 ### results
@@ -193,7 +193,7 @@ this call is `results()`
 
 ### show_user_message
 
-There is a helper method called `show_user_message` that will pop up a message dialog 
+There is a helper method called `show_user_message` that will pop up a message dialog
 for the user.  As an example:
 
 ```python
@@ -205,10 +205,10 @@ self.vis.show_user_message(f"Sigma slider changed to {val}")
 There is a helper method called `make_modal` that will pop up a message in the webpage
 and block access to the UI.  It takes two parameters, a `widget` and a `message`.  The
 `message` will be the text displayed to the user.  The `widget` is used to drive display
-of the popup.  When this `widget` is disabled, the message will be shown.  When the `widget` 
+of the popup.  When this `widget` is disabled, the message will be shown.  When the `widget`
 is re-enabled, the message will be hidden and the user will have access to the UI again.
 
-This roundabout way of showing the popup is necessary due to the design of bokeh. 
+This roundabout way of showing the popup is necessary due to the design of bokeh.
 Typically, you would tie it to a button that kicks off an operation that you expect to be
 slow.
 
@@ -250,7 +250,7 @@ There is a helper method called `make_ok_cancel_dialog`.  This is called on a bo
 `Button`, typically right after creating it.  The helper method also takes the message
 to display in the ok/cancel dialog and a callback function.  The callback function should
 take a single boolean argument, which will be `True` if the user chose "OK" and `False`
-if they chose "Cancel".  The helper calls the callback from inside the UI thread, so you 
+if they chose "Cancel".  The helper calls the callback from inside the UI thread, so you
 don't have to add a `do_later` layer of your own.
 
 Here is an example from the 1-D fitter:
@@ -267,11 +267,11 @@ self.reset_dialog = self.visualizer.make_ok_cancel_dialog(reset_button,
 
 ### make_widgets_from_parameters
 
-The `PrimitiveVisualizer` has a `make_widgets_from_parameters` helper method.  For the 
-passed parameters, defined in a `UIParameters`, this will build a panel of widgets 
-to update the corresponding parameters.  This provides a quick and easy way to make 
-a UI for the inputs to a primitive.  For this to work, the `PrimitiveVisualizer` must 
-be told about the parameters when it is constructed.  This is done with a few lines of 
+The `PrimitiveVisualizer` has a `make_widgets_from_parameters` helper method.  For the
+passed parameters, defined in a `UIParameters`, this will build a panel of widgets
+to update the corresponding parameters.  This provides a quick and easy way to make
+a UI for the inputs to a primitive.  For this to work, the `PrimitiveVisualizer` must
+be told about the parameters when it is constructed.  This is done with a few lines of
 code in the primitive like so:
 
 ```python
@@ -281,23 +281,23 @@ ui_params = UIParams(config)
 # pass this config to the visualizer constructor
 ```
 
-The `UIParams` can also take a few extra arguments to fine tune it's behavior.  
+The `UIParams` can also take a few extra arguments to fine tune it's behavior.
 `params` is a list of all the parameters you want captured from the `Config`.
-`hidden_params` are the parameters to not automatically add in the 
+`hidden_params` are the parameters to not automatically add in the
 `make_widgets_from_parameters`, if you want to place them elsewhere.  You can add
 `title_overrides` to give a dictionary mapping of parameters to text to use in
-the UI instead of inferring them from the `Config`. 
+the UI instead of inferring them from the `Config`.
 
 ## Tornado Handlers
 
-The embedded bokeh server uses Tornado for the web engine.  It is possible to add 
-additional Tornado-based handlers to the server.  This can be useful, for instance, 
-to create custom web service calls that the HTML UI could access.  As an example, I 
-have wired up a ‘version’ web service that will report back the DRAGONS version 
-number.  This is used in the HTML UI to set the text/link to DRAGONS in the lower 
+The embedded bokeh server uses Tornado for the web engine.  It is possible to add
+additional Tornado-based handlers to the server.  This can be useful, for instance,
+to create custom web service calls that the HTML UI could access.  As an example, I
+have wired up a ‘version’ web service that will report back the DRAGONS version
+number.  This is used in the HTML UI to set the text/link to DRAGONS in the lower
 right corner.
 
-The logic that adds this handler is the extra_patterns parameter to the bokeh 
+The logic that adds this handler is the extra_patterns parameter to the bokeh
 Server constructor.
 
 ```python
@@ -324,11 +324,11 @@ is generally a dictionary where the values are arrays of bytes.
 
 ## Key Passing
 
-Bokeh provides no way to pass key presses naturally to the python.  As a workaround, 
-I added a custom bokeh endpoint that takes key presses as URL parameters.  This is 
-wired up to the `handle_key` URL endpoint in the bokeh Server.  Supported keys must 
+Bokeh provides no way to pass key presses naturally to the python.  As a workaround,
+I added a custom bokeh endpoint that takes key presses as URL parameters.  This is
+wired up to the `handle_key` URL endpoint in the bokeh Server.  Supported keys must
 be intercepted in the javascript in `index.html`.  Then they will come in through
-`handle_key`.  
+`handle_key`.
 
 Note that this code path is outside the bokeh event loop, so if you
 need to change the UI in response to a key press, you will want to use the
@@ -336,29 +336,29 @@ need to change the UI in response to a key press, you will want to use the
 
 ## Controller/Tasks/Handlers
 
-The key passing is currently used for working with selection bands and apertures.  
-The bands interface is built into the Fit1DVisualizer, but may be useful in building 
+The key passing is currently used for working with selection bands and apertures.
+The bands interface is built into the Fit1DVisualizer, but may be useful in building
 more custom visualizers as well.
 
-There are two places this interface is visible.  The first is in the plot itself, 
-where bands are seen here as shaded bluish stripes.  The second is below the 
-mask/unmask where some help text is displayed with the currently available key 
-commands.  Let’s take a look at the code.  Note that we will show bands here, 
+There are two places this interface is visible.  The first is in the plot itself,
+where bands are seen here as shaded bluish stripes.  The second is below the
+mask/unmask where some help text is displayed with the currently available key
+commands.  Let’s take a look at the code.  Note that we will show bands here,
 but Apertures work similarly.
 
 ![Controller/Task UI](docs/ControllerAndTask.png)
 
-First, in the visualizer for each tab a region model is created.  This is a data 
-structure that keeps track of all the regions, can check if a given coordinate is 
-‘selected’ by the regions, and notifies registered listeners whenever the bands 
-change.  This last is used by Fit1DVisualizer to recalculate the masked points 
+First, in the visualizer for each tab a region model is created.  This is a data
+structure that keeps track of all the regions, can check if a given coordinate is
+‘selected’ by the regions, and notifies registered listeners whenever the bands
+change.  This last is used by Fit1DVisualizer to recalculate the masked points
 and redo the fit, for instance.
 
 ```python
 self.region_model = GIRegionModel()
 ```
 
-Next, in the UI below the mask/unmask buttons we add a bokeh `Div`.  This `Div` is 
+Next, in the UI below the mask/unmask buttons we add a bokeh `Div`.  This `Div` is
 going to be updated with help text for the active task.
 
 ```python
@@ -366,35 +366,35 @@ controller_div = Div()
 controls = column(..., controller_div)
 ```
 
-Then we create a visualization of the bands on the bokeh `Figure`.  This can be 
-done with a simple utility function.  The None here refers to an optional 
-`GIApertureModel`.  Note that we can call this multiple times to connect the 
+Then we create a visualization of the bands on the bokeh `Figure`.  This can be
+done with a simple utility function.  The None here refers to an optional
+`GIApertureModel`.  Note that we can call this multiple times to connect the
 `GIRegionModel` to multiple `Figure`s (and indeed in this example there are two).
 
 ```python
 connect_figure_extras(figure, None, self.region_model)
 ```
 
-To get updates on the bands so we know to recalculate the masked points, we add 
-a listener to the `GIRegionModel`.  Note there is a lot of custom code for 
-`Fit1DVisualizer` behind this and we would need to do something custom for any 
+To get updates on the bands so we know to recalculate the masked points, we add
+a listener to the `GIRegionModel`.  Note there is a lot of custom code for
+`Fit1DVisualizer` behind this and we would need to do something custom for any
 new interfaces.
 
 ```python
 self.region_model.add_listener(some_listener)
 ```
 
-Lastly, we setup a `Controller`.  There is one for the top figure in each of the 
-tabs in this example UI.  The `Controller` detects when the mouse enters a 
-figure and routes mouse coordinates and key presses to a `RegionTask` to modify the 
-bands as directed.  We don’t need to do anything additional for that, we just 
+Lastly, we setup a `Controller`.  There is one for the top figure in each of the
+tabs in this example UI.  The `Controller` detects when the mouse enters a
+figure and routes mouse coordinates and key presses to a `RegionTask` to modify the
+bands as directed.  We don’t need to do anything additional for that, we just
 create the `Controller` and let it manage everything.
 
 ```python
 Controller(figure, None, self.band_model, controller_div)
 ```
 
-There is also a helper class called `RegionEditor`.  If you create an instance of 
+There is also a helper class called `RegionEditor`.  If you create an instance of
 this, it will make a text input that is linked to the `GIRegionModel`.  Just call
 `get_widget()` on the `RegionEditor` after you make it to get a widget you can add
 to a bokeh layout.
@@ -421,7 +421,7 @@ The `Tabs` in `bokeh` do a poor job of managing the DOM.  If you have many tabs
 with content, it can drastically impair the performance.  As a workaround, you
 can initialize your tabs using the provided `TabsTurboInjector` in the `interactive`
 module.  First, you instantiate one of these helpers passing an empty bokeh `Tabs`
-to it to be managed.  Then, instead of adding child tab `Panel`s to your `Tabs`, 
+to it to be managed.  Then, instead of adding child tab `Panel`s to your `Tabs`,
 you call the injector's helper method to add the child with a passed title.
 
 A side effect of the injector is that, on tab changes, you'll get a momentary blank tab.
@@ -429,7 +429,7 @@ A side effect of the injector is that, on tab changes, you'll get a momentary bl
 ## Modules
 
 The top-level module is for the bokeh server and for custom UI elements and helpers.  It
-has the base PrimitiveVisualizer class that you should subclass if you need a 
+has the base PrimitiveVisualizer class that you should subclass if you need a
 custom UI.
 
 The `fit` module holds the custom `PrimitiveVisualizer` implementations.  This keeps
@@ -453,7 +453,7 @@ user clicking the Submit button or closing the browser tab.
 
 `interactive` has the abstract base class, `PrimitiveVisualizer`.  It also has some
 helper methods for building slider/text box widgets and some code for displaying and
-managing bands (range-selections with plot shading) and apertures (also with plot 
+managing bands (range-selections with plot shading) and apertures (also with plot
 shading).
 
 ### controls
@@ -468,10 +468,10 @@ connect a `GIRegionModel` and/or `GIApertureModel` to a bokeh `Figure` and `Div`
 The connected `Figure` will show the selected areas and the `Div` will show
 help text for the currently active task (such as `RegionTask`).
 
-Connecting the models to a `Figure` is done with 
+Connecting the models to a `Figure` is done with
 `connect_figure_extras(fig, aperture_model, band_model)`
 
-To cause a figure to respond to key presses and connect a help `Div` area, 
+To cause a figure to respond to key presses and connect a help `Div` area,
 you build a `Controller` like: `Controller(fig, aperture_model, band_model, helptext)`.
 Note that `aperture_model` or `band_model` may be passed as None if it
 is not relevant.

@@ -50,4 +50,3 @@ def test_spline_table_recovery(k):
     assert m.k == m2.k
     assert m2.meta["xunit"] is u.nm
     assert m2.meta["yunit"] is u.electron
-

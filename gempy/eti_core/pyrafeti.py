@@ -18,5 +18,3 @@ class PyrafETI(ExternalTaskInterface):
 
     def recover(self):
         log.debug("PyrafETI.recover()")
-
-

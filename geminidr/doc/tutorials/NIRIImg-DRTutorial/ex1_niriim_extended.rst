@@ -17,5 +17,3 @@ the science observation that is not "contaminated" by the galaxy.
    ex1_niriim_extended_dataset
    ex1_niriim_extended_cmdline
    ex1_niriim_extended_api
-
-

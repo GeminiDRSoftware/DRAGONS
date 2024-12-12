@@ -32,7 +32,7 @@ Recipe System Users Manual
 
 .. toctree::
    :maxdepth: 1
-   
+
    appendices/glossary
-   
+
 .. todolist::

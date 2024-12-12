@@ -7,7 +7,7 @@ Parameter defaults and options
       	none	Row-by-row values
       	spline3	Cubic spline
       	chebyshev	Chebyshev polynomial
-      
+
    order                None                 Order of fitting function
       	Valid Range = [0,inf)
    lsigma               3.0                  Low rejection in sigma of fit

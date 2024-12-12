@@ -29,7 +29,7 @@ Glossary
 
   DRAGONS
       Data Reduction for Astronomy from Gemini Observatory North and South.
-      
+
       A suite of packages comprising ``astrodata``, ``gemini_instruments``, the
       ``recipe_system``, ``geminidr``, and ``gempy``, which together provide
       the full functionality needed to run recipe pipelines on observational
@@ -63,10 +63,9 @@ Glossary
 
   reduce
       The command line interface to the Recipe System.
-  
+
   tags [or tagset]
       Represents a data classification. When loaded with ``AstroData``, a
       dataset will be classified with a number of tags that describe both the
       data and its processing state.  The tags are defined in *astrodata
       packages*, eg. the Gemini package is ``gemini_instruments``.
-

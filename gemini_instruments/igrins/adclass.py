@@ -133,7 +133,7 @@ class AstroDataIgrins(AstroDataGemini):
 
         Returns
         -------
-        <str>: 
+        <str>:
             instrument name
 
         """
@@ -251,7 +251,7 @@ class AstroDataIgrins(AstroDataGemini):
 
         Returns
         -------
-        <int>: 
+        <int>:
             center x position in pixels
 
         """
@@ -264,7 +264,7 @@ class AstroDataIgrins(AstroDataGemini):
 
         Returns
         -------
-        <int>: 
+        <int>:
             center y position in pixels
 
         """
@@ -277,7 +277,7 @@ class AstroDataIgrins(AstroDataGemini):
 
         Returns
         -------
-        <int>: 
+        <int>:
             slit width in pixels
 
         """
@@ -290,7 +290,7 @@ class AstroDataIgrins(AstroDataGemini):
 
         Returns
         -------
-        <int>: 
+        <int>:
             slit length in pixels
 
         """
@@ -303,11 +303,11 @@ class AstroDataIgrins(AstroDataGemini):
 
         Returns
         -------
-        <int>: 
+        <int>:
             slit length in pixels
 
         """
-        return self.phu.get(self._keyword_for('slit_angle'))      
+        return self.phu.get(self._keyword_for('slit_angle'))
 
     @astro_data_descriptor
     def target_ra(self):

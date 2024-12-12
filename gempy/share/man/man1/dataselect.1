@@ -15,16 +15,16 @@ inputs [inputs ...]
 
 .SH DESCRIPTION
 .B dataselect
-helps users find files matching certain criteria defined by astrodata tags and 
-expressions involving descriptors. Descriptors are specified to fine tune 
+helps users find files matching certain criteria defined by astrodata tags and
+expressions involving descriptors. Descriptors are specified to fine tune
 dataselect matches.
 
-As the \fB--tags\fR option indicates, \fBdataselect\fR can find and report data 
-that match specific tag criteria. For example, a user might want to find all 
-GMOS image flats under a certain directory. \fBdataselect\fR will locate and 
+As the \fB--tags\fR option indicates, \fBdataselect\fR can find and report data
+that match specific tag criteria. For example, a user might want to find all
+GMOS image flats under a certain directory. \fBdataselect\fR will locate and
 report all datasets that would match the tag set (GMOS, IMAGE, FLAT).
 
-A user may request that a file be written containing all datasets matching 
+A user may request that a file be written containing all datasets matching
 the data selection. An output file is specified through the \fB\-o\fR,
 \fB\-\-output\fR option. Output files are formatted so they may be passed
 directly to the reduce command line via that applications 'at-file' (@file)
@@ -96,5 +96,5 @@ Recommend Anaconda 4.2.0, Astropy 1.2.1.
 .SH BUGS
 None known.
 
-.SH SEE ALSO 
+.SH SEE ALSO
 .I reduce(1), typewalk(1)

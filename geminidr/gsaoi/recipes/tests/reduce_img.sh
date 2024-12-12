@@ -72,4 +72,3 @@ reduce @sciset.lis -p addDQ:user_bpm=${bpm}
 # Check the final result & return status. Since there's no stack here, just
 # spot check the last file:
 compare_file $(last_result_filename skySubtracted)
-

@@ -49,4 +49,3 @@ This recipe reduces GMOS N&S longslit science data.
         p.extractSpectra()
         p.fluxCalibrate()
         p.storeProcessedScience(suffix="_1D")
-

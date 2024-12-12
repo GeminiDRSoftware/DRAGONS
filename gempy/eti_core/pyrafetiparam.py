@@ -34,5 +34,3 @@ class IrafStdout():
     def write(self, out):
         if len(out) > 1:
             self.log.fullinfo(out)
-
-

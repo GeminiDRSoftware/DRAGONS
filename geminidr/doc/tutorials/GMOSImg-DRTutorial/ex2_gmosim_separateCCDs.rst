@@ -28,5 +28,3 @@ reduce and stack the CCDs separately.
    ex2_gmosim_separateCCDs_dataset
    ex2_gmosim_separateCCDs_cmdline
    ex2_gmosim_separateCCDs_api
-
-

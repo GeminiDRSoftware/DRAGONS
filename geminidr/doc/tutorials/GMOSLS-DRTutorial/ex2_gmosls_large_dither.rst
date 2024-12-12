@@ -14,5 +14,3 @@ In this example we will reduce a GMOS longslit observation containing traces of 
    ex2_gmosls_large_dither_dataset
    ex2_gmosls_large_dither_cmdline
    ex2_gmosls_large_dither_api
-
-

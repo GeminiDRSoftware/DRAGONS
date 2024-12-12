@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -30,12 +30,12 @@
       <div class="colleft">
         <div class="col1" id="example-content">
 
-  
+
 <!-- Example scripts go here -->
 
 
   <style type="text/css">
-    
+
     .note {
         font-size: 0.8em;
     }
@@ -43,7 +43,7 @@
       white-space: nowrap;
     }
   </style>
-        
+
     <div id="chart1" style="width:600px; height:250px;"></div>
 
     <pre class="code brush: js"></pre>
@@ -53,7 +53,7 @@
     <pre class="code brush: js"></pre>
 
     <p class="text">Click on a bar in the plot below to update the text box.</p>
-    <p class="text">You Clicked: 
+    <p class="text">You Clicked:
     <span id="info3">Nothing yet.</span>
     </p>
     <div id="chart3" style="width:400px; height:300px;"></div>
@@ -68,7 +68,7 @@ $(document).ready(function(){
     // Can specify a custom tick Array.
     // Ticks should match up one for each y value (category) in the series.
     var ticks = ['May', 'June', 'July', 'August'];
-    
+
     var plot1 = $.jqplot('chart1', [s1, s2, s3], {
         // The "seriesDefaults" option is an options object that will
         // be applied to all series in the chart.
@@ -108,21 +108,21 @@ $(document).ready(function(){
     });
 });
   </script>
-  
+
 
 <script class="code" type="text/javascript">
 $(document).ready(function(){
     // For horizontal bar charts, x an y values must will be "flipped"
     // from their vertical bar counterpart.
     var plot2 = $.jqplot('chart2', [
-        [[2,1], [4,2], [6,3], [3,4]], 
-        [[5,1], [1,2], [3,3], [4,4]], 
+        [[2,1], [4,2], [6,3], [3,4]],
+        [[5,1], [1,2], [3,3], [4,4]],
         [[4,1], [7,2], [1,3], [2,4]]], {
         seriesDefaults: {
             renderer:$.jqplot.BarRenderer,
             // Show point labels to the right ('e'ast) of each bar.
             // edgeTolerance of -15 allows labels flow outside the grid
-            // up to 15 pixels.  If they flow out more than that, they 
+            // up to 15 pixels.  If they flow out more than that, they
             // will be hidden.
             pointLabels: { show: true, location: 'e', edgeTolerance: -15 },
             // Rotate the bar shadow as if bar is lit from top right.
@@ -157,7 +157,7 @@ $(document).ready(function(){
           barMargin: 30,
           // Highlight bars when mouse button pressed.
           // Disables default highlighting on mouse over.
-          highlightMouseDown: true    
+          highlightMouseDown: true
       },
       pointLabels: {show: true}
     },
@@ -177,18 +177,18 @@ $(document).ready(function(){
       show: true,
       location: 'e',
       placement: 'outside'
-    }      
+    }
   });
   // Bind a listener to the "jqplotDataClick" event.  Here, simply change
   // the text of the info3 element to show what series and ponit were
   // clicked along with the data for that point.
-  $('#chart3').bind('jqplotDataClick', 
+  $('#chart3').bind('jqplotDataClick',
     function (ev, seriesIndex, pointIndex, data) {
       $('#info3').html('series: '+seriesIndex+', point: '+pointIndex+', data: '+data);
     }
-  ); 
+  );
 });
-</script>    
+</script>
 
 <!-- End example scripts -->
 

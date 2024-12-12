@@ -40,4 +40,3 @@ todo: add docstring
         p.storeProcessedScience(suffix="_2D")
         p.extractSpectra()
         p.storeProcessedScience(suffix="_1D")
-

@@ -5,4 +5,3 @@ license (as an alternative option to their existing GNU General Public License,
 mentioned in the source files); see extern_licenses/pex_config. We are hoping
 to converge with LSST's upstream version once we no longer need support for
 Python 2.
-

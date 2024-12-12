@@ -12,5 +12,3 @@ __version__ = "1.0"
 from .ghost import GhostArm
 from .slitview import SlitView
 from .extract import Extractor
-
-

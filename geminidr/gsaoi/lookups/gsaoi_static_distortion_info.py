@@ -6,18 +6,17 @@ inverse.
 # In degrees; these are the RA and DEC for the LMC field
 __STATIC_REFERENCE_COORDS__ = {"x": 80.45476667, "y": -69.4999333}
 
-"""
-forward: A dictionary specifiying the information related to the default static
-transformation of pixel coordinates to projection plane coordinates.
-Containing the *linear* and *non-linear* surface fits information
-including model definition and coefficients per array per axis.
 
-backward: A dictionary specifying the information related to the inverse of the
-default static transformation. Containing only one model type which maps
-projection plane coordinates to pixel coordinates. The information includes 
-model definition (type, domain, degree) and coefficients per array per
-axis. Recomputed by CJS 07/13/2016
-"""
+# forward: A dictionary specifiying the information related to the default static
+# transformation of pixel coordinates to projection plane coordinates.
+# Containing the *linear* and *non-linear* surface fits information
+# including model definition and coefficients per array per axis.
+#
+# backward: A dictionary specifying the information related to the inverse of the
+# default static transformation. Containing only one model type which maps
+# projection plane coordinates to pixel coordinates. The information includes
+# model definition (type, domain, degree) and coefficients per array per
+# axis. Recomputed by CJS 07/13/2016
 STATIC_CORRECTIONS = {
     "forward": [
         # Linear model
@@ -226,22 +225,20 @@ STATIC_CORRECTIONS = {
 # Static centre of rotation
 # Relative to array A4 reference point
 CENTER_OF_ROTATION = (-65.44, -75.154)
-"""
-Dictionary keyed by X, Y stating the relative offset in pixels for the given
-key.
-"""
+# Dictionary keyed by X, Y stating the relative offset in pixels for the given
+# key.
 
 # Dictionary mapping date ranges to static corrections
 #STATIC_CORRECTIONS_DATE_MAPPING = {(None, None):
 #                                   {"model": STATIC_CORRECTIONS,
 #                                    "cor_offset": CENTER_OF_ROTATION}}
-"""
-A dictionary mapping a date range, the key (a tuple of dates, default
-currently is None, None) to the appropriate static correction information,
-the value, a dictionary keyed by MODEL, INVERSE,
-CENTRE_OF_ROTATION_OFFSET. The MODEL and INVERSE values are dictionaries
-that contain the coefficients for the defined models for each of the defined
-arrays. The CENTRE_OF_ROTATION_OFFSET is a dictionary keyed by X, Y that
-refer to the relative offsets to apply to translate everything to the centre
-of rotation.
-"""
+#
+# A dictionary mapping a date range, the key (a tuple of dates, default
+# currently is None, None) to the appropriate static correction information,
+# the value, a dictionary keyed by MODEL, INVERSE,
+# CENTRE_OF_ROTATION_OFFSET. The MODEL and INVERSE values are dictionaries
+# that contain the coefficients for the defined models for each of the defined
+# arrays. The CENTRE_OF_ROTATION_OFFSET is a dictionary keyed by X, Y that
+# refer to the relative offsets to apply to translate everything to the centre
+# of rotation.
+#

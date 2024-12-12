@@ -15,34 +15,34 @@ typewalk
 
 .SH DESCRIPTION
 .B typewalk
-examines files in a directory or directory tree and reports the tag set through the 
-astrodata classification scheme. Running \fBtypewalk\fR on a directory containing 
+examines files in a directory or directory tree and reports the tag set through the
+astrodata classification scheme. Running \fBtypewalk\fR on a directory containing
 some Gemini datasets will demonstrate what users can expect to see.
 
-By default, \fBtypewalk\fR will recurse all subdirectories under the current 
-directory. Users may specify an explicit directory with the \fB-d\fR or 
+By default, \fBtypewalk\fR will recurse all subdirectories under the current
+directory. Users may specify an explicit directory with the \fB-d\fR or
 \fB\-\-dir\fR option; the behavior remains recursive.
 
-Files are selected and reported through a regular expression mask which, 
-by default, finds all ".fits" and ".FITS" files. Users can change this mask 
+Files are selected and reported through a regular expression mask which,
+by default, finds all ".fits" and ".FITS" files. Users can change this mask
 with the \fB\-f\fR, \fB\-\-filemask\fR option.
 
-As the \fB--tags\fR option indicates, \fBtypewalk\fR can find and report data 
-that match specific tag criteria. For example, a user might want to find all 
-GMOS image flats under a certain directory. \fBtypewalk\fR will locate and 
+As the \fB--tags\fR option indicates, \fBtypewalk\fR can find and report data
+that match specific tag criteria. For example, a user might want to find all
+GMOS image flats under a certain directory. \fBtypewalk\fR will locate and
 report all datasets that would match the tag set (GMOS, IMAGE, FLAT).
 
-A user may request that a file be written containing all datasets matching 
-astrodata tags qualifiers passed by the \fB--tags\fR option. An output file is 
+A user may request that a file be written containing all datasets matching
+astrodata tags qualifiers passed by the \fB--tags\fR option. An output file is
 specified through the \fB\-o\fR, \fB\-\-out\fR
-option. Output files are formatted so they may be passed directly to the 
-reduce command line via that applications 'at-file' (@file) facility. 
+option. Output files are formatted so they may be passed directly to the
+reduce command line via that applications 'at-file' (@file) facility.
 (See the \fIRecipe System Users Manual\fR for further detail.)
 
-Users may select tag matching logic with the \fB\-\-or switch\fR. By default, 
-qualifying logic is \fBAND\fR, i.e. the logic specifies that `all` tags must be 
-present (x AND y); \fB\-\-or\fR specifies that ANY tags, enumerated with 
-\fB\-\-tags\fR, may be present (x OR y). \fB\-\-or\fR is only effective when the 
+Users may select tag matching logic with the \fB\-\-or switch\fR. By default,
+qualifying logic is \fBAND\fR, i.e. the logic specifies that `all` tags must be
+present (x AND y); \fB\-\-or\fR specifies that ANY tags, enumerated with
+\fB\-\-tags\fR, may be present (x OR y). \fB\-\-or\fR is only effective when the
 \fB\-\-tags\fR option is specified with more than one tag.
 
 .SH OPTIONS
@@ -51,7 +51,7 @@ present (x AND y); \fB\-\-or\fR specifies that ANY tags, enumerated with
 show the \fBtypewalk\fR help message and exit
 .TP
 \fB\-b\fR BATCHNUM, \fB\-\-batch\fR BATCHNUM
-In shallow walk mode, number of files to process at a time in the current 
+In shallow walk mode, number of files to process at a time in the current
 directory. Controls behavior in large data directories. Default is \fB100\fR.
 .TP
 \fB\-d\fR TWDIR, \fB\-\-dir\fR TWDIR
@@ -64,16 +64,16 @@ Show files matching regex <FILEMASK>. Default is all .fits and .FITS files.
 Do not recurse subdirectories.
 .TP
 \fB\-\-or\fR
-Use OR logic on 'tags' criteria. If not specified, matching logic is AND 
+Use OR logic on 'tags' criteria. If not specified, matching logic is AND
 (See \fB\-\-tags\fR). Eg., \fB\-\-or \-\-tags\fR
-SOUTH GMOS IMAGE will report datasets that are one of SOUTH \fBOR\fR GMOS 
+SOUTH GMOS IMAGE will report datasets that are one of SOUTH \fBOR\fR GMOS
 \fBOR\fR IMAGE.
 .TP
 \fB\-o\fR OUTFILE, \fB\-\-out\fR OUTFILE
 Write reported files to this file. Effective only with \fB\-\-tags\fR option.
 .TP
 \fB\-\-tags\fR TAGS [TAGS ...]
-Find datasets that match only these tag criteria. Eg., \fB\-\-tags\fR SOUTH 
+Find datasets that match only these tag criteria. Eg., \fB\-\-tags\fR SOUTH
 GMOS IMAGE will report datasets that are all tagged \fBSOUTH\fR and \fBGMOS\fR
 and \fBIMAGE\fR.
 .TP
@@ -86,5 +86,5 @@ Recommend Anaconda 4.2.0, Astropy 1.2.1., astrodata.__version__ '9999'
 .SH BUGS
 None known.
 
-.SH SEE ALSO 
+.SH SEE ALSO
 .I reduce(1)

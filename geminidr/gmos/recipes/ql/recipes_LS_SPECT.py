@@ -74,4 +74,3 @@ def reduceStandard(p):
     p.writeOutputs()
 
 _default = reduceScience
-

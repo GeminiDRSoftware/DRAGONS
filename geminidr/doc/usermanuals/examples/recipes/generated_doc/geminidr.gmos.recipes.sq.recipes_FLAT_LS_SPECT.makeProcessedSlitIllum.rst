@@ -17,4 +17,3 @@ makeProcessedSlitIllum
         p.makeSlitIllum()
         p.makeIRAFCompatible()
         p.storeProcessedSlitIllum()
-

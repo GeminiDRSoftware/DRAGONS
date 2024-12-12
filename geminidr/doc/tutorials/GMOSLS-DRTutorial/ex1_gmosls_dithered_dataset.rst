@@ -72,4 +72,3 @@ package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 +---------------------+---------------------------------------------+
 | BPM                 || bpm_20140601_gmos-s_Ham_22_full_12amp.fits |
 +---------------------+---------------------------------------------+
-

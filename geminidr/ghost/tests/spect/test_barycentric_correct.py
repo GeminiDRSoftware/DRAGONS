@@ -67,4 +67,3 @@ def test_barycentricCorrect(ad_min, ra, dec, dt, known_corr):
         gs.timestamp_keys['barycentricCorrect']), "barycentricCorrect did not " \
                                                   "timestamp-mark the " \
                                                   "output file"
-

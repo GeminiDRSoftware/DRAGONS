@@ -156,4 +156,3 @@ primitive set for GMOS images defines a few of its own primitives and inherits
 many other primitives from other sets (classes) like the one for
 generic CCD processing, the one related to photometry, the one that applies to
 all Gemini data, etc.
-

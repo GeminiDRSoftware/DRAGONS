@@ -335,5 +335,3 @@ recipe image (left) that does dissappear when the ultradeep recipe is used.
 Even using the full set, it is still subtle.  Therefore, we recommend the
 use of the ultradeep recipe only when you actually needed or when the blotching
 is more severe.  The blotching is expected to be more severe in crowded fields.
-
-

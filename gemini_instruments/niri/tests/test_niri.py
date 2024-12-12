@@ -78,4 +78,3 @@ def test_ra_dec_from_text(astrofaker):
     assert ad.target_dec() == pytest.approx(24.345277777777778)
 
     from astropy import units as u
-

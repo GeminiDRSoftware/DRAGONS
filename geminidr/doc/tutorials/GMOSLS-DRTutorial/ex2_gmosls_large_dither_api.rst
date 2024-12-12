@@ -246,13 +246,13 @@ receive the Astrodata tag ``STANDARD``.  To be recognized, the name of the
 star must be in a lookup table.  All spectrophotometric standards normally used
 at Gemini are in that table.
 
-For this example with a large wavelength dither, we will be reducing the standard star observations at each 
-central wavelength separately without stacking them. The standard star reduction 
-recipe stacks all the observations in a given file list. So we need to create 
-separate file lists for the different central wavelengths. 
+For this example with a large wavelength dither, we will be reducing the standard star observations at each
+central wavelength separately without stacking them. The standard star reduction
+recipe stacks all the observations in a given file list. So we need to create
+separate file lists for the different central wavelengths.
 
-First, let's inspect the central wavelength of the standard star frames in our raw data directory. 
-For this, we can loop through all the files with the tag ``STANDARD`` and print 
+First, let's inspect the central wavelength of the standard star frames in our raw data directory.
+For this, we can loop through all the files with the tag ``STANDARD`` and print
 the value for the descriptor of interest, here ``central_wavelength``.
 
 .. code-block:: python
@@ -263,7 +263,7 @@ the value for the descriptor of interest, here ``central_wavelength``.
     for std in all_stdstar:
         ad = astrodata.open(std)
         print(std, '  ', ad.central_wavelength())
-        
+
 ::
 
     ../playdata/example2/S20220608S0098.fits    7.05e-07
@@ -484,11 +484,11 @@ Processed Standard - Sensitivity Function
 =========================================
 The GMOS longslit spectrophotometric standards are normally taken when there
 is a hole in the queue schedule, often when the weather is not good enough
-for science observations. For a large wavelength dither, i.e., a difference 
-in central wavelength much greater than about 10 nm, a spectrophotometric standard should be 
-taken at each of those positions to calculate the respective sensitvity functions. 
-The latter will then be used for spectrophotometric calibration of the science observations 
-at the corresponding central wavelengths. 
+for science observations. For a large wavelength dither, i.e., a difference
+in central wavelength much greater than about 10 nm, a spectrophotometric standard should be
+taken at each of those positions to calculate the respective sensitvity functions.
+The latter will then be used for spectrophotometric calibration of the science observations
+at the corresponding central wavelengths.
 
 The reduction of the standard will be using a BPM, a master bias, a master flat,
 and a processed arc.  If those have been added to the local calibration
@@ -548,15 +548,15 @@ The interactive tools are introduced in section :ref:`interactive`.
 **The 795nm Standard**
 
 For the standard star observation at central wavelength 795 nm in this
-dataset, ``calculateSensitivity`` with its default parameter values yields a suboptimal number 
-of data points to constrain its sensitivity curve (see the left plot below; click the panel to enlarge). 
-There is a conspicuous gap between 820 and 980 nm -- a result of the amplifier #5 issue and compounded 
-by the presence of telluric absorption redward of around 880 nm. 
+dataset, ``calculateSensitivity`` with its default parameter values yields a suboptimal number
+of data points to constrain its sensitivity curve (see the left plot below; click the panel to enlarge).
+There is a conspicuous gap between 820 and 980 nm -- a result of the amplifier #5 issue and compounded
+by the presence of telluric absorption redward of around 880 nm.
 
-To deal with this, we can consider interpolating the (reference) data of the spectrophotometric standard, 
-given that it has a smooth spectrum,  
-to generate new sensitivity data points to fit. 
-This is enabled by the ``resampling`` parameter, whose value 
+To deal with this, we can consider interpolating the (reference) data of the spectrophotometric standard,
+given that it has a smooth spectrum,
+to generate new sensitivity data points to fit.
+This is enabled by the ``resampling`` parameter, whose value
 we update as follows
 
 .. code-block:: python
@@ -573,14 +573,14 @@ we update as follows
 .. image:: _graphics/LS_ldred_sens_before.png
    :width: 325
    :alt: Sensitivity function before optimization
-   
-   
+
+
 .. image:: _graphics/LS_ldred_sens_after.png
    :width: 325
    :alt: Sensitivity function after optimization
 
-The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the 
-interactive tool and have manually masked four data points.  
+The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the
+interactive tool and have manually masked four data points.
 
 .. note:: If you wish to inspect the spectrum in aperture 1:
 
@@ -600,10 +600,10 @@ interactive tool and have manually masked four data points.
 
 Science Observations
 ====================
-As mentioned previously, the science target is the central galaxy of an Odd Radio Circle. The sequence 
-has two images that were dithered in wavelength (with a large step of 90 nm).  
+As mentioned previously, the science target is the central galaxy of an Odd Radio Circle. The sequence
+has two images that were dithered in wavelength (with a large step of 90 nm).
 DRAGONS will register the two images, align and stack them before
-extracting the 1-D spectrum. 
+extracting the 1-D spectrum.
 
 This is what one raw image looks like.
 
@@ -611,11 +611,11 @@ This is what one raw image looks like.
    :width: 600
    :alt: raw science image
 
-The broad, white and black vertical bands (slightly to the left of the middle) are related 
-to the GMOS-S amplifier #5 issues. 
-As can be seen, there are two obvious sources in this observation. Regardless of whether 
-both of them are of interest to the program, DRAGONS will locate, trace, and extract 
-them automatically. Each extracted spectrum is stored in an individual extension 
+The broad, white and black vertical bands (slightly to the left of the middle) are related
+to the GMOS-S amplifier #5 issues.
+As can be seen, there are two obvious sources in this observation. Regardless of whether
+both of them are of interest to the program, DRAGONS will locate, trace, and extract
+them automatically. Each extracted spectrum is stored in an individual extension
 in the output multi-extension FITS file.
 
 
@@ -633,29 +633,29 @@ science observations and extract the 1-D spectrum.
     reduce_science.recipename = 'reduceWithMultipleStandards'
     reduce_science.uparms = dict([('interactive', True)])
     reduce_science.runr()
-    
-Here we use a different science reduction recipe ``reduceWithMultipleStandards`` (line 97) 
-than the default. The 
-latter performs flux calibration *after* stacking the extracted spectra 
-as described :ref:`here <Science Observations>`, which is not suitable 
-for these observations with a large wavelength dither. The recipe 
-``reduceWithMultipleStandards`` will run flux calibration for each 
+
+Here we use a different science reduction recipe ``reduceWithMultipleStandards`` (line 97)
+than the default. The
+latter performs flux calibration *after* stacking the extracted spectra
+as described :ref:`here <Science Observations>`, which is not suitable
+for these observations with a large wavelength dither. The recipe
+``reduceWithMultipleStandards`` will run flux calibration for each
 central wavelength using the corresponding sensitivity function from the
-spectrophotometric standard before stacking 
+spectrophotometric standard before stacking
 the observations -- the desired workflow for this example.
 
-You can make use of the interactive tools to optimize the reduction. For 
+You can make use of the interactive tools to optimize the reduction. For
 the science reduction above, we have deleted any additional apertures found
-by DRAGONS barring the two most prominent ones (see the left plot; click 
-to enlarge). You simply hover over the unwanted peak and press D. Furthermore, 
-we have selected sigma-clipping while tracing the apertures (right plot; 
+by DRAGONS barring the two most prominent ones (see the left plot; click
+to enlarge). You simply hover over the unwanted peak and press D. Furthermore,
+we have selected sigma-clipping while tracing the apertures (right plot;
 click to enlarge). Notice that there is an additional tab for Aperture 2
-in the upper part of the right plot. 
+in the upper part of the right plot.
 
 .. image:: _graphics/LS_ldred_findAp_sci.png
    :width: 325
    :alt: Apertures found by DRAGONS
-   
+
 .. image:: _graphics/LS_ldred_traceAp_sci.png
    :width: 325
    :alt: Tracing of aperture
@@ -663,12 +663,12 @@ in the upper part of the right plot.
 The outputs include a 2-D spectrum image (``S20220611S0716_2D.fits``), which has been
 bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
 distortion, sky-subtracted, flux-calibrated, and stacked, and also the 1-D spectra
-(``S20171022S0087_1D.fits``) extracted from this 2-D spectrum image. The 1-D spectra are stored 
-as 1-D FITS images in extensions of the output Multi-Extension FITS file, along with their 
-respective variance and data quality (or mask) arrays.  
+(``S20171022S0087_1D.fits``) extracted from this 2-D spectrum image. The 1-D spectra are stored
+as 1-D FITS images in extensions of the output Multi-Extension FITS file, along with their
+respective variance and data quality (or mask) arrays.
 
-.. note:: If you wish to inspect the content of the 1-D output, run:    
-    
+.. note:: If you wish to inspect the content of the 1-D output, run:
+
     .. code-block:: python
 
             astrodata.open('S20220611S0716_1D.fits').info()
@@ -736,13 +736,13 @@ The 1-D flux-calibrated spectra of the two apertures are shown below.
 .. image:: _graphics/LS_ldred_ap1_spec1D.png
    :width: 325
    :alt: 1D spectrum for aperture 1
-   
+
 .. image:: _graphics/LS_ldred_ap2_spec1D.png
    :width: 325
-   :alt: 1D spectrum for aperture 2   
+   :alt: 1D spectrum for aperture 2
 
 To learn how to plot a 1-D spectrum with matplotlib using the WCS from a Python
-script, see Tips and Tricks :ref:`plot_1d`. 
+script, see Tips and Tricks :ref:`plot_1d`.
 
 If you need an ascii representation of the spectum, you can use the primitive
 ``write1DSpectra`` to extract the values from the FITS file.

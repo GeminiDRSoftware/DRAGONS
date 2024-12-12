@@ -40,4 +40,3 @@ Indices and tables
 * :ref:`search`
 
 .. todolist::
-

@@ -1,11 +1,11 @@
 """
-This module provides some functions to regularize BPM files for DRAGONS 
+This module provides some functions to regularize BPM files for DRAGONS
 comsumption.
 
     bpmify(ad) -
       Fixes certain keywords for DRAGONS BPM files.
 
-    dragons_bpm(ad) - 
+    dragons_bpm(ad) -
       creates a nominal DRAGONS BPM file name and writes this new filename.
 
     tabl(<filelist>) -
@@ -19,7 +19,7 @@ compatible BPM files and names. This table is current as of 2020-05-05
 >>> bpmtab.tabl(bpmfiles)
 
   DIRECTORY /Users/kanderso/Gemini/GitHub/DRAGONS/geminidr/gmos/lookups/BPM/
- 
+
 	File				OBJ   BININNG  BITPIX    Shape 0         Det Name      Camera
 ======================
 gmos-n_bpm_HAM_11_full_12amp_v1.fits	BPM     (1 1)	16	(4224, 544)	Hamamatsu-N	GMOS-N
@@ -105,7 +105,7 @@ def dragons_bpm(ad, prefix=None):
         namps = '12amp'
     else:
         raise TypeError("Unrecognized detector name")
-    
+
     new_bpm_name = nbuffer.format(
         ad.camera().lower(),
         ad.object().lower(),
@@ -161,4 +161,4 @@ def tabl(ffiles):
                 ad.camera())
             )
     print("="*22)
-    return 
+    return

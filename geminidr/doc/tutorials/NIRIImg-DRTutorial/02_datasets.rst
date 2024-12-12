@@ -30,4 +30,3 @@ we will work in the subdirectory named ``niriimg_tutorial/playground``.
 
 .. note:: All the raw data can also be downloaded from the Gemini Observatory
      Archive.  Using the tutorial data package is probably more convenient.
-

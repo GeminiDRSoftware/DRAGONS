@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -30,7 +30,7 @@
       <div class="colleft">
         <div class="col1" id="example-content">
 
-  
+
 <!-- Example scripts go here -->
 
 <p>The Highlighter plugin will highlight data points near the mouse and display an optional tooltip with the data point value.  By default, the tooltip values will be formatted with the same formatter as used to display the axes tick values.  The text format can be customized with an optional sprintf style format string.</p>
@@ -63,7 +63,7 @@ $(document).ready(function(){
           renderer:$.jqplot.DateAxisRenderer,
           tickOptions:{
             formatString:'%b&nbsp;%#d'
-          } 
+          }
         },
         yaxis:{
           tickOptions:{
@@ -81,7 +81,7 @@ $(document).ready(function(){
   });
 });
 </script>
-  
+
 <script class="code" type="text/javascript">
 $(document).ready(function(){
   var line1=[['23-May-08', 578.55], ['20-Jun-08', 566.5], ['25-Jul-08', 480.88], ['22-Aug-08', 509.84],
@@ -115,7 +115,7 @@ $(document).ready(function(){
 
 <script class="code" type="text/javascript">
 $(document).ready(function() {
-  var line1 = [['Sony',7], ['Samsung',13.3], ['LG',14.7], 
+  var line1 = [['Sony',7], ['Samsung',13.3], ['LG',14.7],
     ['Vizio',5.2], ['Insignia', 1.2]];
 
   var plot3 = $.jqplot('chart3', [line1], {

@@ -51,4 +51,3 @@ def test__get_polyfit_filename_errors(ad_min):
     assert polyfit_file is None, "_get_polyfit_filename didn't return " \
                                  "None when asked for a bogus " \
                                  "model type"
-

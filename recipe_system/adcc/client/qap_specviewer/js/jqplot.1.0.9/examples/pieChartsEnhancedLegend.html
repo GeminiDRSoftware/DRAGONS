@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -30,7 +30,7 @@
       <div class="colleft">
         <div class="col1" id="example-content">
 
-  
+
 <style>
 #chart10 td.jqplot-table-legend-label {
     white-space: normal;
@@ -42,7 +42,7 @@
     white-space: normal;
 }
 </style>
-   
+
 <!-- Example scripts go here --><!DOCTYPE html>
 
     <div style="margin-left:20px; margin-top:20px;">The EnhancedPieLegendRenderer allows use of shorter legend labels, but longer tooltips.</div>
@@ -57,13 +57,13 @@
     data1 = [[['Apples', 210],['Oranges', 111], ['Bananas', 74], ['Grapes', 72],['Pears', 49]]];
     toolTip1 = ['Red Delicious Apples', 'Parson Brown Oranges', 'Cavendish Bananas', 'Albaranzeuli Nero Grapes', 'Green Anjou Pears'];
 
-    var plot1 = jQuery.jqplot('chart1', 
+    var plot1 = jQuery.jqplot('chart1',
         data1,
         {
-            title: ' ', 
+            title: ' ',
             seriesDefaults: {
-                shadow: false, 
-                renderer: jQuery.jqplot.PieRenderer, 
+                shadow: false,
+                renderer: jQuery.jqplot.PieRenderer,
                 rendererOptions: { padding: 2, sliceMargin: 2, showDataLabels: true }
             },
             legend: {

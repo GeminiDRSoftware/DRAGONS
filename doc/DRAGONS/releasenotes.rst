@@ -158,5 +158,3 @@ will nevertheless be useful to our users.
 Installation instructions can be found in the Recipe System User Manual at:
 
  |RSUserShow|
-
-

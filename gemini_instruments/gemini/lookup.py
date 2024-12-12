@@ -19,7 +19,7 @@ wavelength_band = {
 
 nominal_extinction = {
     # These are the nominal MK and CP extinction values
-    # ie the k values where the magnitude of the star should be modified by 
+    # ie the k values where the magnitude of the star should be modified by
     # -= k(airmass-1.0)
     #
     # Columns are given as:
