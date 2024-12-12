@@ -34,4 +34,4 @@ jobs:
       - name: Run dev tests
         shell: bash -l {0}
         run: |
-          nox -s run_tests -- -vv
+          nox -s run_dev_tests -- -vv
