@@ -48,21 +48,24 @@ them yourself*):
 .. _ruff_docs: https://docs.astral.sh/ruff/
 .. _black_docs: https://black.readthedocs.io/en/stable/
 .. _pre_commit_default_hooks: https://github.com/pre-commit/pre-commit-hooks?tab=readme-ov-file#pre-commit-hooks
+.. _mdformat_hook: https://github.com/hukkin/mdformat
 
-+----------------------------------+--------------------------+
-| Tool                             |                          |
-+----------------------------------+--------------------------+
-| ``black`` (`link <black_docs>`_) | Automated formatting     |
-+----------------------------------+--------------------------+
-| ``ruff`` (`link <ruff_docs>`_)   | Linting                  |
-+----------------------------------+--------------------------+
-| ``pre-commit-hooks``             | Miscellaneous validation |
-+----------------------------------+--------------------------+
++-------------------------------------------------------------+--------------------------+
+| Tool                                                        | Chore                    |
++-------------------------------------------------------------+--------------------------+
+| ``black`` (`link <black_docs>`_)                            | Automated formatting     |
++-------------------------------------------------------------+--------------------------+
+| ``ruff`` (`link <ruff_docs>`_)                              | Linting                  |
++-------------------------------------------------------------+--------------------------+
+| ``pre-commit-hooks`` (`link <pre_commit_default_hooks>`_)   | Miscellaneous validation |
++-------------------------------------------------------------+--------------------------+
+| ``mdformat`` (`link <mdformat_hook>`_)                      | Markdown formatting      |
++-------------------------------------------------------------+--------------------------+
 
 .. _noirlab_python_template: https://github.com/teald/python-standard-template
 
 These tools will comprise a superset of NOIRLab's Python Coding Standard
-outlined in the `Python standard template <noirlab_python_template>`.
+outlined in the `Python standard template <noirlab_python_template>`_.
 
 Formatting
 ^^^^^^^^^^
@@ -75,7 +78,7 @@ repository. We chose it for it focus on:
 + Clarity
 
 You can learn more about the formatter in `the black documentation
-<black_docs>`, but there are a few concepts that may be useful to your
+<black_docs>`_, but there are a few concepts that may be useful to your
 development.
 
 Trailing commas
