@@ -17,4 +17,3 @@ makeProcessedFlatNoStack
         p.thresholdFlatfield()
         p.makeIRAFCompatible()
         p.storeProcessedFlat()
-

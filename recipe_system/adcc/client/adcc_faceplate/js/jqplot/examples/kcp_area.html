@@ -2,18 +2,18 @@
 
 <html>
 <head>
-	
+
 	<title>Area Chart</title>
 
     <link class="include" rel="stylesheet" type="text/css" href="../jquery.jqplot.min.css" />
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
   <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="../jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div class="logo">
@@ -30,11 +30,11 @@
     <div class="example-nav">
   <a href="index.html">Previous</a> <a href="./">Examples</a> <a href="kcp_cdf.html">Next</a></div>
 
-      
+
 <!-- Example scripts go here -->
 
 
-  <link class="include" type="text/css" href="jquery-ui/css/ui-lightness/jquery-ui.min.css" rel="Stylesheet" /> 
+  <link class="include" type="text/css" href="jquery-ui/css/ui-lightness/jquery-ui.min.css" rel="Stylesheet" />
 
    <style type="text/css">
 
@@ -43,7 +43,7 @@
         padding: 30px 0px 30px 30px;
         width: 900px;
         height: 400px;
-        
+
     }
 
     table.jqplot-table-legend {
@@ -96,13 +96,13 @@
 
   </style>
 
-      <div class="chart-container">    
+      <div class="chart-container">
         <div id="chart1"></div>
         <div class="jqplot-datestamp"></div>
     </div>
 
     <pre class="code brush:js"></pre>
-  
+
   <script class="code" type="text/javascript">
 $(document).ready(function(){
 
@@ -147,7 +147,7 @@ $(document).ready(function(){
                           for (var n=0, nl=temp.length; n<nl; n++) {
                             values[values.length-1][n] = parseFloat(temp[n]);
                           }
-                        } 
+                        }
                     }
                 }
                 ret = [values, labels, ticks];
@@ -155,7 +155,7 @@ $(document).ready(function(){
         });
         return ret;
     };
- 
+
     var jsonurl = "./KCPsample4.csv";
 
     var infos = parseCSVFile(jsonurl);
@@ -166,7 +166,7 @@ $(document).ready(function(){
     ticks = infos[2];
 
     // make the plot
-    
+
     plot1 = $.jqplot('chart1', data, {
         title: 'Area Plot',
         stackSeries: true,
@@ -212,7 +212,7 @@ $(document).ready(function(){
     $('div.jqplot-datestamp').html('Generated on '+d.strftime('%v'));
 
     // make it resizable.
-    
+
     $("div.chart-container").resizable({delay:20});
 
     $('div.chart-container').bind('resize', function(event, ui) {
@@ -241,7 +241,7 @@ $(document).ready(function(){
 <!-- End additional plugins -->
 
 
-	</div>	
+	</div>
 	<script type="text/javascript" src="example.min.js"></script>
 
 </body>

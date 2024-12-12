@@ -13,4 +13,3 @@ Recipes Reference
 
     gmos_sq_recipes
 ..  niri_sq_recipes
-

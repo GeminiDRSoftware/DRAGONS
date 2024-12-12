@@ -29,7 +29,7 @@ def plot_arcs(arc_data, thar_spec, w_map, title):
     Parameters
     ----------
 
-    arc_data: 
+    arc_data:
     """
     pl.rc('axes', prop_cycle=(cycler('color', ['b', 'r'])))
     f, axes = pl.subplots(3, 1, sharex='all')

@@ -156,5 +156,5 @@ and starts iterating over the ``TagSet`` list.
   4. Finally, neither ``GCAL_IR_OFF`` nor ``LAMPOFF`` are in ``blocked``, and
      ``PROCESSED`` is not in ``tags``, meaning that we can add this tag set to
      the final one.
-     
+
 Our result will look something like: ``{'BIAS', 'CAL', 'GMOS', 'GCAL_IR_OFF', 'LAMPOFF'}``

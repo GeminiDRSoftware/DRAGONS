@@ -79,7 +79,7 @@ class cleanFFTReadoutConfig(config.Config):
                                allowed={"default": "perform pattern removal if pattern in strong enough",
                                         "skip": "skip primitive"},
                                default="skip", optional=False)
-    
+
 
 
 class separateFlatsDarksConfig(config.Config):

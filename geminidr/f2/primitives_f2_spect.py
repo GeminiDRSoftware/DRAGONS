@@ -325,7 +325,7 @@ class F2Spect(Spect, F2):
             if min_snr_isNone:
                 self.log.stdinfo(f'Parameter "min_snr" is set to None. '
                                  f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
-            
+
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
 

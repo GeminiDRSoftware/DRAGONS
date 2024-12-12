@@ -271,7 +271,7 @@ def create_master_bias_for_tests():
         bias_reduce = Reduce()
         bias_reduce.files.extend(bias_paths)
         bias_reduce.runr()
-        
+
         shutil.rmtree("calibrations/")
 
 

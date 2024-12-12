@@ -16,5 +16,3 @@ dither-on-target with offset-to-sky sequence.
    ex1_gsaoiim_offsetsky_dataset
    ex1_gsaoiim_offsetsky_cmdline
    ex1_gsaoiim_offsetsky_api
-
-

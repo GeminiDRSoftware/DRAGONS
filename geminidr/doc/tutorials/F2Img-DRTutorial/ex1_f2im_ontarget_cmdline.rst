@@ -355,6 +355,3 @@ the data quality plane (mask) is in the "DQ" extension.
 
 .. figure:: _static/S20131121S0075_stack.fits.png
    :align: center
-
-
-

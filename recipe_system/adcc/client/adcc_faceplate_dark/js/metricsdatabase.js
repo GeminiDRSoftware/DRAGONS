@@ -1,5 +1,5 @@
 // Class for a database of metrics records returned by the adcc
-// (can actually be used for other types of records too; should probably 
+// (can actually be used for other types of records too; should probably
 // change the name)
 
 // Constructor
@@ -10,7 +10,7 @@ function MetricsDatabase(key) {
 // Add methods to prototype
 MetricsDatabase.prototype = {
     constructor: MetricsDatabase,
-    
+
     addRecord: function(key, record) {
 	if (this.records[key]) {
 	    for (var i in record) {

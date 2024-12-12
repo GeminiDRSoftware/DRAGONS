@@ -29,10 +29,10 @@ Recipe System Programmers Manual
 
 .. toctree::
    :maxdepth: 1
-   
+
    appendices/drpkg
    appendices/caldb
    appendices/jit
    appendices/glossary
-   
+
 .. todolist::

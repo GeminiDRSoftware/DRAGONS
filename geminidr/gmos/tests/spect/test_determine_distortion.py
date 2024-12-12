@@ -158,7 +158,7 @@ def test_regression_for_determine_distortion_using_models_coefficients(
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
     assert_have_same_distortion(distortion_determined_ad, ref_ad, atol=1)
-        
+
     if request.config.getoption("--do-plots"):
         do_plots(distortion_determined_ad, ref_ad)
 

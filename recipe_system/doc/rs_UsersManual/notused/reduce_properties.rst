@@ -20,7 +20,7 @@ the instance. Use the type specified in the type column.)::
  adinputs               <type 'list'>        None
  drpkg                  <type 'str'>         'geminidr'
  files                  <type 'list'>        []
- mode                   <type 'str'>         'sq'      
+ mode                   <type 'str'>         'sq'
  recipename             <type 'str'>         'default'
  suffix                 <type 'str'>         None
  ucals                  <type 'dict'>        None
@@ -60,10 +60,10 @@ can be built from a list of 'par:val' tuples, as in::
 Example function
 ----------------
 
-The following function shows a potential usage of class Reduce. When 
+The following function shows a potential usage of class Reduce. When
 (unspecified) conditions are met, the function ``reduce_conditions_met()`` is
 called passing several lists of files, ``procfiles`` (a list of lists of fits
-files). Here, each list of ``procfiles`` is then passed to the internal 
+files). Here, each list of ``procfiles`` is then passed to the internal
 ``launch_reduce()`` function.
 
 .. code-block:: python
@@ -75,7 +75,7 @@ files). Here, each list of ``procfiles`` is then passed to the internal
     def reduce_conditions_are_met(procfiles, control_options=None):
         reduce_object = Reduce()
         reduce_object.uparms = dict([('nhigh', 4)])
-	
+
         # write logfile only, no stdout.
         logutils.config(file_name='my_reduce.log', mode='quiet')
 
@@ -106,5 +106,5 @@ files). Here, each list of ``procfiles`` is then passed to the internal
     if conditions_are_met:
         reduce_conditions_are_met(procfiles, control_options=['metrics'])
 
-Calling ``reduce_conditions_are_met()`` without the ``control_options`` 
+Calling ``reduce_conditions_are_met()`` without the ``control_options``
 parameter will result in the ``mode`` attribute being set to ``'qa'``.

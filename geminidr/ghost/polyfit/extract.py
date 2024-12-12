@@ -100,10 +100,10 @@ class Extractor(object):
         Bin the models to match data binning.
 
         Function used to artificially bin the models so that they apply to
-        whatever binning mode the data are. This requires knowledge of the 
+        whatever binning mode the data are. This requires knowledge of the
         x and y binning from the arm class, which is assumed this class
-        inherits. 
-        
+        inherits.
+
         The binning is done as a running average, in which the
         values for each binned pixel are assumed to be equivalent to the average
         value of all physical pixels that are part of the binned pixel.
@@ -159,7 +159,7 @@ class Extractor(object):
             # Now, naturally, the actualy x values must change according to the
             # xbin
             x_map = (x_map + 0.5) / self.arm.xbin - 0.5
-            # The w_map and blaze remain unchanged by this. 
+            # The w_map and blaze remain unchanged by this.
 
         # Now we must modify the values of the [0,0] and [1,1] elements of
         # each matrix according to the binning to reflect the now size of
@@ -183,11 +183,11 @@ class Extractor(object):
 
     def make_pixel_model(self, input_image=None):
         """
-        Based on the xmod and the slit viewer image, create a complete model image, 
-        where flux versus wavelength pixel is constant. As this is designed for 
+        Based on the xmod and the slit viewer image, create a complete model image,
+        where flux versus wavelength pixel is constant. As this is designed for
         comparing to flats, normalisation is to the median of the non-zero pixels in the
         profile.
-        
+
         Parameters
         ----------
         input_iage: :obj:`numpy.ndarray`, optional
@@ -195,7 +195,7 @@ class Extractor(object):
             If this is given, then the pixel model is scaled according to the input flux
             for every order and wavelength. Note that this isn't designed to reproduce
             dual-object or object+sky data.
-        
+
         Returns
         -------
         model: :obj:`numpy.ndarray`
@@ -212,19 +212,19 @@ class Extractor(object):
         ny = x_map.shape[1]
         nm = x_map.shape[0]
         nx = int(self.arm.szx / self.arm.xbin)
-                             
+
         profiles = [self.slitview.slit_profile(arm=self.arm.arm)]
-        
+
         n_slitpix = profiles[0].shape[0]
         profile_y_microns = (np.arange(n_slitpix) -
                              n_slitpix / 2 + 0.5) * self.slitview.microns_pix
-        
+
         if self.transpose:
             pixel_model = np.zeros((ny, nx))
         else:
             pixel_model = np.zeros((nx, ny))
-        
-        # Loop through all orders then through all y pixels.        
+
+        # Loop through all orders then through all y pixels.
         print("    Creating order ", end="")
         for i in range(nm):
             print(f"{self.arm.m_min+i}...", end="")
@@ -246,7 +246,7 @@ class Extractor(object):
                     pixel_model[j, np.minimum(x_ix, nx-1)] = phi[0]
                 else:
                     pixel_model[np.minimum(x_ix, nx-1), j] = phi[0]
-                    
+
         return pixel_model
 
     def new_extract(self, data=None, correct_for_sky=True, use_sky=True,
@@ -631,7 +631,7 @@ class Extractor(object):
         THIS FUNCTION IS NO LONGER USED!
 
         Find lines near the locations of input arc lines.
-        
+
         This is done with Gaussian fits near the location of where lines are
         expected to be. An initial decent model must be present, likely
         the result of a manual adjustment.
@@ -653,7 +653,7 @@ class Extractor(object):
             If true, show display of lines and where they are predicted to fall
 
         plots: bool, optional
-            If true, plot every gaussian fit along the way for visual inspection 
+            If true, plot every gaussian fit along the way for visual inspection
 
         Returns
         -------
@@ -756,7 +756,7 @@ class Extractor(object):
                     plt.show()
 
                 # This part allows the user to inspect the global fit and
-                # position finding. 
+                # position finding.
                 if inspect:
                     plt.plot(xpos, ix, 'bx')
                     plt.plot(xpos, ypos, 'rx')

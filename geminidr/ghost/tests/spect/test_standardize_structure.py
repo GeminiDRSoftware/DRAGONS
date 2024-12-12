@@ -27,4 +27,3 @@ def test_standardizeStructure(ad_min):
         ad_orig[0].hdr == ad_out[0].hdr,
         len(ad_orig) == len(ad_out),
     ]), "standardizeStructure is no longer a no-op primitive"
-

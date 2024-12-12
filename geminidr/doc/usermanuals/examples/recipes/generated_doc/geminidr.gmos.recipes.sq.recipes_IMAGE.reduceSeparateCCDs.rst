@@ -48,4 +48,3 @@ of the images and then applied to each of the CCDs separately.
             p.appendStream(stream="all", from_stream="main", copy=False)
         p.mergeInputs(instream="all")
         p.storeProcessedScience(suffix="_image")
-

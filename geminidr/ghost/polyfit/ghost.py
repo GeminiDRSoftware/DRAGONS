@@ -27,8 +27,8 @@ from __future__ import division, print_function
 import numpy as np
 from .polyspect import Polyspect
 
-GHOST_BLUE_SZX = 4112 # 4096 # 
-GHOST_BLUE_SZY = 4096 # 4112 # 
+GHOST_BLUE_SZX = 4112 # 4096 #
+GHOST_BLUE_SZY = 4096 # 4112 #
 GHOST_RED_SZX = 6160
 GHOST_RED_SZY = 6144
 
@@ -78,7 +78,7 @@ class GhostArm(Polyspect):
         | ``lenslet_high_size`` and    | Unused                                |
         | ``lenslet_std_size``         |                                       |
         +------------------------------+---------------------------------------+
-        
+
         Attributes
         ----------
         arm: str
@@ -160,7 +160,7 @@ class GhostArm(Polyspect):
         ----------
         data: :obj:`numpy.ndarray`
             The (unbinned) data to be binned
-        
+
         Raises
         ------
         UserWarning
@@ -212,9 +212,9 @@ class GhostArm(Polyspect):
         a different slit magnification corresponding to each order stored in the
         list orders.
 
-        For each of these orders, a convolution is done in 2D by interpolating 
-        the magnified slit profile with the slit coordinates, normalising it and 
-        inverse Fourier transforming the product between the flat transform and the 
+        For each of these orders, a convolution is done in 2D by interpolating
+        the magnified slit profile with the slit coordinates, normalising it and
+        inverse Fourier transforming the product between the flat transform and the
         shifted slit profile::
 
           # Create the slit model.
@@ -244,25 +244,25 @@ class GhostArm(Polyspect):
         ----------
         flat: :obj:`numpy.ndarray`
             A flat field image from the spectrograph
-            
+
         slit_profile: :obj:`numpy.ndarray`, optional
             A slit profile as a 1D array with the slit profile fiber amplitudes.
             If none is supplied this function will assume identical fibers and
             create one to be used in the convolution based on default parameters
             specified in the ghost class.
-            
+
         spatpars: :obj:`numpy.ndarray`, optional
-            The 2D polynomial parameters for the slit spatial scale. 
+            The 2D polynomial parameters for the slit spatial scale.
             Required if slit_profile is not None.
-        
+
         microns_pix: float, optional
             The slit scale in microns per pixel.
             Required if slit_profile is not None.
-            
+
         xpars:  :obj:`numpy.ndarray`, optional
             The 2D polynomial parameters for the x (along-slit) coordinate.
             Required if slit_profile is not None.
-            
+
         num_conv: int, optional, optional
             The number of different convolution functions to use for different
             orders.
@@ -308,7 +308,7 @@ class GhostArm(Polyspect):
         # Fourier transform the flat for convolution
         im_fft = np.fft.rfft(flat, axis=0)
 
-        # Create a x baseline for convolution 
+        # Create a x baseline for convolution
         xbase = flat.shape[0]
         profilex = np.arange(xbase) - xbase // 2
 
@@ -343,7 +343,7 @@ class GhostArm(Polyspect):
         # If a profile is given, do this instead.
         else:
             slit_profile_cor = slit_profile.copy()
-            
+
             flat_conv = np.zeros_like(flat)
             flat_conv_cube = np.zeros((num_conv, flat.shape[0], flat.shape[1]))
 
@@ -365,7 +365,7 @@ class GhostArm(Polyspect):
 
                 # The x pixel values, just for this order
                 x_map[j] = self.evaluate_poly(xpars)[orders[j] - self.m_min]
-                
+
                 for i in range(im_fft.shape[1]):
                     #CRH 20220901 Old Create the slit model.
                     #mod_slit = np.interp(profilex * spat_scale[i], slit_coord,
@@ -388,8 +388,8 @@ class GhostArm(Polyspect):
                     #mod_slit2_ft = (np.fft.rfft(np.fft.fftshift(mod_slit2), n=flat.shape[0]))
 
                     # Normalise the slit model and Fourier transform for
-                    # convolution. This has to be an l2 norm, in order to 
-                    # work with variable slit lengths and mean that 
+                    # convolution. This has to be an l2 norm, in order to
+                    # work with variable slit lengths and mean that
                     # the correlation peak is the least squares fit.
                     #mod_slit /= np.sum(mod_slit)
                     #mod_slit /= np.sqrt(np.sum(mod_slit ** 2))

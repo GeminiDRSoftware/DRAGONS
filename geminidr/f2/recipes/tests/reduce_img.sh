@@ -61,4 +61,3 @@ reduce @sciset.lis -p alignAndStack:save=True -p addDQ:user_bpm=${bpm}
 
 # Check the final result & return status:
 compare_file $(last_result_filename stack)
-

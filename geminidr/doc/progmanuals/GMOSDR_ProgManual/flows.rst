@@ -37,5 +37,3 @@ Top-Level Flow Charts for Processing of Calibrations
 
 Top-Level Flow Charts for Processing of Science
 -----------------------------------------------
-
-

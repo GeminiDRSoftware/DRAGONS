@@ -141,4 +141,3 @@ class LogFile(GemcombineFile):
         log.debug("LogFile prepare()")
         tmplog = tempfile.NamedTemporaryFile()
         self.filedict.update({"logfile": tmplog.name})
-

@@ -12,4 +12,3 @@ start_test_set "$name"
 "$script_dir/reduce_img_every_n.sh" "$name" "Sgr A* - off-centered" 9182 1 || nerr=${nerr}1
 
 end_test_set "$name" $nerr
-

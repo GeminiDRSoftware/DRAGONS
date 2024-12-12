@@ -47,7 +47,7 @@ and on each tab.
 ### Step 3b: Alter Regions As Desired
 
 The regions can be specified as well.  This narrows the points used as input
-to the fit.  This can be done interactively, or via the text input below 
+to the fit.  This can be done interactively, or via the text input below
 each plot.  Regions are also set per-CCD.
 
 ### Step 4: Submit Parameters
@@ -57,7 +57,7 @@ continue, using the inputs and fit function you specified.
 
 ### Step 5: Check Output
 
-After finishing, the result of the reduction will be available as 
+After finishing, the result of the reduction will be available as
 `N20200520S0141_flat.fits`
 
 ## Calculate Sensitivity
@@ -69,7 +69,7 @@ use.  Here are steps to test it out.
 
 For this example, we are going to run the primitive explicitly.  To do this,
 I have pulled out a file from just before this step during reduce.  You can
-get the file at this URL (Google Drive).  You must be logged in to your 
+get the file at this URL (Google Drive).  You must be logged in to your
 Gemini account, so a browser is recommended.
 
 <https://drive.google.com/file/d/1P_DpzBWtEye03p8AcZy5YrOYz0BKPdZB/view?usp=sharing>
@@ -90,21 +90,21 @@ look as follows:
 ![Calculate Sensitivity Visualizer](docs/CalculateSensitivityCallouts.png)
 
 There are two sets of inputs.  The left-most are applied across all of the
-CCDs.  This is the fit function (i.e. spline) to perform on the data.  
+CCDs.  This is the fit function (i.e. spline) to perform on the data.
 The inputs to the fit are available per-extension
 and on each tab.
 
 ### Step 3b: Alter Regions As Desired
 
 The regions can be specified as well.  This narrows the points used as input
-to the fit.  This can be done interactively, or via the text input below 
+to the fit.  This can be done interactively, or via the text input below
 each plot.  Regions are also set per-CCD.
 
 ### Step 3c: Mask Arbitrary Points As Desired
 
 This primitive allows the selection of arbitrary points.  This can be done
 by clicking directly on a point, by using the box select tool, or by using the
-lasso free select tool.  Then you either use the 'M' and 'U' keys or the 
+lasso free select tool.  Then you either use the 'M' and 'U' keys or the
 buttons to mask or unmask those points.  This was not feasable for the
 normalize flat UI since it can only show one row at a time.
 
@@ -115,7 +115,7 @@ continue, using the inputs and fit function you specified.
 
 ### Step 5: Check Output
 
-After finishing, the result of the reduction will be available as 
+After finishing, the result of the reduction will be available as
 `N20201022S0006_sensitivityCalculated.fits`
 
 ## Find Source Apertures
@@ -127,7 +127,7 @@ use.  Here are steps to test it out.
 
 For this example, we are going to run the primitive explicitly.  To do this,
 I have pulled out a file from just before this step during reduce.  You can
-get the file at this URL (Google Drive).  You must be logged in to your 
+get the file at this URL (Google Drive).  You must be logged in to your
 Gemini account, so a browser is recommended.
 
 <https://drive.google.com/file/d/1nSsTVvEf3OFO46TkK5vbTcjmJsHm6mKs/view?usp=sharing>
@@ -149,7 +149,7 @@ look as follows:
 
 The inputs to the primitive are in the top left.  Altering these will cause the
 apertures to be regenerated.  Then, you can modify, add, or delete apertures using
-the controls below.  You can also edit the apertures by hovering the mouse over 
+the controls below.  You can also edit the apertures by hovering the mouse over
 the plot and using the key commands as described on the bottom left.
 
 ### Step 4: Submit Parameters
@@ -159,5 +159,5 @@ continue, using the currently defined apertures.
 
 ### Step 5: Check Output
 
-After finishing, the result of the reduction will be available as 
+After finishing, the result of the reduction will be available as
 `S20200201S0031_aperturesFound.fits`

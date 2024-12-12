@@ -23,4 +23,3 @@ This recipe stack already preprocessed data.
         p.scaleCountsToReference()
         p.stackFrames(zero=True)
         return
-

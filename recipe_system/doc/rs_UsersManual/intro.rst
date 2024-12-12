@@ -69,4 +69,3 @@ interested in those topics to refer to the topical documentation.
   - |RSProg|
   - |astrodatauser|
   - |astrodataprog|
-

@@ -32,5 +32,3 @@ is expected to be ready to use, without additional processing.)
 Therefore, the Recipe System uses JIT calibration requests.  The calibration
 found will match the data at that point in the recipe where the calibration
 is needed.
-
-

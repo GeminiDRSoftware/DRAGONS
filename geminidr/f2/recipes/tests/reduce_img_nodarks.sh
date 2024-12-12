@@ -61,4 +61,3 @@ reduce @sciset.lis -p darkCorrect:do_dark=False -p alignAndStack:save=True -p ad
 
 # Check the final result & return status:
 compare_file $(last_result_filename stack)
-

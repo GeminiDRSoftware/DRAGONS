@@ -1,7 +1,7 @@
 // ViewPort parent class
 function ViewPort(element, id) {
     if (element && id) {
-	this.element = element; 
+	this.element = element;
 	this.id = id;
 	this.init();
     }
@@ -75,7 +75,7 @@ KeyedViewPort.prototype.addRecord = function(records,prepend) {
     } else {
 	$('#'+this.id).append(record_str);
     }
-  
+
 }; // end addRecord
 
 
@@ -152,7 +152,7 @@ SimpleTable.prototype.addRecord = function(records) {
 	    table_row += '<td class="'+col.id+'">'+record[col.field]+'</td>';
 	}
 	table_row += '</tr>';
-	
+
 	// Add the new row to the database of rows
 	if ($("#"+record['key']).length>0) {
 	    // A row with this key exists already, remove it
@@ -239,7 +239,7 @@ ScrollTable.prototype.init = function() {
 			     '<span class="swap_icon"></span>'+
 			     '</div>');
 
-		    
+
 		// Put alternate data in data cells
 		$("#"+st.id+" td."+col.id).each(function(){
 		    var key = $(this).attr("id");
@@ -403,7 +403,7 @@ ScrollTable.prototype.composeHTML = function() {
 	} else {
 	    html_str += col.name;
 	}
-	
+
 	html_str += '</th>';
     }
     html_str += '</tr></thead>';
@@ -480,7 +480,7 @@ ScrollTable.prototype.addRecord = function(records) {
 		         record[col.field]+'</td>';
 	}
 	table_row += '</tr>';
-	
+
 	// Add the new row to the database of rows
 	if ($("#"+record['key']).length>0) {
 	    // A row with this key exists already, remove it
@@ -585,7 +585,7 @@ ScrollTable.prototype.filterRecord = function(query) {
 
 	// Escape any \
 	query = query.replace(/(\\)/gi, '\\\\');
-	
+
 	// Get non-searchable column names
 	var no_search = [];
 	for (var col in this.columns) {
@@ -609,9 +609,9 @@ ScrollTable.prototype.filterRecord = function(query) {
 
     // Redo even row classes
     $("#"+this.id+" tbody tr.visible:even").addClass("even");
-    
+
     // Display the number of visible rows
-    var display_msg = "Displaying " + 
+    var display_msg = "Displaying " +
                       $("#"+this.id+" tbody tr.visible").length +
                       " of " +
                       $("#"+this.id+" tbody tr").length +
@@ -663,7 +663,7 @@ TimePlot.prototype.init = function(record) {
 	this.selected[series_to_use[i]] = true;
 
 	// Make empty data structure for each series
-	data.push([null]);	
+	data.push([null]);
 
 	// Set up series labels and band data
 	series_options.push({label:series,
@@ -710,7 +710,7 @@ TimePlot.prototype.init = function(record) {
 	maxdate.add(-this.ut_offset,"milliseconds");
 	this.ut = false;
     }
-    
+
     this.options.mindate = mindate.getTime();
     this.options.maxdate = maxdate.getTime();
     // Prevent multiple date labels being added to the x-axis on re-plotting
@@ -721,7 +721,7 @@ TimePlot.prototype.init = function(record) {
 	    this.options.xaxis_label += " ("+this.timezone+")";
         }
     }
-    
+
     // Check whether y-axis should be inverted
     var ymin, ymax;
     if (this.options.invert_yaxis) {
@@ -784,8 +784,8 @@ TimePlot.prototype.init = function(record) {
     this.plot = $.jqplot(this.id, data, this.config);
 
     // Store a data dictionary in the plot
-    this.plot.data_dict = {};	
-    
+    this.plot.data_dict = {};
+
     var tp = this;
     if (this.options.series_labels.length>1) {
 	// Add click handler, to track selected series if the legend is clicked
@@ -821,7 +821,7 @@ TimePlot.prototype.init = function(record) {
 	    var s = tp.plot.series[i];
 	    for (var j=0; j<s.gridData.length; j++) {
 		p = s.gridData[j];
-		var point = {seriesIndex:i, pointIndex:j, 
+		var point = {seriesIndex:i, pointIndex:j,
 			     gridData:p, data:s.data[j]};
 		tp.plot.data_dict[s.label][s.data[j][2]]["point"] = point;
 	    }
@@ -835,14 +835,14 @@ TimePlot.prototype.init = function(record) {
         if (tp.options.overlay.length<1) {
 	    return;
 	}
-	
+
 	var co = tp.plot.plugins.canvasOverlay;
 	co.options.show=true;
 
 	var series_index = undefined;
 	for (var i=0; i<tp.options.series_labels.length; i++) {
 	    var s = tp.options.series_labels[i];
-	    if (tp.plot.data_dict[s] && 
+	    if (tp.plot.data_dict[s] &&
 		tp.plot.data_dict[s][pt.data[2]]!=undefined) {
 		series_index = i;
 		break;
@@ -880,9 +880,9 @@ TimePlot.prototype.init = function(record) {
 
     // Update the HTML to ensure the title which contains the optical/IR switch is accessible
     tp.plot.postDrawHooks.add(function() {
-        $('#' + tp.id + ' .jqplot-title').remove().appendTo('#' + tp.id);	
+        $('#' + tp.id + ' .jqplot-title').remove().appendTo('#' + tp.id);
     });
-    
+
 }; // end init
 
 TimePlot.prototype.composeHTML = function() {
@@ -928,7 +928,7 @@ TimePlot.prototype.addRecord = function(records) {
 	series = series_to_use[j];
 
 	if (!data_dict[series]) {
-	    data.push([null]);	
+	    data.push([null]);
 	    band_data.push([[null],[null]]);
 	} else {
 
@@ -956,7 +956,7 @@ TimePlot.prototype.addRecord = function(records) {
 
 	        lower = value - error;
 	        upper = value + error;
-		
+
 		// convert date to timestamp, and UT, if desired
 		// This uses jqPlot's own date handling methods,
 		// built on top of JavaScript's native Date object
@@ -1028,12 +1028,12 @@ TimePlot.prototype.addRecord = function(records) {
 		ymin = this.options.ymax;
 	    }
 	}
-	
+
 	// Set min/max in plot
 	if (this.plot.axes.yaxis._options.min==undefined ||
 	    this.plot.axes.yaxis._options.max==undefined ||
 	    (this.plot.axes.yaxis._options.min==this.plot.axes.yaxis.min &&
-	     this.plot.axes.yaxis._options.max==this.plot.axes.yaxis.max)) 
+	     this.plot.axes.yaxis._options.max==this.plot.axes.yaxis.max))
 	{
 	    this.plot.axes.yaxis.min = ymin;
 	    this.plot.axes.yaxis.max = ymax;
@@ -1045,7 +1045,7 @@ TimePlot.prototype.addRecord = function(records) {
 	    this.plot.axes.yaxis._options.max = ymax;
 	}
     }
-    
+
 
     // Check to see if min/maxdate should be in UT
     // and update it in options and config object
@@ -1071,7 +1071,7 @@ TimePlot.prototype.addRecord = function(records) {
     }
     this.config.axes.xaxis.min = this.options.mindate;
     this.config.axes.xaxis.max = this.options.maxdate;
-    this.config.axes.xaxis.label = this.options.xaxis_label;    
+    this.config.axes.xaxis.label = this.options.xaxis_label;
 
     // Update or create the plot
     if (this.plot) {
@@ -1082,9 +1082,9 @@ TimePlot.prototype.addRecord = function(records) {
 		this_series.data = data[series_i];
 
 		var renderer = this_series.renderer;
-		renderer.bands.show = true; 
+		renderer.bands.show = true;
 		renderer.options.bandData = band_data[series_i];
-		renderer.initBands.call(this_series, 
+		renderer.initBands.call(this_series,
 					renderer.options, this.plot);
 
 		this.plot.series[series_i].showLabel = true;
@@ -1092,7 +1092,7 @@ TimePlot.prototype.addRecord = function(records) {
 		this.plot.series[series_i].data = [];
 		this.plot.series[series_i].showLabel = false;
 	    }
-	}	
+	}
 
 	// Check whether date should be displayed in UT, and it is not already
 	var mindate, maxdate;
@@ -1157,7 +1157,7 @@ TimePlot.prototype.addRecord = function(records) {
 		var s = tp.plot.series[i];
 		for (var j=0; j<s.gridData.length; j++) {
 		    p = s.gridData[j];
-		    var point = {seriesIndex:i, pointIndex:j, 
+		    var point = {seriesIndex:i, pointIndex:j,
 				 gridData:p, data:s.data[j]};
 		    tp.plot.data_dict[s.label][s.data[j][2]]["point"] = point;
 		}
@@ -1166,13 +1166,13 @@ TimePlot.prototype.addRecord = function(records) {
 
         // Update the HTML to ensure the title which contains the optical/IR switch is accessible
         tp.plot.postDrawHooks.add(function() {
-            $('#' + tp.id + ' .jqplot-title').remove().appendTo('#' + tp.id);	
+            $('#' + tp.id + ' .jqplot-title').remove().appendTo('#' + tp.id);
         });
-	
+
 	tp.plot.postDrawHooks.add(updatePoints);
-	
+
     }
-    
+
     // Store the data dictionary in the plot
     this.plot.data_dict = data_dict;
 
@@ -1215,16 +1215,16 @@ TimePlot.prototype.highlightPoint = function(key) {
 	highlight_fn(this.plot);
 	return;
     }
-    
+
     // Get the point information from the record
     var point = rec["point"];
 
     // Check whether point is currently visible
     try {
 	if (this.options.invert_yaxis) {
-	    if (point.data[0]>this.plot.axes.xaxis.max || 
-		point.data[0]<this.plot.axes.xaxis.min || 
-		point.data[1]>this.plot.axes.yaxis.min || 
+	    if (point.data[0]>this.plot.axes.xaxis.max ||
+		point.data[0]<this.plot.axes.xaxis.min ||
+		point.data[1]>this.plot.axes.yaxis.min ||
 		point.data[1]<this.plot.axes.yaxis.max) {
 
 		// If not, clear existing highlights
@@ -1232,9 +1232,9 @@ TimePlot.prototype.highlightPoint = function(key) {
 		return;
 	    }
 	} else {
-	    if (point.data[0]>this.plot.axes.xaxis.max || 
-		point.data[0]<this.plot.axes.xaxis.min || 
-		point.data[1]>this.plot.axes.yaxis.max || 
+	    if (point.data[0]>this.plot.axes.xaxis.max ||
+		point.data[0]<this.plot.axes.xaxis.min ||
+		point.data[1]>this.plot.axes.yaxis.max ||
 		point.data[1]<this.plot.axes.yaxis.min) {
 
 		// If not, clear existing highlights
@@ -1255,7 +1255,7 @@ TimePlot.prototype.highlightPoint = function(key) {
 TimePlot.prototype.updateDate = function(mindate,maxdate,xaxis_label) {
     // Assume incoming dates are LT
     this.ut = false;
-    
+
     // Convert to UT milliseconds
     mindate = new $.jsDate(mindate);
     maxdate = new $.jsDate(maxdate);
@@ -1379,7 +1379,7 @@ TooltipOverlay.prototype.init = function() {
 	} else {
 	    tt_left = trg_ctr;
 	}
-	
+
 	// Position tooltip
 	tooltip.css({
 	    left: tt_left,
@@ -1387,12 +1387,12 @@ TooltipOverlay.prototype.init = function() {
 	    position: "absolute"
 	});
 
-	// Set delay so that tooltip does not trigger on 
+	// Set delay so that tooltip does not trigger on
 	// accidental mouseover
 	hovering = setTimeout(function() {
 	    // Show the tooltip
 	    tooltip.show();
-	    
+
 	    // Throw a custom event, as a hook for the manager
 	    // to do something (eg. hide any other tooltips)
 	    tooltip.trigger("showTooltip");

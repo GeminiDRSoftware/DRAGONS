@@ -26,4 +26,3 @@ Utility Recipes
 ***************
 
 .. include:: generated_doc/geminidr.gmos.recipes.sq.recipes_ARC_LS_SPECT.makeIRAFCompatible.rst
-

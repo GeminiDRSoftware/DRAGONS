@@ -36,7 +36,7 @@
 25  1  960 1520		# imt25|imt2df9 2D-Frutti
 26  1 1232  800		# imt26|imtcryo Cryogenic Camera
 27  1 3104  512		# imt27|imtgcam Gold Camera with Ford chip
-28  1  976 3040		# imt28|imt2df9x3 2D-Frutti 
+28  1  976 3040		# imt28|imt2df9x3 2D-Frutti
 29  1  800  256         # imt29|imtgong Gong Cache Monitor
 30  1  256  800         # imt30|imtgong Gong Cache Monitor
 31  1 1240  400		# imt31|imtret Reticon CCD detector format
@@ -49,7 +49,7 @@
 38  1 3104 1024		# imt38|imtf3ka|imtf3kb|imtfo3k
 39  1 1232  800		# imt39|imtf1ka
 40  4 1200  600		# imt40|imtweather
- 
+
 # Mosaic formats.
 41  1 8800  8800	# imt41|imt8800
 42  1 4400  4400	# imt42|imt4400
@@ -67,4 +67,3 @@
 # (add here)
 64 1 3200 3200          # imt64|imt3200
 65 1 5000 5000          # imt65|imt5000
-

@@ -21,7 +21,7 @@ Version 3.2 is recommend for the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI, for the
 reduction of GMOS longslit spectroscopy data, and the reduction of GHOST data.
 
-To reduce other types of Gemini spectroscopy data, please continue to use 
+To reduce other types of Gemini spectroscopy data, please continue to use
 the [Gemini IRAF package](https://www.gemini.edu/observing/phase-iii/reducing-data/gemini-iraf-data-reduction-software).
 
 To install DRAGONS:
@@ -44,7 +44,7 @@ A list of changes since 3.1 can be found in the [Change Logs](https://dragons.re
 # What is DRAGONS
 DRAGONS is a platform for the reduction and processing of astronomical data.
 The DRAGONS meta-package includes an infrastructure for automation of the
-processes and algorithms for processing of astronomical data, with focus on the 
+processes and algorithms for processing of astronomical data, with focus on the
 reduction of Gemini data.
 
 
@@ -59,7 +59,7 @@ There your will find manuals for Astrodata and the Recipe System, and hands-on
 tutorials on reducing Gemini imaging data with DRAGONS.
 
 Gemini users with imaging data to reduce should pick the tutorial discussing
-the reduction of data from the appropriate instrument.  
+the reduction of data from the appropriate instrument.
 
 Software developers should start with the Astrodata and Recipe System
 manuals.
@@ -69,7 +69,7 @@ manuals.
 # Setting up a development environment
 
 To run checkouts, first set up a development conda environment.  This is what
-we are using at this time for the `master` branch and the `release/3.2.x` 
+we are using at this time for the `master` branch and the `release/3.2.x`
 branches.
 
 ```
@@ -79,7 +79,6 @@ $ pip install git+https://github.com/GeminiDRSoftware/GeminiObsDB.git@release/1.
 $ pip install git+https://github.com/GeminiDRSoftware/GeminiCalMgr.git@release/1.1.x
 ```
 Dependencies change all the time and can break the development environment
-or cause problems when conda tries to find a solution for the dependencies. 
+or cause problems when conda tries to find a solution for the dependencies.
 This not guaranteed to work flawlessly, you might have to adjust version
 requirements.
-

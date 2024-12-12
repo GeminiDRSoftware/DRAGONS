@@ -8,11 +8,11 @@ Fringe Correction Tables
 
 Here you will find what are the detector-filter combinations that requires a
 Processed Fringe Frame for the data reduction. Below are one table for
-GMOS-N and one table for GMOS-S. Each row of these tables corresponds to one 
+GMOS-N and one table for GMOS-S. Each row of these tables corresponds to one
 of the detectors used in the instrument during its life-time. The five columns
 in the right contains
-the broadband filters used in imaging mode. The intersection of the 
-detector rows with the filter columns contains cell with the following 
+the broadband filters used in imaging mode. The intersection of the
+detector rows with the filter columns contains cell with the following
 information:
 
 - `Yes`: Requires a Processed Fringe Frame for data reduction;

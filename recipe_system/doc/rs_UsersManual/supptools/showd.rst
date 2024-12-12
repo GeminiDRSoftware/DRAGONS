@@ -79,4 +79,3 @@ the descriptors values of a data subset::
     N20160102S0367.fits   GCALflat          42.001
 
 The "pipe" `` | `` gets the ``dataselect`` output and passes it to ``showd``.
-

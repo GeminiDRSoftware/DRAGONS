@@ -16,5 +16,3 @@ in time will be used for sky subtraction of each frame.
    ex1_gnirsim_twostars_dataset
    ex1_gnirsim_twostars_cmdline
    ex1_gnirsim_twostars_api
-
-

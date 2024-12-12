@@ -34,4 +34,3 @@ class PyrafETIFile(ETIFile):
 
     def clean(self):
         log.debug("PyrafETIFile clean(): pass")
-

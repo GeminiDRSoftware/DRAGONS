@@ -228,4 +228,3 @@ upload              <type 'list' of 'str'>     None
     **Internal use only**.  Specify which types of product to upload to the
     Gemini internal database.  Allowed values are "metrics", "calibs", and
     "science".
-

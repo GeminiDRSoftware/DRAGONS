@@ -1823,4 +1823,3 @@ MetricsViewer.prototype = {
     }, // end formatWarningRecords
 
 }; // end prototype
-

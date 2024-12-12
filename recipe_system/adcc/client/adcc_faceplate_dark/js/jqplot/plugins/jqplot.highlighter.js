@@ -5,13 +5,13 @@
  * Version: 1.0.0b2_r1012
  *
  * Copyright (c) 2009-2011 Chris Leonello
- * jqPlot is currently available for use in all personal or commercial projects 
- * under both the MIT (http://www.opensource.org/licenses/mit-license.php) and GPL 
- * version 2.0 (http://www.gnu.org/licenses/gpl-2.0.html) licenses. This means that you can 
- * choose the license that best suits your project and use it accordingly. 
+ * jqPlot is currently available for use in all personal or commercial projects
+ * under both the MIT (http://www.opensource.org/licenses/mit-license.php) and GPL
+ * version 2.0 (http://www.gnu.org/licenses/gpl-2.0.html) licenses. This means that you can
+ * choose the license that best suits your project and use it accordingly.
  *
- * Although not required, the author would appreciate an email letting him 
- * know of any substantial use of jqPlot.  You can reach the author at: 
+ * Although not required, the author would appreciate an email letting him
+ * know of any substantial use of jqPlot.  You can reach the author at:
  * chris at jqplot dot com or see http://www.jqplot.com/info.php .
  *
  * If you are feeling kind and generous, consider supporting the project by
@@ -25,7 +25,7 @@
  *     http://hexmen.com/js/sprintf.js
  *     The author (Ash Searle) has placed this code in the public domain:
  *     "This code is unrestricted: you are free to use it however you like."
- * 
+ *
  */
 (function($) {
     $.jqplot.eventListenerHooks.push(['jqplotMouseMove', handleMove]);
@@ -33,38 +33,38 @@
     // Fix added by M. Clarke 5/11/12 to hide tooltip when mouse leaves
     // the plot
     $.jqplot.eventListenerHooks.push(['jqplotMouseLeave', handleMove]);
-    
+
     /**
      * Class: $.jqplot.Highlighter
      * Plugin which will highlight data points when they are moused over.
-     * 
+     *
      * To use this plugin, include the js
      * file in your source:
-     * 
+     *
      * > <script type="text/javascript" src="plugins/jqplot.highlighter.js"></script>
-     * 
+     *
      * A tooltip providing information about the data point is enabled by default.
      * To disable the tooltip, set "showTooltip" to false.
-     * 
+     *
      * You can control what data is displayed in the tooltip with various
      * options.  The "tooltipAxes" option controls wether the x, y or both
      * data values are displayed.
-     * 
+     *
      * Some chart types (e.g. hi-low-close) have more than one y value per
      * data point. To display the additional values in the tooltip, set the
      * "yvalues" option to the desired number of y values present (3 for a hlc chart).
-     * 
+     *
      * By default, data values will be formatted with the same formatting
      * specifiers as used to format the axis ticks.  A custom format code
-     * can be supplied with the tooltipFormatString option.  This will apply 
-     * to all values in the tooltip.  
-     * 
+     * can be supplied with the tooltipFormatString option.  This will apply
+     * to all values in the tooltip.
+     *
      * For more complete control, the "formatString" option can be set.  This
      * Allows conplete control over tooltip formatting.  Values are passed to
      * the format string in an order determined by the "tooltipAxes" and "yvalues"
-     * options.  So, if you have a hi-low-close chart and you just want to display 
+     * options.  So, if you have a hi-low-close chart and you just want to display
      * the hi-low-close values in the tooltip, you could set a formatString like:
-     * 
+     *
      * > highlighter: {
      * >     tooltipAxes: 'y',
      * >     yvalues: 3,
@@ -73,7 +73,7 @@
      * >         <tr><td>low:</td><td>%s</td></tr>
      * >         <tr><td>close:</td><td>%s</td></tr></table>'
      * > }
-     * 
+     *
      */
     $.jqplot.Highlighter = function(options) {
         // Group: Properties
@@ -140,7 +140,7 @@
         // indicated by tooltipAxes option.  So, you could have a tooltip like:
         // 'Date: %s, number of cats: %d' to format the whole tooltip at one go.
         // If useAxesFormatters is true, values will be formatted according to
-        // Axes formatters and you can populate your tooltip string with 
+        // Axes formatters and you can populate your tooltip string with
         // %s placeholders.
         this.formatString = null;
         // prop: yvalues
@@ -159,32 +159,32 @@
 
         $.extend(true, this, options);
     };
-    
+
     var locations = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
     var locationIndicies = {'nw':0, 'n':1, 'ne':2, 'e':3, 'se':4, 's':5, 'sw':6, 'w':7};
     var oppositeLocations = ['se', 's', 'sw', 'w', 'nw', 'n', 'ne', 'e'];
-    
+
     // axis.renderer.tickrenderer.formatter
-    
+
     // called with scope of plot
     $.jqplot.Highlighter.init = function (target, data, opts){
         var options = opts || {};
         // add a highlighter attribute to the plot
         this.plugins.highlighter = new $.jqplot.Highlighter(options.highlighter);
     };
-    
+
     // called within scope of series
     $.jqplot.Highlighter.parseOptions = function (defaults, options) {
-        // Add a showHighlight option to the series 
+        // Add a showHighlight option to the series
         // and set it to true by default.
         this.showHighlight = true;
     };
-    
+
     // called within context of plot
     // create a canvas which we can draw on.
     // insert it before the eventCanvas, so eventCanvas will still capture events.
     $.jqplot.Highlighter.postPlotDraw = function() {
-        // Memory Leaks patch    
+        // Memory Leaks patch
         if (this.plugins.highlighter && this.plugins.highlighter.highlightCanvas) {
             this.plugins.highlighter.highlightCanvas.resetCanvas();
             this.plugins.highlighter.highlightCanvas = null;
@@ -196,7 +196,7 @@
         }
 
         this.plugins.highlighter.highlightCanvas = new $.jqplot.GenericCanvas();
-        
+
         this.eventCanvas._elem.before(this.plugins.highlighter.highlightCanvas.createElement(this._gridPadding, 'jqplot-highlight-canvas', this._plotDimensions, this));
         this.plugins.highlighter.highlightCanvas.setContext();
 
@@ -205,26 +205,26 @@
         elem = null;
         this.plugins.highlighter._tooltipElem.addClass('jqplot-highlighter-tooltip');
         this.plugins.highlighter._tooltipElem.css({position:'absolute', display:'none'});
-        
+
         this.eventCanvas._elem.before(this.plugins.highlighter._tooltipElem);
     };
-    
+
     $.jqplot.preInitHooks.push($.jqplot.Highlighter.init);
     $.jqplot.preParseSeriesOptionsHooks.push($.jqplot.Highlighter.parseOptions);
     $.jqplot.postDrawHooks.push($.jqplot.Highlighter.postPlotDraw);
 
     ////FIX
-    // Fix added by M. Clarke 5/11/12 to give external caller access to 
+    // Fix added by M. Clarke 5/11/12 to give external caller access to
     // the handleMove function (ie. to trigger data point highlighting with
     // some external event)
     $.jqplot.Highlighter.handleMove = handleMove;
-    
+
     function draw(plot, neighbor) {
         var hl = plot.plugins.highlighter;
         var s = plot.series[neighbor.seriesIndex];
         var smr = s.markerRenderer;
-        var mr = hl.markerRenderer;	
-	////FIX 
+        var mr = hl.markerRenderer;
+	////FIX
 	// Fix added by M. Clarke 5/11/12 to allow a style to be passed in options
         //mr.style = smr.style;
         mr.lineWidth = smr.lineWidth + hl.lineWidthAdjust;
@@ -236,7 +236,7 @@
         mr.init();
         mr.draw(s.gridData[neighbor.pointIndex][0], s.gridData[neighbor.pointIndex][1], hl.highlightCanvas._ctx);
     }
-    
+
     function showTooltip(plot, series, neighbor) {
         // neighbor looks like: {seriesIndex: i, pointIndex:j, gridData:p, data:s.data[j]}
         // gridData should be x,y pixel coords on the grid.
@@ -295,7 +295,7 @@
                         ystrs.unshift(opts.formatString);
                         str = $.jqplot.sprintf.apply($.jqplot.sprintf, ystrs);
                         break;
-                } 
+                }
             }
             else {
                 switch (opts.tooltipAxes) {
@@ -331,8 +331,8 @@
                             str += opts.tooltipSeparator + ystrs[i];
                         }
                         break;
-                    
-                }                
+
+                }
             }
         }
         else {
@@ -353,7 +353,7 @@
                 }
                 else if (opts.tooltipAxes == 'y') {
                     str = $.jqplot.sprintf(opts.tooltipFormatString, neighbor.data[1]);
-                } 
+                }
             }
         }
         if ($.isFunction(opts.tooltipContentEditor)) {
@@ -365,15 +365,15 @@
         var gridpos = {x:neighbor.gridData[0], y:neighbor.gridData[1]};
         var ms = 0;
         var fact = 0.707;
-        if (series.markerRenderer.show == true) { 
+        if (series.markerRenderer.show == true) {
             ms = (series.markerRenderer.size + opts.sizeAdjust)/2;
         }
-		
+
 		var loc = locations;
 		if (series.fillToZero && series.fill && neighbor.data[1] < 0) {
 			loc = oppositeLocations;
 		}
-		
+
         switch (loc[locationIndicies[opts.tooltipLocation]]) {
             case 'nw':
                 var x = gridpos.x + plot._gridPadding.left - elem.outerWidth(true) - opts.tooltipOffset - fact * ms;
@@ -422,9 +422,9 @@
             elem.show();
         }
         elem = null;
-        
+
     }
-    
+
     function handleMove(ev, gridpos, datapos, neighbor, plot) {
         var hl = plot.plugins.highlighter;
         var c = plot.plugins.cursor;
@@ -434,7 +434,7 @@
 	    // Fix added by M. Clarke 5/11/12 so that data points from
 	    // hidden series are not highlighted
 	    var series_show = true;
-	    if (neighbor!=null && 
+	    if (neighbor!=null &&
 		plot.series[neighbor.seriesIndex]
 		    .canvas._elem.hasClass('jqplot-series-hidden')) {
 		series_show = false;
@@ -500,13 +500,13 @@
                     }
                     if (hl.bringSeriesToFront) {
                         plot.moveSeriesToFront(neighbor.seriesIndex);
-                    }                    
+                    }
 
 		    ////FIX
 		    // Fix added by M. Clarke 5/18/12 to throw an event when
 		    // a new data point is highlighted
 		    plot.target.trigger('jqplotDataPointHighlight',neighbor);
-                }                
+                }
             }
         }
     }

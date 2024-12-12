@@ -125,6 +125,3 @@ Storage is only permitted when it is instantiated if the ``store`` flag is
 set in the config file *and* the appropriate string is in the ``uploads``
 attribute of the ``PrimitivesBASE`` object. This class has a ``store_science``
 parameter as well as the ``store_cal`` parameter it shares with ``LocalDB``.
-
-
-

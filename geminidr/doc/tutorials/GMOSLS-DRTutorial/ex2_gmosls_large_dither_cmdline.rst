@@ -7,7 +7,7 @@ Example 2 - Longslit large-dither point source - using the "reduce" command line
 ********************************************************************************
 
 
-In this example, we will reduce a GMOS longslit observation of `ORC J0102-2450 <https://ui.adsabs.harvard.edu/abs/2021MNRAS.505L..11K/abstract>`_, 
+In this example, we will reduce a GMOS longslit observation of `ORC J0102-2450 <https://ui.adsabs.harvard.edu/abs/2021MNRAS.505L..11K/abstract>`_,
 an Odd Radio Circle, using the "|reduce|" command that is operated directly from the unix shell. Just open a terminal and load the DRAGONS conda environment
 to get started.
 
@@ -184,11 +184,11 @@ Two lists for the spectrophotometric standard star
 --------------------------------------------------
 If a spectrophotometric standard is recognized as such by DRAGONS, it will
 receive the Astrodata tag ``STANDARD``.  All spectrophotometric standards
-normally used at Gemini are in the DRAGONS list of recognized standards. 
-For this example, we will be reducing the standard star observations at each 
-central wavelength separately without stacking them. The standard star reduction 
-recipe stacks all the observations in a given file list. So we need to create 
-separate file lists for the different central wavelengths. 
+normally used at Gemini are in the DRAGONS list of recognized standards.
+For this example, we will be reducing the standard star observations at each
+central wavelength separately without stacking them. The standard star reduction
+recipe stacks all the observations in a given file list. So we need to create
+separate file lists for the different central wavelengths.
 
 First, let's check the central wavelength of the standard star frames in our raw data directory.
 
@@ -200,15 +200,15 @@ First, let's check the central wavelength of the standard star frames in our raw
     filename                                   central_wavelength
     -------------------------------------------------------------
     ../playdata/example2/S20220608S0098.fits             7.05e-07
-    ../playdata/example2/S20220608S0101.fits             7.95e-07    
+    ../playdata/example2/S20220608S0101.fits             7.95e-07
 
-We will then create two standard star lists for the two central wavelengths.  
+We will then create two standard star lists for the two central wavelengths.
 
 ::
 
     dataselect ../playdata/example2/*.fits --tags STANDARD --expr='central_wavelength==7.05e-07' -o std_705nm.lis
     dataselect ../playdata/example2/*.fits --tags STANDARD --expr='central_wavelength==7.95e-07' -o std_795nm.lis
-    
+
 
 A list for the science observations
 -----------------------------------
@@ -320,13 +320,13 @@ Processed Arc - Wavelength Solution
 ===================================
 GMOS longslit arc can be obtained at night with the observation sequence,
 if requested by the program, but are often obtained at the end of the night
-or the following afternoon instead. In this example, the arcs have been obtained at night, 
+or the following afternoon instead. In this example, the arcs have been obtained at night,
 as part of the sequence. Like the spectroscopic flats, they are not
 stacked, which means that they can be sent to reduce all together and will
 be reduced individually.
 
 The wavelength solution is automatically calculated and has been found to be
-quite reliable.  There might be cases where it fails; inspect the RMS of 
+quite reliable.  There might be cases where it fails; inspect the RMS of
 ``determineWavelengthSolution`` in the logs to confirm a good solution.
 
 ::
@@ -347,11 +347,11 @@ Processed Standard - Sensitivity Function
 =========================================
 The GMOS longslit spectrophotometric standards are normally taken when there
 is a hole in the queue schedule, often when the weather is not good enough
-for science observations. For a large wavelength dither, i.e., a difference 
-in central wavelength much greater than about 10 nm, a spectrophotometric standard should be 
-taken at each of those positions to calculate the respective sensitvity functions. 
-The latter will then be used for spectrophotometric calibration of the science observations 
-at the corresponding central wavelengths. 
+for science observations. For a large wavelength dither, i.e., a difference
+in central wavelength much greater than about 10 nm, a spectrophotometric standard should be
+taken at each of those positions to calculate the respective sensitvity functions.
+The latter will then be used for spectrophotometric calibration of the science observations
+at the corresponding central wavelengths.
 
 The reduction of the standard will be using a BPM, a master bias, a master flat,
 and a processed arc.  If those have been added to the local calibration
@@ -384,7 +384,7 @@ interactive mode for all four:
 Since the standard star spectrum is bright and strong, and the exposure short,
 it is somewhat unlikely that interactivity will be needed for the sky
 subtraction, or finding and tracing the spectrum.  The fitting of the
-sensitivity function however can sometimes benefit from little adjustment. 
+sensitivity function however can sometimes benefit from little adjustment.
 
 To activate the interactive mode **only** for the measurement of the
 sensitivity function:
@@ -393,20 +393,20 @@ sensitivity function:
 
     reduce @std_705nm.lis -p calculateSensitivity:interactive=True
 
-The interactive tools are introduced in section :ref:`interactive`. 
+The interactive tools are introduced in section :ref:`interactive`.
 
 **The 795nm Standard**
 
 For the standard star observation at central wavelength 795 nm in this
-dataset, ``calculateSensitivity`` with its default parameter values yields a suboptimal number 
-of data points to constrain its sensitivity curve (see the left plot below; click the panel to enlarge). 
-There is a conspicuous gap between 820 and 980 nm -- a result of the amplifier #5 issue and compounded 
-by the presence of telluric absorption redward of around 880 nm. 
+dataset, ``calculateSensitivity`` with its default parameter values yields a suboptimal number
+of data points to constrain its sensitivity curve (see the left plot below; click the panel to enlarge).
+There is a conspicuous gap between 820 and 980 nm -- a result of the amplifier #5 issue and compounded
+by the presence of telluric absorption redward of around 880 nm.
 
-To deal with this, we can consider interpolating the (reference) data of the spectrophotometric standard, 
-given that it has a smooth spectrum,  
-to generate new sensitivity data points to fit. 
-This is enabled by the ``resampling`` parameter, whose value 
+To deal with this, we can consider interpolating the (reference) data of the spectrophotometric standard,
+given that it has a smooth spectrum,
+to generate new sensitivity data points to fit.
+This is enabled by the ``resampling`` parameter, whose value
 we update as follows
 
 .. todo:: The trace and the sensfunc plot are different from 3.2.x  For the
@@ -420,14 +420,14 @@ we update as follows
 .. image:: _graphics/LS_ldred_sens_before.png
    :width: 325
    :alt: Sensitivity function before optimization
-   
-   
+
+
 .. image:: _graphics/LS_ldred_sens_after.png
    :width: 325
    :alt: Sensitivity function after optimization
 
-The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the 
-interactive tool and have manually masked four data points.  
+The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the
+interactive tool and have manually masked four data points.
 
 .. note:: If you wish to inspect the spectra::
 
@@ -444,10 +444,10 @@ interactive tool and have manually masked four data points.
 
 Science Observations
 ====================
-As mentioned previously, the science target is the central galaxy of an Odd Radio Circle. The sequence 
-has two images that were dithered in wavelength (with a large step of 90 nm).  
+As mentioned previously, the science target is the central galaxy of an Odd Radio Circle. The sequence
+has two images that were dithered in wavelength (with a large step of 90 nm).
 DRAGONS will register the two images, align and stack them before
-extracting the 1-D spectrum. 
+extracting the 1-D spectrum.
 
 This is what one raw image looks like.
 
@@ -455,11 +455,11 @@ This is what one raw image looks like.
    :width: 600
    :alt: raw science image
 
-The broad, white and black vertical bands (slightly to the left of the middle) are related 
-to the GMOS-S amplifier #5 issues. 
-As can be seen, there are two obvious sources in this observation. Regardless of whether 
-both of them are of interest to the program, DRAGONS will locate, trace, and extract 
-them automatically. Each extracted spectrum is stored in an individual extension 
+The broad, white and black vertical bands (slightly to the left of the middle) are related
+to the GMOS-S amplifier #5 issues.
+As can be seen, there are two obvious sources in this observation. Regardless of whether
+both of them are of interest to the program, DRAGONS will locate, trace, and extract
+them automatically. Each extracted spectrum is stored in an individual extension
 in the output multi-extension FITS file.
 
 
@@ -472,21 +472,21 @@ science observations and extract the 1-D spectrum.
 
     reduce -r reduceWithMultipleStandards @sci.lis -p interactive=True
 
-Here we use a different science reduction recipe ``reduceWithMultipleStandards`` 
-than the default. The 
-latter performs flux calibration *after* stacking the extracted spectra 
-as described :ref:`here <Science Observations>`, which is not suitable 
-for these observations with a large wavelength dither. The recipe 
-``reduceWithMultipleStandards`` will run flux calibration for each 
+Here we use a different science reduction recipe ``reduceWithMultipleStandards``
+than the default. The
+latter performs flux calibration *after* stacking the extracted spectra
+as described :ref:`here <Science Observations>`, which is not suitable
+for these observations with a large wavelength dither. The recipe
+``reduceWithMultipleStandards`` will run flux calibration for each
 central wavelength using the corresponding sensitivity function from the
-spectrophotometric standard before stacking 
+spectrophotometric standard before stacking
 the observations -- the desired workflow for this example.
 
-You can make use of the interactive tools to optimize the reduction. For 
+You can make use of the interactive tools to optimize the reduction. For
 the science reduction above, we have deleted any additional apertures found
-by DRAGONS barring the two most prominent ones (see the left plot; click 
-to enlarge). You simply hover over the unwanted peak and press D. Furthermore, 
-we have selected sigma-clipping while tracing the apertures (right plot; 
+by DRAGONS barring the two most prominent ones (see the left plot; click
+to enlarge). You simply hover over the unwanted peak and press D. Furthermore,
+we have selected sigma-clipping while tracing the apertures (right plot;
 click to enlarge). Notice that there is an additional tab for Aperture 2
 in the upper part of the right plot.
 
@@ -495,7 +495,7 @@ in the upper part of the right plot.
 .. image:: _graphics/LS_ldred_findAp_sci.png
    :width: 325
    :alt: Apertures found by DRAGONS
-   
+
 .. image:: _graphics/LS_ldred_traceAp_sci.png
    :width: 325
    :alt: Tracing of aperture
@@ -504,8 +504,8 @@ The outputs include a 2-D spectrum image (``S20220611S0716_2D.fits``), which has
 bias corrected, flat fielded, QE-corrected, wavelength-calibrated, corrected for
 distortion, sky-subtracted, flux-calibrated, and stacked, and also the 1-D spectra
 (``S20220611S0716_1D.fits``) extracted from this 2-D spectrum image. The 1-D spectra are stored
-as 1-D FITS images in extensions of the output Multi-Extension FITS file, along with their 
-respective variance and data quality (or mask) arrays. 
+as 1-D FITS images in extensions of the output Multi-Extension FITS file, along with their
+respective variance and data quality (or mask) arrays.
 
 This is what the 2-D spectrum looks like.
 
@@ -545,10 +545,10 @@ The 1-D flux-calibrated spectra of the two apertures are shown below.
 .. image:: _graphics/LS_ldred_ap1_spec1D.png
    :width: 325
    :alt: 1D spectrum for aperture 1
-   
+
 .. image:: _graphics/LS_ldred_ap2_spec1D.png
    :width: 325
-   :alt: 1D spectrum for aperture 2   
+   :alt: 1D spectrum for aperture 2
 
 Since there are only two images, several bad columns, and artifacts remain
 in the data.  Many are flagged in the mask, the DQ plane of the output FITS

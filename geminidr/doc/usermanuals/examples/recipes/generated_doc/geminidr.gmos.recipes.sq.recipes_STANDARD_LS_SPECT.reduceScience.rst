@@ -41,4 +41,3 @@ todo: add docstring
         p.extractSpectra()
         p.fluxCalibrate()
         p.storeProcessedScience(suffix="_1D")
-

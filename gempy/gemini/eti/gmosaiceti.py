@@ -105,5 +105,3 @@ class GmosaicETI(PyrafETI):
             return adlist[0]
         else:
             return adlist
-
-

@@ -11,7 +11,7 @@ def read_inc():
         ic, bits, lines = nextchar(lines)
         cdict[ic] = bits
     return cdict
-    
+
 def nextchar(lines):
     """read next character data in file, and return numeric array 5x7 pixels"""
     if not lines[0].startswith('data'):
@@ -23,7 +23,7 @@ def nextchar(lines):
         ic = lines[6][lines[6].find('#')+1:].strip()
     carr
     return ic, clist, lines[8:]
-        
+
 def initichar_old():
     '''read the data file (old form) and generate the dict for numdisplay to use'''
     f = open('ichar_old.dat')
@@ -35,9 +35,9 @@ def initichar_old():
         for item in clist:
             alist.append([int(c) for c in item])
         alist.reverse()
-        cdict[key] = np.where(np.array(alist, dtype=np.bool_)) 
-    return cdict 
-    
+        cdict[key] = np.where(np.array(alist, dtype=np.bool_))
+    return cdict
+
 def initichar():
     '''read the data file (old form) and generate the dict for numdisplay to use'''
     filepath = os.path.split(__file__)[0]
@@ -45,12 +45,12 @@ def initichar():
     fstr = f.read()
     cdict = eval(fstr)
     return cdict
-    
+
 def expandchar(indices, size):
     '''block replicate a character. This implementation is inefficient
     but probably won't matter unless many large characters are used'''
     iy, ix = indices
-    ox = np.zeros((size, size, len(indices[0]))) 
+    ox = np.zeros((size, size, len(indices[0])))
     oy = ox.copy()
     for i in range(size):
         for j in range(size):

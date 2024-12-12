@@ -8,16 +8,16 @@ see <jqPlot Options> in the jqPlotOptions.txt file.
 The key to effectively using jqPlot is understanding jqPlot's
 options.  The online documentation is API documentation.  While
 it explains what attributes and methods various objects posses,
-it doesn't explain how to use or set those attributes through 
+it doesn't explain how to use or set those attributes through
 options.  This tutorial will help explain that.
 
-Lets assume you are creating a plot 
+Lets assume you are creating a plot
 like this:
 
 > chart = $.jqplot('chart', dataSeries, optionsObj);
 
 First, note that you shouldn't try to directly set attributes on the
-"chart" object (like chart.grid.shadow) after your call to $.jqplot().  
+"chart" object (like chart.grid.shadow) after your call to $.jqplot().
 At best this won't do anything **(see below). You should pass options in via
 the "optionsObj".
 
@@ -71,7 +71,7 @@ something like (only some attributes shown):
 >        |              |      |-pad
 >        |
 >        | ... and so on
- 
+
 The optionsObj should follow the same construction as if it were a
 jqPlot object (with some exceptions/shortcuts I'll mention in a
 moment).  So generally, when you see something like
@@ -216,11 +216,11 @@ and wanted to turn off dragging and trend lines on the second series, you could 
 >    }
 > }]
 
-Note, series dragability is turned off with the "isDragable" option directly on 
-the series itself, not with a suboption of "dragable".  This may be improved 
+Note, series dragability is turned off with the "isDragable" option directly on
+the series itself, not with a suboption of "dragable".  This may be improved
 in the future.
 
-I hope this is helpful. 
+I hope this is helpful.
 A few key points to remember:
 
 - When you see "this" in the api docs, you generally replace it with

@@ -33,20 +33,20 @@ Throughout this document the term *mosaic* will have the following meanings:
 
 **What is the Mosaic class**
 
-- The Mosaic class provides functionality to create a mosaic by pasting a set of 
+- The Mosaic class provides functionality to create a mosaic by pasting a set of
   individual ndarrays of the same size and data type.
 
-- Layout description of the ndarrays on the output mosaic is done via the 
+- Layout description of the ndarrays on the output mosaic is done via the
   MosaicData class.
 
-- Information about geometric transformation of the ndarrays is carried using 
+- Information about geometric transformation of the ndarrays is carried using
   the MosaicGeometry class.
 
 What is the MosaicAD class
 --------------------------
 
 - MosaicAD extends the generic Mosaic class to supoort AstroData objects. Both
-  MosaicAD and Mosaic provide support for tiling and transformation of multiple 
+  MosaicAD and Mosaic provide support for tiling and transformation of multiple
   image arrays onto a single image plane.
 
 - MosaicAD provides support of Gemini astronomical data by working with
@@ -59,7 +59,7 @@ Getting Help
 ------------
 
 If you experience problems running Mosaic please contact the
-Gemini `Helpdesk <http://www.gemini.edu/sciops/helpdesk/?q=sciops/helpdesk>`_ 
+Gemini `Helpdesk <http://www.gemini.edu/sciops/helpdesk/?q=sciops/helpdesk>`_
 (under gemini IRAF/Python).
 
 Quick Example
@@ -83,17 +83,17 @@ Create a mosaic with MosaicAD class.
     ad = astrodata.open('S20170427S0064.fits')
 
 - Create a *MosaicAD* Class object.
-  The user function *gemini_mosaic_function* currently supports only GMOS and 
+  The user function *gemini_mosaic_function* currently supports only GMOS and
   GSAOI data at this time. ::
 
     mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
-   
-- Use *mosaic_image_data* method to generate a mosaic with all the 'SCI' 
-  extensions in the input Astrodata data list.  The output *mosaic_array* is a 
+
+- Use *mosaic_image_data* method to generate a mosaic with all the 'SCI'
+  extensions in the input Astrodata data list.  The output *mosaic_array* is a
   numpy *<ndarray>* of the same datatype as the input image array in the *ad*
   object.
-  The input data pieces (blocks) are corrected (transformed) for shift, rotation 
-  and magnification with respect to the reference block. This information is 
+  The input data pieces (blocks) are corrected (transformed) for shift, rotation
+  and magnification with respect to the reference block. This information is
   available in the 'geometry' configuration file for each supported instrument. ::
 
     mosaic_array = mos.mosaic_image_data()
@@ -110,11 +110,11 @@ Create a mosaic with MosaicAD class.
 Mosaic in Primitives
 --------------------
 
-The primitive **mosaicDetectors** in the module *primitives_visualize.py* handles 
+The primitive **mosaicDetectors** in the module *primitives_visualize.py* handles
 GMOS and GSAOI images and can be called directly from the reduce command line.
 
 Example ::
- 
+
   # Using reduce to mosaic a GMOS raw in tile mode.
 
   reduce -r mosaicDetectors S20170427S0064.fits

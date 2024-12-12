@@ -82,4 +82,3 @@ def test_darkCorrect(ad_min):
         gs.timestamp_keys['darkCorrect']), "darkCorrect did not " \
                                            "timestamp-mark the " \
                                            "output file"
-

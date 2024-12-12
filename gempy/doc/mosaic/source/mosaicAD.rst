@@ -17,7 +17,7 @@ providing support for:
 
 - Updating the WCS information in the output AstroData object mosaic header
 
-- A user_function as a parameter to input data and geometric values of the 
+- A user_function as a parameter to input data and geometric values of the
   individual data elements.
 
 - A user_function (already written) to support GMOS and GSAOI data
@@ -33,7 +33,7 @@ How to use  MosaicAD class
 2) Instantiate a MosaicAD class object with the user supplied
    :ref:`mosaic function <user_function_ad>` name as input parameter.
 
-3) Now generate :ref:`mosaics ndarrays <mosad_array>` or 
+3) Now generate :ref:`mosaics ndarrays <mosad_array>` or
    :ref:`AstroData objects <mos_associated>`.
 
 To instantiate a MosaicAd object:
@@ -60,12 +60,12 @@ To instantiate a MosaicAd object:
     a user function available 'gemini_mosaic_function' in a module
     *gemMosaicFunction.py*. If you have other data, see the Example section for
     :ref:`'Write a user_function <user_function_ad>`
-                        
+
 :ref:`MosaicAD example <mosad_array>`
 
 **MosaicAD class Attributes**
 
-These attributes are in addition to the Mosaic class. 
+These attributes are in addition to the Mosaic class.
 
 - .log DRAGONS logger object.
 - .ad  AstroData object.
@@ -91,14 +91,14 @@ image extensions. This will also process any provided mask of name, OBJMASK.
 
 Usage:
  ::
-  
+
   import astroData
   import gemini_instruments
-  
+
   # gemini_mosaic_function is a user function ready made for use with GMOS
   # and GSAOI datasets. You may use this function for all Gemini/GMOS or
   # Gemini/GSAOI data.
-  
+
   from gempy.mosaic.mosaicAD import MosaicAD
   from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
@@ -123,21 +123,21 @@ Usage:
  as_astrodata(block=None, doimg=False, tile=False, return_ROI=True)
 
 - block: <2-tuple>. Default is None.
-    Allows a specific block to be returned as the output mosaic. The tuple 
-    notation is (col,row) (zero-based) where (0,0) is the lower left block.  
+    Allows a specific block to be returned as the output mosaic. The tuple
+    notation is (col,row) (zero-based) where (0,0) is the lower left block.
     The blocks layout is given by the attribute mosaic_grid.
 
 - doimg: <bool>. Default is False.
-    Specifies that *only* the SCI image data are tiled or transformed (see 
-    parameter, ``tile``). False indicates all image extensions are processed, 
+    Specifies that *only* the SCI image data are tiled or transformed (see
+    parameter, ``tile``). False indicates all image extensions are processed,
     i.e. all SCI, VAR, DQ extensions.
 
 - tile: <bool>. Default is False
-    If True, the mosaics returned are not corrected for shifting, rotation or 
+    If True, the mosaics returned are not corrected for shifting, rotation or
     magnification.
 
 - return_ROI: <bool>. Default is True
-    Returns the minimum frame size calculated from the location of the 
+    Returns the minimum frame size calculated from the location of the
     amplifiers in a given block. If False uses the blocksize value.
 
 **Output**
@@ -147,7 +147,7 @@ Usage:
   E.g.::
 
     adout.write('newfile.fits')
-  
+
 See Examples for an example of `as_astrodata()`
 :ref:`as_astrodata example <asastro_ex>`
 
@@ -163,14 +163,14 @@ function. An astrodata object is returned to the caller.
 
 Usage:
  ::
-  
+
   import astroData
   import gemini_instruments
-  
+
   # gemini_mosaic_function is a user function ready made for use with GMOS
   # and GSAOI datasets. You may use this function for all Gemini/GMOS or
   # Gemini/GSAOI data.
-  
+
   from gempy.mosaic.mosaicAD import MosaicAD
   from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
@@ -201,12 +201,12 @@ Usage:
     detector chip. Default is False.
 
 - doimg: <bool>. Default is False.
-    Specifies that *only* the SCI image data are tiled or transformed (see 
-    parameter, ``tile``). False indicates all image extensions are processed, 
+    Specifies that *only* the SCI image data are tiled or transformed (see
+    parameter, ``tile``). False indicates all image extensions are processed,
     i.e. all SCI, VAR, DQ extensions.
 
 - return_ROI: <bool>. Default is True
-    Returns the minimum frame size calculated from the location of the 
+    Returns the minimum frame size calculated from the location of the
     amplifiers in a given block. If False uses the blocksize value.
 
 **Output**
@@ -222,12 +222,12 @@ Usage:
 mosaic_image_data()
 *******************
 
-Method to layout the blocks of data in the output mosaic grid.  Correction for 
-rotation, shifting and magnification is performed with respect to the reference 
-block.  A Mask is also created containing value zero for positions where there 
-are pixel data and one for everywhere else, like gaps and areas of no-data due 
+Method to layout the blocks of data in the output mosaic grid.  Correction for
+rotation, shifting and magnification is performed with respect to the reference
+block.  A Mask is also created containing value zero for positions where there
+are pixel data and one for everywhere else, like gaps and areas of no-data due
 to shifting when transforming the data.
- 
+
 Usage:
 ::
 
@@ -238,19 +238,19 @@ Usage:
 **Input parameters**
 
 - block: <2-tuple>. Default is None.
-    Allows a specific block to be returned as the output mosaic. The tuple 
-    notation is (col,row) (zero-based) where (0,0) is the lower left block.  
+    Allows a specific block to be returned as the output mosaic. The tuple
+    notation is (col,row) (zero-based) where (0,0) is the lower left block.
     The blocks layout is given by the attribute mosaic_grid.
 
 - dq_data: <bool>
     Handle data in self.data_list as bit-planes.
 
 - tile: <bool>
-    If True, the mosaics returned are not corrected for shifting, rotation or 
+    If True, the mosaics returned are not corrected for shifting, rotation or
     magnification. Default is False.
 
 - return_ROI: <bool> (default is True).
-    Returns the minimum frame size calculated from the location of the 
+    Returns the minimum frame size calculated from the location of the
     amplifiers in a given block. If False uses the blocksize value.
 
 **Output**
@@ -265,11 +265,11 @@ See Examples for an example of `mosaic_image_data()`
 calculate_jfactor()
 *******************
 
-Calculate the ratio of reference input pixel size to output pixel size for each 
-reference extension in the AstroData object.  In practice this ratio is formulated 
+Calculate the ratio of reference input pixel size to output pixel size for each
+reference extension in the AstroData object.  In practice this ratio is formulated
 as the determinant of the WCS transformation matrix.  This ratio is applied to each
-pixel to conserve flux in an image after magnification in the transformation.  
- 
+pixel to conserve flux in an image after magnification in the transformation.
+
  Usage:
  ::
 
@@ -278,14 +278,14 @@ pixel to conserve flux in an image after magnification in the transformation.
 
 **Justification**
 
-In general CD matrix element is the ratio between partial derivative of the 
-world coordinate (ra,dec) with respect to the pixel coordinate (x,y). We have 4 
+In general CD matrix element is the ratio between partial derivative of the
+world coordinate (ra,dec) with respect to the pixel coordinate (x,y). We have 4
 elements in the FITS header CD1_1, CD1_2, CD2_1 and CD2_2 that defines a CD matrix.
 
-For an adjacent image in the sky (GMOS detectors 1,2,3 for example), the 
+For an adjacent image in the sky (GMOS detectors 1,2,3 for example), the
 cd matrix elements will have slightly different values.
 
-Given the CD matrices from adjacent fields, the jfactor is calculated as the 
+Given the CD matrices from adjacent fields, the jfactor is calculated as the
 dot product of the inverse of one of the matrices times the other matrix.
 
 **Output**
@@ -298,8 +298,8 @@ dot product of the inverse of one of the matrices times the other matrix.
 get_data_list(attr)
 *******************
 
-Returns a list of image data for all the ad. It assumes that the input 
-AstroData Descriptor *data_section* has been defined for this astrodata type, 
+Returns a list of image data for all the ad. It assumes that the input
+AstroData Descriptor *data_section* has been defined for this astrodata type,
 i.e. GMOS or GSAOI. The data list returned by this function should be used to
 set the instance attribute, *self.data_list*, which is what is worked on by
 subsequent calls to *.mosaic_image_data()*.
@@ -339,7 +339,7 @@ info()
   'amp_block_coord': <list> of tuples (x1,x2,y1,y2))
        The list of amplifier indices within a block.
   'amp_mosaic_coord': <list> of tuples (x1, x2, y1, y2)).
-       The list of amplifier location within the mosaic.  
+       The list of amplifier location within the mosaic.
        These values do not include the gaps between the blocks.
   'amps_per_block': <int>
        Number of amplifiers per block.

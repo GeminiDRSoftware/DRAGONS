@@ -13,4 +13,3 @@
 .. |Reduce| replace:: :class:`~recipe_system.reduction.coreReduce.Reduce`
 .. |RecipeMapper| replace:: :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
 .. |PrimitiveMapper| replace:: :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`
-

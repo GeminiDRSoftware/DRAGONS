@@ -299,4 +299,3 @@ Below are one of the raw images and the final stack:
 
    Final stacked image. The light-gray area represents the
    masked pixels.
-

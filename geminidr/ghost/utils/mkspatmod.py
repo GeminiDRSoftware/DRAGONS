@@ -236,6 +236,5 @@ if __name__ == "__main__":
     assert flat.res_mode() == "std", "Must be run on SR data"
     assert {'FLAT', 'PROCESSED', 'SLIT'}.issubset(slitflat.tags), \
         f"{slitflat.filename} is not a SLITFLAT"
-    
+
     main(flat, slitflat)
-    

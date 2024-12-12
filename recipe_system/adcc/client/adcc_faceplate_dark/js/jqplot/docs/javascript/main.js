@@ -833,4 +833,3 @@ function SearchResults(name, mode)
         return true;
         };
     };
-

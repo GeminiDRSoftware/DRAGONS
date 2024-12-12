@@ -72,4 +72,3 @@ will work in the subdirectory named ``gsaoiimg_tutorial/playground``.
           but if you really want to learn how to search for and retrieve the
           data yourself, see the step-by-step instructions for Example 1
           in the appendix, :ref:`goadownload`.
-
