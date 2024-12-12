@@ -29,13 +29,15 @@ jobs:
 
       - name: Install python
         uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
 
       - name: Install packages
         shell: bash -l {0}
         run: python -m pip install nox
 
-      - name: Run dev tests
+      - name: Run pre-commit via nox
         shell: bash -l {0}
         run: |
           nox -s lint
