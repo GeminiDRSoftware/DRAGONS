@@ -1,5 +1,3 @@
-
-
 <table border="0">
 <tr>
   <td rowspan="2"><img src="./graphics/DRAGONS-Iconblue.png" width="100" height="100"></td>
@@ -21,8 +19,8 @@ Version 3.2 is recommend for the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI, for the
 reduction of GMOS longslit spectroscopy data, and the reduction of GHOST data.
 
-To reduce other types of Gemini spectroscopy data, please continue to use
-the [Gemini IRAF package](https://www.gemini.edu/observing/phase-iii/reducing-data/gemini-iraf-data-reduction-software).
+To reduce other types of Gemini spectroscopy data, please continue to use the
+[Gemini IRAF package](https://www.gemini.edu/observing/phase-iii/reducing-data/gemini-iraf-data-reduction-software).
 
 To install DRAGONS:
 
@@ -37,20 +35,22 @@ $ conda config --add channels conda-forge
 $ conda config --add channels http://astroconda.gemini.edu/public
 ```
 
+A list of changes since 3.1 can be found in the
+[Change Logs](https://dragons.readthedocs.io/en/v3.2.0/changes.html).
 
-A list of changes since 3.1 can be found in the [Change Logs](https://dragons.readthedocs.io/en/v3.2.0/changes.html).
+______________________________________________________________________
 
----
 # What is DRAGONS
-DRAGONS is a platform for the reduction and processing of astronomical data.
-The DRAGONS meta-package includes an infrastructure for automation of the
-processes and algorithms for processing of astronomical data, with focus on the
-reduction of Gemini data.
 
+DRAGONS is a platform for the reduction and processing of astronomical data. The
+DRAGONS meta-package includes an infrastructure for automation of the processes
+and algorithms for processing of astronomical data, with focus on the reduction
+of Gemini data.
 
----
+______________________________________________________________________
 
 # Documentation
+
 Documentation on DRAGONS v3.2 is available on "readthedocs" at:
 
 * https://dragons.readthedocs.io/en/v3.2.2/
@@ -58,19 +58,17 @@ Documentation on DRAGONS v3.2 is available on "readthedocs" at:
 There your will find manuals for Astrodata and the Recipe System, and hands-on
 tutorials on reducing Gemini imaging data with DRAGONS.
 
-Gemini users with imaging data to reduce should pick the tutorial discussing
-the reduction of data from the appropriate instrument.
+Gemini users with imaging data to reduce should pick the tutorial discussing the
+reduction of data from the appropriate instrument.
 
-Software developers should start with the Astrodata and Recipe System
-manuals.
+Software developers should start with the Astrodata and Recipe System manuals.
 
----
+______________________________________________________________________
 
 # Setting up a development environment
 
-To run checkouts, first set up a development conda environment.  This is what
-we are using at this time for the `master` branch and the `release/3.2.x`
-branches.
+To run checkouts, first set up a development conda environment. This is what we
+are using at this time for the `master` branch and the `release/3.2.x` branches.
 
 ```
 $ conda create -n dgdev3.10_20240401 python=3.10 astropy=6 astroquery matplotlib numpy psutil pytest python-dateutil requests scikit-image scipy sextractor sqlalchemy ds9 gwcs specutils sphinx sphinx_rtd_theme bokeh holoviews cython future astroscrappy=1.1 fitsverify imexam
@@ -78,7 +76,8 @@ $ conda activate dgdev3.10_20240401
 $ pip install git+https://github.com/GeminiDRSoftware/GeminiObsDB.git@release/1.0.x
 $ pip install git+https://github.com/GeminiDRSoftware/GeminiCalMgr.git@release/1.1.x
 ```
-Dependencies change all the time and can break the development environment
-or cause problems when conda tries to find a solution for the dependencies.
-This not guaranteed to work flawlessly, you might have to adjust version
+
+Dependencies change all the time and can break the development environment or
+cause problems when conda tries to find a solution for the dependencies. This
+not guaranteed to work flawlessly, you might have to adjust version
 requirements.
