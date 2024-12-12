@@ -16,7 +16,7 @@ on:
     - cron: 53 3 * * 0
 
 jobs:
-  tests:
+  lint:
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
