@@ -27,9 +27,9 @@ class Helpers:
             stdout = result.stdout.decode("utf-8")
             stderr = result.stderr.decode("utf-8")
             message = (
-                f"    Command: {result.args}\n"
-                f"    stdout:\n{divider}\n{stdout}"
-                f"    stderr:\n{divider}\n{stderr}"
+                f"    Command: {result.args}\n{divider}"
+                f"    stdout:\n{stdout}\n{divider}"
+                f"    stderr:\n{stderr}\n{divider}"
             )
 
             raise Exception(message)
@@ -37,6 +37,8 @@ class Helpers:
     @staticmethod
     def clear_conda_environment(env_name: str = "dragons_dev", *, strict: bool = False):
         """Clear a conda environment, raise exception if it exists after."""
+        if not Helpers.check_for_conda_environment(env_name):
+            return
 
         conda_remove_command = [
             "conda",
@@ -45,6 +47,7 @@ class Helpers:
             env_name,
             "--all",
             "-y",
+            "--force",
         ]
 
         if strict and Helpers.check_for_conda_environment(env_name):
