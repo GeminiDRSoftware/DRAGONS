@@ -9,7 +9,7 @@ on:
     - cron: 53 3 * * 0
 
 jobs:
-  tests:
+  dev_tests:
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
@@ -25,9 +25,18 @@ jobs:
         with:
           auto-update-conda: true
           channels: conda-forge
-          python-version: ${{ matrix.python-version }}
           conda-remove-defaults: true
+          miniforge-version: latest
 
-      - uses: actions/checkout@v2
-      - uses: excitedleigh/setup-nox@v2.0.0
-      - run: nox -s run_dev_tests -- -vv
+      - name: Install python
+        uses: actions/setup-python@v5
+        with:
+          python-version: |
+            3.11
+            3.12
+            3.13
+
+
+      - name: Run dev tests
+        run: |
+          nox -s run_dev_tests -- -vv
