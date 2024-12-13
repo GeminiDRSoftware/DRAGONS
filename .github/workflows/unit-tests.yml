@@ -9,7 +9,7 @@ on:
     - cron: 53 3 * * 0
 
 jobs:
-  tests:
+  unit_tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
