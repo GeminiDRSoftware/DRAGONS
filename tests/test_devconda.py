@@ -70,6 +70,8 @@ def test_installed_packages_conda(clean_conda_env, helpers):
         "astropy",
         "scipy",
         "pytest",
+        "gemini_obs_db",
+        "gemini_calmgr",
     )
 
     python_imports_command = [

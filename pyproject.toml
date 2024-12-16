@@ -5,4 +5,6 @@ build-backend = 'setuptools.build_meta'
 [development]
 dependencies = [
   "pytest",
+  "git+https://github.com/GeminiDRSoftware/GeminiObsDB.git@release/1.0.x",
+  "git+https://github.com/GeminiDRSoftware/GeminiCalMgr.git@release/1.1.x",
 ]

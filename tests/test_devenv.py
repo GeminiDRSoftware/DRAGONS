@@ -103,6 +103,8 @@ def test_installed_packages(fresh_dragons_dir, helpers):
         "astropy",
         "scipy",
         "pytest",
+        "gemini_obs_db",
+        "gemini_calmgr",
     )
 
     python_imports_command = [
