@@ -4,7 +4,6 @@
 Setup script for gemini_python
 
 In this package:
-    astrodata
     gemini_instruments
     geminidr
     gempy
