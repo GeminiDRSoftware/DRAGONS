@@ -32,6 +32,21 @@ Interface Modifications
 * Rename the "threshold" parameter in ``transferObjectMask``
   to "dq_threshold", in line with other primitives.
 
+
+3.2.2
+=====
+
+Bug Fixes
+---------
+**geminidr.ghost**
+
+* Fix an issue where the GHOST reduction would fail if specific header
+  values were not in the expected format.
+
+Improvements
+------------
+* Reduce memory usage in ``flagCosmicRays`` and ``QECorrect`` primitives.
+
 3.2.1
 =====
 
@@ -41,12 +56,49 @@ Improvements
 
 * Improved speed and success rate of wavelength calibration.
 
+**geminidr.ghost**
+
+* Added ``makeIRAFCompatible`` primitive to write order-combined GHOST
+  spectra in a non-FITS-standard format that is compatible with IRAF.
+
 Bug fixes
 ---------
 **geminidr.ghost**
 
 * Cause data validation to fail for echellograms without exactly 4 extensions.
 
+* Fixed an occasional issue with bad pixels causing ``traceFibers`` to fail.
+
+**geminidr.interactive**
+
+* Fixed issues where certain values were not initialized correctly.
+
+* Fixed stylesheet issues
+
+New Features
+------------
+
+**gemini_instruments.gnirs**
+
+* Preemptively added support for handling GNIRS data produced with the new
+  detector controller software that will be installed in coming months.  An
+  additional patch release will be issued once the gain, read noise, and other
+  detector properties are known.
+
+Documentation
+-------------
+* Several updates to the GHOST tutorials to fix errors and improve clarity.
+
+Interface Modifications
+-----------------------
+**gemini_instruments.gnirs**
+
+* New prims_motor_steps descriptor to support flat association with HR-IFU
+and SciOps prism mechanism reproducibility workarounds adopted in Apr-2024.
+
+**gemini_instruments.ghost**
+
+* Change GHOST fast/low read mode from "fast" to "rapid".
 
 3.2.0
 =====
@@ -549,8 +601,8 @@ Compatibility
 
 **geminidr.core**
 
-* Add compatibility with sigma_clip fro astropy v3.1+ 
-  
+* Add compatibility with sigma_clip fro astropy v3.1+
+
 **geminidr.gmos**
 
 * Add IRAF compatibility recipe.

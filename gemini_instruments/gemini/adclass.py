@@ -324,7 +324,8 @@ class AstroDataGemini(AstroData):
     @astro_data_tag
     def _status_processed_cals(self):
         kwords = {'PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
-                      'GIFLAT', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND', 'PROCILLM'}
+                  'GIFLAT', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG',
+                  'PROCPNHL', 'PROCSTND', 'PROCILLM'}
 
         if set(self.phu.keys()) & kwords:
             return TagSet(['PROCESSED'])

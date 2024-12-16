@@ -23,6 +23,9 @@ from astropy.table import vstack, Table, Column
 from scipy.ndimage import distance_transform_edt
 from scipy.special import erf
 
+from gwcs import coordinate_frames as cf
+from gwcs.utils import CoordinateFrameError
+
 from ..library import astromodels, tracing, astrotools as at
 from ..library.nddops import NDStacker
 from ..utils import logutils
@@ -194,6 +197,66 @@ def array_information(adinput=None):
         array_info_list.append(ArrayInfo(detshape, sorted_origins,
                                          array_shapes, arrays_list))
     return array_info_list
+
+
+def attach_rectification_model(target, source, log=None):
+    """
+    Copy a slit rectification model from source to target file.
+
+    Copies the transform step in an Astropy gWCS object corresponding to a
+    slit rectification model from the given source file to a given target
+    file. The source file must have either one extension, or the same
+    number of extensions as the target, in which case the model in each
+    extension in the source will be copied to the corresponding extension
+    in the target. This function will either add a rectification model if
+    one is not present in the target, or replaces an existing one. If no
+    rectification model is found in the source, logs a warning and returns
+    the target file unmodified.
+
+    Parameters
+    ----------
+    target : `Astrodata object`
+        The file to copy the rectification model to.
+    source : `Astrodata object`
+        The file to get the rectification model from.
+    log : logger instance
+        An optional logger instance to write log messages to.
+
+    Returns
+    -------
+    `Astrodata object`
+        The target file; either modified with the new rectification model
+        in each extenstion, or unmodified if no model was found in `source`.
+
+    """
+    if len(target) != len(source):
+        raise ValueError("Target image and source image have different "
+                         f"number of extensions, {len(target)} vs. "
+                         f"{len(source)}, {target.filename} not modified.")
+
+    for ext_t, ext_s in zip(target, source):
+        # Check that a transform exists, else return `target` unmodified.
+        try:
+            new_transform = ext_s.wcs.get_transform("pixels", "rectified")
+        except CoordinateFrameError:
+            # Silently no-op. If it's important to know if a model has been
+            # attached, run this same check on the output where this function
+            # is called, since the severity of it happening varies by context.
+            # (For longslit, it's not a big deal; for e.g. cross-dispersed it's
+            # a major problem.)
+            return target
+
+        # If a 'rectified' frame exists, just replace the transform.
+        # Otherwise add a new frame with the transform.
+        try:
+            ext_t.wcs.set_transform('pixels', 'rectified', new_transform)
+        except CoordinateFrameError:
+            ext_t.wcs.insert_frame(ext_t.wcs.input_frame, new_transform,
+                                   cf.Frame2D(name='rectified'))
+        log.fullinfo(f"Rectification model found in {source.filename}. "
+                     f"Attaching to {target.filename}")
+
+    return target
 
 
 def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
@@ -1119,6 +1182,124 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
                     ext.hdr.set("OBJECT", "Flat Frame",
                                       keyword_comments["OBJECT"])
     return adinput
+
+@handle_single_adinput
+def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
+                        return_dtype=None):
+    """
+    This function cuts sections of the science frame into extensions to match
+    the auxiliary data like calibration files or BPMs based on the value of the
+    `detector_section()` keyword in the auxiliary data.
+
+    Parameters
+    ----------
+    adinput: list/AstroData
+        input science image(s)
+    aux: list/AstroData
+        auxiliary file(s) (e.g., BPM, flat) to be clipped
+    aux_type: str
+        type of auxiliary file
+    return_dtype: dtype
+        datatype of returned objects
+
+    Returns
+    -------
+    list/AD:
+        science frame file(s), appropriately cut into multiple extensions
+    """
+    raise RuntimeError("cut_to_match_auxiliary_data() should not be used")
+    log = logutils.get_logger(__name__)
+    ad_output_list = []
+
+    for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
+        xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+
+        if this_aux.detector_x_bin() != xbin or this_aux.detector_y_bin() != ybin:
+            raise OSError("Auxiliary data {} has different binning to {}".
+                          format(os.path.basename(this_aux.filename), ad.filename))
+        cut_this_ad = False
+
+        # Since this is cutting a full frame, should be only one extension.
+        for ext in ad:
+            # Make a new science file for appending to, starting with PHU
+            new_ad = astrodata.create(ad.phu)
+            for auxext, detsec in zip(this_aux, this_aux.detector_section()):
+                new_ad.append(ext.nddata[detsec.asslice()])
+                new_ad[-1].SLITEDGE = auxext.SLITEDGE
+                new_ad[-1].hdr[ad._keyword_for('detector_section')] =\
+                    detsec.asIRAFsection(binning=(xbin, ybin))
+                new_ad[-1].hdr['SPECORDR'] = auxext.hdr['SPECORDR']
+
+                # By default, when a section is cut out of an array the WCS is
+                # updated with Shift models corresponding to the number of rows/
+                # columns that were removed, so that the WCS of the cut-out
+                # section remains the same. For this, however, we want to change
+                # the WCS so that in each slit the sky position points at the
+                # center of the slit.
+
+                # Get the forward and backward transforms from the input and
+                # auxiliary files so we can update the spatial shifts simultaneously
+                f_transform = new_ad[-1].wcs.get_transform('pixels', 'world')
+                aux_f_transform = auxext.wcs.get_transform('rectified', 'world')
+
+                b_transform = new_ad[-1].wcs.get_transform('world', 'pixels')
+                aux_b_transform = auxext.wcs.get_transform('world', 'rectified')
+
+                # In the first or last two submodels of the forward and backward
+                # (respectively) transforms will be one or more Shift models
+                # representing the amount of rows or columns that have been cut.
+                # Set these Shifts to 0. It's not part of the WAVE & SKY paradigm
+                # so they will be dropped later anyway, but it's good to be
+                # consistent at each step.
+                # TODO: This works assuming a single Shift in the spatial direction.
+                # If there's also a shift in the spectral direction (instead of
+                # an Identity, this will need updating.
+                for m in range(0, 2, 1):
+                    if isinstance(f_transform[m], models.Shift):
+                        f_transform[m].offset = 0
+                        break
+
+                for n in range(-2, 0, 1):
+                    if isinstance(b_transform[n], models.Shift):
+                        b_transform[n].offset = 0
+                        break
+
+                forward_shift, backward_shift = False, False
+                # Now find the offset that sets the middle of the slit to the WCS
+                # sky position from the auxiliary file and copy it over.
+                for j in range(f_transform.n_submodels):
+                    if (isinstance(f_transform[j], models.Shift) and
+                        isinstance(f_transform[j+1], models.Const1D)):
+
+                        f_transform[j].offset = aux_f_transform[j].offset
+                        forward_shift = True
+                        break
+
+                for k in range(b_transform.n_submodels):
+                    if (isinstance(b_transform[k], models.Shift) and
+                        isinstance(b_transform[k+1], models.Shift)):
+
+                        b_transform[k].offset = aux_b_transform[k].offset
+                        backward_shift = True
+                        break
+
+            if not (forward_shift or backward_shift):
+                raise RuntimeError("No forward or backward shift found in WCS")
+            cut_this_ad = True
+
+        if return_dtype:
+            for adext in new_ad:
+                if adext.data.dtype != return_dtype:
+                    adext.data = adext.data.astype(return_dtype)
+                if adext.variance is not None and adext.variance.dtype != return_dtype:
+                    adext.variance = adext.variance.astype(return_dtype)
+
+        ad_output_list.append(new_ad)
+        if cut_this_ad:
+            log.stdinfo(f"Cutting {os.path.basename(ad.filename)} to match "
+                        "auxiliary data")
+
+    return ad_output_list
 
 @handle_single_adinput
 def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,

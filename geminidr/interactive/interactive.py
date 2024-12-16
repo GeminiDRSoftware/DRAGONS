@@ -157,6 +157,10 @@ class PrimitiveVisualizer(ABC):
         self.extras = dict()
         self.ui_params = ui_params
 
+        # If the user is "improving" an exisiting fit (e.g., in wavecal), we
+        # may allow them to exit without a new fit.
+        self.can_exit_with_bad_fits = False
+
         self.user_satisfied = False
 
         legend_html = (
@@ -280,14 +284,16 @@ class PrimitiveVisualizer(ABC):
 
             self.widgets[fname].update(**kwargs)
 
-            # Update Text Field via callback function
-            values = self.widgets[fname]._callbacks.get("value", [])
-            for callback in values:
-                callback("value", old=old, new=reset_value)
-
-            throt = self.widgets[fname]._callbacks.get("value_throttled", [])
-            for callback in throt:
-                callback(attrib="value_throttled", old=old, new=reset_value)
+            # This code is called when reinit_live has been set to False
+            # (to avoid repeated callbacks) so won't actually do anything
+            # # Update Text Field via callback function
+            # values = self.widgets[fname]._callbacks.get("value", [])
+            # for callback in values:
+            #     callback("value", old=old, new=reset_value)
+            #
+            # throt = self.widgets[fname]._callbacks.get("value_throttled", [])
+            # for callback in throt:
+            #     callback(attrib="value_throttled", old=old, new=reset_value)
 
     def build_reset_button(self, extra_handler_fn=None):
         reset_reinit_button = bm.Button(
@@ -404,23 +410,27 @@ class PrimitiveVisualizer(ABC):
             if fit.quality == FitQuality.POOR
         )
 
-        if bad_fits:
+        if bad_fits and not self.can_exit_with_bad_fits:
             # popup message
             self.show_user_message(
                 f"Failed fit(s) on {bad_fits}. Please "
                 "modify the parameters and try again."
             )
 
-        elif poor_fits:
+        elif poor_fits or bad_fits:
             def cb(accepted):
                 if accepted:
                     # Trigger the exit/fit, otherwise we do nothing
                     self.submit_button.disabled = True
 
+            if bad_fits:
+                msg = (f"Failed fit(s)s on {bad_fits}. Click OK to "
+                       "proceed with the original wavelength model(s)")
+            else:
+                msg = (f"Poor quality fit(s)s on {poor_fits}. Click "
+                       "OK to proceed anyway")
             self.show_ok_cancel(
-                f"Poor quality fit(s)s on {poor_fits}. Click "
-                "OK to proceed anyway, or Cancel to return to "
-                "the fitter.",
+                f"{msg}, or Cancel to return to the fitter.",
                 cb,
             )
 
@@ -765,6 +775,7 @@ class PrimitiveVisualizer(ABC):
         slider_width: int = 256,
         add_spacer=False,
         hide_textbox=None,
+        reinit_live=False
     ):
         """
         Makes appropriate widgets for all the parameters in params,
@@ -803,7 +814,7 @@ class PrimitiveVisualizer(ABC):
                     is_float = field.dtype is not int
 
                     # Step is handled in the slider factory.
-                    step = None 
+                    step = None
 
                     slider_handler = self.slider_handler_factory(key)
 
@@ -1086,13 +1097,12 @@ def build_text_slider(
     if value is None:
         # If the value is None/Falsey, set to a default value
         start = min_value or 0
-        end = max_value or 10
+        end = max_value if max_value is not None else 10
         slider_kwargs = {"value": start, "show_value": False}
-
     else:
         # if min/max value is None/Falsey, use a default.
         start = min(value, min_value or 0)
-        end = max(value, max_value or 2 * value, 10)
+        end = max(value, max_value) if max_value is not None else max(10, value * 2)
         slider_kwargs = {"value": value, "show_value": True}
 
     # Fix the start/end values to the min/max values if requested
@@ -2307,6 +2317,9 @@ class UIParameters:
         # Catching RecusionError here in case of circular reference.
         except RecursionError:
             return object.__getattribute__(self, attr)
+
+    def __repr__(self):
+        return self.toDict().__repr__()
 
     def toDict(self):
         """

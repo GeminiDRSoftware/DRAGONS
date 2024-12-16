@@ -14,24 +14,15 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gemini_instruments.f2.lookup import dispersion_offset_mask
 
 from . import parameters_f2_longslit
+from geminidr.core.primitives_longslit import Longslit
 from .primitives_f2_spect import F2Spect
+from .lookups.MDF_LS import slit_info
 
 # -----------------------------------------------------------------------------
 
-# This dictionary contains the following information for each slit configuration:
-# x-coordinate of the pixel in the center of the slit, slit length in arcsec,
-# slit length in pixels. The F2 pixel scale is 0.18 arsec/pixel, according to
-# the instrument webpage.
-f2_slit_info = {'1pix': (763.5, 271.62, 1509),
-                '2pix': (769.5, 265.14, 1473),
-                '3pix': (770.0, 271.80, 1510),
-                '4pix': (772.5, 270.54, 1503),
-                '6pix': (777.0, 271.80, 1510),
-                '8pix': (771.0, 271.80, 1510)}
-
 @parameter_override
 @capture_provenance
-class F2Longslit(F2Spect):
+class F2Longslit(F2Spect, Longslit):
     """This class contains all of the processing primitives for the F2Longslit
     level of the type hiearchy tree. It inherits all the primitives from the
     above level.
@@ -62,35 +53,22 @@ class F2Longslit(F2Spect):
         ----------
         suffix : str
             suffix to be added to output files
-        mdf : str/None
-            name of MDF to add (None => use default)
-
         """
-
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
-        mdf_list = mdf or self.caldb.get_calibrations(adinputs,
-                                                      caltype="mask").files
+        for ad in adinputs:
+            maskname = ad.focal_plane_mask(pretty=True).split('-')[0]
+            x_ccd, length_pix = slit_info[maskname]
 
-        for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
+            mdf_table = Table([[x_ccd], [1023.5], [length_pix*ad.pixel_scale()], [length_pix]],
+                              names=('x_ccd', 'y_ccd', 'slitlength_arcsec', 'slitlength_pixels'))
+            ad.MDF = mdf_table
+            log.stdinfo(f"Adding MDF table for {ad.filename}")
 
-            # F2 doesn't have actual mask defintiion files, so this won't add
-            # anyything, but it will check if the file already has an MDF table
-            self._addMDF(ad, suffix, mdf)
-
-            if hasattr(ad, 'MDF'):
-                continue
-            else:
-                log.stdinfo(f"Creating MDF table for F2 file {ad.filename}.")
-
-                maskname = ad.focal_plane_mask(pretty=True).split('-')[0]
-
-                mdf_table = Table(np.array(f2_slit_info[maskname]),
-                                  names=('x_ccd', 'slitlength_arcsec',
-                                         'slitlength_pixels'))
-                ad.MDF = mdf_table
-
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None,

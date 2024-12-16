@@ -34,7 +34,7 @@ from geminidr.interactive.interactive import PrimitiveVisualizer
 from geminidr.interactive.interactive_config import interactive_conf
 from geminidr.interactive.interactive_config import show_add_aperture_button
 from geminidr.interactive.server import interactive_fitter
-from gempy.library.tracing import (
+from gempy.library.peak_finding import (
     find_apertures,
     find_wavelet_peaks,
     get_limits,
@@ -281,7 +281,7 @@ class FindSourceAperturesModel:
         # initial parameters are set as attributes
         self.reset()
         # no longer passed to find_apertures()
-        del self._aper_params["direction"]  
+        del self._aper_params["direction"]
 
     @property
     def aper_params(self):

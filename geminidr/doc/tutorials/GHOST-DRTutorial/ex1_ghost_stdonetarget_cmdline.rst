@@ -621,7 +621,7 @@ possible configurations:
     ``-p extractSpectra:sky_subtract=False weighting=uniform`` may help.
 
 
-It is possible to write the spectra to a text file with ``write1DSpectrum``,
+It is possible to write the spectra to a text file with ``write1DSpectra``,
 for example::
 
   reduce -r write1DSpectra S20230416S0079_red001_dragons.fits
@@ -692,3 +692,15 @@ object, you can do this within a python session as follows:
 
 Note that you need to specify ``ad[0]`` to obtain the first aperture
 (the target).
+
+If you wish to analyse the spectrum with IRAF's `onedspec` tools, the data
+need to be written in the non-standard format that IRAF uses for log-linear
+wavelength axes. There is a primitive to do this, ``makeIRAFCompatible``,
+so you should run
+
+::
+
+  reduce -r makeIRAFCompatible S20230416S0079_red001_dragons.fits
+
+which will create a file ``S20230416S0079_red001_irafCompatible.fits`` that
+IRAF can read. Note, however, that this file is **incompatible with DRAGONS**.

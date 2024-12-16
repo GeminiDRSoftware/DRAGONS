@@ -48,7 +48,7 @@ def reduceScience(p):
 
     # continuing with main stream of 2D pre-stack.
     p.addToList(purpose='forStack')
-    p.getList(purpose='forStack')
+    p.getList(purpose='forStack', max_frames=10)
     p.adjustWCSToReference()
     p.resampleToCommonFrame()  # default force_linear=True, ie. linearized.
     p.scaleCountsToReference()
@@ -97,7 +97,7 @@ def reduceStandard(p):
     sleep(3)
 
     p.addToList(purpose='forStack')
-    p.getList(purpose='forStack')
+    p.getList(purpose='forStack', max_frames=10)
     p.resampleToCommonFrame()  # default force_linear=True, ie. linearized.
     p.scaleCountsToReference()
     p.stackFrames()

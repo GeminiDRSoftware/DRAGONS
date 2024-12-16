@@ -30,7 +30,6 @@ def input_filename(change_working_dir, request):
     return return_dict
 
 
-@pytest.mark.slow
 @pytest.mark.dragons_remote_data
 @pytest.mark.integration_test
 @pytest.mark.ghostspect

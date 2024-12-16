@@ -151,7 +151,7 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
 
     """
     logfmt = None
-    lmodes = ['debug', 'standard', 'quiet', 'rotating']
+    lmodes = ['debug', 'standard', 'quiet', 'rotating', 'verbose']
     fm = 'w' if stomp else 'a'
     mode = mode.lower()
     if mode not in lmodes:
@@ -176,6 +176,20 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
     elif mode == 'standard':
         logfmt = STDFMT
         console_lvl = 21
+        logging.basicConfig(level=file_lvl, format=logfmt,
+                            datefmt='%Y-%m-%d %H:%M:%S',
+                            filename=file_name, filemode=fm)
+
+        # add console handler for rootlog through addHandler()
+        console = logging.StreamHandler()
+        formatter = logging.Formatter('%(message)s')
+        console.setFormatter(formatter)
+        console.setLevel(console_lvl)
+        rootlog.addHandler(console)
+
+    elif mode == 'verbose':
+        logfmt = STDFMT
+        console_lvl = 15
         logging.basicConfig(level=file_lvl, format=logfmt,
                             datefmt='%Y-%m-%d %H:%M:%S',
                             filename=file_name, filemode=fm)

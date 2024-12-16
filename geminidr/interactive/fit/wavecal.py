@@ -25,15 +25,13 @@ from geminidr.interactive.styles import dragons_styles
 
 
 from gempy.library.matching import match_sources
-from gempy.library.tracing import cwt_ricker, pinpoint_peaks
-from gempy.library.fitting import fit_1D
+from gempy.library.peak_finding import cwt_ricker, pinpoint_peaks
 
 from .fit1d import (
     Fit1DPanel,
     Fit1DVisualizer,
     InfoPanel,
     fit1d_figure,
-    USER_MASK_NAME,
 )
 
 from .help import DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT
@@ -159,12 +157,15 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
 
+        # Stuff to cope with underconstrained fits
+        these_fitting_parameters = fitting_parameters.copy()
+        these_fitting_parameters["order"] = max(min(fitting_parameters["order"], len(x) - 1), 1)
         if len(x) == 0:
             kwargs["initial_fit"] = meta["fit"]
 
         super().__init__(
             visualizer,
-            fitting_parameters,
+            these_fitting_parameters,
             domain,
             x,
             y,
@@ -538,7 +539,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             # point for the text, which is the center of the text, so it's
             # inverse the common axes logic. And also not standard for, e.g.,
             # image coordinates in most software.
-            y_offset = -5 
+            y_offset = -5
             text_align = 'left'
 
             # Font size (pt)
@@ -579,7 +580,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def _set_spectrum_plot_axes(self):
         """Set the axes for the spectrum plot.
-        
+
         Notes
         -----
         This should only be called if the spectrum plot is shown. It can be
@@ -592,7 +593,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # Set the initial vertical range to include some padding for labels
         label_positions = self.label_height(self.model.x)
-        
+
         # Some of the following code will fail if there are no labels for any
         # reason (e.g., no fit). In that case, we'll just set the range to the
         # min/max of the spectrum data, which we're collecting twice here (but
@@ -630,9 +631,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def _set_refplot_axes(self):
         """Set the axes for the reference plot.
-        
+
         This should only be called if the reference plot is shown.
-        
+
         Notes
         -----
         This should only be called if the spectrum plot is shown. It can be
@@ -762,7 +763,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         if single_value:
             return heights[0]
-        
+
         return heights
 
     def refplot_label_height(self):
@@ -800,9 +801,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
             end = self.p_spectrum.y_range.end
             lheight = 0.05 * (end - start)
             if self.absorption:
-                self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] - lheight
-            else:
-                self.new_line_marker.data["y"][1] = self.new_line_marker.data["y"][0] + lheight
+                lheight *= -1
+
+            self.new_line_marker.data["y"][1] = (
+                self.new_line_marker.data["y"][0] + lheight
+            )
 
     # I could put the extra stuff in a second listener but the name of this
     # is generic, so let's just super() it and then do the extra stuff
@@ -1030,7 +1033,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
     def _close_to_peak(self, x, x1, x2, new_peaks, index):
         """Checks if the click is close to a peak and if so returns True.
-        
+
         Parameters
         ----------
         x : float
@@ -1201,6 +1204,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
                          help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
                          absorption=absorption)
+        self.can_exit_with_bad_fits = True
+
         #self.widgets["in_vacuo"] = bm.RadioButtonGroup(
         #    labels=["Air", "Vacuum"], active=0)
         #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
@@ -1234,8 +1239,11 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         """The image for each fit as a list."""
         image = []
         for model in self.fits:
-            goodpix = np.array([m != USER_MASK_NAME for m in model.mask])
-            image.append(model.y[goodpix])
+            goodpix = np.array([m != model.UserMasked.name for m in model.mask])
+            try:
+                image.append(model.y[goodpix])
+            except IndexError:  # a bad fit
+                image.append(None)
         return image
 
     def make_widgets_from_parameters(self, params,
@@ -1299,7 +1307,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     self.panels[i].reset_view()
                 except (AttributeError, KeyError):
                     pass
-            
+
             # Reset panel axes
             for panel in self.panels:
                 panel.reset_spectrum_axes()

@@ -23,7 +23,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.fitting import fit_1D
-from gempy.library import astromodels, tracing, transform
+from gempy.library import astromodels, peak_finding, transform
 from gempy.library import astrotools as at
 
 from gwcs import coordinate_frames
@@ -38,6 +38,7 @@ from recipe_system.utils.md5 import md5sum
 
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
+from ..core.primitives_longslit import Longslit
 from . import parameters_gmos_longslit
 
 
@@ -66,7 +67,7 @@ class GMOSLongslit():
 
 @parameter_override
 @capture_provenance
-class GMOSClassicLongslit(GMOSSpect):
+class GMOSClassicLongslit(GMOSSpect, Longslit):
     """
     This is the class containing all of the preprocessing primitives
     for the GMOSLongslit level of the type hierarchy tree. It inherits all
@@ -227,7 +228,7 @@ class GMOSClassicLongslit(GMOSSpect):
 
                     # Only keep maxima if the fitted peak value is close to
                     # the actual peak (should remove single-pixel peaks)
-                    extrema = tracing.get_extrema(xcorr, remove_edge_maxima=False)
+                    extrema = peak_finding.get_extrema(xcorr, remove_edge_maxima=False)
                     if debug_plot:
                         print(extrema)
                     maxima = [int(x[0] + 0.5) for x in extrema if x[2]]
@@ -1065,7 +1066,7 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
 
 @parameter_override
 @capture_provenance
-class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle):
+class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle, Longslit):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)

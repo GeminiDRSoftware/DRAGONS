@@ -9,5 +9,11 @@ class addDQConfig(parameters_standardize.addDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True
 
+
 class addIllumMaskToDQConfig(parameters_standardize.addIllumMaskToDQConfig):
     keep_second_order = config.Field("Don't apply second order light mask?", bool, False)
+
+
+class addMDFConfig(config.Config):
+    # Does not use MDF files
+    suffix = config.Field("Filename suffix", str, "_mdfAdded", optional=True)

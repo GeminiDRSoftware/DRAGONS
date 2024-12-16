@@ -9,6 +9,7 @@ Notes
 """
 import numpy as np
 import os
+from pathlib import Path
 import pytest
 
 from matplotlib import colors
@@ -16,7 +17,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy import ndimage
 
-import astrodata
+import astrodata, gemini_instruments
 
 import geminidr
 from astropy.modeling import models
@@ -118,6 +119,7 @@ def test_regression_for_determine_distortion_using_wcs(
     model = distortion_determined_ad[0].wcs.get_transform(
         "pixels", "distortion_corrected")[2]
     ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[2]
+    # do_plots(ad, ref_ad)
 
     # Otherwise we're doing something wrong!
     assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
@@ -207,13 +209,14 @@ def do_plots(ad, ad_ref):
     n_hlines = 25
     n_vlines = 25
 
-    output_dir = "./plots/geminidr/gnirs/test_gnirs_spect_ls_determine_wavelength_solution"
+    output_dir = Path("./plots/geminidr/gnirs/"
+                      "test_gnirs_spect_ls_determine_wavelength_solution")
     os.makedirs(output_dir, exist_ok=True)
 
     name, _ = os.path.splitext(ad.filename)
     grating = ad.disperser(pretty=True)
     camera = ad.camera(pretty=True)
-    filter = ad.filter_name(pretty=True)
+    filt = ad.filter_name(pretty=True)
     central_wavelength = ad.central_wavelength(asNanometers=True)  # in nanometers
 
     # -- Show distortion map ---
@@ -226,7 +229,7 @@ def do_plots(ad, ad_ref):
 
         X, Y = np.meshgrid(x, y)
 
-        model = ext.wcs.get_transform("pixels", "distortion_corrected")[1]
+        model = ext.wcs.get_transform("pixels", "distortion_corrected")[2]
         U = X - model(X, Y)
         V = np.zeros_like(U)
 
@@ -239,13 +242,13 @@ def do_plots(ad, ad_ref):
 
         Q = ax.quiver(
             X, Y, U, V, U, cmap="coolwarm",
-            norm=colors.DivergingNorm(vcenter=vcen, vmin=vmin, vmax=vmax))
+            norm=colors.TwoSlopeNorm(vcenter=vcen, vmin=vmin, vmax=vmax))
 
         ax.set_xlabel("X [px]")
         ax.set_ylabel("Y [px]")
         ax.set_title(
             "Distortion Map\n{:s}_{:s}_{:s}_{:s}_{:.0f}".format(
-                fname, grating, camera, filter, central_wavelength))
+                fname, grating, camera, filt, central_wavelength))
 
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -254,9 +257,10 @@ def do_plots(ad, ad_ref):
         cbar.set_label("Distortion [px]")
 
         fig.tight_layout()
-        fig_name = os.path.join(
-            output_dir, "{:s}_{:s}_{:s}_{:s}_{:.0f}_distMap.png".format(
-                fname, grating, camera, filter, central_wavelength))
+        fig_name = output_dir /\
+            "{:s}_{:s}_{:s}_{:s}_{:.0f}_distMap.png".format(
+                fname, grating, camera, filt, central_wavelength).replace(
+                    '/', '-') # Replace slashes in file name
 
         fig.savefig(fig_name)
         del fig, ax
@@ -296,9 +300,10 @@ def do_plots(ad, ad_ref):
         cbar = fig.colorbar(im, extend="max", cax=cax, orientation="vertical")
         cbar.set_label("Distortion [px]")
 
-        fig_name = os.path.join(
-            output_dir, "{:s}_{:s}_{:s}_{:s}_{:.0f}_distDiff.png".format(
-                fname, grating, camera, filter, central_wavelength))
+        fig_name = output_dir /\
+            "{:s}_{:s}_{:s}_{:s}_{:.0f}_distDiff.png".format(
+                fname, grating, camera, filt, central_wavelength).replace(
+                    '/', '-') # Replace slashes in file name
 
         fig.savefig(fig_name)
 
@@ -324,15 +329,17 @@ def generate_fake_data(shape, dispersion_axis, n_lines=100):
     np.random.seed(0)
     nrows, ncols = shape
 
+    len_axis = ncols if dispersion_axis == 1 else nrows
+
     data = np.zeros((nrows, ncols))
-    line_positions = np.random.random_integers(0, ncols, size=n_lines)
-    line_intensities = 100 * np.random.random_sample(n_lines)
+    line_positions = np.random.random_integers(0, len_axis, size=n_lines)
+    line_intensities = np.array([100 * np.random.random_sample(n_lines)])
 
     if dispersion_axis == 0:
         data[:, line_positions] = line_intensities
         data = ndimage.gaussian_filter(data, [5, 1])
     else:
-        data[line_positions, :] = line_intensities
+        data[line_positions, :] = line_intensities.reshape((n_lines, 1))
         data = ndimage.gaussian_filter(data, [1, 5])
 
     data = data + (np.random.random_sample(data.shape) - 0.5) * 10

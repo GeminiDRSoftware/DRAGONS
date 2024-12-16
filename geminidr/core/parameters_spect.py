@@ -14,7 +14,6 @@ def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
     return True
 
-
 def table_writing_formats():
     t = registry.get_formats(table.Table, readwrite="Write")
     return {fmt: "" for fmt, dep in t["Format", "Deprecated"] if dep != "Yes"}
@@ -28,6 +27,7 @@ def validate_regions_int(value, multiple=False):
     ranges = at.parse_user_regions(value, dtype=int, allow_step=True)
     return multiple or len(ranges) == 1
 
+
 class adjustWavelengthZeroPointConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthZeroPointAdjusted",
                           optional=True)
@@ -39,6 +39,7 @@ class adjustWavelengthZeroPointConfig(config.Config):
                            optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
                                         float, 5, min=0)
+
 
 class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",
@@ -58,6 +59,12 @@ class adjustWCSToReferenceConfig(config.Config):
                                   "for the correlation method (arcsec)",
                                   float, 1, min=0., optional=True)
     debug_block_resampling = config.Field("Block resampling in the spatial direction?", bool, False)
+    debug_plots = config.Field("Plot the cross-correlation function?", bool, False)
+
+
+class attachPinholeModelConfig(parameters_generic.calRequirementConfig):
+    suffix = config.Field("Filename suffix", str, "_pinholeModelAttached", optional=True)
+    pinhole = config.Field("Pinhole frame", (str, AstroData), None, optional=True)
 
 
 class attachWavelengthSolutionConfig(config.Config):
@@ -105,6 +112,10 @@ class createNewApertureConfig(config.Config):
                              "specified, or left as None.")
 
 
+class cutSlitsConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitsCut", optional=True)
+
+
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
@@ -128,14 +139,29 @@ class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
     spectral_order = config.RangeField("Fitting order in spectral direction",
                                        int, 3, min=1)
-    edges1 = config.ListField("List of left edges of illuminated region(s)",
-                              float, default=None, minLength=1,
-                              optional=True, single=True)
-    edges2 = config.ListField("List of right edges of illuminated region(s)",
-                              float, default=None, minLength=1,
-                              optional=True, single=True)
-    debug = config.Field("Plot fits of edges and print extra information?",
-                         bool, False)
+    edge1 = config.RangeField("Left/lower edge of illuminated region",
+                              float, None, min=1)
+    edge2 = config.RangeField("Right/upper edge of illuminated region",
+                              float, None, min=1)
+    search_radius = config.RangeField("Radius (in pixels) to search for edges",
+                                      float, 30, min=5)
+    debug_plots = config.Field("Plot fits of edges and print extra information",
+                               bool, False)
+    debug_max_missed = config.RangeField("Maximum missed steps when tracing edges",
+                                         int, 8, min=1)
+    debug_max_shift = config.RangeField("Maximum perpendicular shift (in pixels) per pixel",
+                                        float, 0.08, min=0.)
+    debug_step = config.RangeField("Step size (in pixels) for fitting edges",
+                                   int, 20, min=5)
+    debug_nsum = config.RangeField("Columns/rows to sum each step when fitting edges",
+                                   int, 10, min=5)
+
+    def validate(self):
+        if hasattr(self, 'edge1'):
+            if [self.edge1, self.edge2].count(None) == 1:
+                raise ValueError("Both edges or neither edges must be specified")
+            if self.edge1 is not self.edge2 <= self.edge1:
+                raise ValueError("Right/upper edge must be greater than left/lower edge")
 
 
 class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
@@ -482,16 +508,17 @@ class linearizeSpectraConfig(config.Config):
 
 
 class maskBeyondSlitConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit", optional=True)
-    debug = config.Field("Plot the mask created.",
-                         bool, False)
+    suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit",
+                          optional=True)
 
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central (spatial axis) row/column for 1D extraction (None => use middle)", int, None, min=1, optional=True)
+    offset_from_center = config.Field("Offset in pixels from center of slit",
+                                      int, None, optional=True)
     nsum = config.RangeField('Number of rows/columns to average (about "center")', int, 10, min=1)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
-                                  float, 0.01, min=0.01, max=1.0)
+                                  float, 0.01, min=0.0001, max=1.0)
     interactive = config.Field("Interactive fitting?", bool, False)
 
     def setDefaults(self):
@@ -569,6 +596,48 @@ class traceAperturesConfig(config.core_1Dfitting_config):
     def setDefaults(self):
         del self.function
         self.order = 2
+
+
+class tracePinholeAperturesConfig(config.Config):
+    """
+    Configuration for the tracePinholeApertures() primitive.
+
+    While the primitive itself should be useable with various modes, it has
+    only been tested with cross-dispersed so far (September 2023). Parameters
+    thoughtare therefore left unspecified here, and should be defined in parameter
+    files more specific to the mode.
+    """
+    suffix = config.Field("Filename suffix",
+                          str, "_pinholeAperturesTraced", optional=True)
+    start_pos = config.RangeField("Row or column to start tracing at (default: halfway)",
+                                  int, None, min=0, inclusiveMin=True, optional=True)
+    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
+                                   int, 5, min=0)
+    max_shift = config.RangeField("Maximum shift per pixel in line position",
+                                  float, 0.05, min=0.001, max=0.3,
+                                  inclusiveMax=True)
+    min_line_length = config.RangeField("Minimum line length as a fraction of array",
+                                        float, 0, min=0, max=1, inclusiveMin=True,
+                                        inclusiveMax=True)
+    min_snr = config.RangeField("Minimum SNR for apertures", float, 10., min=0.)
+    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
+    spectral_order = config.RangeField("Order of fit in spectral direction",
+                                       int, 3, min=1)
+    # These exist in case excluding some of the pinhole traces is desired. This
+    # is important for GNIRS but may not be the case for other instruments/
+    # modes, so the defaults here are to use all traces found.
+    debug_min_trace_pos = config.RangeField("First pinhole trace to use",
+                                            dtype=int, default=None, min=1, optional=True)
+    debug_max_trace_pos = config.RangeField("Last pinhole trace to use",
+                                            dtype=int, default=None, min=1, optional=True)
+    debug_plots = config.Field("Create diagnostic plots of traces", bool, False)
+
+    def validate(self):
+        if (self.debug_max_trace_pos is not None and
+                self.debug_min_trace_pos is not None and
+                self.debug_max_trace_pos < self.debug_min_trace_pos):
+            raise ValueError("debug_max_trace_pos cannot be less than debug_min_trace_pos")
 
 
 def wavelength_units_check(value):

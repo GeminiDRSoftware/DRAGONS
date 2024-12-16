@@ -104,7 +104,14 @@ def trace_apertures_data_provider(ext, ui_params):
     dispaxis = 2 - ext.dispersion_axis()  # python sense
 
     for loc in ext.APERTURE['c0'].data:
-        _, in_coords = tracing.trace_aperture(ext, loc, ui_params)
+        traces = tracing.trace_aperture(ext, loc, ui_params)
+
+        # List of traced peak positions
+        in_coords = np.array([coord for trace in traces for
+                              coord in trace.input_coordinates()]).T
+
+        assert len(in_coords) == 2,\
+            f"No trace was found at {loc} in {ext.filename}."
 
         data["x"].append(in_coords[1 - dispaxis])
         data["y"].append(in_coords[dispaxis])

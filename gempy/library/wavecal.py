@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 
 from astrodata import wcs as adwcs
 
-from . import matching, tracing
+from . import matching, tracing, peak_finding
 from .fitting import fit_1D
 from . import astromodels as am
 
@@ -211,7 +211,7 @@ def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
     """
     # Find peaks; convert width FWHM to sigma
     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-    peaks, peak_snrs = tracing.find_wavelet_peaks(
+    peaks, peak_snrs = peak_finding.find_wavelet_peaks(
         data, widths=widths, mask=mask, variance=variance, min_snr=min_snr,
         min_sep=min_sep, reject_bad=reject_bad)
     fit_this_peak = peak_snrs > min_snr
@@ -497,13 +497,30 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     if ext.data.ndim > 1:
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
-        data, mask, variance, extract_slice = tracing.average_along_slit(
-            ext, center=config["center"], nsum=config["nsum"], combiner=config["combine_method"])
-        logit("Extracting 1D spectrum from {}s {} to {}".
-              format(direction, extract_slice.start + 1, extract_slice.stop))
-        middle = 0.5 * (extract_slice.start + extract_slice.stop - 1)
-        axes = {dispaxis: middle}
-        location = f"{direction} {int(middle)}"
+        const_slit = 'LS' in ext.tags
+        data, mask, variance, extract_info = peak_finding.average_along_slit(
+            ext, center=config["center"], nsum=config["nsum"],
+            combiner=config["combine_method"])
+        if const_slit:
+            logit("Extracting 1D spectrum from {}s {} to {}".
+                  format(direction, extract_info.start + 1, extract_info.stop))
+            middle = 0.5 * (extract_info.start + extract_info.stop - 1)
+            axes = {dispaxis: middle}
+            location = f"{direction} {int(middle)}"
+        else:
+            # For non-straight slits, `extract_info` is the 1D
+            # Chebyshev polynomial that traces the center of the slit.
+            coeffs = [f"{key}: {value:.2f}" for key, value in
+                      zip(extract_info.param_names,
+                          extract_info.parameters)]
+            logit(f"Extracting 1D spectrum for extension {ext.id}")
+            logit(f"  ±{config['nsum']/2:.1f} {direction}s "
+                  "around polynomial with " + ", ".join(coeffs))
+            middle = extract_info(0.5 * (ext.shape[dispaxis] - 1))
+            axes = {dispaxis: middle}
+            # TODO: this isn't strictly correct, since it implies extraction
+            # at a fixed location.
+            location = f"{direction} {int(middle)}"
     else:
         data = ext.data.copy()
         mask = ext.mask.copy()
@@ -516,14 +533,14 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         data[mask > 0] = 0.
 
     if config["fwidth"] is None:
-        fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30)
+        fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30)
         logit(f"Estimated feature width: {fwidth:.2f} pixels")
     else:
         fwidth = config["fwidth"]
 
     # If we are doing wavecal from sky absorption lines in object spectrum,
     # the most realistic variance estimation comes from pixel-to-pixel
-    # variations, as done in `tracing.find_wavelet_peaks`.
+    # variations, as done in `peak_finding.find_wavelet_peaks`.
     # The variance estimations coming from `tracing.average_along_slit` don't
     # provide sensible values in this particular case.
     if config.get("absorption") is True:
@@ -540,7 +557,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends
     # to be too high.
     if config["fwidth"] is None:
-        fwidth = tracing.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
+        fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
+        log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
@@ -631,7 +649,6 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     best_score = np.inf
     arc_lines = linelist.wavelengths(in_vacuo=config["in_vacuo"], units="nm")
     arc_weights = linelist.weights
-
     # This allows suppression of the terminal log output by calling the function
     # with loglevel='debug'.
     loglevel = "stdinfo" if config["verbose"] else "fullinfo"
@@ -642,28 +659,39 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     # don't get a better solution. Since we can't create a fit_1D object
     # easily we evaluate the model at all pixels and fit. We do this by
     # fitting increasing orders until we hit the order requested by the
-    # user or reach a low rms.
-    model = init_models[0]
-    domain = model.meta["domain"]
-    x = np.arange(*domain)
-    dw = abs(np.diff(model(domain))[0] / np.diff(domain)[0])
-    order = 0
-    while order < config["order"]:
-        order += 1
-        fit1d = fit_1D(model(x), points=x, function="chebyshev",
-                       order=order, domain=domain,
-                       niter=config["niter"], sigma_lower=config["lsigma"],
-                       sigma_upper=config["hsigma"])
-        if fit1d.rms < 0.001 * dw:
-            break
-    fit1d.image = np.array([])
-    fit1d.points = np.array([])
-    fit1d.mask = np.array([], dtype=bool)
-    initial_model_fit = fit1d
+    # user or reach a low rms. We also construct 1D models for the other
+    # initial_models in the same way.
+    init_models_1d = []
+    for i, model in enumerate(init_models):
+        domain = model.meta["domain"]
+        x = np.arange(*domain)
+        dw = abs(np.diff(model(domain))[0] / np.diff(domain)[0])
+        order = 0
+        while order < config["order"]:
+            order += 1
+            fit1d = fit_1D(model(x), points=x, function="chebyshev",
+                           order=order, domain=domain,
+                           niter=config["niter"], sigma_lower=config["lsigma"],
+                           sigma_upper=config["hsigma"])
+            if fit1d.rms < 0.001 * dw:
+                break
+        fit1d.model.meta["domain"] = domain
+        init_models_1d.append(fit1d.model)
+        if i == 0:
+            fit1d.image = np.array([])
+            fit1d.points = np.array([])
+            fit1d.mask = np.array([], dtype=bool)
+            initial_model_fit = fit1d
 
+        #print("MAKING INIT MODELS")
+        #print(model)
+        #print(fit1d.evaluate([0, 1021]))
+
+    best_fit1d = None
     # Iterate over start position models most rapidly
     for min_lines_per_fit, model, loc_start in cart_product(
-            min_lines, init_models, (0.5, 0.3, 0.7)):
+            min_lines, init_models_1d, (0.5, 0.3, 0.7)):
+        #print("STARTING", model.parameters, loc_start)
         domain = model.meta["domain"]
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
@@ -676,24 +704,32 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         # We perform a regular least-squares fit to all the matches
         # we've made. This allows a high polynomial order to be
         # used without the risk of it going off the rails
+        matched = np.where(matches > -1)[0]
         fit_it = fitting.LinearLSQFitter()
-        if len(matches) > 1:  # need at least 2 lines, right?
-            m_init = models.Chebyshev1D(degree=config["order"], domain=domain)
+        if len(matched) > 1:  # need at least 2 lines, right?
+            m_init = models.Chebyshev1D(degree=min(config["order"], len(matched)-1),
+                                        domain=domain)
             for p, v in zip(model.param_names, model.parameters):
                 if p in m_init.param_names:
                     setattr(m_init, p, v)
-            matched = np.where(matches > -1)
+            #bounds_setter(m_init)
+            #for i in range(len(matched), m_init.degree + 1):
+            #    m_init.fixed[f"c{i}"] = True
             matched_peaks = peaks[matched]
             matched_arc_lines = arc_lines[matches[matched]]
             m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
+            #for p, l in zip(matched_peaks, matched_arc_lines):
+            #    print(f"{p:.2f} => {l:.2f}")
 
             # We're close to the correct solution, perform a KDFit
-            m_init = m_final.copy()
+            m_init = models.Chebyshev1D(degree=config["order"], domain=domain)
+            for p, v in zip(m_final.param_names, m_final.parameters):
+                setattr(m_init, p, v)
             dw = abs(np.diff(m_final(m_final.domain))[0] / np.diff(m_final.domain)[0])
             fit_it = matching.KDTreeFitter(sigma=2 * abs(dw), maxsig=5,
                                            k=k, method='Nelder-Mead')
             m_final = fit_it(m_init, peaks, arc_lines, in_weights=peak_weights,
-                             ref_weights=arc_weights, matches=matches)
+                             ref_weights=arc_weights)
             logit(f'{repr(m_final)} {fit_it.statistic}')
 
             # And then recalculate the matches
@@ -706,7 +742,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 # Probably incoords and outcoords as defined here should go to
                 # the interactive fitter, but cull to derive the "best" model
                 fit1d = fit_1D(outcoords, points=incoords, function="chebyshev",
-                               order=m_final.degree, domain=m_final.domain,
+                               order=min(m_final.degree, len(incoords)-1),
+                               domain=m_final.domain,
                                niter=config["niter"], sigma_lower=config["lsigma"],
                                sigma_upper=config["hsigma"])
                 fit1d.image = np.asarray(outcoords)
@@ -716,22 +753,33 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             nmatched = np.sum(~fit1d.mask)
             logit(f"{filename} {repr(fit1d.model)} {nmatched} {fit1d.rms}")
 
+            # Wavelength solution models need to be monotonic. Make that check.
+            waves = fit1d.evaluate(np.arange(len_data))
+            if not (np.all(np.diff(waves) > 0) or np.all(np.diff(waves) < 0)):
+                continue
+
             # Calculate how many lines *could* be fit. We require a constrained
             # fit but also that it fits some reasonable number of lines
-            wmin, wmax = sorted(fit1d.evaluate(points=(0, len_data)))
-            nfittable_lines = np.sum(np.logical_and(arc_lines > wmin, arc_lines < wmax))
+            nfittable_lines = np.sum(np.logical_and(arc_lines > waves.min(), arc_lines < waves.max()))
             min_matches_required = max(config["order"] + min(nfittable_lines // 2, 3), 2)
 
             # Trial and error suggests this criterion works well
             if fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and nmatched >= min_matches_required:
+                #print("RETURNING", fit1d.model.parameters)
                 return fit1d, True
 
             # This seems to be a reasonably ranking for poor models
-            score = fit1d.rms / max(nmatched - config["order"] - 1, np.finfo(float).eps)
-            if score < best_score:
+            if nmatched > config["order"] + 1:
+                score = fit1d.rms / (nmatched - config["order"] - 1)
+            else:
+                score = np.inf
+            if score < best_score or np.isinf(score) and (best_fit1d is None or fit1d.model.degree > best_fit1d.model.degree):
                 best_score = score
+                best_fit1d = fit1d
 
-    return initial_model_fit, False
+    if best_fit1d is None:
+        best_fit1d = initial_model_fit
+    return best_fit1d, True
 
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
@@ -782,28 +830,30 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     wave_start = model(pixel_start)
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
-    fits_to_do = [(pixel_start, wave_start, dw_start)]
+    fits_to_do = [(pixel_start, wave_start, dw_start, min_lines_per_fit)]
 
     first = True
     while fits_to_do:
         start = datetime.now()
-        p0, c0, dw = fits_to_do.pop()
-        #print(f"Pixel={p0:7.2f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_per_fit}")
-        if min(len(arc_lines), len(peaks)) <= min_lines_per_fit:
+        p0, c0, dw, min_lines_this_fit = fits_to_do.pop()
+        if min(len(arc_lines), len(peaks)) <= min_lines_this_fit:
             p1 = p0
         else:
             p1 = 0
         npeaks = narc_lines = 0
-        while (min(npeaks, narc_lines) < min_lines_per_fit and
+        while (min(npeaks, narc_lines) < min_lines_this_fit and
                not (p0 - p1 < 0 and p0 + p1 >= len_data)):
             p1 += 1
             i1 = bisect(peaks, p0 - p1)
             i2 = bisect(peaks, p0 + p1)
-            npeaks = i2 - i1
+            #npeaks = i2 - i1
+            npeaks = (matches[i1:i2] == -1).sum()  # only count unmatched peaks
             i1 = bisect(arc_lines, c0 - p1 * abs(dw))
             i2 = bisect(arc_lines, c0 + p1 * abs(dw))
-            narc_lines = i2 - i1
+            #narc_lines = i2 - i1
+            narc_lines = [x not in matches for x in range(i1, i2)].count(True)
         c1 = p1 * dw
+        #print(f"Pixel={p0:6.1f} p1={p1:6.1f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_this_fit}")
 
         if p1 > 0.25 * len_data and order >= 2:
             m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
@@ -830,26 +880,32 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         # Add new matches to the list
         new_matches = matching.match_sources(m_this(peaks), arc_lines,
                                              radius=match_radius)
+        found_new_matches = False
         for i, (m, p) in enumerate(zip(new_matches, peaks)):
             if matches[i] == -1 and m > -1:
                 if p0 - p1 <= p <= p0 + p1:
                     # automatically removes old (bad) match
                     matches[i] = m
+                    found_new_matches = True
+                    #print(f"Pixel {p} => {arc_lines[m]}")
         try:
             p_lo = peaks[matches > -1].min()
         except ValueError:
             pass
         else:
-            #if min(len(arc_lines), len(peaks)) > min_lines_per_fit:
-            if True:
+            # The commented-out line below speeds up fitting in some situations,
+            # but also breaks regression tests. More investigation needed. DB
+            # if min(len(arc_lines), len(peaks)) > min_lines_per_fit:
                 if p_lo < p0 <= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_lo)]]
-                    fits_to_do.append((p_lo, arc_line, dw))
+                    fits_to_do.append((p_lo, arc_line, dw, min_lines_per_fit))
                 p_hi = peaks[matches > -1].max()
                 if p_hi > p0 >= pixel_start:
                     arc_line = arc_lines[matches[list(peaks).index(p_hi)]]
-                    fits_to_do.append((p_hi, arc_line, dw))
+                    fits_to_do.append((p_hi, arc_line, dw, min_lines_per_fit))
         #dc0 = 5 * abs(dw)
+        #if not found_new_matches and min_lines_this_fit < 2 * min_lines_per_fit:
+        #    fits_to_do.append((p0, c0, dw, 2 * min_lines_this_fit))
         first = False
 
     return matches
@@ -1047,8 +1103,8 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         ext.wcs.set_transform(ext.wcs.input_frame,
                               new_spectral_frame, m_final)
     else:
-        # Write out a simplified WCS model so it's easier to
-        # extract what we need later
+        # Write out a simplified WCS model with a new "world" frame
+        # so it's easier to extract what we need later
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         spatial_frame = cf.CoordinateFrame(
             naxes=1, axes_type="SPATIAL", axes_order=(1,),
@@ -1063,7 +1119,10 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         transform = m_final & slit_model
         if dispaxis == 0:
             transform = models.Mapping((1, 0)) | transform
-        ext.wcs = gWCS([(ext.wcs.input_frame, transform),
+        #ext.wcs = gWCS([(ext.wcs.input_frame, transform),
+        #                (output_frame, None)])
+        ext.wcs = gWCS(ext.wcs.pipeline[:-2] +
+                       [(ext.wcs.pipeline[-2].frame, transform),
                         (output_frame, None)])
 
 

@@ -14,6 +14,7 @@ REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
                      'processed_dark': ['PROCESSED', 'DARK'],
                      'processed_flat': ['PROCESSED', 'FLAT'],
                      'processed_fringe': ['PROCESSED', 'FRINGE'],
+                     'processed_pinhole': ['PROCESSED', 'PINHOLE'],
                      'processed_standard': ['PROCESSED', 'STANDARD'],
                      'processed_slitillum': ['PROCESSED', 'SLITILLUM'],
                      'processed_bpm': ['PROCESSED', 'BPM'],
@@ -92,7 +93,7 @@ class CalDB(metaclass=abc.ABCMeta):
     def __getitem__(self, item):
         """Return the CalDB instance at that position in the list"""
         if not isinstance(item, (int, np.integer)):
-            raise TypeError("Index must me an integer")
+            raise TypeError("Index must be an integer")
         if item == 0:
             return self
         elif item > 0 and self.nextdb:

@@ -56,9 +56,9 @@ author = 'DRAGONS Team'
 # built documents.
 #
 # The short X.Y version.
-version = '3.2'
+version = '4.0-dev'
 # The full version, including alpha/beta/rc tags.
-#release = '3.2.0'
+#release = '3.2.2'
 #rtdurl = 'v'+release
 #release = '3.2.x'
 #rtdurl = 'release-'+release
@@ -73,7 +73,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2024'
+today = 'October 2024'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 

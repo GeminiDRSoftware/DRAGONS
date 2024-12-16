@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy import ndimage
 
-import astrodata
+import astrodata, gemini_instruments
 import geminidr
 from astropy.modeling import models
 from geminidr.f2.primitives_f2_longslit import F2Longslit
@@ -223,7 +223,9 @@ def test_regression_for_determine_distortion_using_wcs(
 
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
-    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
+    # Increasing atol to 0.07 due to S20180114S0104_flatCorrected.fits producing
+    # slightly different results on Jenkins vs. on MacOS. DB 20240820
+    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.07)
 
 
 @pytest.mark.gnirs

@@ -115,7 +115,10 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
         [os.remove(f) for f in r.output_filenames]
 
     # check that we are not leaking objects
-    assert len(objgraph.by_type('NDAstroData')) == 0
+    assert len(objgraph.by_type('NDAstroData')) == 0, ("Leaking objects",
+           [x.shape for x in objgraph.by_type('NDAstroData')],
+           [x.filename for x in objgraph.by_type("AstroDataGsaoi")],
+           f'{label=}')
 
     return output_file, calib_files
 

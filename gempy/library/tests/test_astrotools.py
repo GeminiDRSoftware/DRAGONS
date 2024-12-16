@@ -18,6 +18,26 @@ def test_array_from_list():
     np.testing.assert_array_equal(result.value, values)
 
 
+def test_boxcar_logical_or():
+    x = np.zeros((100,), dtype=bool)
+    x[45:55] = True
+    y = at.boxcar(x, size=2, operation=np.logical_or)
+    assert y.sum() == 14
+
+
+def test_boxcar_median():
+    x = np.zeros((100,))
+    x[45:55] = 1
+    y = at.boxcar(x, size=2)
+    np.testing.assert_allclose(x, y)
+
+
+def test_calculate_pixel_edges():
+    x = np.arange(100)
+    edges = at.calculate_pixel_edges(x)
+    np.testing.assert_allclose(edges, np.arange(-0.5, 100.4))
+
+
 def test_calculate_scaling_without_outlier_removal():
     x = np.arange(1, 11)
     y = 2 * x
@@ -98,6 +118,16 @@ def test_std_from_pixel_variations(separation, subtract, limit):
     data = rng.normal(size=10000)
     assert abs(at.std_from_pixel_variations(
         data, separation=separation, subtract_linear_fits=subtract) - 1) < limit
+
+
+@pytest.mark.parametrize("data,reference",
+                         [([15.2, 15.6, 14.9, 25.4], np.array([False, False, False, True])),
+                          ([0, 17, 0, 0], np.array([False, True, False, False])),
+                          ([0, 0, 0, 0], np.array([False, False, False, False])),
+                          ([1, 1.1, 1.1, 1], np.array([False, False, False, False]))])
+def test_find_outliers(data, reference):
+    # Test that it works correctly when some values are repeated.
+    assert np.allclose(at.find_outliers(data), reference)
 
 
 def test_get_corners_2d():

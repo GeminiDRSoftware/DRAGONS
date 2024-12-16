@@ -56,7 +56,7 @@ extra_test_data.extend([
 
 # Some iterations are known to be failure cases
 # we mark them accordingly so we can see if they start passing
-_xfail_indices = (0, 1, 5, 9, 12, 13, 17, 20, 24, 25, 29)
+_xfail_indices = (0, 1, 5, 6, 9, 17, 20, 24, 25, 29)
 for idx in _xfail_indices:
     args = extra_test_data[idx]
     extra_test_data[idx] = pytest.param(args, marks=pytest.mark.xfail)
@@ -103,7 +103,7 @@ def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrof
         ext.mask = np.zeros_like(ext.data, dtype=np.uint)
 
     p = GMOSSpect([ad])
-    _ad = p.findApertures(max_apertures=1)[0]
+    _ad = p.findApertures(max_apertures=1, min_snr=3)[0]
 
     for _ext in _ad:
         # ToDo - Could we improve the primitive to have atol=0.50 or less?
@@ -127,7 +127,6 @@ def test_find_apertures_using_standard_star(ad_and_center):
     np.testing.assert_allclose(ad[0].APERTURE['c0'], expected_center, 3)
 
 
-@pytest.mark.skip("MUST WORK; temporary skip")
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad_center_tolerance_snr", extra_test_data, indirect=True)

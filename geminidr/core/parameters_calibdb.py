@@ -42,6 +42,10 @@ class getProcessedFringeConfig(config.Config):
     pass
 
 
+class getProcessedPinholeConfig(config.Config):
+    pass
+
+
 class getProcessedStandardConfig(config.Config):
     pass
 
@@ -67,6 +71,7 @@ class storeCalibrationConfig(config.Config):
                  "processed_flat": "processed FLAT",
                  "processed_fringe": "processed fringe",
                  "processed_bpm": "processed bad pixel mask",
+                 "processed_pinhole": "processed PINHOLE",
                  "processed_standard": "processed standard",
                  "processed_slitillum": "processed slitillum",
                  },
@@ -104,6 +109,12 @@ class storeProcessedFlatConfig(config.Config):
 
 class storeProcessedFringeConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_fringe", optional=True)
+
+
+class storeProcessedPinholeConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_pinhole", optional=True)
+    force = config.Field("Force input to be identified as a pinhole?",
+                         bool, False)
 
 
 class storeProcessedScienceConfig(config.Config):

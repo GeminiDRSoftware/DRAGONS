@@ -91,6 +91,12 @@ class CalibDB(PrimitivesBASE):
         self._assert_calibrations(adinputs, cals)
         return adinputs
 
+    def getProcessedPinhole(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_pinhole(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
+        return adinputs
+
     def getProcessedStandard(self, adinputs=None):
         procmode = 'sq' if self.mode == 'sq' else None
         cals = self.caldb.get_processed_standard(adinputs, procmode=procmode)
@@ -241,6 +247,17 @@ class CalibDB(PrimitivesBASE):
                                                 keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                                            primname=self.myself(), keyword="PROCFRNG", update_datalab=False)
+        self.storeCalibration(adinputs, caltype=caltype)
+        return adinputs
+
+    def storeProcessedPinhole(self, adinputs=None, suffix=None, force=False):
+        caltype = 'processed_pinhole'
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="pinhole",
+                                                keyword_comments=self.keyword_comments)
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
+                                           primname=self.myself(), keyword="PROCPNHL")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
