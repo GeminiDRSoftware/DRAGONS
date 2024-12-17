@@ -4,6 +4,7 @@
 #                                                           primitives_gemini.py
 # ------------------------------------------------------------------------------
 import datetime
+from contextlib import suppress
 from copy import deepcopy
 import numpy as np
 
@@ -12,7 +13,7 @@ from astropy import units as u
 from astropy.modeling import models
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astrotools as at
+from gempy.library import astromodels as am, astrotools as at
 
 from geminidr.core import Bookkeeping, CalibDB, Preprocess
 from geminidr.core import Visualize, Standardize, Stack
@@ -223,7 +224,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         limit = params["debug_consistency_limit"]
         max_deadtime = params["debug_max_deadtime"]
 
-        want_to_fix = bad_wcs not in ('exit', 'ignore')
+        want_to_fix = bad_wcs not in ('check', 'exit', 'ignore')
         bad_wcs_list = []
         base_pointing = None
         last_pointing = None
@@ -260,9 +261,12 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                 base_pointing = None
                 last_pointing = None
 
-            p = Pointing(ad)
-            needs_fixing = (bad_wcs == 'new' or
-                            not p.self_consistent(limit=limit))
+            p = Pointing(ad, log_function=self.log.debug)
+            selfcon = p.self_consistent(limit=limit)
+            if not selfcon:
+                log.stdinfo(f"{ad.filename}: WCS inconsistent with target "
+                            "coordinates")
+            needs_fixing = (bad_wcs == 'new' or not selfcon)
             if base_pointing is not None:
                 needs_fixing |= not base_pointing.consistent_with(p)
 
@@ -273,6 +277,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                     for ext, wcs in zip(ad, p.wcs):
                         ext.wcs = wcs
                     base_pointing = p
+                    log.stdinfo(f"Using {ad.filename} as base pointing")
                 elif not want_to_fix or base_pointing is None:
                     # Do not want to, or cannot yet, fix
                     bad_wcs_list.append(ad)
@@ -293,6 +298,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                 if base_pointing is None:
                     # Found a reliable base WCS
                     base_pointing = p
+                    log.stdinfo(f"Using {ad.filename} as base pointing")
                     # Fix all backed up ADs if we want to
                     if want_to_fix:
                         while bad_wcs_list:
@@ -316,15 +322,18 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             last_obsid = this_obsid
 
         if not want_to_fix and bad_wcs_list:
-            log.stdinfo("The following files were identified as having bad "
-                        "WCS information:")
+            log.stdinfo("\nThe following files were identified as having bad"
+                        " WCS information:")
             for ad in bad_wcs_list:
                 log.stdinfo(f"    {ad.filename}")
+            if base_pointing is None:
+                log.stdinfo("\nNo valid base pointing was identified, so a "
+                            "'new' WCS is required, 'fix' will not work.")
             if bad_wcs == 'exit':
                 raise ValueError("Some files have bad WCS information and "
                                  "user has requested an exit")
             else:
-                log.stdinfo("This is being ignored as requested.")
+                log.stdinfo("No changes are being made to the WCS information.")
 
         for ad in adinputs:
             # Timestamp and update filename
@@ -333,15 +342,10 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
 
         return adinputs
 
-    def checkWCS(self, adinputs=None, tolerance=None):
+    def checkWCS(self, adinputs=None):
         """
-        This primitive checks for consistency within the WCS by comparing the
-        header offsets with the WCS coordinates
-
-        Parameters
-        ----------
-        tolerance: float
-            positional tolerance in arcseconds
+        This primitive checks for consistency within the WCS by calling
+        standardizeWCS().
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -351,32 +355,12 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         if any('PREPARED' in ad.tags for ad in adinputs):
             raise ValueError(f"'{self.myself()}' requires unprepared data")
 
-        adref = adinputs[0]
-        refindex = (len(adref) - 1) // 2
-        refpixel = tuple(length // 2 for length in adref[refindex].shape[::-1])
-
-        bad = []
-        for i, ad in enumerate(adinputs):
-            offsets = ad.detector_x_offset(), ad.detector_y_offset()
-            pixel = tuple(r + o for r, o in zip(refpixel, offsets)) + refpixel[2:]
-            # Be wary of third F2 axis
-            coord = SkyCoord(*ad[refindex].wcs(*pixel)[:2], unit='deg')
-            if i == 0:
-                log.stdinfo(f"Using {ad.filename} as the reference")
-                ref_coord = coord
-            else:
-                sep = ref_coord.separation(coord).arcsec
-                if sep > tolerance:
-                    bad.append((ad.filename, sep))
-
-        for (fname, sep) in bad:
-            log.stdinfo(f"{fname} has a discrepancy of {sep:.2f} arcsec")
-
-        if len(bad) > len(adinputs) // 2:
-            log.stdinfo(f"The first frame ({adref.filename}) is likely to "
-                        "be the one in error")
-        elif not bad:
-            log.stdinfo("All files appear to be OK")
+        # We don't want to modify the filename or PHU in case such changes
+        # cause the outputs to be written to disk
+        Gemini([]).standardizeWCS(adinputs, bad_wcs='ignore', suffix=None)
+        for ad in adinputs:
+            with suppress(KeyError):
+                del ad.phu[self.timestamp_keys['standardizeWCS']]
 
         return adinputs
 
@@ -391,20 +375,39 @@ class Pointing:
     # (x, y), 0-indexed
     center_of_rotation_dict = {'GNIRS': (629., 519.)}
 
-    def __init__(self, ad):
+    def __init__(self, ad, log_function=None):
         self.phu = ad.phu.copy()
         self.instrument = ad.instrument()
-        self.wcs = [ext.wcs for ext in ad]
-        self.target_coords = SkyCoord(ad.target_ra(), ad.target_dec(),
-                                      unit=u.deg)
-        self.coords = SkyCoord(ad.wcs_ra(), ad.wcs_dec(), unit=u.deg)
-        self.expected_coords = self.target_coords.spherical_offsets_by(
-            self.phu['RAOFFSET']*u.arcsec, self.phu['DECOFFSE']*u.arcsec)
         self.pa = ad.position_angle()
         self.xoffset = ad.detector_x_offset()
         self.yoffset = ad.detector_y_offset()
         self.pixel_scale = ad.pixel_scale()
         self.filename = ad.filename
+        self.wcs = [ext.wcs for ext in ad]
+        self.logit = log_function or print
+
+        self.logit(f"{self.filename} {self.xoffset} {self.yoffset} {self.pa}")
+        self.target_coords = SkyCoord(ad.target_ra(), ad.target_dec(),
+                                      unit=u.deg)
+        # This returns the CRVALi keywords, which are expected to change
+        # because the CRPIXj keywords are expected to be constant.
+        self.coords = SkyCoord(ad.wcs_ra(), ad.wcs_dec(), unit=u.deg)
+
+        # We want to know whether East is to the left or right when North
+        # is up, which may depend on the port the instrument is on.
+        # Unfortunately, we can't trust the CD matrix because values close
+        # to zero (when the instrument is oriented along one of the cardinal
+        # axes) can have random signs. So we need to do this empirically.
+        self.flipped = (self.instrument == "GNIRS" or
+                        self.phu.get("INPORT") == 1 and (
+                                "GMOS" in self.instrument or
+                                self.instrument == "NIRI" and not ad.is_ao()))
+        # If an offset is positive, it means that an object's pixel coords
+        # will *decrease*, so the telescope has moved either up or right.
+        self.expected_coords = self.target_coords.directional_offset_by(
+            self.pa * u.deg, -self.yoffset * self.pixel_scale * u.arcsec).directional_offset_by(
+            (self.pa + 90 * (-1, 1)[self.flipped]) * u.deg, -self.xoffset * self.pixel_scale * u.arcsec
+        )
 
     def __repr__(self):
         return f"Pointing object from {self.filename}"
@@ -426,7 +429,14 @@ class Pointing:
         -------
         bool: is the pointing self-consistent?
         """
-        return self.coords.separation(self.expected_coords).arcsec <= limit
+        sep = self.coords.separation(self.expected_coords).arcsec
+        self.logit(f"Self-consistency report on {self.filename} "
+                   f"(flipped={self.flipped})")
+        self.logit(f"Base coords:     {self.coords.to_string(precision=5)}")
+        self.logit("Expected coords: "
+                   f"{self.expected_coords.to_string(precision=5)}")
+        self.logit(f"Separation: {sep:.2f} arcsec")
+        return sep <= limit
 
     def consistent_with(self, other):
         """
@@ -455,8 +465,8 @@ class Pointing:
                 ra, dec = at.get_center_of_projection(wcs1)
             except TypeError:  # if this returns None
                 return False
-            x, y = wcs1.invert(ra, dec)
-            x2, y2 = wcs2.invert(ra, dec)
+            x, y = am.get_named_submodel(wcs1.forward_transform, 'SKY').inverse(ra, dec)
+            x2, y2 = am.get_named_submodel(wcs2.forward_transform, 'SKY').inverse(ra, dec)
             dx = other.xoffset - self.xoffset
             dy = other.yoffset - self.yoffset
             distsq = dx * dx + dy * dy
@@ -486,19 +496,11 @@ class Pointing:
             # Update projection center with coordinates
             nat2cel.lon = self.expected_coords.ra.value
             nat2cel.lat = self.expected_coords.dec.value
-            # Try to construct a new CD matrix. Whether East is to the left or
-            # right when North is up may depend on the port the instrument is
-            # on, but we can assume that the matrix in the header is correct
-            # in this regard since the instrument won't have switched ports.
-            # Not true for GNIRS where there was a sign error, but GNIRS is
-            # always flipped (East is to the right if North is up).
-            flipped = (aftran.matrix[0, 0] * aftran.matrix[1, 1] > 0 or
-                       aftran.matrix[0, 1] * aftran.matrix[1, 0] < 0 or
-                       self.instrument == "GNIRS")
+            # Try to construct a new CD matrix.
             new_matrix = self.pixel_scale / 3600 * np.identity(2)
-            pa = -self.pa if flipped else self.pa
+            pa = -self.pa if self.flipped else self.pa
             new_matrix = np.asarray(models.Rotation2D(pa)(*new_matrix))
-            if not flipped:
+            if not self.flipped:
                 new_matrix[0] *= -1
             aftran.matrix = new_matrix
 
