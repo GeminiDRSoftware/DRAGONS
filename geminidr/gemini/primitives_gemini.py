@@ -6,6 +6,8 @@
 import datetime
 from contextlib import suppress
 from copy import deepcopy
+from multiprocessing.managers import Value
+
 import numpy as np
 
 from astropy.coordinates import SkyCoord
@@ -261,7 +263,16 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                 base_pointing = None
                 last_pointing = None
 
-            p = Pointing(ad, log_function=self.log.debug)
+            try:
+                p = Pointing(ad, log_function=self.log.debug)
+            except ValueError:
+                log.warning(f"{ad.filename} (and maybe other files) do not "
+                            "have detector offsets. Cannot check/fix WCS.")
+                # Ensure correct logging
+                bad_wcs_list = []
+                base_pointing = 1
+                break
+
             selfcon = p.self_consistent(limit=limit)
             if not selfcon:
                 log.stdinfo(f"{ad.filename}: WCS inconsistent with target "
@@ -381,6 +392,8 @@ class Pointing:
         self.pa = ad.position_angle()
         self.xoffset = ad.detector_x_offset()
         self.yoffset = ad.detector_y_offset()
+        if self.xoffset is None or self.yoffset is None:
+            raise ValueError("Cannot determine detector offsets")
         self.pixel_scale = ad.pixel_scale()
         self.filename = ad.filename
         self.wcs = [ext.wcs for ext in ad]
