@@ -406,7 +406,7 @@ class Pointing:
         # will *decrease*, so the telescope has moved either up or right.
         self.expected_coords = self.target_coords.directional_offset_by(
             self.pa * u.deg, -self.yoffset * self.pixel_scale * u.arcsec).directional_offset_by(
-            (self.pa + 90 * (-1, 1)[self.flipped]) * u.deg, -self.xoffset * self.pixel_scale * u.arcsec
+            (self.pa + (90 if self.flipped else -90)) * u.deg, -self.xoffset * self.pixel_scale * u.arcsec
         )
 
     def __repr__(self):
