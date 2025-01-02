@@ -12,22 +12,25 @@ class F2LineSpreadFunction(LineSpreadFunction):
     parameters = ["lsf_scaling"]
 
     # These are the c2 Chebyshev1D coeffs multiplied by 2/1061**2
-    quad_coeffs = {
-        ("R3K", "J"): 1.485e-6,
-        ("R3K", "H"): 2.065e-6,
-        ("R3K", "K-long"): 3.035e-6,
-    }
+    # Update: when done in pixel space, results are very similar
+    #quad_coeffs = {
+    #    ("R3K", "J"): 1.485e-6,
+    #    ("R3K", "H"): 2.065e-6,
+    #    ("R3K", "K-long"): 3.035e-6,
+    #}
 
     def __init__(self, ext):
         super().__init__(ext)
         self.slit_width_pix = int(ext.focal_plane_mask().replace('pix-slit', ''))
-        key = (ext.disperser(pretty=True), ext.filter_name(pretty=True))
-        try:
-            quad_coeff = self.quad_coeffs[key]
-        except KeyError:
-            raise KeyError(f"Unsupported configuration {key}")
-        self.skew = lambda y: (y / 1061 - 1) * 9.5
-        self.omega = lambda y: 0.9 * self.dispersion + quad_coeff * (y - 1061) ** 2
+        #key = (ext.disperser(pretty=True), ext.filter_name(pretty=True))
+        #try:
+        #    quad_coeff = self.quad_coeffs[key]
+        #except KeyError:
+        #    raise KeyError(f"Unsupported configuration {key}")
+        # Skew is relative to increasing lambda, not increasing y!
+        self.skew = lambda y: -(y / 1061 - 1) * 12
+        #self.omega = lambda y: 0.9 * self.dispersion + quad_coeff * (y - 1061) ** 2
+        self.omega = lambda y: (5.0 + 4.0 * (2 * (y / 1061 - 1) ** 2 - 1)) * self.dispersion
 
     def skew_normal(self, w0, dw, scale=1):
         y = np.argmin(abs(w0 - self.all_waves))
@@ -40,8 +43,8 @@ class F2LineSpreadFunction(LineSpreadFunction):
     def convolutions(self, lsf_scaling=1):
         slit_width = self.slit_width_pix * self.dispersion
         print("SLIT WIDTH", slit_width, self.slit_width_pix, self.dispersion)
-        boxcar_func = partial(convolution.boxcar, width=slit_width)
-        convolutions = [(partial(self.skew_normal, scale=lsf_scaling), 20*self.dispersion),
-                        (boxcar_func, 0.5*slit_width)]
+        boxcar_func = partial(convolution.boxcar, width=slit_width*lsf_scaling)
+        convolutions = [(partial(self.skew_normal, scale=1), 25 * self.dispersion),
+                        (boxcar_func, 0.5 * slit_width * lsf_scaling)]
         print("CONVOLUTIONS", convolutions)
         return convolutions

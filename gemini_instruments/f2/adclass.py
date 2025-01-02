@@ -216,11 +216,13 @@ class AstroDataF2(AstroDataGemini):
                 central_wavelength = 19000
 
         if central_wavelength < 0.0:
-            return None
+            if self.disperser().startswith('R3K'):
+                central_wavelength = self.phu['GRWLEN'] * 10000
+            else:
+                return None
 
-        else:
-            return gmu.convert_units('angstroms', central_wavelength,
-                                     output_units)
+        return gmu.convert_units('angstroms', central_wavelength,
+                                 output_units)
 
     @astro_data_descriptor
     def data_section(self, pretty=False):
