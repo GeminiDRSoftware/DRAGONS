@@ -8,6 +8,8 @@ import os
 
 from importlib import import_module
 
+from astropy.modeling import models
+
 from geminidr.core import Spect
 from .primitives_f2 import F2
 from . import parameters_f2_spect
@@ -301,9 +303,21 @@ class F2Spect(Spect, F2):
             Updated objects with a `.WAVECAL` attribute and improved wcs for
             each slice
         """
+        log=self.log
         adoutputs = []
         for ad in adinputs:
             these_params = params.copy()
+
+            # The peak locations are slightly dependent on the width of the
+            # Ricker filter used in the peak finding, so control that
+            try:
+                slitwidth = int(ad.focal_plane_mask().replace('pix-slit', ''))
+            except AttributeError:  # fpm() is returning None
+                log.warning(f"Cannot determine slit width for {ad.filename}")
+            else:
+                these_params["fwidth"] = 2 + 0.5 * slitwidth
+                log.stdinfo(f"Setting fwidth={these_params['fwidth']}")
+
             min_snr_isNone = True if these_params["min_snr"] is None else False
 
             if "ARC" in ad.tags:
@@ -323,8 +337,9 @@ class F2Spect(Spect, F2):
                         these_params["min_snr"] = 10
 
             if min_snr_isNone:
-                self.log.stdinfo(f'Parameter "min_snr" is set to None. '
-                                 f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
+                log.stdinfo('Parameter "min_snr" is set to None. '
+                            f'Using min_snr={these_params["min_snr"]} '
+                            f'for {ad.filename}')
             
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
@@ -402,3 +417,57 @@ class F2Spect(Spect, F2):
             slit_width = fpmask
         disperser = ext.disperser(pretty=True)
         return resolving_power.get(f"{slit_width}", {}).get(f"{disperser}", None)
+
+    def _convert_peak_to_centroid(self, ext):
+        """
+        Returns a function that converts the location of the peak of an arc
+        (or sky) line to the location of its centroid (also works on an array
+        of locations). This is required due to the poor and spatially-varying
+        line spread function of F2, which produces skewed lines. It's used in
+        the wavecal routine to ensure that the wavelength solution is correct
+        in terms of line centroids. This can be lead to incorrect results if
+        the wavelength of a line in the science data is measured from its peak
+        (or nadir).
+
+        These cubic polynomials have all been derived by fitting to shifts
+        measured from synthetic data using the LSF in geminidr.f2.lookups.lsf
+        with the constraint that the shift is zero at row 1061 (therefore
+        the Chebyshev coefficients c0 and c2 are the same, and c0 is not
+        listed).
+
+        Parameters
+        ----------
+        ext: single-slice AstroData
+            the extension for which the shifts are to be calculation
+
+        Returns
+        -------
+        callable:
+            a callable that modifies a pixel value (or array thereof) of a
+            line peak to the centroid
+        """
+        # (c1, c2, c3) Chebyshev coefficients for each slit width
+        coefficients = {1: (-4.471281214, -0.062329556, -1.324079642),
+                        2: (-4.138404874, -0.054101213, -1.306253510),
+                        3: (-3.739663083, -0.048616217, -1.248004911),
+                        4: (-3.328556440, -0.042899206, -1.166940684),
+                        6: (-2.595923451, -0.029713970, -0.990172698),
+                        8: (-1.966203933, -0.017133596, -0.801233150),
+                        }
+        try:
+            slitwidth = int(ext.focal_plane_mask().replace('pix-slit', ''))
+        except AttributeError:  # fpm() is returning None
+            raise ValueError(f"Cannot determine slit width for {ext.filename}")
+        try:
+            c1, c2, c3 = coefficients[slitwidth]
+        except KeyError:
+            raise ValueError(f"Slit width {slitwidth} for {ext.filename}"
+                             "unknown")
+
+        # c0=c2 because the function must evaluate to 0 at the domain midpoint
+        # Domain is (0, 2122) since slit projects on row 1061
+        # The 1061 values are so the model returns the new pixel location
+        # and not the shift (so we don't need to wrap the model)
+        m_tweak = models.Chebyshev1D(degree=3, c0=c2+1061, c1=c1+1061,
+                                     c2=c2, c3=c3, domain=(0, 2122))
+        return m_tweak

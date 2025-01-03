@@ -883,7 +883,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         wavelength : float
             wavelength in nm
         """
-        print(f"Adding {wavelength} nm at pixel {peak}")
+        #print(f"Adding {wavelength} nm at pixel {peak}")
         if self.model.x.size > 1:
             lower_limit, upper_limit = get_closest(
                 self.model.y, self.model.evaluate(peak)[0]
@@ -963,9 +963,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
 
                 try:
-                    peak = pinpoint_peaks(pinpoint_data, [pixel], None)[0][0]
-                    print(f"Found peak at pixel {peak}")
-
+                    orig_peak = pinpoint_peaks(pinpoint_data, [pixel], None)[0][0]
+                    peak = self.model.meta["peak_to_centroid_func"](orig_peak)
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
                     return
