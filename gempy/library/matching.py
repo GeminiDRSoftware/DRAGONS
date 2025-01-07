@@ -371,8 +371,11 @@ class KDTreeFitter(Fitter):
         farg = (model_copy, in_coords, tree)
         p0, *_ = model_to_fit_params(model_copy)
 
-        argspec = inspect.getfullargspec(self._opt_method)
-        arg_names, kwarg_names = argspec.args, argspec.kwonlyargs
+        opt_method_params = inspect.signature(self._opt_method).parameters
+        arg_names = list(k for k, v in opt_method_params.items()
+                         if v.default == inspect.Parameter.empty)
+        kwarg_names = list(k for k, v in opt_method_params.items()
+                           if v.default != inspect.Parameter.empty)
         args = [self.objective_function]
         if arg_names[1] == 'x0':
             args.append(p0)
