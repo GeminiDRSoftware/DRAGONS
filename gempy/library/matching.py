@@ -385,6 +385,9 @@ class KDTreeFitter(Fitter):
         else:
             raise ValueError("Don't understand argument {}".format(arg_names[1]))
 
+        # Just in case as a result of scipy change
+        if 'bounds' in kwarg_names:
+            kwargs['bounds'] = tuple(model_copy.bounds[p] for p in model_copy.param_names)
         if 'args' in arg_names or 'args' in kwarg_names:
             kwargs['args'] = farg
 
