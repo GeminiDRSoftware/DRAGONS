@@ -5211,11 +5211,11 @@ class Spect(Resample):
         Parameters
         ----------
         cenwave: float
-            central wavelength in um
+            central wavelength in nm
         absorption: bool
             is wavecal done from absorption lines?
         """
-        return True if (absorption is True) or (cenwave >= 2.8) else False
+        return absorption or (cenwave >= 2800)
 
     def _get_atran_linelist(self, ext, config):
         """
@@ -5475,7 +5475,8 @@ class Spect(Resample):
             # Use ATRAN models for generating reference plots
             # for wavecal from sky absorption lines in science spectrum,
             # and for wavecal from sky emission lines in L- and M-bands
-            if self._uses_atran_linelist(absorption=absorption, cenwave=ext.central_wavelength(asMicrometers=True)):
+            if self._uses_atran_linelist(absorption=absorption,
+                                         cenwave=ext.central_wavelength(asNanometers=True)):
                 if refplot_spec is None:
                     refplot_spec, _ = self._get_convolved_atran(ext, model_params)
                 if refplot_y_axis_label is None:

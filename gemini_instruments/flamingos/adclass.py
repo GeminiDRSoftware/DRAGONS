@@ -41,43 +41,17 @@ class AstroDataFlamingos(AstroDataGemini):
             return TagSet(['DARK', 'CAL'])
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units()
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength
 
         Returns
         -------
         float
             The central wavelength setting
-
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
-        return gmu.convert_units('micrometers', 1.5, output_units)
+        return 1500.0
 
     @astro_data_descriptor
     def dec(self):

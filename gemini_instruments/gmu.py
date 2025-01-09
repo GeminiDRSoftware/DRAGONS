@@ -2,7 +2,11 @@
 
 import math
 import re
-from astropy import coordinates, units
+from functools import wraps
+
+import numpy as np
+
+from astropy import coordinates, units as u
 
 # The unitDict dictionary defines the factors for the function
 # convert_units
@@ -103,6 +107,44 @@ def convert_units(input_units, input_value, output_units):
     if input_value is not None:
         return input_value * factor
 
+
+def return_requested_units(input_units='nm'):
+    """
+    Decorator that replaces the repeated code for asMicrometers,
+    asNanometers, asAngstroms. Should be replaced by a "units='nm'"
+    parameter, but time is limited.
+
+    Returns as np.float32 values to avoid excessive precision
+    """
+    def inner_decorator(fn):
+        @wraps(fn)
+        def gn(instance, asMicrometers=False, asNanometers=False, asAngstroms=False,
+               **kwargs):
+            unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+            output_units = u.m # By default
+            if unit_arg_list.count(True) == 1:
+                # Just one of the unit arguments was set to True. Return the
+                # central wavelength in these units
+                if asMicrometers:
+                    output_units = u.um
+                elif asNanometers:
+                    output_units = u.nm
+                else:
+                    output_units = u.AA
+
+            # Ensure we return a list, not an array
+            # nm are the "standard" DRAGONS wavelength unit
+            retval = fn(instance, **kwargs)
+            if retval is None:
+                return retval
+            if isinstance(retval, list):
+                return [None if v is None else np.float32((v * u.Unit(input_units)).to(output_units).value)
+                        for v in retval]
+            return np.float32((retval * u.Unit(input_units)).to(output_units).value)
+        return gn
+    return inner_decorator
+
+
 def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
     # Utility function. Converts and RA and Dec in the specified reference frame
     # and equinox at ut_datetime into ICRS. This is used by the ra and dec descriptors.
@@ -124,12 +166,12 @@ def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
     # Try this with the passed frame but, if it doesn't work, convert to "cirs"
     # If that doesn't work, then raise an error
     try:
-        coords = coordinates.SkyCoord(ra=ra*units.degree, dec=dec*units.degree,
+        coords = coordinates.SkyCoord(ra=ra*u.degree, dec=dec*u.degree,
                                       frame=frame, equinox=equinox,
                                       obstime=ut_datetime)
     except ValueError:
         frame = 'cirs'
-        coords = coordinates.SkyCoord(ra=ra*units.degree, dec=dec*units.degree,
+        coords = coordinates.SkyCoord(ra=ra*u.degree, dec=dec*u.degree,
                                       frame=frame, equinox=equinox,
                                       obstime=ut_datetime)
 
@@ -146,7 +188,7 @@ def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
         astrom, eo = erfa.apci13(coords.obstime.jd1, coords.obstime.jd2)
         # eo comes back as a single element array in radians
         eo = float(eo)
-        eo = eo * units.radian
+        eo = eo * u.radian
         # re-create the coords frame object with the corrected ra
         coords = coordinates.SkyCoord(ra=coords.ra+eo, dec=coords.dec,
                                       frame=coords.frame.name,

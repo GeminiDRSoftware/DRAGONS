@@ -4,6 +4,11 @@ import astrodata.testing
 import gemini_instruments
 import os
 
+import numpy as np
+
+
+FLOAT_TYPES = (float, np.float32, np.float64)
+
 THIS_DIR = os.path.dirname(__file__)
 
 from .lut_descriptors import fixture_data as descriptors_fixture_data
@@ -40,7 +45,12 @@ def test_descriptor(instr, filename, descriptor, value):
         assert method() is None
     else:
         mvalue = method()
-        if float in (type(value), type(mvalue)):
+        if type(value) in FLOAT_TYPES or type(mvalue) in FLOAT_TYPES:
             assert abs(mvalue - value) < 0.0001
-        else:
-            assert value == mvalue
+        elif isinstance(value, list):
+            assert len(value) == len(mvalue)
+            for v, mv in zip(value, mvalue):
+                if type(v) in FLOAT_TYPES or type(mv) in FLOAT_TYPES:
+                    assert abs(mv - v) < 0.0001
+                else:
+                    assert v == mv

@@ -610,50 +610,23 @@ class AstroDataGemini(AstroData):
         return crpa if abs(crpa) <= 360 else None
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units(input_units="um")
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength
 
         Returns
         -------
         float
             The central wavelength setting
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
         # We assume that the central_wavelength keyword is in microns
         keyword = self._keyword_for('central_wavelength')
-        wave_in_microns = self.phu.get(keyword, -1)
-        # Convert to float if they saved it as a string
-        wave_in_microns = float(wave_in_microns) if isinstance(wave_in_microns, str) else wave_in_microns
+        wave_in_microns = float(self.phu.get(keyword, -1))
+
         if wave_in_microns < 0:
             return None
-        return gmu.convert_units('micrometers', wave_in_microns,
-                             output_units)
+        return wave_in_microns
 
     @astro_data_descriptor
     def coadds(self):
@@ -897,57 +870,28 @@ class AstroDataGemini(AstroData):
                                           stripID, pretty)
 
     @astro_data_descriptor
-    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    @gmu.return_requested_units(input_units="m")
+    def dispersion(self):
         """
-        Returns the dispersion in meters per pixel as a list (one value per
+        Returns the dispersion in nm per pixel as a list (one value per
         extension) or a float if used on a single-extension slice.  It is
         possible to control the units of wavelength using the input arguments.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
 
         Returns
         -------
         list/float
-            The dispersion(s)
+            The dispersion(s) in nm
         """
-        if self._keyword_for('dispersion') in self.hdr:
-            dispersion = self.hdr[self._keyword_for('dispersion')]
-
+        keyword = self._keyword_for('dispersion')
+        print(keyword)
+        if keyword in self.hdr:
+            dispersion = self.hdr[keyword]
         elif self._keyword_for('dispersion') in self.phu:
-            dispersion = self.phu[self._keyword_for('dispersion')]
-
-        else:
-            dispersion = None
-
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
-        if dispersion is not None:
-
-            dispersion = gmu.convert_units('meters', dispersion, output_units)
-
+            dispersion = self.phu[keyword]
             if not self.is_single:
                 dispersion = [dispersion] * len(self)
+        else:
+            return None
 
         return dispersion
 
