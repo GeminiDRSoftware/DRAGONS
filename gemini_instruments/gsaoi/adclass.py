@@ -67,48 +67,21 @@ class AstroDataGsaoi(AstroDataGemini):
             return self.phu.get('DETECTOR')
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength in microns
 
         Returns
         -------
         float
-            The central wavelength setting
-
+            The central wavelength setting in um
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
-        central_wavelength = self.phu.get('WAVELENG', -1)
+        central_wavelength = self.phu.get('WAVELENG', -1)  # in Angstroms
         if central_wavelength < 0.0:
             return None
-        else:
-            return gmu.convert_units('angstroms', central_wavelength,
-                                     output_units)
+
+        return 0.1 * central_wavelength
 
     @returns_list
     @use_keyword_if_prepared

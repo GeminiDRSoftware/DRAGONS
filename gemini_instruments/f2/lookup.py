@@ -1,7 +1,8 @@
 from collections import namedtuple
 ArrayProperties = namedtuple("ArrayProperties",
                              "readnoise gain welldepth linlimit nonlinlimit coeffs")
-DispersionOffsetMask = namedtuple("DispersionOffsetMask", "dispersion cenwaveoffset cutonwvl cutoffwvl")
+SpectroscopicConfig = namedtuple("SpectroscopicConfig",
+                                 "central_wavelength dispersion cutonwvl cutoffwvl")
 
 
 filter_wavelengths = {
@@ -73,25 +74,25 @@ nominal_zeropoints = {
 }
  # Instruction for making this LUT:
  # https://docs.google.com/document/d/1LVTUFWkXJygkRUvqjsFm_7VZnqy7I4fy/edit?usp=sharing&ouid=106387637049533476653&rtpof=true&sd=true
-dispersion_offset_mask = {
+spectroscopic_configurations = {
     # Dictionary keys are in the following order:
     # "grism, filter".
     # Dictionary values are in the following order:
-    # (dispersion (nm/pix), central_wavelength offset along the dispersion direction (pix),
+    # central wavlenegth (nm), dispersion (nm/pix),
     # illum_mask cut-on wvl (nm), illum_mask cut-off wvl (nm) )
     # All values were refined using the archive F2 ARC images.
 
-    ("JH", "JH_G0809"):     DispersionOffsetMask(-0.651, -35, 888, 1774),   # old filter. (cut-on, cut-off) wvl at filter T=(1%, 50%) - to avoid order overlap
-    ("JH", "JH_G0816"):     DispersionOffsetMask(-0.651, 44, 857, 1782),    # new filter. T=(1%, 50%)
-    ("HK", "HK_G0806"):     DispersionOffsetMask(-0.757, 6, 1245, 2540),    # old filter. T=(1%, 1%)
-    ("HK", "HK_G0817"):     DispersionOffsetMask(-0.757, -30, 1273, 2534),  # new filter. T=(1%, 1%)
-    ("HK", "JH_G0809"):     DispersionOffsetMask(-0.760, 635, 888, 2700),   # old filter. T=(1%, :) - to keep both orders as per IS request
-    ("HK", "JH_G0816"):     DispersionOffsetMask(-0.760, 710, 857, 2700),   # new filter. T=(1%, :)
-    ("R3K", "J-lo_G0801"):  DispersionOffsetMask(-0.168, -173, 1027, 1204), # T=(1%, 1%)
-    ("R3K", "J_G0802"):     DispersionOffsetMask(-0.202, 418, 1159, 1349),  # T=(1%, 1%)
-    ("R3K", "H_G0803"):     DispersionOffsetMask(-0.260, 22, 1467, 1804),   # T=(1%, 1%)
-    ("R3K", "Ks_G0804"):    DispersionOffsetMask(-0.349, 128, 1966, 2350),  # T=(1%, 1%)
-    ("R3K", "K-long_G0812"):DispersionOffsetMask(-0.351, -14, 1865, 2520)   # T=(1%, 1%)
+    ("JH", "JH_G0809"):     SpectroscopicConfig(1367, -0.651, 888, 1774),   # old filter. (cut-on, cut-off) wvl at filter T=(1%, 50%) - to avoid order overlap
+    ("JH", "JH_G0816"):     SpectroscopicConfig(1367, -0.651, 857, 1782),    # new filter. T=(1%, 50%)
+    ("HK", "HK_G0806"):     SpectroscopicConfig(1876, -0.757, 1245, 2540),    # old filter. T=(1%, 1%)
+    ("HK", "HK_G0817"):     SpectroscopicConfig(1876, -0.757, 1273, 2534),  # new filter. T=(1%, 1%)
+    ("HK", "JH_G0809"):     SpectroscopicConfig(1876, -0.760, 888, 2700),   # old filter. T=(1%, :) - to keep both orders as per IS request
+    ("HK", "JH_G0816"):     SpectroscopicConfig(1876, -0.760, 857, 2700),   # new filter. T=(1%, :)
+    ("R3K", "J-lo_G0801"):  SpectroscopicConfig(1120, -0.168, 1027, 1204), # T=(1%, 1%)
+    ("R3K", "J_G0802"):     SpectroscopicConfig(1258, -0.202, 1159, 1349),  # T=(1%, 1%)
+    ("R3K", "H_G0803"):     SpectroscopicConfig(1655, -0.260, 1467, 1804),   # T=(1%, 1%)
+    ("R3K", "Ks_G0804"):    SpectroscopicConfig(2195, -0.349, 1966, 2350),  # T=(1%, 1%)
+    ("R3K", "K-long_G0812"):SpectroscopicConfig(2195, -0.351, 1865, 2520)   # T=(1%, 1%)
     # Consider adding the following modes:
     #"HK, Ks": # SV data only
     #"HK, K-long": # CAL data only
