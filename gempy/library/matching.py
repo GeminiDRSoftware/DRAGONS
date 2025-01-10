@@ -396,7 +396,7 @@ class KDTreeFitter(Fitter):
         if self._method is not None:
             kwargs['method'] = self._method
 
-        if 'minimizer_kwargs' in arg_names:
+        if 'minimizer_kwargs' in kwarg_names:
             kwargs['minimizer_kwargs'] = {'args': farg,
                                           'method': 'Nelder-Mead'}
 
