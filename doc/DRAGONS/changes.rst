@@ -6,6 +6,22 @@
 Change Logs
 ***********
 
+3.2.3
+=====
+
+Dependency Updates
+------------------
+**gempy.library**
+
+* Ensure compatibility with SciPy v1.15 (matching.py)
+
+Improvements
+------------
+**gempy**
+
+* Improve interrupt handling and allow additional loggers to enhance the
+  operation of GOATS.
+
 3.2.2
 =====
 
