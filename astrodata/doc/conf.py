@@ -119,8 +119,8 @@ todo_include_todos = True
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'astropy': ('https://docs.astropy.org/en/stable/', None),
-    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    #'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    #'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
     'python': ('https://docs.python.org/3', None),
