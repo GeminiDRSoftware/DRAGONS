@@ -1,4 +1,4 @@
-# Synthetic OH emission line spectrum in XJHK-bands, convolved to R=500 
+# Synthetic OH emission line spectrum in XJHK-bands, convolved to R=500
 # Based on the line list computed by Philippe Rousselot (Observatory of Besancon, France).
 900.000 0.0012915
 900.100 0.0013413

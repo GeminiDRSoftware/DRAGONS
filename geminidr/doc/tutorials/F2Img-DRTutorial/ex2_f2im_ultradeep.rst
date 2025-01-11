@@ -33,5 +33,3 @@ this tutorial.
    ex2_f2im_ultradeep_dataset
    ex2_f2im_ultradeep_cmdline
    ex2_f2im_ultradeep_api
-
-

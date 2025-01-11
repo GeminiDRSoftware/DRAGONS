@@ -1,7 +1,7 @@
 To ensure some sort of uniformity across our Sphinx documents please use
-this template.  Follow the instructions below. 
+this template.  Follow the instructions below.
 
-First, go to the directory that will contain the sources and 
+First, go to the directory that will contain the sources and
 run sphinx-quickstart to get the basic structure laid out and the Makefile
 created.
 
@@ -24,13 +24,13 @@ index.rst
     The template index.rst has additional statements over the default to make
     the HTML look a bit better and to display the TODOs.  Also, it shows
     how to set up an appendix section.
-    
-    Copy the template index.rst on top of the automatically generated one 
-    and edit as needed.  In particular, edit the <replace_me> with what it 
-    says.  You can remove the appendix section if you don't need it.  Of 
+
+    Copy the template index.rst on top of the automatically generated one
+    and edit as needed.  In particular, edit the <replace_me> with what it
+    says.  You can remove the appendix section if you don't need it.  Of
     course, replace "intro" and "yourcontent" with the name of your .rst
     files.  (There is an example "intro.rst" file in the template directory.)
-    
+
     $ cp <path>/DPSG-TEMP-110_TeamSphinxManual/index.rst .
     $ launch editor on index.rst
 
@@ -40,19 +40,19 @@ index-latex.rst
     copy it over and edit the <replace_me> strings appropriately.  If you
     do not need an appendix, just delete that section (from .. raw:: latex
     to appendices/appendix_yourcontent, inclusively).
-    
+
     $ cp <path>/DPSG-TEMP-110_TeamSphinxManual/index-latex.rst .
     $ launch editor on index-latex.rst
-    
+
 conf.py
     There is a bit of work to do on this file changing strings relating to the
-    title of the manual, your name, version number.  However, all the special 
+    title of the manual, your name, version number.  However, all the special
     code to pick up the "index-latex.rst", the todo style, and setting up the
     extensions is done for you.  So, in the end, it is simpler this way.
 
     $ cp <path>/DPSG-TEMP-110_TeamSphinxManual/conf.py .
     $ launch editor on conf.py
-    
+
     Things to edit:
     * Replace all the "<REPLACE-WITH-TITLE>" with the title of your document.
     * Replace all the "ReplaceWithTitle" with a CamelCase string of your title.
@@ -61,7 +61,7 @@ conf.py
     * Replace the only occurrence of "2016" with the current year.
     * Find "version =", and set the X.Y version number
     * Find "release =", and set the full version/release number (eg. X.Y.Z)
-    
+
     That should do it.
 
 That's it with the edits.
@@ -70,4 +70,3 @@ For reference, the template directory has a source .rst example, "intro.rst"
 and an appendix example.  It would be nice if we could adopt the section
 delimiters from the examples as our standard.  (Though of course ReST does
 not care, just us, humans.)
- 

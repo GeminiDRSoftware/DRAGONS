@@ -11,4 +11,3 @@ start_test_set "$name"
 "$script_dir/reduce_img_not_bpm.sh" "$name" "WISE0833+0052" 9146 || nerr=${nerr}1
 
 end_test_set "$name" $nerr
-

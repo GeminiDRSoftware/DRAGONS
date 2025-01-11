@@ -10,4 +10,3 @@ start_test_set "$name"
 "$script_dir/reduce_img_nodarks.sh" F2/H/raw "S201801..S00[0-1]" 48 || nerr=${nerr}1
 
 end_test_set "$name" $nerr
-

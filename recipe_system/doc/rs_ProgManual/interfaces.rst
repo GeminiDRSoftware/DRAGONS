@@ -1,6 +1,6 @@
 .. interfaces.rst
 
-.. include:: references.txt 
+.. include:: references.txt
 
 .. _iface:
 
@@ -256,11 +256,11 @@ of a user recipe library and recipe.  It is simply a matter of setting the
 when the |RecipeMapper| is instantiated.  The |RecipeMapper| imports the file
 and returns the recipe function object.
 
-While some users may have set their ``PYTHONPATH`` to include such arbitrary 
-locations, which would allow the ``myrecipes`` module to be imported directly, 
-most people will not have such paths in their ``PYTHONPATH``, and would not be 
-able to directly import their recipe file without modifying their environment. 
-Using the RecipeMapper lets users avoid this hassle because it handles import 
+While some users may have set their ``PYTHONPATH`` to include such arbitrary
+locations, which would allow the ``myrecipes`` module to be imported directly,
+most people will not have such paths in their ``PYTHONPATH``, and would not be
+able to directly import their recipe file without modifying their environment.
+Using the RecipeMapper lets users avoid this hassle because it handles import
 transparently.
 
 ::
@@ -456,5 +456,3 @@ inspect the recipes returned by the |RecipeMapper|.
         p.stackFrames(zero=True)
         p.storeProcessedScience()
         return
-
-

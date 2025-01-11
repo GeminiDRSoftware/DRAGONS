@@ -38,7 +38,7 @@ a.nav, a.nav:link {
     text-decoration: none;
   font-family: Tahoma, "Helvetica Neue", "Trebuchet MS", Verdana, Arial, sans-serif;
   font-size: 16px;
-  color: #aaaaaa; 
+  color: #aaaaaa;
   margin-right: 11px;
 }
 
@@ -70,9 +70,9 @@ pre.code-block{
     padding-bottom: 1em;
     margin-top: 1em;
     margin-bottom: 3em;
-    
+
 }
-    
+
 pre.code {
 /*    background: #D8F4DC;*/
     border: 1px solid rgb(200, 200, 200);
@@ -81,13 +81,13 @@ pre.code {
     padding-bottom: 1em;
     margin-top: 1em;
     margin-bottom: 4em;
-    
+
 }
 
 div.include {
   margin-bottom: 2em;
 }
-    
+
 p {
     margin: 2em 0;
 }

@@ -2,18 +2,18 @@
 
 <html>
 <head>
-	
+
 	<title>Line Charts and Options</title>
 
     <link class="include" rel="stylesheet" type="text/css" href="../jquery.jqplot.min.css" />
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
   <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="../jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div class="logo">
@@ -30,7 +30,7 @@
     <div class="example-nav">
   <a href="area.html">Previous</a> <a href="./">Examples</a> <a href="axisLabelsRotatedText.html">Next</a></div>
 
-      
+
 <!-- Example scripts go here -->
 
 <p>jqPlot support axis labels through the "label" option of each axis.  The default label renderer creates labels in div tags, which allows full css control over every label.  Labels are assigned css classes like "jqplot-axis_name-label" where "axis_name" will be xaxis, yaxis, etc.</p>
@@ -46,7 +46,7 @@
 
 <pre class="code prettyprint brush: js"></pre>
 
-      
+
 <p>If a visitors is using a browser suppporting native canvas fonts, the plot belowsupported browser, they will see the labels in the plot below rendered as 12 pt Georgia (or their system serif font if Georgia is unavailable).  If they are on an unsupported browser, they will see the default Hershey font.</p>
 
 <div id="chart3" style="height:300px; width:500px;"></div>
@@ -54,14 +54,14 @@
 <pre class="code prettyprint brush: js"></pre>
 
 
-  
+
 <script class="code" type="text/javascript">
 $(document).ready(function(){
-  var cosPoints = []; 
-  for (var i=0; i<2*Math.PI; i+=0.1){ 
-     cosPoints.push([i, Math.cos(i)]); 
-  } 
-  var plot1 = $.jqplot('chart1', [cosPoints], {  
+  var cosPoints = [];
+  for (var i=0; i<2*Math.PI; i+=0.1){
+     cosPoints.push([i, Math.cos(i)]);
+  }
+  var plot1 = $.jqplot('chart1', [cosPoints], {
       series:[{showMarker:false}],
       axes:{
         xaxis:{
@@ -74,14 +74,14 @@ $(document).ready(function(){
   });
 });
 </script>
-  
+
 <script class="code" type="text/javascript">
 $(document).ready(function(){
-  var cosPoints = []; 
-  for (var i=0; i<2*Math.PI; i+=0.1){ 
-     cosPoints.push([i, Math.cos(i)]); 
-  } 
-  var plot2 = $.jqplot('chart2', [cosPoints], {  
+  var cosPoints = [];
+  for (var i=0; i<2*Math.PI; i+=0.1){
+     cosPoints.push([i, Math.cos(i)]);
+  }
+  var plot2 = $.jqplot('chart2', [cosPoints], {
       series:[{showMarker:false}],
       axes:{
         xaxis:{
@@ -96,14 +96,14 @@ $(document).ready(function(){
   });
 });
 </script>
-  
+
 <script class="code" type="text/javascript">
 $(document).ready(function(){
-  var cosPoints = []; 
-  for (var i=0; i<2*Math.PI; i+=0.1){ 
-     cosPoints.push([i, Math.cos(i)]); 
-  } 
-  var plot3 = $.jqplot('chart3', [cosPoints], {  
+  var cosPoints = [];
+  for (var i=0; i<2*Math.PI; i+=0.1){
+     cosPoints.push([i, Math.cos(i)]);
+  }
+  var plot3 = $.jqplot('chart3', [cosPoints], {
       series:[{showMarker:false}],
       axes:{
         xaxis:{
@@ -148,7 +148,7 @@ $(document).ready(function(){
 <!-- End additional plugins -->
 
 
-	</div>	
+	</div>
 	<script type="text/javascript" src="example.min.js"></script>
 
 </body>

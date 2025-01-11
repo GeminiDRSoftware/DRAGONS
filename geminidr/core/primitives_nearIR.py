@@ -577,32 +577,32 @@ class NearIR(Bookkeeping):
 
     def cleanFFTReadout(self, adinputs=None, **params):
         """
-        This attempts to remove the pattern noise in NIRI/GNIRS data 
-        in the Fourier domain. It shares similar capabilities as 
-        cleanReadout (automatically determining pattern coverage, 
-        leveling intra- and inter-quad biases), but with an additonal 
-        advantage of being able to handling pattern noise that varies 
+        This attempts to remove the pattern noise in NIRI/GNIRS data
+        in the Fourier domain. It shares similar capabilities as
+        cleanReadout (automatically determining pattern coverage,
+        leveling intra- and inter-quad biases), but with an additonal
+        advantage of being able to handling pattern noise that varies
         from row to row. NOTE, however, when battle tested, cleanReadout
         performs equally or better than this Fourier version. For e.g.,
         this Fourier version may not work when applied to an image with
         a strong gradient in background supersposed with a strong pattern
         noise; there will likely be issues in leveling of signals.
         Additionally, this Fourier version DOES NOT work well for cross-
-        dispersed spectra. 
+        dispersed spectra.
 
-        The processing flow of this algorithm is the following. For each 
-        quadrant, take the FFT row by row and relying on the known 
-        periodicity of the pattern (8 pix), look for significant peaks 
-        in the amplitude spectrum at the corresponding frequency and its 
-        harmonics, and interpolate over them. This should clean 
-        the noise. Subtract the resulting frame from the input frame 
-        to generate the pattern frame. 
-        Then, leverage the four-fold symmetry of the pattern coverage to 
-        determine the edges. To this end, median-combine the pattern 
-        amplitude functions (using the pattern frame) after standardizing 
-        each separately. The regions unaffected by pattern noise will 
-        show up in such a stacked amplitude function near -1. 
-        Finally, in a similar manner to cleanReadout, the signal levels  
+        The processing flow of this algorithm is the following. For each
+        quadrant, take the FFT row by row and relying on the known
+        periodicity of the pattern (8 pix), look for significant peaks
+        in the amplitude spectrum at the corresponding frequency and its
+        harmonics, and interpolate over them. This should clean
+        the noise. Subtract the resulting frame from the input frame
+        to generate the pattern frame.
+        Then, leverage the four-fold symmetry of the pattern coverage to
+        determine the edges. To this end, median-combine the pattern
+        amplitude functions (using the pattern frame) after standardizing
+        each separately. The regions unaffected by pattern noise will
+        show up in such a stacked amplitude function near -1.
+        Finally, in a similar manner to cleanReadout, the signal levels
         are normalized across the edges within each quad and across quads.
 
         Parameters
@@ -610,33 +610,33 @@ class NearIR(Bookkeeping):
         suffix: str, Default: "_readoutFFTCleaned"
             Suffix to be added to output files.
         win_size: int
-            Window size to compute local threshold for finding significant Fourier peaks at 
-            the target frequencies corresponding to the pattern noise periodicity.  
+            Window size to compute local threshold for finding significant Fourier peaks at
+            the target frequencies corresponding to the pattern noise periodicity.
         periodicity: int
             Pattern noise periodicity. For NIRI/GNIRS, it is known to be 8 pix.
         sigma_fact: float
-            Sigma factor used for the Fourier amplitude threshold. 
+            Sigma factor used for the Fourier amplitude threshold.
         pat_thres: float
-            Threshold used to characterise the strength of the standardized pattern noise. If 
-            smaller than this value, the pattern noise is absent.  
+            Threshold used to characterise the strength of the standardized pattern noise. If
+            smaller than this value, the pattern noise is absent.
         lquad: bool
             Level the offset in bias level across (sub-)quads that typically accompany
             pattern noise.
         l2clean: bool
-            Perform a second-level cleaning of the pattern to do away with Fourier artifacts, 
-            e.g., ringing from bright stars. This operates on the pattern frame and tries to 
+            Perform a second-level cleaning of the pattern to do away with Fourier artifacts,
+            e.g., ringing from bright stars. This operates on the pattern frame and tries to
             interpolate over rogue rows.
         l2thres: float
             Sigma factor to be used in thresholding for l2clean. For stubborn Fourier artifacts,
-            consider decreasing this value. 
+            consider decreasing this value.
 	smoothing_extent: int
-            Width (in pixels) of the region at a given quad interface to be smoothed over 
+            Width (in pixels) of the region at a given quad interface to be smoothed over
             on each side of the interface.
         pad_rows: int
-            Number of dummy rows to append to the top quads of the image. This is to take care of 
-            weird quad structure like that for GNIRS, where the top and bottom quads are not equal 
-            in size but are read out synchronously. For example, for GNIRS, the top quad is really 
-            only 510 rows but read out synchronously with the "bottom" 510 rows although this "bottom" 
+            Number of dummy rows to append to the top quads of the image. This is to take care of
+            weird quad structure like that for GNIRS, where the top and bottom quads are not equal
+            in size but are read out synchronously. For example, for GNIRS, the top quad is really
+            only 510 rows but read out synchronously with the "bottom" 510 rows although this "bottom"
             quad has 512 rows.
         clean: str, Default: "skip"
             Must be one of "skip" or "default". Note "force" option doesn't exist for this FFT method.
@@ -682,7 +682,7 @@ class NearIR(Bookkeeping):
                         pad_objmask = np.full((pad_rows, ext.OBJMASK.shape[1]), DQ.no_data)
                         ext.OBJMASK = np.insert(ext.OBJMASK, qysize, pad_objmask, axis=0)
                     log.stdinfo(f"Padded {pad_rows} dummy rows for image taken with {ad.instrument()}")
-                
+
                 ori_ext = deepcopy(ext)
                 pattern_data = {}
                 rows_cleaned = 0
@@ -697,7 +697,7 @@ class NearIR(Bookkeeping):
                             num_samples = len(quad.data[i,:])
                             row_data = quad.data[i,:]
                             row_fft = rfft(row_data)
-                            row_freq = rfftfreq(num_samples, 1) 
+                            row_freq = rfftfreq(num_samples, 1)
                             amp = np.abs(row_fft)
                             _ind = np.argmin(np.abs(row_freq - 1/periodicity)) ##find the index closest to the principal target frequency
                             a_mean, a_median, a_std = sigma_clipped_stats(amp[_ind-win_size:_ind+win_size], sigma=2.0)
@@ -707,14 +707,14 @@ class NearIR(Bookkeeping):
                             if np.interp(1/periodicity, row_freq, amp)>amp_threshold: ##if principal target frequency stands out then automatically clean its harmonics
                                 counter = 1
                                 while int(counter*1/periodicity*num_samples) <= (num_samples-1):
-                                    mask.append(int(counter*1/periodicity*num_samples)) 
+                                    mask.append(int(counter*1/periodicity*num_samples))
                                     counter += 1
                                 rows_cleaned += 1
 
                             mask = np.array(mask)
                             real_ = row_fft.real
                             imag_ = row_fft.imag
-                            idx = np.arange(len(row_fft)) 
+                            idx = np.arange(len(row_fft))
                             MM = np.isin(idx, mask)
                             real_[MM] = np.interp(idx[MM].astype(float), idx[~MM].astype(float), real_[~MM])
                             imag_[MM] = np.interp(idx[MM].astype(float), idx[~MM].astype(float), imag_[~MM])
@@ -723,12 +723,12 @@ class NearIR(Bookkeeping):
                             row_fft.real = real_
                             row_fft.imag = imag_
                             row_data_new = irfft(row_fft)
-                            quad.data[i,:] = row_data_new 
+                            quad.data[i,:] = row_data_new
 
                         pattern_data[tb+'-'+lr] = ori_quad.data - quad.data
 
                 if lquad and rows_cleaned>0:
-                    ## intra-quad leveling             
+                    ## intra-quad leveling
                     for K in ['bottom-left', 'bottom-right']:
                         pattern_data[K] = np.flipud(pattern_data[K])
 
@@ -745,8 +745,8 @@ class NearIR(Bookkeeping):
                     edges = {} #dummy dict to make use of the _levelQuad function
                     if np.sum(MSK) > 0:
                         for ystart, tb in zip((0, qysize),('bottom','top')):
-                            for xstart, lr in zip((0, qxsize),('left','right')): 
-                                quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]     
+                            for xstart, lr in zip((0, qxsize),('left','right')):
+                                quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]
                                 mean_collapsed_signa, median_collapsed_signal, __ = sigma_clipped_stats(quad.data, axis=1, sigma=2.0)
 
                                 if np.sum(MSK) > np.sum(~MSK): ##to normalize the smaller section to the larger section
@@ -759,7 +759,7 @@ class NearIR(Bookkeeping):
                                 median_collapsed_signal[mask] = np.NAN
                                 mean_collapsed_signa[mask] = np.NAN
 
-                                ## for intra-quad, level to the same value. Note that when there is a strong gradient in the quad, this method will fail 
+                                ## for intra-quad, level to the same value. Note that when there is a strong gradient in the quad, this method will fail
                                 for _ind in np.arange(len(median_collapsed_signal))[mask]:
                                     offset = np.nanmean(median_collapsed_signal) - sigma_clipped_stats(quad.data[_ind,:], sigma=2.0)[1]
                                     quad.data[_ind,:] += offset
@@ -776,37 +776,37 @@ class NearIR(Bookkeeping):
                         MASK = ext.mask
                     masked_data = np.ma.masked_array(ext.data, mask=MASK)
                     self._levelQuad(masked_data, smoothing_extent=smoothing_extent, edges=edges)
-                    
 
-                if l2clean and rows_cleaned>0: 
+
+                if l2clean and rows_cleaned>0:
                     for ystart, tb in zip((0, qysize),('bottom','top')):
-                        for xstart, lr in zip((0, qxsize),('left','right')): 
+                        for xstart, lr in zip((0, qxsize),('left','right')):
                             quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]
-                            ori_quad = ori_ext.nddata[0][ystart:ystart + qysize, xstart:xstart + qxsize]            
-                            ## update the pattern data (lquad, if called, would have modified it) 
+                            ori_quad = ori_ext.nddata[0][ystart:ystart + qysize, xstart:xstart + qxsize]
+                            ## update the pattern data (lquad, if called, would have modified it)
                             pattern_data[tb+'-'+lr] = ori_quad.data - quad.data
                             if tb=='top':
                                 pattern_data[tb+'-'+lr] = np.flipud(ori_quad.data - quad.data)
 
                     strength = {}
                     for K, V in pattern_data.items():
-                        strength[K] = np.std(V, axis=1) 
+                        strength[K] = np.std(V, axis=1)
 
                     collapsed_matrix = pd.DataFrame(strength)
-                    standardized_collapsed_matrix = (collapsed_matrix - collapsed_matrix.median())/collapsed_matrix.std() 
+                    standardized_collapsed_matrix = (collapsed_matrix - collapsed_matrix.median())/collapsed_matrix.std()
                     meddev_matrix = standardized_collapsed_matrix.sub(standardized_collapsed_matrix.mean(axis=1), axis=0) ## flatten the curves
 
                     pattern_data_new = {}
-                    bucket = np.array([meddev_matrix[V] for V in meddev_matrix.columns]) 
-                    mn, med, st = sigma_clipped_stats(bucket, sigma=2.5) 
+                    bucket = np.array([meddev_matrix[V] for V in meddev_matrix.columns])
+                    mn, med, st = sigma_clipped_stats(bucket, sigma=2.5)
 
                     for K in meddev_matrix.columns:
-                        bb = meddev_matrix[K].values 
+                        bb = meddev_matrix[K].values
                         mask = (bb < mn - l2thres * st) | (bb > mn + l2thres * st)
                         pattern_data_new[K] = deepcopy(pattern_data[K])
                         if np.sum(mask) > 0:
-                            for i in range(pattern_data_new[K].shape[1]): ## work at column-by-column level 
-                                pattern_data_new[K][mask,i] = np.interp(np.arange(pattern_data[K].shape[0])[mask], 
+                            for i in range(pattern_data_new[K].shape[1]): ## work at column-by-column level
+                                pattern_data_new[K][mask,i] = np.interp(np.arange(pattern_data[K].shape[0])[mask],
                                                                      np.arange(pattern_data[K].shape[0])[~mask], pattern_data[K][~mask,i])
 
                     for K in ['top-left', 'top-right']:
@@ -815,7 +815,7 @@ class NearIR(Bookkeeping):
                     ## create the full improved pattern
                     temp_top = np.hstack((pattern_data_new['top-left'], pattern_data_new['top-right']))
                     temp_bottom = np.hstack((pattern_data_new['bottom-left'], pattern_data_new['bottom-right']))
-                    temp = np.vstack((temp_bottom, temp_top))            
+                    temp = np.vstack((temp_bottom, temp_top))
 
                     ext.data = ori_ext.data[0] - temp
                     if pad_rows>0:
@@ -823,14 +823,14 @@ class NearIR(Bookkeeping):
                         ext.mask = np.delete(ext.mask, np.arange(qysize, qysize+pad_rows), axis=0)
                         if hasattr(ext, 'OBJMASK'):
                             ext.OBJMASK = np.delete(ext.OBJMASK, np.arange(qysize, qysize+pad_rows), axis=0)
-                    
+
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
-    
+
 
     def separateFlatsDarks(self, adinputs=None, **params):
         """

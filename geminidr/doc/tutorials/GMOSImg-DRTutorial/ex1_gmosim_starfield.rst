@@ -15,5 +15,3 @@ in the i-band.
    ex1_gmosim_starfield_dataset
    ex1_gmosim_starfield_cmdline
    ex1_gmosim_starfield_api
-
-

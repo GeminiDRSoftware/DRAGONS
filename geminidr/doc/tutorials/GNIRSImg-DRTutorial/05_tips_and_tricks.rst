@@ -177,4 +177,3 @@ The list of recognized processed calibration is:
 * processed_flat
 * processed_fringe
 * processed_standard
-

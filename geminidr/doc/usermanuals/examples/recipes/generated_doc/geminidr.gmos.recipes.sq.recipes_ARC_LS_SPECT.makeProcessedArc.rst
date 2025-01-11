@@ -18,4 +18,3 @@ makeProcessedArc
         p.determineDistortion()
         p.storeProcessedArc()
         p.writeOutputs()
-

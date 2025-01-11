@@ -18,5 +18,3 @@ class ETIParam:
 
     def clean(self):
         log.debug("ETIParam clean(): pass")
-
-

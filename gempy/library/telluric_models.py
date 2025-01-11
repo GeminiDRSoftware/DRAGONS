@@ -455,4 +455,3 @@ def Planck(w, temperature=10000., scale=1.):
     return scale * (2 * h * c**2 / (w * u.nm) ** 5 /
                     (np.exp(h * c/(w * u.nm * k_B * temperature * u.K)) -
                      1)).to(u.W / (u.m ** 2 * u.nm)).value
-

@@ -19,4 +19,3 @@ that extra order using the interactive tools.
    ex4_gmosls_nsred_dataset
    ex4_gmosls_nsred_cmdline
    ex4_gmosls_nsred_api
-

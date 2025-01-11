@@ -1,29 +1,61 @@
-
-
-__all__ = ["PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT", "PLOT_TOOLS_HELP_SUBTEXT", "REGION_EDITING_HELP_SUBTEXT",
-           "CALCULATE_SENSITIVITY_HELP_TEXT", "DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT",
-           "NORMALIZE_FLAT_HELP_TEXT", "DEFAULT_HELP", "TRACE_APERTURES", "SKY_CORRECT_FROM_SLIT_HELP_TEXT"]
+__all__ = [
+    "PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT",
+    "PLOT_TOOLS_HELP_SUBTEXT",
+    "REGION_EDITING_HELP_SUBTEXT",
+    "CALCULATE_SENSITIVITY_HELP_TEXT",
+    "DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT",
+    "NORMALIZE_FLAT_HELP_TEXT",
+    "DEFAULT_HELP",
+    "TRACE_APERTURES",
+    "SKY_CORRECT_FROM_SLIT_HELP_TEXT",
+]
 
 
 def _plot_tool(name, icon):
-    return '<img width=16 height=16 src="dragons/static/help/' + icon + '.png"/><span><b>' + name + '</b></span><br/>'
+    return (
+        '<img width=16 height=16 src="dragons/static/help/'
+        + icon
+        + '.png"/><span><b>'
+        + name
+        + "</b></span><br/>"
+    )
 
 
 tools_with_select = (
-    ("Move", 'move', 'drag the plot around to reposition it'),
-    ("Free-Select", 'lasso_select', 'draw an arbitrary area to select points for masking/unmasking<br/><i>also works with shift</i>'),
-    ('Box Zoom', 'box_zoom', 'drag a rectangle to zoom into that area of the plot'),
-    ('Box Select', 'box_select', 'drag a rectangle to select points for masking/unmasking<br/><i>also works with shift</i>'),
-    ('Scroll Wheel Zoom', 'wheel_zoom', 'enable the scroll wheel to zoom the plot in or out'),
-    ('Point Select', 'tap_select', 'click on individual points to select or unselect for masking/unmasking.<br/><i>also works with shift</i>'),
-    ('Reset', 'reset', 'Reset the view, clearing any zoom or moves')
+    ("Move", "move", "drag the plot around to reposition it"),
+    (
+        "Free-Select",
+        "lasso_select",
+        "draw an arbitrary area to select points for masking/unmasking<br/><i>also works with shift</i>",
+    ),
+    ("Box Zoom", "box_zoom", "drag a rectangle to zoom into that area of the plot"),
+    (
+        "Box Select",
+        "box_select",
+        "drag a rectangle to select points for masking/unmasking<br/><i>also works with shift</i>",
+    ),
+    (
+        "Scroll Wheel Zoom",
+        "wheel_zoom",
+        "enable the scroll wheel to zoom the plot in or out",
+    ),
+    (
+        "Point Select",
+        "tap_select",
+        "click on individual points to select or unselect for masking/unmasking.<br/><i>also works with shift</i>",
+    ),
+    ("Reset", "reset", "Reset the view, clearing any zoom or moves"),
 )
 
 tools_without_select = (
-    ("Move", 'move', 'drag the plot around to reposition it'),
-    ('Box Zoom', 'box_zoom', 'drag a rectangle to zoom into that area of the plot'),
-    ('Scroll Wheel Zoom', 'wheel_zoom', 'enable the scroll wheel to zoom the plot in or out'),
-    ('Reset', 'reset', 'Reset the view, clearing any zoom or moves')
+    ("Move", "move", "drag the plot around to reposition it"),
+    ("Box Zoom", "box_zoom", "drag a rectangle to zoom into that area of the plot"),
+    (
+        "Scroll Wheel Zoom",
+        "wheel_zoom",
+        "enable the scroll wheel to zoom the plot in or out",
+    ),
+    ("Reset", "reset", "Reset the view, clearing any zoom or moves"),
 )
 
 
@@ -49,50 +81,59 @@ FIT1D_PARAMETERS_HELP_WITHOUT_GROW = """
 """
 
 
-FIT1D_PARAMETERS_HELP_WITH_GROW = FIT1D_PARAMETERS_HELP_WITHOUT_GROW + """
+FIT1D_PARAMETERS_HELP_WITH_GROW = (
+    FIT1D_PARAMETERS_HELP_WITHOUT_GROW
+    + """
 <dt>Grow</dt>
 <dd>
     Radius within which reject pixels adjacent to sigma-clipped pixels
 </dd>
 """
+)
 
 
-PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT = """
+PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT = (
+    """
 <h3>Plot Tools</h3>
 
 <p>
-<div class="plot_tools_help"><div>""" + \
-    '\n'.join(_plot_tool(t[0], t[1]) for t in tools_with_select) + \
-"""
+<div class="plot_tools_help"><div>"""
+    + "\n".join(_plot_tool(t[0], t[1]) for t in tools_with_select)
+    + """
 </div></div>
 Data points in the upper plot may be selected in order to mask or
 unmask them from consideration.  To select, choose the <i>Box Select</i>,
-<i>Point Select</i>, or <i>Free-Select</i> tool to the right of the figure. 
+<i>Point Select</i>, or <i>Free-Select</i> tool to the right of the figure.
 Selections may be additive if you hold down the shift key.  Once you have a
 selection, you may <b>mask</b> or <b>unmask</b> the selection by hitting
 the <b>M</b> or <b>U</b> key respectively.
 </p>
-<dl>""" + \
-    '\n'.join('<dt>' + t[0] + '</dt><dd>' + t[2] + '</dd>' for t in tools_with_select) + \
- """
+<dl>"""
+    + "\n".join("<dt>" + t[0] + "</dt><dd>" + t[2] + "</dd>" for t in tools_with_select)
+    + """
 </dl>
 <br clear="all"/>"""
+)
 
 
-PLOT_TOOLS_HELP_SUBTEXT = """
+PLOT_TOOLS_HELP_SUBTEXT = (
+    """
 <h3>Plot Tools</h3>
 
 <p>
-<div class="plot_tools_help"><div>""" + \
-    '\n'.join(_plot_tool(t[0], t[1]) for t in tools_without_select) + \
-"""
+<div class="plot_tools_help"><div>"""
+    + "\n".join(_plot_tool(t[0], t[1]) for t in tools_without_select)
+    + """
 </div></div>
 </p>
-<dl>""" + \
-    '\n'.join('<dt>' + t[0] + '</dt><dd>' + t[2] + '</dd>' for t in tools_without_select) + \
- """
+<dl>"""
+    + "\n".join(
+        "<dt>" + t[0] + "</dt><dd>" + t[2] + "</dd>" for t in tools_without_select
+    )
+    + """
 </dl>
 <br clear="all"/>"""
+)
 
 
 REGION_EDITING_HELP_SUBTEXT = """
@@ -111,7 +152,8 @@ results there as well.
 """
 
 
-CALCULATE_SENSITIVITY_HELP_TEXT = """
+CALCULATE_SENSITIVITY_HELP_TEXT = (
+    """
 <h2>Help</h2>
 <p>
     This primitive calculates the overall sensitivity of the system
@@ -124,7 +166,9 @@ CALCULATE_SENSITIVITY_HELP_TEXT = """
     a value for each wavelength when the fluxCalibrate primitive is run.
 </p>
 <h3>Fitting parameters</h3>
-<dl>""" + FIT1D_PARAMETERS_HELP_WITHOUT_GROW + """
+<dl>"""
+    + FIT1D_PARAMETERS_HELP_WITHOUT_GROW
+    + """
 <dt>Regions</dt>
 <dd>
     Comma-separated list of colon-separated wavelength (not pixel) pairs
@@ -133,10 +177,14 @@ CALCULATE_SENSITIVITY_HELP_TEXT = """
     continue to the end of the data.
 </dd>
 </dl>
-""" + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
+"""
+    + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
+    + REGION_EDITING_HELP_SUBTEXT
+)
 
 
-DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT = """
+DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT = (
+    """
 <h2>Help</h2>
 <p>
     This primitive provides wavelength calibration from a reference
@@ -212,11 +260,16 @@ DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT = """
 </p>
 <h3>Fitting parameters</h3>
 <dl>
-""" + FIT1D_PARAMETERS_HELP_WITHOUT_GROW + """
-</dl>""" + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT.replace("upper", "central")
+"""
+    + FIT1D_PARAMETERS_HELP_WITHOUT_GROW
+    + """
+</dl>"""
+    + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT.replace("upper", "central")
+)
 
 
-NORMALIZE_FLAT_HELP_TEXT = """
+NORMALIZE_FLAT_HELP_TEXT = (
+    """
 <h2>Help</h2>
 <p>
     This primitive normalizes a GMOS Longslit spectroscopic flatfield
@@ -228,7 +281,9 @@ NORMALIZE_FLAT_HELP_TEXT = """
     masked out.
 </p>
 <h3>Fitting parameters</h3>
-<dl>""" + FIT1D_PARAMETERS_HELP_WITH_GROW + """
+<dl>"""
+    + FIT1D_PARAMETERS_HELP_WITH_GROW
+    + """
 <dt>Regions</dt>
 <dd>
     Comma-separated list of colon-separated pixel coordinate pairs
@@ -237,7 +292,10 @@ NORMALIZE_FLAT_HELP_TEXT = """
     continue to the end of the data.
 </dd>
 </dl>
-""" + PLOT_TOOLS_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
+"""
+    + PLOT_TOOLS_HELP_SUBTEXT
+    + REGION_EDITING_HELP_SUBTEXT
+)
 
 
 DEFAULT_HELP = """
@@ -250,7 +308,8 @@ to your liking and click the <b>Accept</b> button to continue.</p>
 """
 
 
-TRACE_APERTURES = """
+TRACE_APERTURES = (
+    """
 <h2>Help</h2>
 
 <p> Traces the spectrum in 2D spectral images for each aperture center
@@ -278,7 +337,7 @@ TRACE_APERTURES = """
 <p> The red line in the top plot shows the function that better represents
     how our target's spatial position varies continuously along the
     dispersion direction, following the traced data using a Chebyshev
-    function. <p> 
+    function. <p>
 
 <p> You can change the parameters in the rightmost column within each tab,
     which contains the Fitting Parameters for each APERTURE. If you change
@@ -287,7 +346,7 @@ TRACE_APERTURES = """
 
 <p> For both Tracing Parameters and Fitting Parameters, you will find a
     reset button. Each reset button only resets the parameters in the same
-    column it belongs. </p>       
+    column it belongs. </p>
 
 <p> Once you are satisfied with the tracing and the fit, press the Accept
     button at the top right to continue your data reduction using the
@@ -309,7 +368,9 @@ TRACE_APERTURES = """
 </dl>
 
 <h3> Fitting Parameters </h3>
-<dl>""" + FIT1D_PARAMETERS_HELP_WITH_GROW + """
+<dl>"""
+    + FIT1D_PARAMETERS_HELP_WITH_GROW
+    + """
 <dt>Regions</dt>
 <dd>
     Comma-separated list of colon-separated pixel coordinate pairs
@@ -319,9 +380,11 @@ TRACE_APERTURES = """
 </dd>
 </dl>
 """
+)
 
 
-SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
+SKY_CORRECT_FROM_SLIT_HELP_TEXT = (
+    """
 <h2>Help</h2>
 <p>
     This primitive removes the background sky level on a line-by-line basis
@@ -340,7 +403,9 @@ SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
     is used.
 </p>
 <h3>Fitting parameters</h3>
-<dl>""" + FIT1D_PARAMETERS_HELP_WITH_GROW + """
+<dl>"""
+    + FIT1D_PARAMETERS_HELP_WITH_GROW
+    + """
 <dt>Regions</dt>
 <dd>
     Comma-separated list of colon-separated pixel coordinate pairs
@@ -349,10 +414,14 @@ SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
     continue to the end of the data.
 </dd>
 </dl>
-""" + PLOT_TOOLS_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
+"""
+    + PLOT_TOOLS_HELP_SUBTEXT
+    + REGION_EDITING_HELP_SUBTEXT
+)
 
 
-TELLURIC_CORRECT_HELP_TEXT = """
+TELLURIC_CORRECT_HELP_TEXT = (
+    """
 <h2>Help</h2>
 <p>
     This primitive calculates the sensitivity of the instrument and the
@@ -362,7 +431,9 @@ TELLURIC_CORRECT_HELP_TEXT = """
     independently, but a single absorption model applies to all the data.
 </p>
 <h3>Fitting parameters</h3>
-<dl>""" + FIT1D_PARAMETERS_HELP_WITH_GROW + """
+<dl>"""
+    + FIT1D_PARAMETERS_HELP_WITH_GROW
+    + """
 <dt>Regions</dt>
 <dd>
     Comma-separated list of colon-separated wavelength (not pixel) pairs
@@ -371,4 +442,7 @@ TELLURIC_CORRECT_HELP_TEXT = """
     continue to the end of the data.
 </dd>
 </dl>
-""" + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
+"""
+    + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT
+    + REGION_EDITING_HELP_SUBTEXT
+)

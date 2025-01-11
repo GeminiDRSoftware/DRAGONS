@@ -135,4 +135,3 @@ class FlClean(GmosaicParam):
 
 mosaic_detectors_hardcoded_params = {"Stdout"      : IrafStdout(),
                                      "Stderr"      : IrafStdout()}
-

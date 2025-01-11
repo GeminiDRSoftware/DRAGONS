@@ -11,4 +11,3 @@ Primitives Reference
     :numbered:
 
     primitive_createExample
-

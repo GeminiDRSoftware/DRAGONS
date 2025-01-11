@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -31,22 +31,22 @@
         <div class="col1" id="example-content">
 
 <div class="example-plot" id="chart1" style="width: 700px; height: 400px;"></div>
-  
+
 <!-- Example scripts go here -->
 
 <script type="text/javascript" src="yahooData.js" ></script>
 
 <script type="text/javascript" class="code">
 $(document).ready(function(){
-    plot1 = $.jqplot('chart1', [yahoo], { 
-        series: [{ 
+    plot1 = $.jqplot('chart1', [yahoo], {
+        series: [{
             renderer: $.jqplot.OHLCRenderer,
             rendererOptions: {
                 candleStick: true
-            } 
-        }], 
-        axes: { 
-            xaxis: { 
+            }
+        }],
+        axes: {
+            xaxis: {
                 renderer:$.jqplot.DateAxisRenderer,
                 rendererOptions: {
                     tickInset: 0
@@ -54,17 +54,17 @@ $(document).ready(function(){
                 tickRenderer: $.jqplot.CanvasAxisTickRenderer,
                 tickOptions: {
                   angle: -30
-                } 
-            }, 
-            yaxis: {  
+                }
+            },
+            yaxis: {
                 renderer: $.jqplot.LogAxisRenderer,
-                tickOptions:{ prefix: '$' } 
-            } 
-        }, 
+                tickOptions:{ prefix: '$' }
+            }
+        },
         cursor:{
-            show: true, 
+            show: true,
             zoom: true
-        } 
+        }
     });
 });
 </script>

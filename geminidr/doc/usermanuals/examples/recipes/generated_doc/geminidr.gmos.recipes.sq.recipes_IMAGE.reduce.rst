@@ -37,4 +37,3 @@ convert the raw input science images into a stacked image.
         p.stackFrames(zero=True)
         p.storeProcessedScience(suffix="_image")
         return
-

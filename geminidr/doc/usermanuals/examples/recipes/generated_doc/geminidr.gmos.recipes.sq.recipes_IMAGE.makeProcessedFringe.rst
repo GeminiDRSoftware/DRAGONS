@@ -30,4 +30,3 @@ to the name of the first input bias image with "_fringe.fits" appended.
         p.makeFringeFrame()
         p.storeProcessedFringe()
         return
-

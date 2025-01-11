@@ -68,4 +68,3 @@ class CalibDBGHOST(CalibDB):
             adinputs, suffix=suffix, primname=self.myself(), keyword="PROCSTND")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
-

@@ -286,5 +286,3 @@ If all is well, you will see something like::
     Wrote N20180106S0700_prepared.fits in output directory
 
     reduce completed successfully.
-
-

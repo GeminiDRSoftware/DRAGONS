@@ -49,7 +49,7 @@ class AstroDataCirpass(AstroDataGemini):
     @astro_data_descriptor
     def ra(self):
         """
-        Returns the name of the 
+        Returns the name of the
 
         Returns
         -------
@@ -62,7 +62,7 @@ class AstroDataCirpass(AstroDataGemini):
     @astro_data_descriptor
     def dec(self):
         """
-        Returns the name of the 
+        Returns the name of the
 
         Returns
         -------

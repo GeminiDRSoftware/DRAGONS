@@ -225,4 +225,3 @@ class GSAOI(Gemini, NearIR):
     def _has_valid_extensions(ad):
         """Check the AD has a valid number of extensions"""
         return len(ad) == 4
-

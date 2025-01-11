@@ -26,4 +26,3 @@ def ad_min():
     ad = astrodata.create(phu, [sci, ])
     ad.filename = rawfilename
     return ad
-

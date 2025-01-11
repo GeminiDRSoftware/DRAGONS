@@ -20,14 +20,14 @@ command `reduce` is in your ``PATH`` and that ``PYTHONPATH`` includes the
 location where the modules ``astrodata``, the ``recipe_system``, and ``gempy``
 are installed.
 
-The demo data is distributed separately.  You can find the demo data package 
-``gemini_python_datapkg-X1.tar.gz`` on the Gemini website where you found the 
+The demo data is distributed separately.  You can find the demo data package
+``gemini_python_datapkg-X1.tar.gz`` on the Gemini website where you found the
 gemini_python package.  Unpack the data package somewhere convenient::
 
    tar xvzf gemini_python_datapkg-X1.tar.gz
 
 In there, you will find a subdirectory named ``data_for_reduce_demo``. Those are
-the data we will use here.  You will also find an empty directory called 
+the data we will use here.  You will also find an empty directory called
 ``playground``.  This is your playground. The instructions in this demo assume
 that you are running the ``reduce`` command from that directory.  There is no
 requirements to run ``reduce`` from that directory, but if you want to follow
@@ -39,8 +39,8 @@ In this demo, we will reduce a simple dither-on-source GMOS imaging sequence.
 We will first process the raw biases, and then the raw twilight flats.  We will
 then use those processed files to process and stack the science observation.
 
-Instead of the default Quality Assessment (QA) recipe that is used at the Gemini 
-summits, we will use another recipe that will focus on the reduction rather 
+Instead of the default Quality Assessment (QA) recipe that is used at the Gemini
+summits, we will use another recipe that will focus on the reduction rather
 than on the multiple measurements of the QA metrics used at night.  QA metrics,
 here the image quality (IQ), will only be measured at the end of the reduction
 rather than throughout the reduction.   Another difference between the standard
@@ -59,10 +59,10 @@ as GMOS biases and GMOS twilight flats.
 
 For the science data, we will override the recipe selection to use the Demo recipe.
 If we were not to override the recipe selection, the system would automatically
-select the QA recipe.  The Demo recipe is more representative of a standard 
+select the QA recipe.  The Demo recipe is more representative of a standard
 Quick-Look reduction with stacking, hence probably more interesting to the reader.
 
-The standard recipe to process GMOS biases is named ``makeProcessedBias`` 
+The standard recipe to process GMOS biases is named ``makeProcessedBias``
 and contains the instruction set::
 
  recipe_tags = set(['GMOS', 'CAL', 'BIAS'])
@@ -123,12 +123,12 @@ and contains the instruction set::
      return
 
 .. todo::
-   The new recipe libraries have no ``reduceDemo`` recipe. 
+   The new recipe libraries have no ``reduceDemo`` recipe.
 
 The Demo recipe is named ``reduceDemo`` and contains the instruction set::
 
    # reduceDemo
-   
+
    p.prepare()
    p.addDQ()
    p.addVAR(read_noise=True)
@@ -147,8 +147,8 @@ The Demo recipe is named ``reduceDemo`` and contains the instruction set::
    p.detectSources()
    p.measureIQ()
 
-For the curious, the standard bias and flat recipes are found in 
-``???`` and the demo recipe is in 
+For the curious, the standard bias and flat recipes are found in
+``???`` and the demo recipe is in
 ``???demos/``.  You do not really need that information
 as the system will find them on its own.
 
@@ -165,7 +165,7 @@ The Processed Bias
 
 The first step is to create the processed bias.  We are using the standard
 recipe.  The system will recognize the inputs as GMOS biases and call the
-appropriate recipe automatically. 
+appropriate recipe automatically.
 
 The biases were taken on different dates around the time of the science
 observations.  For convenience, we will use a file with the list of datasets
@@ -173,9 +173,9 @@ as input instead of listing all the input datasets individually.  We will use th
 tool, ``typewalk``, to painlessly create the list. ::
 
    cd <your_path>/gemini_python_datapkg-X1/playground
-   
+
    typewalk --tags GMOS BIAS --dir ../data_for_reduce_demo -o bias.list
-   
+
    reduce @bias.list
 
 This creates the processed bias, ``N20120202S0955_bias.fits``.  The output
@@ -188,23 +188,23 @@ If you wish to see what the processed bias looks like::
 
 .. note::
    This will issue an error about the file already existing.  Ignore it.
-   The explanation of what is going on is beyond the scope of this demo.  We 
+   The explanation of what is going on is beyond the scope of this demo.  We
    will fix this, eventually.  Remember that this is a release of software meant
    for internal use; there are still plenty of issues to be resolved.*
 
 The Processed Flat
 ^^^^^^^^^^^^^^^^^^
 
-Next we create a processed flat.  We will use the processed bias we have 
+Next we create a processed flat.  We will use the processed bias we have
 just created.  The system will recognize the inputs as GMOS twilight flats and
 call the appropriate recipe automatically.
 
 The "public" RecipeSystem does not yet have a Local Calibration Server.  Therefore,
 we will need to specify the processed bias we want to use on the `reduce` command
-line.  For information only, internally the QA pipeline at the summit uses a 
+line.  For information only, internally the QA pipeline at the summit uses a
 central calibration server and the most appropriate processed calibrations available
 are selected and retrieved automatically.  We hope to be able to offer a "local",
-end-user version of this system in the future.  For now, calibrations must be 
+end-user version of this system in the future.  For now, calibrations must be
 specified on the command line.
 
 For the flats, we do not really need a list, we can use wild cards::
@@ -236,9 +236,9 @@ we will specify the processed calibrations, bias and flat, we wish to use. ::
       -r reduceDemo -p clobber=True
 
 The demo data was obtained with the z' filter, therefore the images contain fringing.
-The ``makeFringe`` and ``fringeCorrect`` primitives are filter-aware, they will do 
-something only when the data is from a filter that produces fringing, like the z' 
-filter.  The processed fringe that is created is stored with the other processed 
+The ``makeFringe`` and ``fringeCorrect`` primitives are filter-aware, they will do
+something only when the data is from a filter that produces fringing, like the z'
+filter.  The processed fringe that is created is stored with the other processed
 calibrations in ``./calibrations/`` and it is named ``N20120203S0281_fringe.fits``.
 The ``_fringe`` suffix indicates a processed fringe.
 
@@ -261,6 +261,5 @@ It is good practice to reset the RecipeSystem state when you are done::
 
    superclean --safe
 
-Your files will stay there, only some hidden RecipeSystem directories 
+Your files will stay there, only some hidden RecipeSystem directories
 and files will be deleted.
-

@@ -584,7 +584,7 @@ class ImageDisplay:
 
             # Python 3 compat
             #  It used to be that in Py2 is wasn't type str, we found cases
-            #  where it is, so now, there's a try block too.  Py2 and Py3 
+            #  where it is, so now, there's a try block too.  Py2 and Py3
             #  compat.
             if isinstance(s, str):
                 try:

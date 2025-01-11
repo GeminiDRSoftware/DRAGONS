@@ -32,4 +32,3 @@ flat image with "_flat.fits" appended.
         p.makeIRAFCompatible()
         p.storeProcessedFlat()
         return
-

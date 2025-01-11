@@ -16,5 +16,3 @@ Hamamatsu CCDs.
    ex3_gmosls_ns_dataset
    ex3_gmosls_ns_cmdline
    ex3_gmosls_ns_api
-
-

@@ -24,5 +24,3 @@ def test__total_obj_flux(ad_slit):
                        for ext in ad_slit])
     for actual, measured in zip(sums, fluxes):
         assert 0.98 < measured / actual < 1.01
-
-

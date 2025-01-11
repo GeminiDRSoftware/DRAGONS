@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -30,11 +30,11 @@
       <div class="colleft">
         <div class="col1" id="example-content">
 
-  
+
 <!-- Example scripts go here -->
 
 
-  <link class="include" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.0/themes/smoothness/jquery-ui.css" rel="Stylesheet" /> 
+  <link class="include" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.0/themes/smoothness/jquery-ui.css" rel="Stylesheet" />
 
 
     <style type="text/css">
@@ -148,7 +148,7 @@
         </td>
 
         <td class="chart">
-            <div class="chart-container"> 
+            <div class="chart-container">
                 <div id="chart1"></div>
                 <div class="jqplot-datestamp"></div>
             </div>
@@ -157,13 +157,13 @@
     </table>
 
     <pre class="code brush:js"></pre>
-  
+
 
 
     <script class="code" type="text/javascript" language="javascript">
     $(document).ready(function(){
 
-        // the "x" values from the data will go into the ticks array.  
+        // the "x" values from the data will go into the ticks array.
         // ticks should be strings for this case where we have values like "75+"
         var ticks = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75+", ""];
 
@@ -179,7 +179,7 @@
         var blueColors = ["#3F7492", "#4F9AB8", "#C57225", "#C57225"];
 
         // To accomodate changing y axis, need to keep track of plot options, so they are defined separately
-        // changing axes will require recreating the plot, so need to keep 
+        // changing axes will require recreating the plot, so need to keep
         // track of state changes.
         var plotOptions = {
             // We set up a customized title which acts as labels for the left and right sides of the pyramid.
@@ -332,7 +332,7 @@
         // The followng functions use verbose css selectors to make
         // it clear exactly which elements they are binging to/operating on
         //////
-        
+
         //////
         // Function which checkes if the countour lines checkbox is checked.
         // If not, hide the contour lines by hiding the canvases they are
@@ -345,9 +345,9 @@
                 plot1.series[3].canvas._elem.addClass('jqplot-series-hidden');
                 plot1.series[3].canvas._elem.hide();
             }
-        }    
+        }
 
-        $('select[name=axisPosition]').change(function(){ 
+        $('select[name=axisPosition]').change(function(){
             // this refers to the html element we are binding to.
             // $(this) is jQuery object on that element.
 
@@ -378,7 +378,7 @@
                     break;
                 default:
                     break;
-                    
+
             }
 
             plot1.destroy();
@@ -387,7 +387,7 @@
             checkContour();
         });
 
-        $('input[type=radio][name=backgroundColor]').change(function(){ 
+        $('input[type=radio][name=backgroundColor]').change(function(){
             // this refers to the html element we are binding to.
             // $(this) is jQuery object on that element.
             plot1.grid.background = $(this).val();
@@ -397,7 +397,7 @@
             checkContour();
         });
 
-        $('input[type=radio][name=seriesColor]').change(function(){ 
+        $('input[type=radio][name=seriesColor]').change(function(){
             // this refers to the html element we are binding to.
             // $(this) is jQuery object on that element.
             if ($(this).val() === 'blue') {
@@ -543,8 +543,8 @@
 
         var d = new $.jsDate();
         $('div.jqplot-datestamp').html('Generated on '+d.strftime('%v'));
-    
-        $("div.chart-container").resizable({delay:20});    
+
+        $("div.chart-container").resizable({delay:20});
 
         $("div.chart-container").bind("resize", function(event, ui) {
             plot1.replot();
@@ -571,7 +571,7 @@
 
     <!-- load the pyramidAxis and Grid renderers in production.  pyramidRenderer will try to load via ajax if not present, but that is not optimal and depends on paths being set. -->
     <script class="include" type="text/javascript" src="../plugins/jqplot.pyramidAxisRenderer.min.js"></script>
-    <script class="include" type="text/javascript" src="../plugins/jqplot.pyramidGridRenderer.min.js"></script> 
+    <script class="include" type="text/javascript" src="../plugins/jqplot.pyramidGridRenderer.min.js"></script>
 
     <script class="include" type="text/javascript" src="../plugins/jqplot.pyramidRenderer.min.js"></script>
     <script class="include" type="text/javascript" src="../plugins/jqplot.canvasTextRenderer.min.js"></script>

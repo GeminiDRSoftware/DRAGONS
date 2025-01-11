@@ -15,5 +15,3 @@ dwarf candidate.
    ex1_gmosls_dithered_dataset
    ex1_gmosls_dithered_cmdline
    ex1_gmosls_dithered_api
-
-

@@ -137,10 +137,10 @@ it. This is not always consistent throughout models, for example,
 
 This means you will need to check the bokeh documentation for the component
 you are adding to see if it accepts a `stylesheet` attribute, or you need to
-test it yourself should it not be specified. Generally, err on the side of 
+test it yourself should it not be specified. Generally, err on the side of
 assuming it does accept a stylesheet and debugging as needed.
 
-Bokeh does have a `GlobalImportedStyleSheet` class that does not work with the 
+Bokeh does have a `GlobalImportedStyleSheet` class that does not work with the
 current version of bokeh and DRAGONS. Instead, this method links the shadow
 elements within a component to the stylesheet. This means that the stylesheet
 is applied to the component, but it is not applied globally. This is a
@@ -181,7 +181,7 @@ strings that specify how the component should be sized. The strings are
 +-----------------+---------------------------------------------------------+
 
 Bokeh models also often have `width_policy` and `height_policy` attributes,
-but these should be avoided in the interactive module. See 
+but these should be avoided in the interactive module. See
 [bokeh's reference](https://docs.bokeh.org/en/latest/docs/reference/models/layouts.html#bokeh.models.Column)
 for more details on what these attributes do and when to use them.
 
@@ -197,7 +197,7 @@ The `margin` attribute is used to specify the margins around a component. The
 `margin` attribute accepts a tuple of four integers that specify the margins
 in the order (top, right, bottom, left). The margins are specified in pixels.
 Margins can be used to change where a component is positioned within its own
-'box' on the page. 
+'box' on the page.
 
 If you are creating a widget, it is best practice to use margin to add a
 static margin around the widget, and `Spacer` to add a dynamic margin between

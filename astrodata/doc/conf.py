@@ -462,4 +462,3 @@ rst_epilog = """
 
 
 """.format(v = rtdurl)
-

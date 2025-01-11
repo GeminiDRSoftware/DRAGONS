@@ -72,4 +72,3 @@ end_test_set() {  # name nerr
     echo
     exit $nerr
 }
-

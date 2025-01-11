@@ -15,5 +15,3 @@ Recipes Reference
 ..    gnirs_sq_recipes
 ..    gsaoi_sq_recipes
 ..    niri_sq_recipes
-
-

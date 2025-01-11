@@ -27,7 +27,7 @@ class adjustWCSToReferenceConfig(parameters_register.adjustWCSToReferenceConfig)
         self.first_pass = 2.
         self.min_sources = 1
         self.rotate = True
-        
+
 
 class cleanFFTReadoutConfig(parameters_nearIR.cleanFFTReadoutConfig):
     # Need a larger extent to cope with a bright spectrum down the middle

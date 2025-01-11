@@ -4,23 +4,23 @@ Mosaic
 ######
 
 **Mosaic**
-  is the base class that provides functionality to layout a list of data 
-  :ref:`ndarrays <why_ndarray>` of the same size into an output mosaic. The main 
+  is the base class that provides functionality to layout a list of data
+  :ref:`ndarrays <why_ndarray>` of the same size into an output mosaic. The main
   characteristics are:
 
-- Input data and their location in the output mosaic is done via 
+- Input data and their location in the output mosaic is done via
   :ref:`MosaicData <help_mdata>` objects
 
-- Information about gaps between the :ref:`blocks <block_def>` and 
-  :ref:`transformation <mos_transf>` is given by the 
+- Information about gaps between the :ref:`blocks <block_def>` and
+  :ref:`transformation <mos_transf>` is given by the
   :ref:`MosaicGeometry <mos_geom>` object
 
-- The interpolator used in the transformation can be reset via a 
+- The interpolator used in the transformation can be reset via a
   Mosaic class function
 
 - Preserve flux when transforming a block
 
-To instantiate a Mosaic object you need to have at least a list of ndarrays 
+To instantiate a Mosaic object you need to have at least a list of ndarrays
 of the same same size contained in a MosaicData object.
 
  ::
@@ -31,12 +31,12 @@ of the same same size contained in a MosaicData object.
 **Input parameters**
 
 - mosaic_data
-    MosaicData class object containing the data_list and list of coordinates. 
-    The members of this class are: data_list, coords. 
+    MosaicData class object containing the data_list and list of coordinates.
+    The members of this class are: data_list, coords.
     (see :ref:`example <help_mdata>` for details).
 
 - mosaic_geometry
-    MosaicGeometry class object (optional). 
+    MosaicGeometry class object (optional).
     See :ref:`example <help_mgeo_example>` on how to set it up.
 
 **Mosaic Class Attributes**
@@ -51,7 +51,7 @@ of the same same size contained in a MosaicData object.
     MosaicGeometry object
 
 - data_index_per_block: <dict>
-    Dictionary containing the list indices of each data_list element that falls 
+    Dictionary containing the list indices of each data_list element that falls
     in one block. The dictionary key is the block tuple.
 
 - return_ROI: <bool>
@@ -69,10 +69,10 @@ Mosaic Methods
 mosaic_image_data()
 ===================
 
-Method to layout the blocks of data in the output mosaic grid.  Correction for 
-rotation, shifting and magnification is performed with respect to the reference 
-block.  A :ref: `mask <mos_mask>` is also created containing value zero for 
-positions were there are pixel data and one for everywhere else -like gaps and 
+Method to layout the blocks of data in the output mosaic grid.  Correction for
+rotation, shifting and magnification is performed with respect to the reference
+block.  A :ref: `mask <mos_mask>` is also created containing value zero for
+positions were there are pixel data and one for everywhere else -like gaps and
 areas of no-data due to shifting when transforming the data.
 
  Usage:
@@ -100,7 +100,7 @@ areas of no-data due to shifting when transforming the data.
     Flag to use the minimum frame enclosing all the block_data elements.
 
 - tile: <bool>
-    Layout the block in the mosaic grid with no correction for rotation 
+    Layout the block in the mosaic grid with no correction for rotation
     nor shift.  Gaps are included. Tiles all extensions into one output
     extension.
 
@@ -117,7 +117,7 @@ the output mosaic frame. This must be done before any transformation operation.
 get_blocks()
 ============
 
-Return a dictionary of block data arrays using their mosaic grid (column,row) 
+Return a dictionary of block data arrays using their mosaic grid (column,row)
 position as keys. Data blocks are necessary when applying transformation.
 
 .. _mos_transform:
@@ -135,7 +135,7 @@ correction for rotation, shift and/or magnification. Set a dictionary with
 set_interpolator()
 ==================
 
-Set the interpolator to use when correcting the blocks for rotation, 
+Set the interpolator to use when correcting the blocks for rotation,
 translation, and magnification.
 
   Usage
@@ -151,8 +151,8 @@ translation, and magnification.
 
 - spline_order: <int>
       Used when tfunction is 'spline' and is the order of the spline interpolant
-      (default is 2). Allowed values are in the range [0-5], where order 0 is 
-      equivalent to a 'linear' interpolator, 1 is equivalent to a 'nearest' 
+      (default is 2). Allowed values are in the range [0-5], where order 0 is
+      equivalent to a 'linear' interpolator, 1 is equivalent to a 'nearest'
       interpolator.
 
 Here is an :ref:`Example <exam11>`  on how to use *set_interpolator*.
@@ -163,13 +163,13 @@ Here is an :ref:`Example <exam11>`  on how to use *set_interpolator*.
 How to use the Mosaic class
 ===========================
 
-The basic steps to generate a mosaic using the Mosaic class are: 
+The basic steps to generate a mosaic using the Mosaic class are:
 
 1) Handle input data.
 2) Describe coordinates of each of the input data elements.
 3) Characterize block geometry.
 
-The input data list is the only requirement which will result in a horizontal 
+The input data list is the only requirement which will result in a horizontal
 tiling of each of the input data elements.
 
 
@@ -177,8 +177,8 @@ tiling of each of the input data elements.
 
 Possible ways to obtain a list of ndarrays (data_list) suitable for Mosaic:
 
-  - Create a data_list from a FITS file. For example: read a FITS file with 
-    three image extensions using pyfits to create the list of numpy arrays 
+  - Create a data_list from a FITS file. For example: read a FITS file with
+    three image extensions using pyfits to create the list of numpy arrays
     (aka ndarrays) ::
 
      import astrodata
@@ -197,30 +197,30 @@ Possible ways to obtain a list of ndarrays (data_list) suitable for Mosaic:
      data = numpy.linspace(0.,1000.,1024*2048).reshape(2048,1024)
      data_list = [data*(-1)**k for k in numpy.arange(4)]
 
-  - Make use of the gemMosaicFunction function to generate a MosaicData and a 
+  - Make use of the gemMosaicFunction function to generate a MosaicData and a
     MosaicGeometry objects from GMOS/GSAOI data. See :ref:`Example <mosad_array>`.
 
 .. _desc_coords:
 
 **2) Describe the coordinates of each data list element (amplifier)**
 
-Each data element coordinate description contains two sets of coordinates given 
-by (x1,x2,y1,y2) where x1 and x2 are the start and end column pixel location: 
-y1 and y2 are the start and end row location of the data piece with respect to 
-a given origin. One tuple origin is with respect to the lower left corner of 
-the block containing the data, the other tuple origin is with respect to the 
-lower left corner of the mosaic. The coordinates values are zero-based and the 
+Each data element coordinate description contains two sets of coordinates given
+by (x1,x2,y1,y2) where x1 and x2 are the start and end column pixel location:
+y1 and y2 are the start and end row location of the data piece with respect to
+a given origin. One tuple origin is with respect to the lower left corner of
+the block containing the data, the other tuple origin is with respect to the
+lower left corner of the mosaic. The coordinates values are zero-based and the
 end values x2,y2 are none inclusive.
 
-These two tuple lists are given as a dictionary callied coords, with keys: 
-*amp_mosaic_coord* with origin the lower left corner of the mosaic and 
-*amp_block_coord* with origin the lower left corner of the block. Here is an 
-example of the dictionary. The order on these lists is the same as the input 
+These two tuple lists are given as a dictionary callied coords, with keys:
+*amp_mosaic_coord* with origin the lower left corner of the mosaic and
+*amp_block_coord* with origin the lower left corner of the block. Here is an
+example of the dictionary. The order on these lists is the same as the input
 list of ndarrays (data_list) order:
 
  ::
 
-  # Coordinate description of a data list with four amplifier 
+  # Coordinate description of a data list with four amplifier
   # ndarrays of size 1024 columns by 2048 rows.
   # Image sections are: (x1, x2, y1, y2)
 
@@ -237,9 +237,9 @@ list of ndarrays (data_list) order:
 
 **3) Geometry description of input data and output mosaic**
 
-Use a geometry dictionary to list block properties such as block separation 
-(gaps) in the mosaic and transformation values for each block with respect to 
-a reference block, etc. :ref:`Here <mos_geom>` is the list of all the geometry 
+Use a geometry dictionary to list block properties such as block separation
+(gaps) in the mosaic and transformation values for each block with respect to
+a reference block, etc. :ref:`Here <mos_geom>` is the list of all the geometry
 keys. This is an example of a typical geometry dictionary:
 
  ::
@@ -257,11 +257,11 @@ keys. This is an example of a typical geometry dictionary:
 
            'rotation': (0.0,     -1.033606,
                         0.582767, 0.769542),
-           # List of magnification        
+           # List of magnification
            'magnification': (1.,     1.0013,
                              1.0052, 1.0159),
            }
-    # (x_gap,y_gap) in pixels. Key values are block location 
+    # (x_gap,y_gap) in pixels. Key values are block location
     # (0-based) (column,row) w.r.t. lower left block in the mosaic.
     'gap_dict': {
 
@@ -270,14 +270,14 @@ keys. This is an example of a typical geometry dictionary:
 
        'transform_gaps': {(0,0):(14,23.4), (1,0):(14.0,23.4),
                           (0,1):(14,20.4), (1,1):(12.6,23.4)},
-            }, 
+            },
     'blocksize':   (1024,2048),  # (npix_x, npix_y)
     'mosaic_grid': (4,1),        # N of blocks in x and N of rows.
     'ref_block':   (0,0),        # Ref block (column,row) 0-based.
     'interpolator': 'linear',    # Interpolator
            }
 
-.. note:: If the gaps values are the same for tile_gaps and transform_gaps then 
+.. note:: If the gaps values are the same for tile_gaps and transform_gaps then
           instead of the 'gap_dict' use the 'gaps' key. E.g. ::
 
            'gaps': { (0,0): (15,25),
@@ -357,38 +357,38 @@ To create a MosaicData object:
       (npixels_x, npixels_y). I.e., the size of the block.
 
     mosaic_grid <tuple>
-      (ncols, nrows). Number of blocks per row and number of rows in the output 
+      (ncols, nrows). Number of blocks per row and number of rows in the output
       mosaic array.
 
     transformation <dict>
       with the following keys
         'shift'
-          List of tuples (x_shift, y_shift). N pixels (as floats) to shift to 
+          List of tuples (x_shift, y_shift). N pixels (as floats) to shift to
           align with the ref_block. There are as many tuples as number of blocks.
         'rotation'
-          (Degrees). List of floats. Amount to rotate each block to align with 
-          the ref_block. There are as many numbers as number of blocks. The angle 
+          (Degrees). List of floats. Amount to rotate each block to align with
+          the ref_block. There are as many numbers as number of blocks. The angle
           is counter clockwise from the x-axis.
         'magnification'
-          List of real numbers. Amount to magnify each block to align with the 
-          ref_block. There are as many numbers as number of blocks. The 
+          List of real numbers. Amount to magnify each block to align with the
+          ref_block. There are as many numbers as number of blocks. The
           magnification is about the block center.
 
     ref_block
-      Reference block tuple. The block location (x,y) coordinate in the 
-      mosaic_grid. This is a 0-based tuple. 'x' increases to the right, 'y' 
+      Reference block tuple. The block location (x,y) coordinate in the
+      mosaic_grid. This is a 0-based tuple. 'x' increases to the right, 'y'
       increases in the upwards direction.
 
     interpolator
-      <str>. Default is 'linear'. Name of the transformation function used for 
-      translation,rotation, magnification of the blocks to be aligned with the 
+      <str>. Default is 'linear'. Name of the transformation function used for
+      translation,rotation, magnification of the blocks to be aligned with the
       reference block. The possible values are: 'linear', 'nearest', 'spline'.
 
     spline_order
-      <int>. Default 3. Is the 'spline' interpolator order. Allow values are in 
+      <int>. Default 3. Is the 'spline' interpolator order. Allow values are in
       the range [0-5].
 
-    gap_dict 
+    gap_dict
        A dictionary of dictionaries of the form::
 
         gap_dict = {
@@ -403,7 +403,7 @@ To create a MosaicData object:
         the block (x_gap) and at the bottom of the block (y_gap); hence
         the (0,0) block will have values (0,0) for gaps.
 
-        For some instruments the gaps are different depending whether we 
+        For some instruments the gaps are different depending whether we
         produce a mosaic in 'tile' or 'transform' mode.
 
     gaps
@@ -413,7 +413,7 @@ To create a MosaicData object:
 
         gaps = {(col,row): (x_gap,y_gap),...},
 
- 
+
 **Class Attributes**
 
 - blocksize:    Same as input

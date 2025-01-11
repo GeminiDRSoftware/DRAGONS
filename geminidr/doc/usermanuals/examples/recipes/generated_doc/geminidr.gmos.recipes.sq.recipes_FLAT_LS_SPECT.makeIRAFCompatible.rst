@@ -22,4 +22,3 @@ only if the reduced file will be used as input to Gemini IRAF tasks.
         p.makeIRAFCompatible()
         p.writeOutputs()
         return
-

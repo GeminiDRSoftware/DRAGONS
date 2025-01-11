@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -30,11 +30,11 @@
       <div class="colleft">
         <div class="col1" id="example-content">
 
-  
+
 <!-- Example scripts go here -->
 
 
-  <link class="include" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.0/themes/smoothness/jquery-ui.css" rel="Stylesheet" /> 
+  <link class="include" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.0/themes/smoothness/jquery-ui.css" rel="Stylesheet" />
 
   <style type="text/css">
 
@@ -43,7 +43,7 @@
         padding: 30px 0px 30px 30px;
         width: 900px;
         height: 400px;
-        
+
     }
 
     table.jqplot-table-legend {
@@ -96,13 +96,13 @@
 
   </style>
 
-    <div class="chart-container">    
+    <div class="chart-container">
         <div id="chart1"></div>
         <div class="jqplot-datestamp"></div>
     </div>
 
     <pre class="code brush:js"></pre>
-  
+
   <script class="code" type="text/javascript">
 $(document).ready(function(){
 
@@ -132,11 +132,11 @@ $(document).ready(function(){
       [58.4561,55.4196,53.3806,53.3059,51.7105,50.007,50.1509,48.2276,47.1521,45.5962,44.1436,43.5952,41.8242,40.8606,39.2451,38.8396,36.5095,34.4988,31.7809,20.3231],
       [41.5439,44.5804,46.6194,46.6941,48.2895,49.993,49.8491,51.7724,52.8479,54.4038,55.8564,56.4048,58.1758,59.1394,60.7549,61.1604,63.4905,65.5012,68.2191,79.6769]
     ];
-    var labels = ["Rice", "Bread and other cereals", "Fish and seafood", "Fruits and vegetables", "Other food products", 
-        "Catering services", "Non-alcoholic beverages", "Alcoholic beverages", "Tobacco and narcotics", "Clothing and footwear", 
-        "Rentals (actual or imputed) and maintenance and repair of the dwelling", "Water supply and miscellaneous services related to the dwelling", 
-        "Electricity gas and other fuels", "Furnishing household equipment and routine household maintenance", "Health", "Transport", 
-        "Communication", "Recreation and culture", "Education", "Personal care", "Other miscellaneous goods and services", 
+    var labels = ["Rice", "Bread and other cereals", "Fish and seafood", "Fruits and vegetables", "Other food products",
+        "Catering services", "Non-alcoholic beverages", "Alcoholic beverages", "Tobacco and narcotics", "Clothing and footwear",
+        "Rentals (actual or imputed) and maintenance and repair of the dwelling", "Water supply and miscellaneous services related to the dwelling",
+        "Electricity gas and other fuels", "Furnishing household equipment and routine household maintenance", "Health", "Transport",
+        "Communication", "Recreation and culture", "Education", "Personal care", "Other miscellaneous goods and services",
         "Food and non-alcoholic beverages", "Non food"]
     var ticks = [[1, "v01"], [2, "v02"], [3, "v03"], [4, "v04"], [5, "v05"],
       [6, "v06"], [7, "v07"], [8, "v08"], [9, "v09"], [10, "v10"],
@@ -198,7 +198,7 @@ $(document).ready(function(){
     $("div.jqplot-datestamp").html("Generated on "+d.strftime("%v"));
 
     // make it resizable.
-    
+
     $("div.chart-container").resizable({delay:20});
 
     $("div.chart-container").bind("resize", function(event, ui) {

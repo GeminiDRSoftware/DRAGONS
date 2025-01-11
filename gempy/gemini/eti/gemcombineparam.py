@@ -150,4 +150,3 @@ class Reject(GemcombineParam):
 
 hardcoded_params = {'title':'DEFAULT', 'Stdout':IrafStdout(),
                     'Stderr':IrafStdout()}
-

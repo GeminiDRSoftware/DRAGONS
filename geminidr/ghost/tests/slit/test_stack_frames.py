@@ -23,4 +23,3 @@ def test_stackFrames_outputs(ad_slit):
     assert np.all([output[0][0].data.shape ==
                    _.data.shape for _ in ad_slit]), "Stacked frame shape " \
                                                "does not match inputs"
-

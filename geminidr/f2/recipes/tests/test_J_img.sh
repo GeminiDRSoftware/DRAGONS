@@ -10,4 +10,3 @@ start_test_set "$name"
 "$script_dir/reduce_img.sh" "$name" "S20130719S052" "S20130719S055" || nerr=${nerr}1
 
 end_test_set "$name" $nerr
-

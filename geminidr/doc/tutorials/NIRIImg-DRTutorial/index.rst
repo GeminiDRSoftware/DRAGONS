@@ -23,7 +23,7 @@ Tutorial Series - NIRI Imaging Data Reduction with DRAGONS
    ex1_niriim_extended
    05_tips_and_tricks
    06_issues_and_limitations
-   
+
 
 Indices and tables
 ==================
