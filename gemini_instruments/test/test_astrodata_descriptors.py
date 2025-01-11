@@ -46,11 +46,11 @@ def test_descriptor(instr, filename, descriptor, value):
     else:
         mvalue = method()
         if type(value) in FLOAT_TYPES or type(mvalue) in FLOAT_TYPES:
-            assert abs(mvalue - value) < 0.0001
+            assert mvalue == pytest.approx(value, rel=1e-7)
         elif isinstance(value, list):
             assert len(value) == len(mvalue)
             for v, mv in zip(value, mvalue):
                 if type(v) in FLOAT_TYPES or type(mv) in FLOAT_TYPES:
-                    assert abs(mv - v) < 0.0001
+                    assert mv == pytest.approx(v, rel=1e-7)
                 else:
                     assert v == mv
