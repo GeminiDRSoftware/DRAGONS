@@ -418,7 +418,8 @@ class F2Spect(Spect, F2):
         disperser = ext.disperser(pretty=True)
         return resolving_power.get(f"{slit_width}", {}).get(f"{disperser}", None)
 
-    def _convert_peak_to_centroid(self, ext):
+    @staticmethod
+    def _convert_peak_to_centroid(ext):
         """
         Returns a function that converts the location of the peak of an arc
         (or sky) line to the location of its centroid (also works on an array
@@ -447,12 +448,12 @@ class F2Spect(Spect, F2):
             line peak to the centroid
         """
         # (c1, c2, c3) Chebyshev coefficients for each slit width
-        coefficients = {1: (-4.471281214, -0.062329556, -1.324079642),
-                        2: (-4.138404874, -0.054101213, -1.306253510),
-                        3: (-3.739663083, -0.048616217, -1.248004911),
-                        4: (-3.328556440, -0.042899206, -1.166940684),
-                        6: (-2.595923451, -0.029713970, -0.990172698),
-                        8: (-1.966203933, -0.017133596, -0.801233150),
+        coefficients = {1: (4.471281214, -0.062329556, 1.324079642),
+                        2: (4.138404874, -0.054101213, 1.306253510),
+                        3: (3.739663083, -0.048616217, 1.248004911),
+                        4: (3.328556440, -0.042899206, 1.166940684),
+                        6: (2.595923451, -0.029713970, 0.990172698),
+                        8: (1.966203933, -0.017133596, 0.801233150),
                         }
         try:
             slitwidth = int(ext.focal_plane_mask().replace('pix-slit', ''))
