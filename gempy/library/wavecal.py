@@ -574,7 +574,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
           f"(nm/pixel):\n{waves} {dw0:.4f}")
 
     # Is ATRAN line list used for this mode?
-    uses_atran_linelist = p._uses_atran_linelist(cenwave=ext.central_wavelength(asMicrometers=True),
+    uses_atran_linelist = p._uses_atran_linelist(cenwave=ext.central_wavelength(asNanometers=True),
                                                  absorption=config.get("absorption", False))
     refplot_dict = None
 

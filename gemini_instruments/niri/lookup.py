@@ -167,63 +167,63 @@ nominal_zeropoints = {
 # Dictionary keys:
 # (camera, focal plane mask, grism)
 # Dictionary values:
-# central wavelength (Å) (apparently this is the center of "useful wvl range"; it is used as cenwave in the archive),
+# central wavelength (nm) (apparently this is the center of "useful wvl range"; it is used as cenwave in the archive),
 # wavelength at central pixel (nm) (as measured by OS),
 # resolution (from NIRI webpage)
 spec_wavelengths = {
-    ('f6', 'f6-2pix',   'Jgrism') : CenwaveAndRes(12330.0, 1211.0, 770),
-    ('f6', 'f6-4pix',   'Jgrism') : CenwaveAndRes(12330.0, 1211.0, 610),
-    ('f6', 'f6-6pix',   'Jgrism') : CenwaveAndRes(12330.0, 1211.0, 460),
-    ('f6', 'f6-2pixBl', 'Jgrism') : CenwaveAndRes(11840.0, 1162.0, 770),
-    ('f6', 'f6-4pixBl', 'Jgrism') : CenwaveAndRes(11840.0, 1162.0, 650),
-    ('f6', 'f6-6pixBl', 'Jgrism') : CenwaveAndRes(11840.0, 1162.0, 480),
-    ('f6', 'f6-2pix',   'Hgrism') : CenwaveAndRes(16950.0, 1665.0, 1650),
-    ('f6', 'f6-4pix',   'Hgrism') : CenwaveAndRes(16950.0, 1665.0, 825),
-    ('f6', 'f6-6pix',   'Hgrism') : CenwaveAndRes(16950.0, 1665.0, 520),
-    ('f6', 'f6-2pixBl', 'Hgrism') : CenwaveAndRes(16250.0, 1595.0, 1650),
-    ('f6', 'f6-4pixBl', 'Hgrism') : CenwaveAndRes(16250.0, 1595.0, 940),
-    ('f6', 'f6-6pixBl', 'Hgrism') : CenwaveAndRes(16250.0, 1595.0, 550),
-    ('f6', 'f6-2pix',   'Kgrism') : CenwaveAndRes(22630.0, 2223.0, 1300),
-    ('f6', 'f6-4pix',   'Kgrism') : CenwaveAndRes(22630.0, 2223.0, 780),
-    ('f6', 'f6-6pix',   'Kgrism') : CenwaveAndRes(22630.0, 2223.0, 520),
-    ('f6', 'f6-2pixBl', 'Kgrism') : CenwaveAndRes(21670.0, 2127.0, 1300),
-    ('f6', 'f6-4pixBl', 'Kgrism') : CenwaveAndRes(21670.0, 2127.0, 780),
-    ('f6', 'f6-6pixBl', 'Kgrism') : CenwaveAndRes(21670.0, 2127.0, 520),
-    ('f6', 'f6-2pix',   'Lgrism') : CenwaveAndRes(35740.0, 3521.0, 1100),
-    ('f6', 'f6-4pix',   'Lgrism') : CenwaveAndRes(35740.0, 3521.0, 690),
-    ('f6', 'f6-6pix',   'Lgrism') : CenwaveAndRes(35740.0, 3521.0, 460),
-    ('f6', 'f6-2pixBl', 'Lgrism') : CenwaveAndRes(34350.0, 3365.0, 1100),
-    ('f6', 'f6-4pixBl', 'Lgrism') : CenwaveAndRes(34350.0, 3365.0, 770),
-    ('f6', 'f6-6pixBl', 'Lgrism') : CenwaveAndRes(34350.0, 3365.0, 490),
-    ('f6', 'f6-2pix',   'Mgrism') : CenwaveAndRes(51400.0, 5080.0, 1100),
-    ('f6', 'f6-4pix',   'Mgrism') : CenwaveAndRes(51400.0, 5080.0, 770),
-    ('f6', 'f6-6pix',   'Mgrism') : CenwaveAndRes(51400.0, 5080.0, 460),
-    ('f6', 'f6-2pixBl', 'Mgrism') : CenwaveAndRes(49400.0, 4940.0, 1100), # copy from non-Bl
-    ('f6', 'f6-4pixBl', 'Mgrism') : CenwaveAndRes(49400.0, 4940.0, 770), # copy from non-Bl
-    ('f6', 'f6-6pixBl', 'Mgrism') : CenwaveAndRes(49400.0, 4940.0, 460), # copy from non-Bl
-    ('f32', 'f32-6pix',  'Jgrism') : CenwaveAndRes(12030.0, 1203.0, 1000), # same as f32 4-pix
-    ('f32', 'f32-9pix',  'Jgrism') : CenwaveAndRes(12030.0, 1203.0, 620), # same as f32 7-pix
-    ('f32', 'f6-2pix',  'Jgrism') : CenwaveAndRes(12030.0, 1203.0, 450), # same as f32 10-pix
-    ('f32', 'f32-6pix',  'Hgrism') : CenwaveAndRes(16412.0, 1641.2, 880),
-    ('f32', 'f32-9pix',  'Hgrism') : CenwaveAndRes(16412.0, 1641.2, 630),
-    ('f32', 'f6-2pix',  'Hgrism') : CenwaveAndRes(16412.0, 1641.2, 500),
-    ('f32', 'f32-6pix',  'Kgrism') : CenwaveAndRes(21840.0, 2184.0, 1280),
-    ('f32', 'f32-9pix',  'Kgrism') : CenwaveAndRes(21840.0, 2184.0, 775),
-    ('f32', 'f6-2pix',  'Kgrism') : CenwaveAndRes(21840.0, 2184.0, 570)
+    ('f6', 'f6-2pix',   'Jgrism') : CenwaveAndRes(1233.0, 1211.0, 770),
+    ('f6', 'f6-4pix',   'Jgrism') : CenwaveAndRes(1233.0, 1211.0, 610),
+    ('f6', 'f6-6pix',   'Jgrism') : CenwaveAndRes(1233.0, 1211.0, 460),
+    ('f6', 'f6-2pixBl', 'Jgrism') : CenwaveAndRes(1184.0, 1162.0, 770),
+    ('f6', 'f6-4pixBl', 'Jgrism') : CenwaveAndRes(1184.0, 1162.0, 650),
+    ('f6', 'f6-6pixBl', 'Jgrism') : CenwaveAndRes(1184.0, 1162.0, 480),
+    ('f6', 'f6-2pix',   'Hgrism') : CenwaveAndRes(1695.0, 1665.0, 1650),
+    ('f6', 'f6-4pix',   'Hgrism') : CenwaveAndRes(1695.0, 1665.0, 825),
+    ('f6', 'f6-6pix',   'Hgrism') : CenwaveAndRes(1695.0, 1665.0, 520),
+    ('f6', 'f6-2pixBl', 'Hgrism') : CenwaveAndRes(1625.0, 1595.0, 1650),
+    ('f6', 'f6-4pixBl', 'Hgrism') : CenwaveAndRes(1625.0, 1595.0, 940),
+    ('f6', 'f6-6pixBl', 'Hgrism') : CenwaveAndRes(1625.0, 1595.0, 550),
+    ('f6', 'f6-2pix',   'Kgrism') : CenwaveAndRes(2263.0, 2223.0, 1300),
+    ('f6', 'f6-4pix',   'Kgrism') : CenwaveAndRes(2263.0, 2223.0, 780),
+    ('f6', 'f6-6pix',   'Kgrism') : CenwaveAndRes(2263.0, 2223.0, 520),
+    ('f6', 'f6-2pixBl', 'Kgrism') : CenwaveAndRes(2167.0, 2127.0, 1300),
+    ('f6', 'f6-4pixBl', 'Kgrism') : CenwaveAndRes(2167.0, 2127.0, 780),
+    ('f6', 'f6-6pixBl', 'Kgrism') : CenwaveAndRes(2167.0, 2127.0, 520),
+    ('f6', 'f6-2pix',   'Lgrism') : CenwaveAndRes(3574.0, 3521.0, 1100),
+    ('f6', 'f6-4pix',   'Lgrism') : CenwaveAndRes(3574.0, 3521.0, 690),
+    ('f6', 'f6-6pix',   'Lgrism') : CenwaveAndRes(3574.0, 3521.0, 460),
+    ('f6', 'f6-2pixBl', 'Lgrism') : CenwaveAndRes(3435.0, 3365.0, 1100),
+    ('f6', 'f6-4pixBl', 'Lgrism') : CenwaveAndRes(3435.0, 3365.0, 770),
+    ('f6', 'f6-6pixBl', 'Lgrism') : CenwaveAndRes(3435.0, 3365.0, 490),
+    ('f6', 'f6-2pix',   'Mgrism') : CenwaveAndRes(5140.0, 5080.0, 1100),
+    ('f6', 'f6-4pix',   'Mgrism') : CenwaveAndRes(5140.0, 5080.0, 770),
+    ('f6', 'f6-6pix',   'Mgrism') : CenwaveAndRes(5140.0, 5080.0, 460),
+    ('f6', 'f6-2pixBl', 'Mgrism') : CenwaveAndRes(4940.0, 4940.0, 1100), # copy from non-Bl
+    ('f6', 'f6-4pixBl', 'Mgrism') : CenwaveAndRes(4940.0, 4940.0, 770), # copy from non-Bl
+    ('f6', 'f6-6pixBl', 'Mgrism') : CenwaveAndRes(4940.0, 4940.0, 460), # copy from non-Bl
+    ('f32', 'f32-6pix',  'Jgrism') : CenwaveAndRes(1203.0, 1203.0, 1000), # same as f32 4-pix
+    ('f32', 'f32-9pix',  'Jgrism') : CenwaveAndRes(1203.0, 1203.0, 620), # same as f32 7-pix
+    ('f32', 'f6-2pix',  'Jgrism') : CenwaveAndRes(1203.0, 1203.0, 450), # same as f32 10-pix
+    ('f32', 'f32-6pix',  'Hgrism') : CenwaveAndRes(1641.2, 1641.2, 880),
+    ('f32', 'f32-9pix',  'Hgrism') : CenwaveAndRes(1641.2, 1641.2, 630),
+    ('f32', 'f6-2pix',  'Hgrism') : CenwaveAndRes(1641.2, 1641.2, 500),
+    ('f32', 'f32-6pix',  'Kgrism') : CenwaveAndRes(2184.0, 2184.0, 1280),
+    ('f32', 'f32-9pix',  'Kgrism') : CenwaveAndRes(2184.0, 2184.0, 775),
+    ('f32', 'f6-2pix',  'Kgrism') : CenwaveAndRes(2184.0, 2184.0, 570)
 }
 
 
 dispersion_by_config = {
     # Dictionary keys are in the following order:
     # 'camera, disperser'
-    # Dispersion is in Å/pix.
+    # Dispersion is in nm/pix.
     # This is a concise version of gnirs$data/nsappwave.fits table.
-    ("f6", "Jgrism")  : -3.604,
-    ("f6", "Hgrism")  : -5.157,
-    ("f6", "Kgrism")  : -7.086,
-    ("f6", "Lgrism")  : -11.39,
-    ("f6", "Mgrism")  : -16.51,
-    ("f32", "Jgrism") : 3.041,
-    ("f32", "Hgrism") : 2.964,
-    ("f32", "Kgrism") : 4.396,
+    ("f6", "Jgrism")  : -0.3604,
+    ("f6", "Hgrism")  : -0.5157,
+    ("f6", "Kgrism")  : -0.7086,
+    ("f6", "Lgrism")  : -1.139,
+    ("f6", "Mgrism")  : -1.651,
+    ("f32", "Jgrism") : 0.3041,
+    ("f32", "Hgrism") : 0.2964,
+    ("f32", "Kgrism") : 0.4396,
 }

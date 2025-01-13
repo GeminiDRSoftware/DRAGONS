@@ -78,41 +78,16 @@ class AstroDataNiri(AstroDataGemini):
         return build_ir_section(self, pretty)
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units()
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength in nm
 
         Returns
         -------
         float
-            The central wavelength setting
+            The central wavelength setting in nm
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
         # Use the lookup dict, keyed on camera, focal_plane_mask and grism
         camera = self.camera()
         try:
@@ -122,11 +97,9 @@ class AstroDataNiri(AstroDataGemini):
         fpmask = self.focal_plane_mask(stripID=True)
 
         try:
-            wave_in_angstroms = lookup.spec_wavelengths[camera, fpmask, disperser][0]
+            return lookup.spec_wavelengths[camera, fpmask, disperser].cenwave
         except KeyError:
             return None
-        return gmu.convert_units('angstroms', wave_in_angstroms,
-                             output_units)
 
     @astro_data_descriptor
     def data_section(self, pretty=False):
@@ -278,28 +251,18 @@ class AstroDataNiri(AstroDataGemini):
             return 'MIRROR'
 
     @astro_data_descriptor
-    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    @gmu.return_requested_units()
+    def dispersion(self):
         """
-        Returns the dispersion in meters per pixel as a list (one value per
+        Returns the dispersion in nm per pixel as a list (one value per
         extension) or a float if used on a single-extension slice. It is
         possible to control the units of wavelength using the input arguments.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
 
         Returns
         -------
         list/float
             The dispersion(s)
-
         """
-
         camera = self.camera()
         try:
             disperser = self.disperser(stripID=True)[0:6]
@@ -311,22 +274,7 @@ class AstroDataNiri(AstroDataGemini):
         except KeyError:
             dispersion = None
 
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        output_units = "meters"  # By default
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-
-        if dispersion is not None:
-            dispersion = gmu.convert_units('angstroms', dispersion, output_units)
-
-            if not self.is_single:
+        if dispersion is not None and not self.is_single:
                 dispersion = [dispersion] * len(self)
 
         return dispersion

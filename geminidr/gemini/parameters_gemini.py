@@ -29,4 +29,4 @@ class standardizeWCSConfig(parameters_standardize.standardizeWCSConfig):
 
 
 class checkWCSConfig(config.Config):
-    tolerance = config.RangeField("Positional tolerance (arcsec)", float, 2, min=0.1)
+    pass

@@ -11,7 +11,7 @@ from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 import pytest
 
 # ---- Parameters -------------------------------------------------------------
-associate_sky_params = {'time': 600., 'min_skies': 3, 'distance': 0,
+associate_sky_params = {'time': 600., 'min_skies': 3, 'distance': 1,
                         'max_skies': None, 'use_all': False, 'sky': None}
 
 # ---- Fixtures ---------------------------------------------------------------

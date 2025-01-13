@@ -693,7 +693,7 @@ fixture_data = {
         ('observation_id', 'GS-2014B-LP-2-68'),
         ('observation_type', 'OBJECT'),
         ('overscan_section', [None, None, None, None]),
-        ('pixel_scale', 0.019657272307533242),
+        ('pixel_scale', 0.0196558),
         ('program_id', 'GS-2014B-LP-2'),
         ('pupil_mask', None),
         ('qa_state', 'Pass'),
