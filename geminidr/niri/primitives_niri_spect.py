@@ -226,20 +226,23 @@ class NIRISpect(Spect, NIRI):
             return None
         return resolution
 
-    def _get_actual_cenwave(self, ext, asMicrometers=False, asNanometers=False, asAngstroms=False):
-        # For NIRI wavelength at central pixel doesn't match the descriptor value
+    @staticmethod
+    @gmu.return_requested_units()
+    def _get_actual_cenwave(ext):
+        """
+        For some instruments (NIRI, F2) wavelength at the central pixel
+        can differ significantly from the descriptor value.
 
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        output_units = "meters" # By default
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
+        Parameters
+        ----------
+        ext: single-slice AstroDataNIRI
+            the extension for which to determine the central wavelength
+
+        Returns
+        -------
+        float
+            Actual central wavelength
+        """
         camera = ext.camera()
         try:
             disperser = ext.disperser(stripID=True)[0:6]
@@ -247,9 +250,6 @@ class NIRISpect(Spect, NIRI):
             disperser = None
         fpmask = ext.focal_plane_mask(stripID=True)
         try:
-            cenwave = lookup.spec_wavelengths[camera, fpmask, disperser][1]
+            return lookup.spec_wavelengths[camera, fpmask, disperser].cenpixwave
         except KeyError:
             return None
-        actual_cenwave = gmu.convert_units('nanometers', cenwave, output_units)
-
-        return actual_cenwave

@@ -366,43 +366,28 @@ class F2Spect(Spect, F2):
         filename = os.path.join(lookup_dir, linelist)
         return wavecal.LineList(filename)
 
-
-    def _get_actual_cenwave(self, ext, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    @staticmethod
+    @gmu.return_requested_units(input_units="m")
+    def _get_actual_cenwave(ext):
         """
-        For some instruments (NIRI, F2) wavelenght at the central pixel
+        For some instruments (NIRI, F2) wavelength at the central pixel
         can differ significantly from the descriptor value.
 
         Parameters
         ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        ext: single-slice AstroDataF2
+            the extension for which to determine the central wavelength
 
         Returns
         -------
         float
-            Actual cenral wavelenght
+            Actual central wavelength
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        output_units = "meters" # By default
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
         index = (ext.disperser(pretty=True), ext.filter_name(keepID=True))
         mask = dispersion_offset_mask.get(index, None)
         cenwave_offset = mask.cenwaveoffset if mask else None
         actual_cenwave = ext.central_wavelength() + \
                   abs(ext.dispersion()) * cenwave_offset
-        actual_cenwave = gmu.convert_units('meters', actual_cenwave, output_units)
         return actual_cenwave
 
 

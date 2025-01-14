@@ -5652,41 +5652,24 @@ class Spect(Resample):
         slit_width_pix = ext.slit_width()/ext.pixel_scale()
         return abs(resolution_1pix_slit // slit_width_pix)
 
-    def _get_actual_cenwave(self, ext, asMicrometers=False,
-                            asNanometers=False, asAngstroms=False):
+    @staticmethod
+    @gmu.return_requested_units(input_units="m")
+    def _get_actual_cenwave(ext):
         """
-        For some instruments (NIRI, F2) wavelenght at the central pixel
+        For some instruments (NIRI, F2) wavelength at the central pixel
         can differ significantly from the descriptor value.
 
         Parameters
         ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        ext; single-slice AstroData object
+            the extension for which to determine the central wavelength
 
         Returns
         -------
         float
-            Actual cenral wavelenght
+            Actual central wavelength
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        output_units = "meters" # By default
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        cenwave = ext.central_wavelength()
-        actual_cenwave = gmu.convert_units('meters', cenwave, output_units)
-
-        return actual_cenwave
+        return ext.central_wavelength()
 
     def _get_cenwave_accuracy(self, ext):
         # TODO: remove this
