@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '3.2.2'
+VERSION = '3.2.3'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
