@@ -3565,7 +3565,6 @@ class Spect(Resample):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        threshold = params["threshold"]
         interactive_reduce = params["interactive"]
 
         fit1d_params = fit_1D.translate_params(params)
@@ -3683,14 +3682,12 @@ class Spect(Resample):
 
             xaxis_label = 'x (pixels)' if dispaxis == 1 else 'y (pixels)'
 
-            data = reconstruct_points(uiparams)
-
             fit1d_arr = list()
 
             if interactive_reduce:
                 all_domains = list()
                 all_fp_init = list()
-                for ext, x in zip(admos, x_arr):
+                for ext in admos:
                     dispaxis = 2 - ext.dispersion_axis()
                     pixels = np.arange(ext.shape[dispaxis])
                     all_domains.append([min(pixels), max(pixels)])
@@ -3716,12 +3713,13 @@ class Spect(Resample):
                                                    enable_regions=True,
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=False,
-                                                   # modal_message="Recalculating",
+                                                   modal_message="Recalculating",
                                                    ui_params=uiparams,
                                                    mask_glyphs={"threshold": ("square", "orange")})
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fit1d_arr = visualizer.results()
             else:
+                reconstruct_points(uiparams)  # will populate variables as in scope
                 for ext, masked_data, x, weights, threshold_value \
                         in zip(admos, masked_data_arr, x_arr, weights_arr,
                                saved_thresholds):
@@ -3730,8 +3728,8 @@ class Spect(Resample):
                                          **fit1d_params)
                     fit1d_arr.append(fitted_data)
 
-            for ext, fitted_data, x, threshold_mask, masked_data, threshold_value \
-                    in zip(admos, fit1d_arr, x_arr, threshold_mask_arr, masked_data_arr, saved_thresholds):
+            for ext, fitted_data, threshold_mask, masked_data, threshold_value \
+                    in zip(admos, fit1d_arr, threshold_mask_arr, masked_data_arr, saved_thresholds):
                 if not mosaicked:
                     # In the case where this was run interactively, the resulting fit has pre-masked points (x).
                     # This happens before the interactive code builds the fit_1D.  Using the default evaluate()

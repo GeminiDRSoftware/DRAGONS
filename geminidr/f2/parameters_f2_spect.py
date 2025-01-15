@@ -9,6 +9,7 @@ def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
     return True
 
+
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     def setDefaults(self):
         self.order = 3
@@ -19,6 +20,7 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         del self.num_atran_lines
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
 
+
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, None, min=0, optional=True)
@@ -27,6 +29,12 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
         self.min_snr = 7.
         self.min_line_length = 0.3
         self.debug_reject_bad = False
+
+
+class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
+    def setDefaults(self):
+        self.threshold = 0.005  # since we want to go to 1% filter transmission
+
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):
