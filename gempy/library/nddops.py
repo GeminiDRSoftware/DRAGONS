@@ -228,7 +228,7 @@ class NDStacker:
             if np.any(mask < 0):
                 raise ValueError("Got negative value in mask.")
 
-            out_mask |= (np.bitwise_or.reduce(np.where(tmp_mask, ZERO, mask.astype(np.uint16)), axis=0))
+            out_mask |= (np.bitwise_or.reduce(np.where(tmp_mask, ZERO, mask.astype(type(ZERO))), axis=0))
             ngood = NDStacker._num_good(tmp_mask)
 
             # Where we've been able to construct an output pixel (ngood>0)
