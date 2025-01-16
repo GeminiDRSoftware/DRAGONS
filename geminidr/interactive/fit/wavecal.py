@@ -123,16 +123,11 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # No need to compute wavelengths here as the model_change_handler() does it
         self.absorption = absorption
-        if absorption:
-            spectrum_data_dict = {
-                "wavelengths": np.zeros_like(meta["spectrum"]),
-                "spectrum": -meta["spectrum"],
-            }
-        else:
-            spectrum_data_dict = {
-                "wavelengths": np.zeros_like(meta["spectrum"]),
-                "spectrum": meta["spectrum"],
-            }
+        spectrum_data_dict = {
+            "pixels": meta["pixels"],
+            "wavelengths": np.zeros_like(meta["spectrum"]),
+            "spectrum": meta["spectrum"] * (-1 if absorption else 1),
+        }
 
         kwargs["default_model"] = meta["init_models"][0]
 
@@ -153,7 +148,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.refplot_y_axis_label = meta["refplot_y_axis_label"]
             self.refplot_name = meta["refplot_name"]
 
-
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
 
@@ -163,15 +157,22 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if len(x) == 0:
             kwargs["initial_fit"] = meta["fit"]
 
+        # We need to temporarily set the domain of the model to the central
+        # unmasked region of the spectrum so that "xlinspace" will be created
+        # correctly. After this, we reset it to the correct value and re-fit.
+        xmin = self.spectrum.data["pixels"].min()
+        xmax = self.spectrum.data["pixels"].max()
         super().__init__(
             visualizer,
             these_fitting_parameters,
-            domain,
+            (xmin, xmax),
             x,
             y,
             weights=weights,
             **kwargs,
         )
+        self.model.domain = domain
+        self.model.perform_fit()
 
         # This has to go on the model (and not this TabPanel instance) since
         # the models are returned by the Visualizer, not the TabPanel
@@ -749,13 +750,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
             x = [x]
 
         spectrum = self.spectrum.data["spectrum"]
+        xmin = self.spectrum.data["pixels"].min()
 
         # Get points around the line.
         def get_nearby_points(p):
             distance = 5
-            low = max(0, int(p - distance + 0.5))
-            high = min(len(spectrum), int(p + distance + 0.5))
-            return spectrum[low:high]
+            low = max(xmin, int(p - distance + 0.5))
+            high = min(xmin + len(spectrum), int(p + distance + 0.5))
+            return spectrum[low-xmin:high-xmin]
 
         extrema_func = np.amin if self.absorption else np.amax
 
@@ -831,10 +833,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
         eval_data["nonlinear"] = (
             eval_data["model"] - linear_model(eval_data["xlinspace"])
         )
-
-        domain = model.domain
         self.spectrum.data["wavelengths"] = model.evaluate(
-            np.arange(domain[0], domain[1] + 1)
+            # np.arange(domain[0], domain[1] + 1)
+            self.spectrum.data["pixels"]
         )
 
         # If we recalculated the model while in the middle of identifying a
@@ -1166,7 +1167,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 good_data["heights"].append(self.label_height(peak))
                 good_data["residuals"].append(0)
                 good_data["lines"].append(wavestr(unmatched_lines[match]))
-                print("NEW LINE", peak, unmatched_lines[match])
 
         self.model.data.data = good_data
         self.model.perform_fit()

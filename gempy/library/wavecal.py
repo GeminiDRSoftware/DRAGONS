@@ -621,7 +621,12 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         p.log.stdinfo("Applying peak-to-centroid shifts to lines.")
         peaks = peak_to_centroid_func(peaks)
 
-    return {"spectrum": np.ma.masked_array(data, mask=mask),
+    # We don't want to send a lot of masked data at either end
+    x1 = mask.astype(bool).argmin()
+    x2 = mask.size - mask.astype(bool)[::-1].argmin()
+
+    return {"spectrum": np.ma.masked_array(data[x1:x2], mask=mask[x1:x2]),
+            "pixels": np.arange(x1, x2),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
             "refplot_data": refplot_dict,
@@ -1135,15 +1140,15 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
                         (output_frame, None)])
 
 
-def create_pdf_plot(data, peaks, arc_lines, title):
+def create_pdf_plot(input_data, peaks, arc_lines, title):
     """
     Create and save a simple pdf plot of the arc spectrum with line
     identifications, useful for checking the validity of the solution.
 
     Parameters
     ----------
-    data: 1d array
-        the arc spectrum
+    input_data: dict
+        the dict from get_all_input_data()
     peaks: 1d array
         pixel locations of peaks
     arc_lines: 1d array
@@ -1155,19 +1160,22 @@ def create_pdf_plot(data, peaks, arc_lines, title):
     -------
     fig: a matplotlib figure
     """
+    data = input_data["spectrum"]
+    pixels = input_data["pixels"]
+    xmin, xmax = pixels.min(), pixels.max()
     data_max = data.max()
     fig, ax = plt.subplots()
-    ax.plot(data, 'b-')
+    ax.plot(pixels, data, 'b-')
     ax.set_ylim(0, data_max * 1.1)
     if len(arc_lines) and np.diff(arc_lines)[0] / np.diff(peaks)[0] < 0:
-        ax.set_xlim(len(data), -1)
+        ax.set_xlim(xmax + 1, xmin - 1)
     else:
-        ax.set_xlim(-1, len(data))
+        ax.set_xlim(xmin - 1, xmax + 1)
     for p, w in zip(peaks, arc_lines):
         j = int(p + 0.5)
-        ax.plot([p, p], [data[j] + 0.01 * data_max,
-                         data[j] + 0.02 * data_max], 'k-')
-        ax.text(p, data[j] + 0.03 * data_max, str('{:.5f}'.format(w)),
+        ax.plot([p, p], [data[j - xmin] + 0.01 * data_max,
+                         data[j - xmin] + 0.02 * data_max], 'k-')
+        ax.text(p, data[j - xmin] + 0.03 * data_max, str('{:.5f}'.format(w)),
                 horizontalalignment='center', rotation=90, fontdict={'size': 8})
     ax.set_xlabel("Pixel number")
     ax.set_title(title)

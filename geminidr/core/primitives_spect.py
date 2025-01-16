@@ -2484,7 +2484,7 @@ class Spect(Resample):
                     else:
                         wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                         figures.append(wavecal.create_pdf_plot(
-                            input_data["spectrum"], fit1d.points[~fit1d.mask],
+                            input_data, fit1d.points[~fit1d.mask],
                             fit1d.image[~fit1d.mask], f"{ad.filename}:{ext.id}"))
 
             ad.update_filename(suffix=sfx, strip=True)
