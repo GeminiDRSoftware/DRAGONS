@@ -13,4 +13,4 @@ overlap = datatype(32)
 unilluminated = datatype(64)
 
 fail = bad_pixel | saturated | cosmic_ray | no_data
-not_signal = max ^ (non_linear | saturated)  # NUMPY_2: OK
+not_signal = max ^ (non_linear | saturated)
