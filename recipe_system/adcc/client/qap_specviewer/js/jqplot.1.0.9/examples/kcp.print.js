@@ -1,17 +1,17 @@
 // <--- --------------------------------------------------------------------------------------- ----
-	
+
 // 	Blog Entry:
 // 	Ask Ben: Print Part Of A Web Page With jQuery
-	
+
 // 	Author:
 // 	Ben Nadel / Kinky Solutions
-	
+
 // 	Link:
 // 	http://www.bennadel.com/index.cfm?event=blog.view&id=1591
-	
+
 // 	Date Posted:
 // 	May 21, 2009 at 9:10 PM
-	
+
 // ---- --------------------------------------------------------------------------------------- --->
 
 
@@ -32,17 +32,17 @@ jQuery.fn.print = function(){
     // var statsrows = $(this).closest('div.quintile-outer-container').find('table.stats-table tr');
     var statsTable = $('<div></div>').append($(this).closest('div.quintile-outer-container').find('table.stats-table').clone());
     // var rowstyles = window.getComputedStyle(statsrows.get(0), '');
- 
+
 	// ASSERT: At this point, we know that the current jQuery
 	// collection (as defined by THIS), contains only one
 	// printable element.
- 
+
 	// Create a random name for the print frame.
 	var strFrameName = ("printer-" + (new Date()).getTime());
- 
+
 	// Create an iFrame with the new name.
 	var jFrame = $( "<iframe name='" + strFrameName + "'>" );
- 
+
 	// Hide the frame (sort of) and attach to the body.
 	jFrame
 		.css( "width", "1px" )
@@ -51,24 +51,24 @@ jQuery.fn.print = function(){
 		.css( "left", "-9999px" )
 		.appendTo( $( "body:first" ) )
 	;
- 
+
 	// Get a FRAMES reference to the new frame.
 	var objFrame = window.frames[ strFrameName ];
- 
+
 	// Get a reference to the DOM in the new frame.
 	var objDoc = objFrame.document;
- 
+
 	// Grab all the style tags and copy to the new
 	// document so that we capture look and feel of
 	// the current document.
- 
+
 	// Create a temp document DIV to hold the style tags.
 	// This is the only way I could find to get the style
 	// tags into IE.
 	var jStyleDiv = $( "<div>" ).append(
 		$( "style" ).clone()
 		);
- 
+
 	// Write the HTML for the document. In this, we will
 	// write out the HTML of the current element.
 	objDoc.open();
@@ -82,7 +82,7 @@ jQuery.fn.print = function(){
 	objDoc.write( jStyleDiv.html() );
 	objDoc.write( "</head>" );
 
-	// Typically, would just write out the html.	
+	// Typically, would just write out the html.
 	// objDoc.write( this.html() );
 
 	// We need to do specific manipulation for kcp quintiles.
@@ -93,7 +93,7 @@ jQuery.fn.print = function(){
                 <td class="chart-cell">');
 
     objDoc.write(imageElemStr);
-    
+
     objDoc.write('</td> <td class="stats-cell">');
 
     objDoc.write(statsTable.html());
@@ -103,8 +103,8 @@ jQuery.fn.print = function(){
 	objDoc.write( "</body>" );
 	objDoc.write( "</html>" );
 	objDoc.close();
- 
- 	// 
+
+ 	//
 	// When the iframe is completely loaded, print it.
 	// This seemed worked in IE 9, but caused problems in FF.
 	//
@@ -122,7 +122,7 @@ jQuery.fn.print = function(){
 			objFrame.focus();
 			objFrame.print();
 		}, 750);
- 
+
 
 	// Have the frame remove itself in about a minute so that
 	// we don't build up too many of these frames.

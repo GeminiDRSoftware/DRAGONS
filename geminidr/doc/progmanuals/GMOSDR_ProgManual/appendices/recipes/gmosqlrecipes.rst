@@ -13,4 +13,3 @@ geminidr.gmos.recipes.ql.recipes_IMAGE
 .. automodule:: geminidr.gmos.recipes.ql.recipes_IMAGE
    :members:
    :undoc-members:
-

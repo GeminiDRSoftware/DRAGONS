@@ -28,4 +28,3 @@ equal to the name of the first input bias image with "_bias.fits" appended.
         p.makeIRAFCompatible()
         p.storeProcessedBias()
         return
-

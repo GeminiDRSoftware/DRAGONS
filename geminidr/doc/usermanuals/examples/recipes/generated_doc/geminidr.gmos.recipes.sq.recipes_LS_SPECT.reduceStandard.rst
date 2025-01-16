@@ -37,4 +37,3 @@ todo: add docstring
         p.calculateSensitivity()
         p.storeProcessedStandard()
         p.writeOutputs()
-

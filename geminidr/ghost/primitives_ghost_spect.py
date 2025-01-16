@@ -1144,7 +1144,7 @@ class GHOSTSpect(GHOST):
           objects for the input
         - Extract the spectra from the input AstroData, using calls to
           :meth:`polyfit.Extractor.new_extract`.
-        
+
         Parameters
         ----------
         suffix: str
@@ -1410,7 +1410,7 @@ class GHOSTSpect(GHOST):
 
             extractor = Extractor(arm, sview, badpixmask=ad[0].mask,
                                   vararray=ad[0].variance)
-                        
+
             # FIXME: This really could be done as part of flat processing!
             correction = None
             if flat_correct:
@@ -2148,7 +2148,7 @@ class GHOSTSpect(GHOST):
         will try to attach an MDF because a GHOST image is
         tagged as SPECT. Rather than set parameters for that primitive to
         stop it from doing so, just override with a no-op primitive.
-        
+
         .. note::
             This could go in primitives_ghost.py if the SLITV version
             also no-ops.

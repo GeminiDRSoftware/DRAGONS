@@ -32,7 +32,7 @@ function SERVEReditFile(link,lnum)
                     filename: link
                    }
            });
-    
+
 }
 
 function aceditFile(link,lnum)
@@ -41,7 +41,7 @@ function aceditFile(link,lnum)
     {
         lnum = 0;
     }
-    
+
     var ddict = {   lnum:lnum,
                     filename:link
                 };
@@ -55,7 +55,7 @@ function aceditFile(link,lnum)
         acewin.moveTo(200,200);
         //acewin.resizeTo(600,500);
     }
-    
+
     else
     {
         $.ajax({url:"/acedit",
@@ -73,7 +73,7 @@ function aceditFile(link,lnum)
                     acewin.focus();
                 }
                });
-     }   
+     }
 }
 
 editFile = aceditFile;
@@ -83,7 +83,7 @@ function empty_pdk_focus(){
                      $($(".pdk_focus")[0]).empty();
                      });
 }
-                                        
+
 function getKeys(obj)
 {
     var keys = []
@@ -95,10 +95,10 @@ function getKeys(obj)
     return keys;
 }
 localClient = %(local_client)s;
-</script>                    
+</script>
 
  </head>
-                    
+
 <body>
     <div>
         <a href='http://ophiuchus.hi.gemini.edu/ADDOCS'>Astrodata 0.2 Manual:</a>
@@ -115,7 +115,7 @@ localClient = %(local_client)s;
         ) (
         <a href='http://ophiuchus.hi.gemini.edu/ADDOCS/gen.ADMANUAL_ADConcepts.html'>Concepts</a>
         )
-        <br/> 
+        <br/>
     </div>
     %(accordian_div)s
     %(select_options)s
@@ -188,7 +188,7 @@ digraph G {
 </script>
 
 <script>
-$("body").ready(function () 
+$("body").ready(function ()
 {
 var treeEL = $("#type_tree");
 var adkpackEL = $(".adk_packages");
@@ -201,7 +201,7 @@ var margin = {top: 20, right: 120, bottom: 20, left: 120},
     height = 600 - margin.top - margin.bottom;
 
 
-    
+
 var i = 0,
     duration = 750,
     root;
@@ -232,7 +232,7 @@ function sort_children(children)
         if (child.children && child.children.length)
         {
             sort_children(child.children);
-        }    
+        }
     }
     children.sort( function (a,b)
         {
@@ -240,7 +240,7 @@ function sort_children(children)
             if (a.name < b.name) return -1
             return 0
         });
-        
+
 }
 
 function loaddata( flare) {
@@ -273,7 +273,7 @@ function update(source) {
       links = tree.links(nodes);
   // Normalize for fixed-depth.
   nodes.forEach(function(d) { d.y = d.depth * 180; });
- 
+
   //nodes.children.sort(d3.ascending)
   //console.log(nodes)
   // Update the nodes

@@ -3,7 +3,7 @@
 reduce \- Recipe Processing Management System, v2.0, command line interface (cli)
 .SH SYNOPSIS
 .B reduce
-[\fB\-h\fR] 
+[\fB\-h\fR]
 [\fB\-v\fR]
 [\fB\-d\fR]
 [\fB\--adpkg\fR ADPKG]
@@ -27,12 +27,12 @@ the Recipe System, on input dataset(s). Control of reduce and the recipe system
 is provided by a variety of options and switches.
 
 .SH OPTIONS
-.TP 
+.TP
 .B -h, --help
 show the
 .B reduce
 help message and exit
-.TP 
+.TP
 .B -v, --version
 show program's version number and exit
 .TP
@@ -59,9 +59,9 @@ E.g.,
 \fB\-\-drpkg\fR ghostdr
 .RE
 .RE
-.TP 
-\fB\--logfile\fR LOGFILE 
-Name of log file (default is 
+.TP
+\fB\--logfile\fR LOGFILE
+Name of log file (default is
 .B 'reduce.log'
 )
 .TP
@@ -70,7 +70,7 @@ Set log mode. One of \fB\ standard, quiet, debug\fR
 (default is \fB\ standard\fR)
 .RE
 .RE
-.TP 
+.TP
 \fB\-p\fR USERPARAM [USERPARAM ...], \fB\--param\fR USERPARAM [USERPARAM ...]
 Set a primitive parameter from the command line. The form,
 .B -p par=val
@@ -85,11 +85,11 @@ E.g., \fB\-p\fR par1=val1 par2=val2).
 \fB\-r\fR RECIPENAME, \fB\--recipe\fR RECIPENAME
 Specify a recipe by name. Users can request non-default system recipe
 functions by their simple names, e.g.,
-.B -r qaStack 
+.B -r qaStack
 OR may specify their own recipe file and recipe function. A user defined
 recipe function must be 'dotted' with the recipe file.
 .RS
-E.g.,  
+E.g.,
 .RS
 \fB\-r\fR /path/to/recipes/recipefile.recipe_function
 .RE
@@ -105,8 +105,8 @@ that multiple user defined recipe functions can be defined in a single file.
 
 Readers should understand that these recipe files shall behave as python
 modules and should be named accordingly. I.e., in the example above,
-.B 'recipefile' 
-is a python module named, 
+.B 'recipefile'
+is a python module named,
 .B 'recipefile.py'
 .RE
 
@@ -143,7 +143,7 @@ mode.
 Add SUFFIX to filenames at end of reduction; strip all other suffixes
 marked by '_'.
 .RE
-.TP	
+.TP
 \fB\-\-upload\fR PROD [PROD ...]
 Send these pipeline products to fitsstore. Default is None.
 .RS
@@ -157,7 +157,7 @@ E.g.,
 Specify user supplied calibrations for calibration types.
 .RS
 E.g.,
-.RS 
+.RS
 \fB\-\-user_cal\fR processed_arc:gsTest_arc.fits
 .RE
 .RE
@@ -168,5 +168,5 @@ Recommend Anaconda 4.2.0, Astropy 1.2.1.
 .SH BUGS
 None known
 
-.SH SEE ALSO 
+.SH SEE ALSO
 .I typewalk(1)

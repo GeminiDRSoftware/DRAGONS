@@ -8,4 +8,3 @@ chmod -Rv 775 $DRAGONS_TEST_INPUTS || echo 1
 chmod -Rv 775 $DRAGONS_TEST_OUTPUTS || echo 1
 
 chmod -Rv 775 $DRAGONS_TEST_REFS || echo 1
-

@@ -112,7 +112,7 @@ def ad(request):
     filename = request.param
     path = astrodata.testing.download_from_archive(filename)
     return astrodata.open(path)
-    
+
 
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("ad", test_files, indirect=True)

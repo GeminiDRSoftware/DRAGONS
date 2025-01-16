@@ -31,7 +31,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
     above, 'GENERALPrimitives'.
     """
     astrotype = "GEMINI"
-    
+
     def init(self, rc):
         BookkeepingPrimitives.init(self, rc)
         CalibrationPrimitives.init(self, rc)
@@ -46,7 +46,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
         StandardizePrimitives.init(self, rc)
         return rc
     init.pt_hide = True
-    
+
     def standardizeGeminiHeaders(self, rc):
         """
         This primitive is used to make the changes and additions to the
@@ -54,90 +54,90 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
-        
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "standardizeGeminiHeaders",
                                  "starting"))
-        
+
         # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["standardizeGeminiHeaders"]
-        
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
-        
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-            
+
             # Check whether the standardizeGeminiHeaders primitive has been run
             # previously
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has "
                             "already been processed by "
                             "standardizeGeminiHeaders" % ad.filename)
-                
+
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            
+
             # Standardize the headers of the input AstroData object. Update the
             # keywords in the headers that are common to all Gemini data.
             log.status("Updating keywords that are common to all Gemini data")
-            
+
             # Original name
             ad.store_original_name()
-            
+
             # Number of science extensions
             gt.update_key(adinput=ad, keyword="NSCIEXT", value=ad.count_exts("SCI"),
                 comment=None, extname="PHU", keyword_comments=self.keyword_comments)
-            
+
             # Number of extensions
-            gt.update_key(adinput=ad, keyword="NEXTEND", value=len(ad), comment=None, 
+            gt.update_key(adinput=ad, keyword="NEXTEND", value=len(ad), comment=None,
                           extname="PHU", keyword_comments=self.keyword_comments)
-            
+
             # Physical units (assuming raw data has units of ADU)
             gt.update_key(adinput=ad, keyword="BUNIT", value="adu", comment=None,
                           extname="SCI", keyword_comments=self.keyword_comments)
-            
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
-            
+
             # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
                                               strip=True)
-            
+
             # Append the output AstroData object to the list of output
-            # AstroData objects 
+            # AstroData objects
             adoutput_list.append(ad)
-        
+
         # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
-        
+
         yield rc
 
     def mosaicADdetectors(self,rc):      # Uses python MosaicAD script
         """
         This primitive will mosaic the SCI frames of the input images, along
         with the VAR and DQ frames if they exist.
-        
+
         :param tile: tile images instead of mosaic
         :type tile: Python boolean (True/False), default is False
-        
+
         """
         log = logutils.get_logger(__name__)
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "mosaicADdetectors", "starting"))
-        
+
         # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["mosaicADdetectors"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
-        
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-            
+
             # Validate Data
             #if (ad.phu_get_key_value('GPREPARE')==None) and \
             #    (ad.phu_get_key_value('PREPARE')==None):
@@ -153,7 +153,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            
+
             # If the input AstroData object only has one extension, there is no
             # need to mosaic the detectors
             if ad.count_exts("SCI") == 1:
@@ -163,10 +163,10 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            
+
             # Get the necessary parameters from the RC
             tile = rc["tile"]
-            
+
             log.stdinfo("Mosaicking %s ..."%ad.filename)
             log.stdinfo("MosaicAD: Using tile: %s ..."%tile)
             #t1 = time.time()
@@ -177,10 +177,10 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
             adout = mo.as_astrodata(tile=tile)
             #t2 = time.time()
             #print '%s took %0.3f ms' % ('as_astrodata', (t2-t1)*1000.0)
-            
+
             # Verify mosaicAD was actually run on the file
             # then log file names of successfully reduced files
-            if adout.phu_get_key_value("MOSAIC"): 
+            if adout.phu_get_key_value("MOSAIC"):
                 log.fullinfo("File "+adout.filename+\
                             " was successfully mosaicked")
 
@@ -190,23 +190,23 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
             # Change the filename
             adout.filename = gt.filename_updater(
                 adinput=ad, suffix=rc["suffix"], strip=True)
-            
+
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(adout)
-        
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
-        
+
         yield rc
-    
+
 
     def traceFootprints(self, rc):
- 
+
         """
         This primitive will create and append a 'TRACEFP' Bintable HDU to the
-        AD object. The content of this HDU is the footprints information 
+        AD object. The content of this HDU is the footprints information
         from the espectroscopic flat in the SCI array.
 
         :param logLevel: Verbosity setting for log messages to the screen.
@@ -216,7 +216,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
-        
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "", "starting"))
 
@@ -240,13 +240,13 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                                   trace_threshold=rc["trace_threshold"])
             except:
                log.warning("Error in traceFootprints with file: %s"%ad.filename)
-               
+
             # Change the filename
-            adout.filename = gt.filename_updater(adinput=ad, 
+            adout.filename = gt.filename_updater(adinput=ad,
                                                  suffix=rc["suffix"],
                                                  strip=True)
 
-            # Append the output AstroData object to the list of output 
+            # Append the output AstroData object to the list of output
             # AstroData objects.
             adoutput_list.append(adout)
 
@@ -258,7 +258,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
 
 
     def cutFootprints(self, rc):
- 
+
         """
         This primitive will create and append multiple HDU to the output
         AD object. Each HDU correspond to a rectangular cut containing a
@@ -283,7 +283,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             # Call the  user level function
-      
+
             # Check that the input ad has the TRACEFP extension,
             # otherwise, create it.
             if ad['TRACEFP'] == None:
@@ -296,14 +296,14 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                 log.error("Error in cut_slits with file: %s"%ad.filename)
                 # DO NOT add this input ad to the adoutput_lis
                 continue
-               
-               
+
+
             # Change the filename
-            adout.filename = gt.filename_updater(adinput=ad, 
+            adout.filename = gt.filename_updater(adinput=ad,
                                                  suffix=rc["suffix"],
                                                  strip=True)
 
-            # Append the output AstroData object to the list of output 
+            # Append the output AstroData object to the list of output
             # AstroData objects.
             adoutput_list.append(adout)
 
@@ -317,7 +317,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
 
         # Instantiate the log
         log = logutils.get_logger(__name__)
-        
+
         # Define the keyword to be used for the time stamp
         timestamp_key = self.timestamp_keys["attachWavelengthSolution"]
 
@@ -346,7 +346,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                     arc = AstroData(arc)
                 tmp_list.append(arc)
             arc_list = tmp_list
-            
+
             arc_dict = gt.make_dict(key_list=adinput, value_list=arc_list)
 
         for ad in adinput:
@@ -354,8 +354,8 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                 arc = arc_dict[ad]
             else:
                 arc = rc.get_cal(ad, "processed_arc")
-            
-                # Take care of the case where there was no arc 
+
+                # Take care of the case where there was no arc
                 if arc is None:
                     log.warning("Could not find an appropriate arc for %s" \
                                 % (ad.filename))
@@ -377,8 +377,8 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                 gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
                 # Change the filename
-                ad.filename = gt.filename_updater(adinput=ad, 
-                                                  suffix=rc["suffix"], 
+                ad.filename = gt.filename_updater(adinput=ad,
+                                                  suffix=rc["suffix"],
                                                   strip=True)
                 adoutput_list.append(ad)
             else:
@@ -388,6 +388,5 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
-      
-        yield rc
 
+        yield rc

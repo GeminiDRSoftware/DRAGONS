@@ -81,4 +81,3 @@ Releases
 ..   testing.rst
 
 .. todolist::
-

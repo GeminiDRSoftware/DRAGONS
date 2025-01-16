@@ -184,4 +184,3 @@ def alignAndStack(p):
 #     p.makeIRAFCompatible()
 #     p.writeOutputs()
 #     return
-

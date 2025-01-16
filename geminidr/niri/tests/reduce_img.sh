@@ -61,4 +61,3 @@ reduce @sciset.lis -p addDQ:user_bpm=${bpm} -p skyCorrect:nhigh=3 -p alignAndSta
 
 # Check the final result & return status:
 compare_file $(last_result_filename stack)
-

@@ -205,4 +205,3 @@ class NIRI(Gemini, NearIR):
         naxis2 = ad.hdr.get('NAXIS2')
         return [self.inst_adlookup.nonlin_coeffs.get((read_mode, size, well_depth))
                     for size in naxis2]
-

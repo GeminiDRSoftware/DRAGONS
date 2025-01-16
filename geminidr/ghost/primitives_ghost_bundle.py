@@ -134,7 +134,7 @@ def _get_common_hdr_value(base, extns, key):
     extns : iterable of :any:`astrodata.Astrodata`
         AstroData extensions to be examined
     key : str
-        The FITS header key to find in each extension 
+        The FITS header key to find in each extension
 
     Raises
     ------
@@ -278,4 +278,3 @@ def _write_newfile(extns, suffix, base, log):
     #n.phu['GHOSTDR'] = (ghost_instruments.__version__, "GHOSTDR version")
 
     return n
-

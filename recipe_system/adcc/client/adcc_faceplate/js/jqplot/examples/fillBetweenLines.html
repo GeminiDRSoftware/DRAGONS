@@ -2,18 +2,18 @@
 
 <html>
 <head>
-	
+
 	<title>Charts with Fill Between Lines</title>
 
     <link class="include" rel="stylesheet" type="text/css" href="../jquery.jqplot.min.css" />
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
   <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="../jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div class="logo">
@@ -30,7 +30,7 @@
     <div class="example-nav">
   <a href="dateAxisRenderer.html">Previous</a> <a href="./">Examples</a> <a href="hiddenPlotsInTabs.html">Next</a></div>
 
-      
+
 <!-- Example scripts go here -->
 
     <style type="text/css" media="screen">
@@ -63,7 +63,7 @@
         var l2 = [4,   8,  9, 10, 8,   6];
         var l3 = [9,  13, 14, 16, 17, 19];
         var l4 = [15, 17, 16, 18, 13, 11];
-        
+
         var plot1 = $.jqplot("chart1", [l0, l1, l2, l3, l4], {
             title: "Fill between 2 lines",
             axesDefaults: {
@@ -84,7 +84,7 @@
                 // index.  Defaults to 0 (first series).  If an index higher than 0 is
                 // used, fill will hide series below it.
                 baseSeries: 0,
-                // fill:  Optional, defaults to true.  False to turn off fill.  
+                // fill:  Optional, defaults to true.  False to turn off fill.
                 fill: true
             },
             seriesDefaults: {
@@ -125,7 +125,7 @@
 <!-- End additional plugins -->
 
 
-	</div>	
+	</div>
 	<script type="text/javascript" src="example.min.js"></script>
 
 </body>

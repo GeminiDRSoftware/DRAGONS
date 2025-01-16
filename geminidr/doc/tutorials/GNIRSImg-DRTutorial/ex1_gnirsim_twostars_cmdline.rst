@@ -225,4 +225,3 @@ signal-to-noise.
 .. image:: _graphics/gnirs_keyhole_after.png
    :scale: 60%
    :align: center
-

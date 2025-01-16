@@ -9,4 +9,3 @@ from geminidr.gmos.recipes.sq.recipes_FLAT_LS_SPECT import (makeProcessedFlatSta
                                         makeProcessedFlatNoStack)
 
 _default = makeProcessedFlatNoStack
-

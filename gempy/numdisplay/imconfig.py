@@ -3,8 +3,8 @@ Version 1.0alpha - 9-Oct-2003 (WJH)
 
 loadImtoolrc (imtoolrc=None):
     Locates, then reads in IMTOOLRC configuration file from
-    system or user-specified location, and returns the 
-    dictionary for reference. 
+    system or user-specified location, and returns the
+    dictionary for reference.
 
     The table gets loaded into a dictionary of the form:
         {configno:{'nframes':n,'width':nx,'height':ny},...}
@@ -15,7 +15,7 @@ loadImtoolrc (imtoolrc=None):
         print fbtab[34]['width']
         1056 1024
 
-"""    
+"""
 
 import os,string,sys
 
@@ -26,10 +26,10 @@ _default_local_imtoolrc = "imtoolrc"
 def loadImtoolrc(imtoolrc=None):
     """
         Locates, then reads in IMTOOLRC configuration file from
-        system or user-specified location, and returns the 
-        dictionary for reference. 
-        
-    """    
+        system or user-specified location, and returns the
+        dictionary for reference.
+
+    """
     # Find the IMTOOLRC file.  Except as noted below, this order
     # matches what ximtool and ds9 use.
     _home = os.getenv("HOME")
@@ -59,10 +59,10 @@ def loadImtoolrc(imtoolrc=None):
 
     # /usr/local/lib/imtoolrc
     _name_list.append(_default_system_imtoolrc)
-    
+
     # $iraf/dev/imtoolrc - this is not in ds9 or NOAO's ximtool,
     # but it is in the AURA Unified Release ximtool.  This is the
-    # one place on your system where you can be certain that 
+    # one place on your system where you can be certain that
     # imtoolrc is really there.  Eventually, we will make a patch
     # to add this to ds9 and to IRAF.
     if 'iraf' in os.environ :
@@ -82,7 +82,7 @@ def loadImtoolrc(imtoolrc=None):
                 break
         except OSError as error:
             pass
-    
+
     #Parse the file, line by line and populate the dictionary
     _lines = _fdin.readlines()
     _fdin.close()
@@ -90,7 +90,7 @@ def loadImtoolrc(imtoolrc=None):
     # Build a dictionary for the entire IMTOOL table
     # It will be indexed by configno.
     fbdict = {}
-    
+
     for line in _lines:
         # Strip out any blanks/tabs, Python 3 compat
         line = line.strip()
@@ -102,7 +102,7 @@ def loadImtoolrc(imtoolrc=None):
                 configno = int(_lsp[0])
                 _dict = {'nframes':int(_lsp[1]),'width':int(_lsp[2]),'height':int(_lsp[3]),'name':_lsp[5]}
                 fbdict[configno] = _dict
-    return fbdict                    
+    return fbdict
 
 def help():
     print(__doc__)

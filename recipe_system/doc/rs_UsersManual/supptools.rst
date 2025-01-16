@@ -19,4 +19,3 @@ work directly.
 .. include:: supptools/showrecipes.rst
 .. include:: supptools/showpars.rst
 .. include:: supptools/typewalk.rst
-

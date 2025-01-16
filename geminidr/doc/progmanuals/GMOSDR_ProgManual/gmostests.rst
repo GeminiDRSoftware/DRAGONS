@@ -39,4 +39,3 @@ Missing or Desirable Tests
 --------------------------
 
 .. note:: as a list, or in a table
-

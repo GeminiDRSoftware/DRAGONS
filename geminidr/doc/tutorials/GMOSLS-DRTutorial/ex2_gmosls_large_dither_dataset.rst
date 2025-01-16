@@ -5,10 +5,10 @@
 *******************************
 Example 2 - Dataset description
 *******************************
-The dataset used in this example is from a GMOS longslit observation from the program GS-2022A-FT-110. 
-The primary target is the central galaxy of an Odd Radio Circle, `ORC J0102-2450 <https://ui.adsabs.harvard.edu/abs/2021MNRAS.505L..11K/abstract>`_. 
-The observation sequence makes a large wavelength dither (several tens of nanometer) to circumvent the issues with 
-GMOS South amplifier #5, which began in January 2022. During reduction, DRAGONS will adjust for the difference in 
+The dataset used in this example is from a GMOS longslit observation from the program GS-2022A-FT-110.
+The primary target is the central galaxy of an Odd Radio Circle, `ORC J0102-2450 <https://ui.adsabs.harvard.edu/abs/2021MNRAS.505L..11K/abstract>`_.
+The observation sequence makes a large wavelength dither (several tens of nanometer) to circumvent the issues with
+GMOS South amplifier #5, which began in January 2022. During reduction, DRAGONS will adjust for the difference in
 central wavelength and then stack the aligned spectra automatically.
 
 The observation uses the R400 grating on GMOS South. The central wavelengths
@@ -73,4 +73,3 @@ package. They can also be downloaded from the Gemini Observatory Archive (GOA).
 +---------------------+---------------------------------------------+
 | BPM                 || bpm_20220128_gmos-s_Ham_22_full_12amp.fits |
 +---------------------+---------------------------------------------+
-

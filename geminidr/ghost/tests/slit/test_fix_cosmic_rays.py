@@ -48,5 +48,3 @@ def test_fix_cosmic_rays(ad_slit):
         'Incorrect number of rejected pixels recorded in CRPIXREJ'
     np.testing.assert_array_equal(ad_slit.shape, shapes), \
         'fixCosmicRays has mangled data shapes'
-
-

@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -30,7 +30,7 @@
       <div class="colleft">
         <div class="col1" id="example-content">
 
-  
+
 <!-- Example scripts go here -->
 
 <p>These examples use rectangle overlays to show various ranges.
@@ -47,11 +47,11 @@ Colors are specified in the canvas drawing format (use rgba for transparency).
     <div id="chart2" style="margin-top:20px; margin-left:20px; width:400px; height:300px;"></div>
 
 <pre class="code prettyprint brush: js"></pre>
-  
+
     <div id="chart3" style="margin-top:20px; margin-left:20px; width:400px; height:300px;"></div>
 
 <pre class="code prettyprint brush: js"></pre>
-  
+
 <script class="code" type="text/javascript">
 $(document).ready(function(){
   var plot1 = $.jqplot ('chart1', [[30,-10,90,20,50,130,80,120,50]], {
@@ -63,15 +63,15 @@ $(document).ready(function(){
           { rectangle: { ymin: 100, xminOffset: "0px", xmaxOffset: "0px", yminOffset: "0px", ymaxOffset: "0px",
                     color: "rgba(200, 0, 0, 0.3)", showTooltip: true, tooltipFormatString: "Too Warm" } }
         ]
-      } 
+      }
   });
 });
 </script>
-  
+
 <script class="code" type="text/javascript">
 $(document).ready(function(){
   var plot2 = $.jqplot ('chart2',
-          [ [ ["2012-01-01", 30], ["2012-01-02", -10], ["2012-01-03", 90], ["2012-01-04", 20], ["2012-01-05", 50], 
+          [ [ ["2012-01-01", 30], ["2012-01-02", -10], ["2012-01-03", 90], ["2012-01-04", 20], ["2012-01-05", 50],
               ["2012-01-06", 130], ["2012-01-07", 80], ["2012-01-08", 120],["2012-01-09", 50] ]], {
       axes : {
         xaxis : {
@@ -85,7 +85,7 @@ $(document).ready(function(){
           { rectangle: { xmin: new Date("2012-01-03"), xmax: new Date("2012-01-07"), xminOffset: "0px", xmaxOffset: "0px", yminOffset: "0px", ymaxOffset: "0px",
                     color: "rgba(0, 200, 200, 0.3)", showTooltip: true, tooltipFormatString: "Holidays" } },
         ]
-      } 
+      }
   });
 });
 </script>
@@ -99,7 +99,7 @@ $(document).ready(function(){
           { rectangle: { xmin:3.5, xmax: 8.2, ymin: 10, ymax: 70, xminOffset: "0px", xmaxOffset: "0px", yminOffset: "0px", ymaxOffset: "0px",
                     color: "rgba(200, 100, 100, 0.3)", showTooltip: true, tooltipFormatString: "Ideal Zone" } },
         ]
-      } 
+      }
   });
 });
 </script>

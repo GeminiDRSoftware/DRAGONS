@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 """
 This module provides a number "action" classes, subclassed from the
-argparse.Action class. These classes only override the __call__() method. This 
+argparse.Action class. These classes only override the __call__() method. This
 actions class library supplies ad hoc functionality to DPDG requirements on the
 reduce command line interface.
 
@@ -128,8 +128,8 @@ class ParameterAction(Action):
             setattr(namespace, self.dest, _par_args)
 
         if _extant_par_args:
-            reemed = [_extant_par_args.remove(z) for z in 
-                      [x for x in _extant_par_args if x.split('=')[0] in 
+            reemed = [_extant_par_args.remove(z) for z in
+                      [x for x in _extant_par_args if x.split('=')[0] in
                        [y.split('=')[0] for y in _par_args]]
             ]
 
@@ -164,8 +164,8 @@ class CalibrationAction(Action):
             setattr(namespace, self.dest, _cal_args)
 
         if _extant_cal_args:
-            reemed = [_extant_cal_args.remove(z) for z in 
-                      [x for x in _extant_cal_args if x.split(':')[0] in 
+            reemed = [_extant_cal_args.remove(z) for z in
+                      [x for x in _extant_cal_args if x.split(':')[0] in
                        [y.split(':')[0] for y in _cal_args]]
             ]
 
@@ -173,4 +173,3 @@ class CalibrationAction(Action):
             _extant_cal_args.extend(_cal_args)
             setattr(namespace, self.dest, _extant_cal_args)
         return
-

@@ -2,18 +2,18 @@
 
 <html>
 <head>
-	
+
 	<title>Candlestick and Open Hi Low Close charts</title>
 
     <link class="include" rel="stylesheet" type="text/css" href="../jquery.jqplot.min.css" />
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
   <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="../jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div class="logo">
@@ -30,7 +30,7 @@
     <div class="example-nav">
   <a href="candlestick-charts.html">Previous</a> <a href="./">Examples</a> <a href="cursor-highlighter.html">Next</a></div>
 
-      
+
 <!-- Example scripts go here -->
 
 <div id="chart1" class="code" style="margin:20px;height:240px; width:640px;"></div>
@@ -47,7 +47,7 @@
 <pre class="common brush:js"></pre>
 
 <script class="common" type="text/javascript">
-    
+
     ohlc = [['07/06/2009', 138.7, 139.68, 135.18, 135.4],
     ['06/29/2009', 143.46, 144.66, 139.79, 140.02],
     ['06/22/2009', 140.67, 143.56, 132.88, 142.44],
@@ -81,7 +81,7 @@
     ['12/08/2008', 97.28, 103.6, 92.53, 98.27],
     ['12/01/2008', 91.3, 96.23, 86.5, 94],
     ['11/24/2008', 85.21, 95.25, 84.84, 92.67],
-    ['11/17/2008', 88.48, 91.58, 79.14, 82.58],    
+    ['11/17/2008', 88.48, 91.58, 79.14, 82.58],
     ['11/10/2008', 100.17, 100.4, 86.02, 90.24],
     ['11/03/2008', 105.93, 111.79, 95.72, 98.24],
     ['10/27/2008', 95.07, 112.19, 91.86, 107.59],
@@ -93,7 +93,7 @@
     ['09/15/2008', 142.03, 147.69, 120.68, 140.91],
     ['09/08/2008', 164.57, 164.89, 146, 148.94]
     ];
-    
+
     ohlc_b = [['07/06/2009', 138.7, 139.68, 135.18, 135.4, 'j'],
     ['06/29/2009', 143.46, 144.66, 139.79, 140.02, 'q'],
     ['06/22/2009', 140.67, 143.56, 132.88, 142.44, 'p'],
@@ -107,8 +107,8 @@
     ['04/27/2009', 122.9, 127.95, 122.66, 127.24, 'r'],
     ['04/20/2009', 121.73, 127.2, 118.6, 123.9, 't'],
     ['04/13/2009', 120.01, 124.25, 115.76, 123.42, 's']
-    ];     
-    
+    ];
+
     hlc = [['07/06/2009', 139.68, 135.18, 135.4],
     ['06/29/2009', 144.66, 139.79, 140.02],
     ['06/22/2009', 143.56, 132.88, 142.44],
@@ -142,7 +142,7 @@
     ['12/08/2008', 103.6, 92.53, 98.27],
     ['12/01/2008', 96.23, 86.5, 94],
     ['11/24/2008', 95.25, 84.84, 92.67],
-    ['11/17/2008', 91.58, 79.14, 82.58],  
+    ['11/17/2008', 91.58, 79.14, 82.58],
     ['11/10/2008', 100.4, 86.02, 90.24],
     ['11/03/2008', 111.79, 95.72, 98.24],
     ['10/27/2008', 112.19, 91.86, 107.59],
@@ -154,11 +154,11 @@
     ['09/15/2008', 147.69, 120.68, 140.91],
     ['09/08/2008', 164.89, 146, 148.94]
     ];
-    
+
 </script>
 
-<script class="code" type="text/javascript">$(document).ready(function(){  
-    $.jqplot.config.enablePlugins = true;     
+<script class="code" type="text/javascript">$(document).ready(function(){
+    $.jqplot.config.enablePlugins = true;
     plot1 = $.jqplot('chart1',[ohlc],{
       title: 'Chart',
       axesDefaults:{},
@@ -179,7 +179,7 @@
     });
 });</script>
 
-<script class="code" type="text/javascript">$(document).ready(function(){  
+<script class="code" type="text/javascript">$(document).ready(function(){
     plot2 = $.jqplot('chart2',[ohlc],{
       title: 'Chart',
       axesDefaults:{},
@@ -211,7 +211,7 @@
     });
 });</script>
 
-<script class="code" type="text/javascript">$(document).ready(function(){  
+<script class="code" type="text/javascript">$(document).ready(function(){
     plot2b = $.jqplot('chart2b',[ohlc_b],{
       title: 'Chart',
       axesDefaults:{},
@@ -244,7 +244,7 @@
     });
 });</script>
 
-<script class="code" type="text/javascript">$(document).ready(function(){ 
+<script class="code" type="text/javascript">$(document).ready(function(){
     plot3 = $.jqplot('chart3',[hlc],{
       title: 'Chart',
       axesDefaults:{},
@@ -265,7 +265,7 @@
     });
 });</script>
 
-<script class="code" type="text/javascript">$(document).ready(function(){ 
+<script class="code" type="text/javascript">$(document).ready(function(){
     var catOHLC = [[1, 138.7, 139.68, 135.18, 135.4],
     [2, 143.46, 144.66, 139.79, 140.02],
     [3, 140.67, 143.56, 132.88, 142.44],
@@ -274,9 +274,9 @@
     [6, 136.47, 146.4, 136, 144.67],
     [7, 124.76, 135.9, 124.55, 135.81],
     [8, 123.73, 129.31, 121.57, 122.5]];
-    
+
     var ticks = ['Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue'];
-        
+
     plot4 = $.jqplot('chart4',[catOHLC],{
       axes: {
           xaxis: {
@@ -313,7 +313,7 @@
 <!-- End additional plugins -->
 
 
-	</div>	
+	</div>
 	<script type="text/javascript" src="example.min.js"></script>
 
 </body>

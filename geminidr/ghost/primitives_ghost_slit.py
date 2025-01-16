@@ -656,4 +656,3 @@ def _total_obj_flux(log, res, ut_date, filename, data, flat_data=None, binning=2
         blues = blues[:1]
         reds = reds[:1]
     return reduce(lambda x, y: x + y, [np.sum(z) for z in reds + blues])
-

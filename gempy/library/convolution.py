@@ -1,15 +1,15 @@
-import numpy as np
-
-from scipy.interpolate import make_interp_spline
-
-from gempy.library import astrotools as at
-
 """
 Various convolution functions should go here. They can have as many parameters
 as you like, but the "line_spread_function" that is passed must be compatible
 with the definition in the convolve() function, i.e., take 2 parameters: a
 wavelength and an array of wavelength offsets
 """
+
+import numpy as np
+
+from scipy.interpolate import make_interp_spline
+
+from gempy.library import astrotools as at
 
 
 def gaussian_constant_r(w0, dw, r):
@@ -53,7 +53,7 @@ def convolve(w, y, func, dw, sampling=1):
     -------
     array: the convolved array, of the same size as x
     """
-    #start = datetime.now()
+    # start = datetime.now()
     # Calculate size of kernel in pixels
     diffs = np.diff(w)
     if any(diffs <= 0):
@@ -65,20 +65,21 @@ def convolve(w, y, func, dw, sampling=1):
     nw = y.shape[-1]
     if sampling == 1:  # this is a bit quicker
         for j in range(0, nw):
-            start = max(j-i, 0)
-            yout[..., start:j+i+1] = (yout[..., start:j+i+1] +
-                                      np.outer(y.T[j], func(w[j], w[start:j+i+1] - w[j])))
+            start = max(j - i, 0)
+            yout[..., start : j + i + 1] = yout[..., start : j + i + 1] + np.outer(
+                y.T[j], func(w[j], w[start : j + i + 1] - w[j])
+            )
     else:
         ww = w[:nw:sampling]
         yconv = np.zeros((ww.size, kernel_size))
         for jj, j in enumerate(range(0, nw, sampling)):
-            start = max(j-i, 0)
-            yconv[jj, start-j+i:] = func(w[j], w[start:j+i+1]-w[j])
+            start = max(j - i, 0)
+            yconv[jj, start - j + i :] = func(w[j], w[start : j + i + 1] - w[j])
         for j in range(kernel_size):
             z = y * np.interp(w, ww, yconv[:, j])
-            yout[..., j:j+nw-i] += z[..., i:nw+i-j]
+            yout[..., j : j + nw - i] += z[..., i : nw + i - j]
 
-    #print(datetime.now() - start)
+    # print(datetime.now() - start)
     return yout
 
 

@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -30,7 +30,7 @@
       <div class="colleft">
         <div class="col1" id="example-content">
 
-  
+
 <!-- Example scripts go here -->
 
  <p>The Bezier curve renderer can distinguish between two different input data formats.  This first example has the data passed in as 2 data points, the second one defining the Bezier curve to the end point.  With this format, non-default axes renderers will require specifying the minimum and maximum on the axes.</p>
@@ -52,7 +52,7 @@
 
 <script class="code" type="text/javascript">
 $(document).ready(function(){
-    
+
     var line1 = [[0, 1], [2, 2, 4, .5, 6, 0]];
     var line2 = [[0, 5], [2, 6, 5, 1, 6, .5]];
     var line3 = [[0, 6], [3, 9, 4, 8, 6, 3]];
@@ -68,7 +68,7 @@ $(document).ready(function(){
 
 <script class="code" type="text/javascript">
 $(document).ready(function(){
-    
+
     var s1 = [[0, 1], [2, 2], [4, .5], [6, 0]];
     var s2 = [[0, 5], [2, 6], [5, 1], [6, .5]];
     var s3 = [[0, 6], [3, 9], [4, 8], [6, 3]];
@@ -84,7 +84,7 @@ $(document).ready(function(){
 
 <script class="code" type="text/javascript">
 $(document).ready(function(){
-    
+
     var s1 = [['01/01/2010', 1], ['02/01/2010', 2], ['03/01/2010', .5], ['04/01/2010', 0]];
     var s2 = [['01/01/2010', 5], ['02/01/2010', 6], ['03/01/2010', 1], ['04/01/2010', .5]];
     var s3 = [['01/01/2010', 6], ['02/01/2010', 9], ['03/01/2010', 8], ['04/01/2010', 3]];

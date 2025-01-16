@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -30,7 +30,7 @@
       <div class="colleft">
         <div class="col1" id="example-content">
 
-  
+
 <!-- Example scripts go here -->
 
 <p class="text">Date axis renderer with default settings.  Ticks are given wider spacing by default since date axes typically have longer tick labels.</p>
@@ -74,7 +74,7 @@
     ['12/08/08', 97.28, 103.6, 92.53, 98.27],
     ['12/01/08', 91.3, 96.23, 86.5, 94],
     ['11/24/08', 85.21, 95.25, 84.84, 92.67],
-    ['11/17/08', 88.48, 91.58, 79.14, 82.58],    
+    ['11/17/08', 88.48, 91.58, 79.14, 82.58],
     ['11/10/08', 100.17, 100.4, 86.02, 90.24],
     ['11/03/08', 105.93, 111.79, 95.72, 98.24],
     ['10/27/08', 95.07, 112.19, 91.86, 107.59],
@@ -86,7 +86,7 @@
     ['09/15/08', 142.03, 147.69, 120.68, 140.91],
     ['09/08/08', 164.57, 164.89, 146, 148.94]
     ];
-     
+
     var hlc = [['07/06/09', 139.68, 135.18, 135.4],
     ['06/29/09', 144.66, 139.79, 140.02],
     ['06/22/09', 143.56, 132.88, 142.44],
@@ -120,7 +120,7 @@
     ['12/08/08', 103.6, 92.53, 98.27],
     ['12/01/08', 96.23, 86.5, 94],
     ['11/24/08', 95.25, 84.84, 92.67],
-    ['11/17/08', 91.58, 79.14, 82.58],  
+    ['11/17/08', 91.58, 79.14, 82.58],
     ['11/10/08', 100.4, 86.02, 90.24],
     ['11/03/08', 111.79, 95.72, 98.24],
     ['10/27/08', 112.19, 91.86, 107.59],
@@ -142,7 +142,7 @@ $(document).ready(function(){
 
     // for 2 digit years, set the default centry to 2000.
     $.jsDate.config.defaultCentury = 2000;
-    
+
     plot1 = $.jqplot('chart1',[ohlc],{
         axes: {
           xaxis: {
@@ -154,9 +154,9 @@ $(document).ready(function(){
         },
         series: [
             {
-                renderer:$.jqplot.OHLCRenderer, 
-                rendererOptions:{ 
-                    candleStick:true 
+                renderer:$.jqplot.OHLCRenderer,
+                rendererOptions:{
+                    candleStick:true
                 }
             }
         ],
@@ -178,7 +178,7 @@ $(document).ready(function(){
 
 <script class="code" type="text/javascript">
 $(document).ready(function(){
-        
+
     plot2 = $.jqplot('chart2',[ohlc],{
         title: 'OHLC chart',
         axes: {
@@ -218,7 +218,7 @@ $(document).ready(function(){
 
 <script class="code" type="text/javascript">
 $(document).ready(function(){
-        
+
     plot3 = $.jqplot('chart3',[ohlc],{
         axesDefaults:{},
         axes: {
@@ -238,9 +238,9 @@ $(document).ready(function(){
         },
         series: [
             {
-                renderer:$.jqplot.OHLCRenderer, 
-                rendererOptions:{ 
-                    candleStick:true 
+                renderer:$.jqplot.OHLCRenderer,
+                rendererOptions:{
+                    candleStick:true
                 }
             }
         ],

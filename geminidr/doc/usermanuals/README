@@ -41,4 +41,3 @@ Dev and test for primitives
 Dev and test for recipes
 
 * ./generate_recipedoc.py gmos -d testdoc
-

@@ -84,9 +84,9 @@ in an instrument package that matches the instrument descriptor of the input
 datasets.  In fact, the way the search is optimized right now, it enforces that
 principle.
 
-As the search of instrument primitive classes progresses, modules are 
+As the search of instrument primitive classes progresses, modules are
 inspected, looking for class objects with a *tagset* attribute. A tagset match
-is assessed against all previous matches and the best matching class is retrieved 
+is assessed against all previous matches and the best matching class is retrieved
 and instantiated with all the appropriate arguments.
 
 A match requires that the primitive class *tagset* be a subset of the
@@ -97,7 +97,7 @@ only return the first *best match* primitive class it has encountered.  It is
 therefore very important to be specific with the *tagset* attributes to avoid
 such multiple match situation and to ensure only one true best match.
 
-The ``get_applicable_primitives()`` method returns this instance of the best 
+The ``get_applicable_primitives()`` method returns this instance of the best
 match primitive class. The object returned will be the actual instance and
 usable as such as an argument to a recipe function.  The list of AstroData
 objects given as input to PrimitiveMapper is used to instantiate the

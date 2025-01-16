@@ -47,4 +47,3 @@ separately. The relative WCS is determined from the central CCD
             p.appendStream(stream="all", from_stream="main", copy=False)
         p.mergeInputs(instream="all")
         p.storeProcessedScience(suffix="_image")
-

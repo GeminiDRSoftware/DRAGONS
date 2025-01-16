@@ -138,14 +138,14 @@ class Polyspect(object):
         ------
         TypeError
             If required input ``params`` is not provided.
-        
+
         Returns
         -------
 
         evaluation: :obj:`numpy.ndarray`
             This is a (orders,yvalues) array containing the polynomial
             evaluation at every point. If data is provided, the returned
-            array has the same shape. 
+            array has the same shape.
 
         """
         # params needs to be a np.array
@@ -160,7 +160,7 @@ class Polyspect(object):
             # Create the y_values and orders.
             # This is essentially the purpose of creating this function. These
             # parameters can be easily derived from class properties and should
-            # not have to be provided as inputs. 
+            # not have to be provided as inputs.
             y_values, orders = np.meshgrid(np.arange(self.szy),
                                            np.arange(self.m_max -
                                                      self.m_min + 1) +
@@ -221,8 +221,8 @@ class Polyspect(object):
         xdeg: int
             Polynomial degree as a function of y
         sigma: :obj:`numpy.ndarray` array
-            Array containing uncertainties for each point. Must have the same 
-            format as data. 
+            Array containing uncertainties for each point. Must have the same
+            format as data.
 
         Returns
         -------
@@ -451,7 +451,7 @@ class Polyspect(object):
         usefulness of this function can be debated, but ultimately it won't
         create any problems.
 
-        
+
         Parameters
         ----------
         old_x: :obj:`numpy.ndarray`
@@ -554,7 +554,7 @@ class Polyspect(object):
         UserWarning
             If the decreased dimension is not possible due to rounding off
             errors
-        
+
         Returns
         -------
         fitted_parameters: :obj:`numpy.ndarray`
@@ -696,9 +696,9 @@ class Polyspect(object):
             Initial model parameters
         y_values: :obj:`numpy.ndarray`, optional
             Y positions on the CCD. If none given, defaults to the spectral
-            direction pixel indices. 
+            direction pixel indices.
         sigma: :obj:`numpy.ndarray`, optional
-            Uncertainties in the y_values, for weighted fit purposes. 
+            Uncertainties in the y_values, for weighted fit purposes.
         decrease_dim: int, optional
             The factor of decreased dimentionality for the fit.
             This needs to be an exact factor of the y size.
@@ -797,7 +797,7 @@ class Polyspect(object):
                                     return_arrays=False):
         """
         Create a spectral format, including a detector-to-slit matrix, at
-        every point. 
+        every point.
 
         The input parameters represent the polynomial coefficients for second
         order descriptions of how the spectral and spatial scales vary as a
@@ -1003,7 +1003,7 @@ class Polyspect(object):
         overlaid on top of the result of convolving the flat with a slit
         profile in 2D which just reveals the location of the middle of the
         orders.
-        
+
         It uses :any:`matplotlib` slider widgets to adjust a polynomial model
         representation overlaid on top of an image. A ``data`` array is provided
         containing an image, and the model parameters needed to determine the
@@ -1027,7 +1027,7 @@ class Polyspect(object):
         documented in the :any:`matplotlib` documentation.
 
         The function returns the changed model parameters.
-        
+
         Parameters
         ----------
         data: :obj:`numpy.ndarray`
@@ -1069,24 +1069,24 @@ class Polyspect(object):
         # Grab the model to be plotted
         x_int, wave_int, blaze_int = self.spectral_format(wparams=wparams,
                                                           xparams=xparams)
-        
+
         # define what is to be plotted
         def plot_data(model, xparams, wparams, nxbase, ygrid,
                       thar_spectrum=None):
             """
             Function used for working out and defining
-            the data to be plotted as a function of purpose 
+            the data to be plotted as a function of purpose
 
             Parameters
             ----------
 
             model: string
-                What model is being adjusted. This is the input to the main 
+                What model is being adjusted. This is the input to the main
                 function
             xparams: :obj:`numpy.ndarray` array
                 The (adjusted) position model parameters
             wparams: :obj:`numpy.ndarray` array
-                The (adjusted) wavelength model parameters 
+                The (adjusted) wavelength model parameters
             nxbase: :obj:`numpy.ndarray` array
                 The amount to add to the xbase after the spectral format
             ygrid: :obj:`numpy.ndarray` array
@@ -1095,7 +1095,7 @@ class Polyspect(object):
 
             Returns
             -------
-            
+
             plot_vals: :obj:`numpy.ndarray` array
                  The values to be plotted
             """
@@ -1147,8 +1147,8 @@ class Polyspect(object):
         #    slider change though ***
         #if len(to_plot)>2:
         #    plt.scatter(to_plot[0], to_plot[1], c=to_plot[2])
-        #    plt.colorbar() 
-        
+        #    plt.colorbar()
+
         # Now over plot the image and add a contrast adjustment slider.
         image_min = np.percentile(data,10) #!!! MJI Hack
         image_max = data.max()

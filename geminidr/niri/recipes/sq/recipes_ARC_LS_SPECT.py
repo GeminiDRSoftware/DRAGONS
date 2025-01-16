@@ -1,7 +1,7 @@
 """
 MS: this is just an MVP, copying the corresponding GNIRS recipe.
-Expect Olesja will improve this after she finds some bandwidth.  
- 
+Expect Olesja will improve this after she finds some bandwidth.
+
 Recipes available to data with tags ['NIRI', 'SPECT', 'LS'],
 excluding data with tags ['FLAT', 'DARK', 'BIAS'].
 These are NIRI longslit arc-lamp or sky-line calibrations.

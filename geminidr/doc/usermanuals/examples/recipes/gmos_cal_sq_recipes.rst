@@ -27,4 +27,3 @@ GMOS Calibrations Recipes
     .. gmos_cal_flat_ls_spect_sq_recipes
     gmos_cal_wavecal_ls_sq_recipes
     .. gmos_cal_standard_ls_sq_recipes
-

@@ -17,4 +17,3 @@ if [[ -n "${DRAGONS_TEST_OUT-}" ]]; then
 else
     echo "DRAGONS_TEST_OUT is not set, so not deleting it"
 fi
-

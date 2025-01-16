@@ -2,18 +2,18 @@
 
 <html>
 <head>
-	
+
 	<title>Cumulative Density Function Chart</title>
 
     <link class="include" rel="stylesheet" type="text/css" href="../jquery.jqplot.min.css" />
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
   <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="../jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div class="logo">
@@ -30,11 +30,11 @@
     <div class="example-nav">
   <a href="kcp_area.html">Previous</a> <a href="./">Examples</a> <a href="kcp_engel.html">Next</a></div>
 
-      
+
 <!-- Example scripts go here -->
 
 
-  <link class="include" type="text/css" href="jquery-ui/css/ui-lightness/jquery-ui.min.css" rel="Stylesheet" /> 
+  <link class="include" type="text/css" href="jquery-ui/css/ui-lightness/jquery-ui.min.css" rel="Stylesheet" />
 
    <style type="text/css">
 
@@ -43,7 +43,7 @@
         padding: 30px;
         width: 500px;
         height: 400px;
-        
+
     }
 
     #chart1 {
@@ -124,7 +124,7 @@
         </td>
 
         <td class="chart">
-            <div class="chart-container">    
+            <div class="chart-container">
                 <div id="chart1"></div>
                 <div class="jqplot-datestamp"></div>
             </div>
@@ -133,7 +133,7 @@
     </table>
 
     <pre class="code brush:js"></pre>
-  
+
   <script class="code" type="text/javascript">
 $(document).ready(function(){
     var dataSets = {
@@ -143,13 +143,13 @@ $(document).ready(function(){
 
         rural: [[1522.3755, 0.044856], [1621.4335, 0.048153], [1726.937, 0.051764], [1839.3056, 0.055907], [1958.9857, 0.060801], [2086.4531, 0.066762], [2222.2145, 0.073899], [2366.8099, 0.082612], [2520.8136, 0.093168], [2684.8381, 0.106164], [2859.5353, 0.122508], [3045.6, 0.142886], [3243.7713, 0.16758], [3454.8371, 0.19669], [3679.6367, 0.23118], [3919.0639, 0.273098], [4174.0698, 0.325019], [4445.6684, 0.390807], [4734.9398, 0.474177], [5043.0332, 0.579565], [5371.1735, 0.719638], [5720.6654, 0.911325], [6092.8986, 1.175054], [6489.3516, 1.537895], [6911.6011, 2.041596], [7361.3256, 2.758826], [7840.3135, 3.776691], [8350.4675, 5.133703], [8893.8162, 6.852621], [9472.5195, 8.948744], [10088.8789, 11.417648], [10745.3427, 14.293846], [11444.5212, 17.634387], [12189.194, 21.360828], [12982.3225, 25.29956], [13827.0569, 29.428878], [14726.7567, 33.707138], [15684.9997, 38.129755], [16705.5921, 42.671778], [17792.5925, 47.229102], [18950.322, 51.800588], [20183.3846, 56.383771], [21496.6782, 60.886558], [22895.4161, 65.12792], [24385.1837, 69.030354], [25971.888, 72.617033], [27661.8365, 75.986887], [29461.7179, 79.112304], [31378.744, 81.975561], [33420.5079, 84.537139], [35595.0905, 86.782817], [37911.2052, 88.71901], [40378.0258, 90.413815], [43005.3584, 91.908817], [45803.6014, 93.228911], [48783.9674, 94.381653], [51958.2609, 95.359352], [55339.1005, 96.170082], [58939.867, 96.837248], [62774.9884, 97.378991], [66859.655, 97.8273], [71210.033, 98.200135], [75843.5542, 98.506646], [80778.5711, 98.752685], [86034.7015, 98.949784], [91632.7482, 99.10766], [97595.1423, 99.232528], [103945.4998, 99.334335], [110709.0646, 99.42121], [117912.6058, 99.497035], [125584.9876, 99.563629], [133756.5988, 99.621726], [142459.781, 99.672192], [151729.4076, 99.715746], [161602.1937, 99.752893], [172117.386, 99.784601], [183316.6015, 99.811139], [195244.7151, 99.833203], [207948.9717, 99.852181], [221479.8735, 99.868723], [235890.9734, 99.883153], [251240.0159, 99.89576], [267587.7958, 99.906951], [284999.0141, 99.917064], [303543.4372, 99.926265], [323294.5157, 99.9346], [344330.7648, 99.942191], [366735.4418, 99.949086], [390598.3214, 99.955426], [416013.9199, 99.961279], [443083.2701, 99.966677], [471913.507, 99.971673], [502620.1526, 99.976302], [535324.8297, 99.980575], [570156.9769, 99.984496], [607256.1655, 99.988063], [646769.3381, 99.991314], [688853.5686, 99.994366], [733675.418, 99.997264], [781414.486, 100]]
     };
-     
+
     // Initial values for the user lines.
     var userLine1Val = 8250;
-    var userLine2Val = 60000; 
+    var userLine2Val = 60000;
 
 
-    
+
     plot1 = $.jqplot("chart1", [dataSets.national], {
         title: "Cumulative Density Function",
         cursor: {
@@ -239,12 +239,12 @@ $(document).ready(function(){
     $("input[type=checkbox][name=gridsVertical]").attr("checked", true);
     $("input[type=checkbox][name=gridsHorizontal]").attr("checked", true);
 
-    $("input[type=radio][name=backgroundColor]").change(function(){ 
+    $("input[type=radio][name=backgroundColor]").change(function(){
         plot1.grid.background = $(this).val();
         plot1.replot();
     });
 
-    $("input[type=radio][name=dataSeries]").change(function(){ 
+    $("input[type=radio][name=dataSeries]").change(function(){
         var val = $(this).val();
         plot1.series[0].data = dataSets[val];
 
@@ -290,7 +290,7 @@ $(document).ready(function(){
     });
 
     $("input[type=radio][name=lineWidth]").change(function(){
-        var val = parseFloat($(this).val()), shadowOffset; 
+        var val = parseFloat($(this).val()), shadowOffset;
         plot1.series[0].renderer.shapeRenderer.lineWidth = val;
         plot1.series[0].renderer.shadowRenderer.lineWidth = val;
         // for thick lines, scale shadow offset.
@@ -307,9 +307,9 @@ $(document).ready(function(){
         plot1.plugins.canvasOverlay.get("line2").options.lineWidth = val;
         plot1.replot();
     });
-    
-    
-    $("div.chart-container").resizable({delay:20});    
+
+
+    $("div.chart-container").resizable({delay:20});
 
     $("div.chart-container").bind("resize", function(event, ui) {
         plot1.replot();
@@ -342,7 +342,7 @@ $(document).ready(function(){
 <!-- End additional plugins -->
 
 
-	</div>	
+	</div>
 	<script type="text/javascript" src="example.min.js"></script>
 
 </body>

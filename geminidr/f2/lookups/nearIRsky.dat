@@ -10,7 +10,7 @@
 #
 # Because of the very high resolution OH line list from Rousselot et al,
 # the list was then modified removing lines that could not be identified
-# with the medium resolution mode on ISAAC. Because of the lower 
+# with the medium resolution mode on ISAAC. Because of the lower
 # resolution R=2000 mode of GNIRS, the blended lines will be identified
 # by the strongest line in the blend.
 #

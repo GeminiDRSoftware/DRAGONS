@@ -82,6 +82,3 @@ You can download them from
 here: https://archive.gemini.edu/searchform/GHOST/notengineering/cols=CTOWBEQ/NotFail/not_site_monitoring/BPM
 
 Put them in ``playdata/example1/``.
-
-
-

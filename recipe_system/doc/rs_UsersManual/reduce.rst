@@ -541,5 +541,3 @@ be ignored::
     Input files: S20161025S0111.fits
     Parameters: no changes
     Recipe: no changes
-
-

@@ -155,7 +155,7 @@ a.nav, a.nav:link {
     text-decoration: none;
   font-family: Tahoma, "Helvetica Neue", "Trebuchet MS", Verdana, Arial, sans-serif;
   font-size: 16px;
-  color: #aaaaaa; 
+  color: #aaaaaa;
   margin-right: 11px;
 }
 
@@ -170,5 +170,3 @@ a.nav:active {
     border: 0px;
   color: #E0771C;
 }
-
-

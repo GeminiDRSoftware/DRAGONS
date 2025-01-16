@@ -24,7 +24,7 @@ function StatusViewer(element, id) {
 StatusViewer.prototype = {
     constructor: StatusViewer,
     load: function() {
-	// Make an AJAX request to the server for the current 
+	// Make an AJAX request to the server for the current
 	// time and the server site information
 	// The callback for this request will call the init function
 	var sv = this;
@@ -45,7 +45,7 @@ StatusViewer.prototype = {
 		    var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
 						  ut[0],ut[1],ut[2], ut[3]));
 		    // Add in the UT offset
-		    sv.server_now = 
+		    sv.server_now =
 			Date(ldate.setHours(ldate.getHours()+sv.utc_offset));
 
 		    // Keep track of the difference between local
@@ -87,7 +87,7 @@ StatusViewer.prototype = {
 	// If there is a date parameter, use it instead of the current time
 	var prev_turnover;
 	if (datepar) {
-	    // This sets the previous turnover to UT 0, which is 
+	    // This sets the previous turnover to UT 0, which is
 	    // 14:00 HST or 20:00 (+/- an hour) Chile time.  Either
 	    // way the following code to set it to 14:00 will
 	    // get the right times for the fake UT used at
@@ -142,9 +142,9 @@ StatusViewer.prototype = {
 			field:"metadata-local_time_str"},
                        {id:"filename", name:"Filename",
 			field:"metadata-raw_filename"},
-		       {id:"datalabel",	name:"Data Label", 
+		       {id:"datalabel",	name:"Data Label",
 			field:"metadata-datalabel"},
-		       {id:"status", name:"Reduce Status", 
+		       {id:"status", name:"Reduce Status",
 			field:"status-current"}
 		       ]; // end columns
 	this.status_table = new SimpleTable($("#table_wrapper"),
@@ -252,21 +252,21 @@ StatusViewer.prototype = {
 
     getDateString: function() {
 	var date_str = "";
-	
+
 	// Get prefix from server site information
 	// If not GN or GS, don't use a prefix
 	if (this.site=="gemini-north") {
 	    date_str += "N";
 	} else if (this.site=="gemini-south") {
 	    date_str += "S";
-	} 
+	}
 
 	var date = new Date(this.prev_turnover);
-	
+
 	// Timezone offset is in hours; 10 is Hawaii.
 	var timezone = this.utc_offset;
 	if (timezone<10) {
-	    // Add one day, since the UT date we use at night is 
+	    // Add one day, since the UT date we use at night is
 	    // actually the UT date for the next day for any
 	    // place east of Hawaii
 	    date = new Date(date.getFullYear(),
@@ -284,7 +284,7 @@ StatusViewer.prototype = {
 	date_str += year + month + day;
 	if (this.site=="gemini-north" || this.site=="gemini-south") {
 	    date_str += "S";
-	} 
+	}
 	return date_str;
     },
 
@@ -315,7 +315,7 @@ StatusViewer.prototype = {
 	// Set the turnover times
 	var prev_turnover = this.turnover;
 	var timestamp = Math.round(prev_turnover.valueOf()/1000);
-	
+
 	var next_turnover = new Date(prev_turnover.getFullYear(),
 				     prev_turnover.getMonth(),
 				     prev_turnover.getDate() + 1,
@@ -388,7 +388,7 @@ StatusViewer.prototype = {
 	    var fn_regex = /.*((N|S)\d{8}S(\d{4}))(_[a-zA-Z0-9]+)?(\.fits?)?/;
 	    var fn = record["metadata"]["raw_filename"];
 	    if (fn.match(fn_regex)) {
-		record["metadata"]["raw_filename"] = 
+		record["metadata"]["raw_filename"] =
 		    fn.replace(fn_regex,'$1$5');
 	    }
 
@@ -416,10 +416,10 @@ StatusViewer.prototype = {
 		wlen = parseFloat(wlen).toFixed(3) + "\u00B5m";
 		record["metadata"]["wavelength_str"] = wlen;
 	    } else {
-		record["metadata"]["wavelength_str"] = 
+		record["metadata"]["wavelength_str"] =
 		    record["metadata"]["filter"];
 	    }
-	    
+
 	    // Add the record to the database
 	    var datalabel = record["metadata"]["datalabel"];
 	    this.database.addRecord(datalabel, record);
@@ -480,7 +480,7 @@ StatusViewer.prototype = {
 			    if (record[subdict]["logfile"]) {
 				var lf = encodeURIComponent(
 				    record[subdict]["logfile"])
-				table_record[key[j]] = 
+				table_record[key[j]] =
 				    '<a class="rqlog" '+
 				    'href="../rqlog.json?file='+lf+'">'+
 				    record[subdict][subkey]+'</a>';
@@ -498,7 +498,7 @@ StatusViewer.prototype = {
 		}
 	    }
 	    table_record["key"] = record["metadata"]["datalabel"];
-	    
+
 	    tbl_records.push(table_record);
 	}
 
@@ -508,5 +508,5 @@ StatusViewer.prototype = {
 	    return tbl_records;
 	}
     }, // end formatTableRecords
-    
+
 }; // end prototype

@@ -15,5 +15,3 @@ galaxies with dither on target for sky subtraction.
    ex1_f2im_ontarget_dataset
    ex1_f2im_ontarget_cmdline
    ex1_f2im_ontarget_api
-
-

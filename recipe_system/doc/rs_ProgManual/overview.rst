@@ -43,7 +43,7 @@ calculated from the data itself.  DRAGONS and the Recipe System also are
 the data reduction platform that will replace Gemini's legacy IRAF software.
 
 Readers unfamiliar with terms and concepts presented in this manual can consult
-the :ref:`Glossary <glossary>` for a definition of terms. For greater detail and 
+the :ref:`Glossary <glossary>` for a definition of terms. For greater detail and
 depth, below are definitions of terms and components directly relevant to
 usage and development of the Recipe System.
 
@@ -348,7 +348,7 @@ calibration manager (GeminiCalMgr), the Gemini Observatory facility
 calibration manager (fitsstore), or the Gemini Observatory Archive.
 
 Primitives requiring **processed** calibration files (biases, flats, etc.)
-will use this functional interface to make calibration requests. These requests 
+will use this functional interface to make calibration requests. These requests
 are served by the calibration manager in real time. This is a *JIT* (just in
 time) service.  (See the :ref:`Appendix<jit>` for more information about why
 *JIT* calibration service is necessary.)
@@ -428,4 +428,3 @@ necessity.  The local calibration manager, distributed as GeminiCalMgr, is
 also, unfortunately still quite Gemini-centric.  The ORMs are designed for
 Gemini data.  It might be possible for a third-party to replace the ORMs and
 the calibration rules to match their data's needs.
-

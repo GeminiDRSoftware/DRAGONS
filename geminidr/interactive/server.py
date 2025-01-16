@@ -210,7 +210,7 @@ def _shutdown(doc):
 
         falsey_responses = ("0", "n", "f", "no", "false")
         if (
-            user_satisfied is not None 
+            user_satisfied is not None
             and user_satisfied.lower() in falsey_responses
         ):
             user_satisfied = False

@@ -9,11 +9,11 @@
     <link rel="stylesheet" type="text/css" href="examples.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shCoreDefault.min.css" />
     <link type="text/css" rel="stylesheet" href="syntaxhighlighter/styles/shThemejqPlot.min.css" />
-  
+
     <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="../excanvas.js"></script><![endif]-->
     <script class="include" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-   
+
+
 </head>
 <body>
     <div id="header">
@@ -30,7 +30,7 @@
       <div class="colleft">
         <div class="col1" id="example-content">
 
-  
+
 <!-- Example scripts go here -->
 
 <style type="text/css">
@@ -40,7 +40,7 @@
 </style>
 
 <p>jqPlot has basic theming support for commonly styled atributes of plot elements.  Upon creation, each plot will have a "themeEngine" that controls modificaition, adding, removing and activating of plot themes.  In addition, each plot will have a "Default" theme which corresponds to the styling of the plot at plot creation.<p>
-    
+
 <p>Creation of new themes is easy.  A "style" object is created with properties for the various plot elements to be styles.  Attached to each of those is an ojbect with the actual styling properties.  A simple style object might look like:</p>
 
 <pre>
@@ -61,7 +61,7 @@
     plot1b.themeEngine.newTheme('gabe', gabe);
     plot1b.activateTheme('gabe');
 </pre>
-    
+
 <div id="chart1b" class="plot" style="width:400px;height:260px;"></div>
 <p>Select Theme for area plot:
 <select id="p1bswitcher" onchange="switch1b();">
@@ -88,7 +88,7 @@
             backgroundColor: 'rgb(211, 233, 195)'
         }
     };
-    
+
     plot3.themeEngine.newTheme('uma', temp);
     plot5.themeEngine.newTheme('uma', temp);
 </pre>
@@ -120,7 +120,7 @@
 
 <p>There are various was to create and edit themes for a plot.  Below are two different methods for creating additional themes for a line plot and adding them to the plots themeEngine.  Here the <code>axesStyles</code> property is used to supply styling to all axes at one time.  A similar property, <code>seriesStyles</code>, exists for styling all series of a plot at one time. Note, neither of these methods is as straightforward as using the <code>newTheme()</code> method of the plots themeEngine, but are included for illustrative purposes.</p>
 
-<pre> 
+<pre>
     e1 = plot1.themeEngine;
     brass = e1.copy('Default', 'brass');
     brass.title.fontFamily = 'Copperplate, Impact';
@@ -131,7 +131,7 @@
     brass.axesStyles.label.fontFamily = "Copperplate, 'Copperplate Gothic Light', Impact";
     brass.axesStyles.ticks.fontFamily = "Copperplate, 'Copperplate Gothic Light', Impact";
     brass.axesStyles.label.fontSize = '14pt';
-    
+
     temp = {
         grid: {
             backgroundColor: "#593D2B",
@@ -159,7 +159,7 @@
             }
         }
     };
-    
+
     chocolate = plot1.themeEngine.copy('Default', 'chocolate', temp);
 </pre>
 
@@ -174,7 +174,7 @@
 </p>
 
 <p>The example below shows more extensive use of the various styling options to give the chart a rather ugly and dated appearence.  Note that, for bar (and funnel, pie and donut charts), <code>highlightColors</code> can be specified as an array of colors which will be applied to each bar individually, as a single string giving a color to apply to all bars, or as an empty array which will force jqPlot to auto calculate highlight colors based on the current bar color.<p>
-    
+
 <pre>
     oldstyle = {
         title: {
@@ -213,7 +213,7 @@
             border: '1px solid black'
         }
     };
-    
+
     plot2.themeEngine.newTheme('oldstyle', oldstyle);
 </pre>
 
@@ -257,7 +257,7 @@ $(document).ready(function(){
            }
        }
     });
-    
+
     plot1b = $.jqplot('chart1b',[l2, l3, l4],{
        stackSeries: true,
        showMarker: false,
@@ -305,7 +305,7 @@ $(document).ready(function(){
            }
        }
     });
-    
+
     plot3 = $.jqplot('chart3',[l1],{
        title: 'Global City Index',
        legend: {
@@ -319,7 +319,7 @@ $(document).ready(function(){
            renderer: $.jqplot.FunnelRenderer
        }
     });
-        
+
     plot5 = $.jqplot('chart5',[l1],{
        title: 'Pie Chart',
        seriesDefaults: {
@@ -329,7 +329,7 @@ $(document).ready(function(){
            show: true
        }
     });
-        
+
     e1 = plot1.themeEngine;
     brass = e1.copy('Default', 'brass');
     brass.title.fontFamily = 'Copperplate, Impact';
@@ -341,7 +341,7 @@ $(document).ready(function(){
     brass.axesStyles.label.fontFamily = "Copperplate, 'Copperplate Gothic Light', Impact";
     brass.axesStyles.ticks.fontFamily = "Copperplate, 'Copperplate Gothic Light', Impact";
     brass.axesStyles.label.fontSize = '14pt';
-    
+
     temp = {
         grid: {
             backgroundColor: "#593D2B",
@@ -369,9 +369,9 @@ $(document).ready(function(){
             }
         }
     };
-    
+
     chocolate = plot1.themeEngine.copy('Default', 'chocolate', temp);
-    
+
     gabe = {
         series: [
             {color: 'rgba(216, 159, 60, 0.6)'},
@@ -382,9 +382,9 @@ $(document).ready(function(){
             backgroundColor: '#DEA493'
         }
     }
-    
+
     gabe = plot1b.themeEngine.newTheme('gabe', gabe);
-    
+
     oldstyle = {
         title: {
             fontFamily: 'Times New Roman',
@@ -422,9 +422,9 @@ $(document).ready(function(){
             border: '1px solid black'
         }
     };
-    
+
     plot2.themeEngine.newTheme('oldstyle', oldstyle);
-    
+
     temp = {
         seriesStyles: {
             seriesColors: ['red', 'orange', 'yellow', 'green', 'blue', 'indigo'],
@@ -440,10 +440,10 @@ $(document).ready(function(){
             backgroundColor: 'rgb(211, 233, 195)'
         }
     };
-    
+
     plot3.themeEngine.newTheme('uma', temp);
     plot5.themeEngine.newTheme('uma', temp);
-    
+
 });
 
 function switch1() {

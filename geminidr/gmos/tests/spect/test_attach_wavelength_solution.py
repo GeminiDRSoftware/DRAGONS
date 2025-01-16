@@ -211,7 +211,7 @@ def create_inputs_recipe():
     from astrodata.testing import download_from_archive
     from geminidr.gmos.tests.spect import CREATED_INPUTS_PATH_FOR_TESTS
     from recipe_system.reduction.coreReduce import Reduce
-    from recipe_system.utils.reduce_utils import normalize_ucals    
+    from recipe_system.utils.reduce_utils import normalize_ucals
 
     module_name, _ = os.path.splitext(os.path.basename(__file__))
     path = os.path.join(CREATED_INPUTS_PATH_FOR_TESTS, module_name)

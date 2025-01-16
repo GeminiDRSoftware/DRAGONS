@@ -464,9 +464,9 @@ class Config(with_metaclass(ConfigMeta, object)):
     attributes.
 
     Config also emulates a dict of field name: field value
-    
+
     CJS: Edited these so only the _fields are exposed. _storage retains
-    items that have been deleted 
+    items that have been deleted
     """
 
     def __iter__(self):

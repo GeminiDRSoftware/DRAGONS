@@ -32,4 +32,3 @@ in two different ways:
 We show how to run the same reduction using both methods.
 
 * :ref:`twostars_example`
-
