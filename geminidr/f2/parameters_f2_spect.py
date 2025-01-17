@@ -10,6 +10,11 @@ def list_of_ints_check(value):
     return True
 
 
+class associateSkyConfig(parameters_preprocess.associateSkyConfig):
+    def setDefaults(self):
+        self.min_skies = 2
+
+
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     def setDefaults(self):
         self.order = 3

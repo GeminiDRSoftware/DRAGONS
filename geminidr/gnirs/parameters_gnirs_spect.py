@@ -10,6 +10,11 @@ class addMDFConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_mdfAdded", optional=True)
 
 
+class associateSkyConfig(parameters_preprocess.associateSkyConfig):
+    def setDefaults(self):
+        self.min_skies = 2
+
+
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):
         # self.scale_sky = False #MS: IF for whatever reason the exposure times are different between frames being subtracted, that case may require a special treatment
