@@ -33,7 +33,7 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     def setDefaults(self):
-        self.threshold = 0.005  # since we want to go to 1% filter transmission
+        self.threshold = 0.001  # since we want to go to 1% filter transmission
 
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):

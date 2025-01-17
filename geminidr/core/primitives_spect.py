@@ -3728,8 +3728,8 @@ class Spect(Resample):
                                          **fit1d_params)
                     fit1d_arr.append(fitted_data)
 
-            for ext, fitted_data, threshold_mask, masked_data, threshold_value \
-                    in zip(admos, fit1d_arr, threshold_mask_arr, masked_data_arr, saved_thresholds):
+            for ext, fitted_data, x, threshold_mask, masked_data, threshold_value \
+                    in zip(admos, fit1d_arr, x_arr, threshold_mask_arr, masked_data_arr, saved_thresholds):
                 if not mosaicked:
                     # In the case where this was run interactively, the resulting fit has pre-masked points (x).
                     # This happens before the interactive code builds the fit_1D.  Using the default evaluate()

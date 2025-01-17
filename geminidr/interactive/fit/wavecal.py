@@ -922,13 +922,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         logging.debug("Identifying line: %s %s %s", key, x, y)
 
+        xmin = self.spectrum.data["pixels"].min()
         if peak is None:
             x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
             fwidth = self.model.meta["fwidth"]
 
             interp_pixel = interp1d(
                 self.spectrum.data["wavelengths"],
-                range(len(self.spectrum.data["wavelengths"])),
+                self.spectrum.data["pixels"],
             )
 
             pixel = interp_pixel(x)
@@ -964,8 +965,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
 
                 try:
-                    orig_peak = pinpoint_peaks(pinpoint_data, [pixel], None)[0][0]
-                    peak = self.model.meta["peak_to_centroid_func"](orig_peak)
+                    orig_peak = pinpoint_peaks(pinpoint_data, [pixel - xmin],
+                                               None)[0][0]
+                    peak = self.model.meta["peak_to_centroid_func"](orig_peak + xmin)
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
                     return
@@ -1022,7 +1024,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         lheight = (end - start) * (-0.05 if self.absorption else 0.05)
         # TODO: check what happens here in case of absorption -OS
 
-        height = self.spectrum.data["spectrum"][int(peak + 0.5)]
+        height = self.spectrum.data["spectrum"][int(peak - xmin + 0.5)]
 
         self.new_line_marker.data = {
             "x": [est_wave] * 2,
@@ -1074,7 +1076,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 return False
 
         eval_peaks = self.model.evaluate(new_peaks[index])
-        close_to_peak = abs(eval_peaks - x) < (0.025 * (x2 - x1))
+        close_to_peak = abs(eval_peaks - x) < (0.01 * (x2 - x1))
 
         return close_to_peak
 
