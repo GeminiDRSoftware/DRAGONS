@@ -68,7 +68,9 @@ def stack_nddata(fn):
         dtype = np.float32
         data = np.empty((len(nddata_list),)+nddata_list[0].data.shape, dtype=dtype)
         for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
-            data[i] = ndd.data * s + z  # NUMPY_2: OK
+            s = dtype(s)
+            z = dtype(z)
+            data[i] = ndd.data.astype(dtype) * s + z  # NUMPY_2: OK
 
         if any(ndd.mask is None for ndd in nddata_list):
             mask = None
