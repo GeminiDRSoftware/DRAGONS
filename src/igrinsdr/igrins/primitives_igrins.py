@@ -53,7 +53,6 @@ from .procedures.identified_lines import IdentifiedLines
 from .procedures.echellogram import Echellogram
 from .procedures.fit_affine import fit_affine_clip
 from .procedures.ecfit import get_ordered_line_data, fit_2dspec  # , check_fit
-from .procedures.ref_lines_db import SkyLinesDB
 
 from .procedures.sky_spec_helper import _get_slices
 from .procedures.process_wvlsol_volume_fit import (_append_offset,
@@ -429,6 +428,149 @@ def get_wat_header(wat_table, wavelength_increasing_order=False):
             return d
 
     return header, convert_data
+
+# for fitting the liness
+
+import numpy as np
+import pandas as pd
+
+from numpy.typing import ArrayLike
+
+def _gauss0_w_dcenters(xx, params, lines):
+    """ Returns a gaussian function with the given parameters"""
+    shift, sigma, height, background = params
+
+    y_models = []
+    with np.errstate(divide="ignore"):
+        for line in lines:
+            y_models.append(np.exp(-(((xx - (line + shift))/sigma)**2*0.5)))
+
+    return height*np.array(y_models).sum(axis=0) + background
+
+
+# def _gauss_w_dcenters_chi2(xx, yy, params, lines):
+#     return np.sum((yy - _gauss0_w_dcenters(xx, params, lines))**2)
+
+
+FIT_FAIL_RETURN_VALUE = [np.nan] * 4, None, None
+
+
+def prepare_gaussian_group(x: np.ndarray, s: np.ndarray, lines: np.ndarray,
+                           sigma_init=1.5,
+                           max_sigma_scale=2,
+                           fitrange_scale=2.5):
+    """
+    Prepare the fit that fits the spectrum with a group of gaussian that shares same offset and width.
+    It returns sliced spectrum, fitting function, initial and bounds of the fit parameters.
+
+    lines : initial x-coordinate of lines to fit
+    sigma_init : initial sigma. A single value is given which will be shared with multiple lines. 
+    """
+
+    lines = np.array(lines)
+    lines.sort()
+
+    if not np.all(np.isfinite(lines)):  # if any of the position has nan
+        return FIT_FAIL_RETURN_VALUE
+
+    max_sigma = max_sigma_scale * sigma_init
+
+    # The spectrum will be sliced and fit. We calculate the boundary of the slice.
+    # The slice need to be larger than the bounds of x parameter.
+
+    # The shift of x is bound to [-fitrange_scale, +fitrange_scale] * max_sigma.
+    # The slice will be as large as this padded with addtional 2*max_sigma.
+
+    xshift_max = fitrange_scale * max_sigma
+    xmin = lines[0] - xshift_max - 2 * max_sigma
+    xmax = lines[-1] + xshift_max + 2 * max_sigma
+
+    # find the slice
+    imin, imax = np.clip(np.searchsorted(x, [xmin, xmax]), 0, len(x))
+
+    if imax - imin < 3:
+        return FIT_FAIL_RETURN_VALUE
+
+    sl = slice(imin, imax)
+
+    xx = x[sl]
+    yy = s[sl]
+
+    # initial estimation of the height
+    ymin, ymax = yy.min(), yy.max()
+    yheight = ymax - ymin
+
+    # dcenters0 = lines - lines[0]
+
+    def _gauss(params, xx=xx, lines=lines):
+        # return _gauss_w_dcenters_chi2(xx, yy, params, lines)
+        return _gauss0_w_dcenters(xx, params, lines)
+
+    # initial parameter and bounds
+    params_ = [(0, (-xshift_max, xshift_max)),
+               (sigma_init, (0, max_sigma)),
+               (yheight, (0, 2*yheight)),
+               (ymin, (ymin, ymax)) # baseline
+               ]
+
+    params0 = np.array([p for p, _ in params_])
+    param_bounds = np.array([b for _, b in params_])
+
+    return xx, yy, _gauss, params0, param_bounds
+
+
+def fit_gaussian_group(x: np.ndarray, s: np.ndarray,
+                       lines: np.ndarray,
+                       sigma_init=1.5,
+                       max_sigma_scale=2,
+                       # drange_scale=5,
+                       fitrange_scale=2.5):
+    """
+    Fit the spectrum with a group of gaussian that shares same offset and width.
+
+
+    Parameters
+    ----------
+    x : x
+    s : spectrum
+    lines : initial x-coordinate of lines to fit
+    sigma_init : initial sigma. A single value is given which will be
+        shared with multiple lines. 
+
+    Returns
+    -------
+    x : ndarray
+        The solution. (offset, sigma, height, baseline)
+    nfeval : int
+        The number of function evaluations.
+    rc : int
+        Return code from the fitter, scipy.fmin_tnc
+
+
+    """
+
+
+    xx, yy, _gauss, params0, param_bounds = prepare_gaussian_group(x, s, lines,
+                                                                   sigma_init=sigma_init,
+                                                                   max_sigma_scale=max_sigma_scale,
+                                                                   fitrange_scale=fitrange_scale)
+
+
+
+    from scipy.optimize import fmin_tnc
+
+    def chi2(params, gauss=_gauss, yy=yy):
+        return np.sum((yy - gauss(params))**2)
+
+    try:
+        sol_ = fmin_tnc(chi2, params0,
+                        bounds=param_bounds,
+                        approx_grad=True, disp=0,
+                        )
+    except ValueError:
+        raise
+
+    return sol_
 
 
 
@@ -938,65 +1080,114 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def identifyMultiline(self, adinputs, **params):
+        from operator import itemgetter
+        from scipy.interpolate import interp1d
+        from igrinsdr.igrins.primitives_igrins import get_ref_path
 
         ad = adinputs[0]
+        band = ad[0].band()
 
-        # multi_spec = obsset.load("multi_spec_fits")
+        # prepare line fitting. Reference lines are read and we will define
+        # _fit function which will fit lines given a list of spectrum. _fit
+        # will be applied to spectra of different slit positions.
+
+        wvlsol0 = ad[0].WVLSOL0
+        orders, wvlsol = wvlsol0["orders"], wvlsol0["wavelengths"]
+        wvlsol_by_order = dict(zip(orders, wvlsol))
+
+        ref_file = get_ref_path(band, "ref_lines_oh") # "ref_lines_oh.fits"
+        tbl = Table.read(ref_file.open("rb"), format="fits") # "ref_lines_oh.fits"
+        df_ref_data0 = tbl.to_pandas()
+
+        from scipy.interpolate import interp1d
+        x = np.arange(2048)
+        # for each order, add pixel coordinate from the initial wvlsol
+        for order, grouped in df_ref_data0.groupby("order"):
+            wvl = wvlsol_by_order.get(order, None)
+            if wvl is not None:
+                knots = interp1d(wvl, x,
+                                 bounds_error=False, assume_sorted=True, fill_value=np.nan)
+                df_ref_data0.loc[grouped.index, "pixel"] = knots(grouped["um"])
+
+        # flags groups that any of the line in the group has a pixel value of nan.
+        msk = df_ref_data0.groupby("gid")["pixel"].apply(lambda pixels:
+                                                        np.all(np.isfinite(pixels)))
+        # msk has an index of "gid". We will filter the dataframe using this mask.
+        # Note that there can be multiple rows wit same gid, and indexing with mask
+        # gives a warning of
+
+        # Boolean Series key will be reindexed to match DataFrame index
+
+        # FIXME check if there is a better way of doing this.
+        df_ref_data = df_ref_data0.set_index("gid")[msk].reset_index()
+
+        # The filtered df_ref_data should only have valid pixels.
+
+
+        def _fit(df_ref_data, spec_by_order):
+            # we prepare a dataframe index of (order, gid)
+            grouped = df_ref_data.groupby(["order", "gid"])
+            df_fit = pd.DataFrame(dict(initial_mean_pixel=grouped["pixel"].mean(),
+                                       wavelength=grouped["um"].mean()))
+
+            fitted_line_location = pd.Series(index=df_ref_data.index) # initially set to nan
+
+            # For each group, we fit the sliced data with multiple gaussian.
+            for (o, gid), grp in grouped:
+                if (s := spec_by_order.get(o, None)) is not None:
+                    r = fit_gaussian_group(x, s, grp["pixel"])
+                    # add column for the fit parameter
+                    df_fit.loc[(o, gid), ["shift", "sigma", "height", "baseline"]] = r[0]
+                    # add column for fitted pixel position
+                    df_fit.loc[(o, gid), "fitted_pixel"] = df_fit.loc[(o, gid), "initial_mean_pixel"] + r[0][0]
+                    fitted_line_location[grp.index] = grp["pixel"] + r[0][0]
+
+            return df_fit, fitted_line_location
+
+        # fit lines in the spectrum of the slit center
         multi_spec = ad[0].SPEC1D_MULTI
+        slit_centers = multi_spec["slit_centers"][0].astype("float32")
+        i_slit_center = len(slit_centers) // 2
 
-        # # just to retrieve order information
-        # wvlsol_v0 = obsset.load_resource_for("wvlsol_v0")
-        # orders = wvlsol_v0["orders"]
-        # wvlsol = wvlsol_v0["wvl_sol"]
+        spec_data = multi_spec["multispec"][:, i_slit_center, :]
+        spec_by_order = dict(zip(multi_spec["orders"], spec_data))
 
-        orders = ad[0].WVLSOL0["orders"]
-        wvlsol = ad[0].WVLSOL0["wavelengths"]
+        df_fit_list = []
+        df_fit, fitted_line_location0 = _fit(df_ref_data, spec_by_order)
+        df_fit_list.append((slit_centers[i_slit_center], df_fit))
+
+        # Now we do lower and upper part of the slit
+        for i_range in [range(0, i_slit_center)[::-1], # lower part of the slit
+                        range(i_slit_center+1, len(slit_centers)) # upper part of the slit
+                        ]:
+            # for the start of upper and lower parts, the initial location of
+            # lines are from the slit center.
+            fitted_line_location = fitted_line_location0
+            for i in i_range:
+                # we update the pixel location from the previous fit
+                df_ref_data_updated = df_ref_data.copy(deep=False)
+                df_ref_data_updated["pixel"] = fitted_line_location
+
+                spec_data = multi_spec["multispec"][:, i, :]
+                spec_by_order = dict(zip(multi_spec["orders"], spec_data))
+
+                df_fit, fitted_line_location = _fit(df_ref_data, spec_by_order)
+                df_fit_list.append((slit_centers[i], df_fit))
 
 
-        # ref_lines_db = SkyLinesDB(config=obsset.get_config())
-        # ref_file = get_ref_line_path() # "ref_lines_oh.fits"
-        ref_file = get_ref_path(ad.band, "ref_lines_oh")
-        ref_lines_db = SkyLinesDB(ref_file)
+        df_fit_list.sort(key=itemgetter(0))
+        df_fit_oh = pd.concat([df_fit for _, df_fit in df_fit_list],
+                              keys=[c for c, _ in df_fit_list],
+                              names=["slit_center"],
+                              axis=0)
 
-        ref_lines_db_hitrans = None
-        # if obsset.rs.get_resource_spec()[1] == "K":
-        #     ref_lines_db_hitrans = HitranSkyLinesDB(obsset.rs.master_ref_loader)
-        # else:
-        #     ref_lines_db_hitrans = None
+        df_fit_master = pd.concat([df_fit_oh],
+                                  keys=["oh"],
+                                  names=["kind"],
+                                  axis=0)
 
-        # keys = []
-        fitted_pixels_list = []
 
-        slit_centers = multi_spec["slit_centers"][0]
-        for i, slit_center in enumerate(slit_centers):
-            d = multi_spec["multispec"][:, i, :]
-            fitted_pixels_ = identify_lines_from_spec(orders, d, wvlsol,
-                                                      ref_lines_db,
-                                                      ref_lines_db_hitrans)
-
-            fitted_pixels_list.append(fitted_pixels_)
-
-        # for hdu in multi_spec:
-        #     slit_center = hdu.header["FSLIT_CN"]
-        #     keys.append(slit_center)
-
-        #     fitted_pixels_ = identify_lines_from_spec(orders, hdu.data, wvlsol,
-        #                                               ref_lines_db,
-        #                                               ref_lines_db_hitrans)
-
-        #     fitted_pixels_list.append(fitted_pixels_)
-
-        # concatenate collected list of fitted pixels.
-        fitted_pixels_master = pd.concat(fitted_pixels_list,
-                                         keys=slit_centers,
-                                         names=["slit_center"],
-                                         axis=0)
-
-        # storing multi-index seems broken. Enforce reindexing.
-        tbl = Table.from_pandas(fitted_pixels_master.reset_index())
-
-        # tbl["params"] is type of object. We need to transform it to float[4]
-        tbl["params"] = np.array(list(tbl["params"]))
+        tbl = Table.from_pandas(df_fit_master.reset_index())
 
         ad[0].LINEFIT = tbl
 
