@@ -631,7 +631,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
             "linelist": linelist, "fwidth": fwidth, "location": location,
             "refplot_data": refplot_dict,
             "peak_to_centroid_func": peak_to_centroid_func,
-            "bounds_setter": partial(p._apply_wavelength_model_bounds, ext=ext)}
+            "bounds_setter": partial(p._wavelength_model_bounds, ext=ext)}
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,
@@ -875,7 +875,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         else:
             m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
-        bounds_setter(m_init)
+        m_init.bounds.update(bounds_setter(m_init))
         if not first:
             m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
         #print("INPUT MODEL")

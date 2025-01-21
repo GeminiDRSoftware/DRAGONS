@@ -5675,20 +5675,38 @@ class Spect(Resample):
         npix = ext.shape[dispaxis]
         w1, w2 = am.get_named_submodel(ext.wcs.forward_transform, "WAVE").copy()([0, npix-1])
         m_wave = models.Chebyshev1D(degree=1, c0=0.5*(w1+w2), c1=0.5*(w2-w1))
-        self._apply_wavelength_model_bounds(m_wave, ext)
-        return 0.5 * abs(np.diff(m_wave.c0.bounds)[0])
+        bounds = self._wavelength_model_bounds(m_wave, ext)
+        return 0.5 * abs(np.diff(bounds["c0"])[0])
 
-    def _apply_wavelength_model_bounds(self, model=None, ext=None):
+    def _wavelength_model_bounds(self, model=None, ext=None):
+        """
+        Return a set of model bounds to apply to an approximate wavelength
+        solution before fitting to data. Different instruments will have
+        different accuracies so this can be overridden in subclasses.
+
+        Parameters
+        ----------
+        model: `astropy.modeling.models.Chebyshev1D`
+            a model representing the current wavelength solution
+        ext: single-slice AstroData
+            the slice containgin the spectrum
+
+        Returns
+        -------
+        bounds: dict
+            a dict containing the model bounds that can be applied directly
+            to the model instance
+        """
         # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
         # the range of parameter space to explore
-        for i, (pname, pvalue) in enumerate(zip(model.param_names, model.parameters)):
-            if i == 0:  # central wavelength
-                prange = 10
-            elif i == 1:  # half the wavelength extent (~dispersion)
-                prange = 0.05 * abs(pvalue)
-            else:  # higher-order terms
-                prange = 20
-            getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)
+        for k, v in zip(model.param_names, model.parameters):
+            if k == 'c0':
+                bounds = {'c0': (v - 20, v + 20)}
+            elif k == 'c1':
+                bounds['c1'] = (v - 0.05 * abs(v), v + 0.05 * abs(v))
+            else:
+                bounds[k] = (v - 20, v + 20)
+        return bounds
 
 # -----------------------------------------------------------------------------
 

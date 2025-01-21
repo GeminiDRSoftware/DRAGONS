@@ -93,17 +93,18 @@ class GNIRSSpect(Telluric, GNIRS):
 
         return wavecal.LineList(filename)
 
-    def _apply_wavelength_model_bounds(self, model=None, ext=None):
+    def _wavelength_model_bounds(self, model=None, ext=None):
         # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
         # the range of parameter space to explore
         # GNIRS has a different central wavelength uncertainty
-        super()._apply_wavelength_model_bounds(model, ext)
+        bounds = super()._wavelength_model_bounds(model, ext)
         if 'ARC' in ext.tags or not (ext.filter_name(pretty=True)[0] in 'LM'):
             prange = 10
         else:
             dispaxis = 2 - ext.dispersion_axis()
             npix = ext.shape[dispaxis]
             prange = abs(ext.dispersion(asNanometers=True)) * npix * 0.07
-        model.c0.bounds = (model.c0 - prange, model.c0 + prange)
+        bounds['c0'] = (model.c0 - prange, model.c0 + prange)
         dx = 0.02 * abs(model.c1.value)
-        model.c1.bounds = (model.c1 - dx, model.c1 + dx)
+        bounds['c1'] = (model.c1 - dx, model.c1 + dx)
+        return bounds
