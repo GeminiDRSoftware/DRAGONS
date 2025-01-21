@@ -4,11 +4,19 @@
 #                                                         primitives_igrins.py
 # ------------------------------------------------------------------------------
 
-import numpy as np
 import json
+import numpy as np
 import pandas as pd
+
+from numpy.typing import ArrayLike
+
+
 from collections import namedtuple
 from importlib.resources import files
+
+from itertools import product
+
+from numpy.linalg import lstsq
 
 from astropy.io import fits
 from astropy.table import Table
@@ -47,19 +55,15 @@ from .procedures.match_orders import match_orders
 import matplotlib
 import warnings
 
-from .procedures.procedures_register import _get_offset_transform_between_two_specs
-from .procedures.line_identify_simple import match_lines1_pix
+# from .procedures.procedures_register import _get_offset_transform_between_two_specs
+# from .procedures.line_identify_simple import match_lines1_pix
 from .procedures.identified_lines import IdentifiedLines
 from .procedures.echellogram import Echellogram
 from .procedures.fit_affine import fit_affine_clip
 from .procedures.ecfit import get_ordered_line_data, fit_2dspec  # , check_fit
 
 from .procedures.sky_spec_helper import _get_slices
-from .procedures.process_wvlsol_volume_fit import (_append_offset,
-                                                   _filter_points,
-                                                   _volume_poly_fit)
 
-from .procedures.nd_poly import NdPolyNamed
 from .procedures.process_derive_wvlsol import fit_wvlsol, _convert2wvlsol
 
 from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
@@ -429,12 +433,7 @@ def get_wat_header(wat_table, wavelength_increasing_order=False):
 
     return header, convert_data
 
-# for fitting the liness
-
-import numpy as np
-import pandas as pd
-
-from numpy.typing import ArrayLike
+# for fitting the lines
 
 def _gauss0_w_dcenters(xx, params, lines):
     """ Returns a gaussian function with the given parameters"""
@@ -572,6 +571,124 @@ def fit_gaussian_group(x: np.ndarray, s: np.ndarray,
 
     return sol_
 
+
+######
+# Helper function and classes for volume fit
+
+class NdPoly(object):
+    """This class is to help fitting n-dim data with 3-dimensional polynomial.
+    Asume that we 3 independent variable of x, y, z, with polynomial order of
+    Ox, Oy and Oz, then there will be (Ox+1)(Oy+1)(Oz+1) coeeficients. For example,
+    Ox, Oy and Oz of (2, 2, 1), then v = c1*x^2*y^2*z + c2*x^2*y^2 + ... + c18.
+    The `get_array` method will return [x^2*y^2*z, x^2*y^2, ...., 1] so that this
+    can be used with least square method to get the coefficients of [c1, c2, ..., c18].
+    """
+    def _setup(self, orders, orderT, names):
+        po_list = [orderT(*_) for _ in product(*list(range(o + 1) for o in orders))]
+
+        self.orders = orderT(*orders)
+        self.names = names
+        self.orderT = orderT
+        self.po_list = po_list
+
+    def __init__(self, orders):
+        names = range(len(orders))
+        orderT = tuple
+
+        self._setup(orders, orderT, names)
+
+    def multiply(self, vv, coeffs):
+        v = 0.
+        for po, p in zip(self.po_list, coeffs):
+            pod = po._asdict()
+            v1 = np.multiply.reduce([pow(vv[k], pod[k])
+                                     for k in self.names])
+            v += p*v1
+
+        return v
+
+    def get_array(self, vv):
+        v_list = []
+        for po in self.po_list:
+            pod = po._asdict()
+            v1 = np.multiply.reduce([pow(vv[k], pod[k])
+                                     for k in self.names])
+            v_list.append(v1)
+
+        return v_list
+
+    def _get_frozen_p(self, k_survived):
+        p = NdPoly([self.orders[_k] for _k in k_survived])
+        return p
+
+    def freeze(self, k, v, coeffs):
+
+        k_survived = tuple(_k for _k in self.names if _k != k)
+        p = self._get_frozen_p(k_survived)
+        # p = NdPoly([self.orders[_k] for _k in k_survived], k_survived)
+
+        poo = dict((_k, []) for _k in p.po_list)
+
+        for c1, po in zip(coeffs, self.po_list):
+            _ = (o for _k, o in zip(self.names, po) if _k != k)
+            nk = p.orderT(_)
+            oo = po[k]
+            poo[nk].append(c1 * pow(v, oo))
+
+        sol1 = [np.sum(poo[po]) for po in p.po_list]
+
+        return p, sol1
+
+    def to_pandas(self, **kwargs):
+        """
+        convert to pandas dataframe.
+        """
+
+        import pandas as pd
+        index = pd.MultiIndex.from_tuples(self.po_list, names=self.names)
+        df = pd.DataFrame(index=index, data=kwargs)
+
+        return df
+
+    @staticmethod
+    def from_pandas(df):
+        # df.index.values
+        # df.index.names
+        # df = coeffs
+
+        orders = df.index.values.max(axis=0)
+        p = NdPolyNamed(orders, df.index.names)
+
+        coeffs = df.loc[p.po_list].values.reshape([-1,])
+
+        return p, coeffs
+
+        # coeffs = pd.read_json("coeffs.json", orient="split")
+
+
+class NdPolyNamed(NdPoly):
+    def __init__(self, orders, names):
+        # orderT = my_namedtuple("order_" + "_".join(names), names)
+        orderT = namedtuple("order_" + "_".join(names), names)
+
+        self._setup(orders, orderT, names)
+
+    def _get_frozen_p(self, k_survived):
+        p = NdPolyNamed([self.orders[_k] for _k in k_survived], k_survived)
+        return p
+
+
+def _volume_poly_fit(points, scalar, orders, names):
+
+    p = NdPolyNamed(orders, names)  # order 2 for all dimension.
+
+    v = p.get_array(points)
+    v = np.array(v)
+
+    # errors are not properly handled for now.
+    s = lstsq(v.T, scalar, rcond=None)
+
+    return p, s
 
 
 
@@ -1193,26 +1310,59 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
-    def volumeFit(self, adinputs, **params):
+    @staticmethod
+    def _prepareVolumFit(tbl_linefit):
+        # refactor the linefit table to the form usable for the volume fit.
 
-        # fn = "./SDCH_20190412_0040_wvl0.fits"
-        # ad = astrodata.open(fn)
-        ad = adinputs[0]
+        df = tbl_linefit.to_pandas().rename(columns=dict(fitted_pixel="pixel"))
 
-        linefit = ad[0].LINEFIT
-        # d = obsset.load("SKY_FITTED_PIXELS_JSON")
-        # .remove_column("params") # params column is a multi-d data,
-        #                                       # not supported for conversion. We
-        #                                       # just drop it.
-        colnames = linefit.colnames
+        # we now calculate offset of pixels from the lines at the central slit
+        slit_centers = sorted(df["slit_center"].unique())
+        i_slit_center = len(slit_centers) // 2
+        sc_center = slit_centers[i_slit_center]
 
-        df = linefit[colnames[:-1]].to_pandas()
+        # We populate the "pixel0" column with the pixel value of central slit,
+        # then subtract pixel0 from pixel. FIXME be a better way of doing this?
 
-        index_names = ["kind", "order", "wavelength"]
-        df = df.set_index(index_names)[["slit_center", "pixels"]]
+        # FIXME make sure gid is unique regardless of kind
+        dft = df.set_index(["slit_center", "gid"])
+        pixel0 = dft.loc[sc_center, "pixel"]
 
-        dd = _append_offset(df)
-        dd = _filter_points(dd)
+        # FIXME it coule be better to simply using the numpy operation instead
+        # of reindexing.
+        dft["pixel0"] = pixel0.reindex(dft.index, level=1)
+        # dft["pixel0"] = np.tile(pixel0.values, len(slit_centers)) # FIXME is this safe?
+        dft["offset"] = dft["pixel"] - dft["pixel0"]
+
+        # FILTER_POINTS
+
+        # We will drop outliers from both side.
+        # FIXME Can we simply do the fitting and drop the outliers?
+
+        # index_names = ["kind", "order", "wavelength"]
+        # dfs = df.reset_index().set_index(index_names)[["slit_center", "pixel", "offset"]]
+
+        # ss0 = df.groupby("pixel0")["offset"]
+        ss0 = dft.groupby("gid")["offset"]
+        ss0_std = ss0.std()
+        # ss0_std = ss0.transform(np.std)
+
+        ss = ss0.std()
+        drop = 0.1
+        vmin = np.percentile(ss, 100*drop)
+        vmax = np.percentile(ss, 100*(1 - drop))
+
+        msk = (ss0_std > vmin) & (ss0_std < vmax)
+
+        mskk = msk.reindex(dft.index, level=1)
+        dft.loc[:, "badmask"] = 0
+        dft.loc[mskk, "badmask"] = mskk.astype(int)
+
+        return dft
+
+
+    @staticmethod
+    def _volumeFit(dd):
 
         names = ["pixel", "order", "slit"]
         orders = [3, 2, 1]
@@ -1222,56 +1372,37 @@ class Igrins(Gemini, NearIR):
 
         cc0 = dd["slit_center"] - 0.5
 
-        # 3d points : x-pixel, order, location on the slit
-        points0 = dict(zip(names, [dd["pixels0"],
-                                   dd["order"],
-                                   cc0]))
-        # scalar is offset of the measured line from the location at slic center.
-        scalar0 = dd["offsets"]
-
         msk = abs(cc0) > 0.
 
-        points = dict(zip(names, [dd["pixels0"][msk],
+        points = dict(zip(names, [dd["pixel0"][msk],
                                   dd["order"][msk],
                                   cc0[msk]]))
 
-        scalar = dd["offsets"][msk] / cc0[msk]
+        scalar = dd["offset"][msk] / cc0[msk]
 
         poly, params = _volume_poly_fit(points, scalar, orders, names)
-
-        if 0:
-            #values = dict(zip(names, [pixels, orders, slit_pos]))
-            offsets_fitted = poly.multiply(points0, params[0])
-            doffsets = scalar0 - offsets_fitted * cc0
-
-            clf()
-            scatter(dd["pixels0"], doffsets, c=cc0.values, cmap="gist_heat")
-
-            # clf()
-            # scatter(dd["pixels0"] + doffsets, dd["order"] + dd["slit_center"], color="g")
-            # scatter(dd["pixels0"], dd["order"] + dd["slit_center"], color="r")
-
-
-            # # test with fitted data
-            # #input_points = np.zeros_like(offsets_fitted)
-            # input_points = offsets_fitted
-            # poly, params = volume_poly_fit(points,
-            #                                input_points,
-            #                                orders, names)
-
-            # offsets_fitted = poly.multiply(points, params[0])
-            # doffsets = input_points - offsets_fitted
-
-            # clf()
-            # scatter(dd["pixels0"], dd["order"] + dd["slit_center"] + doffsets, color="g")
-            # scatter(dd["pixels0"], dd["order"] + dd["slit_center"], color="r")
 
         # save
         out_df = poly.to_pandas(coeffs=params[0])
         out_df = out_df.reset_index()
-        ad[0].VOLUMEFIT_COEFFS = Table.from_pandas(out_df)
-        # d = out_df.to_dict(orient="split")
-        # obsset.store("VOLUMEFIT_COEFFS_JSON", d)
+
+        return out_df
+
+    def volumeFit(self, adinputs, **params):
+
+        # fn = "./SDCH_20190412_0040_wvl0.fits"
+        # ad = astrodata.open(fn)
+        ad = adinputs[0]
+
+        tbl_linefit = ad[0].LINEFIT
+
+        dft = self._prepareVolumFit(tbl_linefit)
+
+        dd = dft[dft["badmask"] == 0].reset_index()
+
+        df = self._volumeFit(dd)
+
+        ad[0].VOLUMEFIT_COEFFS = Table.from_pandas(df)
 
         return adinputs
 
