@@ -36,7 +36,6 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
-from copy import deepcopy
 
 from specutils.utils.wcs_utils import air_to_vac
 
@@ -47,10 +46,8 @@ from gempy.library.wavecal import LineList
 from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
-from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
-from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from geminidr.gnirs import primitives_gnirs_longslit
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
@@ -107,6 +104,7 @@ def test_extract_1d_spectra_with_sky_lines():
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)
+
 
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename',
@@ -389,6 +387,7 @@ def test_sky_correct_from_slit_with_multiple_sources():
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
+
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_shift', [0, -1.2, 2.75])
 def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
@@ -403,6 +402,7 @@ def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
     shift = getattr(transform, 'offset_1')
     assert shift == pytest.approx(in_shift)
 
+
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_shift', [-16, 7.7])
 def test_adjust_wavelength_zero_point_overlarge_shift(in_shift,
@@ -414,6 +414,7 @@ def test_adjust_wavelength_zero_point_overlarge_shift(in_shift,
     p = GNIRSLongslit([ad])
     with pytest.raises(ValueError):
         p.adjustWavelengthZeroPoint(shift=in_shift).pop()
+
 
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
@@ -480,6 +481,7 @@ def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
 
     assert shift == pytest.approx(results[filename])
 
+
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_file,instrument',
                          [# GNIRS 111/mm LongBlue, off right edge of detector
@@ -518,6 +520,7 @@ def test_mask_beyond_slit(in_file, instrument, change_working_dir,
 
     assert ad_compare(ad_out, ref, compare=['attributes'], max_miss=size*0.001)
 
+
 @pytest.mark.skip("Needs redoing/moving, think about how best to test slit rectification")
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename,instrument',
@@ -550,6 +553,7 @@ def test_slit_rectification(filename, instrument, change_working_dir,
 
     for coeff in ('c1', 'c2', 'c3'):
         np.testing.assert_allclose(ad_out[0].SLITEDGE[coeff], 0, atol=0.25)
+
 
 def test_trace_apertures():
     # Input parameters ----------------
@@ -614,7 +618,6 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
 
 
 def test_resample_spec_table():
-
     waves_air = np.arange(3500, 7500.001, 100) * u.AA
     waves_vac = air_to_vac(waves_air)
     bandpass = np.full(waves_air.size, 5.) * u.nm
@@ -632,31 +635,37 @@ def test_resample_spec_table():
                for i, bw in enumerate(t['WIDTH'].quantity)])
     np.testing.assert_allclose(t['FLUX'].data, 1.0)
 
+
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-def test_make_atran_linelist(change_working_dir, path_to_inputs, path_to_refs):
-    # GNIRS L-band, sky emission
-    ad_em = astrodata.open(os.path.join(path_to_inputs, 'N20100820S0214_varAdded.fits'))
-    model_params_em = {"site": 'mk', "alt": "13825ft", "start_wvl": 3040.96658,
-                          "end_wvl": 3359.0334199999998, "spec_range": 318.06684,
-                           "wv_content": 5.0, "resolution": 1760.0, "cenwave": 3200.0,
-                           "in_vacuo": True, "absorption": False, "nlines": 100}
-    # GNIRS J-band, sky absorption in object spectrum
-    ad_abs = astrodata.open(os.path.join(path_to_inputs, 'N20121221S0199_aperturesFound.fits'))
-    model_params_abs = {"site": 'mk', "alt": "13825ft", "start_wvl": 1057.2100999999998,
-                          "end_wvl": 1108.7898999999998, "spec_range": 51.5798,
-                           "wv_content": 1.0, "resolution": 17520.0, "cenwave": 1082.9999999999998,
-                           "in_vacuo": True, "absorption": True, "nlines": 50}
-    p = primitives_spect.Spect([])
-    p._get_cenwave_accuracy = lambda x: 10  # kludge FIX to preserve behaviour
-    linelist_em,_ = p._make_atran_linelist(ext=ad_em[0], filename=None, model_params=model_params_em)
-    linelist_abs,_ = p._make_atran_linelist(ext=ad_abs[0], filename=None, model_params=model_params_abs)
+@pytest.mark.parametrize("filename,model_params",
+                         # GNIRS L-band, sky emission
+                         [('N20100820S0214_varAdded.fits',
+                           {"site": 'mk', "alt": "13825ft", "start_wvl": 3040.96658,
+                            "end_wvl": 3359.0334199999998, "spec_range": 318.06684,
+                            "wv_content": 5.0, "resolution": 1760.0, "cenwave": 3200.0,
+                            "in_vacuo": True, "absorption": False, "nlines": 100}),
+                          # GNIRS J-band, sky absorption in object spectrum
+                          ('N20121221S0199_aperturesFound.fits',
+                            {"site": 'mk', "alt": "13825ft",
+                            "start_wvl": 1057.2100999999998,
+                            "end_wvl": 1108.7898999999998, "spec_range": 51.5798,
+                            "wv_content": 1.0, "resolution": 17520.0,
+                            "cenwave": 1082.9999999999998,
+                            "in_vacuo": True, "absorption": True, "nlines": 50}),
+                         ])
+def test_make_atran_linelist(filename, model_params, change_working_dir,
+                             path_to_inputs, path_to_refs):
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    p = GNIRSLongslit([])
+    linelist, _ = p._make_atran_linelist(ext=ad[0], filename=None,
+                                         model_params=model_params)
     with change_working_dir(path_to_refs):
-        ref_linelist_em = np.loadtxt("N20100820S0214_atran_linelist.dat")
-        ref_linelist_abs = np.loadtxt("N20121221S0199_atran_linelist.dat")
+        linelist_fname = filename.split("_")[0] + "_atran_linelist.dat"
+        ref_linelist = np.loadtxt(linelist_fname)
 
-    np.testing.assert_allclose(linelist_em, ref_linelist_em, atol=1e-3)
-    np.testing.assert_allclose(linelist_abs, ref_linelist_abs, atol=1e-3)
+    np.testing.assert_allclose(linelist, ref_linelist, atol=1e-3)
+
 
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
@@ -668,8 +677,7 @@ def test_make_refplot_data(change_working_dir, path_to_inputs, path_to_refs):
                            "wv_content": 10.0, "resolution": 350, "cenwave": 1875.5420000000001,
                            "in_vacuo": True, "absorption": False, "nlines": 50}
 
-    p = primitives_spect.Spect([])
-    p._get_cenwave_accuracy = lambda x: 10  # kludge FIX to preserve behaviour
+    p = F2Longslit([])
     refplot_data_f2 = p._make_refplot_data(ext=ad_f2[0], model_params=model_params_f2,
                                     refplot_linelist=LineList(os.path.join(path_to_inputs, "nearIRsky.dat")))
     with change_working_dir(path_to_refs):
@@ -683,6 +691,7 @@ def compare_frames(frame1, frame2):
     """Compare the important stuff of two CoordinateFrame instances"""
     for attr in ("naxes", "axes_type", "axes_order", "unit", "axes_names"):
         assert getattr(frame1, attr) == getattr(frame2, attr)
+
 
 #@pytest.mark.skip
 @pytest.mark.preprocessed_data
