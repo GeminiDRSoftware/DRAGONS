@@ -1,7 +1,7 @@
 import numpy as np
 
 datatype = np.uint16
-max = np.iinfo(datatype).max
+max = datatype(np.iinfo(datatype).max)
 
 good = datatype(0)
 bad_pixel = datatype(1)
