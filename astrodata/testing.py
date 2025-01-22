@@ -207,8 +207,10 @@ def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
                        check_inverse=False)
 
 
-def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'):
-    """Download file from the archive and store it in the local cache.
+def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST', url=None):
+    """
+    Download file from the archive (or an alternative URL) and store it in the
+    local cache.
 
     Parameters
     ----------
@@ -219,6 +221,11 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
         using ``path`` allows to specify a sub-directory.
     env_var: str
         Environment variable containing the path to the cache directory.
+    url : str, optional
+        Alternative URL of the file to be fetched, if not using the Gemini
+        archive (a full path is required, since the last part of the path
+        component may differ from the nominal `filename` for some services,
+        such as Google Drive).
 
     Returns
     -------
@@ -239,10 +246,13 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
     if not os.path.exists(cache_path):
         os.makedirs(cache_path)
 
+    if url is None:
+        url = URL + filename
+
     # Now check if the local file exists and download if not
     local_path = os.path.join(cache_path, filename)
     if not os.path.exists(local_path):
-        tmp_path = download_file(URL + filename, cache=False)
+        tmp_path = download_file(url, cache=False)
         shutil.move(tmp_path, local_path)
 
         # `download_file` ignores Access Control List - fixing it
