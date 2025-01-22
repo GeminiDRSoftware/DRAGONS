@@ -765,9 +765,10 @@ class NearIR(Bookkeeping):
                                 mean_collapsed_signa[mask] = np.nan
 
                                 ## for intra-quad, level to the same value. Note that when there is a strong gradient in the quad, this method will fail 
+                                quad_data_type = quad.data.dtype.type
                                 for _ind in np.arange(len(median_collapsed_signal))[mask]:
                                     offset = np.nanmean(median_collapsed_signal) - sigma_clipped_stats(quad.data[_ind,:], sigma=2.0)[1]
-                                    quad.data[_ind,:] += offset
+                                    quad.data[_ind,:] += quad_data_type(offset)
 
                                 edges[ystart, xstart] = [] # just a dummy to enable call to _levelQuad for inter-quad leveling
                     else:
