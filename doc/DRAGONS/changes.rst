@@ -6,6 +6,36 @@
 Change Logs
 ***********
 
+3.2.3
+=====
+
+Dependency Updates
+------------------
+**gempy.library**
+
+* Ensure compatibility with SciPy v1.15 (matching.py)
+
+Improvements
+------------
+**gempy**
+
+* Improve interrupt handling and allow additional loggers to enhance the
+  operation of GOATS.
+
+3.2.2
+=====
+
+Bug Fixes
+---------
+**geminidr.ghost**
+
+* Fix an issue where the GHOST reduction would fail if specific header
+  values were not in the expected format.
+
+Improvements
+------------
+* Reduce memory usage in ``flagCosmicRays`` and ``QECorrect`` primitives.
+
 3.2.1
 =====
 

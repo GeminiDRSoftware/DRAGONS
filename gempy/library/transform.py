@@ -535,7 +535,7 @@ class Transform:
             i = self.index(index)
             # Avoids corrupting a Model (it will lose its name)
             if len(sequence) == 1:
-                self._models.insert(index, model.copy() if copy else model)
+                self._models.insert(index, deepcopy(model) if copy else model)
             else:
                 self._models[i:i] = sequence
         # Update affinity based on new model (leave existing stuff alone)

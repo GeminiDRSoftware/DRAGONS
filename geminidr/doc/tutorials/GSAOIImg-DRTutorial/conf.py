@@ -30,7 +30,7 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial - GSAOI Data Reduction'
-copyright = '2024, Association of Universities for Research in Astronomy'
+copyright = '2025, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The short X.Y version
@@ -39,10 +39,10 @@ version = '3.2'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-#release = '3.2.0'
-#rtdurl = 'v'+release
-release = '3.2.x'
-rtdurl = 'release-'+release
+release = '3.2.3'
+rtdurl = 'v'+release
+#release = '3.2.x'
+#rtdurl = 'release-'+release
 #rtdurl = 'latest'
 
 # -- General configuration ---------------------------------------------------
@@ -86,7 +86,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2024'
+today = 'January 2025'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 

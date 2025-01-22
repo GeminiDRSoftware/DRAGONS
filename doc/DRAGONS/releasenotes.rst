@@ -6,6 +6,22 @@
 Release Notes
 *************
 
+V3.2.3
+======
+
+This is a bug fix release that addresses a change in API in SciPy v1.15. The
+update also includes new code to in support of GOATS.
+
+V3.2.2
+======
+
+This is bug fix release in support of GHOST.  Unplanned changes in
+header values led to GHOST reduction to fail in some cases.  This release
+offers a more resilient implementation.
+
+We also include memory usage optimizations to the ``flagCosmicRays`` and
+``QECorrect`` primitives.
+
 V3.2.1
 ======
 

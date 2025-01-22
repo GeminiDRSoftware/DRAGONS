@@ -11,10 +11,10 @@
 </table>
 
 # Current Status
-**The stable version is v3.2.1.**  
+**The stable version is v3.2.3.**  
 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13274573.svg)](https://doi.org/10.5281/zenodo.13274573) DRAGONS is distributed as a conda package, *dragons*, and it is 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14625073.svg)](https://doi.org/10.5281/zenodo.14625073) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
 Version 3.2 is recommend for the reduction of **imaging** data from Gemini's
@@ -27,7 +27,7 @@ the [Gemini IRAF package](https://www.gemini.edu/observing/phase-iii/reducing-da
 To install DRAGONS:
 
 ```
-$ conda create -n dragons python=3.10 dragons ds9 "numpy<2"
+$ conda create -n dragons python=3.10 dragons ds9
 ```
 
 You might need to add two relevant conda channels if you haven't already:
@@ -53,7 +53,7 @@ reduction of Gemini data.
 # Documentation
 Documentation on DRAGONS v3.2 is available on "readthedocs" at:
 
-* https://dragons.readthedocs.io/en/v3.2.1/
+* https://dragons.readthedocs.io/en/v3.2.3/
 
 There your will find manuals for Astrodata and the Recipe System, and hands-on
 tutorials on reducing Gemini imaging data with DRAGONS.
