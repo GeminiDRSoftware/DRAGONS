@@ -278,6 +278,7 @@ class NearIR(Bookkeeping):
         """
         log = self.log
         qysize, qxsize = [size // 2 for size in masked_data.shape]
+        masked_data_type = masked_data.data.dtype.type
 
         clippedstats_lr = partial(sigma_clipped_stats, axis=1, sigma=sig)
         clippedstats_tb = partial(sigma_clipped_stats, axis=0, sigma=sig)
@@ -315,11 +316,11 @@ class NearIR(Bookkeeping):
                 if ystart:
                     log.debug(f"Adding {-offset} to row {edge} and above "
                               f"in (X{xstart}, Y{ystart}) quad")
-                    masked_data.data[slice(edge, None), xslice] -= offset  # NUMPY_2: CHECK
+                    masked_data.data[slice(edge, None), xslice] -= masked_data_type(offset)
                 else:
                     log.debug(f"Adding {offset} below row {edge} "
                               f"in (X{xstart}, Y{ystart}) quad")
-                    masked_data.data[slice(0, edge), xslice] += offset  # NUMPY_2: CHECK (ABOVE TOO)
+                    masked_data.data[slice(0, edge), xslice] += masked_data_type(offset)
 
         # match top and bottom halves of left and right separately
         for xslice in (slice(0, qxsize), slice(qxsize, None)):
@@ -328,7 +329,7 @@ class NearIR(Bookkeeping):
             offset = find_offset(masked_data, arr1_slicers, arr2_slicers,
                                  clippedstats_tb)
             log.debug(f"Adding {offset} to bottom of X{xslice.start} quad")
-            masked_data.data[slice(0, qysize), xslice] += offset  # NUMPY_2: CHECK (ABOVE TOO)
+            masked_data.data[slice(0, qysize), xslice] += masked_data_type(offset)
 
         # match left and right halves
         arr1_slicers = (slice(None), slice(qxsize - smoothing_extent,qxsize))
@@ -337,7 +338,7 @@ class NearIR(Bookkeeping):
                              clippedstats_lr)
         # xslice still set to right half from previous loop
         log.debug(f"Adding {offset} to right half")
-        masked_data.data[slice(None), xslice] += offset  # NUMPY_2: CHECK (ABOVE TOO)
+        masked_data.data[slice(None), xslice] += masked_data_type(offset)
 
     def cleanReadout(self, adinputs=None, **params):
         """
@@ -478,6 +479,7 @@ class NearIR(Bookkeeping):
                         1, 2).reshape(-1, pysize, pxsize)
 
                 pattern_strengths = []
+                expected_dtype = data.dtype.type
                 for ystart, ydesc in zip((0, qysize), ('bottom', 'top')):
                     for xstart, xdesc in zip((0, qxsize), ('left', 'right')):
                         quad_slice = (slice(ystart, ystart+qysize), slice(xstart, xstart+qxsize))
@@ -485,14 +487,15 @@ class NearIR(Bookkeeping):
                         # Reshape each quad into a stack of pattern-box-sized arrays
                         data_block = reblock(data[quad_slice])
                         mask_block = reblock(mask[quad_slice]) if mask is not None else None
-                        blocks = np.ma.masked_array(data=data_block, mask=mask_block)
+                        blocks = np.ma.masked_array(data=data_block, mask=mask_block, dtype=expected_dtype)
 
                         # If all pixels are masked in a box, we'll get no
                         # result from the mean. Suppress warning.
                         with warnings.catch_warnings():
                             warnings.simplefilter("ignore", category=UserWarning)
                             zeros = np.nan_to_num(
-                                blocks.reshape(nblocks, pattern_size).mean(axis=1))
+                                blocks.reshape(nblocks, pattern_size).mean(axis=1, dtype=expected_dtype))
+
 
                         # compute average pattern from all the pattern boxes
                         pattern = stack_function(ext.nddata.__class__(data=blocks.data, mask=blocks.mask),
@@ -503,6 +506,7 @@ class NearIR(Bookkeeping):
 
                         qstr = (f"{ad.filename} extension {ext.id} "
                                 f"{ydesc}-{xdesc} quadrant")
+
                         # MS: do not touch the quad if pattern strength is weak
                         if pattern.std() >= pat_strength_thres or clean == "force":
                             if pattern.std() < pat_strength_thres:
@@ -514,7 +518,8 @@ class NearIR(Bookkeeping):
                                 np.tile(pattern.data, (nblocks, 1, 1)), mask=blocks.mask)
                             sum1 = ((blocks - zeros[:, np.newaxis, np.newaxis]) * pattern).reshape(
                                 nblocks, pattern_size).sum(axis=1)
-                            sum2 = (pattern2 ** 2).reshape(nblocks, pattern_size).sum(axis=1)
+
+                            sum2 = (pattern2 ** expected_dtype(2)).reshape(nblocks, pattern_size).sum(axis=1)
                             with warnings.catch_warnings():
                                 warnings.simplefilter("ignore")
                                 scaling_factors = sum1 / sum2
