@@ -1,6 +1,8 @@
 import re
 import math
 
+import numpy as np
+
 from astrodata import (astro_data_tag, TagSet, astro_data_descriptor,
                        returns_list, Section)
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
@@ -761,3 +763,11 @@ class AstroDataF2(AstroDataGemini):
     #         ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
     #
     #     return {'lon': ra, 'lat': dec}
+
+    def actual_central_wavelength(self, *args, **kwargs):
+        index = (self.disperser(pretty=True), self.filter_name(keepID=True))
+        mask = dispersion_offset_mask[index]
+        disp = self.dispersion() if self.is_single else self.dispersion()[0]
+        actual_cenwave = (self.central_wavelength(*args, **kwargs) -
+                          disp * mask.cenwaveoffset)
+        return np.float32(actual_cenwave)

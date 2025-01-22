@@ -196,7 +196,7 @@ class TelluricSpectrum:
         if lsf_params:
             # We only need an ArrayInterpolator if some of the params have
             # multiple values. Otherwise we might be constructing a model for
-            # telluricCorrect9) from single parameter values, for example.
+            # telluricCorrect() from single parameter values, for example.
             fixed_params, interp_params = {}, {}
             for k, v in lsf_params.items():
                 try:

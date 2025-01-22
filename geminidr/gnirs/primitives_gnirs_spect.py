@@ -4,10 +4,11 @@
 #                                                        primtives_gnirs_spect.py
 # ------------------------------------------------------------------------------
 import os
+import numpy as np
 
 from importlib import import_module
 
-from geminidr.core import Spect, Telluric
+from geminidr.core import Telluric
 
 from .primitives_gnirs import GNIRS
 from . import parameters_gnirs_spect
@@ -104,7 +105,10 @@ class GNIRSSpect(Telluric, GNIRS):
             dispaxis = 2 - ext.dispersion_axis()
             npix = ext.shape[dispaxis]
             prange = abs(ext.dispersion(asNanometers=True)) * npix * 0.07
-        bounds['c0'] = (model.c0 - prange, model.c0 + prange)
-        dx = 0.02 * abs(model.c1.value)
-        bounds['c1'] = (model.c1 - dx, model.c1 + dx)
+        # Recovering the values from the bounds protects against a Shift/Scale model
+        cenwave = np.mean(bounds['c0'])
+        bounds['c0'] = (cenwave - prange, cenwave + prange)
+        c1 = np.mean(bounds['c1'])
+        dx = 0.02 * abs(c1)
+        bounds['c1'] = (c1 - dx, c1 + dx)
         return bounds

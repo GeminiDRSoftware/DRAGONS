@@ -11,16 +11,14 @@ from bokeh.plotting import figure
 from gempy.library import astrotools as at
 
 from geminidr.interactive.interactive import (
-    connect_region_model, FitQuality, PrimitiveVisualizer)
+    connect_region_model, FitQuality)
 from ..controls import Controller
 from .fit1d import (
     Fit1DPanel, Fit1DVisualizer, InfoPanel, fit1d_figure, Fit1DRegionListener,
     InteractiveModel, InteractiveModel1D)
 from ..styles import dragons_styles
 
-from gempy.library.telluric_models import Planck
-
-from datetime import datetime
+from gempy.library.telluric_models import Planck, get_good_pixels
 
 from .help import TELLURIC_CORRECT_HELP_TEXT
 
@@ -377,7 +375,9 @@ class TelluricPanel(Fit1DPanel):
         model.aux_data.data['telluric_model'] = model.fit.pca.evaluate(
             None, np.asarray(model.fit.parameters[model.fit.pca_params]).flatten())
 
-        absorption = model.y / model.aux_data.data['continuum']
+        good = get_good_pixels(model.x, model.aux_data.data['waves'])
+
+        absorption = model.y / model.aux_data.data['continuum'][good]
         goodpix = [m == 'good' for m in model.mask]
         spline = make_interp_spline(model.x[goodpix],
                                     absorption[goodpix], k=3)

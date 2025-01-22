@@ -573,6 +573,10 @@ class LineSpreadFunction(ABC):
         npix = ext.shape[0]
         self.all_waves = ext.wcs(np.arange(npix))
         self.dispersion = abs(np.median(np.diff(self.all_waves)))
+        # For lack of any better estimate, but these should get overridden
+        # in the relevant subclass
+        self.resolution = self.all_waves.mean() / (2 * self.dispersion)
+        self.mean_resolution = self.resolution
 
     @abstractmethod
     def convolutions(self):
@@ -640,6 +644,7 @@ class GaussianLineSpreadFunction(LineSpreadFunction):
     def __init__(self, ext, resolution=None):
         super().__init__(ext)
         self.resolution = resolution
+        self.mean_resolution = resolution
 
     def convolutions(self, resolution=None):
         if resolution is None:

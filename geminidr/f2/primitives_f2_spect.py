@@ -10,7 +10,7 @@ from importlib import import_module
 
 from astropy.modeling import models
 
-from geminidr.core import Spect
+from geminidr.core import Spect, Telluric
 from .primitives_f2 import F2
 from . import parameters_f2_spect
 from gemini_instruments.f2.lookup import dispersion_offset_mask, resolving_power
@@ -25,7 +25,7 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 # ------------------------------------------------------------------------------
 @parameter_override
 @capture_provenance
-class F2Spect(Spect, F2):
+class F2Spect(Telluric, Spect, F2):
     """
     This is the class containing all of the preprocessing primitives
     for the F2Spect level of the type hierarchy tree. It inherits all
@@ -123,7 +123,7 @@ class F2Spect(Spect, F2):
             # Apply central wavelength offset
             if ad.dispersion() is None:
                 raise ValueError(f"Unknown dispersion for {ad.filename}")
-            cenwave = self._get_actual_cenwave(ad[0], asNanometers=True)
+            cenwave = ad.actual_central_wavelength(asNanometers=True)
             transform.add_longslit_wcs(ad, central_wavelength=cenwave,
                                        pointing=ad[0].wcs(1024, 1024))
 
@@ -217,7 +217,6 @@ class F2Spect(Spect, F2):
                 f'Using max_missed={these_params["max_missed"]} for {ad.filename}')
             adoutputs.extend(super().determineDistortion([ad], **these_params))
         return adoutputs
-
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
@@ -365,43 +364,6 @@ class F2Spect(Spect, F2):
         self.log.stdinfo(f"Using linelist '{linelist}'")
         filename = os.path.join(lookup_dir, linelist)
         return wavecal.LineList(filename)
-
-    @staticmethod
-    @gmu.return_requested_units(input_units="m")
-    def _get_actual_cenwave(ext):
-        """
-        For some instruments (NIRI, F2) wavelength at the central pixel
-        can differ significantly from the descriptor value.
-
-        Parameters
-        ----------
-        ext: single-slice AstroDataF2
-            the extension for which to determine the central wavelength
-
-        Returns
-        -------
-        float
-            Actual central wavelength
-        """
-        index = (ext.disperser(pretty=True), ext.filter_name(keepID=True))
-        mask = dispersion_offset_mask.get(index, None)
-        cenwave_offset = mask.cenwaveoffset if mask else None
-        actual_cenwave = ext.central_wavelength() + \
-                  abs(ext.dispersion()) * cenwave_offset
-        return actual_cenwave
-
-
-    def _get_resolution(self, ext):
-        # For F2 grisms resolution peaks in the middle of tthe filter and drops
-        # dramatically on both sides. Use "average" resolution from the LUT,
-        # (within 70% of filter's range, see F2 web pages).
-        fpmask = ext.focal_plane_mask(pretty=True)
-        if 'pix-slit' in fpmask:
-            slit_width= int(fpmask.replace('pix-slit', ''))
-        else:
-            slit_width = fpmask
-        disperser = ext.disperser(pretty=True)
-        return resolving_power.get(f"{slit_width}", {}).get(f"{disperser}", None)
 
     @staticmethod
     def _convert_peak_to_centroid(ext):

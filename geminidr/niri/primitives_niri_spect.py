@@ -53,7 +53,7 @@ class NIRISpect(Spect, NIRI):
         for ad in adinputs:
             log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
             # For NIRI wavelength at central pixel doesn't match the descriptor value
-            cenwave = self._get_actual_cenwave(ad, asNanometers=True)
+            cenwave = ad.actual_central_wavelength(asNanometers=True)
             # NIRI's dispersion and spatial axis have the same length.
             # Different square-shaped ROIs can be used, all centered on the array.
             dispersion_axis = 2 - ad[0].dispersion_axis()
@@ -225,31 +225,3 @@ class NIRISpect(Spect, NIRI):
         except KeyError:
             return None
         return resolution
-
-    @staticmethod
-    @gmu.return_requested_units()
-    def _get_actual_cenwave(ext):
-        """
-        For some instruments (NIRI, F2) wavelength at the central pixel
-        can differ significantly from the descriptor value.
-
-        Parameters
-        ----------
-        ext: single-slice AstroDataNIRI
-            the extension for which to determine the central wavelength
-
-        Returns
-        -------
-        float
-            Actual central wavelength
-        """
-        camera = ext.camera()
-        try:
-            disperser = ext.disperser(stripID=True)[0:6]
-        except TypeError:
-            disperser = None
-        fpmask = ext.focal_plane_mask(stripID=True)
-        try:
-            return lookup.spec_wavelengths[camera, fpmask, disperser].cenpixwave
-        except KeyError:
-            return None

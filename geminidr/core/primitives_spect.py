@@ -5519,7 +5519,10 @@ class Spect(Resample):
                     last_non_zero_index = ind[0][-1]
                     # Number of illuminated pixels
                     npix = last_non_zero_index - first_non_zero_index
-                    spec_range = 2 * self._get_cenwave_accuracy(ext) +\
+                    wave_model = am.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
+                    dcenwave = np.diff(self._wavelength_model_bounds(wave_model, ext)['c0'])[0]
+
+                    spec_range = dcenwave + \
                                  abs(ext.dispersion(asNanometers=True)) * npix
                     center_shift = (center - (npix//2 + first_non_zero_index)) * ext.dispersion(asNanometers=True)
                     start_wvl = model_params["cenwave"] - (0.5 * spec_range) - center_shift
@@ -5593,7 +5596,7 @@ class Spect(Resample):
             resolution = config["resolution"]
 
         if config["central_wavelength"] is None:
-            cenwave = self._get_actual_cenwave(ext, asNanometers=True)
+            cenwave = ext.wcs(*(0.5 * np.array(ext.shape[::-1])))[0]
         else:
             cenwave = config["central_wavelength"]
 
@@ -5603,9 +5606,10 @@ class Spect(Resample):
 
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         npix = ext.shape[dispaxis]
-        dcenwave = self._get_cenwave_accuracy(ext)
+        dcenwave = np.diff(am.get_named_submodel(
+            ext.wcs.forward_transform, 'WAVE').c0.bounds['c0'])[0]
 
-        spec_range = 2 * dcenwave + abs(ext.dispersion(asNanometers=True)) * npix
+        spec_range = dcenwave + abs(ext.dispersion(asNanometers=True)) * npix
         start_wvl = cenwave - (0.5 * spec_range)
         end_wvl = start_wvl + spec_range
         observatory = ext.phu['OBSERVAT']
@@ -5643,40 +5647,15 @@ class Spect(Resample):
 
 
     def _get_resolution(self, ext):
-        # Estimated resolwing power of a spectrum at it's actual central wavelenght,
+        # Estimated resolwing power of a spectrum at its actual central wavelenght,
         # assuming that it depends on 1/(slit width). This is true only for GNIRS (and GMOS?),
         # for other instruments there should be an instrument-specific implementation.
-        resolution_1pix_slit = self._get_actual_cenwave(ext) / ext.dispersion()
-        slit_width_pix = ext.slit_width()/ext.pixel_scale()
-        return abs(resolution_1pix_slit // slit_width_pix)
-
-    @staticmethod
-    @gmu.return_requested_units(input_units="m")
-    def _get_actual_cenwave(ext):
-        """
-        For some instruments (NIRI, F2) wavelength at the central pixel
-        can differ significantly from the descriptor value.
-
-        Parameters
-        ----------
-        ext; single-slice AstroData object
-            the extension for which to determine the central wavelength
-
-        Returns
-        -------
-        float
-            Actual central wavelength
-        """
-        return ext.central_wavelength()
-
-    def _get_cenwave_accuracy(self, ext):
-        # TODO: remove this
-        dispaxis = 2 - ext.dispersion_axis()
-        npix = ext.shape[dispaxis]
-        w1, w2 = am.get_named_submodel(ext.wcs.forward_transform, "WAVE").copy()([0, npix-1])
-        m_wave = models.Chebyshev1D(degree=1, c0=0.5*(w1+w2), c1=0.5*(w2-w1))
-        bounds = self._wavelength_model_bounds(m_wave, ext)
-        return 0.5 * abs(np.diff(bounds["c0"])[0])
+        try:
+            return np.round(self._line_spread_function(ext).mean_resolution)
+        except (AttributeError, TypeError):
+            resolution_1pix_slit = ext.actual_central_wavelength() / ext.dispersion()
+            slit_width_pix = ext.slit_width() / ext.pixel_scale()
+            return abs(resolution_1pix_slit // slit_width_pix)
 
     def _wavelength_model_bounds(self, model=None, ext=None):
         """
@@ -5686,10 +5665,10 @@ class Spect(Resample):
 
         Parameters
         ----------
-        model: `astropy.modeling.models.Chebyshev1D`
+        model: `astropy.modeling.models.Chebyshev1D` (preferably)
             a model representing the current wavelength solution
         ext: single-slice AstroData
-            the slice containgin the spectrum
+            the slice containing the spectrum
 
         Returns
         -------
@@ -5697,15 +5676,25 @@ class Spect(Resample):
             a dict containing the model bounds that can be applied directly
             to the model instance
         """
-        # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
-        # the range of parameter space to explore
-        for k, v in zip(model.param_names, model.parameters):
-            if k == 'c0':
-                bounds = {'c0': (v - 20, v + 20)}
-            elif k == 'c1':
-                bounds['c1'] = (v - 0.05 * abs(v), v + 0.05 * abs(v))
-            else:
-                bounds[k] = (v - 20, v + 20)
+        if isinstance(model, models.Chebyshev1D):
+            for k, v in zip(model.param_names, model.parameters):
+                if k == 'c0':
+                    bounds = {'c0': (v - 20, v + 20)}
+                elif k == 'c1':
+                    bounds['c1'] = (v - 0.05 * abs(v), v + 0.05 * abs(v))
+                else:
+                    bounds[k] = (v - 20, v + 20)
+        elif model[0].name.lower().startswith('crpix'):
+            # Shift (crpix) | Scale (dw) | Shift (cenwave)
+            c0 = model[2].offset
+            dw = model[1].factor
+            c1 = 0.5 * dw * ext.shape[-ext.dispersion_axis()]
+            bounds = {'c0': (c0 - 20, c0 + 20),
+                      'c1': (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))}
+        else:
+            raise ValueError("Cannot set bounds for model class "
+                             f"{model.__class__.__name__}")
+
         return bounds
 
 # -----------------------------------------------------------------------------

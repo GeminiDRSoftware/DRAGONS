@@ -2191,7 +2191,6 @@ class AstroDataGemini(AstroData):
         """
         return self.phu.get(self._keyword_for('prism'))
 
-
     def _raw_to_percentile(self, descriptor, raw_value):
         """
         Parses the Gemini constraint bands, and returns the percentile
@@ -2212,3 +2211,15 @@ class AstroDataGemini(AstroData):
         """
         val = gmu.parse_percentile(raw_value)
         return val
+
+    def actual_central_wavelength(self, *args, **kwargs):
+        """
+        Return the true central wavelength (in the middle of the detector),
+        to avoid messing the descriptor around. We probably want to revisit
+        what "central wavelength" means, but we don't want to upset the
+        archive.
+
+        This is not a descriptor. The args/kwargs accept whatever unit
+        information central_wavelength() can handle.
+        """
+        return self.central_wavelength(*args, **kwargs)

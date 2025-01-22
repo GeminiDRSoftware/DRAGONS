@@ -19,6 +19,13 @@ def gaussian_constant_r(w0, dw, r):
     return z / z.sum()
 
 
+def gaussian_constant_fwhm(w0, dw, fwhm):
+    """A Gaussian with specified FWHM"""
+    sigma = 0.42466 * fwhm
+    z = np.exp(-0.5 * (dw / sigma) ** 2)
+    return z / z.sum()
+
+
 def boxcar(w0, dw, width):
     """A boxcar of full-width width nm"""
     z = abs(dw) <= 0.5 * width

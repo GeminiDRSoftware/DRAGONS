@@ -549,3 +549,16 @@ class AstroDataNiri(AstroDataGemini):
         except KeyError:
             pass
         return 'Unknown'
+
+    @gmu.return_requested_units(input_units="nm")
+    def actual_central_wavelength(self):
+        camera = self.camera()
+        try:
+            disperser = self.disperser(stripID=True)[0:6]
+        except TypeError:
+            disperser = None
+        fpmask = self.focal_plane_mask(stripID=True)
+        try:
+            return lookup.spec_wavelengths[camera, fpmask, disperser].cenpixwave
+        except KeyError:
+            return None
