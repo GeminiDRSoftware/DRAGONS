@@ -102,19 +102,21 @@ class AstroDataMixin:
 
         mods = []
         mapped_axes = []
-        for i, (slice_, length) in enumerate(zip(slices[::-1], self.shape)):
+        for i, (slice_, length) in enumerate(zip(slices[::-1], self.shape[::-1])):
             model = []
             if isinstance(slice_, slice):
                 if slice_.step and slice_.step > 1:
                     raise IndexError("Cannot slice with a step")
                 if slice_.start:
-                    start = length + slice_.start if slice_.start < 1 else slice_.start
+                    start = (length + slice_.start) if slice_.start < 0 else slice_.start
                     if start > 0:
                         model.append(models.Shift(start))
-                mapped_axes.append(max(mapped_axes)+1 if mapped_axes else 0)
+                mapped_axes.append(max(mapped_axes) + 1 if mapped_axes else 0)
             elif isinstance(slice_, INTEGER_TYPES):
-                model.append(models.Const1D(slice_))
+                model.append(models.Const1D((length + slice_) if slice_ < 0 else slice_))
                 mapped_axes.append(-1)
+            elif slice_ is None:  # equivalent to slice(None, None, None)
+                mapped_axes.append(max(mapped_axes) + 1 if mapped_axes else 0)
             else:
                 raise IndexError("Slice not an integer or range")
             if model:
