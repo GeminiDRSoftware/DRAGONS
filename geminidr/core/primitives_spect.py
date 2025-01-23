@@ -5606,8 +5606,9 @@ class Spect(Resample):
 
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         npix = ext.shape[dispaxis]
-        dcenwave = np.diff(am.get_named_submodel(
-            ext.wcs.forward_transform, 'WAVE').c0.bounds['c0'])[0]
+        dcenwave = np.diff(self._wavelength_model_bounds(
+            am.get_named_submodel(ext.wcs.forward_transform, 'WAVE'),
+            ext)['c0'])[0]
 
         spec_range = dcenwave + abs(ext.dispersion(asNanometers=True)) * npix
         start_wvl = cenwave - (0.5 * spec_range)
