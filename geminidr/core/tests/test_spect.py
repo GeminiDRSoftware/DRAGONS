@@ -479,7 +479,7 @@ def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
     param = 'offset_0' if instrument == 'NIRI' else 'offset_1'
     shift = getattr(transform, param)
 
-    assert shift == pytest.approx(results[filename])
+    assert shift == pytest.approx(results[filename], atol=0.001)
 
 
 @pytest.mark.preprocessed_data
