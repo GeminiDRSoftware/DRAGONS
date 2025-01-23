@@ -764,10 +764,12 @@ class AstroDataF2(AstroDataGemini):
     #
     #     return {'lon': ra, 'lat': dec}
 
-    def actual_central_wavelength(self, *args, **kwargs):
+    @gmu.return_requested_units(input_units="nm")
+    def actual_central_wavelength(self):
         index = (self.disperser(pretty=True), self.filter_name(keepID=True))
         mask = dispersion_offset_mask[index]
-        disp = self.dispersion() if self.is_single else self.dispersion()[0]
-        actual_cenwave = (self.central_wavelength(*args, **kwargs) -
+        disp = (self.dispersion(asNanometers=True) if self.is_single else
+                self.dispersion(asNanometers=True)[0])
+        actual_cenwave = (self.central_wavelength(asNanometers=True) -
                           disp * mask.cenwaveoffset)
         return np.float32(actual_cenwave)

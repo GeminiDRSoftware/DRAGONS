@@ -5,6 +5,7 @@ from astrodata import AstroData
 from gempy.library import config
 from geminidr.core import parameters_spect
 from geminidr.core import parameters_preprocess
+from . import parameters_niri
 
 
 def list_of_ints_check(value):
@@ -12,7 +13,7 @@ def list_of_ints_check(value):
     return True
 
 
-class associateSkyConfig(parameters_preprocess.associateSkyConfig):
+class associateSkyConfig(parameters_niri.associateSkyConfig):
     def setDefaults(self):
         self.min_skies = 2
 
