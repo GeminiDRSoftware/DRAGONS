@@ -1110,3 +1110,11 @@ class AstroDataGmos(AstroDataGemini):
             crval = self.phu.get('CRVAL2')
             ctype = self.phu.get('CTYPE2')
         return crval if ctype == 'DEC--TAN' else None
+
+    @gmu.return_requested_units(input_units="nm")
+    def actual_central_wavelength(self):
+        """GMOS-S has not been properly calibrated for red spectra"""
+        cenwave = self.central_wavelength(asNanometers=True)
+        if self.instrument() == "GMOS-S" and cenwave > 950:
+            cenwave += (6.89483617 - 0.00332086 * cenwave) * cenwave - 3555.048
+        return cenwave
