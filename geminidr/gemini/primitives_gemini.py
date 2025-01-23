@@ -6,7 +6,6 @@
 import datetime
 from contextlib import suppress
 from copy import deepcopy
-from multiprocessing.managers import Value
 
 import numpy as np
 
@@ -15,7 +14,7 @@ from astropy import units as u
 from astropy.modeling import models
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels as am, astrotools as at
+from gempy.library import astromodels as am, astrotools as at, transform
 
 from geminidr.core import Bookkeeping, CalibDB, Preprocess
 from geminidr.core import Visualize, Standardize, Stack
@@ -375,6 +374,41 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
 
         return adinputs
 
+    def _add_longslit_wcs(self, ad, pointing=None):
+        """
+        This primitive updates the WCS attribute of each NDAstroData extension
+        in the input AstroData objects. For spectroscopic data, it means
+        replacing an imaging WCS with an approximate spectroscopic WCS.
+
+        Parameters
+        ----------
+        ad: AstroData
+            object to have a longslit WCS added
+        pointing: None/tuple/"center"
+            pointing center for reprojecting the WCS:
+                None => don't reproject
+                "center" => reproject to WCS at center of first extension
+
+        """
+        log = self.log
+        # Need to exclude darks from having a spectroscopic WCS added as
+        # they don't have a SPECT tag and will gum up the works. This only
+        # needs to be done for F2's makeLampFlat as it uses flats minus
+        # darks to remove dark current.
+        if 'DARK' in ad.tags:
+            log.stdinfo(f"{ad.filename} is a DARK, continuing")
+            return ad
+
+        log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
+        if ad.dispersion() is None:
+            raise ValueError(f"Unknown dispersion for {ad.filename}")
+        cenwave = ad.actual_central_wavelength(asNanometers=True)
+        if pointing == "center":
+            pointing = ad[0].wcs(*(0.5 * np.array(ad[0].shape[::-1])))
+        transform.add_longslit_wcs(ad, central_wavelength=cenwave,
+                                   pointing=pointing)
+
+        return ad
 
 class Pointing:
     """

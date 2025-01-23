@@ -43,27 +43,10 @@ class NIRISpect(Spect, NIRI):
         ----------
         suffix: str/None
             suffix to be added to output files
-
         """
-        log = self.log
-        timestamp_key = self.timestamp_keys[self.myself()]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
         super().standardizeWCS(adinputs, **params)
-
         for ad in adinputs:
-            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-            # For NIRI wavelength at central pixel doesn't match the descriptor value
-            cenwave = ad.actual_central_wavelength(asNanometers=True)
-            # NIRI's dispersion and spatial axis have the same length.
-            # Different square-shaped ROIs can be used, all centered on the array.
-            dispersion_axis = 2 - ad[0].dispersion_axis()
-            npix = ad[0].shape[1 - dispersion_axis]
-            center = 0.5 * (npix - 1)
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave,
-                                       pointing=ad[0].wcs(center, center))
-
-            # Timestamp. Suffix was updated in the super() call
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            self._add_longslit_wcs(ad, pointing="center")
         return adinputs
 
     def determineWavelengthSolution(self, adinputs=None, **params):

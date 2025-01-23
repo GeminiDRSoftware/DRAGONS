@@ -102,35 +102,11 @@ class F2Spect(Telluric, Spect, F2):
         ----------
         suffix: str/None
             suffix to be added to output files
-
         """
-
-        log = self.log
-        timestamp_key = self.timestamp_keys[self.myself()]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
         super().standardizeWCS(adinputs, **params)
-
         for ad in adinputs:
-            # Need to exclude darks from having a spectroscopic WCS added as
-            # they don't have a SPECT tag and will gum up the works. This only
-            # needs to be done for F2's makeLampFlat as it uses flats minus
-            # darks to remove dark current.
-            if 'DARK' in ad.tags:
-                log.stdinfo(f"{ad.filename} is a DARK, continuing")
-                continue
-
-            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-            # Apply central wavelength offset
-            if ad.dispersion() is None:
-                raise ValueError(f"Unknown dispersion for {ad.filename}")
-            cenwave = ad.actual_central_wavelength(asNanometers=True)
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave,
-                                       pointing=ad[0].wcs(1024, 1024))
-
-            # Timestamp. Suffix was updated in the super() call
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            self._add_longslit_wcs(ad, pointing="center")
         return adinputs
-
 
     def determineDistortion(self, adinputs=None, **params):
         """
