@@ -5651,11 +5651,19 @@ class Spect(Resample):
         # assuming that it depends on 1/(slit width). This is true only for GNIRS (and GMOS?),
         # for other instruments there should be an instrument-specific implementation.
         try:
-            return np.round(self._line_spread_function(ext).mean_resolution)
+            if len(ext.shape) == 1:
+                lsf = self._line_spread_function(ext)
+            else:
+                spataxis = ext.dispersion_axis() - 1  # python sense
+                _slice = tuple(ext.shape[i] // 2 if i == spataxis else None
+                               for i in range(ext.shape))
+                lsf = self._line_spread_function(ext.__class__(
+                    ext.nddata[_slice], phu=ext.phu, is_single=True))
         except (AttributeError, TypeError):
             resolution_1pix_slit = ext.actual_central_wavelength() / ext.dispersion()
             slit_width_pix = ext.slit_width() / ext.pixel_scale()
             return abs(resolution_1pix_slit // slit_width_pix)
+        return lsf.mean_resolution
 
     def _wavelength_model_bounds(self, model=None, ext=None):
         """
