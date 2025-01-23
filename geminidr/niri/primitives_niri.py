@@ -66,8 +66,12 @@ class NIRI(Gemini, NearIR):
                             format(ad.filename))
                 continue
 
-            total_exptime = ad.exposure_time()
-            coadds = ad.coadds()
+            # This assumes all extensions have the same dtype, which gets
+            # checked below.
+            extension_data_type = ad[0].data.dtype.type
+            total_exptime = extension_data_type(ad.exposure_time())
+            coadds = extension_data_type(ad.coadds())
+
             # Check the raw exposure time (i.e., per coadd). First, convert
             # the total exposure time returned by the descriptor back to
             # the raw exposure time
@@ -83,7 +87,9 @@ class NIRI(Gemini, NearIR):
                                 "no correction applied")
                     continue
 
-                raw_mean_value = np.mean(ext.data) / coadds # NUMPY_2: OK
+                gain = extension_data_type(gain)
+
+                raw_mean_value = np.mean(ext.data) / coadds
                 log.fullinfo("The mean value of the raw pixel data in " \
                              "{} is {:.8f}".format(ext.filename, raw_mean_value))
 
@@ -106,7 +112,8 @@ class NIRI(Gemini, NearIR):
 
                 # Correct for the exposure time issue by scaling the counts
                 # to the nominal exposure time
-                ext.multiply(exptime / (exptime + coeffs.time_delta))
+                time_delta = extension_data_type(coeffs.time_delta)
+                ext.multiply(exptime / (exptime + time_delta))
 
                 # Determine the mean of the corrected pixel data
                 corrected_mean_value = np.mean(ext.data) / coadds
@@ -114,12 +121,13 @@ class NIRI(Gemini, NearIR):
                         "{} is {:.8f}".format(ext.filename, corrected_mean_value))
 
                 # Correct the exposure time by adding coeff1 * coadds
-                total_exptime = total_exptime + coeffs.time_delta * coadds
+                total_exptime = total_exptime + time_delta * coadds
 
                 # Update descriptors for saturation and nonlinear thresholds
                 log.fullinfo(f"The true total exposure time = {total_exptime}")
                 for desc in ('saturation_level', 'non_linear_level'):
                     current_value = getattr(ext, desc)()
+                    current_value = extension_data_type(current_value)
                     new_value = linearize(
                         current_value * gain / coadds, coeffs) * coadds / gain
                     ext.hdr[ad._keyword_for(desc)] = np.round(new_value, 3)

@@ -70,6 +70,20 @@ class AstroDataMixin:
         Override the NDData method so that "bitwise_or" becomes the default
         operation to combine masks, rather than "logical_or"
         """
+        # Ensure the operand has the same dtype to avoid undesirable promotions
+        # (astropy side of things)
+        expected_dtype = self.data.dtype.type
+
+        try:
+            operand = expected_dtype(operand)
+
+        except ValueError as err:
+            if "setting an array element with a sequence" not in str(err):
+                message = f"Unexpected problem while enforcing {expected_dtype=}"
+                raise Exception(message) from err
+
+            operand.data = operand.data.astype(expected_dtype)
+
         return super()._arithmetic(
             operation, operand, propagate_uncertainties=propagate_uncertainties,
             handle_mask=handle_mask, handle_meta=handle_meta,
