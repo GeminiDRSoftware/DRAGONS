@@ -5685,21 +5685,38 @@ class Spect(Resample):
             a dict containing the model bounds that can be applied directly
             to the model instance
         """
-        if isinstance(model, models.Chebyshev1D):
-            for k, v in zip(model.param_names, model.parameters):
+        # We may need to cope with a prepended Shift is there's been some
+        # resampling/stacking of inputs for an absorption-line wavecal
+        try:
+            model[0]
+        except TypeError:  # not iterable
+            cheb = model
+        else:
+            for m in model:
+                if isinstance(m, models.Chebyshev1D):
+                    cheb = m
+                    break
+            else:
+                if set(model.param_names) == {'offset_0', 'factor_1', 'offset_2'}:
+                    # Shift (crpix) | Scale (dw) | Shift (cenwave)
+                    c0 = model[2].offset
+                    dw = model[1].factor
+                    c1 = 0.5 * dw * ext.shape[-ext.dispersion_axis()]
+                    bounds = {'c0': (c0 - 20, c0 + 20),
+                              'c1': (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))}
+                    return bounds
+                else:
+                    raise ValueError("Cannot set bounds for model class "
+                                     f"{model.__class__.__name__}")
+
+        if isinstance(cheb, models.Chebyshev1D):
+            for k, v in zip(cheb.param_names, cheb.parameters):
                 if k == 'c0':
                     bounds = {'c0': (v - 20, v + 20)}
                 elif k == 'c1':
                     bounds['c1'] = (v - 0.05 * abs(v), v + 0.05 * abs(v))
                 else:
                     bounds[k] = (v - 20, v + 20)
-        elif model[0].name.lower().startswith('crpix'):
-            # Shift (crpix) | Scale (dw) | Shift (cenwave)
-            c0 = model[2].offset
-            dw = model[1].factor
-            c1 = 0.5 * dw * ext.shape[-ext.dispersion_axis()]
-            bounds = {'c0': (c0 - 20, c0 + 20),
-                      'c1': (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))}
         else:
             raise ValueError("Cannot set bounds for model class "
                              f"{model.__class__.__name__}")
