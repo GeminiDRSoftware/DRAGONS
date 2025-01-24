@@ -13,8 +13,8 @@
 // @Library('dragons_ci@master') _
 
 // Change these to automatically skip steps
-def runtests_unit    = 0
-def runtests_regress = 0
+def runtests_unit    = 1
+def runtests_regress = 1
 def runtests_gmosls  = 1  // 1 to enable
 def runtests_slow    = 1
 def runtests_f2      = 1
