@@ -338,6 +338,7 @@ def test_regression_determine_wavelength_solution(
     with change_working_dir():
         logutils.config(file_name='log_regress_{:s}.txt'.format(ad.data_label()))
         p = F2Longslit([ad])
+        pixel_scale = ad[0].pixel_scale()  # arcsec / px
         p.viewer = geminidr.dormantViewer(p, None)
 
         p.determineWavelengthSolution(**{**determine_wavelength_solution_parameters,
@@ -357,7 +358,6 @@ def test_regression_determine_wavelength_solution(
     wavelength = model(x)
     ref_wavelength = ref_model(x)
 
-    pixel_scale = wcalibrated_ad[0].pixel_scale()  # arcsec / px
     slit_size_in_px = wcalibrated_ad[0].slit_width() / pixel_scale
     dispersion = abs(wcalibrated_ad[0].dispersion(asNanometers=True))  # nm / px
 
