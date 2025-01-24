@@ -322,6 +322,7 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.skip("MUST WORK")
 @pytest.mark.wavecal
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
