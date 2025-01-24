@@ -5702,7 +5702,7 @@ class Spect(Resample):
                     c0 = model[2].offset
                     dw = model[1].factor
                     c1 = 0.5 * dw * ext.shape[-ext.dispersion_axis()]
-                    bounds = {'c0': (c0 - 20, c0 + 20),
+                    bounds = {'c0': (c0 - 10, c0 + 10),
                               'c1': (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))}
                     return bounds
                 else:
@@ -5712,7 +5712,7 @@ class Spect(Resample):
         if isinstance(cheb, models.Chebyshev1D):
             for k, v in zip(cheb.param_names, cheb.parameters):
                 if k == 'c0':
-                    bounds = {'c0': (v - 20, v + 20)}
+                    bounds = {'c0': (v - 10, v + 10)}
                 elif k == 'c1':
                     bounds['c1'] = (v - 0.05 * abs(v), v + 0.05 * abs(v))
                 else:
