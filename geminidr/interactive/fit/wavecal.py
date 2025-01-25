@@ -124,7 +124,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
         # No need to compute wavelengths here as the model_change_handler() does it
         self.absorption = absorption
         spectrum_data_dict = {
-            "pixels": meta["pixels"],
             "wavelengths": np.zeros_like(meta["spectrum"]),
             "spectrum": meta["spectrum"] * (-1 if absorption else 1),
         }
@@ -157,15 +156,12 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if len(x) == 0:
             kwargs["initial_fit"] = meta["fit"]
 
-        # We need to temporarily set the domain of the model to the central
-        # unmasked region of the spectrum so that "xlinspace" will be created
-        # correctly. After this, we reset it to the correct value and re-fit.
-        xmin = self.spectrum.data["pixels"].min()
-        xmax = self.spectrum.data["pixels"].max()
+        # We determine the domain of the model from the initial model fit
+        domain = meta["init_models"][0].domain
         super().__init__(
             visualizer,
             these_fitting_parameters,
-            (xmin, xmax),
+            domain,
             x,
             y,
             weights=weights,
@@ -750,7 +746,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
             x = [x]
 
         spectrum = self.spectrum.data["spectrum"]
-        xmin = self.spectrum.data["pixels"].min()
+        xmin = self.model.domain[0]
 
         # Get points around the line.
         def get_nearby_points(p):
@@ -834,8 +830,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
             eval_data["model"] - linear_model(eval_data["xlinspace"])
         )
         self.spectrum.data["wavelengths"] = model.evaluate(
-            # np.arange(domain[0], domain[1] + 1)
-            self.spectrum.data["pixels"]
+            np.arange(model.domain[0], model.domain[1] + 1)
+            #self.spectrum.data["pixels"]
         )
 
         # If we recalculated the model while in the middle of identifying a
@@ -922,14 +918,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         logging.debug("Identifying line: %s %s %s", key, x, y)
 
-        xmin = self.spectrum.data["pixels"].min()
+        xmin = self.model.domain[0]
         if peak is None:
             x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
             fwidth = self.model.meta["fwidth"]
 
             interp_pixel = interp1d(
                 self.spectrum.data["wavelengths"],
-                self.spectrum.data["pixels"],
+                np.arange(*self.model.domain + np.array([0, 1])),
             )
 
             pixel = interp_pixel(x)

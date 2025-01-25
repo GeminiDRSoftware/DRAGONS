@@ -3,6 +3,7 @@ from itertools import product as cart_product
 from functools import partial, reduce
 
 import numpy as np
+from astropy.modeling.polynomial import Chebyshev1D
 from scipy.spatial import cKDTree
 from bisect import bisect
 
@@ -267,8 +268,11 @@ def find_alternative_solutions(peaks, arc_lines, model, kdsigma, weights=None):
     m_out = fit_it(m_tweak, peak_waves, arc_lines, in_weights=weights)
     diffs = m_out(peak_waves) - peak_waves
     if abs(np.median(diffs)) > 10:
-        new_model = model | m_out
-        new_model.meta["domain"] = model.meta["domain"]
+        # Convert back to original domain
+        cheb = np.polynomial.chebyshev.Chebyshev(model.parameters,
+                                                 domain=m_tweak(model.domain))
+        coef = {f'c{i}': v for i, v in enumerate(cheb.convert(domain=model.domain).coef)}
+        new_model = Chebyshev1D(degree=model.degree, **coef, domain=model.domain)
         return [new_model]
 
 
@@ -445,6 +449,47 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     return input_data, fit1d, acceptable_fit
 
 
+def create_chebyshev(waves, central_wavelength=None, dispersion=None,
+                     max_order=1):
+    """
+    Create a Chebyshev1D Model instance that fits the pixel->wavelength
+    mapping of a 1D AstroNDData object, with the option of overriding the
+    central wavelength and/or dispersion
+
+    Parameters
+    ----------
+    waves: array-like
+        wavelengths of pixels
+    central_wavelength: float
+        estimated wavelength of central pixel (nm)
+    dispersion: float
+        estimated dispersion (nm/pixel)
+    config: Config object
+        contains the maximum order of fit
+
+    Returns
+    -------
+    model: Chebyshev1D
+    """
+    npix = waves.size
+    x = np.arange(npix)
+    dw = abs(np.median(np.diff(waves)))
+    order = 0
+    while order < max_order:
+        order += 1
+        fit1d = fit_1D(waves, points=x, function="chebyshev",
+                       order=order, domain=[0, npix - 1],
+                       niter=0, sigma_lower=None, sigma_upper=None)
+        if fit1d.rms < 0.001 * dw:
+            break
+    model = fit1d.model
+    if central_wavelength is not None:
+        model.c0 = central_wavelength
+    if dispersion is not None:
+        model.c1 = 0.5 * dispersion * (npix - 1)
+    return model
+
+
 def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                        skylines=False, loglevel='stdinfo'):
     """
@@ -487,6 +532,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
      "bounds_setter" : a callable to set the uncertainty on polynomial parameters
     """
     cenwave = config["central_wavelength"]
+    dispersion = config["dispersion"]
 
     log = FakeLog() if config["interactive"] == True else p.log
     # This allows suppression of the terminal log output by calling the function
@@ -498,14 +544,14 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
         const_slit = 'LS' in ext.tags
+        center = config["center"] or int(0.5 * (ext.shape[1 - dispaxis] - 1))
         data, mask, variance, extract_info = peak_finding.average_along_slit(
-            ext, center=config["center"], nsum=config["nsum"],
+            ext, center=center, nsum=config["nsum"],
             combiner=config["combine_method"])
         if const_slit:
             logit("Extracting 1D spectrum from {}s {} to {}".
                   format(direction, extract_info.start + 1, extract_info.stop))
             middle = 0.5 * (extract_info.start + extract_info.stop - 1)
-            axes = {dispaxis: middle}
             location = f"{direction} {int(middle)}"
         else:
             # For non-straight slits, `extract_info` is the 1D
@@ -517,7 +563,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
             logit(f"  ±{config['nsum']/2:.1f} {direction}s "
                   "around polynomial with " + ", ".join(coeffs))
             middle = extract_info(0.5 * (ext.shape[dispaxis] - 1))
-            axes = {dispaxis: middle}
             # TODO: this isn't strictly correct, since it implies extraction
             # at a fixed location.
             location = f"{direction} {int(middle)}"
@@ -526,7 +571,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         mask = ext.mask.copy()
         variance = ext.variance
         location = ""
-        axes = {}
     # Mask bad columns but not saturated/non-linear data points
     if mask is not None:
         mask &= bad_bits
@@ -563,13 +607,37 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
             reject_bad=False, nbright=config.get("nbright", 0))
-    # Get the initial wavelength solution
-    m_init = initial_wavelength_model(
-        ext, central_wavelength=cenwave,
-        dispersion=config["dispersion"], axes=axes)
 
-    waves = m_init([0, 0.5 * (data.size - 1), data.size - 1])
-    dw0 = (waves[2] - waves[0]) / (data.size - 1)
+    # Determine extent of data in spectrum
+    x1 = mask.astype(bool).argmin()
+    x2 = mask.size - mask.astype(bool)[::-1].argmin()
+
+    if dispaxis == 1:
+        _slice = (center, slice(None))
+    else:
+        _slice = (slice(None), center)
+    ndd = ext.nddata[_slice]
+
+    # Get the initial wavelength solution
+    npix = ndd.shape[0]
+    try:
+        ndd.wcs.forward_transform
+    except AttributeError:
+        return models.Chebyshev1D(degree=1, c0=cenwave or ext.central_wavelength(asNanometers=True),
+                                  c1=0.5 * (dispersion or ext.dispersion(asNanometers=True)) * (npix - 1),
+                                  domain=[0, npix - 1])
+    else:
+        m_init = create_chebyshev(
+            ndd.wcs(np.arange(npix)), central_wavelength=cenwave,
+            dispersion=dispersion, max_order=config["order"])
+
+    # Convert to appropriate domain
+    cheb = np.polynomial.chebyshev.Chebyshev(m_init.parameters, m_init.domain)
+    coef = {f'c{i}': v for i, v in enumerate (cheb.convert(domain=(x1, x2 - 1)).coef)}
+    m_init = Chebyshev1D(degree=m_init.degree, **coef, domain=(x1, x2 - 1))
+
+    waves = m_init([0, 0.5 * (npix - 1), npix - 1])
+    dw0 = (waves[2] - waves[0]) / (npix - 1)
     logit("Wavelengths at start, middle, end (nm), and dispersion "
           f"(nm/pixel):\n{waves} {dw0:.4f}")
 
@@ -621,12 +689,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         p.log.stdinfo("Applying peak-to-centroid shifts to lines.")
         peaks = peak_to_centroid_func(peaks)
 
-    # We don't want to send a lot of masked data at either end
-    x1 = mask.astype(bool).argmin()
-    x2 = mask.size - mask.astype(bool)[::-1].argmin()
-
     return {"spectrum": np.ma.masked_array(data[x1:x2], mask=mask[x1:x2]),
-            "pixels": np.arange(x1, x2),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
             "refplot_data": refplot_dict,
@@ -639,7 +702,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     """
     Find the best wavelength solution from the set of initial models.
 
-    init_models : list of Model instances
+    init_models : list of Chebyshev1D instances
         starting models
     config : dict
         dictionary of parameters
@@ -668,45 +731,12 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     loglevel = "stdinfo" if config["verbose"] else "fullinfo"
     logit = getattr(log, loglevel)
 
-    # Create an initial fit_1D object using the initial wavelength model
-    # (always the first model in the init_models list) as a fallback in case
-    # don't get a better solution. Since we can't create a fit_1D object
-    # easily we evaluate the model at all pixels and fit. We do this by
-    # fitting increasing orders until we hit the order requested by the
-    # user or reach a low rms. We also construct 1D models for the other
-    # initial_models in the same way.
-    init_models_1d = []
-    for i, model in enumerate(init_models):
-        domain = model.meta["domain"]
-        x = np.arange(*domain)
-        dw = abs(np.diff(model(domain))[0] / np.diff(domain)[0])
-        order = 0
-        while order < config["order"]:
-            order += 1
-            fit1d = fit_1D(model(x), points=x, function="chebyshev",
-                           order=order, domain=domain,
-                           niter=config["niter"], sigma_lower=config["lsigma"],
-                           sigma_upper=config["hsigma"])
-            if fit1d.rms < 0.001 * dw:
-                break
-        fit1d.model.meta["domain"] = domain
-        init_models_1d.append(fit1d.model)
-        if i == 0:
-            fit1d.image = np.array([])
-            fit1d.points = np.array([])
-            fit1d.mask = np.array([], dtype=bool)
-            initial_model_fit = fit1d
-
-        #print("MAKING INIT MODELS")
-        #print(model)
-        #print(fit1d.evaluate([0, 1021]))
-
     best_fit1d = None
     # Iterate over start position models most rapidly
     for min_lines_per_fit, model, loc_start in cart_product(
-            min_lines, init_models_1d, (0.5, 0.3, 0.7)):
+            min_lines, init_models, (0.5, 0.3, 0.7)):
         #print("STARTING", model.parameters, loc_start)
-        domain = model.meta["domain"]
+        domain = model.domain
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
 
@@ -792,7 +822,12 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 best_fit1d = fit1d
 
     if best_fit1d is None:
-        best_fit1d = initial_model_fit
+        # Hack a fit1D object that represents the original model with no fitted lines
+        best_fit1d = fit1d
+        fit1d._models = init_models[0]
+        fit1d.image = np.array([])
+        fit1d.points = np.array([])
+        fit1d.mask = np.array([], dtype=bool)
     return best_fit1d, True
 
 
@@ -840,7 +875,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     from datetime import datetime
     start_time = datetime.now()
     matches = np.full_like(peaks, -1, dtype=int)
-    len_data = np.diff(model.meta["domain"])[0]
+    len_data = np.diff(model.domain)[0] + 1
     wave_start = model(pixel_start)
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
@@ -1161,8 +1196,8 @@ def create_pdf_plot(input_data, peaks, arc_lines, title):
     fig: a matplotlib figure
     """
     data = input_data["spectrum"]
-    pixels = input_data["pixels"]
-    xmin, xmax = pixels.min(), pixels.max()
+    xmin, xmax = input_data["init_models"][0].domain
+    pixels = np.arange(xmin, xmax + 1)
     data_max = data.max()
     fig, ax = plt.subplots()
     ax.plot(pixels, data, 'b-')
