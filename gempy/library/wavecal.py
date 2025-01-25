@@ -268,11 +268,12 @@ def find_alternative_solutions(peaks, arc_lines, model, kdsigma, weights=None):
     m_out = fit_it(m_tweak, peak_waves, arc_lines, in_weights=weights)
     diffs = m_out(peak_waves) - peak_waves
     if abs(np.median(diffs)) > 10:
-        # Convert back to original domain
-        cheb = np.polynomial.chebyshev.Chebyshev(model.parameters,
-                                                 domain=m_tweak(model.domain))
-        coef = {f'c{i}': v for i, v in enumerate(cheb.convert(domain=model.domain).coef)}
-        new_model = Chebyshev1D(degree=model.degree, **coef, domain=model.domain)
+        # Linear approximation to modified model
+        cheb_params = {k: v for k, v in zip(model.param_names,
+                                            model.parameters)}
+        cheb_params.update({'c0': m_out(model.c0),
+                            'c1': m_out[1](model.c1)})
+        new_model = Chebyshev1D(degree=model.degree, **cheb_params, domain=model.domain)
         return [new_model]
 
 
