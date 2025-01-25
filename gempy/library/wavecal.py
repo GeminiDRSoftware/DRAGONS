@@ -678,8 +678,10 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                 m_init.extend(alt_models)
                 log.warning("Alternative model(s) found")
                 for i, m in enumerate(alt_models, start=1):
-                    log.warning(f"{i}. Offset {m.right.offset_0.value} "
-                                f"scale {m.right.factor_1.value}")
+                    waves = m([0, 0.5 * (npix - 1), npix - 1])
+                    dw0 = (waves[2] - waves[0]) / (npix - 1)
+                    log.warning(f"{i}. Wavelength at middle, and dispersion "
+                                f"(nm/pixel):\n{waves[1]} {dw0:.4f}")
 
     try:
         peak_to_centroid_func = p._convert_peak_to_centroid(ext)
@@ -823,11 +825,12 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
     if best_fit1d is None:
         # Hack a fit1D object that represents the original model with no fitted lines
-        best_fit1d = fit1d
-        fit1d._models = init_models[0]
-        fit1d.image = np.array([])
-        fit1d.points = np.array([])
-        fit1d.mask = np.array([], dtype=bool)
+        best_fit1d = fit_1D(np.arange(5), function="chebyshev", order=1,
+                            niter=0)
+        best_fit1d._models = init_models[0]
+        best_fit1d.image = np.array([])
+        best_fit1d.points = np.array([])
+        best_fit1d.mask = np.array([], dtype=bool)
     return best_fit1d, True
 
 
