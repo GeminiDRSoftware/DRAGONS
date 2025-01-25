@@ -624,9 +624,9 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     try:
         ndd.wcs.forward_transform
     except AttributeError:
-        return models.Chebyshev1D(degree=1, c0=cenwave or ext.central_wavelength(asNanometers=True),
-                                  c1=0.5 * (dispersion or ext.dispersion(asNanometers=True)) * (npix - 1),
-                                  domain=[0, npix - 1])
+        m_init = models.Chebyshev1D(degree=1, c0=cenwave or ext.central_wavelength(asNanometers=True),
+                                    c1=0.5 * (dispersion or ext.dispersion(asNanometers=True)) * (npix - 1),
+                                    domain=[0, npix - 1])
     else:
         m_init = create_chebyshev(
             ndd.wcs(np.arange(npix))[0], central_wavelength=cenwave,
@@ -738,8 +738,8 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     # Iterate over start position models most rapidly
     for min_lines_per_fit, model, loc_start in cart_product(
             min_lines, init_models, (0.5, 0.3, 0.7)):
-        #print("STARTING", model.parameters, loc_start)
         domain = model.domain
+        #print("STARTING", model.parameters, loc_start, domain)
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
 
@@ -895,7 +895,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             p1 = 0
         npeaks = narc_lines = 0
         while (min(npeaks, narc_lines) < min_lines_this_fit and
-               not (p0 - p1 < 0 and p0 + p1 >= len_data)):
+               not (p0 - p1 < model.domain[0] and p0 + p1 >= model.domain[1])):
             p1 += 1
             i1 = bisect(peaks, p0 - p1)
             i2 = bisect(peaks, p0 + p1)
@@ -918,7 +918,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         if not first:
             m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
         #print("INPUT MODEL")
-        #print(m_init.parameters)
+        #print(m_init.parameters, m_init.domain, m_init(np.arange(0,1001,200)))
         #print(m_init.bounds)
         #print(datetime.now() - start)
 
@@ -1007,7 +1007,7 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     new_ref_weights = (abs(arc_lines - w0) <= 1.05 * w1).astype(float)
     if ref_weights is not None:
         new_ref_weights *= ref_weights
-    new_ref_weights = ref_weights
+    #new_ref_weights = ref_weights
     # Maybe consider two fits here, one with a large kdsigma, and then
     # one with a small one (perhaps the second could use weights)?
     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='direct')
