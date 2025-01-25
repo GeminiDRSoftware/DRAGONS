@@ -628,7 +628,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                                   domain=[0, npix - 1])
     else:
         m_init = create_chebyshev(
-            ndd.wcs(np.arange(npix)), central_wavelength=cenwave,
+            ndd.wcs(np.arange(npix))[0], central_wavelength=cenwave,
             dispersion=dispersion, max_order=config["order"])
 
     # Convert to appropriate domain
