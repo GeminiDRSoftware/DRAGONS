@@ -1004,7 +1004,9 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
         new_in_weights *= in_weights
     w0 = m_init.c0.value
     w1 = abs(m_init.c1.value)
-    new_ref_weights = (abs(arc_lines - w0) <= 1.05 * w1).astype(float)
+    max_range = max(1.05 * w1, np.sum(abs(np.diff(v)[0])
+                                      for v in m_init.bounds.values()))
+    new_ref_weights = (abs(arc_lines - w0) < max_range).astype(float)
     if ref_weights is not None:
         new_ref_weights *= ref_weights
     #new_ref_weights = ref_weights
