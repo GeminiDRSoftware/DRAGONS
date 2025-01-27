@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Tutorial Series - NIRI Imaging Data Reduction with DRAGONS'
-copyright = '2024, Association of Universities for Research in Astronomy'
+copyright = '2025, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -72,7 +72,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'October 2024'
+today = 'January 2025'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -207,7 +207,7 @@ epub_exclude_files = ['search.html']
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {'python': ('http://docs.python.org/3', None)}
 
 # ------
 

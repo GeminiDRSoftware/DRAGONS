@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '3.2.2'
+VERSION = '3.2.3'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -80,7 +80,7 @@ setup(name='dragons',
       ],
       install_requires=[
           'asdf>=2.7,!=2.10.0',
-          'astropy>=4.3,!=5.3.0',
+          'astropy>=4.3,!=5.3.0,!=6.1.5,!=6.1.6',
           'astroquery>=0.4',
           'astroscrappy>=1.1',
           'bokeh>=3.0',
