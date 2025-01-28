@@ -61,7 +61,9 @@ def test_reduce_flat(change_working_dir, input_filename, bias, arm,
 
         # Comparison doesn't include "exotic" extensions
         assert hasattr(adout[0], "BLAZE")
-        assert_allclose(adref[0].BLAZE, adout[0].BLAZE)
+        # Tolerance set because of a change in MINPACK scipy 1.14.1->1.15.0
+        # that causes optimize.leastsq() to produce slightly different values
+        assert_allclose(adref[0].BLAZE, adout[0].BLAZE, atol=0.001)
 
         # Need to evaluate XMOD
         arm = GhostArm(arm=adout.arm(), mode=adout.res_mode())
@@ -70,4 +72,5 @@ def test_reduce_flat(change_working_dir, input_filename, bias, arm,
         # We can reuse the GhostArm object since we already know that 'arm'
         # 'and res_mode' match
         xmodref = arm.evaluate_poly(adref[0].XMOD)
-        assert_allclose(xmodref, xmodout)
+        # This is the pixel location of the trace, so 0.01 pix tolerance is OK
+        assert_allclose(xmodref, xmodout, atol=0.01)
