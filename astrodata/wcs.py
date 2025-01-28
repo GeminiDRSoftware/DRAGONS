@@ -23,8 +23,8 @@ FrameMapping = namedtuple("FrameMapping", "cls description")
 frame_mapping = {'WAVE': FrameMapping(cf.SpectralFrame, "Wavelength in vacuo"),
                  'AWAV': FrameMapping(cf.SpectralFrame, "Wavelength in air")}
 
-re_ctype = re.compile(r"^CTYPE(\\d+)$", re.IGNORECASE)
-re_cd = re.compile(r"^CD(\\d+)_\\d+$", re.IGNORECASE)
+re_ctype = re.compile("^CTYPE(\\d+)$", re.IGNORECASE)
+re_cd = re.compile("^CD(\\d+)_\\d+$", re.IGNORECASE)
 
 #-----------------------------------------------------------------------------
 # FITS-WCS -> gWCS
