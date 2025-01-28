@@ -175,7 +175,7 @@ class NIRISpect(Spect, NIRI):
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
 
-    def _get_arc_linelist(self, ext, waves=None):
+    def _get_arc_linelist(self, wave_model=None, ext=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
         if 'ARC' in ext.tags:

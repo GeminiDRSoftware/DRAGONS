@@ -319,27 +319,28 @@ class F2Spect(Telluric, Spect, F2):
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
 
-    def _get_arc_linelist(self, ext, waves=None):
+    def _get_linelist(self, wave_model=None, ext=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
-        isHK_JH = ext.disperser(pretty=True) == "HK" and \
-                    ext.filter_name(pretty=True) == "JH"
+        isHK_JH = (ext.disperser(pretty=True) == "HK" and
+                   ext.filter_name(pretty=True) == "JH")
         if 'ARC' in ext.tags:
-            linelist = 'argon.dat'
             # For HK grism + JH filter the second order is preserved by default
             # (as per IS request), so use the line list with the second order lines
             # for this mode
-            if isHK_JH:
-                linelist = 'lowresargon_with_2nd_ord.dat'
+            filename = 'argon.dat' if isHK_JH else 'lowresargon_with_2nd_ord.dat'
         else:
             # In case of wavecal from sky OH emission use this line list:
-            linelist = 'nearIRsky.dat'
-            if isHK_JH:
-                linelist = 'nearIRsky_with_2nd_order.dat'
+            filename = 'nearIRsky_with_2nd_order.dat' if isHK_JH else 'nearIRsky.dat'
 
-        self.log.stdinfo(f"Using linelist '{linelist}'")
-        filename = os.path.join(lookup_dir, linelist)
-        return wavecal.LineList(filename)
+        self.log.stdinfo(f"Using linelist '{filename}'")
+        linelist = wavecal.LineList(os.path.join(lookup_dir, filename))
+
+        # Attach a synthetic sky spectrum if using sky lines
+        if 'ARC' not in ext.tags:
+            linelist.reference_spectrum = self._get_sky_spectrum(wave_model, ext)
+
+        return linelist
 
     @staticmethod
     def _convert_peak_to_centroid(ext):

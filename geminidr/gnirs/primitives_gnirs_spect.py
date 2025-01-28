@@ -13,8 +13,7 @@ from geminidr.core import Telluric
 from .primitives_gnirs import GNIRS
 from . import parameters_gnirs_spect
 
-from gempy.gemini import gemini_tools as gt
-from gempy.library import transform, wavecal
+from gempy.library import wavecal
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -49,33 +48,36 @@ class GNIRSSpect(Telluric, GNIRS):
             self._add_longslit_wcs(ad, pointing="center")
         return adinputs
 
-    def _get_arc_linelist(self, ext, waves=None):
+    def _get_linelist(self, wave_model=None, ext=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
 
-        is_lowres = ext.disperser(pretty=True).startswith('10') or \
-                    (ext.disperser(pretty=True).startswith('32') and
-                        ext.camera(pretty=True).startswith('Short'))
+        is_lowres = (ext.disperser(pretty=True).startswith('10') or
+                     ext.disperser(pretty=True).startswith('32') and
+                     ext.camera(pretty=True).startswith('Short'))
 
         if 'ARC' in ext.tags:
             if 'Xe' in ext.object():
-                linelist ='Ar_Xe.dat'
+                filename ='Ar_Xe.dat'
             elif "Ar" in ext.object():
-                if is_lowres:
-                    linelist = 'lowresargon.dat'
-                else:
-                    linelist = 'argon.dat'
+                filename = 'lowresargon.dat' if is_lowres else 'argon.dat'
             else:
-                raise ValueError(f"No default line list found for {ext.object()}-type arc. Please provide a line list.")
-
+                raise ValueError(f"No default line list found for {ext.object()}"
+                                 "-type arc. Please provide a line list.")
+        elif config.get("absorption", False) or wave_model.c0 > 2800:
+            return self._get_atran_linelist(wave_model=wave_model, ext=ext, config=config)
         else:
-            # In case of wavecal from sky OH emission use this line list:
-            linelist = 'nearIRsky.dat'
+            # In case of wavecal from sky OH emission use this line list
+            filename = 'nearIRsky.dat'
 
-        self.log.stdinfo(f"Using linelist {linelist}")
-        filename = os.path.join(lookup_dir, linelist)
+        self.log.stdinfo(f"Using linelist {filename}")
+        linelist = wavecal.LineList(os.path.join(lookup_dir, filename))
+        if 'ARC' not in ext.tags:
+            # Attach a synthetic sky spectrum if using sky lines or absorption
+            linelist.reference_spectrum = self._get_sky_spectrum(wave_model, ext)
 
-        return wavecal.LineList(filename)
+        return linelist
+
 
     def _wavelength_model_bounds(self, model=None, ext=None):
         # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
