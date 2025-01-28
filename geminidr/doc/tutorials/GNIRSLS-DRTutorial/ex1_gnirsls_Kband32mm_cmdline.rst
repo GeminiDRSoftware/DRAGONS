@@ -223,14 +223,14 @@ interactive mode. To activate the interactive mode:
 
 The interactive tools are introduced in section :ref:`interactive`.
 
-We can see from the interactive tool plots that the wavelength solution has
+We can see from the interactive tool plot that the wavelength solution has
 reasonable line coverage between 1.98 and 2.4 |um|.
 
 We will see later that the final science spectrum goes about 0.1 |um| beyond
 the coverage.  The solution in the outer area is unconstrained.  If the lines
 of scientific interest are beyond the line list range and wavelength accuracy
-is very important, using sky lines might be a solution, if sky lines are
-present.
+is very important, using sky lines, if strong enough in the science spectrum,
+might be a better solution.
 
 .. todo:: refer to an example using sky lines.
 
@@ -318,7 +318,8 @@ At the ``findApertures`` step, you will notice that it finds 4 sources.
 Clearly, only the central one is real.  In interactive mode, just delete the
 extra apertures.  You can leave them there too, they will not hurt anything.
 
-At the ``traceApertures`` step, the fit one gets is perfectly reasonable, well
+At the ``traceApertures`` step, the fit one gets automatically for this source
+is perfectly reasonable, well
 within the envelope of the source aperture.  To improve the fit, one could
 activate sigma clipping and increase to number of iteration to 3 to get a
 straighter fit that ignores the deviant points at the edges of the spectrum.
