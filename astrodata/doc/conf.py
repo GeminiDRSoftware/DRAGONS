@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Astrodata Manual'
-copyright = '2024, Association of Universities for Research in Astronomy'
+copyright = '2025, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -76,7 +76,7 @@ language = "en"
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
 #
-today = 'October 2024'
+today = 'January 2025'
 #
 # Else, today_fmt is used as the format for a strftime call.
 #
@@ -120,8 +120,8 @@ todo_include_todos = True
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'astropy': ('https://docs.astropy.org/en/stable/', None),
-    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    #'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    #'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
     'python': ('https://docs.python.org/3', None),

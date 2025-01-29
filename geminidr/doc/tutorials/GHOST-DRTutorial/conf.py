@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Tutorial Series - GHOST Data Reduction with DRAGONS'
-copyright = '2024, Association of University for Research in Astronomy'
+copyright = '2025, Association of University for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags

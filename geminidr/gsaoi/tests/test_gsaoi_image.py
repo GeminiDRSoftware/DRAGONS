@@ -58,7 +58,7 @@ def test_gsaoi_resample_to_refcat(path_to_inputs, adinputs):
     objcat = ad[0].OBJCAT
     incoords = (objcat['X_IMAGE']-1, objcat['Y_IMAGE']-1)
     t = Table.read(table_path)
-    refcoords = ad[0].wcs.invert(t['RAJ2000'], t['DEJ2000'])
+    refcoords = ad[0].wcs.invert(t['RAJ2000'].data, t['DEJ2000'].data)
     t = matching.find_alignment_transform(incoords, refcoords, rotate=True, scale=True)
     assert ad[0].shape == (4219, 4226)
     assert_allclose(t.factor_0, 1, atol=1e-3)
