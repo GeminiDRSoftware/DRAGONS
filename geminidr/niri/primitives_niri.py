@@ -66,8 +66,7 @@ class NIRI(Gemini, NearIR):
                             format(ad.filename))
                 continue
 
-            # This assumes all extensions have the same dtype, which gets
-            # checked below.
+            # This assumes all extensions have the same dtype
             extension_data_type = ad[0].data.dtype.type
             total_exptime = extension_data_type(ad.exposure_time())
             coadds = extension_data_type(ad.coadds())
