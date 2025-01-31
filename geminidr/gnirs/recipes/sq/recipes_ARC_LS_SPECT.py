@@ -18,9 +18,8 @@ def makeProcessedArc(p):
 
     p.prepare()
     p.addDQ()
-    p.addVAR(read_noise=True)
     p.ADUToElectrons()
-    p.addVAR(poisson_noise=True)
+    p.addVAR(poisson_noise=True, read_noise=True)
     p.flatCorrect()
     p.stackFrames()
     p.determineWavelengthSolution()
