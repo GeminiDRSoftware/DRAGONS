@@ -23,7 +23,6 @@ def makeProcessedArc(p):
     p.addVAR(poisson_noise=True)
     p.flatCorrect()
     p.stackFrames()
-    p.makeIRAFCompatible()
     p.determineWavelengthSolution()
     p.determineDistortion()
     p.storeProcessedArc()
