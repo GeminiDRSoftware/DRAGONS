@@ -540,7 +540,8 @@ class Telluric(Spect):
         """
         Return a list of spectral lines to be matched in the wavelength
         calibration, and a reference plot of a convolved synthetic spectrum,
-        to aid the user in making the correct identifications.
+        to aid the user in making the correct identifications (which is
+        an attribute of the LineList object).
 
         The linelist can be generated on-the-fly by finding peaks in the
         convolved spectrum, or read from disk if there exists a suitable
@@ -605,19 +606,21 @@ class Telluric(Spect):
 
         absorption = config.get("absorption", False)
 
-        # Get the high-resolution spectrum and convolve it
+        # Get the high-resolution spectrum for the site/conditions
         atran_file = os.path.join(LOOKUPS_PATH, "atran_spectra.fits")
         atran_models = Table.read(atran_file)
         waves = atran_models['wavelength']
         data = atran_models[f"{site}_wv{wv_content * 1000:.0f}_za48"]
+
+        # Convolve the appropriate wavelength region with a Gaussian of
+        # constant FWHM (only works if wavelength scale is linear)
         wave_range = np.logical_and(waves >= start_wvl, waves <= end_wvl)
-        # Smooth the ATRAN spectrum with a Gaussian with a constant FWHM value,
-        # (only works if wavelength scale is linear)
         sampling = abs(np.diff(waves).mean())
         sigma_pix = 0.42 * 0.5 * (start_wvl + end_wvl) / resolution / sampling
         atran_spec = convolve(data[wave_range], Gaussian1DKernel(sigma_pix),
                               boundary='extend')
-        refplot_spec = np.asarray([waves[wave_range], atran_spec], dtype=np.float32)
+        refplot_spec = np.asarray([waves[wave_range], atran_spec],
+                                  dtype=np.float32)
 
         if linelist is None:
             # Invert spectrum because we want the wavelengths of troughs
@@ -661,7 +664,13 @@ class Telluric(Spect):
 
 def make_linelist(spectrum, resolution=1000, num_bins=10, num_lines=50):
     """
+    Create a linelist (with weights) from a spectrum by selecting the most
+    prominent peaks. The spectrum is split into several bins and the
+    strongest peaks found in each of those bins, to ensure that there are
+    suitable features to match across the entire spectral range.
 
+    Feature strengths are determined by the prominence divided by the width,
+    so that broad features must be more pronounced than narrower ones.
 
     Parameters
     ----------
@@ -722,11 +731,12 @@ def make_linelist(spectrum, resolution=1000, num_bins=10, num_lines=50):
     best_peaks = trim_peaks(wavelength[pixel_peaks], weights, bin_edges,
                             nlargest=num_lines // num_bins, sort=True)
 
-    # Pinpoint peak positions, and cull any peaks that couldn't be fit
-    # (keep_bad will return location=None)
     # Convert to pixel locations
     best_pixel_peaks = np.interp(best_peaks[:, 0], wavelength,
                                  np.arange(wavelength.size))
+
+    # Pinpoint peak positions, and cull any peaks that couldn't be fit
+    # (keep_bad will return location=NaN)
     atran_linelist = np.vstack(peak_finding.pinpoint_peaks(
         flux, peaks=best_pixel_peaks, halfwidth=2, keep_bad=True)).T
     atran_linelist = atran_linelist[~np.isnan(atran_linelist).any(axis=1)]

@@ -175,7 +175,7 @@ class NIRISpect(Spect, NIRI):
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
 
-    def _get_arc_linelist(self, wave_model=None, ext=None):
+    def _get_linelist(self, wave_model=None, ext=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
         if 'ARC' in ext.tags:
@@ -185,12 +185,18 @@ class NIRISpect(Spect, NIRI):
                 linelist = 'argon.dat'
             else:
                 raise ValueError(f"No default line list found for {ext.object()}-type arc. Please provide a line list.")
+        elif config.get("absorption", False) or wave_model.c0 > 2800:
+                return self._get_atran_linelist(wave_model=wave_model, ext=ext, config=config)
         else:
-            # In case of wavecal from sky OH emission use these line lists:
-            linelist = 'nearIRsky.dat'
+            # In case of wavecal from sky OH emission use this line list
+            filename = 'nearIRsky.dat'
 
         self.log.stdinfo(f"Using linelist {linelist}")
         filename = os.path.join(lookup_dir, linelist)
+
+        if 'ARC' not in ext.tags:
+            # Attach a synthetic sky spectrum if using sky lines or absorption
+            linelist.reference_spectrum = self._get_sky_spectrum(wave_model, ext)
 
         return wavecal.LineList(filename)
 
