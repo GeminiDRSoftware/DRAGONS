@@ -8,10 +8,8 @@ import os
 
 from importlib import import_module
 
-from geminidr.core import Spect
-from gemini_instruments import gmu
-from gempy.gemini import gemini_tools as gt
-from gempy.library import transform, wavecal
+from geminidr.core import Telluric
+from gempy.library import wavecal
 from gemini_instruments.niri import lookup
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -21,7 +19,7 @@ from . import parameters_niri_spect
 
 @parameter_override
 @capture_provenance
-class NIRISpect(Spect, NIRI):
+class NIRISpect(Telluric, NIRI):
     """
     This is the class containing all of the preprocessing primitives for the
     NIRISpect level of the hierarchy tree. It inherits all the primitives from
