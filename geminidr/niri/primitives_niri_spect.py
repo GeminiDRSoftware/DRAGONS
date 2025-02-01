@@ -178,9 +178,9 @@ class NIRISpect(Telluric, NIRI):
                                                    self.inst_lookups).__file__)
         if 'ARC' in ext.tags:
             if 'Xe' in ext.object():
-                linelist ='Ar_Xe.dat'
+                filename ='Ar_Xe.dat'
             elif "Ar" in ext.object():
-                linelist = 'argon.dat'
+                filename = 'argon.dat'
             else:
                 raise ValueError(f"No default line list found for {ext.object()}-type arc. Please provide a line list.")
         elif config.get("absorption", False) or wave_model.c0 > 2800:
@@ -189,14 +189,13 @@ class NIRISpect(Telluric, NIRI):
             # In case of wavecal from sky OH emission use this line list
             filename = 'nearIRsky.dat'
 
-        self.log.stdinfo(f"Using linelist {linelist}")
-        filename = os.path.join(lookup_dir, linelist)
-
+        self.log.stdinfo(f"Using linelist {filename}")
+        linelist = wavecal.LineList(os.path.join(lookup_dir, filename))
         if 'ARC' not in ext.tags:
             # Attach a synthetic sky spectrum if using sky lines or absorption
             linelist.reference_spectrum = self._get_sky_spectrum(wave_model, ext)
 
-        return wavecal.LineList(filename)
+        return linelist
 
     def _get_resolution(self, ad):
         # For NIRI actual resolving power values are much lower than

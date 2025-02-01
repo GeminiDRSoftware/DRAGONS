@@ -626,6 +626,11 @@ class Telluric(Spect):
         refplot_spec = np.asarray([waves[wave_range], atran_spec],
                                   dtype=np.float32)
 
+        # Resample the reference spectrum so it has about twice as many pixels
+        # as the data, to avoid too much plotting overhead
+        resampling = max(int(0.5 * atran_spec.size / np.diff(wave_model.domain)[0]), 1)
+        refplot_spec = refplot_spec[:, ::resampling]
+
         if linelist is None:
             # Invert spectrum because we want the wavelengths of troughs
             refplot_spec[1] = 1 - refplot_spec[1]

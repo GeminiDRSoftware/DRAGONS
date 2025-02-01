@@ -646,31 +646,10 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     logit("Wavelengths at start, middle, end (nm), and dispersion "
           f"(nm/pixel):\n{waves} {dw0:.4f}")
 
-    # Is ATRAN line list used for this mode?
-    #uses_atran_linelist = p._uses_atran_linelist(cenwave=ext.central_wavelength(asNanometers=True),
-    #                                             absorption=config.get("absorption", False))
+    print("LINELIST", linelist)
     if linelist is None:
         linelist = p._get_linelist(wave_model=m_init, ext=ext, config=config)
-        try:
-            linelist, refplot_dict = linelist
-        except TypeError:  # only returned a LineList
-            refplot_dict = None
-        # if uses_atran_linelist:
-        #     # If the mode is supposed to use ATRAN line list, we generate it
-        #     # on-the-fly (or use a previously generated one). When the line list is
-        #     # generated on-the-fly, the reference plot data is created as a by-product,
-        #     # so we return it here to avoid repeating the same calculations later.
-        #     # Otherwise (in case of existing pre-calculated ATRAN line list)
-        #     # refplot_dict is expected to be returned as None, and
-        #     # can be populated in create_interactive_inputs
-        #     linelist, refplot_dict= p._get_atran_linelist(wave_model=m_init, ext=ext, config=config)
-        #     linelist._weights = None
-        # else:
-        #     # Get list of arc lines (probably from a text file dependent on the
-        #     # input spectrum, so a private method of the primitivesClass). If a
-        #     # user-defined file, only read it if arc_lines is undefined
-        #     # (i.e., first time through the loop)
-        #     linelist = p._get_arc_linelist(wave_model=m_init, ext=ext)
+
     # This wants to be logged even in interactive mode
     sky_or_arc = 'reference sky' if skylines else 'arc'
     msg = f"Found {len(peaks)} peaks and {len(linelist)} {sky_or_arc} lines"
@@ -703,7 +682,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     return {"spectrum": np.ma.masked_array(data[x1:x2], mask=mask[x1:x2]),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
-            "refplot_data": refplot_dict,
             "peak_to_centroid_func": peak_to_centroid_func,
             "bounds_setter": partial(p._wavelength_model_bounds, ext=ext)}
 
