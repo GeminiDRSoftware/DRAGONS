@@ -49,8 +49,12 @@ class Telluric(Spect):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_telluric)
 
-        lsf_module = import_module('.lsf', self.inst_lookups)
-        self._line_spread_function = lsf_module.lsf_factory(self.__class__.__name__)
+        try:
+            lsf_module = import_module('.lsf', self.inst_lookups)
+        except ModuleNotFoundError:
+            pass
+        else:
+            self._line_spread_function = lsf_module.lsf_factory(self.__class__.__name__)
 
     def fitTelluric(self, adinputs=None, **params):
         """
