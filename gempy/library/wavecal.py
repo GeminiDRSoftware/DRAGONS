@@ -646,7 +646,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     logit("Wavelengths at start, middle, end (nm), and dispersion "
           f"(nm/pixel):\n{waves} {dw0:.4f}")
 
-    print("LINELIST", linelist)
     if linelist is None:
         linelist = p._get_linelist(wave_model=m_init, ext=ext, config=config)
 

@@ -713,7 +713,7 @@ def make_linelist(spectrum, resolution=1000, num_bins=10, num_lines=50):
         signal, preserving only the N-largest ones on each bin
 
         peaks: array
-            wavelengths of peaks
+            pixel locations of peaks
         weights: array
             strengths of peaks
         bin_edges: array of shape (N+1,)
@@ -725,8 +725,8 @@ def make_linelist(spectrum, resolution=1000, num_bins=10, num_lines=50):
             the M (M <= N * nlargest) line wavelengths and weights
         """
         result = []
-        for wstart, wend in zip(bin_edges[:-1], bin_edges[1:]):
-            indices = np.logical_and(peaks >= wstart, peaks < wend)
+        for i1, i2 in zip(bin_edges[:-1], bin_edges[1:]):
+            indices = np.logical_and(peaks >= i1, peaks < i2)
             indices_to_keep = weights[indices].argsort()[-nlargest:]
             result.extend(list(zip(peaks[indices][indices_to_keep],
                                    weights[indices][indices_to_keep])))
@@ -735,19 +735,14 @@ def make_linelist(spectrum, resolution=1000, num_bins=10, num_lines=50):
 
     # For the final line list select n // 10 peaks with largest weights
     # within each of 10 wavelength bins.
-    bin_edges = np.linspace(wavelength.min(),
-                            wavelength.max() + wavelength_sampling, num_bins + 1)
-    best_peaks = trim_peaks(wavelength[pixel_peaks], weights, bin_edges,
-                            nlargest=num_lines // num_bins, sort=True)
-
-    # Convert to pixel locations
-    best_pixel_peaks = np.interp(best_peaks[:, 0], wavelength,
-                                 np.arange(wavelength.size))
+    bin_edges = np.linspace(0, flux.size + 1, num_bins + 1)
+    best_pixel_peaks = trim_peaks(pixel_peaks, weights, bin_edges,
+                                  nlargest=num_lines // num_bins, sort=True)
 
     # Pinpoint peak positions, and cull any peaks that couldn't be fit
     # (keep_bad will return location=NaN)
     atran_linelist = np.vstack(peak_finding.pinpoint_peaks(
-        flux, peaks=best_pixel_peaks, halfwidth=2, keep_bad=True)).T
+        flux, peaks=best_pixel_peaks[:, 0], halfwidth=2, keep_bad=True)).T
     atran_linelist = atran_linelist[~np.isnan(atran_linelist).any(axis=1)]
 
     # Convert back to wavelengths
