@@ -587,9 +587,18 @@ class Telluric(Spect):
         resolution = self._get_resolution(ext)
         # The wave_model's domain describes the illuminated region
         wave_model_bounds = self._wavelength_model_bounds(wave_model, ext)
-        start_wvl, end_wvl = (np.sort(wave_model(wave_model.domain)) +
+        try:
+            domain = wave_model.domain
+        except AttributeError:
+            for m in wave_model:
+                if hasattr(m, 'domain'):
+                    domain = m.domain
+                    break
+            else:
+                raise ValueError("No domain in wavelength model")
+        start_wvl, end_wvl = (np.sort(wave_model(domain)) +
                               np.asarray(wave_model_bounds['c0']) -
-                              wave_model.c0)
+                              np.mean(wave_model_bounds['c0']))
 
         # A linelist may be in the Gemini lookup directory, or one may
         # have been created in the cwd
@@ -628,7 +637,7 @@ class Telluric(Spect):
 
         # Resample the reference spectrum so it has about twice as many pixels
         # as the data, to avoid too much plotting overhead
-        resampling = max(int(0.5 * atran_spec.size / np.diff(wave_model.domain)[0]), 1)
+        resampling = max(int(0.5 * atran_spec.size / np.diff(domain)[0]), 1)
         refplot_spec = refplot_spec[:, ::resampling]
 
         if linelist is None:
@@ -636,7 +645,7 @@ class Telluric(Spect):
             refplot_spec[1] = 1 - refplot_spec[1]
             linelist_data = make_linelist(refplot_spec,
                                           resolution=resolution,
-                                          num_lines=config['num_atran_lines'])
+                                          num_lines=config.get('num_atran_lines', 50))
             # In L and M bands, the sky spectrum has emission where the ATRAN
             # spectrum has absorption, so keep the inverted version for display.
             # But if we're actually matching absorption features, then we want
@@ -737,7 +746,8 @@ def make_linelist(spectrum, resolution=1000, num_bins=10, num_lines=50):
     # within each of 10 wavelength bins.
     bin_edges = np.linspace(0, flux.size + 1, num_bins + 1)
     best_pixel_peaks = trim_peaks(pixel_peaks, weights, bin_edges,
-                                  nlargest=num_lines // num_bins, sort=True)
+                                  nlargest=(num_lines + num_bins - 1) // num_bins,
+                                  sort=True)
 
     # Pinpoint peak positions, and cull any peaks that couldn't be fit
     # (keep_bad will return location=NaN)

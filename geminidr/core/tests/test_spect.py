@@ -617,6 +617,21 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
     assert warn == warning_given
 
 
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+def test_get_sky_spectrum(path_to_inputs, path_to_refs):
+    # Spectrum of F2 OH-emission sky lines for plotting
+    ad_f2 = astrodata.open(os.path.join(path_to_inputs, 'S20180114S0104_varAdded.fits'))
+    wave_model = am.get_named_submodel([0].wcs.forward_transform, 'WAVE')
+
+    p = F2Longslit([])
+    refplot_data_f2 = p._get_sky_spectrum(wave_mode=wave_model, ext=ad_f2[0])
+    ref_refplot_spec_f2 = np.loadtxt(
+        os.path.join(path_to_refs, "S20180114S0104_refplot_spec.dat"))
+
+    np.testing.assert_allclose(ref_refplot_spec_f2, refplot_data_f2["refplot_spec"], atol=1e-3)
+
+
 def test_resample_spec_table():
     waves_air = np.arange(3500, 7500.001, 100) * u.AA
     waves_vac = air_to_vac(waves_air)
@@ -635,57 +650,6 @@ def test_resample_spec_table():
                for i, bw in enumerate(t['WIDTH'].quantity)])
     np.testing.assert_allclose(t['FLUX'].data, 1.0)
 
-
-@pytest.mark.preprocessed_data
-@pytest.mark.regression
-@pytest.mark.parametrize("filename,model_params",
-                         # GNIRS L-band, sky emission
-                         [('N20100820S0214_varAdded.fits',
-                           {"site": 'mk', "alt": "13825ft", "start_wvl": 3040.96658,
-                            "end_wvl": 3359.0334199999998, "spec_range": 318.06684,
-                            "wv_content": 5.0, "resolution": 1760.0, "cenwave": 3200.0,
-                            "in_vacuo": True, "absorption": False, "nlines": 100}),
-                          # GNIRS J-band, sky absorption in object spectrum
-                          ('N20121221S0199_aperturesFound.fits',
-                            {"site": 'mk', "alt": "13825ft",
-                            "start_wvl": 1057.2100999999998,
-                            "end_wvl": 1108.7898999999998, "spec_range": 51.5798,
-                            "wv_content": 1.0, "resolution": 17520.0,
-                            "cenwave": 1082.9999999999998,
-                            "in_vacuo": True, "absorption": True, "nlines": 50}),
-                         ])
-def test_make_atran_linelist(filename, model_params, change_working_dir,
-                             path_to_inputs, path_to_refs):
-    ad = astrodata.open(os.path.join(path_to_inputs, filename))
-    p = GNIRSLongslit([])
-    linelist, _ = p._make_atran_linelist(ext=ad[0], filename=None,
-                                         model_params=model_params)
-    with change_working_dir(path_to_refs):
-        linelist_fname = filename.split("_")[0] + "_atran_linelist.dat"
-        ref_linelist = np.loadtxt(linelist_fname)
-
-    np.testing.assert_allclose(linelist, ref_linelist, atol=1e-3)
-
-
-@pytest.mark.preprocessed_data
-@pytest.mark.regression
-def test_make_refplot_data(change_working_dir, path_to_inputs, path_to_refs):
-    # F2 OH-emission sky lines
-    ad_f2 = astrodata.open(os.path.join(path_to_inputs, 'S20180114S0104_varAdded.fits'))
-    model_params_f2 = {"site": 'cp', "alt": "8980ft", "start_wvl": 1090.3740000000003,
-                          "end_wvl": 2660.71, "spec_range": 1570.336,
-                           "wv_content": 10.0, "resolution": 350, "cenwave": 1875.5420000000001,
-                           "in_vacuo": True, "absorption": False, "nlines": 50}
-
-    p = F2Longslit([])
-    refplot_data_f2 = p._make_refplot_data(ext=ad_f2[0], model_params=model_params_f2,
-                                    refplot_linelist=LineList(os.path.join(path_to_inputs, "nearIRsky.dat")))
-    with change_working_dir(path_to_refs):
-        ref_refplot_spec_f2 = np.loadtxt("S20180114S0104_refplot_spec.dat")
-        ref_refplot_linelist_f2 = np.loadtxt("S20180114S0104_refplot_linelist.dat")
-
-    np.testing.assert_allclose(ref_refplot_spec_f2, refplot_data_f2["refplot_spec"], atol=1e-3)
-    np.testing.assert_allclose(ref_refplot_linelist_f2, refplot_data_f2["refplot_linelist"], atol=1e-3)
 
 def compare_frames(frame1, frame2):
     """Compare the important stuff of two CoordinateFrame instances"""

@@ -5236,9 +5236,18 @@ class Spect(Resample):
 
         # The wave_model's domain describes the illuminated region
         wave_model_bounds = self._wavelength_model_bounds(wave_model, ext)
-        start_wvl, end_wvl = (np.sort(wave_model(wave_model.domain)) +
+        try:
+            domain = wave_model.domain
+        except AttributeError:
+            for m in wave_model:
+                if hasattr(m, 'domain'):
+                    domain = m.domain
+                    break
+            else:
+                raise ValueError("No domain in wavelength model")
+        start_wvl, end_wvl = (np.sort(wave_model(domain)) +
                               np.asarray(wave_model_bounds['c0']) -
-                              wave_model.c0)
+                              np.mean(wave_model_bounds['c0']))
 
         self.log.stdinfo("Convolving Rousselot et al. (2000) synthetic "
                          f"sky spectrum to R={int(resolution)}")
