@@ -28,46 +28,48 @@ from geminidr.gemini.primitives_gemini import Gemini
 from geminidr.core.primitives_nearIR import NearIR
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
+import matplotlib
+import warnings
+
+from recipe_system.utils.decorators import parameter_override
+
+# ------------------------------------------------------------------------------
+
 from . import parameters_igrins
 
 from .lookups import timestamp_keywords as igrins_stamps
 
 from .json_helper import dict_to_table
 
-from recipe_system.utils.decorators import parameter_override
-# ------------------------------------------------------------------------------
 
-from .procedures.readout_pattern.readout_pattern_helper import (remove_readout_pattern_flat_off,
-                                                                remove_readout_pattern_from_guard)
+from .procedures.readout_pattern.readout_pattern_helper import (
+    remove_readout_pattern_flat_off,
+    # remove_readout_pattern_from_guard,
+    remove_pattern
+)
 
-from .procedures.procedure_dark import (make_guard_n_bg_subtracted_images,
-                                        estimate_amp_wise_noise)
+from .procedures.readout_pattern.readout_pattern_guard import remove_pattern_from_guard as remove_readout_pattern_from_guard
+
+def fix_pattern_using_reference_pixel(d):
+    return remove_readout_pattern_from_guard(d)
+
+
+from .procedures.readout_pattern.util_dark import (make_guard_n_bg_subtracted_images,
+                                                   estimate_amp_wise_noise)
 
 from .procedures.trace_flat import trace_flat_edges, table_to_poly
 from .procedures.iter_order import iter_order
-from .procedures.reference_pixel import fix_pattern_using_reference_pixel
 
-from .procedures.trace_flat import table_to_poly
-from .procedures.iter_order import iter_order
 from .procedures.apertures import Apertures
+
 from .procedures.match_orders import match_orders
-
-import matplotlib
-import warnings
-
-# from .procedures.procedures_register import _get_offset_transform_between_two_specs
-# from .procedures.line_identify_simple import match_lines1_pix
 from .procedures.identified_lines import IdentifiedLines
 from .procedures.echellogram import Echellogram
+from .procedures.offset_transform import get_offset_transform_between_two_specs
 from .procedures.fit_affine import fit_affine_clip
-from .procedures.ecfit import get_ordered_line_data, fit_2dspec  # , check_fit
-
-from .procedures.sky_spec_helper import _get_slices
+from .procedures.ecfit import fit_2dspec  # , check_fit
 
 from .procedures.process_derive_wvlsol import fit_wvlsol, _convert2wvlsol
-
-from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
-
 
 from .procedures.slit_profile import (extract_slit_profile,
                                       _get_norm_profile_ab,
@@ -86,61 +88,6 @@ from .procedures.correct_distortion import get_rectified_2dspec
 from .procedures.shifted_images import ShiftedImages
 from .procedures.badpixel_mask import make_igrins_hotpixel_mask, make_igrins_deadpixel_mask
 
-from .procedures.procedures_register import get_offset_transform_between_two_specs
-
-
-def _get_wavelength_solutions(zdata, affine_tr_matrix,
-                              new_orders):
-    """
-    new_orders : output orders
-
-    convert (x, y) of zdata (where x, y are pixel positions and z
-    is wavelength) with affine transform, then derive a new wavelength
-    solution.
-
-    """
-    affine_tr = matplotlib.transforms.Affine2D()
-    affine_tr.set_matrix(affine_tr_matrix)
-
-    d_x_wvl = {}
-    for order, z in zdata.items():
-        xy_T = affine_tr.transform(np.array([z.x, z.y]).T)
-        x_T = xy_T[:, 0]
-        d_x_wvl[order] = (x_T, z.wvl)
-
-    _xl, _ol, _wl = get_ordered_line_data(d_x_wvl)
-    # _xl : pixel
-    # _ol : order
-    # _wl : wvl * order
-
-    x_domain = [0, 2047]
-    # orders = igrins_orders[band]
-    # y_domain = [orders_band[0]-2, orders_band[-1]+2]
-    y_domain = [new_orders[0], new_orders[-1]]
-    p, m = fit_2dspec(_xl, _ol, _wl, x_degree=4, y_degree=3,
-                      x_domain=x_domain, y_domain=y_domain)
-
-    # if 0:
-    #     import matplotlib.pyplot as plt
-    #     fig = plt.figure(figsize=(12, 7))
-    #     orders_band = sorted(zdata.keys())
-    #     check_fit(fig, xl, yl, zl, p, orders_band, d_x_wvl)
-    #     fig.tight_layout()
-
-    xx = np.arange(2048)
-    wvl_sol = []
-    for o in new_orders:
-        oo = np.empty_like(xx)
-        oo.fill(o)
-        wvl = p(xx, oo) / o
-        wvl_sol.append(list(wvl))
-
-    # if 0:
-    #     json.dump(wvl_sol,
-    #               open("wvl_sol_phase0_%s_%s.json" % \
-    #                    (band, igrins_log.date), "w"))
-
-    return wvl_sol
 
 def get_ref_path(band, kind):
     "returns a path-like object returned by importlib.resources.files"
@@ -690,6 +637,26 @@ def _volume_poly_fit(points, scalar, orders, names):
 
     return p, s
 
+## util function for extractSpectraMulti
+
+def _get_slices(n_slice_one_direction):
+    """
+    given number of slices per direction, return slices for the
+    center, up and down positions.
+    """
+    n_slice = n_slice_one_direction*2 + 1
+    i_center = n_slice_one_direction
+    slit_slice = np.linspace(0., 1., n_slice+1)
+
+    slice_center = (slit_slice[i_center], slit_slice[i_center+1])
+
+    slice_up = [(slit_slice[i_center+i], slit_slice[i_center+i+1])
+                for i in range(1, n_slice_one_direction+1)]
+
+    slice_down = [(slit_slice[i_center-i-1], slit_slice[i_center-i])
+                  for i in range(n_slice_one_direction)]
+
+    return slice_center, slice_up, slice_down
 
 
 @parameter_override

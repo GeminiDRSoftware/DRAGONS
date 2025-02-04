@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
-from ..igrins_pipeline.procedures.readout_pattern_guard import (
+from .readout_pattern_guard import (
     remove_pattern_from_guard)
 
-from ..igrins_pipeline.procedures.readout_pattern_helper import (
+from .readout_pattern_helper import (
     apply_rp_2nd_phase,
     apply_rp_3rd_phase)
 

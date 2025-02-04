@@ -5,8 +5,9 @@ from ..bg_mask_helper import make_background_mask_from_combined
 
 from .readout_pattern import pipes, apply as apply_pipe
 
-# from igrins.procedures.procedure_dark import (apply_rp_2nd_phase,
-#                                               apply_rp_1st_phase)
+# from .readout_pattern_guard import remove_pattern_from_guard as remove_readout_pattern_from_guard
+from .ro_pattern_fft import (get_amp_wise_rfft,
+                             make_model_from_rfft)
 
 
 def apply_rp_1st_phase(d, mask=None, subtract_col_wise_bias_c64=False):
@@ -110,9 +111,6 @@ def make_initial_flat_cube(data_list, mode, bg_y_slice):
 
     return cards, cube3
 
-from .readout_pattern_guard import remove_pattern_from_guard as remove_readout_pattern_from_guard
-from .ro_pattern_fft import (get_amp_wise_rfft,
-                             make_model_from_rfft)
 
 def select_k_to_remove(c, n=2):
     ca = np.abs(c)

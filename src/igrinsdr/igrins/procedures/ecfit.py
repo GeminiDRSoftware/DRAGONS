@@ -5,27 +5,27 @@ igrins_orders["H"] = range(99, 122)
 igrins_orders["K"] = range(72, 94)
 
 
-def get_ordered_line_data(identified_lines, orders=None):
-    """
-    identified_lines : dict of lines with key of orders_i.
-    lines[0] : list of x positions
-    lines[1] : list of wavelengths
-    """
-    x_list, y_list, z_list = [], [], []
-    # x:pixel, y:order, z:wavelength
+# def get_ordered_line_data(identified_lines, orders=None):
+#     """
+#     identified_lines : dict of lines with key of orders_i.
+#     lines[0] : list of x positions
+#     lines[1] : list of wavelengths
+#     """
+#     x_list, y_list, z_list = [], [], []
+#     # x:pixel, y:order, z:wavelength
 
-    if orders is None:
-        o_l = [(i, oh)  for i, oh in identified_lines.items()]
-    else:
-        o_l = zip(orders, identified_lines)
+#     if orders is None:
+#         o_l = [(i, oh)  for i, oh in identified_lines.items()]
+#     else:
+#         o_l = zip(orders, identified_lines)
 
-    for o, oh in sorted(o_l):
+#     for o, oh in sorted(o_l):
 
-        x_list.extend(oh[0])
-        y_list.extend([o] * len(oh[0]))
-        z_list.extend(np.array(oh[1])*o)
+#         x_list.extend(oh[0])
+#         y_list.extend([o] * len(oh[0]))
+#         z_list.extend(np.array(oh[1])*o)
 
-    return map(np.array, [x_list, y_list, z_list])
+#     return map(np.array, [x_list, y_list, z_list])
 
 
 def check_dx1(ax, x, y, dx, gi, mystd):
@@ -210,71 +210,71 @@ def check_fit_simple(fig, xl, yl, zl, p, orders):
     check_dx2(ax2, xl, yl, dx)
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    utdate="20140316"
-    band = "K"
+#     utdate="20140316"
+#     band = "K"
 
-    import json
-    ohlines = {}
-    for b_ in ["H","K"]:
-        ohlines_ = json.load(open("ohlines_%s_%s_r2.json" % (b_,utdate)))
-        ohlines[b_] = dict((int(k), (v["pixel"], v["wavelength"])) \
-                           for (k, v) in ohlines_.items())
+#     import json
+#     ohlines = {}
+#     for b_ in ["H","K"]:
+#         ohlines_ = json.load(open("ohlines_%s_%s_r2.json" % (b_,utdate)))
+#         ohlines[b_] = dict((int(k), (v["pixel"], v["wavelength"])) \
+#                            for (k, v) in ohlines_.items())
 
-    for b_ in ["K"]:
-        hitran_ = json.load(open("../hitran_bootstrap_%s_%s.json" % (b_,utdate)))
-        hitran_ = dict((int(i_), s) for i_,s in hitran_.items())
+#     for b_ in ["K"]:
+#         hitran_ = json.load(open("../hitran_bootstrap_%s_%s.json" % (b_,utdate)))
+#         hitran_ = dict((int(i_), s) for i_,s in hitran_.items())
 
-        for k, o in enumerate(igrins_orders["K"]):
-            if o not in hitran_: continue
-            kk = ohlines[b_][k]
-            v = hitran_[o]
-            kk[0].extend(v["pixel"])
-            kk[1].extend(v["wavelength"])
+#         for k, o in enumerate(igrins_orders["K"]):
+#             if o not in hitran_: continue
+#             kk = ohlines[b_][k]
+#             v = hitran_[o]
+#             kk[0].extend(v["pixel"])
+#             kk[1].extend(v["wavelength"])
 
-        extra_ = json.load(open("../extra_%s_%s.json" % (b_,utdate)))
-        for k, v in extra_.items():
-            kk = ohlines[b_].setdefault(int(k), [[],[]])
-            kk[0].extend(v["pixel"])
-            kk[1].extend(v["wavelength"])
-
-
-    # identified_lines : dict of dict(pixel, wavelenth, weight) for each order.
-    orders = igrins_orders[band]
-    identified_lines = dict((orders[i], s) for i,s in ohlines[band].items())
+#         extra_ = json.load(open("../extra_%s_%s.json" % (b_,utdate)))
+#         for k, v in extra_.items():
+#             kk = ohlines[b_].setdefault(int(k), [[],[]])
+#             kk[0].extend(v["pixel"])
+#             kk[1].extend(v["wavelength"])
 
 
-    xl, yl, zl = get_ordered_line_data(identified_lines)
-    # xl : pixel
-    # yl : order
-    # zl : wvl * order
-
-    x_domain = [0, 2047]
-    y_domain = [orders[0]-2, orders[-1]+2]
-    p, m = fit_2dspec(xl, yl, zl, x_degree=4, y_degree=3)
-
-    import matplotlib.pyplot as plt
-    fig = plt.figure(figsize=(12, 7))
-
-    #id_lines = dict((orders[o], s) for o, s in identified_lines.items())
-    check_fit(fig, xl, yl, zl, p, orders, identified_lines)
-    fig.tight_layout()
+#     # identified_lines : dict of dict(pixel, wavelenth, weight) for each order.
+#     orders = igrins_orders[band]
+#     identified_lines = dict((orders[i], s) for i,s in ohlines[band].items())
 
 
-    postfix = "%s_%s" % (utdate, band)
-    fig.savefig("ecfit_%s_fig1.png" % postfix)
+#     xl, yl, zl = get_ordered_line_data(identified_lines)
+#     # xl : pixel
+#     # yl : order
+#     # zl : wvl * order
 
-    if 0:
-        xx = np.arange(0, 2048)
-        wvl_list = []
-        figure()
-        for o in igrins_orders[band]:
-            oo = np.empty_like(xx)
-            oo.fill(o)
-            wvl = p(xx, oo)/o
-            plot(xx, wvl)
-            wvl_list.append(list(wvl))
-        import json
-        json.dump(wvl_list,
-                  open("wvl_sol_ohlines_%s_%s.json" % (band, utdate),"w"))
+#     x_domain = [0, 2047]
+#     y_domain = [orders[0]-2, orders[-1]+2]
+#     p, m = fit_2dspec(xl, yl, zl, x_degree=4, y_degree=3)
+
+#     import matplotlib.pyplot as plt
+#     fig = plt.figure(figsize=(12, 7))
+
+#     #id_lines = dict((orders[o], s) for o, s in identified_lines.items())
+#     check_fit(fig, xl, yl, zl, p, orders, identified_lines)
+#     fig.tight_layout()
+
+
+#     postfix = "%s_%s" % (utdate, band)
+#     fig.savefig("ecfit_%s_fig1.png" % postfix)
+
+#     if 0:
+#         xx = np.arange(0, 2048)
+#         wvl_list = []
+#         figure()
+#         for o in igrins_orders[band]:
+#             oo = np.empty_like(xx)
+#             oo.fill(o)
+#             wvl = p(xx, oo)/o
+#             plot(xx, wvl)
+#             wvl_list.append(list(wvl))
+#         import json
+#         json.dump(wvl_list,
+#                   open("wvl_sol_ohlines_%s_%s.json" % (band, utdate),"w"))
