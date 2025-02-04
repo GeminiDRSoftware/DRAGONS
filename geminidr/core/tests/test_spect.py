@@ -622,7 +622,7 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
 def test_get_sky_spectrum(path_to_inputs, path_to_refs):
     # Spectrum of F2 OH-emission sky lines for plotting
     ad_f2 = astrodata.open(os.path.join(path_to_inputs, 'S20180114S0104_varAdded.fits'))
-    wave_model = am.get_named_submodel([0].wcs.forward_transform, 'WAVE')
+    wave_model = am.get_named_submodel(ad_f2[0].wcs.forward_transform, 'WAVE')
 
     p = F2Longslit([])
     refplot_data_f2 = p._get_sky_spectrum(wave_mode=wave_model, ext=ad_f2[0])

@@ -233,7 +233,7 @@ class Spect(Resample):
 
                 spectrum = input_data["spectrum"]
                 init_models = input_data["init_models"]
-                domain = init_models[0].meta["domain"]
+                domain = init_models[0].domain
                 peaks, weights = input_data["peaks"], input_data["weights"]
                 sky_lines = input_data["linelist"].wavelengths(
                     in_vacuo=config_dict["in_vacuo"], units='nm')
