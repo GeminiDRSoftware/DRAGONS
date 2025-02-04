@@ -5,7 +5,7 @@ from astropy.table import Table
 
 import math
 
-# NanConvert from from https://stackoverflow.com/questions/28639953/python-json-encoder-convert-nans-to-null-instead
+# NanConvert from https://stackoverflow.com/questions/28639953/python-json-encoder-convert-nans-to-null-instead
 
 def nan2None(obj):
     if isinstance(obj, dict):
