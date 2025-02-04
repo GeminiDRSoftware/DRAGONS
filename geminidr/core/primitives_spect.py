@@ -28,6 +28,7 @@ from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from numpy.f2py.crackfortran import verbose
 from numpy.ma.extras import _ezclump
 from scipy import optimize
 from scipy.signal import find_peaks, correlate
@@ -89,6 +90,10 @@ class Spect(Resample):
         wavelength scale zero point slightly to account for flexure in the
         telescope.
 
+        NB. This only works for longslit data because the wavelength solution
+        is calculated from a vertical/horizontal (depending on orientation)
+        slice and not a curved slice as for GNIRS XD, for example.
+
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
@@ -149,11 +154,12 @@ class Spect(Resample):
         max_shift = params["debug_max_shift"]
         verbose = params["verbose"]
 
-        # Check given shift, if there is one.
-        if shift and abs(shift) > max_shift:
-            raise ValueError("Provided shift is larger than parameter "
-                             f"'debug_max_shift': |{shift:.3g}| > "
-                             f"{max_shift:.3g}")
+        # get_all_input_data() outputs several lines of information
+        # which can be useful but confusing if many files are processed,
+        # so use the verbose parameter to allow users to control it.
+        # loglevel is the level at which the output should be logged,
+        # so higher levels (e.g. stdinfo) print more to the console.
+        loglevel = "stdinfo" if verbose else "fullinfo"
 
         for ad in adinputs:
             log.stdinfo(f"{ad.filename}:")
@@ -211,14 +217,8 @@ class Spect(Resample):
                 else:
                     raise ValueError("Cannot interpret wavelength scale "
                                      f"for {ext.filename}:{ext.id} "
-                                     f"(found '{wave_scale}'")
+                                     f"(found '{wave_scale}')")
 
-                # get_all_input_data() outputs several lines of information
-                # which can be useful but confusing if many files are processed,
-                # so use the verbose parameter to allow users to control it.
-                # loglevel is the level at which the output should be logged,
-                # so higher levels (e.g. stdinfo) print more to the console.
-                loglevel = "stdinfo" if verbose else "fullinfo"
                 try:
                     input_data = wavecal.get_all_input_data(
                         ext, self, config_dict, linelist=None,
@@ -233,16 +233,15 @@ class Spect(Resample):
 
                 spectrum = input_data["spectrum"]
                 init_models = input_data["init_models"]
-                domain = init_models[0].domain
                 peaks, weights = input_data["peaks"], input_data["weights"]
                 sky_lines = input_data["linelist"].wavelengths(
                     in_vacuo=config_dict["in_vacuo"], units='nm')
                 sky_weights = input_data["linelist"].weights
                 if sky_weights is None:
-                    sky_weights = np.ones_like(sky_lines)
                     log.debug("No weights were found for the reference linelist")
 
                 m_init = init_models[0]
+                domain = m_init.domain
                 # Fix all parameters in the model so that they don't change
                 # (only the Shift which will be added next).
                 for p in m_init.param_names:

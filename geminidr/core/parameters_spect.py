@@ -1,5 +1,7 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_spect.py file, in alphabetical order.
+from multiprocessing.managers import Value
+
 from astropy import table, units as u
 from astropy.io import registry
 
@@ -39,6 +41,13 @@ class adjustWavelengthZeroPointConfig(config.Config):
                            optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
                                         float, 5, min=0)
+
+    def validate(self):
+        config.Config.validate(self)
+        if self.shift is not None and abs(self.shift) > self.debug_max_shift:
+            raise ValueError(f"Requested shift ({self.shift}) is larger than "
+                             f"maximum allowed shift ({self.debug_max_shift}).\n"
+                             "Set debug_max_shift to a larger value.")
 
 
 class adjustWCSToReferenceConfig(config.Config):

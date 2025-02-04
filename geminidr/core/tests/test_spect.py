@@ -416,46 +416,29 @@ def test_adjust_wavelength_zero_point_overlarge_shift(in_shift,
         p.adjustWavelengthZeroPoint(shift=in_shift).pop()
 
 
+@pytest.mark.skip("Results derived from incorrect code")
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize('filename,instrument',
-                         [('N20220706S0337', 'GNIRS'),
-                          ('N20110331S0400', 'GNIRS'),
-                          ('N20150511S0123', 'GNIRS'),
-                          ('N20220718S0140', 'GNIRS'),
-                          ('N20130827S0128', 'GNIRS'),
-                          #('S20140610S0077', 'F2'),
-                          #('S20210430S0138', 'F2'),
-                          #('S20150629S0230', 'F2'),
-                          #('S20210709S0035', 'F2'),
-                          #('S20170215S0111', 'F2'),
-                          #('S20180125S0028', 'F2'),
-                          ('N20050918S0135', 'NIRI'),
-                          ('N20050627S0040', 'NIRI'),
-                          ('N20070615S0118', 'NIRI'),
-                          ('N20061114S0193', 'NIRI'),
+@pytest.mark.parametrize('filename,result',
+                         [('N20220706S0337', 0.0005),
+                          ('N20110331S0400', 0.1696875),
+                          ('N20150511S0123', -0.0273750),
+                          ('N20220718S0140', 2.083875),
+                          ('N20130827S0128', -3.2903125),
+                          #('S20140610S0077', -1.755625),
+                          #('S20210430S0138', 0.2556250),
+                          #('S20150629S0230', 0.3927500),
+                          #('S20210709S0035', 0.3030625),
+                          #('S20170215S0111', 0.0551250),
+                          #('S20180125S0028', -0.046375),
+                          ('N20050918S0135', 0.6130625),
+                          ('N20050627S0040', -0.059625),
+                          ('N20070615S0118', -0.029875),
+                          ('N20061114S0193', 0.1915000),
                           ])
-def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
+def test_adjust_wavelength_zero_point_auto_shift(filename, result,
                                                  change_working_dir,
                                                  path_to_inputs):
-    # Dictionary of shift values (in pixels) for each file.
-    results = {'N20220706S0337': 0.0005, # GNIRS 111/mm 0.10" LongBlue
-               'N20110331S0400': 0.1696875,  # GNIRS 111/mm 0.30" ShortBlue
-               'N20150511S0123': -0.0273750, # GNIRS 32/mm  0.45" ShortBlue
-               'N20220718S0140': 2.083875,   # GNIRS 32/mm  0.10" LongBlue
-               'N20130827S0128': -3.2903125, # GNIRS 10/mm  0.10" LongBlue
-               'S20140610S0077': -1.755625,  # F2    R3K 1pix-slit f/16
-               'S20210430S0138': 0.2556250,  # F2    R3K 2pix-slit f/16
-               'S20150629S0230': 0.3927500,  # F2    JH  3pix-slit f/16
-               'S20210709S0035': 0.3030625,  # F2    JH  4pix-slit f/16
-               'S20170215S0111': 0.0551250,  # F2    HK  6pix-slit f/16
-               'S20180125S0028': -0.046375,  # F2    JH  8pix-slit f/16
-               'N20050918S0135': 0.6130625,  # NIRI  Hgrism f6-6pix
-               'N20050627S0040': -0.059625,  # NIRI  Hgrism f6-6pix
-               'N20070615S0118': -0.029875,  # NIRI  Jgrism f6-6pix
-               'N20061114S0193': 0.1915000,  # NIRI  Kgrism f6-2pix
-               }
-
     classes_dict = {'GNIRS': GNIRSLongslit,
                     'F2': F2Longslit,
                     'NIRI': NIRILongslit}
@@ -464,14 +447,12 @@ def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
     centers = {'N20130827S0128': 800,
                'N20220718S0140': 300,
                'S20140610S0077': 600}
-    try:
-        center = centers[filename]
-    except KeyError:
-        center = None
+    center = centers.get(filename)
 
     with change_working_dir(path_to_inputs):
         ad = astrodata.open(filename + '_wavelengthSolutionAttached.fits')
 
+    instrument = ad.instrument()
     p = classes_dict[instrument]([ad])
     ad_out = p.adjustWavelengthZeroPoint(center=center, shift=None).pop()
     transform = ad_out[0].wcs.get_transform('pixels',
@@ -479,7 +460,37 @@ def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
     param = 'offset_0' if instrument == 'NIRI' else 'offset_1'
     shift = getattr(transform, param)
 
-    assert shift == pytest.approx(results[filename], abs=0.001)
+    assert shift == pytest.approx(result, abs=0.001)
+
+
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+@pytest.mark.parametrize('filename,center,shift',
+                         [('N20220706S0337', 300, 2),
+                         ])
+def test_adjust_wavelength_zero_point_controlled(filename, center, shift,
+                                                 path_to_inputs):
+    """
+    Artificially shift a spectrogram along the dispersion axis and check
+    that the shift is recovered by adjustWavelengthZeroPoint(). This assumes
+    that the wavelength solution is correct and there is no significant
+    flexure to within the tolerance (0.1 pixels).
+    """
+    classes_dict = {'GNIRS': GNIRSLongslit,
+                    'F2': F2Longslit,
+                    'NIRI': NIRILongslit}
+
+    ad = astrodata.open(os.path.join(path_to_inputs,
+                                     filename + '_wavelengthSolutionAttached.fits'))
+    p = GNIRSLongslit([ad])
+
+    dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
+    ad[0].data = np.roll(ad[0].data, -shift, axis=dispaxis)
+    ad_out = p.adjustWavelengthZeroPoint(center=center, shift=None).pop()
+
+    m_flex = ad_out[0].wcs.get_transform('pixels', 'wavelength_scale_adjusted')
+    measured_shift = getattr(m_flex, f'offset_{1 - dispaxis}')
+    assert measured_shift == pytest.approx(shift, abs=0.1)
 
 
 @pytest.mark.preprocessed_data
