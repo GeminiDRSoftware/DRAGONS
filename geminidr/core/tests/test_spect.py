@@ -636,7 +636,7 @@ def test_get_sky_spectrum(path_to_inputs, path_to_refs):
     wave_model = am.get_named_submodel(ad_f2[0].wcs.forward_transform, 'WAVE')
 
     p = F2Longslit([])
-    refplot_data_f2 = p._get_sky_spectrum(wave_mode=wave_model, ext=ad_f2[0])
+    refplot_data_f2 = p._get_sky_spectrum(wave_model=wave_model, ext=ad_f2[0])
     ref_refplot_spec_f2 = np.loadtxt(
         os.path.join(path_to_refs, "S20180114S0104_refplot_spec.dat"))
 
