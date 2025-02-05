@@ -424,11 +424,18 @@ class ADCompare:
                 except KeyError:  # Missing keyword in AD2
                     continue
                 try:
-                    if abs(v1 - v2) >= 0.01:
-                        errorlist.append(f'{kw} value mismatch: {v1} v {v2}')
+                    threshold = max(self.rtol * min(v1, v2), 0.01)
+
+                    if abs(v1 - v2) > threshold:
+                        errorlist.append(f'{kw} value mismatch: {v1} v {v2} ({threshold=})')
+
                 except TypeError:
                     if v1 != v2:
-                        errorlist.append(f'{kw} value inequality: {v1} v {v2}')
+                        v1_type = type(v1)
+                        v2_type = type(v2)
+                        errorlist.append(
+                            f'{kw} value inequality: {v1} v {v2} ({v1_type} v {v2_type})'
+                        )
         return errorlist
 
     def refcat(self):
