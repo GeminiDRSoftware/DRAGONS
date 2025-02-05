@@ -28,7 +28,7 @@ def reduceScience(p):
     p.skyCorrect()
     p.distortionCorrect()
     p.adjustWCSToReference()
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame(conserve=True)
     # p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()

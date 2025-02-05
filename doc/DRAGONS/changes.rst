@@ -6,7 +6,7 @@
 Change Logs
 ***********
 
-4.0.0
+4.0.0 - In DEVELOPMENT
 =====
 
 This release includes new support for longslit spectroscopic data from the
@@ -31,6 +31,22 @@ Interface Modifications
   "interpolant", as described above.
 * Rename the "threshold" parameter in ``transferObjectMask``
   to "dq_threshold", in line with other primitives.
+
+3.2.3
+=====
+
+Dependency Updates
+------------------
+**gempy.library**
+
+* Ensure compatibility with SciPy v1.15 (matching.py)
+
+Improvements
+------------
+**gempy**
+
+* Improve interrupt handling and allow additional loggers to enhance the
+  operation of GOATS.
 
 
 3.2.2

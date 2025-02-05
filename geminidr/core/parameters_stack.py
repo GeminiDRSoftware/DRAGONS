@@ -81,6 +81,7 @@ class stackFlatsConfig(stackFramesConfig):
 
 class stackDarksConfig(stackFramesConfig):
     def setDefaults(self):
+        self.reject_method = 'varclip'
         del self.zero
         del self.scale
 
