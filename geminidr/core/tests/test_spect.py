@@ -632,7 +632,12 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
 @pytest.mark.regression
 def test_get_sky_spectrum(path_to_inputs, path_to_refs):
     # Spectrum of F2 OH-emission sky lines for plotting
-    ad_f2 = astrodata.open(os.path.join(path_to_inputs, 'S20180114S0104_varAdded.fits'))
+    # We use the _wavelengthSolutionDetermined file because thw WAVE model
+    # is a Chebyshev1D, as required. (In normal reduction, a Cheb1D will be
+    # provided bto _get_sky_spectrum() y determineWavelengthSolution,
+    # regardless of the state of the input file.)
+    ad_f2 = astrodata.open(os.path.join(
+        path_to_inputs, 'S20180114S0104_wavelengthSolutionDetermined.fits'))
     wave_model = am.get_named_submodel(ad_f2[0].wcs.forward_transform, 'WAVE')
 
     p = F2Longslit([])
