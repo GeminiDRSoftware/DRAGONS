@@ -82,6 +82,21 @@ class AstroDataMixin:
                 message = f"Unexpected problem while enforcing {expected_dtype=}"
                 raise Exception(message) from err
 
+            # Need to copy the object, in case the operand's data type is
+            # expected to be constant.
+            operand = deepcopy(operand)
+
+            operand.data = operand.data.astype(expected_dtype)
+
+        except TypeError as err:
+            if "argument must be" not in str(err):
+                message = f"Unexpected problem while enforcing {expected_dtype=}"
+                raise Exception(message) from err
+
+            # Need to copy the object, in case the operand's data type is
+            # expected to be constant.
+            operand = deepcopy(operand)
+
             operand.data = operand.data.astype(expected_dtype)
 
         return super()._arithmetic(
