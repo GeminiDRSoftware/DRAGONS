@@ -5,10 +5,9 @@
 # ------------------------------------------------------------------------------
 import datetime
 from functools import partial
-from itertools import product as cart_product
 import warnings
 
-from astropy.stats import sigma_clip, sigma_clipped_stats
+from astropy.stats import sigma_clipped_stats
 import numpy as np
 
 from gempy.gemini import gemini_tools as gt
@@ -18,8 +17,6 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from . import parameters_nearIR, Bookkeeping
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
-
-from scipy.signal import savgol_filter
 
 from scipy.fft import rfft, rfftfreq, irfft
 from copy import deepcopy
@@ -290,8 +287,11 @@ class NearIR(Bookkeeping):
             if arr1.mask.all() or arr2.mask.all():
                 return 0  # all pixels are masked
 
-            meds_1 = clipper(arr1)[1]  # 2nd tuple item is median
-            meds_2 = clipper(arr2)[1]  # 2nd tuple item is median
+            # Suppress "all-NaN slice" warnings when a column is masked
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                meds_1 = clipper(arr1)[1]  # 2nd tuple item is median
+                meds_2 = clipper(arr2)[1]  # 2nd tuple item is median
             offsets = meds_1 - meds_2
             return np.median(offsets[np.isfinite(offsets)])  # to be added to arr2
 
