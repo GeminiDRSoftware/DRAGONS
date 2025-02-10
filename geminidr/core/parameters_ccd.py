@@ -21,6 +21,9 @@ class subtractOverscanConfig(config.core_1Dfitting_config):
                               optional=True)
     nbiascontam = config.RangeField("Number of columns to exclude from averaging",
                                     int, 0, min=0)
+    bias_type = config.ChoiceField("Overscan type", str,
+                                   allowed={"serial":"Serial", "parallel":"Parallel"},
+                                   optional=True)
 
     def validate(self):
         config.Config.validate(self)

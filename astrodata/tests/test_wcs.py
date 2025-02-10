@@ -147,7 +147,7 @@ def test_remove_unused_world_axis(F2_IMAGE):
     assert_allclose(new_result, result)
     adwcs.remove_unused_world_axis(ad[0])
     new_result = ad[0].wcs(900, 800)
-    assert_allclose(new_result, result[:2])
+    assert_allclose(new_result, result[-2:])
     for frame in ad[0].wcs.available_frames:
         assert getattr(ad[0].wcs, frame).naxes == 2
 

@@ -638,7 +638,11 @@ def make_fitswcs_transform(input):
     other_models = fitswcs_other(wcs_info, other=other)
     all_models = other_models
     if sky_model:
+        i = -1
+        for i, m in enumerate(all_models):
+            m.meta['output_axes'] = [i]
         all_models.append(sky_model)
+        sky_model.meta['output_axes'] = [i+1, i+2]
 
     # Now arrange the models so the inputs and outputs are in the right places
     all_models.sort(key=lambda m: m.meta['output_axes'][0])
@@ -834,8 +838,9 @@ def remove_axis_from_frame(frame, axis):
         elif axis in f.axes_order:
             new_frames.append(remove_axis_from_frame(f, axis))
         else:
-            new_frames.append(deepcopy(f))
-            f._axes_order = tuple(x if x<axis else x-1 for x in f.axes_order)
+            nf = deepcopy(f)
+            nf._axes_order = tuple(x if x<axis else x-1 for x in f.axes_order)
+            new_frames.append(nf)
     if len(new_frames) == 1:
         ret_frame = deepcopy(new_frames[0])
         ret_frame.name = frame.name
@@ -947,9 +952,11 @@ def remove_unused_world_axis(ext):
     ext: single-slice AstroData object
     """
     ndim = len(ext.shape)
+    if ext.wcs is None:
+        raise ValueError("The input has no WCS")
     affine = calculate_affine_matrices(ext.wcs.forward_transform, ext.shape)
     # Check whether there's a single output that isn't affected by the input
-    removable_axes = np.all(affine.matrix[:, ndim-1:] == 0, axis=1)[::-1]  # xyz order
+    removable_axes = np.all(affine.matrix == 0, axis=1)[::-1]  # xyz order
     if removable_axes.sum() == 1:
         output_axis = removable_axes.argmax()
     else:
@@ -959,11 +966,11 @@ def remove_unused_world_axis(ext):
     new_pipeline = []
     for step in reversed(ext.wcs.pipeline):
         frame, transform = step.frame, step.transform
-        if axis < frame.naxes:
-            frame = remove_axis_from_frame(frame, axis)
         if transform is not None:
             if axis < transform.n_outputs:
                 transform, axis = remove_axis_from_model(transform, axis)
+        if axis is not None and axis < frame.naxes:
+            frame = remove_axis_from_frame(frame, axis)
         new_pipeline = [(frame, transform)] + new_pipeline
 
     if axis not in (ndim, None):

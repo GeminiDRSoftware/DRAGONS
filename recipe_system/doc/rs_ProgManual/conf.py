@@ -36,7 +36,7 @@ else:
 # -- Project information -----------------------------------------------------
 
 project = "DRAGONS - Recipe System Programmer's Manual"
-copyright = '2024, Association of Universities for Research in Astronomy'
+copyright = '2025, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The version info for the project you're documenting, acts as replacement for

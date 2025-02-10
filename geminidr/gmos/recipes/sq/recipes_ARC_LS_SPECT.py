@@ -15,7 +15,6 @@ def makeProcessedArc(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.mosaicDetectors()
-    p.makeIRAFCompatible()
     p.determineWavelengthSolution()
     p.determineDistortion()
     p.storeProcessedArc()

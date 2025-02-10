@@ -14,6 +14,7 @@ def reduceScience(p):
     p : :class:`geminidr.gnirs.primitives_gnirs_longslit.GNIRSLongslit`
 
     """
+    # todo: [Chris] I suspect scaleCountsToReference() could go back in but presumably hasn't been looked at whether it does something weird. skyCorrectFromSlit() should probably work OK, but it might also be better if it's before adjustWCSToReference(), so any residual sky is removed before that resampling takes place.
     p.prepare()
     p.addDQ()
     # p.nonlinearityCorrect() # non-linearity correction tbd
@@ -29,7 +30,7 @@ def reduceScience(p):
     p.cleanReadout()
     p.distortionCorrect()
     p.adjustWCSToReference()
-    p.resampleToCommonFrame()
+    p.resampleToCommonFrame(conserve=True)
     # p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
@@ -56,7 +57,6 @@ def  makeWavecalFromSkyEmission(p):
     p.addVAR(poisson_noise=True, read_noise=True)
     p.flatCorrect()
     p.stackFrames()
-    p.makeIRAFCompatible()
     p.determineWavelengthSolution()
     p.determineDistortion()
     p.storeProcessedArc(force=True)
