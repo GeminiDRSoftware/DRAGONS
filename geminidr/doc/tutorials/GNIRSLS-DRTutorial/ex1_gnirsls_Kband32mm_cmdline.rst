@@ -310,14 +310,6 @@ To run the reduction with all the interactive tools activated, set the
       to support this explanation.
 
 
-::
-
-    reduce @sci.lis -p interactive=True distortionCorrect:order=1 traceApertures:niter=3
-
-At the ``findApertures`` step, you will notice that it finds 4 sources.
-Clearly, only the central one is real.  In interactive mode, just delete the
-extra apertures.  You can leave them there too, they will not hurt anything.
-
 At the ``traceApertures`` step, the fit one gets automatically for this source
 is perfectly reasonable, well
 within the envelope of the source aperture.  To improve the fit, one could
@@ -325,6 +317,11 @@ activate sigma clipping and increase to number of iteration to 3 to get a
 straighter fit that ignores the deviant points at the edges of the spectrum.
 This can be done manually with the interactive tool (try it), or on the command
 line by adding ``-p traceApertures:niter=3`` to the ``reduce`` call.
+
+::
+
+    reduce @sci.lis -p interactive=True traceApertures:niter=3
+
 
 .. image:: _graphics/gnirsls_Kband32mm_2d.png
    :width: 400
