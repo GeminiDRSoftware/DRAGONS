@@ -54,6 +54,24 @@ pipeline {
             }
         }
 
+        stage('Webhook config') {
+            when {
+                 triggeredBy "SCMTrigger"
+            }
+            steps {
+                echo "Webhook trigger"
+            }
+        }
+
+        stage('Timer config') {
+            when {
+                 triggeredBy "TimerTrigger"
+            }
+            steps {
+                echo "Timer trigger"
+            }
+        }
+
         stage('Pre-install') {
             agent { label "conda" }
             environment {
