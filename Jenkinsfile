@@ -46,36 +46,39 @@ pipeline {
 
     stages {
 
+        environment {
+            VARIANT = "-dev"
+        }
+
         stage ("Prepare"){
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
                 // sendNotifications 'STARTED'
-                echo getCronParams()
             }
         }
 
-        // stage('Pre-install') {
-        //     agent { label "conda" }
-        //     environment {
-        //         TMPDIR = "${env.WORKSPACE}/.tmp/conda/"
-        //     }
-        //     steps {
-        //         echo "Update the Conda base install for all on-line nodes"
-        //         checkout scm
-        //         sh '.jenkins/scripts/setup_agent.sh'
-        //         echo "Create a trial Python 3.10 env, to cache new packages"
-        //         sh 'tox -e py310-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
-        //     }
-        //     post {
-        //         always {
-        //             echo "Deleting conda temp workspace ${env.WORKSPACE}"
-        //             cleanWs()
-        //             dir("${env.WORKSPACE}@tmp") {
-        //               deleteDir()
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Pre-install') {
+            agent { label "conda" }
+            environment {
+                TMPDIR = "${env.WORKSPACE}/.tmp/conda/"
+            }
+            steps {
+                echo "Update the Conda base install for all on-line nodes"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Create a trial Python 3.10 env, to cache new packages"
+                sh 'tox -e py310-noop${VARIANT} -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
+            }
+            post {
+                always {
+                    echo "Deleting conda temp workspace ${env.WORKSPACE}"
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                      deleteDir()
+                    }
+                }
+            }
+        }
 
         // stage('Quicker tests') {
         //     parallel {
@@ -528,6 +531,7 @@ pipeline {
 def getCronParams() {
     if (env.BRANCH_NAME == 'upstream_testing') {
         return "H H(2-7) * * 6"  // run every Saturday morning
+        // return "55 18 * * 2"  // run in a few minutes' time
     } else {
         return "0 0 31 2 *"  // only run on the 31 Feb. (there's no "never")
     }
