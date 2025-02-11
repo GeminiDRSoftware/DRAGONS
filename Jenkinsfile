@@ -42,13 +42,10 @@ pipeline {
     environment {
         MPLBACKEND = "agg"
         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
+        VARIANT = "-dev"
     }
 
     stages {
-
-        environment {
-            VARIANT = "-dev"
-        }
 
         stage ("Prepare"){
             steps{
