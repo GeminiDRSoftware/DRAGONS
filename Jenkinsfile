@@ -27,10 +27,10 @@ pipeline {
 
     agent any
 
-    // triggers {
-    //    //Polls Source Code Manager every 15 mins
-    //    pollSCM('*/15 * * * *')
-    // }
+    triggers {
+        // Timed builds occur in addition to Webhook triggers
+        cron(getCronParams())
+    }
 
     options {
         skipDefaultCheckout(true)
@@ -50,8 +50,7 @@ pipeline {
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
                 // sendNotifications 'STARTED'
-                echo env.BRANCH_NAME
-                echo getCronParams(env.BRANCH_NAME)
+                echo getCronParams()
             }
         }
 
@@ -526,12 +525,10 @@ pipeline {
     }
 }
 
-def getCronParams(String name) {
-    echo "NAME"
-    echo name
+def getCronParams() {
     if (env.BRANCH_NAME == 'upstream_testing') {
-        return "YES branch"
+        return "H H(2-7) * * 6"  // run every Saturday morning
     } else {
-        return "NO branch"
+        return "0 0 31 2 *"  // only run on the 31 Feb. (there's no "never")
     }
 }
