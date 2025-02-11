@@ -527,7 +527,7 @@ pipeline {
 
 def getCronParams() {
     if (env.BRANCH_NAME == 'upstream_testing') {
-        return "H H(2-7) * * 6"  // run every Saturday morning
+        return "25 18 * * 2"  // run every Saturday morning
     } else {
         return "0 0 31 2 *"  // only run on the 31 Feb. (there's no "never")
     }
