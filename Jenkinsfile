@@ -58,7 +58,10 @@ pipeline {
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
                 // sendNotifications 'STARTED'
-                echo "[${params.VARIANT}]"
+                script {
+                    env.VARIANT = ${params.VARIANT}
+                }
+                echo "[${params.VARIANT}][${env.VARIANT}]"
             }
         }
 
@@ -72,8 +75,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Create a trial Python 3.10 env, to cache new packages"
-                echo "tox -e py310-noop${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} \${TOX_ARGS}"
-                sh "tox -e py310-noop${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} \${TOX_ARGS}"
+                sh 'tox -e py310-noop${VARIANT} -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
             }
             post {
                 always {
@@ -537,7 +539,7 @@ pipeline {
 def getCronParams() {
     if (env.BRANCH_NAME == 'upstream_testing') {
         // return "H H(2-7) * * 6 %VARIANT=-dev"  // every Saturday morning
-        return "33 19 * * * %VARIANT=-dev"  // in a few minutes' time
+        return "51 19 * * * %VARIANT=-dev"  // in a few minutes' time
     } else {
         return "0 0 31 2 *"  // only on 31 Feb. (there's no "never")
     }
