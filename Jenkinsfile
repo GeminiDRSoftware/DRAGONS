@@ -58,7 +58,7 @@ pipeline {
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
                 // sendNotifications 'STARTED'
-                echo "${params.VARIANT}"
+                echo "[${params.VARIANT}]"
             }
         }
 
@@ -72,7 +72,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Create a trial Python 3.10 env, to cache new packages"
-                sh 'tox -e py310-noop${params.VARIANT} -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
+                sh "tox -e py310-noop${params.VARIANT} -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}"
             }
             post {
                 always {
