@@ -59,7 +59,7 @@ pipeline {
                 echo "Step would notify STARTED when dragons_ci is available"
                 // sendNotifications 'STARTED'
                 script {
-                    env.VARIANT = ${params.VARIANT}
+                    env.VARIANT = params.VARIANT
                 }
                 echo "[${params.VARIANT}][${env.VARIANT}]"
             }
@@ -539,7 +539,7 @@ pipeline {
 def getCronParams() {
     if (env.BRANCH_NAME == 'upstream_testing') {
         // return "H H(2-7) * * 6 %VARIANT=-dev"  // every Saturday morning
-        return "51 19 * * * %VARIANT=-dev"  // in a few minutes' time
+        return "54 19 * * * %VARIANT=-dev"  // in a few minutes' time
     } else {
         return "0 0 31 2 *"  // only on 31 Feb. (there's no "never")
     }
