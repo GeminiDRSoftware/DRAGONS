@@ -11,9 +11,9 @@ Example 3 - L-band Longslit Point Source (10 l/mm grating)
 In this example, we will reduce the GNIRS L-band longslit observation
 of a Be-star.
 
-This observation uses the 10 l/mm grating, the longred camera, a 0.1 arcsec
+This observation uses the 10 l/mm grating, the long-red camera, a 0.1 arcsec
 slit, and is centered at 3.7 |um|.  The dither pattern is a standard
-ABBA.
+ABBA sequence.
 
 .. toctree::
    :maxdepth: 1

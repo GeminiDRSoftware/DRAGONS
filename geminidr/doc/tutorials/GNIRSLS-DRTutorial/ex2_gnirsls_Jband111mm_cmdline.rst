@@ -2,7 +2,7 @@
 
 .. include:: symbols.txt
 
-.. _gnirs_Jband111mm_cmdline:
+.. _gnirsls_Jband111mm_cmdline:
 
 **************************************************************************
 Example 2 - J-band Longslit Point Source - Using the "reduce" command line
@@ -175,8 +175,7 @@ you run ``normalizeFlat`` in interactive mode you can clearly see the two
 levels.
 
 In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, order=30
-worked well.
+two sets of points, with a symmetrical residual fit.
 
 Note that you are not required to run in interactive mode, but you might want
 to if flat fielding is critical to your program.
@@ -185,9 +184,9 @@ to if flat fielding is critical to your program.
 
     reduce @flats.lis -p interactive=True
 
-In this case, we find that sigma clipping with 1 iteration and
-grow=2 rejects the outliers at the left end of the flat.  The fit
-leads to residuals that are symmetrical.
+In this case, order=20, the default, worked well and we find that sigma
+clipping with 1 iteration and grow=2 rejects the outliers at the left end
+of the flat.  The fit leads to residuals that are symmetrical.
 
 .. image:: _graphics/gnirsls_Jband111_evenoddflat.png
    :width: 600
@@ -203,8 +202,9 @@ topic.  The quality of the results and what to use depend greatly on the
 wavelength regime and the grating.
 
 Our configuration in this example is J-band with a central wavelength of
-1.22 |um|, using the 111 l/mm grating. Arcs are available, however there
-might be cases where there are too few lines to get a good solution.
+1.22 |um|, using the 111 l/mm grating. Arcs are available, however, depending
+on the central wavelength setting, there might be cases where there are too
+few lines or the coverage is not adequate to get a good solution.
 
 In our current case, the numbers of arcs lines and sky lines are similar.
 Either solution could work.  We will show the result of both.  It is up to
@@ -227,20 +227,23 @@ an arc lamp.
 
 Here, increasing the order to 4 helps to get a tighter fit.
 
-.. image:: _graphics/gnirsls_Jband111mm_arc.png
-   :width: 600
-   :alt: Arc line identifications and fit
+.. image:: _graphics/gnirsls_Jband111mm_arcID.png
+    :width: 600
+    :alt: Arc line identifications
 
-.. todo:: redo the screenshot and separate the line plot and the fit to
-        avoid having the buttons in the way.
+.. image:: _graphics/gnirsls_Jband111mm_arcfit.png
+   :width: 600
+   :alt: Arc line fit
+
 
 Using the sky lines
 -------------------
 The spectrum has a number of OH and O\ :sub:`2` sky lines that can be used to
 create a wavelength solution.  The calibration can be done on a single frame
 or, in case of multiple input frames, the frames will be stacked.  It is
-recommended to use only one frame for a more precised wavelength solution,
-unless multiple frames are needed to increase the signal-to-noise ratio.
+recommended to use only one frame for a more precise wavelength solution,
+unless multiple frames are needed to increase the signal-to-noise ratio.  Here
+we will use all the frames in the ``sci.lis`` list.
 
 Wavelength calibration from sky lines is better done in interactive mode
 despite our efforts to automate the process.
@@ -252,21 +255,8 @@ invoke the ``makeWavecalFromSkyEmission`` recipe.
 
     reduce @sci.lis -r makeWavecalFromSkyEmission -p interactive=True
 
-In this case, you will initially get no fit at all in the interactive window.
-This is because the
-sky lines are relatively weak.
-
-.. image:: _graphics/gnirsls_Jband111_noskyfit.png
-   :width: 600
-   :alt: No sky lines found, no fit
-
-On the left control panel, set the ``Minimum SNR`` to 5 (down from the default
-of 10).  Then click the "Reconstruct points" button.  Sky lines will now be
-identified and you will get a fit.  Use the sky line model at the top as a
-reference to ensure that the fit is correct.  You can also add some of the
-weaker lines manually, and/or change the sigma clipping parameters.
-For example, lowering the high and low sigma clipping to 2 will help reject
-some of the weak blended lines that are more inaccurate.
+In this case, using all the frames, we get a good signal to noise and an
+automatic fit.  If you wanted, you could identify more sky lines manually.
 
 .. image:: _graphics/gnirsls_Jband111_skylineref.png
    :width: 600
@@ -275,6 +265,14 @@ some of the weak blended lines that are more inaccurate.
 .. image:: _graphics/gnirsls_Jband111_skyfit.png
    :width: 600
    :alt: Sky lines fit
+
+.. note::  If the sky lines were too weak and not fit were found, a possible
+    solution is to lower the minimum SNR to 5 (down from the default of 10).
+    This setting is in the left control panel.  When done, click the the
+    "Reconstruct points" button.
+
+.. note:: Lowering the high and low sigma clipping to 2 will help reject some
+    of the weak blended lines that are more inaccurate.
 
 Each case will be slightly different.   Whether you decide to use the solution
 from the arc lamp or the sky lines is up to you.
@@ -297,13 +295,9 @@ this step will NOT make any adjustment.  We found that in general, the
 adjustment is so small as being in the noise.  If you wish to make an
 adjustment, or try it out, see :ref:`wavzero` to learn how.
 
-For this dataset, the automatic wavelength zero point algorithm would find a
-shift of no more than 0.1333 pixels (-0.01479 nm), so not really significant.
-This is typical and why the default is set to do nothing.
-
 This is what one raw image looks like.
 
-.. image:: _graphics/gnirsls_Jband111mm_raw.png
+.. image:: _graphics/gnirsls_Jband111nm_raw.png
    :width: 400
    :alt: raw science image
 
@@ -312,7 +306,7 @@ to call |reduce| on the science frames to get an extracted spectrum.
 
 .. note::  If you have derived a wavelength solution from both the arcs and
      the sky lines, as we've done here, you will have two solutions in the
-     calibration manager database.  My default, the system will pick the sky
+     calibration manager database.  By default, the system will pick the sky
      line solution because the solution is closer in time (same time, in fact)
      as the science observations.  If you wish to use the lamp solution, either
      delete the sky line solution from the database
@@ -324,23 +318,39 @@ to call |reduce| on the science frames to get an extracted spectrum.
 
 ::
 
-    reduce @sci.lis -p findAperture:max_apertures=1 traceApertures:niter=3 distortionCorrect:order=1
+    reduce @sci.lis
 
-.. todo:: funky shape to the spectrum.  Somewhat visible in the raw data
-        however.
+The 2D spectrum looks like this:
 
-.. todo:: way too many junk apertures.
+::
 
-.. todo:: trace again benefits from sigma clipping with 3 iterations.
+    reduce -r display N20180201S0052_2D.fits
+
+.. image:: _graphics/gnirsls_Jband111mm_2D.png
+   :width: 400
+   :alt: reduced 2D spectrum
+
+The 1D spectrum looks like this:
+
+::
+
+    dgsplot N20180201S0052_1D.fits 1
+
+.. image:: _graphics/gnirsls_Jband111mm_1D.png
+   :width: 400
+   :alt: raw science image
 
 
 
-
-
-From Olesja about the using stack vs single for sky line wavecal, and how to
-set the sigma based on SNR and blended lines.
-
-I didn’t look into the amount of shift between the lines during sequences. My assumption was that if the PIs care about the precise wavecal, they would try to use a single frame (if the SNR allows), and if they don’t care or if the SNR is low, they would use a stack. (edited)
-
-Also, I wouldn’t think of the rejected lines in both of the above plots as “good”. Most are barely above the noise level, and the others are blends, which in my book is a definition of a “bad” line (especially when there are enough of unblended strong lines to choose from).
-I actually tried to filter out this kind of lines on purpose by setting the default lsigma and hsigma for wavecal from skylines to “2” . If you set those back to “3" it maybe that most of these lines wouldn’t get rejected. (edited)
+.. From Olesja about the using stack vs single for sky line wavecal,
+   and how to set the sigma based on SNR and blended lines.  I didn’t look
+   into the amount of shift between the lines during sequences. My assumption
+   was that if the PIs care about the precise wavecal, they would try to use a
+   single frame (if the SNR allows), and if they don’t care or if the SNR is
+   low, they would use a stack. Also, I wouldn’t think of the rejected lines
+   in both of the above plots as “good”. Most are barely above the noise level,
+   and the others are blends, which in my book is a definition of a “bad” line
+   (especially when there are enough of unblended strong lines to choose from).
+   I actually tried to filter out this kind of lines on purpose by setting the
+   default lsigma and hsigma for wavecal from skylines to “2” . If you set
+   those back to “3" it maybe that most of these lines wouldn’t get rejected. (edited)

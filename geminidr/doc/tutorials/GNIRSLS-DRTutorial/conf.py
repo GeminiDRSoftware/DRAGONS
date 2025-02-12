@@ -25,7 +25,7 @@ today = 'May 2025'
 
 extensions = ['sphinx.ext.intersphinx',
     'sphinx.ext.todo',
-    'sphinx.ext.imgmath'
+    'sphinx.ext.imgmath',
 ]
 
 templates_path = ['_templates']

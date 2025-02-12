@@ -9,13 +9,12 @@ Example 3 - L-band Longslit Point Source - Using the "reduce" command line
 **************************************************************************
 
 We will reduce the GNIRS L-band longslit observation of "HD41335", a Be-star,
-using the "|reduce|" command that
-is operated directly from the unix shell.  Just open a terminal and load
-the DRAGONS conda environment to get started.
+using the "|reduce|" command that is operated directly from the unix shell.
+Just open a terminal and load the DRAGONS conda environment to get started.
 
-This observation uses the 10 l/mm grating, the longred camera, a 0.1 arcsec
+This observation uses the 10 l/mm grating, the long-red camera, a 0.1 arcsec
 slit, and is centered at 3.7 |um|.  The dither pattern is a standard
-ABBA.
+ABBA sequence.
 
 The dataset
 ===========
@@ -64,7 +63,7 @@ could contain different observed targets and different exposure times depending
 on how you like to organize your raw data.
 
 The DRAGONS data reduction pipeline does not organize the data for you.  You
-have to do it.  However, DRAGONS provides tools to help you with that.
+have to do it.  However, DRAGONS provides tools to help you.
 
 The first step is to create input file lists.  The tool "|dataselect|" helps
 with that.  It uses Astrodata tags and "|descriptors|" to select the files and
@@ -94,7 +93,7 @@ In our case, the science observations can be selected from the observation
 class, ``science``, that is how they are differentiated from the telluric
 standards which are ``partnerCal``.
 
-If we had multiple targets, we would need to split them into separate list. To
+If we had multiple targets, we would need to split them into separate lists. To
 inspect what we have we can use |dataselect| and |showd| together.
 
 ::
@@ -154,8 +153,10 @@ you run ``normalizeFlat`` in interactive mode you can clearly see the two
 levels.
 
 In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, order=30
-worked well.
+two sets of points, with a symmetrical residual fit.  In this case, because
+of the rapid variations around pixel 800, increasing the order could improve
+the final results.  Setting ``order=50`` fits that area well while still
+offering a good fit elsewhere.
 
 Note that you are not required to run in interactive mode, but you might want
 to if flat fielding is critical to your program.
@@ -166,35 +167,45 @@ to if flat fielding is critical to your program.
 
 The interactive tools are introduced in section :ref:`interactive`.
 
-.. image:: _graphics/gnirsls_Lband10_evenoddflat.png
+.. image:: _graphics/gnirsls_Lband10mm_evenoddflat.png
    :width: 600
    :alt: Even-odd effect in flats
 
 Processed Arc - Wavelength Solution
 ===================================
 The wavelength solution for L-band and M-band data is derived from the telluric
-sky lines in the science frames.  The quality of the wavelength solution
+emission lines in the science frames.  The quality of the wavelength solution
 depends on the resolution and brightness of the telluric lines.
 
 Wavelength calibration from sky lines is better done in interactive mode
 despite our efforts to automate the process.
 
-To use the sky lines in the science frames, we invoke the ``makeWavecalFromSkyEmission`` recipe.
+To use the sky lines in the science frames, we invoke the
+``makeWavecalFromSkyEmission`` recipe.
 
 ::
 
     reduce @sci.lis -r makeWavecalFromSkyEmission -p interactive=True
 
-.. todo:: min SNR to 5.
+It is very important to inspect the line identification.  Using the defaults,
+like we did above, careful inspection shows that the line identification is
+wrong.  Zooming in, we see the result below, not how the lines do not align.
 
-
-.. image:: _graphics/gnirsls_Lband10mm_arc.png
+.. image:: _graphics/gnirsls_Lband10mm_wrongarcID.png
    :width: 600
-   :alt: Arc line identifications
+   :alt: Incorrect arc line identifications
 
-.. image:: _graphics/gnirsls_Lband10mm_arcfit.png
+We get a good fit by changing the "Minimum SNR for peak detection" value
+to 5 in the panel on the left and then clicking the "Reconstruct points" button.
+
+.. image:: _graphics/gnirsls_Lband10mm_correctarcID.png
    :width: 600
-   :alt: Arc line fit
+   :alt: Correct arc line identifications
+
+
+.. note:: It is possible to set the minimum SNR from the command line by
+   adding ``-p determineWavelengthSolution:min_snr=5`` to the ``reduce`` call)
+
 
 .. telluric
 
@@ -213,21 +224,24 @@ This is what one raw image looks like.
    :width: 400
    :alt: raw science image
 
-With all the calibrations in the local calibration manager, one only needs
-to call |reduce| on the science frames to get an extracted spectrum.
+With all the calibrations in the local calibration manager, simply call
+|reduce| on the science frames to get an extracted spectrum.
 
 ::
 
-    reduce @sci.lis distortionCorrect:order=1
+    reduce @sci.lis
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
 ::
 
-    reduce @sci.lis -p interactive=True distortionCorrect:order=1
+    reduce @sci.lis -p interactive=True
 
-.. todo:: trace.  order=5, niter=3
+The default fits are all good, though the trace can be improved by setting
+the order to 5.
+
+The final 2D spectrum and the extracted 1D spectrum are shown below.
 
 .. image:: _graphics/gnirsls_Lband10mm_2d.png
    :width: 400
