@@ -27,6 +27,14 @@ pipeline {
 
     agent any
 
+    parameters {
+        string(
+            name: 'VARIANT',
+            defaultValue: '',
+            description: 'Variant of key dependencies to build against'
+        )
+    }
+
     triggers {
         // Timed builds occur in addition to Webhook triggers
         cron(getCronParams())
@@ -42,7 +50,6 @@ pipeline {
     environment {
         MPLBACKEND = "agg"
         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-        VARIANT = "-dev"
     }
 
     stages {
@@ -51,24 +58,7 @@ pipeline {
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
                 // sendNotifications 'STARTED'
-            }
-        }
-
-        stage('Webhook config') {
-            when {
-                 triggeredBy "SCMTrigger"
-            }
-            steps {
-                echo "Webhook trigger"
-            }
-        }
-
-        stage('Timer config') {
-            when {
-                 triggeredBy "TimerTrigger"
-            }
-            steps {
-                echo "Timer trigger"
+                echo "${params.VARIANT}"
             }
         }
 
@@ -82,7 +72,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Create a trial Python 3.10 env, to cache new packages"
-                sh 'tox -e py310-noop${VARIANT} -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
+                sh 'tox -e py310-noop${params.VARIANT} -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
             }
             post {
                 always {
