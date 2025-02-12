@@ -72,6 +72,8 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Create a trial Python 3.10 env, to cache new packages"
+                echo "tox -e py310-noop${params.VARIANT} -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}"
+                echo 'tox -e py310-noop${params.VARIANT} -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
                 sh "tox -e py310-noop${params.VARIANT} -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}"
             }
             post {
