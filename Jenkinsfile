@@ -37,7 +37,7 @@ pipeline {
 
     triggers {
         // Timed builds occur in addition to Webhook triggers
-        cron(getCronParams())
+        parameterizedCron(getCronParams())
     }
 
     options {
@@ -535,9 +535,9 @@ pipeline {
 
 def getCronParams() {
     if (env.BRANCH_NAME == 'upstream_testing') {
-        return "H H(2-7) * * 6"  // run every Saturday morning
-        // return "55 18 * * 2"  // run in a few minutes' time
+        return "H H(2-7) * * 6 %VARIANT=dev"  // every Saturday morning
+        // return "55 18 * * 2 %VARIANT=dev"  // in a few minutes' time
     } else {
-        return "0 0 31 2 *"  // only run on the 31 Feb. (there's no "never")
+        return "0 0 31 2 *"  // only on 31 Feb. (there's no "never")
     }
 }
