@@ -31,6 +31,7 @@ pipeline {
         string(
             name: 'VARIANT',
             defaultValue: '', // run against stable versions
+            choices: ['', '-dev'],
             description: 'Variant of key dependencies to build against'
         )
     }
@@ -111,7 +112,7 @@ pipeline {
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "Running tests with Python 3.10"
-        //                 sh 'tox -e py310-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-unit${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml \${TOX_ARGS}"
         //                 echo "Reportint coverage to CodeCov"
         //                 sh 'tox -e codecov -- -F unit'
         //             }
@@ -150,7 +151,7 @@ pipeline {
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "Regression tests"
-        //                 sh 'tox -e py310-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-reg${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml \${TOX_ARGS}"
         //                 echo "Reporting coverage"
         //                 sh 'tox -e codecov -- -F regression'
         //             } // end steps
@@ -190,7 +191,7 @@ pipeline {
         //                 checkout scm
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "Running tests"
-        //                 sh 'tox -e py310-f2 -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-f2${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml \${TOX_ARGS}"
         //                 echo "Reporting coverage"
         //                 sh 'tox -e codecov -- -F f2'
         //             }  // end steps
@@ -227,7 +228,7 @@ pipeline {
         //                 checkout scm
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "Running tests"
-        //                 sh 'tox -e py310-gsaoi -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-gsaoi${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml \${TOX_ARGS}"
         //                 echo "Reporting coverage"
         //                 sh 'tox -e codecov -- -F gsaoi'
         //             }  // end steps
@@ -264,7 +265,7 @@ pipeline {
         //                 checkout scm
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "Running tests"
-        //                 sh 'tox -e py310-niri -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-niri${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml \${TOX_ARGS}"
         //                 echo "Reporting coverage"
         //                 sh 'tox -e codecov -- -F niri'
         //             }  // end steps
@@ -301,7 +302,7 @@ pipeline {
         //                 checkout scm
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "Running tests"
-        //                 sh 'tox -e py310-gnirs -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-gnirs${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml \${TOX_ARGS}"
         //                 echo "Reporting coverage"
         //                 sh 'tox -e codecov -- -F gnirs'
         //             }  // end steps
@@ -338,7 +339,7 @@ pipeline {
         //                 checkout scm
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "Running tests"
-        //                 sh 'tox -e py310-gmos -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmos_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-gmos${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gmos_results.xml \${TOX_ARGS}"
         //                 echo "Reporting coverage"
         //                 sh 'tox -e codecov -- -F gmos'
         //             }  // end steps
@@ -378,7 +379,7 @@ pipeline {
         //         checkout scm
         //         sh '.jenkins/scripts/setup_dirs.sh'
         //         echo "Running tests"
-        //         sh 'tox -e py310-wavecal -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
+        //         sh "tox -e py310-wavecal${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml \${TOX_ARGS}"
         //         echo "Reporting coverage"
         //         sh 'tox -e codecov -- -F wavecal'
         //     }  // end steps
@@ -419,7 +420,7 @@ pipeline {
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "Running tests"
-        //                 sh 'tox -e py310-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-gmosls${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml \${TOX_ARGS}"
         //                 echo "Reporting coverage"
         //                 sh 'tox -e codecov -- -F gmosls'
         //             }  // end steps
@@ -458,7 +459,7 @@ pipeline {
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "Slow tests"
-        //                 sh 'tox -e py310-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-slow${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml \${TOX_ARGS}"
         //                 echo "Reporting coverage"
         //                 sh 'tox -e codecov -- -F slow'
         //             } // end steps
@@ -495,7 +496,7 @@ pipeline {
         //                 echo "${env.PATH}"
         //                 sh '.jenkins/scripts/setup_dirs.sh'
         //                 echo "GHOST tests"
-        //                 sh 'tox -e py310-ghost -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/ghost_results.xml ${TOX_ARGS}'
+        //                 sh "tox -e py310-ghost${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/ghost_results.xml \${TOX_ARGS}"
         //                 echo "Reporting coverage"
         //                 sh 'tox -e codecov -- -F ghost'
         //             } // end steps
@@ -542,7 +543,7 @@ pipeline {
 def getCronParams() {
     if (env.BRANCH_NAME == 'upstream_testing') {
         // return "H H(2-7) * * 6 %VARIANT=-dev"  // every Saturday morning
-        return "23 20 * * * %VARIANT=-dev"  // testing: a few minutes' time
+        return "30 05 * * * %VARIANT=-dev"  // testing: a few minutes' time
     } else {
         return "0 0 31 2 *"  // only on 31 Feb. (there's no "never")
     }
