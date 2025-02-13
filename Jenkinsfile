@@ -13,15 +13,15 @@
 // @Library('dragons_ci@master') _
 
 // Change these to automatically skip steps
-def runtests_gmosls  = 1  // 1 to enable
-def runtests_slow    = 1
-def runtests_f2      = 1
-def runtests_niri    = 1
-def runtests_gsaoi   = 1
-def runtests_gnirs   = 1
-def runtests_wavecal = 1
-def runtests_ghost   = 1
-def runtests_gmos    = 1
+def runtests_gmosls  = 0  // 1 to enable
+def runtests_slow    = 0
+def runtests_f2      = 0
+def runtests_niri    = 0
+def runtests_gsaoi   = 0
+def runtests_gnirs   = 0
+def runtests_wavecal = 0
+def runtests_ghost   = 0
+def runtests_gmos    = 0
 
 pipeline {
 
@@ -542,7 +542,7 @@ pipeline {
 def getCronParams() {
     if (env.BRANCH_NAME == 'upstream_testing') {
         // return "H H(2-7) * * 6 %VARIANT=-dev"  // every Saturday morning
-        return "30 12 * * * %VARIANT=-dev"  // testing: a few minutes' time
+        return "35 13 * * * %VARIANT=-dev"  // testing: a few minutes' time
     } else {
         return "0 0 31 2 *"  // only on 31 Feb. (there's no "never")
     }
