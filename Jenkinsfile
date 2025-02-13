@@ -77,8 +77,8 @@ pipeline {
                 echo "Update the Conda base install for all on-line nodes"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
-                echo "Create a trial Python 3.10 env, to cache new packages"
-                sh "tox -e py310-noop${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} \${TOX_ARGS}"
+                echo "Create a trial Python 3.12 env, to cache new packages"
+                sh "tox -e py312-noop${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} \${TOX_ARGS}"
             }
             post {
                 always {
@@ -110,8 +110,8 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         sh '.jenkins/scripts/setup_dirs.sh'
-                        echo "Running tests with Python 3.10"
-                        sh "tox -e py310-unit${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml \${TOX_ARGS}"
+                        echo "Running tests with Python 3.12"
+                        sh "tox -e py312-unit${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml \${TOX_ARGS}"
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
                     }
@@ -119,7 +119,7 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-unit/reports/*_results.xml'
+                                testResults: '.tmp/py312-unit/reports/*_results.xml'
                             )
                             echo "Deleting Unit tests workspace ${env.WORKSPACE}"
                             cleanWs()
@@ -150,7 +150,7 @@ pipeline {
                         sh '.jenkins/scripts/setup_dirs.sh'
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Regression tests"
-                        sh "tox -e py310-reg${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml \${TOX_ARGS}"
+                        sh "tox -e py312-reg${params.VARIANT} -v -r -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml \${TOX_ARGS}"
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F regression'
                     } // end steps
@@ -158,7 +158,7 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-reg/reports/*_results.xml'
+                                testResults: '.tmp/py312-reg/reports/*_results.xml'
                             )
                             echo "Deleting Regression Tests workspace ${env.WORKSPACE}"
                             cleanWs()
@@ -190,7 +190,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh "tox -e py310-f2${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml \${TOX_ARGS}"
+                        sh "tox -e py312-f2${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml \${TOX_ARGS}"
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F f2'
                     }  // end steps
@@ -200,7 +200,7 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-f2/reports/*_results.xml'
+                                testResults: '.tmp/py312-f2/reports/*_results.xml'
                             )
                             echo "Deleting F2 Tests workspace ${env.WORKSPACE}"
                             cleanWs()
@@ -227,7 +227,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh "tox -e py310-gsaoi${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml \${TOX_ARGS}"
+                        sh "tox -e py312-gsaoi${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml \${TOX_ARGS}"
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F gsaoi'
                     }  // end steps
@@ -237,7 +237,7 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-gsaoi/reports/*_results.xml'
+                                testResults: '.tmp/py312-gsaoi/reports/*_results.xml'
                             )
                             echo "Deleting GSAOI Tests workspace ${env.WORKSPACE}"
                             cleanWs()
@@ -264,7 +264,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh "tox -e py310-niri${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml \${TOX_ARGS}"
+                        sh "tox -e py312-niri${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml \${TOX_ARGS}"
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F niri'
                     }  // end steps
@@ -274,7 +274,7 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-niri/reports/*_results.xml'
+                                testResults: '.tmp/py312-niri/reports/*_results.xml'
                             )
                             echo "Deleting NIRI Tests workspace ${env.WORKSPACE}"
                             cleanWs()
@@ -301,7 +301,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh "tox -e py310-gnirs${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml \${TOX_ARGS}"
+                        sh "tox -e py312-gnirs${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml \${TOX_ARGS}"
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F gnirs'
                     }  // end steps
@@ -311,7 +311,7 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-gnirs/reports/*_results.xml'
+                                testResults: '.tmp/py312-gnirs/reports/*_results.xml'
                             )
                             echo "Deleting GNIRS Tests workspace ${env.WORKSPACE}"
                             cleanWs()
@@ -338,7 +338,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh "tox -e py310-gmos${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gmos_results.xml \${TOX_ARGS}"
+                        sh "tox -e py312-gmos${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gmos_results.xml \${TOX_ARGS}"
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F gmos'
                     }  // end steps
@@ -348,7 +348,7 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-gmos/reports/*_results.xml'
+                                testResults: '.tmp/py312-gmos/reports/*_results.xml'
                             )
                             echo "Deleting GMOS Tests workspace ${env.WORKSPACE}"
                             cleanWs()
@@ -378,7 +378,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_dirs.sh'
                 echo "Running tests"
-                sh "tox -e py310-wavecal${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml \${TOX_ARGS}"
+                sh "tox -e py312-wavecal${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml \${TOX_ARGS}"
                 echo "Reporting coverage"
                 sh 'tox -e codecov -- -F wavecal'
             }  // end steps
@@ -388,7 +388,7 @@ pipeline {
                     archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                     junit (
                         allowEmptyResults: true,
-                        testResults: '.tmp/py310-wavecal/reports/*_results.xml'
+                        testResults: '.tmp/py312-wavecal/reports/*_results.xml'
                     )
                     echo "Deleting WaveCal Tests workspace ${env.WORKSPACE}"
                     cleanWs()
@@ -419,7 +419,7 @@ pipeline {
                         sh '.jenkins/scripts/setup_dirs.sh'
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh "tox -e py310-gmosls${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml \${TOX_ARGS}"
+                        sh "tox -e py312-gmosls${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml \${TOX_ARGS}"
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F gmosls'
                     }  // end steps
@@ -429,7 +429,7 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-gmosls/reports/*_results.xml'
+                                testResults: '.tmp/py312-gmosls/reports/*_results.xml'
                             )
                             echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
                             cleanWs()
@@ -458,7 +458,7 @@ pipeline {
                         sh '.jenkins/scripts/setup_dirs.sh'
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Slow tests"
-                        sh "tox -e py310-slow${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml \${TOX_ARGS}"
+                        sh "tox -e py312-slow${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml \${TOX_ARGS}"
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F slow'
                     } // end steps
@@ -466,7 +466,7 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-slow/reports/*_results.xml'
+                                testResults: '.tmp/py312-slow/reports/*_results.xml'
                             )
                             echo "Deleting GMOS LS Tests workspace ${env.WORKSPACE}"
                             cleanWs()
@@ -495,7 +495,7 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "GHOST tests"
-                        sh "tox -e py310-ghost${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/ghost_results.xml \${TOX_ARGS}"
+                        sh "tox -e py312-ghost${params.VARIANT} -v -- --basetemp=\${DRAGONS_TEST_OUT} --junit-xml reports/ghost_results.xml \${TOX_ARGS}"
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F ghost'
                     } // end steps
@@ -503,7 +503,7 @@ pipeline {
                         always {
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-ghost/reports/*_results.xml'
+                                testResults: '.tmp/py312-ghost/reports/*_results.xml'
                             )
                             echo "Deleting GHOST Tests workspace ${env.WORKSPACE}"
                             cleanWs()
