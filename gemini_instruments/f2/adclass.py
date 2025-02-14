@@ -610,6 +610,11 @@ class AstroDataF2(AstroDataGemini):
         return 'DARK' if 'F2_DARK' in self.tags else self.phu.get('OBSTYPE')
 
     @astro_data_descriptor
+    def pixel_scale(self):
+        pix_scale = super().pixel_scale()
+        return pix_scale or self.phu['PIXSCALE']
+
+    @astro_data_descriptor
     def position_angle(self):
         """
         Returns the position angle of the instruement

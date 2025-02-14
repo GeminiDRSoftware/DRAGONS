@@ -2124,11 +2124,11 @@ class AstroDataGemini(AstroData):
             for coo in coords:
                 if isinstance(coo, SkyCoord):
                     # for spectra the dispersion axis won't change the skycoord
-                    return np.median(i.separation(j).arcsec
-                                     for i, j in combinations(coo, 2))
+                    return np.median([i.separation(j).arcsec
+                                      for i, j in combinations(coo, 2)])
                 elif coo.unit.is_equivalent(u.rad):
-                    return np.median(abs((i - j).to(u.arcsec)).value
-                                     for i, j in combinations(coo, 2))
+                    return np.median([abs((i - j).to(u.arcsec)).value
+                                      for i, j in combinations(coo, 2)])
             return None
 
 
