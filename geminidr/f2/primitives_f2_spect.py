@@ -328,7 +328,7 @@ class F2Spect(Telluric, Spect, F2):
             # For HK grism + JH filter the second order is preserved by default
             # (as per IS request), so use the line list with the second order lines
             # for this mode
-            filename = 'argon.dat' if isHK_JH else 'lowresargon_with_2nd_ord.dat'
+            filename = 'lowresargon_with_2nd_ord.dat' if isHK_JH else 'argon.dat'
         else:
             # In case of wavecal from sky OH emission use this line list:
             filename = 'nearIRsky_with_2nd_order.dat' if isHK_JH else 'nearIRsky.dat'

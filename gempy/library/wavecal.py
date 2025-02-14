@@ -1148,13 +1148,14 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         spatial_frame = cf.CoordinateFrame(
             naxes=1, axes_type="SPATIAL", axes_order=(1,),
-            unit=u.pix, name="SPATIAL")
+            unit=u.arcsec, name="SPATIAL")
         output_frame = cf.CompositeFrame(
             [new_spectral_frame, spatial_frame], name='world')
+        slit_model = models.Scale(ext.pixel_scale())
         try:
-            slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}']
+            slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}'] | slit_model
         except IndexError:
-            slit_model = models.Identity(1)
+            pass
         slit_model.name = 'SKY'
         transform = m_final & slit_model
         if dispaxis == 0:

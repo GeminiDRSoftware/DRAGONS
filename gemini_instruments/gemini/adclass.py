@@ -9,7 +9,7 @@ import re
 import math
 import datetime
 import dateutil.parser
-from itertools import chain
+from itertools import chain, combinations
 
 import numpy as np
 
@@ -2120,13 +2120,17 @@ class AstroDataGemini(AstroData):
             if ext.wcs is None:
                 return None
             yc, xc = [0.5 * l for l in ext.shape]
-            ra, dec = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc])[-2:]
-            cosdec = math.cos(dec[0] * np.pi / 180)
-            a = (ra[2] - ra[0]) * cosdec
-            b = (ra[1] - ra[0]) * cosdec
-            c = dec[2] - dec[0]
-            d = dec[1] - dec[0]
-            return 3600 * np.sqrt(abs(a * d - b * c))
+            coords = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc], with_units=True)
+            for coo in coords:
+                if isinstance(coo, SkyCoord):
+                    # for spectra the dispersion axis won't change the skycoord
+                    return np.median(i.separation(j).arcsec
+                                     for i, j in combinations(coo, 2))
+                elif coo.unit.is_equivalent(u.rad):
+                    return np.median(abs((i - j).to(u.arcsec)).value
+                                     for i, j in combinations(coo, 2))
+            return None
+
 
         if self.is_single:
             try:
