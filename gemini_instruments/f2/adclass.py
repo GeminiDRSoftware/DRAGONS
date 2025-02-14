@@ -610,22 +610,6 @@ class AstroDataF2(AstroDataGemini):
         return 'DARK' if 'F2_DARK' in self.tags else self.phu.get('OBSTYPE')
 
     @astro_data_descriptor
-    def pixel_scale(self):
-        """
-        Returns the image scale in arcseconds per pixel
-
-        Returns
-        -------
-        float
-            pixel scale
-        """
-        # Try to use the Gemini-level helper method
-        if 'PREPARED' in self.tags:
-            return self.phu.get('PIXSCALE')
-        else:
-            return self._get_wcs_pixel_scale()
-
-    @astro_data_descriptor
     def position_angle(self):
         """
         Returns the position angle of the instruement
