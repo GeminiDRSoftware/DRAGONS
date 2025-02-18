@@ -9,7 +9,7 @@ import re
 import numbers
 
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 from collections import namedtuple
 
@@ -1850,7 +1850,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
         raise TypeError("argument 'keyword' required")
 
     # Get the current time to use for the time of last modification
-    tlm = datetime.utcnow().isoformat()
+    tlm = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
     # Construct the default comment
     if comment is None:
