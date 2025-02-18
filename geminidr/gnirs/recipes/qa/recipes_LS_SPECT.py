@@ -29,7 +29,7 @@ def reduceScience(p):
     p.associateSky()
     p.skyCorrect()
     p.distortionCorrect()
-    p.findApertures()
+    p.findApertures(max_apertures=5)
     p.measureIQ(display=True)
 
     # side stream to generate 1D spectra from individual frame, pre-stack
