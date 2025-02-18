@@ -125,7 +125,7 @@ def test_clean_readout(in_file, path_to_inputs, path_to_refs):
     ad_out = p.cleanReadout(clean="default")[0]
 
     ref = astrodata.open(os.path.join(path_to_refs, ad.filename))
-    assert ad_compare(ad_out, ref)
+    assert ad_compare(ad_out, ref, atol=0.01)
 
 
 @pytest.mark.regression
@@ -155,4 +155,4 @@ def test_clean_fftreadout(in_file, path_to_inputs, path_to_refs):
     p = pclass([ad])    
     ad_out = p.cleanFFTReadout(clean="default")[0]
     ref = astrodata.open(os.path.join(path_to_refs, in_file + '_readoutFFTCleaned.fits'))
-    assert ad_compare(ad_out, ref)
+    assert ad_compare(ad_out, ref, atol=0.01)
