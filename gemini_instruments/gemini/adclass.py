@@ -883,7 +883,6 @@ class AstroDataGemini(AstroData):
             The dispersion(s) in nm
         """
         keyword = self._keyword_for('dispersion')
-        print(keyword)
         if keyword in self.hdr:
             dispersion = self.hdr[keyword]
         elif self._keyword_for('dispersion') in self.phu:
@@ -2121,12 +2120,16 @@ class AstroDataGemini(AstroData):
                 return None
             yc, xc = [0.5 * l for l in ext.shape]
             coords = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc], with_units=True)
+            if isinstance(coords, SkyCoord):  # pure image
+                return np.median([i.separation(j).arcsec
+                                  for i, j in combinations(coords, 2)])
             for coo in coords:
                 if isinstance(coo, SkyCoord):
                     # for spectra the dispersion axis won't change the skycoord
                     return np.median([i.separation(j).arcsec
                                       for i, j in combinations(coo, 2)])
                 elif coo.unit.is_equivalent(u.rad):
+                    # ARC spectrum with linear axis in arcsec
                     return np.median([abs((i - j).to(u.arcsec)).value
                                       for i, j in combinations(coo, 2)])
             return None
