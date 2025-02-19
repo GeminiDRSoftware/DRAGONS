@@ -20,7 +20,7 @@ Fork the repository
 .. admonition:: DRAGONS core developers
 
   This step is only necessary if you do not have access to the DRAGONS
-  repository to make branches and pull requests. 
+  repository to make branches. 
 
   If you do have access, you can continue to the next section.
 
@@ -29,7 +29,7 @@ Fork the repository
 
 In order to make changes, you'll need a copy of the repository you can freely
 edit. `Github has a page detailing this process from start to finish
-<github_contributing_with_forks_link>`_.
+<github_contributing_with_forks_link_>`_.
 
 Once you're ready to make a Pull Request, move on to the next step.
 
@@ -45,7 +45,7 @@ Whether using a fork or branch, all contributions should become a Pull Request
 
    You can also make a draft PR to run the CI/CD pipeline while signalling your
    contribution is not ready for review. See `Creating a Pull Request
-   <github_draft_pr_docs>`_.
+   <github_draft_pr_docs_>`_.
 
 
 .. _github_getting_started_prs: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/getting-started/helping-others-review-your-changes
@@ -54,8 +54,8 @@ Whether using a fork or branch, all contributions should become a Pull Request
 If you're new to PRs, you may find the following guides and best practices
 helpful:
 
-* `Getting started with pull requests (GitHub) <github_getting_started_prs>`_
-* `The (written) unwritten guide to pull requests (Atlassian) <attlassian_pr_guide>`_
+* `Getting started with pull requests (GitHub) <github_getting_started_prs_>`_
+* `The (written) unwritten guide to pull requests (Atlassian) <attlassian_pr_guide_>`_
 
 
 Code Review
@@ -164,5 +164,5 @@ formatting.
 This should help guide your review. If it's your first time reviewing/being
 reviewed, or you feel stuck, check out these resource graphics:
 
-* `Code review best practices (roadmap.sh) <roadmap_code_review_best_practices>`_
-* `The Code Review Pyramid (Gunnar Morling) <code_review_pyramid>`_
+* `Code review best practices (roadmap.sh) <roadmap_code_review_best_practices_>`_
+* `The Code Review Pyramid (Gunnar Morling) <code_review_pyramid_>`_
