@@ -48,6 +48,17 @@ DRAGONS Manuals
 * |RSProg|     :small:`(Document ID: PIPE-USER-108_RSProgManual)`
 * |RSUser|     :small:`(Document ID: PIPE-USER-109_RSUserManual)`
 
+Developer Documentation
+-----------------------
+
+.. admonition::
+
+   This documentation is for people contributing to DRAGONS. If you are trying
+   to reduce data or use software from DRAGONS as a dependency, see our other
+   documentation.
+
+* :doc:`Contributing Guide <development/contributing.md>`
+
 
 Workshops
 ---------
