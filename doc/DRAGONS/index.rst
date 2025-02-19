@@ -48,18 +48,6 @@ DRAGONS Manuals
 * |RSProg|     :small:`(Document ID: PIPE-USER-108_RSProgManual)`
 * |RSUser|     :small:`(Document ID: PIPE-USER-109_RSUserManual)`
 
-Developer Documentation
------------------------
-
-.. admonition::
-
-   This documentation is for people contributing to DRAGONS. If you are trying
-   to reduce data or use software from DRAGONS as a dependency, see our other
-   documentation.
-
-* :doc:`Contributing Guide <development/contributing.md>`
-
-
 Workshops
 ---------
 To learn more about how to tame the DRAGONS, try the self-study workshops.
@@ -82,14 +70,13 @@ Releases
 
 
 
-.. Developer Notes
-.. ---------------
+Developer Documentation
+-----------------------
 
-.. .. toctree::
-..    :maxdepth: 1
+.. admonition:: Is this what you're looking for?
 
-..   contributing.rst
-..   testing.rst
+   This documentation is for people contributing to DRAGONS. If you are trying
+   to reduce data or use software from DRAGONS as a dependency, see our other
+   documentation.
 
-.. todolist::
-
+* :doc:`Contributing Guide <development/contributing.md>`
