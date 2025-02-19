@@ -82,11 +82,9 @@ In general try to...
   accusatory ("you did this wrong", "your mistake") or condescending
   ("obviously", "trivial", "sloppy") language. Your point can be communicated
   without it, and their inclusion provide neither insight nor value!
-* **Be specific**: If you have an idea for an edge case, write out example code
-  where it could happen instead of speculating. If the code reproduces the edge
-  case, all the better! Even non-functional code can be more insightful and
-  efficient that long descriptions. Focus on the scope of the PR, and try not
-  to go beyond it unless really necessary.
+* **Be specific**: Communicate with example code where possible; don't write a
+  paragraph when a code snippet could communicate the same idea. Focus on the
+  scope of the PR, and try not to go beyond it unless really necessary.
 * **Stay constructive**: Blanket responses, particularly blanket rejections of
   some or all of a PR, are not helpful. If you think there's a problem, explain
   why you think there's a problem. If you find yourself reacting significantly
