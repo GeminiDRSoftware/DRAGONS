@@ -27,7 +27,8 @@ DRAGONS Code of Conduct
 
 The contents of this Code of Conduct are in part from the `Contributor
 Covenant v2.1 <contributor_coventant_v2_1>`_ (`CC BY 4.0 License
-<contributor_covenant_license>`_). It may be modified to avoid conflicts with AURA Policy.
+<contributor_covenant_license>`_). It may be modified to avoid conflicts with
+AURA Policy.
 
 .. _dragons_github_repo: https://github.com/GeminiDRSoftware/DRAGONS
 
