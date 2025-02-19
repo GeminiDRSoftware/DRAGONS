@@ -83,3 +83,4 @@ Developer Documentation
    :maxdepth: 1
 
    development/contributing.rst
+   development/code_of_conduct.rst
