@@ -6,6 +6,14 @@ Contributing to DRAGONS
 If you're new here, thanks for taking the time to contribute to the DRAGONS
 project! This guide is for how to contribute to the DRAGONS repository.
 
+This page outlines the process from fork/branch to merging into the primary
+branch on the DRAGONS repository.
+
+|image0|
+
+.. |image0| image:: https://mermaid.ink/img/pako:eNpVkMtqwzAQRX9lmLXzA6YE_Eh3hZBmFcuLqTSRTGzJ1SOhhPx7ZYeWdjdzz4F53FE6xVjieXQ3achHOLbCAkDVvTp_Aeeh9mSl6WGz2ULd7dM4woE_E4fYr2a9kqarUnQTRVYvH357zDj85W3X5EkLOvB14NuTNZnBnkJgtVq7NW2XtJKS5_gv33WNIas5wMRes-qxwFxNNKh8wn1xBEbDEwssczkO2kSBwj6ySHm99y8rsYw-cYHeJW2wPNMYcpdmlVdvB9Kept-U1RCdf3u-aP1UgTPZk3M_zuMbubhnNA?type=png
+   :target: https://mermaid.live/edit#pako:eNpVkMtqwzAQRX9lmLXzA6YE_Eh3hZBmFcuLqTSRTGzJ1SOhhPx7ZYeWdjdzz4F53FE6xVjieXQ3achHOLbCAkDVvTp_Aeeh9mSl6WGz2ULd7dM4woE_E4fYr2a9kqarUnQTRVYvH357zDj85W3X5EkLOvB14NuTNZnBnkJgtVq7NW2XtJKS5_gv33WNIas5wMRes-qxwFxNNKh8wn1xBEbDEwssczkO2kSBwj6ySHm99y8rsYw-cYHeJW2wPNMYcpdmlVdvB9Kept-U1RCdf3u-aP1UgTPZk3M_zuMbubhnNA
+
 Fork the repository
 -------------------
 
@@ -14,8 +22,7 @@ Fork the repository
   This step is only necessary if you do not have access to the DRAGONS
   repository to make branches and pull requests. 
 
-  If you do have access, you can create a branch for your changes and skip this
-  section.
+  If you do have access, you can continue to the next section.
 
 
 .. _github_contributing_with_forks_link: https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project
