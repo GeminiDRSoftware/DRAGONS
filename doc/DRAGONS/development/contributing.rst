@@ -31,7 +31,8 @@ In order to make changes, you'll need a copy of the repository you can freely
 edit. `Github has a page detailing this process from start to finish
 <github_contributing_with_forks_link_>`_.
 
-Once you're ready to make a Pull Request, move on to the next step.
+Once you've made your changes and are ready to include them in the DRAGONS
+repo, move on to the next step.
 
 Making a Pull Request
 ---------------------
