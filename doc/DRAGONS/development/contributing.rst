@@ -95,10 +95,10 @@ In general try to...
   back and think about whether this could be an issue with implementation, the
   PR, or documentation. Is there a better way to frame what you're trying to
   say, through code, text formatting (e.g., a list) or something else?
-* **Nitpick responsibly**: Things like code style and naming will be enforced
-  in CI/CD. If you have other nitpicky comments, feel free to leave them and
-  prefix them with "``nitpick``" to make it 100% clear they are not critical.
-  **Do not assume your tone is sufficient in communicating this!**
+* **Nitpick responsibly**: Things like code style and naming conventions will
+  be enforced in CI/CD. If you have other nitpicky comments, feel free to leave
+  them and prefix them with "``nitpick``" to make it 100% clear they are not
+  critical. **Do not assume your tone is sufficient in communicating this!**
 
 Reviewer Checklist
 ^^^^^^^^^^^^^^^^^^
