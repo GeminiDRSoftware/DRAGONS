@@ -79,4 +79,7 @@ Developer Documentation
    to reduce data or use software from DRAGONS as a dependency, see our other
    documentation.
 
-* :doc:`Contributing Guide <development/contributing.md>`
+.. toctree::
+   :maxdepth: 1
+
+   development/contributing.rst
