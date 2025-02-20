@@ -167,3 +167,30 @@ reviewed, or you feel stuck, check out these resource graphics:
 
 * `Code review best practices (roadmap.sh) <roadmap_code_review_best_practices_>`_
 * `The Code Review Pyramid (Gunnar Morling) <code_review_pyramid_>`_
+
+
+I'm Stuck! Help!
+----------------
+
+.. _github_issue_link: https://github.com/GeminiDRSoftware/DRAGONS/issues
+.. _help_desk_link: https://www.gemini.edu/observing/phase-iii-retrieving-reducing-data/getting-help
+
+.. warning:: 
+
+   **This is not for data reduction questions.**
+
+   If you are reducing data and have a question, or have a question unrelated
+   to development (such as installation) do not reach out through these
+   channels. They are meant for issues with development and bugs.
+
+   You can ask for help through our `Help Desk <help_desk_link_>`_.
+
+If you find yourself stuck on any of the above, or you encounter an issue you
+think might be a bug, feel free to `open an issue on our GitHub repository
+<github_issue_link_>`_.
+
+.. _teal_email: dillon.teal@noirlab.edu
+
+**If you do not have access to GitHub or other communication channels with the
+DRAGONS team, please reach out to Dr. D. J. Teal at `dillon.teal@noirlab.edu <teal_email_>`_ for
+development inquiries.**
