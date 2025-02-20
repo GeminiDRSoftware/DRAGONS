@@ -408,6 +408,21 @@ pipeline {
 
         stage('WaveCal Tests') {
             when {
+              beforeAgent true
+              anyOf {
+                changeset "astrodata/**"
+                changeset "geminidr/**"
+                changeset "gemini_instruments/**"
+                changeset "gempy/**"
+                changeset "recipe_system/**"
+                changeset "Jenkinsfile"
+                changeset "tox.ini"
+                changeset "pyproject.toml"
+                changeset "setup.py"
+                changeset "setup.cfg"
+              }
+            }
+            when {
                 expression { runtests_wavecal == 1 }
             }
 
