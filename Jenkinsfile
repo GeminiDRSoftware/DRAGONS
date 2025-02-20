@@ -421,9 +421,7 @@ pipeline {
                 changeset "setup.py"
                 changeset "setup.cfg"
               }
-            }
-            when {
-                expression { runtests_wavecal == 1 }
+              expression { runtests_wavecal == 1 }
             }
 
             agent { label "master" }
