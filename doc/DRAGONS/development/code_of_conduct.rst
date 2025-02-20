@@ -20,7 +20,7 @@ AURA Astronomy and NOIRLab Policies
 .. _noirlab_policies: https://noirlab.edu/public/conduct/
 
 DRAGONS development is funded directly by `AURA Astronomy <aura_link_>`_, and
-is performed by staff at `NOIRLab <noirlab_link_>`_ and the `International
+is maintained by staff at `NOIRLab <noirlab_link_>`_ and the `International
 Gemini Observatory <gemini_link_>`_. Their respective policies supercede any
 practice, recommendation, or guideline in our Code of Conduct.
 
