@@ -98,7 +98,7 @@ In general try to...
   say, through code, text formatting (e.g., a list) or something else?
 * **Nitpick responsibly**: Things like code style and naming conventions will
   be enforced in CI/CD. If you have other nitpicky comments, feel free to leave
-  them and prefix them with "``nitpick``" to make it 100% clear they are not
+  them and prefix them with "``(nitpick)``" to make it 100% clear they are not
   critical. **Do not assume your tone is sufficient in communicating this!**
 
 Reviewer Checklist
