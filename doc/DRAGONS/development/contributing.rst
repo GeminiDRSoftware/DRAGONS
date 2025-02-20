@@ -189,8 +189,8 @@ If you find yourself stuck on any of the above, or you encounter an issue you
 think might be a bug, feel free to `open an issue on our GitHub repository
 <github_issue_link_>`_.
 
-.. _teal_email: dillon.teal@noirlab.edu
+.. |developer_email| replace:: dillon.teal@noirlab.edu
 
-**If you do not have access to GitHub or other communication channels with the
-DRAGONS team, please reach out to Dr. D. J. Teal at `dillon.teal@noirlab.edu <teal_email_>`_ for
-development inquiries.**
+If you do not have access to GitHub or other communication channels with the
+DRAGONS team, please reach out to Dr. D. J. Teal at |developer_email| for
+development inquiries.
