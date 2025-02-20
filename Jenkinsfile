@@ -47,6 +47,21 @@ pipeline {
     stages {
 
         stage ("Prepare"){
+            when {
+              beforeAgent true
+              anyOf {
+                changeset "astrodata/**"
+                changeset "geminidr/**"
+                changeset "gemini_instruments/**"
+                changeset "gempy/**"
+                changeset "recipe_system/**"
+                changeset "Jenkinsfile"
+                changeset "tox.ini"
+                changeset "pyproject.toml"
+                changeset "setup.py"
+                changeset "setup.cfg"
+              }
+            }
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
                 // sendNotifications 'STARTED'
@@ -54,6 +69,21 @@ pipeline {
         }
 
         stage('Pre-install') {
+            when {
+              beforeAgent true
+              anyOf {
+                changeset "astrodata/**"
+                changeset "geminidr/**"
+                changeset "gemini_instruments/**"
+                changeset "gempy/**"
+                changeset "recipe_system/**"
+                changeset "Jenkinsfile"
+                changeset "tox.ini"
+                changeset "pyproject.toml"
+                changeset "setup.py"
+                changeset "setup.cfg"
+              }
+            }
             agent { label "conda" }
             environment {
                 TMPDIR = "${env.WORKSPACE}/.tmp/conda/"
@@ -77,6 +107,21 @@ pipeline {
         }
 
         stage('Quicker tests') {
+            when {
+              beforeAgent true
+              anyOf {
+                changeset "astrodata/**"
+                changeset "geminidr/**"
+                changeset "gemini_instruments/**"
+                changeset "gempy/**"
+                changeset "recipe_system/**"
+                changeset "Jenkinsfile"
+                changeset "tox.ini"
+                changeset "pyproject.toml"
+                changeset "setup.py"
+                changeset "setup.cfg"
+              }
+            }
             parallel {
 
                 stage('Unit tests') {
@@ -157,6 +202,21 @@ pipeline {
         }
 
         stage('Instrument tests') {
+            when {
+              beforeAgent true
+              anyOf {
+                changeset "astrodata/**"
+                changeset "geminidr/**"
+                changeset "gemini_instruments/**"
+                changeset "gempy/**"
+                changeset "recipe_system/**"
+                changeset "Jenkinsfile"
+                changeset "tox.ini"
+                changeset "pyproject.toml"
+                changeset "setup.py"
+                changeset "setup.cfg"
+              }
+            }
             parallel {
                 stage('F2 Tests') {
                     when {
@@ -385,6 +445,21 @@ pipeline {
         }  // end stage
 
         stage('Slower tests') {
+            when {
+              beforeAgent true
+              anyOf {
+                changeset "astrodata/**"
+                changeset "geminidr/**"
+                changeset "gemini_instruments/**"
+                changeset "gempy/**"
+                changeset "recipe_system/**"
+                changeset "Jenkinsfile"
+                changeset "tox.ini"
+                changeset "pyproject.toml"
+                changeset "setup.py"
+                changeset "setup.cfg"
+              }
+            }
             parallel {
                 stage('GMOS LS Tests') {
                     when {
