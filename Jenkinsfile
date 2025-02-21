@@ -134,7 +134,6 @@ pipeline {
 
         stage ("Prepare"){
             when {
-              beforeAgent true
               expression { checkForCodeChanges() }
             }
             steps{
@@ -145,7 +144,6 @@ pipeline {
 
         stage('Pre-install') {
             when {
-              beforeAgent true
               expression { checkForCodeChanges() }
             }
             agent { label "conda" }
@@ -172,7 +170,6 @@ pipeline {
 
         stage('Quicker tests') {
             when {
-              beforeAgent true
               expression { checkForCodeChanges() }
             }
             parallel {
@@ -256,7 +253,6 @@ pipeline {
 
         stage('Instrument tests') {
             when {
-              beforeAgent true
               expression { checkForCodeChanges() }
             }
             parallel {
@@ -450,7 +446,6 @@ pipeline {
 
         stage('WaveCal Tests') {
             when {
-              beforeAgent true
               expression { checkForCodeChanges() }
               expression { runtests_wavecal == 1 }
             }
@@ -490,7 +485,6 @@ pipeline {
 
         stage('Slower tests') {
             when {
-              beforeAgent true
               expression { checkForCodeChanges() }
             }
             parallel {
