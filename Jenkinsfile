@@ -46,7 +46,11 @@ def checkForCodeChanges() {
       break
     }
 
-    CHANGE_SETS = build.changeSets
+    CHANGE_SETS = [] as Set
+
+    for (change_set in build.changeSets) {
+      CHANGE_SETS.add(change_set.getAffectedFiles())
+    }
   }
 
   // If past builds (limited by kept number of builds per branch) didn't have
@@ -78,7 +82,7 @@ def checkForCodeChanges() {
   def affected_files = [] as Set
 
   for (change_set in CHANGE_SETS) {
-    for (file in change_set.getAffectedFiles()) {
+    for (file in change_set) {
       echo "Found file: ${file}"
       affected_files.add(file)
     }
