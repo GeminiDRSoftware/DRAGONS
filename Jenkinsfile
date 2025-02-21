@@ -22,6 +22,18 @@ def runtests_gnirs   = 1
 def runtests_wavecal = 1
 def runtests_ghost   = 1
 def runtests_gmos    = 1
+boolean changed_code = any({
+  changeset "astrodata/**"
+  changeset "geminidr/**"
+  changeset "gemini_instruments/**"
+  changeset "gempy/**"
+  changeset "recipe_system/**"
+  changeset "Jenkinsfile"
+  changeset "tox.ini"
+  changeset "pyproject.toml"
+  changeset "setup.py"
+  changeset "setup.cfg"
+})
 
 pipeline {
 
@@ -49,18 +61,7 @@ pipeline {
         stage ("Prepare"){
             when {
               beforeAgent true
-              anyOf {
-                changeset "astrodata/**"
-                changeset "geminidr/**"
-                changeset "gemini_instruments/**"
-                changeset "gempy/**"
-                changeset "recipe_system/**"
-                changeset "Jenkinsfile"
-                changeset "tox.ini"
-                changeset "pyproject.toml"
-                changeset "setup.py"
-                changeset "setup.cfg"
-              }
+              changed_code
             }
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
