@@ -22,6 +22,18 @@ def runtests_gnirs   = 1
 def runtests_wavecal = 1
 def runtests_ghost   = 1
 def runtests_gmos    = 1
+boolean changed_code = any({
+  changeset "astrodata/**"
+  changeset "geminidr/**"
+  changeset "gemini_instruments/**"
+  changeset "gempy/**"
+  changeset "recipe_system/**"
+  changeset "Jenkinsfile"
+  changeset "tox.ini"
+  changeset "pyproject.toml"
+  changeset "setup.py"
+  changeset "setup.cfg"
+})
 
 pipeline {
 
@@ -47,6 +59,10 @@ pipeline {
     stages {
 
         stage ("Prepare"){
+            when {
+              beforeAgent true
+              changed_code
+            }
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
                 // sendNotifications 'STARTED'
@@ -54,6 +70,10 @@ pipeline {
         }
 
         stage('Pre-install') {
+            when {
+              beforeAgent true
+              changed_code
+            }
             agent { label "conda" }
             environment {
                 TMPDIR = "${env.WORKSPACE}/.tmp/conda/"
@@ -77,6 +97,10 @@ pipeline {
         }
 
         stage('Quicker tests') {
+            when {
+              beforeAgent true
+              changed_code
+            }
             parallel {
 
                 stage('Unit tests') {
@@ -157,6 +181,10 @@ pipeline {
         }
 
         stage('Instrument tests') {
+            when {
+              beforeAgent true
+              changed_code
+            }
             parallel {
                 stage('F2 Tests') {
                     when {
@@ -348,7 +376,9 @@ pipeline {
 
         stage('WaveCal Tests') {
             when {
-                expression { runtests_wavecal == 1 }
+              beforeAgent true
+              changed_code
+              expression { runtests_wavecal == 1 }
             }
 
             agent { label "master" }
@@ -385,6 +415,10 @@ pipeline {
         }  // end stage
 
         stage('Slower tests') {
+            when {
+              beforeAgent true
+              changed_code
+            }
             parallel {
                 stage('GMOS LS Tests') {
                     when {
