@@ -28,7 +28,7 @@ def checkForCodeChanges() {
   def affected_files = [] as Set
 
   for (change_set in CHANGE_SETS) {
-    for (file in change_set) {
+    for (file in change_set.getAffectedFiles()) {
       affected_files.add(file)
     }
   }
