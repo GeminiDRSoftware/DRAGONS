@@ -40,6 +40,10 @@ _arit_doc = """
 """
 
 
+# TODO: REMOVE --- FOR TESTING
+pass
+
+
 class AstroData:
     """
     Base class for the AstroData software package. It provides an interface
