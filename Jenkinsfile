@@ -124,7 +124,6 @@ pipeline {
             when {
               beforeAgent true
               codeChanged()
-              }
             }
             parallel {
 
