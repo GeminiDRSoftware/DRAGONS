@@ -31,15 +31,24 @@ def checkForCodeChanges() {
     // Find the last change set, in case the build is manually run.
     build = build.previousBuild
 
-    // TODO -- remove below for testing
-    echo "Trying with build: ${build.id}"
-
     if (build == null) {
       echo "Could not find previous build with changes."
       break
     }
 
     CHANGE_SETS = build.changeSets
+  }
+
+  // If past builds (limited by kept number of builds per branch) didn't have
+  // anything, last resort: check the git log for the last 24 hours.
+  if (!CHANGE_SETS) {
+    def git_log_files = sh(
+      returnStdout: true,
+      script: "git log --since=1.day --oneline --name-only --pretty=\"format:\""
+    )
+
+    List files = git_log_files.split('\n').findAll { it }
+    CHANGE_SETS = [files as Set] as Set
   }
 
   def affected_files = [] as Set
