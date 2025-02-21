@@ -24,7 +24,7 @@ def runtests_ghost   = 1
 def runtests_gmos    = 1
 
 def checkForCodeChanges() {
-  def CHANGE_SETS = currentBuilds.changeSets
+  def CHANGE_SETS = currentBuild.changeSets
   def affected_files = [] as Set
 
   for (change_set in CHANGE_SETS) {
