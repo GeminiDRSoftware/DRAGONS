@@ -87,7 +87,7 @@ pipeline {
         stage ("Prepare"){
             when {
               beforeAgent true
-              codeChanged
+              expression { codeChanged }
             }
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
@@ -98,7 +98,7 @@ pipeline {
         stage('Pre-install') {
             when {
               beforeAgent true
-              codeChanged
+              expression { codeChanged }
             }
             agent { label "conda" }
             environment {
@@ -125,7 +125,7 @@ pipeline {
         stage('Quicker tests') {
             when {
               beforeAgent true
-              codeChanged
+              expression { codeChanged }
             }
             parallel {
 
@@ -209,7 +209,7 @@ pipeline {
         stage('Instrument tests') {
             when {
               beforeAgent true
-              codeChanged
+              expression { codeChanged }
             }
             parallel {
                 stage('F2 Tests') {
@@ -403,7 +403,7 @@ pipeline {
         stage('WaveCal Tests') {
             when {
               beforeAgent true
-              codeChanged
+              expression { codeChanged }
               expression { runtests_wavecal == 1 }
             }
 
@@ -443,7 +443,7 @@ pipeline {
         stage('Slower tests') {
             when {
               beforeAgent true
-              codeChanged
+              expression { codeChanged }
             }
             parallel {
                 stage('GMOS LS Tests') {
