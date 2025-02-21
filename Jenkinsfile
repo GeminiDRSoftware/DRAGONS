@@ -25,11 +25,26 @@ def runtests_gmos    = 1
 
 @NonCPS
 def checkForCodeChanges() {
-  def CHANGE_SETS = currentBuild.changeSets
+  def build = currentBuild
+  def CHANGE_SETS = build.changeSets
+
+  while (!CHANGE_SETS) {
+    // Find the last change set, in case the build is manually run.
+    build = build.previousBuild
+
+    if (build == null) {
+      echo "Could not find previous build with changes."
+      break
+    }
+
+    CHANGE_SETS = build.changeSets
+  }
+
   def affected_files = [] as Set
 
   for (change_set in CHANGE_SETS) {
     for (file in change_set.getAffectedFiles()) {
+      echo "Found file: ${file}"
       affected_files.add(file)
     }
   }
