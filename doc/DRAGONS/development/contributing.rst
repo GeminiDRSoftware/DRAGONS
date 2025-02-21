@@ -3,6 +3,13 @@
 Contributing to DRAGONS
 =======================
 
+.. warning:: Current staffing will not permit us to review and incorporate
+   large pull requests. If you're unsure if your idea is too large, you can
+   raise an issue before you start coding anything.
+
+   Minor fixes are always welcome!
+
+
 If you're new here, thanks for taking the time to contribute to the DRAGONS
 project! This guide is for how to contribute to the DRAGONS repository.
 
@@ -61,12 +68,6 @@ helpful:
 
 Code Review
 -----------
-
-.. warning:: Current staffing will not permit us to review and incorporate
-   large pull requests. If you're unsure if your idea is too large, you can
-   raise an issue before you start coding anything.
-
-   Minor fixes are always welcome!
 
 Once a PR has been made and marked ready for review, you will be assigned
 one or more core developers to review your code. Depending on the scope and
