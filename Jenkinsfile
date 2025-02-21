@@ -72,18 +72,7 @@ pipeline {
         stage('Pre-install') {
             when {
               beforeAgent true
-              anyOf {
-                changeset "astrodata/**"
-                changeset "geminidr/**"
-                changeset "gemini_instruments/**"
-                changeset "gempy/**"
-                changeset "recipe_system/**"
-                changeset "Jenkinsfile"
-                changeset "tox.ini"
-                changeset "pyproject.toml"
-                changeset "setup.py"
-                changeset "setup.cfg"
-              }
+              changed_code
             }
             agent { label "conda" }
             environment {
@@ -110,18 +99,7 @@ pipeline {
         stage('Quicker tests') {
             when {
               beforeAgent true
-              anyOf {
-                changeset "astrodata/**"
-                changeset "geminidr/**"
-                changeset "gemini_instruments/**"
-                changeset "gempy/**"
-                changeset "recipe_system/**"
-                changeset "Jenkinsfile"
-                changeset "tox.ini"
-                changeset "pyproject.toml"
-                changeset "setup.py"
-                changeset "setup.cfg"
-              }
+              changed_code
             }
             parallel {
 
@@ -205,18 +183,7 @@ pipeline {
         stage('Instrument tests') {
             when {
               beforeAgent true
-              anyOf {
-                changeset "astrodata/**"
-                changeset "geminidr/**"
-                changeset "gemini_instruments/**"
-                changeset "gempy/**"
-                changeset "recipe_system/**"
-                changeset "Jenkinsfile"
-                changeset "tox.ini"
-                changeset "pyproject.toml"
-                changeset "setup.py"
-                changeset "setup.cfg"
-              }
+              changed_code
             }
             parallel {
                 stage('F2 Tests') {
@@ -410,18 +377,7 @@ pipeline {
         stage('WaveCal Tests') {
             when {
               beforeAgent true
-              anyOf {
-                changeset "astrodata/**"
-                changeset "geminidr/**"
-                changeset "gemini_instruments/**"
-                changeset "gempy/**"
-                changeset "recipe_system/**"
-                changeset "Jenkinsfile"
-                changeset "tox.ini"
-                changeset "pyproject.toml"
-                changeset "setup.py"
-                changeset "setup.cfg"
-              }
+              changed_code
               expression { runtests_wavecal == 1 }
             }
 
@@ -461,18 +417,7 @@ pipeline {
         stage('Slower tests') {
             when {
               beforeAgent true
-              anyOf {
-                changeset "astrodata/**"
-                changeset "geminidr/**"
-                changeset "gemini_instruments/**"
-                changeset "gempy/**"
-                changeset "recipe_system/**"
-                changeset "Jenkinsfile"
-                changeset "tox.ini"
-                changeset "pyproject.toml"
-                changeset "setup.py"
-                changeset "setup.cfg"
-              }
+              changed_code
             }
             parallel {
                 stage('GMOS LS Tests') {
