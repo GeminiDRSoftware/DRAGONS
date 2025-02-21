@@ -31,6 +31,9 @@ def checkForCodeChanges() {
     // Find the last change set, in case the build is manually run.
     build = build.previousBuild
 
+    // TODO -- remove below for testing
+    echo "Trying with build: ${build.id}"
+
     if (build == null) {
       echo "Could not find previous build with changes."
       break
