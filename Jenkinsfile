@@ -32,6 +32,8 @@ def checkForCodeChanges() {
     previousCodeChangeCheck = false
   }
 
+  checkout scm
+
   def build = currentBuild
   def CHANGE_SETS = build.changeSets
 
@@ -106,7 +108,7 @@ def checkForCodeChanges() {
     }
   }
 
-  return previousCodeChangeCheck;
+  return previousCodeChangeCheck
 }
 
 pipeline {
