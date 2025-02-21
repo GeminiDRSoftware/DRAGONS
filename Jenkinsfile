@@ -23,7 +23,6 @@ def runtests_wavecal = 1
 def runtests_ghost   = 1
 def runtests_gmos    = 1
 
-@NonCPS
 def checkForCodeChanges() {
   def build = currentBuild
   def CHANGE_SETS = build.changeSets
