@@ -23,7 +23,7 @@ def runtests_wavecal = 1
 def runtests_ghost   = 1
 def runtests_gmos    = 1
 
-def codeChanged() {
+def checkForCodeChanges() {
   def CHANGE_SETS = currentBuilds.changeSets
   def affected_files = [] as Set
 
@@ -59,6 +59,8 @@ def codeChanged() {
   return false;
 }
 
+def codeChanged = checkForCodeChanges()
+
 pipeline {
 
     agent any
@@ -85,7 +87,7 @@ pipeline {
         stage ("Prepare"){
             when {
               beforeAgent true
-              codeChanged()
+              codeChanged
             }
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
@@ -96,7 +98,7 @@ pipeline {
         stage('Pre-install') {
             when {
               beforeAgent true
-              codeChanged()
+              codeChanged
             }
             agent { label "conda" }
             environment {
@@ -123,7 +125,7 @@ pipeline {
         stage('Quicker tests') {
             when {
               beforeAgent true
-              codeChanged()
+              codeChanged
             }
             parallel {
 
@@ -207,7 +209,7 @@ pipeline {
         stage('Instrument tests') {
             when {
               beforeAgent true
-              codeChanged()
+              codeChanged
             }
             parallel {
                 stage('F2 Tests') {
@@ -401,7 +403,7 @@ pipeline {
         stage('WaveCal Tests') {
             when {
               beforeAgent true
-              codeChanged()
+              codeChanged
               expression { runtests_wavecal == 1 }
             }
 
@@ -441,7 +443,7 @@ pipeline {
         stage('Slower tests') {
             when {
               beforeAgent true
-              codeChanged()
+              codeChanged
             }
             parallel {
                 stage('GMOS LS Tests') {
