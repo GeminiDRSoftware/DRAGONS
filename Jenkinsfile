@@ -23,7 +23,15 @@ def runtests_wavecal = 1
 def runtests_ghost   = 1
 def runtests_gmos    = 1
 
+previousCodeChangeCheck = null;
+
 def checkForCodeChanges() {
+  if (previousCodeChangeCheck != null) {
+    return previousCodeChangeCheck
+  } else {
+    previousCodeChangeCheck = false
+  }
+
   def build = currentBuild
   def CHANGE_SETS = build.changeSets
 
@@ -92,12 +100,13 @@ def checkForCodeChanges() {
   for (change_loc in change_locs) {
     for (file in affected_files) {
       if (file =~ change_loc && !(file =~ "/doc/")) {
-        return true
+        previousCodeChangeCheck = true;
+        return previousCodeChangeCheck
       }
     }
   }
 
-  return false;
+  return previousCodeChangeCheck;
 }
 
 pipeline {
