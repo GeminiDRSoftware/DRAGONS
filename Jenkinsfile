@@ -33,7 +33,7 @@ def checkForCodeChanges() {
     }
   }
 
-  println "Current changeset: ${affected_files}"
+  echo "Current changeset: ${affected_files}"
 
   def change_locs = [
     "astrodata",
@@ -58,8 +58,6 @@ def checkForCodeChanges() {
 
   return false;
 }
-
-def codeChanged = checkForCodeChanges()
 
 pipeline {
 
@@ -87,7 +85,7 @@ pipeline {
         stage ("Prepare"){
             when {
               beforeAgent true
-              expression { codeChanged }
+              expression { checkForCodeChanges() }
             }
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
@@ -98,7 +96,7 @@ pipeline {
         stage('Pre-install') {
             when {
               beforeAgent true
-              expression { codeChanged }
+              expression { checkForCodeChanges() }
             }
             agent { label "conda" }
             environment {
@@ -125,7 +123,7 @@ pipeline {
         stage('Quicker tests') {
             when {
               beforeAgent true
-              expression { codeChanged }
+              expression { checkForCodeChanges() }
             }
             parallel {
 
@@ -209,7 +207,7 @@ pipeline {
         stage('Instrument tests') {
             when {
               beforeAgent true
-              expression { codeChanged }
+              expression { checkForCodeChanges() }
             }
             parallel {
                 stage('F2 Tests') {
@@ -403,7 +401,7 @@ pipeline {
         stage('WaveCal Tests') {
             when {
               beforeAgent true
-              expression { codeChanged }
+              expression { checkForCodeChanges() }
               expression { runtests_wavecal == 1 }
             }
 
@@ -443,7 +441,7 @@ pipeline {
         stage('Slower tests') {
             when {
               beforeAgent true
-              expression { codeChanged }
+              expression { checkForCodeChanges() }
             }
             parallel {
                 stage('GMOS LS Tests') {
