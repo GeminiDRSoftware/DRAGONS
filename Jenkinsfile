@@ -40,11 +40,25 @@ def checkForCodeChanges() {
   }
 
   // If past builds (limited by kept number of builds per branch) didn't have
-  // anything, last resort: check the git log for the last 24 hours.
+  // anything, penultimate resort: check the git log for the last 24 hours.
   if (!CHANGE_SETS) {
+    echo "Checking the git log for changes (last 24 hours)"
     def git_log_files = sh(
       returnStdout: true,
       script: "git log --since=1.day --oneline --name-only --pretty=\"format:\""
+    )
+
+    List files = git_log_files.split('\n').findAll { it }
+    CHANGE_SETS = [files as Set] as Set
+  }
+
+  // Final check: just get the last 5 commits and check against those (assuming
+  // no commits made in last 24 hours, still doing a manual build).
+  if (!CHANGE_SETS) {
+    echo "Checking the git log for changes (last 5 commits)"
+    def git_log_files = sh(
+      returnStdout: true,
+      script: "git log -5 --oneline --name-only --pretty=\"format:\""
     )
 
     List files = git_log_files.split('\n').findAll { it }
