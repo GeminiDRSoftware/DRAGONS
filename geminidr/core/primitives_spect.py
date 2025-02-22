@@ -3800,7 +3800,9 @@ class Spect(Resample):
         w2 : float
             Wavelength of last pixel (nm). See Notes below.
         dw : float
-            Dispersion (nm/pixel). See Notes below.
+            Dispersion (nm/pixel) for linearized spectra, or fractional
+            wavelength increase per pixel (w_{i+1} / w_i - 1) for
+            loglinearized spectra. See Notes below.
         npix : int
             Number of pixels in output spectrum. See Notes below.
         conserve : bool
@@ -3813,8 +3815,10 @@ class Spect(Resample):
         trim_spectral: bool
             Output data will cover the intersection (rather than union) of
             the inputs' wavelength coverage?
-        force_linear : bool
-            Force a linear output wavelength solution?
+        output_wave_scale: str ["linear" | "loglinear" | "reference"]
+            what to use for the output wavelength scale(s)
+        single_wave_scale: bool (XD only, otherwise False)
+            for multiple orders, resample to a single wavelength solution?
         dq_threshold : float
             The fraction of a pixel's contribution from a DQ-flagged pixel to
             be considered 'bad' and also flagged.
@@ -3824,8 +3828,6 @@ class Spect(Resample):
         If ``w1`` or ``w2`` are not specified, they are computed from the
         individual spectra: if ``trim_data`` is True, this is the intersection
         of the spectra ranges, otherwise this is the union of all ranges,
-
-        If ``dw`` or ``npix`` are specified, the spectra are linearized.
 
         Returns
         -------
@@ -3844,7 +3846,8 @@ class Spect(Resample):
         interpolant = params["interpolant"]
         trim_spatial = params["trim_spatial"]
         trim_spectral = params["trim_spectral"]
-        force_linear = params.get("force_linear", True)
+        output_spectral = params["output_wave_scale"]
+        single_spectral = params.get("single_wave_scale", True)
         dq_threshold = params["dq_threshold"]
 
         # Check that all ad objects are either 1D or 2D
@@ -3853,8 +3856,16 @@ class Spect(Resample):
             log.warning('Input list empty. Doing nothing.')
             return adinputs
         elif len(ndim) != 1:
-            raise ValueError('inputs must have the same dimension')
+            raise ValueError('inputs must have the same dimensionality')
         ndim = ndim.pop()
+
+        # If we're not resampling everything onto a single wavelength scale,
+        # then the inputs need to have the same number of extensions (orders)
+        num_ext = [len(ad) for ad in adinputs]
+        if not single_spectral and len(set(num_ext)) > 1:
+            raise ValueError("Inputs do not all have the same number of "
+                             "extensions, but single_spectral=False")
+        num_ext = max(num_ext)
 
         if ndim > 1:
             adjust_key = self.timestamp_keys['adjustWCSToReference']
@@ -3886,28 +3897,15 @@ class Spect(Resample):
                                        for ad, r in zip(adinputs,
                                                         ref_pixels_dict[j])]
 
-        # If only one variable is missing we compute it from the others
-        nparams = 4 - [w1, w2, dw, npix].count(None)
-        if nparams == 3:
-            if npix is None:
-                npix = int(np.ceil((w2 - w1) / dw)) + 1
-                w2 = w1 + (npix - 1) * dw
-            elif w1 is None:
-                w1 = w2 - (npix - 1) * dw
-            elif w2 is None:
-                w2 = w1 + (npix - 1) * dw
-            else:
-                dw = (w2 - w1) / (npix - 1)
-
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix), and compute the final bounds (w1out, w2out)
         # if they are not provided
         info = []
-        w1out, w2out, dwout, npixout = w1, w2, dw, npix
-        # Create empty arrays to hold the minimum/maximum wavelengths for each
-        # extension in each ad
-        w1_arr = np.empty((len(adinputs), len(adinputs[0])))
-        w2_arr = np.empty_like(w1_arr)
+        # Create arrays to hold the minimum/maximum wavelengths for each
+        # extension in each AD. Use NaNs in case there are different
+        # numbers of extensions in different ADs.
+        w1_arr = np.full((len(adinputs), len(adinputs[0])), np.nan)
+        w2_arr = np.full_like(w1_arr, np.nan)
         for i, ad in enumerate(adinputs):
             adinfo = []
             for iext, ext in enumerate(ad):
@@ -3922,87 +3920,129 @@ class Spect(Resample):
 
             info.append(adinfo)
 
-        # The outer min()/max() works to find the lowest/highest value from all
-        # extensions, after the inner .max()/.min() has found the appropriate
-        # value for each array across all input ad objects
+        # Compute the output wavelength range for each extension. We can
+        # calculate the overall output range if we're combining to a single
+        # extension later
         if trim_spectral:
-            # Go for the shortest interval in each extension
-            if w1 is None:
-                w1out = min(w1_arr.max(axis=0))
-            if w1 is None:
-                w2out = max(w2_arr.min(axis=0))
+            wave_min = w1_arr.max(axis=0)
+            wave_max = w2_arr.min(axis=0)
         else:
-            # Go for the longest interval
-            if w1 is None:
-                w1out = min(w1_arr.min(axis=0))
-            if w2 is None:
-                w2out = max(w2_arr.max(axis=0))
+            wave_min = w1_arr.min(axis=0)
+            wave_max = w2_arr.max(axis=0)
 
-        if trim_spectral:
-            if w1 is None:
-                w1out = min(w1_arr[0])
-            if w2 is None:
-                w2out  = max(w2_arr[0])
-            if w1 is None or w2 is None:
-                log.fullinfo("Trimming data to size of reference spectra")
+        # create new wavelength scale only if the grid parameters are specified
+        new_wave_scale = (output_spectral != "reference" or
+                          npix is not None or dw is not None)
+        if new_wave_scale:
+            nparams = 4 - [w1, w2, dw, npix].count(None)
+            if w1 is not None:
+                w1 = np.full((num_ext,), w1)
+            if w2 is not None:
+                w2 = np.full((num_ext,), w2)
+            if npix is not None:
+                npix = np.full((num_ext,), npix)
+            if dw is not None:
+                dw = np.full((num_ext,), dw)
 
-        # If more than one extension, find the one with the wavelength model
-        # with the smallest dispersion. If linearizing the wavelength scale,
-        # using the smallest dispersion stops undersampling the blue orders
-        if len(info[0]) > 1:
-            dispersions = np.array([info[0][i]['dw'] for i in range(len(refad))])
-            small_disp_index = dispersions.argmin()
+            # Determine the new wavelength scale(s). We need to compute 3
+            # parameters as the 4th is then calculable. First, we copy the
+            # start and end wavelengths if those aren't specified. If neither
+            # dw nor npix are specified, the behaviour depends on whether we
+            # are resampling to a single wavelength scale: if so, then we want
+            # to preserve the dispersion to avoid undersampling but, if not,
+            # then we want to preserve the number of pixels per extension.
+            while nparams < 3:
+                if w1 is None:
+                    w1 = wave_min
+                elif w2 is None:
+                    w2 = wave_max
+                elif single_spectral and dw is None:
+                    w1 = np.full_like(w1, np.nanmin(w1))
+                    w2 = np.full_like(w2, np.nanmax(w2))
+                    if output_spectral == "linear":
+                        dw = np.array([extinfo['dw'] for adinfo in info
+                                       for extinfo in adinfo])
+                    else:
+                        # dw has been calculated assuming the spectrum is
+                        # linear, so we repeat that assumption
+                        dw = np.array([extinfo['dw'] / extinfo['w2'] - 1
+                                       for adinfo in info for extinfo in adinfo])
+                    dw = np.full_like(w1, dw.min())
+                elif npix is None:
+                    npix = np.array([[ext.shape[dispaxis] for ext in ad]
+                                     for ad in adinputs]).max(axis=0)
+                nparams += 1
 
-        # linearize spectra only if the grid parameters are specified
-        linearize = force_linear or npix is not None or dw is not None
-        if linearize:
-            if npixout is None and dwout is None:
-                # if both are missing, use the reference spectrum
-                index = small_disp_index if len(info[0]) > 1 else 0
-                dwout = info[0][index]['dw']
-            if npixout is None:
-                npixout = int(np.ceil((w2out - w1out) / dwout)) + 1
-            elif dwout is None:
-                dwout = (w2out - w1out) / (npixout - 1)
+            # Now compute the 4th parameter
+            if npix is None:
+                if output_spectral == "linear":
+                    npix = np.ceil((w2 - w1) / dw).astype(int) + 1
+                    w2 = w1 + (npix - 1) * dw
+                else:  # loglinear
+                    npix = np.ceil(np.log(w2 / w1) / np.log(1 + dw) - 1)
+                    w2 = w1 * (1 + dw) ** (npix - 1)
+            elif w1 is None:
+                w1 = w2 - (npix - 1) * dw
+            elif w2 is None:
+                w2 = w1 + (npix - 1) * dw
+            elif output_spectral == "linear":  # dw is None
+                dw = (w2 - w1) / (npix - 1)
+            else:  # dw is None and we're loglinearizing
+                dw = (w2 / w1) ** (1 / (npix - 1)) - 1
 
-        # For cross-dispersed spectra, there is no gaurantee than a non-linear
-        # wavelength scale for a single order will cover the range of the entire
-        # observation, or that its inverse will be good. Therefore, when calling
-        # this primitive for cross-dispersed spectra, it is forced to use a
-        # linear model.
-        if linearize:
-            new_wave_model = models.Scale(dwout) | models.Shift(w1out)
-        else:
-            # compute the inverse model needed to go to the reference
-            # spectrum grid. Due to imperfections in the Chebyshev inverse
-            # we check whether the wavelength limits are the same as the
-            # reference spectrum.
-            index = small_disp_index if len(info[0]) > 1 else 0
-            wave_model_ref = info[0][-1]['wave_model'].copy()
-            wave_model_ref.name = None
-            limits = wave_model_ref.inverse([w1out, w2out])
-            if info[0][index]['w1'] == w1out:
-                limits[0] = round(limits[0])
-            if info[0][index]['w2'] == w2out:
-                limits[1] = round(limits[1])
-                npixout = info[0][index]['npix']
-            pixel_shift = int(np.ceil(limits.min()))
-            new_wave_model = models.Shift(pixel_shift) | wave_model_ref
-            if info[0][index]['w2'] == w2out:
-                npixout = info[0][index]['npix']
-            else:
-               npixout = int(np.floor(new_wave_model.inverse([w1out,
-                                                              w2out]).max()) + 1)
-            dwout = (w2out - w1out) / (npixout - 1)
+            # needs a defined inverse if we're going to do this
+            # new_wave_models = [models.Chebyshev1D(degree=1, c0=0.5 * (this_w1 + this_w2),
+            #                                       c1 = 0.5 * (this_w2 - this_w1),
+            #                                       domain = (0, this_npix - 1),
+            #                                       name='WAVE')
+            #                    for this_w1, this_w2, this_npix in zip(w1, w2, npix)]
+            new_wave_models = []
+            for this_w1, this_dw in zip(w1, dw):
+                if output_spectral == "linear":
+                    new_wave_model = models.Scale(this_dw) | models.Shift(this_w1)
+                else:  # loglinear
+                    new_wave_model = models.Exponential1D(amplitude=this_w1, tau=1. / np.log(1 + this_dw))
+                new_wave_model.name = 'WAVE'
+                new_wave_models.append(new_wave_model)
 
-        new_wave_model.name = 'WAVE'
+        else:  # not linearizing
+            # Use the existing wavelength solution(s) of the reference AD
+            w1, w2 = wave_min, wave_max
+            npix = np.empty_like(w1, dtype=int)
+            new_wave_models = []
+            for iext, (extinfo, this_w1, this_w2) in enumerate(
+                    zip(info[0], wave_min, wave_max)):
+                wave_model_ref = extinfo['wave_model'].copy()
+                limits = wave_model_ref.inverse([this_w1, this_w2])
+                # Due to imperfections in the Chebyshev inverse, we check
+                # whether the wavelength limits are the same as the
+                # reference spectrum.
+                if extinfo['w1'] == this_w1:
+                    limits[0] = round(limits[0])
+                if extinfo['w2'] == this_w2:
+                    limits[1] = round(limits[1])
+                pixel_shift = int(np.ceil(limits.min()))
+                if pixel_shift:
+                    new_wave_model = models.Shift(pixel_shift) | wave_model_ref
+                else:
+                    new_wave_model = wave_model_ref
+                new_wave_model.name = 'WAVE'
+                new_wave_models.append(new_wave_model)
+
+                if extinfo['w2'] == this_w2:
+                    this_npix = extinfo['npix'] + pixel_shift
+                else:  # we don't know if w2 > w1
+                    this_npix = int(np.ceil(new_wave_model.inverse(
+                        [this_w1, this_w2]).max()))
+                npix[iext] = this_npix
+            dw = (w2 - w1) / (npix - 1)
+
         # dicts handle models for multiple extensions
         if ndim == 1:
-            new_wcs_models = {i: new_wave_model for i in range(len(adinputs[0]))}
+            new_wcs_models = {i: m for i, m in enumerate(new_wave_models)}
         else:
             new_wcs_models = {i: refad[i].wcs.forward_transform.replace_submodel(
-                'WAVE', new_wave_model) for i in range(len(refad))}
-
+                'WAVE', m) for i, m in enumerate(new_wave_models)}
 
         # Now let's think about the spatial direction
         if ndim > 1:
@@ -4032,18 +4072,18 @@ class Spect(Resample):
                         all_corners_dict[i], axis=1).max(axis=1) -
                         origin_dict[i] + 1)
 
-            for i in range(len(refad)):
-                output_shape_dict[i][dispaxis] = npixout
+            for i, this_npix in enumerate(npix):
+                output_shape_dict[i][dispaxis] = this_npix
                 origin_dict[i][dispaxis] = 0
         else:
             origin_dict = {i: (0,) for i in range(len(adinputs[0]))}
-            output_shape_dict = {i: (npixout,) for i in range(len(adinputs[0]))}
+            output_shape_dict = {i: (this_npix,) for i, this_npix in enumerate(npix)}
 
         adoutputs = []
         for i, ad in enumerate(adinputs):
             flux_calibrated = self.timestamp_keys["fluxCalibrate"] in ad.phu
 
-            for iext, ext in enumerate(ad):
+            for iext, (ext, new_wave_model) in enumerate(zip(ad, new_wave_models)):
                 wave_model = info[i][iext]['wave_model']
                 extn = f"{ad.filename} extension {ext.id}"
                 wave_resample = wave_model | new_wave_model.inverse
@@ -4051,7 +4091,7 @@ class Spect(Resample):
                 wave_resample.inverse = new_wave_model | wave_model.inverse
 
                 # Avoid performing a Cheb and its imperfect inverse
-                if not linearize and new_wave_model[1:] == wave_model:
+                if not new_wave_model and new_wave_model[1:] == wave_model:
                     wave_resample = models.Shift(-pixel_shift)
 
                 if ndim == 1:
@@ -4069,19 +4109,29 @@ class Spect(Resample):
                 this_conserve = conserve_or_interpolate(ext, user_conserve=conserve,
                                         flux_calibrated=flux_calibrated, log=log)
 
-                if i == 0 and not linearize:
+                if i == 0 and not new_wave_scale:
                     log.fullinfo(f"{ad.filename}: No interpolation")
                 msg = "Resampling"
-                if linearize:
-                    msg += " and linearizing"
-                log.stdinfo(f"{msg} {extn}: w1={w1out:.3f} w2={w2out:.3f} "
-                            f"dw={dwout:.3f} npix={npixout}")
+                if new_wave_scale:
+                    msg += f" and {output_spectral}izing"
+                dwstr = (f"{dw[iext]:.6f}" if output_spectral == "loglinear"
+                         else f"{dw[iext]:.3f}")
+                log.stdinfo(f"{msg} {extn}: w1={w1[iext]:.3f} w2={w2[iext]:.3f} "
+                            f"dw={dwstr} npix={npix[iext]}")
 
                 # If we resample to a coarser pixel scale, we may
                 # interpolate over features. We avoid this by subsampling
                 # back to the original pixel scale (approximately).
-                input_dw = info[i][iext]['dw']
-                subsample = int(np.ceil(abs(dwout / input_dw) - 0.1))
+                if new_wave_scale:
+                    input_dw = info[i][iext]['dw']
+                    if output_spectral == "linear":
+                        max_new_dw = dw[iext]
+                    else:  # loglinear
+                        max_new_dw = info[i][iext]['w2'] * dw[iext]
+                    subsample = int(np.ceil(abs(max_new_dw / input_dw) - 0.1))
+                else:
+                    subsample = 1
+
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
 
@@ -5718,7 +5768,7 @@ def _extract_model_info(ext):
         dispaxis = 2 - ext.dispersion_axis()
         wave_model = am.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
     npix = ext.shape[dispaxis]
-    limits = wave_model([0, npix])
+    limits = wave_model([0, npix - 1])
     w1, w2 = min(limits), max(limits)
     dw = (w2 - w1) / (npix - 1)
     return {'wave_model': wave_model, 'w1': w1, 'w2': w2,
@@ -5782,8 +5832,8 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
                     f"flux calibrated but units are {ext_unit}")
     if user_conserve is None:
         this_conserve = units_imply_conserve
-        log.stdinfo(f"Setting conserve={this_conserve} for {ext_str} since "
-                    f"units are {ext_unit}")
+        log.fullinfo(f"Setting conserve={this_conserve} for {ext_str} since "
+                     f"units are {ext_unit}")
     else:
         if user_conserve != units_imply_conserve:
             log.warning(f"conserve is set to {user_conserve} but the "

@@ -16,14 +16,15 @@ class findAperturesConfig(parameters_spect.findAperturesConfig):
 
 
 class resampleToCommonFrameConfig(parameters_spect.resampleToCommonFrameConfig):
-    """
-    For cross-dispersed spectra, the `force_linear` parameter is problematic if
-    set to `False`. A linear scale for the entire wavelength range of the
-    observation can be created from any individual order, but a non-linear scale
-    created from an arbitrary order may or may not be able to cover the entire
-    wavelength range. (And a good inverse may not be able to be created, even if
-    it does.) For these reasons, for cross-dispersed use we remove the
-    `force_linear` parameter entirely (it's set to `True` if not found).
-    """
-    def setDefaults(self):
-        del self.force_linear
+    single_wave_scale = config.Field("Resample all orders to a single wavelength scale?",
+                                     bool, False)
+
+    def validate(self):
+        super().validate()
+        if self.single_wave_scale and self.force_linear == False:
+            raise ValueError("Incompatible parameters: single_wave_scale=True"
+                             " and force_linear=False")
+        if (not self.single_wave_scale and
+                [self.w1, self.w2, self.dw, self.npix].count(None) not in (1, 4)):
+            raise ValueError("Must specify 0 or 3 resampling parameters "
+                             "(w1, w2, dw, npix) if single_wave_scale=False")

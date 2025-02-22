@@ -5,14 +5,15 @@ import os
 
 import pytest
 
-import astrodata
-import gemini_instruments
+import numpy as np
+
+import astrodata, gemini_instruments
 from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 from gempy.utils import logutils
 
 # Test parameters ------------------------------------------------------
 test_datasets = (
-    # Standard star observations
+    # Standard star observations, ABBA sequence, same wavelengths
     "S20060507S0048_distortionCorrected.fits",
     "S20060507S0049_distortionCorrected.fits",
     "S20060507S0050_distortionCorrected.fits",
@@ -43,20 +44,48 @@ def setup_log(change_working_dir):
 
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
-def test_resampling(adinputs, caplog):
-
+def test_resampling_single_wave_scale(adinputs, caplog):
     p = GNIRSCrossDispersed(adinputs)
     p.adjustWCSToReference()
-    adout = p.resampleToCommonFrame()
-    _check_params(caplog.records, 'w1=703.092 w2=2519.096 dw=0.237 npix=7654')
-    for ad in adout:
+    # default is to linearize
+    adoutputs = p.resampleToCommonFrame(single_wave_scale=True)
+    _check_params(caplog.records, 'w1=703.309 w2=2519.200 dw=0.237 npix=7660')
+    for ad in adoutputs:
         for i, ext in enumerate(ad):
-            assert ext.shape == (7654, ext_widths[i])
+            assert ext.shape == (7660, ext_widths[i])
+
 
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
 def test_resampling_and_w1_w2(adinputs, caplog):
     p = GNIRSCrossDispersed(adinputs)
     p.adjustWCSToReference()
-    adout = p.resampleToCommonFrame(w1=700.000, w2=2520.160, dw=0.237)
+    # default is to linearize
+    adoutputs = p.resampleToCommonFrame(w1=700.000, w2=2520.160, dw=0.237)
     _check_params(caplog.records, 'w1=700.000 w2=2520.160 dw=0.237 npix=7681')
+    for ad in adoutputs:
+        for ext in ad:
+            w = ext.wcs(0, np.arange(ext.shape[0]))[0]
+            np.testing.assert_allclose((w.min(), w.max()), (700, 2520.16))
+            # Check it's been linearized
+            diffs = np.diff(w)
+            np.testing.assert_allclose(diffs, diffs[0])
+
+
+@pytest.mark.gnirsxd
+@pytest.mark.preprocessed_data
+def test_resampling_separate_orders(adinputs):
+    p = GNIRSCrossDispersed(adinputs)
+    waves = [ext.wcs(0, (0, 1021))[0] for ext in adinputs[0]]
+    p.adjustWCSToReference()
+    # default is to linearize
+    adoutputs = p.resampleToCommonFrame(single_wave_scale=False)
+    for ad in adoutputs:
+        for ext, ext_waves in zip(ad, waves):
+            w = ext.wcs(0, np.arange(ext.shape[0]))[0]
+            np.testing.assert_allclose((w.min(), w.max()), sorted(ext_waves))
+            # Check it's been linearized
+            diffs = np.diff(w)
+            np.testing.assert_allclose(diffs, diffs[0])
+            # Check number of dispersion pixels has been preserved
+            assert ext.shape[0] == 1022
