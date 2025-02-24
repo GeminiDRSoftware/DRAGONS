@@ -23,98 +23,6 @@ def runtests_wavecal = 1
 def runtests_ghost   = 1
 def runtests_gmos    = 1
 
-previousCodeChangeCheck = null;
-
-def checkForCodeChanges() {
-  if (previousCodeChangeCheck != null) {
-    return previousCodeChangeCheck
-  } else {
-    previousCodeChangeCheck = false
-  }
-
-  checkout scm
-
-  def build = currentBuild
-  def CHANGE_SETS = build.changeSets
-
-  while (!CHANGE_SETS) {
-    // Find the last change set, in case the build is manually run.
-    build = build.previousBuild
-
-    if (build == null) {
-      echo "Could not find previous build with changes."
-      break
-    }
-
-    CHANGE_SETS = [] as Set
-
-    for (change_set in build.changeSets) {
-      CHANGE_SETS.add(change_set.getAffectedFiles())
-    }
-  }
-
-  // If past builds (limited by kept number of builds per branch) didn't have
-  // anything, penultimate resort: check the git log for the last 24 hours.
-  if (!CHANGE_SETS) {
-    echo "Checking the git log for changes (last 24 hours)"
-    def git_log_files = sh(
-      returnStdout: true,
-      script: "git log --since=1.day --oneline --name-only --pretty=\"format:\""
-    )
-
-    List files = git_log_files.split('\n').findAll { it }
-    CHANGE_SETS = [files as Set] as Set
-  }
-
-  // Final check: just get the last 5 commits and check against those (assuming
-  // no commits made in last 24 hours, still doing a manual build).
-  if (!CHANGE_SETS) {
-    echo "Checking the git log for changes (last 5 commits)"
-    def git_log_files = sh(
-      returnStdout: true,
-      script: "git log -5 --oneline --name-only --pretty=\"format:\""
-    )
-
-    List files = git_log_files.split('\n').findAll { it }
-    CHANGE_SETS = [files as Set] as Set
-  }
-
-  def affected_files = [] as Set
-
-  for (change_set in CHANGE_SETS) {
-    for (file in change_set) {
-      echo "Found file: ${file}"
-      affected_files.add(file)
-    }
-  }
-
-  echo "Current changeset: ${affected_files}"
-
-  def change_locs = [
-    "astrodata",
-    "geminidr",
-    "gemini_instruments",
-    "gempy",
-    "recipe_system",
-    "Jenkinsfile",
-    "tox.ini",
-    "pyproject.toml",
-    "setup.py",
-    "setup.cfg",
-  ]
-
-  for (change_loc in change_locs) {
-    for (file in affected_files) {
-      if (file =~ change_loc && !(file =~ "/doc/")) {
-        previousCodeChangeCheck = true;
-        return previousCodeChangeCheck
-      }
-    }
-  }
-
-  return previousCodeChangeCheck
-}
-
 pipeline {
 
     agent any
@@ -137,6 +45,26 @@ pipeline {
     }
 
     stages {
+
+        stage ("Check for code changes") {
+          when {
+            allOf {
+              changeset ".*"
+              not {
+                changeset pattern: ".*(?!/doc/).*", comparator: "REGEXP"
+              }
+            }
+          }
+
+          // Abort; only documentation (which is not handled by Jenkins)
+          steps {
+            script {
+              currentBuild.result = 'ABORTED';
+              error("Aborting the build: only documentation found. You may manually run this build if you really want to.")
+            }
+          }
+
+        }
 
         stage ("Prepare"){
             when {
