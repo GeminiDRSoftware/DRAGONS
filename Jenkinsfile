@@ -46,8 +46,13 @@ pipeline {
 
     stages {
 
+        stage("Initial checkout") {
+          steps {
+            checkout scm
+          }
+        }
+
         stage ("Check for code changes") {
-          checkout scm
           when {
             allOf {
               changeset ".*"
