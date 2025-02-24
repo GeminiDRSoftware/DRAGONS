@@ -47,6 +47,7 @@ pipeline {
     stages {
 
         stage ("Check for code changes") {
+          checkout scm
           when {
             allOf {
               changeset ".*"
