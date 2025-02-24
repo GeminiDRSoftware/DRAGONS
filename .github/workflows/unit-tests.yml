@@ -3,6 +3,17 @@ name: Run unit tests
 on:
   # pull_request:
   push:
+    paths:
+      - astrodata/**
+      - geminidr/**
+      - gemini_instruments/**
+      - gempy/**
+      - recipe_system/**
+      - tox.ini
+      - pyproject.toml
+      - setup.py
+      - setup.cfg
+      - .github/**
   workflow_dispatch:
   schedule:
     # Run every Sunday at 03:53 UTC

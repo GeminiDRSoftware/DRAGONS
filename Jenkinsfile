@@ -46,6 +46,32 @@ pipeline {
 
     stages {
 
+        stage("Initial checkout") {
+          steps {
+            checkout scm
+          }
+        }
+
+        stage ("Check for code changes") {
+          when {
+            allOf {
+              changeset ".*"
+              not {
+                changeset pattern: ".*(?!/doc/).*", comparator: "REGEXP"
+              }
+            }
+          }
+
+          // Abort; only documentation (which is not handled by Jenkins)
+          steps {
+            script {
+              currentBuild.result = 'ABORTED';
+              error("Aborting the build: only documentation found. You may manually run this build if you really want to.")
+            }
+          }
+
+        }
+
         stage ("Prepare"){
             steps{
                 echo "Step would notify STARTED when dragons_ci is available"
@@ -348,7 +374,7 @@ pipeline {
 
         stage('WaveCal Tests') {
             when {
-                expression { runtests_wavecal == 1 }
+              expression { runtests_wavecal == 1 }
             }
 
             agent { label "master" }

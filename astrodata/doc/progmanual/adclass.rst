@@ -6,6 +6,8 @@
 AstroData and Derivatives
 *************************
 
+.. todo:: remove this, for jenkins tests
+
 The |AstroData| class is the main interface to the package. When opening files
 or creating new objects, a derivative of this class is returned, as the
 |AstroData| class is not intended to be used directly. It provides the logic to
