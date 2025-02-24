@@ -25,6 +25,9 @@ from .utils import (assign_only_single_slice, astro_data_descriptor,
 
 NO_DEFAULT = object()
 
+# TODO: REMOVE -- for jenkins testing
+pass
+
 
 _arit_doc = """
     Performs {name} by evaluating ``self {op} operand``.
