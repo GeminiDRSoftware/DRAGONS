@@ -87,8 +87,7 @@ setup(name='dragons',
           'bokeh>=3.0',
           'bottleneck>=1.2',
           'future>=0.17',
-        # 'gemini_calmgr>=1.1',  # these need uploading to PyPI first
-        # 'gemini_obs_db>=1.0',
+        # 'FitsStorage>=3.4.0',  # this would need uploading to PyPI first
           'gwcs>=0.15',
           'holoviews',
           'jinja2>=3.0',
@@ -102,7 +101,7 @@ setup(name='dragons',
           'scikit-image>=0.21',
           'scipy>=1.3',
           'specutils>=1.1',
-          'sqlalchemy',
+          'sqlalchemy>=2.0.0',
       ],
       extras_require={
           'all': ['ginga', 'imexam'],
