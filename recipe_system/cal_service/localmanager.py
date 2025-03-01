@@ -233,7 +233,7 @@ class LocalManager:
             self.ingester.ingest_file(iqe)
 
             if iqe.failed:
-                log.warn(f"Ingest failed for file {iqe.filename}: {iqe.error}")
+                log.warning(f"Ingest failed for file {iqe.filename}: {iqe.error}")
 
         except Exception as err:
             self.session.rollback()
