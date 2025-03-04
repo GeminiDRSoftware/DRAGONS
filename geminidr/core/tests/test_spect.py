@@ -609,7 +609,7 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
                     flux_calibrated=flux_calibrated, log=p.log)
     correct, warn = RESULTS[unit, flux_calibrated, user_conserve]
     assert conserve == correct
-    warning_given = any("WARNING" in record.message for record in caplog.records)
+    warning_given = any(record.levelname == 'WARNING' for record in caplog.records)
     assert warn == warning_given
 
 
