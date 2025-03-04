@@ -6,9 +6,7 @@
 # ------------------------------------------------------------------------------
 # $Id$
 # ------------------------------------------------------------------------------
-import types
 import logging
-from datetime import time
 from logging import handlers
 from collections.abc import Iterable
 
@@ -18,10 +16,6 @@ SW = 3
 
 # Turn off logging exception messages
 logging.raiseExceptions = 0
-
-# Logging levels
-ll = {'CRITICAL':50, 'ERROR':40, 'WARNING' :30, 'STATUS':25,
-      'STDINFO' :21, 'INFO' :20, 'FULLINFO':15, 'DEBUG' :10}
 
 def add_filter(filt, log):
     """
@@ -43,64 +37,75 @@ def add_filter(filt, log):
         log.addFilter(filt(log))
 
 
-def customize_log(log=None):
+def customize_logger(log=None):
     """
-    Sets up custom attributes for logger
+    Adds the DRAGONS custom log levels to the logging module.
+    Adds methods to the given logger (or the root logger if logger is None)
+    to facilitate logging messages with the custom log levels.
+
+    The extra logging methods added are: logger.status(), logger.stdinfo() and
+    logger.fullinfo()
 
     Parameters
     ----------
     log : <logging.Logger>
-          Logger object from logging.getLogger()
-
-    Returns
-    -------
-    <void>
+          Logger object from logging.getLogger(). Usually leave this as None
+          to have the extra methods added to the root logger
 
     """
-    def arghandler(args=None, levelnum=None, prefix=None):
-        largs = list(args)
-        slargs = str(largs[0]).split('\n')
-        for line in slargs:
-            if prefix:
-                line = prefix + line
-            if len(line) == 0:
-                log.log(levelnum, '')
-            else:
-                log.log(levelnum, line)
 
-    def ccritical(*args):
-        arghandler(args, ll['CRITICAL'], 'CRITICAL - ' )
-    def cerror(*args):
-        arghandler(args, ll['ERROR'], 'ERROR - ')
-    def cwarning(*args):
-        arghandler(args, ll['WARNING'], 'WARNING - ')
-    def cstatus(*args):
-        arghandler(args, ll['STATUS'])
-    def cstdinfo(*args):
-        arghandler(args, ll['STDINFO'])
-    def cinfo(*args):
-        arghandler(args, ll['INFO'])
-    def cfullinfo(*args):
-        arghandler(args, ll['FULLINFO'])
-    def cdebug(*args):
-        arghandler(args, ll['DEBUG'], 'DEBUG - ')
+    # If this logger has already been customized, this is a no-op
+    if getattr(log, 'customized_for_dragons', None):
+        return
 
-    setattr(log, 'critical', ccritical)
-    setattr(log, 'error', cerror)
-    setattr(log, 'warning', cwarning)
-    setattr(log, 'status', cstatus)
-    setattr(log, 'stdinfo', cstdinfo)
-    setattr(log, 'info', cinfo)
-    setattr(log, 'fullinfo', cfullinfo)
-    setattr(log, 'debug', cdebug)
+    # Add the marker flag to the log object to record the fact that it has
+    # been customized for DRAGONS.
+    log.customized_for_dragons = True
 
+    # Register the extra logging levels with the logging module. The native
+    # levels can be found at
+    # https://docs.python.org/3/library/logging.html#levels
+    extra_levels = {25: 'STATUS', 21: 'STDINFO', 15: 'FULLINFO'}
+    for level in extra_levels:
+        levelname = extra_levels[level]
+        logging.addLevelName(level, levelname)
+
+    # Add the extra methods to the given logger to facilitate
+    # logging messages with the custom log levels.
+    if log is None:
+        log = logging.getLogger()
+
+    # It may be possible to do this more "programmatically"
+    # But here's a simple version for now
+    def status(msg, *args, **kwargs):
+        log._log(25, msg, args, **kwargs)
+
+    def stdinfo(msg, *args, **kwargs):
+        log._log(21, msg, args, **kwargs)
+
+    def fullinfo(msg, *args, **kwargs):
+        log._log(15, msg, args, **kwargs)
+
+    setattr(log, 'status', status)
+    setattr(log, 'stdinfo', stdinfo)
+    setattr(log, 'fullinfo', fullinfo)
+
+    # Add the filter for duplicate warning messages
     add_filter(DuplicateWarningFilter, log)
 
-    return
 
 def get_logger(name=None):
     """
-    Wraps logging.getLogger and returns a custom logging object
+    Wraps logging.getLogger and ensures the logger returned has been
+    customized. Note, this does not "configure" the logger - ie set
+    the handlers and formatters that are usually used with DRAGONS. That
+    should be done explicitly by the script that is going to use it, so that
+    other modules calling dragons can use the custom log levels, but define
+    their own log handlers etc.
+
+    It could be argued the same should apply to adding the custom levels, but
+    this check is left in this code for backwards compatability at least for
+    now.
 
     Parameters
     ----------
@@ -110,20 +115,78 @@ def get_logger(name=None):
     Returns
     -------
     log : <logging.Logger>
-          Logger with new levels and prefixes for some levels
+          Logger with custom log levels
 
     """
     log = logging.getLogger(name)
-    try:
-        assert log.root.handlers
-        customize_log(log)
-    except AssertionError:
-        config(mode='standard')
-        customize_log(log)
+    customize_logger(log)  # This is a no-op if it's already customized
     return log
 
+class DragonsConsoleFormatter(logging.Formatter):
+    """
+    Dragons configures (at least) two handlers on the logger. One going to
+    console, which is typically what the user sees when running DRAGONS
+    interactively, and one going to a log file. The format string for the log
+    file is verbose and includes the log level in every message.
+
+    The format string for the console output is much more concise and
+    traditionally only includes the log level for DEBUG and WARNINGS and above.
+    There's no obvious trivial way to conditionally include the level name in
+    the log message, this custom formatter class seems the best way, replacing the
+    previous implementation using custom methods for all the logging calls
+    (.info(), .debug(), etc.).
+
+    In addition, DRAGONS uses indentation in log messages. This handler supports
+    an update_indent() method to support this.
+
+    """
+
+    # We instantiate two logging.Formatters here, _short_formatter, whose format
+    # string includes an indent and just the message, and_long_formatter, whose
+    # format string includes the indent, the log level name, and the message.
+    # When we format a log record, if record's level name is in our
+    # short_levels list, we call the _short_formatter's format method, otherwise
+    # we call the _long_formatter's format method.
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Initial indent parameters
+        self._indent_level = 0
+        self._indent_width = 3
+
+        # Log level names for which to emit short form
+        self.short_levels = ['STATUS', 'STDINFO', 'INFO', 'FULLINFO']
+
+        self._init_formatters()
+
+    def _indent_str(self):
+        return ' ' * (self._indent_level * self._indent_width)
+
+    def _init_formatters(self):
+        print("Init formatters")
+        self._short_fmt_str = self._indent_str() + '%(message)s'
+        self._long_fmt_str = self._indent_str() + '%(levelname)s - %(message)s'
+        self._short_formatter = logging.Formatter(self._short_fmt_str)
+        self._long_formatter = logging.Formatter(self._long_fmt_str)
+
+    def update_indent(self, indent_level):
+        self._indent_level = indent_level
+        self._init_formatters()
+
+    def format(self, record):
+        # Levels for which to emit short form
+        print(f"{record.levelname=} {self.short_levels=}")
+        if record.levelname in self.short_levels:
+            print("short")
+            return self._short_formatter.format(record)
+        else:
+            print("long")
+            return self._long_formatter.format(record)
+
+
 def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
-           additional_handlers=None):
+           additional_handlers=None, keep_handlers=False):
     """
     Controls Dragons logging configuration.
 
@@ -145,83 +208,69 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
         An initialized handler or a list of initialized handlers to be added to the
         root logger.
 
-    Returns
-    -------
-    <void>
-
+    keep_handers : <bool>
+        If True, do not remove all existing Handlers. Default is False and will
+        remove all existing handlers.
     """
+
     logfmt = None
     lmodes = ['debug', 'standard', 'quiet', 'rotating', 'verbose']
     fm = 'w' if stomp else 'a'
     mode = mode.lower()
     if mode not in lmodes:
-        raise NameError("Unknown mode")
+        raise NameError("Unknown logging config mode")
 
-    rootlog = logging.getLogger('')
-    rootlog.handlers = []     # every call on config clears the handlers list.
+    # Get the root logger, and customize it
+    rootlog = logging.getLogger()
+    customize_logger(rootlog)
 
-    # Add the new levels
-    logging.addLevelName(ll['STATUS'], 'STATUS')
-    logging.addLevelName(ll['STDINFO'], 'STDINFO')
-    logging.addLevelName(ll['FULLINFO'], 'FULLINFO')
+    if not keep_handlers:
+        # Drop all existing handlers
+        for h in rootlog.handlers:
+            rootlog.removeHandler(h)
 
-    # Define rootlog handler(s) through basicConfig() according to mode
-    customize_log(rootlog)
+    # Add handlers depending on the logging configuration mode
+    if file_name:
+        filehandler = logging.FileHandler(file_name, mode=fm)
+        filehandler.setLevel(file_lvl)
+    stdformat = logging.Formatter(STDFMT, datefmt='%Y-%m-%d %H:%M:%S')
+    dbgformat = logging.Formatter(DBGFMT, datefmt='%Y-%m-%d %H:%M:%S')
+    consolehandler = logging.StreamHandler()
+    consolehandler.setFormatter(DragonsConsoleFormatter())
+
     if mode == 'quiet':
-        logfmt = STDFMT
-        logging.basicConfig(level=file_lvl, format=logfmt,
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            filename=file_name, filemode=fm)
+        if file_name:
+            filehandler.formatter = stdformat
+            rootlog.addHandler(filehandler)
 
     elif mode == 'standard':
-        logfmt = STDFMT
-        console_lvl = 21
-        logging.basicConfig(level=file_lvl, format=logfmt,
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            filename=file_name, filemode=fm)
-
-        # add console handler for rootlog through addHandler()
-        console = logging.StreamHandler()
-        formatter = logging.Formatter('%(message)s')
-        console.setFormatter(formatter)
-        console.setLevel(console_lvl)
-        rootlog.addHandler(console)
+        if file_name:
+            filehandler.formatter = stdformat
+            rootlog.addHandler(filehandler)
+        consolehandler.setLevel(21)
+        rootlog.addHandler(consolehandler)
 
     elif mode == 'verbose':
-        logfmt = STDFMT
-        console_lvl = 15
-        logging.basicConfig(level=file_lvl, format=logfmt,
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            filename=file_name, filemode=fm)
-
-        # add console handler for rootlog through addHandler()
-        console = logging.StreamHandler()
-        formatter = logging.Formatter('%(message)s')
-        console.setFormatter(formatter)
-        console.setLevel(console_lvl)
-        rootlog.addHandler(console)
+        if file_name:
+            filehandler.formatter = stdformat
+            rootlog.addHandler(filehandler)
+        consolehandler.setLevel(15)
+        rootlog.addHandler(consolehandler)
 
     elif mode == 'debug':
-        logfmt = DBGFMT
-        console_lvl = 10
-        file_lvl = 10
-        logging.basicConfig(level=file_lvl, format=logfmt,
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            filename=file_name, filemode=fm)
-
-        # add console handler for rootlog through addHandler()
-        console = logging.StreamHandler()
-        formatter = logging.Formatter('%(message)s')
-        console.setFormatter(formatter)
-        console.setLevel(console_lvl)
-        rootlog.addHandler(console)
+        if file_name:
+            filehandler.formatter = dbgformat
+            filehandler.setLevel(10)
+            rootlog.addHandler(filehandler)
+        consolehandler.setLevel(10)
+        rootlog.addHandler(consolehandler)
 
     elif mode == 'rotating':
-        log_handler = handlers.TimedRotatingFileHandler(file_name, when='midnight')
-        formatter = logging.Formatter(STDFMT, datefmt='%Y-%m-%d %H:%M:%S')
-        log_handler.setFormatter(formatter)
-        log_handler.setLevel(file_lvl)
-        rootlog.addHandler(log_handler)
+        filehandler = logging.handlers.TimedRotatingFileHandler(file_name,
+                                                                when='midnight')
+        filehandler.formatter = stdformat
+        if file_name:
+            rootlog.addHandler(filehandler)
 
     # Attach additional handlers if provided.
     if additional_handlers is not None:
@@ -231,7 +280,6 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
         else:
             rootlog.addHandler(additional_handlers)
 
-    return
 
 def update_indent(li=0, mode=''):
     """
@@ -245,21 +293,12 @@ def update_indent(li=0, mode=''):
     mode: <str>
           logging mode
 
-    Returns
-    -------
-    <void>
-
     """
     log = logging.getLogger('')
 
-    # Handle the case if logger has not been configured
-    if len(log.handlers) == 0:
-        return
-
     for hndl in log.handlers:
-        if isinstance(hndl, logging.StreamHandler):
-            sf = logging.Formatter(' ' * (li * SW) + '%(message)s')
-            hndl.setFormatter(sf)
+        if isinstance(hndl.formatter, DragonsConsoleFormatter):
+            hndl.formatter.update_indent(li)
         if isinstance(hndl, logging.FileHandler):
             if mode == 'debug':
                 ff = logging.Formatter(DBGFMT[:-11] + ' ' * (li * SW) + \
@@ -270,17 +309,16 @@ def update_indent(li=0, mode=''):
             hndl.setFormatter(ff)
     return
 
-def change_level(new_level=''):
+def change_level(new_level=None):
     """
     Change the level of the console handler
 
     """
-    log = logging.getLogger('')
-    for hndl in log.handlers:
-        if isinstance(hndl, logging.StreamHandler):
-            if new_level:
-                hndl.setLevel(ll[new_level.upper()])
-    return
+    log = logging.getLogger()
+    if new_level:
+        for handler in log.handlers:
+            if isinstance(handler, logging.StreamHandler):
+                log.setLevel(new_level)
 
 class DuplicateWarningFilter(logging.Filter):
     """
