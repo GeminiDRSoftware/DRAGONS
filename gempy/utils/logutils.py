@@ -164,7 +164,6 @@ class DragonsConsoleFormatter(logging.Formatter):
         return ' ' * (self._indent_level * self._indent_width)
 
     def _init_formatters(self):
-        print("Init formatters")
         self._short_fmt_str = self._indent_str() + '%(message)s'
         self._long_fmt_str = self._indent_str() + '%(levelname)s - %(message)s'
         self._short_formatter = logging.Formatter(self._short_fmt_str)
@@ -176,12 +175,9 @@ class DragonsConsoleFormatter(logging.Formatter):
 
     def format(self, record):
         # Levels for which to emit short form
-        print(f"{record.levelname=} {self.short_levels=}")
         if record.levelname in self.short_levels:
-            print("short")
             return self._short_formatter.format(record)
         else:
-            print("long")
             return self._long_formatter.format(record)
 
 
@@ -323,7 +319,7 @@ def change_level(new_level=None):
 class DuplicateWarningFilter(logging.Filter):
     """
     This class contains a filter for log messages to suppress repeated instances
-    of the same message. When a different message comes along, it prints a
+    of the same message. When a different message comes along, it logs a
     message summarizing how many duplicate messages were suppressed.
 
     Parameters
