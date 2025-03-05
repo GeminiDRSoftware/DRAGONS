@@ -22,8 +22,6 @@ from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
 
 from recipe_system.config import globalConf
-
-from recipe_system.utils.rs_utilities import log_traceback
 # ------------------------------------------------------------------------------
 def main(args):
     """

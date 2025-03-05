@@ -36,7 +36,6 @@ from recipe_system.utils.errors import PrimitivesNotFound
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_ucals
 from recipe_system.utils.reduce_utils import set_btypes
-from recipe_system.utils.rs_utilities import log_traceback
 
 from recipe_system.mappers.recipeMapper import RecipeMapper
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
@@ -590,16 +589,15 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
         try:
             primitive_as_recipe()
         except Exception as err:
-            log_traceback(log)
-            log.error(str(err))
+            log.error("Reduce received an unhandled exception.", exc_info=True)
             raise
     else:
         _logheader(recipe, recipename)
         try:
             recipe(p)
         except Exception:
-            log.error("Reduce received an unhandled exception. Aborting ...")
-            log_traceback(log)
+            log.error("Reduce received an unhandled exception. Aborting ...",
+                      exc_info=True)
             log.stdinfo("Writing final outputs ...")
             try:
                 for ad in p.streams['main']:
