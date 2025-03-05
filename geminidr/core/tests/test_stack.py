@@ -88,7 +88,7 @@ def test_error_extension_number(niri_adinputs):
 def test_error_extension_shape(niri_adinputs, caplog):
     niri_adinputs[1][0].data = np.zeros((3, 3))
     p = NIRIImage(niri_adinputs)
-    match = "Not all inputs images have the same shape"
+    match = "Not all the matching extensions have the same shape."
     with pytest.raises(IOError, match=match):
         p.stackFrames()
 
