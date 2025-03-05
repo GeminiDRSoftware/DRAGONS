@@ -580,6 +580,12 @@ class resampleToCommonFrameConfig(config.Config):
             raise ValueError("Cannot specify grid parameters if "
                              "output_wave_scale='reference'")
 
+        # We rely on an analytical inverse to the wavelength solution that is
+        # only valid over the extent of its extension. Extrapolating it could
+        # lead to large errors. TODO: gwcs's numerical inverse?
+        if self.output_wave_scale == "reference" and not self.trim_spectral:
+            raise ValueError("Must set trim_spectral=True if output_wave_scale='reference'")
+
 
 class separateSkyConfig(parameters_preprocess.separateSkyConfig):
     debug_allowable_perpendicular_offset = config.RangeField(

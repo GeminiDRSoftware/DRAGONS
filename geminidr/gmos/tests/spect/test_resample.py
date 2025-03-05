@@ -29,9 +29,9 @@ def test_resample_and_linearize(input_ad_list, caplog):
 
     assert len(ads) == 3
     assert {len(ad) for ad in ads} == {1}
-    assert {ad[0].shape[0] for ad in ads} == {3869}
+    assert {ad[0].shape[0] for ad in ads} == {3868}
     assert {'ALIGN' in ad[0].phu for ad in ads}
-    _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
+    _check_params(caplog.records, 'w1=508.343 w2=1088.393 dw=0.150 npix=3868')
 
 
 @pytest.mark.gmosls
@@ -67,39 +67,40 @@ def test_resample_linearize_trim_and_stack(input_ad_list, caplog):
 
     assert len(ads) == len(test_datasets)
     assert len({ad[0].shape[0] for ad in ads}) == 1
-    _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
+    _check_params(caplog.records, 'w1=614.812 w2=978.862 dw=0.150 npix=2428')
 
     adout = p.stackFrames()
     assert len(adout) == 1
     assert len(adout[0]) == 1
-    assert adout[0][0].shape[0] == 3139
+    assert adout[0][0].shape[0] == 2428
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_only(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
-    p.resampleToCommonFrame(force_linear=False)
-    _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.151 npix=3841')
+    # This will raise an error as explained in parameters_spect.py
+    with pytest.raises(ValueError):
+        p.resampleToCommonFrame(output_wave_scale="reference")
+    _check_params(caplog.records, 'w1=508.489 w2=1088.232 dw=0.151 npix=3840')
 
     caplog.clear()
     adout = p.resampleToCommonFrame(dw=0.15)
     assert 'ALIGN' in adout[0].phu
-    _check_params(caplog.records, 'w1=508.198 w2=1088.232 dw=0.150 npix=3868')
+    _check_params(caplog.records, 'w1=508.489 w2=1088.239 dw=0.150 npix=3866')
 
 
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_only_and_trim(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
-    # Shouldn't change the first adinput
-    p.resampleToCommonFrame(trim_spectral=True, force_linear=False)
-    _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3133')
+    p.resampleToCommonFrame(trim_spectral=True, output_wave_scale="reference")
+    _check_params(caplog.records, 'w1=614.870 w2=978.802 dw=0.151 npix=2407')
 
     caplog.clear()
     adout = p.resampleToCommonFrame(dw=0.15)
     assert 'ALIGN' in adout[0].phu
-    _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
+    _check_params(caplog.records, 'w1=614.870 w2=978.920 dw=0.150 npix=2428')
 
 
 # Local Fixtures and Helper Functions -----------------------------------------

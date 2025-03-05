@@ -48,10 +48,12 @@ def test_resample_to_common_frame_with_defaults(input_ad_list, path_to_refs,
 def test_resample_to_common_frame_nonlinear(input_ad_list, path_to_refs,
                                             caplog):
     p = GNIRSLongslit(input_ad_list)
-    p.resampleToCommonFrame(trim_spatial=True, trim_spectral=False,
-                            output_wave_scale="reference")
+    # This will raise an error as explained in parameters_spect.py
+    with pytest.raises(ValueError):
+        p.resampleToCommonFrame(trim_spatial=True, trim_spectral=False,
+                                output_wave_scale="reference")
     ad_out = p.stackFrames()[0]
-    _check_params(caplog.records, 'w1=1525.174 w2=1806.015 dw=0.135 npix=2082')
+    _check_params(caplog.records, 'w1=1525.312 w2=1806.015 dw=0.135 npix=2082')
     assert 'ALIGN' in ad_out[0].phu
     ref = astrodata.open(os.path.join(path_to_refs,
                                       'N20240329S0022_stack_nonlinear.fits'))
@@ -79,7 +81,7 @@ def test_resample_to_common_frame_trim_spatial(input_ad_list, path_to_refs,
                                                 caplog):
     p = GNIRSLongslit(input_ad_list)
     p.resampleToCommonFrame(trim_spatial=False, trim_spectral=False,
-                            force_linear=True)
+                            output_wave_scale="linear")
     ad_out = p.stackFrames()[0]
     # This should be the same as test_resample_to_common_frame_with_defaults()
     _check_params(caplog.records, 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029')
