@@ -13,7 +13,7 @@ class biasCorrectConfig(parameters_generic.calRequirementConfig):
 class subtractOverscanConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_overscanSubtracted", optional=True)
     function = config.ChoiceField("Fitting function", str,
-                           allowed={"none": "Row-by-row values",
+                           allowed={"none": "Row-by-row average of values",
                                     "spline3": "Cubic spline",
                                     "chebyshev": "Chebyshev polynomial"},
                            default="spline3", optional=False)

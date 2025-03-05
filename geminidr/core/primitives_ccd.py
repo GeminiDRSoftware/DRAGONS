@@ -132,7 +132,7 @@ class CCD(PrimitivesBASE):
         :"spline": using *order* equally-sized cubic spline pieces or, if
                   order=None or 0, a spline that provides a reduced chi^2=1
         :"none":   no function is fit, and the value for each row is determined
-                  by the overscan pixels in that row
+                  by the average of the overscan pixels in that row.
 
         The fitting is done iteratively but, in the first instance, a running
         median of the rows is calculated and rows that deviate from this median
