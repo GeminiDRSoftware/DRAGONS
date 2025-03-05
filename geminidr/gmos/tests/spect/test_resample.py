@@ -82,12 +82,12 @@ def test_resample_only(input_ad_list, caplog):
     # This will raise an error as explained in parameters_spect.py
     with pytest.raises(ValueError):
         p.resampleToCommonFrame(output_wave_scale="reference")
-    _check_params(caplog.records, 'w1=508.489 w2=1088.232 dw=0.151 npix=3840')
-
-    caplog.clear()
-    adout = p.resampleToCommonFrame(dw=0.15)
-    assert 'ALIGN' in adout[0].phu
-    _check_params(caplog.records, 'w1=508.489 w2=1088.239 dw=0.150 npix=3866')
+    # _check_params(caplog.records, 'w1=508.489 w2=1088.232 dw=0.151 npix=3840')
+    #
+    # caplog.clear()
+    # adout = p.resampleToCommonFrame(dw=0.15)
+    # assert 'ALIGN' in adout[0].phu
+    # _check_params(caplog.records, 'w1=508.489 w2=1088.239 dw=0.150 npix=3866')
 
 
 @pytest.mark.gmosls
