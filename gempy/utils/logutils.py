@@ -1,11 +1,44 @@
+"""
+gempy.utils.logutils provides functions to support logging in DRAGONS. There are
+two groups of functions:
+
+Logging setup:
+
+- customize_logger()
+DRAGONS logging uses some extra non-standard logging levels. The
+customize_logger() function provided here will add the extra levels to the
+logging namespace, and will also add methods to a logger to log messages
+with those levels - eg log.fullinfo() is the equivalent of log.info() but for
+the custom FULLINFO level. It will also add a filter to avoid identical repeat
+warning messages. It will *not* add or remove handlers to or from the logger.
+
+3rd party applications calling dragons code that configure their own log
+handlers should call customize_logger() to add the extra levels to the logger.
+
+- config()
+This is the traditional logging configuration method for DRAGONS. It will call
+customize_logger() to set up additional log levels. It will also add file and
+stream (console) handlers to the logger. The console handler gets a custom
+formatter that includes the level name in the output only for non-info-like
+levels.
+
+Some other utility methods are provided to support logging in DRAGONS:
+
+- get_logger() gets the root logger, and ensures that customize_logger has been
+run on it.
+
+- update_indent() updates the format strings, and the console log custom
+formatter, to facilitate indenting log messages to reflect call stack depth in
+recipes and primitives.
+"""
+
 #
 #                                                                  gemini_python
 #
 #                                                                    gempy.utils
 #                                                                    logutils.py
 # ------------------------------------------------------------------------------
-# $Id$
-# ------------------------------------------------------------------------------
+
 import logging
 from logging import handlers
 from collections.abc import Iterable
