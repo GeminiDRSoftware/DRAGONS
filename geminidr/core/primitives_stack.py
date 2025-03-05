@@ -204,7 +204,12 @@ class Stack(PrimitivesBASE):
 
         if len({len(ad) for ad in adinputs}) > 1:
             raise OSError("Not all inputs have the same number of extensions")
-        if len({ext.nddata.shape for ad in adinputs for ext in ad}) > 1:
+        if separate_ext:
+            for i in range(len(adinputs[0])):
+                if len({ad[i].nddata.shape for ad in adinputs}) > 1:
+                    raise OSError(
+                        "Not all the matching extensions have the same shape.")
+        elif len({ext.nddata.shape for ad in adinputs for ext in ad}) > 1:
             raise OSError("Not all inputs images have the same shape")
 
         # We will determine the average gain from the input AstroData
