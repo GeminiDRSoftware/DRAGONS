@@ -89,10 +89,14 @@ class Spect(Resample):
             Wavelength calibrated 1D or 2D spectra.
         suffix : str
             Suffix to be added to output files
-        method : str ['correlation' | 'offsets']
-            Method to use to compute offsets. 'correlation' uses a
-            correlation of the slit profiles (the 2d images stacked
-            on the dispersion axis), 'offsets' uses the QOFFSET keyword.
+        method : str ['sources_wcs' | 'sources_offsets' | 'offsets']
+            Method to use to compute offsets. 'sources_wcs' uses a
+            correlation of the slit profiles using WCS as initial condition
+            (the 2d images stacked on the dispersion axis). 'sources_offsets'
+            uses a correlation too but using telescope offsets from the headers
+            as initial condition.  Finally, 'offsets' uses only the telescope
+            offsets (the QOFFSET keyword).
+            Default: sources_wcs
         region: str / None
             pixel region for determining slit profile for cross-correlation
         tolerance : float
