@@ -23,6 +23,7 @@ Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS
    ex1_gnirsls_Kband32mm
    ex2_gnirsls_Jband111mm
    ex3_gnirsls_Lband10mm
+   ex4_gnirsls_Kband111mm_red
    tips_and_tricks
    issues_and_limitations
    interactive
