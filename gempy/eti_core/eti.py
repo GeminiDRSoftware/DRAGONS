@@ -13,13 +13,20 @@ def loop_process(in_queue, out_queue):
     Parameters
     ----------
     in_queue : multiprocessing.Queue
-        (add docstring)
+        A queue from which commands are received for execution.
     out_queue : multiprocessing.Queue
-        (add docstring)
+        A queue to return the results of the executed commands.
+
+    Notes
+    -----
+    - If `None` is received, it breaks out of the loop and exits cleanly.
     """
     while True:
         try:
             cmd = in_queue.get()
+            # Offer way to cleanly break out of while loop.
+            if cmd is None:
+                break
             try:
                 result = check_output(cmd, stderr=STDOUT)
             except CalledProcessError as e:
@@ -44,8 +51,36 @@ class ETISubprocess:
                                    args=(self.inQueue, self.outQueue))
             self.process.start()
 
-        def terminate(self):
-            self.process.terminate()
+        def terminate(self, timeout=2.0):
+            """Terminate the subprocess gracefully (if possible), or force-kill if needed.
+
+            Parameters
+            ----------
+            timeout : float
+                Number of seconds to wait before forcing termination.
+            """
+            # Send quit message to loop.
+            self.inQueue.put(None)
+            self.process.join(timeout=timeout)
+
+            # If still alive, force-terminate.
+            if self.process.is_alive():
+                self.process.terminate()
+                self.process.join()
+
+            self.process.close()
+
+            # Close queues.
+            try:
+                self.inQueue.close()
+                self.inQueue.join_thread()
+                self.outQueue.close()
+                self.outQueue.join_thread()
+            except Exception:
+                pass
+
+            # Reset instance, ensures new subprocess is created.
+            self.instance = None
 
     instance = None
 
