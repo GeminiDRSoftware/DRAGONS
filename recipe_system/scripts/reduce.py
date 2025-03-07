@@ -7,6 +7,7 @@
 # ---------------------------- Package Import ----------------------------------
 import sys
 import signal
+from sys import exc_info
 
 from gempy.utils import logutils
 
@@ -21,8 +22,6 @@ from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
 
 from recipe_system.config import globalConf
-
-from recipe_system.utils.rs_utilities import log_traceback
 # ------------------------------------------------------------------------------
 def main(args):
     """
@@ -70,15 +69,9 @@ def main(args):
     """
     estat = 0
     log = logutils.get_logger(__name__)
-    try:
-        assert log.root.handlers
-        log.root.handlers = []
-        logutils.config(mode=args.logmode, file_name=args.logfile)
-        log = logutils.get_logger(__name__)
-        log.info("Logging configured for application: reduce")
-        log.info(" ")
-    except AssertionError:
-        pass
+    logutils.config(mode=args.logmode, file_name=args.logfile)
+    log.info("Logging configured for application: reduce")
+    log.info(" ")
 
     log.stdinfo("\n\t\t\t--- reduce v{} ---".format(rs_version))
     log.stdinfo("\nRunning on Python {}".format(sys.version.split()[0]))
@@ -92,9 +85,7 @@ def main(args):
         log.error(str(err))
         estat = signal.SIGABRT
     except Exception as err:
-        log.error("reduce caught an unhandled exception.\n")
-        log.error(err)
-        log_traceback(log)
+        log.error("reduce caught an unhandled exception.\n", exc_info=True)
         log.error("\nReduce instance aborted.")
         estat = signal.SIGABRT
 

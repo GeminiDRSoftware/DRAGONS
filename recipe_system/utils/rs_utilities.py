@@ -2,19 +2,12 @@
 Set of functions in support of the recipe_system.
 
 """
-import sys
 import errno
 import itertools
-import traceback
 
 from os import makedirs
 from os.path import join
 
-def log_traceback(log):
-    exc_type, exc_value, exc_traceback = sys.exc_info()
-    tblist = traceback.format_exception(exc_type, exc_value, exc_traceback)
-    [log.error(line.rstrip()) for line in tblist]
-    return
 
 def makedrpkg(pkgname, instruments, modes=None):
     """

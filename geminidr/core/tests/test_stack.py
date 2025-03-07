@@ -1,6 +1,7 @@
 """
 Tests for primitives_stack.
 """
+import logging
 
 import numpy as np
 import pytest
@@ -132,6 +133,7 @@ def test_stacking_without_gain_or_readnoise(f2_adinputs):
 
 
 def test_stacking_gain_read_noise_propagation(f2_adinputs, caplog):
+    caplog.set_level(logging.WARNING)
     f2_adinputs[0].phu["LNRS"] = 1
     f2_adinputs[1].phu["LNRS"] = 8
     p = F2Image(f2_adinputs)
