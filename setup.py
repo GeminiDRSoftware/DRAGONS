@@ -4,7 +4,6 @@
 Setup script for gemini_python
 
 In this package:
-    astrodata
     gemini_instruments
     geminidr
     gempy
@@ -80,6 +79,7 @@ setup(name='dragons',
           'Topic :: Scientific/Engineering :: Astronomy',
       ],
       install_requires=[
+          'astrodata',
           'asdf>=2.7,!=2.10.0',
           'astropy>=4.3,!=5.3.0,!=6.1.5,!=6.1.6',
           'astroquery>=0.4',
