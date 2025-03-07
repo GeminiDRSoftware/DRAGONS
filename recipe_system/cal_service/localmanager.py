@@ -176,19 +176,19 @@ class LocalManager:
         if os.path.exists(db_path) and wipe:
             try:
                 os.remove(db_path)
-            except Exception:
+            except Exception as err:
                 raise LocalManagerError(ERROR_CANT_WIPE,
-                                        "Failed to remove {db_path}")
+                                        "Failed to remove {db_path}") from err
 
 
         try:
             log.debug(f"Creating Tables with dburl: {self.fsc.database_url}")
             create_tables(self.session)
             self.session.commit()
-        except OperationalError:
+        except OperationalError as err:
             message = (f"There was an error when trying to create the database "
                        f"{db_path}. Please, check your path and permissions.")
-            raise LocalManagerError(ERROR_CANT_CREATE, message)
+            raise LocalManagerError(ERROR_CANT_CREATE, message) from err
 
     @ensure_db_file
     def remove_file(self, path):
@@ -339,9 +339,9 @@ class LocalManager:
 
         try:
             headers = list_headers(selection, orderby, self.session)
-        except OperationalError:
+        except OperationalError as err:
             message = "There was an error when trying to read from the database."
-            raise LocalManagerError(ERROR_CANT_READ, message)
+            raise LocalManagerError(ERROR_CANT_READ, message) from err
 
         for header in headers:
             yield FileData(header.diskfile.filename, header.diskfile.path)
