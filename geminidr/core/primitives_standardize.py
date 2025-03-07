@@ -18,6 +18,8 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
 from recipe_system.utils.decorators import parameter_override, capture_provenance
+from recipe_system import __version__ as rs_version
+
 
 from . import parameters_standardize
 
@@ -355,8 +357,8 @@ class Standardize(PrimitivesBASE):
     def standardizeHeaders(self, adinputs=None, **params):
         """
         This primitive is used to standardize the headers of data. It adds
-        the ORIGNAME keyword and then calls the standardizeObservatoryHeaders
-        and standardizeInstrumentHeaders primitives.
+        the ORIGNAME, PROCSOFT and PROCSVER keywords and then calls the
+        standardizeObservatoryHeaders and standardizeInstrumentHeaders primitives.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -365,6 +367,11 @@ class Standardize(PrimitivesBASE):
             if 'ORIGNAME' not in ad.phu:
                 ad.phu.set('ORIGNAME', ad.orig_filename,
                            'Original filename prior to processing')
+
+            # These are used by FitsStorage / GOA when handling reduced data.
+            # Deliberately overwrite any existing values
+            ad.phu.set('PROCSOFT', 'DRAGONS', 'Data Processing Software used')
+            ad.phu.set('PROCSVER', rs_version, 'DRAGONS software version')
 
         adinputs = self.standardizeObservatoryHeaders(adinputs,
                     **self._inherit_params(params, "standardizeObservatoryHeaders"))
