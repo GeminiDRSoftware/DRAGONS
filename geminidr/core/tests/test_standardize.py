@@ -147,3 +147,21 @@ class TestStandardize:
             os.path.join(path_to_refs, 'N20070819S0104_prepared.fits'))
 
         assert ad_compare(prepared_ad, ref_ad)
+
+    @pytest.mark.niri
+    @pytest.mark.regression
+    @pytest.mark.preprocessed_data
+    def test_standardizeHeaders(self, change_working_dir, path_to_inputs):
+
+        ad = astrodata.open(os.path.join(path_to_inputs,
+                                         'N20070819S0104.fits'))
+
+        with change_working_dir():
+            p = NIRIImage([ad])
+            adout = p.standardizeHeaders()[0]
+
+            # These two are explicitly ignored in ad_compare() as otherwise we
+            # would need to update all the reference files every release.
+            for kw in ['PROCSOFT', 'PROCSVER']:
+                assert kw in adout.phu
+            assert adout.phu['PROCSOFT'] == 'DRAGONS'
