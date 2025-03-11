@@ -39,8 +39,6 @@ from .gemini.lookups.source_detection import sextractor_dict
 from recipe_system.cal_service import init_calibration_databases
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.config import load_config
-
-import atexit
 # ------------------------------ caches ---------------------------------------
 # Formerly in cal_service/caches.py
 #
@@ -132,11 +130,6 @@ class dormantViewer:
 # ------------------------------------------------------------------------------
 
 
-def cleanup(process):
-    # Function for the atexit registry to kill the ETISubprocess
-    process.terminate()
-
-
 @parameter_override
 @capture_provenance
 class PrimitivesBASE:
@@ -225,7 +218,6 @@ class PrimitivesBASE:
         # previously.
         gc.collect()
         self.eti_subprocess = ETISubprocess()
-        atexit.register(cleanup, self.eti_subprocess)
 
         # Instantiate a dormantViewer(). Only ds9 for now.
         self.viewer = dormantViewer(self, 'ds9')
