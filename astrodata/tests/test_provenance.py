@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 
 import numpy as np
@@ -26,7 +26,7 @@ def ad2():
 
 
 def test_add_get_provenance(ad):
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
     filename = "filename"
     md5 = "md5"
     primitive = "provenance_added_by"
@@ -53,7 +53,7 @@ def test_add_get_provenance(ad):
 
 
 def test_add_duplicate_provenance(ad):
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
     filename = "filename"
     md5 = "md5"
     primitive = "provenance_added_by"
@@ -66,7 +66,7 @@ def test_add_duplicate_provenance(ad):
 
 
 def test_add_get_history(ad):
-    timestamp_start = datetime.utcnow()
+    timestamp_start = datetime.now(timezone.utc).replace(tzinfo=None)
     timestamp_end = (timestamp_start +
                      timedelta(days=1)).isoformat()
     timestamp_start = timestamp_start.isoformat()
@@ -87,7 +87,7 @@ def test_add_get_history(ad):
 
 
 def test_add_dupe_history(ad):
-    timestamp_start = datetime.utcnow()
+    timestamp_start = datetime.now(timezone.utc).replace(tzinfo=None)
     timestamp_end = (timestamp_start + timedelta(days=1)).isoformat()
     timestamp_start = timestamp_start.isoformat()
     primitive = "primitive"
@@ -101,7 +101,7 @@ def test_add_dupe_history(ad):
 
 
 def test_clone_provenance(ad, ad2):
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
     filename = "filename"
     md5 = "md5"
     primitive = "provenance_added_by"
@@ -115,7 +115,7 @@ def test_clone_provenance(ad, ad2):
 
 
 def test_clone_history(ad, ad2):
-    timestamp_start = datetime.utcnow()
+    timestamp_start = datetime.now(timezone.utc).replace(tzinfo=None)
     timestamp_end = (timestamp_start + timedelta(days=1)).isoformat()
     timestamp_start = timestamp_start.isoformat()
     primitive = "primitive"
@@ -146,7 +146,7 @@ def test_convert_provhistory(tmpdir, BPM_PROVHISTORY):
     assert hasattr(ad, 'PROVHISTORY')
 
     # When we add history, that should get converted to HISTORY
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
     add_history(ad, now, now, "primitive", "args")
     assert not hasattr(ad, 'PROVHISTORY')
     assert hasattr(ad, 'HISTORY')

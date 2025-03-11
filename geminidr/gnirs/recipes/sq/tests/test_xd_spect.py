@@ -23,7 +23,7 @@ datasets = {
         "flats": [f"N20210129S{i:04d}.fits" for i in range(304, 324)],
         "pinholes": [f"N20210129S{i:04d}.fits" for i in (386, 388, 390, 391, 393)],
         "sci": [f"N20210129S{i:04d}.fits" for i in range(296, 304)],
-        "user_pars": []
+        "user_pars": {}
         },
     # 10 l/mm Longblue SXD
     "GN-2013B-Q-41": {
@@ -31,9 +31,11 @@ datasets = {
         "flats": [f"N20130821S{i:04d}.fits" for i in range(302, 318)],
         "pinholes": ["N20130821S0556.fits"],
         "sci": [f"N20130821S{i:04d}.fits" for i in range(322, 326)],
-        "user_pars": []
+        "user_pars": {}
         },
     # 111 l/mm Shortblue SXD
+    # CJS: This in untraceable in the bluest order and produces
+    # "aperture off image" warnings
     "GS-2006A-Q-9": {
         "arcs": ["S20060311S0321_arc.fits"],
         "flats": [f"S20060311S{i:04d}.fits" for i in (323, 324, 325, 326, 327,
@@ -50,9 +52,10 @@ datasets = {
 @pytest.mark.integration_test
 @pytest.mark.dragons_remote_data
 @pytest.mark.preprocessed_data
+@pytest.mark.parametrize("single_wave_scale", (False, True))
 @pytest.mark.parametrize("test_case", datasets.keys())
 def test_reduce_xd_spect(path_to_inputs, path_to_refs, change_working_dir,
-                         keep_data, test_case):
+                         keep_data, single_wave_scale, test_case):
     """
     Tests that we can run all the data reduction steps on a complete dataset.
 
@@ -89,12 +92,16 @@ def test_reduce_xd_spect(path_to_inputs, path_to_refs, change_working_dir,
         # Reducing science frames
         sci_filenames = datasets[test_case]["sci"]
         sci_paths = [download_from_archive(f) for f in sci_filenames]
+        upars = datasets[test_case]["user_pars"]
+        upars['resampleToCommonFrame:single_wave_scale'] = single_wave_scale
         output = reduce(sci_paths, f"sci_{test_case}", cals,
-                        user_pars=datasets[test_case]["user_pars"],
+                        user_pars=upars,
                         return_output=True)
         ad_out_2d = astrodata.open(output[0].replace("1D", "2D"))
         ad_out_1d = astrodata.open(output[0])
-        ad_ref_1d = astrodata.open(os.path.join(path_to_refs, output[0]))
+        single = "single" if single_wave_scale else "notsingle"
+        ref_filename = output[0].replace("_", f"_{single}_")
+        ad_ref_1d = astrodata.open(os.path.join(path_to_refs, ref_filename))
 
         # Check fewer than 3 apertures extracted
         assert len(ad_out_2d[0].APERTURE) < 3

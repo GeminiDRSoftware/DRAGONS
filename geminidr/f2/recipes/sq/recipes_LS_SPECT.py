@@ -32,9 +32,46 @@ def reduceScience(p):
     # p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
+    p.skyCorrectFromSlit()  # This needs testing.
     p.traceApertures()
     p.storeProcessedScience(suffix="_2D")
     p.extractSpectra()
+    p.telluricCorrect()
+    p.storeProcessedScience(suffix="_1D")
+
+
+def reduceTelluric(p):
+    """
+    To be updated as development continues: This recipe processes F2 longslit
+    spectroscopic data, currently up to basic extraction (no telluric correction).
+
+    Parameters
+    ----------
+    p : :class:`geminidr.f2.primitives_f2_longslit.F2Longslit`
+
+    """
+    p.prepare()
+    p.addDQ()
+    p.nonlinearityCorrect() # non-linearity correction tbd even for gemini iraf
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True, read_noise=True)
+    p.darkCorrect()
+    p.flatCorrect()
+    p.attachWavelengthSolution()
+    p.adjustWavelengthZeroPoint()
+    p.separateSky()
+    p.associateSky()
+    p.skyCorrect()
+    p.distortionCorrect()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    # p.scaleCountsToReference()
+    p.stackFrames()
+    p.findApertures(max_apertures=1)
+    p.skyCorrectFromSlit()  # This needs testing.
+    p.traceApertures()
+    p.extractSpectra()
+    p.fitTelluric()
     p.storeProcessedScience(suffix="_1D")
 
 

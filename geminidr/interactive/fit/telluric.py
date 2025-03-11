@@ -1,7 +1,11 @@
+from functools import partial
+
+from scipy.interpolate import make_interp_spline
+
 import numpy as np
 
 from bokeh import models as bm
-from bokeh.layouts import column
+from bokeh.layouts import column, row
 from bokeh.plotting import figure
 
 from gempy.library import astrotools as at
@@ -14,9 +18,7 @@ from .fit1d import (
     InteractiveModel, InteractiveModel1D)
 from ..styles import dragons_styles
 
-from gempy.library.telluric_models import Planck
-
-from datetime import datetime
+from gempy.library.telluric_models import Planck, get_good_pixels
 
 from .help import TELLURIC_CORRECT_HELP_TEXT
 
@@ -245,6 +247,9 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
         This method exists because the data are obtained from the Calibrator
         instead of needing to be passed as parameters, so it just grabs the
         data and calls the parent method.
+
+        It then re-tags points classified as stellar-masked as user-masked so
+        that the user can modify them.
         """
         data = self.visualizer.get_data(self.my_fit_index)
         x = data['x']
@@ -253,6 +258,8 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
         extra_masks = {k: data[f"{k}_mask"] for k in self.extra_mask_names}
         super().populate_bokeh_objects(x, y, None, mask=init_mask,
                                        extra_masks=extra_masks)
+        self.data.data['mask'] = [self.UserMasked.name if m == 'stellar' else m
+                                  for m in self.data.data['mask']]
 
     def evaluate(self, x):
         return self.fit(x)
@@ -269,9 +276,11 @@ class TelluricPanel(Fit1DPanel):
         # This gets passed down to the TelluricInteractiveModel1D instance
         # in a very clunky way
         self.aux_data = bm.ColumnDataSource(visualizer.get_auxiliary_data(idx))
+        self.aux_data.data['telluric_data'] = np.zeros_like(self.aux_data.data['waves'])
         super().__init__(visualizer, fitting_parameters,
                          interactive_model_class=TelluricInteractiveModel1D,
                          **kwargs)
+
         visualizer.actively_fitting = False
 
     def build_figures(self, domain=None, controller_div=None,
@@ -310,13 +319,13 @@ class TelluricPanel(Fit1DPanel):
         else:
             self.model.aux_data.data['intrinsic_spectrum'] = self.model.aux_data.data['intrinsic_spectrum'].value
         p_intrinsic = figure(width=self.width, height=int(0.8 * self.height),
-                            min_width=400, title='Model Spectrum',
-                            x_axis_label=self.xlabel,
-                            y_axis_label=f"Flux density ({intrinsic_units})",
-                            tools = "pan,wheel_zoom,box_zoom,reset",
-                            output_backend="webgl",
-                            x_range=p_main.x_range,
-                            min_border_left=80, stylesheets=dragons_styles())
+                             min_width=400, title='Model Spectrum',
+                             x_axis_label=self.xlabel,
+                             y_axis_label=f"Flux density ({intrinsic_units})",
+                             tools = "pan,wheel_zoom,box_zoom,reset",
+                             output_backend="webgl",
+                             x_range=p_main.x_range,
+                             min_border_left=80, stylesheets=dragons_styles())
         p_intrinsic.height_policy = 'fixed'
         p_intrinsic.width_policy = 'fit'
         p_intrinsic.sizing_mode = 'stretch_width'
@@ -327,12 +336,29 @@ class TelluricPanel(Fit1DPanel):
         # We only want to scale to the intrinsic spectrum
         p_intrinsic.y_range.renderers = [intrinsic_line]
 
+        # Plot showing only the telluric absorption
+        p_telluric = figure(width=self.width, height=int(0.8 * self.height),
+                            min_width=400, title='Telluric Absorption Model',
+                            x_axis_label=self.xlabel,
+                            y_axis_label=f"Transmission",
+                            tools = "pan,wheel_zoom,box_zoom,reset",
+                            output_backend="webgl",
+                            x_range=p_main.x_range,
+                            min_border_left=80, stylesheets=dragons_styles())
+        p_telluric.height_policy = 'fixed'
+        p_telluric.width_policy = 'fit'
+        p_telluric.sizing_mode = 'stretch_width'
+        p_telluric.step(x='waves', y='telluric_model', source=self.model.aux_data,
+                        line_width=2, color="green", legend_label="model")
+        p_telluric.step(x='waves', y='telluric_data', source=self.model.aux_data,
+                        line_width=2, color="blue", legend_label="data")
+
         self.p_main = p_main
 
         # Do a custom padding for the ranges
         self.reset_view()
 
-        return [p_main, info_panel.component, p_supp, p_intrinsic]
+        return [p_main, info_panel.component, p_supp, p_telluric, p_intrinsic]
 
     def model_change_handler(self, model):
         """
@@ -346,6 +372,17 @@ class TelluricPanel(Fit1DPanel):
         model.evaluation.data['model'] = model.evaluate(model.evaluation.data['xlinspace'])
         model.aux_data.data['continuum'] = model.fit.continuum(model.aux_data.data['waves'])
         model.aux_data.data['corrected'] = model.aux_data.data['spectrum'] * model.fit.self_correction()
+        model.aux_data.data['telluric_model'] = model.fit.pca.evaluate(
+            None, np.asarray(model.fit.parameters[model.fit.pca_params]).flatten())
+
+        good = get_good_pixels(model.x, model.aux_data.data['waves'])
+
+        absorption = model.y / model.aux_data.data['continuum'][good]
+        goodpix = [m == 'good' for m in model.mask]
+        spline = make_interp_spline(model.x[goodpix],
+                                    absorption[goodpix], k=3)
+        spline.extrapolate = False  # will return np.nan outside range
+        model.aux_data.data['telluric_data'] = spline(model.aux_data.data['waves'])
 
 
 class TelluricVisualizer(Fit1DVisualizer):
@@ -542,6 +579,11 @@ class TelluricVisualizer(Fit1DVisualizer):
                 'mask': self.calibrator.mask[index],
                 'stellar_mask': self.calibrator.stellar_mask[index]
                 }
+        # We fold the stellar mask into the user mask
+        #if index is None:
+        #    data['mask'] = [m | sm for m, sm in zip(data['mask'], data['stellar_mask'])]
+        #else:
+        #    data['mask'] |= data['stellar_mask']
         return data
 
     def get_auxiliary_data(self, index):
@@ -663,6 +705,41 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
         for widget in _get_children(self.reinit_panel):
             if 'pixels' in getattr(widget, 'title', ''):
                 widget.step = 0.01
+
+    def visualize(self, doc):
+        # Override the Fit1DVisualizer method to add buttons to the
+        # reinit panel before rendering
+        shiftpixel_row = None
+        for i, widget in enumerate(self.reinit_panel.children):
+            if isinstance(widget, bm.layouts.Row):
+                if 'pixels' in getattr(widget.children[0], 'title', None):
+                    shiftpixel_row = i
+                    break
+
+        def _shift_pixels(row, shift):
+            # Update the pixel shift value in the TextInput widget, which
+            # will update the Slider and the model
+            row.children[-1].value = self.calibrator.reinit_params["pixel_shift"] + shift
+
+        if shiftpixel_row is not None:
+            buttons = []
+            for label, shift in zip(("<<", "<", ">", ">>"),
+                                    (-0.05, -0.01, 0.01, 0.05)):
+                b = bm.Button(label=label+f" {abs(shift):.2f}"
+                              if shift < 0 else f"{shift:.2f} "+label,
+                              sizing_mode="stretch_width",
+                              stylesheets=dragons_styles(),
+                              )
+                b.on_click(partial(_shift_pixels,
+                                   row=self.reinit_panel.children[shiftpixel_row],
+                                   shift=shift))
+                buttons.append(b)
+            reinit_widgets = (self.reinit_panel.children[:shiftpixel_row+1] +
+                              [row(*buttons, sizing_mode="stretch_width")] +
+                              self.reinit_panel.children[shiftpixel_row+1:])
+            self.reinit_panel = column(*reinit_widgets, stylesheets=dragons_styles())
+
+        super().visualize(doc)
 
     def reconstruct_points(self):
         # The Checkbox callback only updates self.extras for an unknown

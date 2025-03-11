@@ -1,5 +1,7 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_spect.py file, in alphabetical order.
+import warnings
+
 from astropy import table, units as u
 from astropy.io import registry
 
@@ -39,6 +41,13 @@ class adjustWavelengthZeroPointConfig(config.Config):
                            optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
                                         float, 5, min=0)
+
+    def validate(self):
+        config.Config.validate(self)
+        if self.shift is not None and abs(self.shift) > self.debug_max_shift:
+            raise ValueError(f"Requested shift ({self.shift}) is larger than "
+                             f"maximum allowed shift ({self.debug_max_shift}).\n"
+                             "Set debug_max_shift to a larger value.")
 
 
 class adjustWCSToReferenceConfig(config.Config):
@@ -529,7 +538,8 @@ class resampleToCommonFrameConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_align", optional=True)
     w1 = config.RangeField("Starting wavelength (nm)", float, None, min=0., optional=True)
     w2 = config.RangeField("Ending wavelength (nm)", float, None, min=0., optional=True)
-    dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
+    dw = config.RangeField("Dispersion (nm/pixel) or fractional wavelength increase per pixel",
+                           float, None, min=0.000001, optional=True)
     npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
     conserve = config.Field("Conserve flux?", bool, None, optional=True)
     interpolant = config.ChoiceField("Type of interpolant", str,
@@ -542,7 +552,14 @@ class resampleToCommonFrameConfig(config.Config):
                                      default="poly3", optional=False)
     trim_spatial = config.Field("Trim spatial range to fully-covered region?", bool, True)
     trim_spectral = config.Field("Trim wavelength range to fully-covered region?", bool, False)
-    force_linear = config.Field("Force linear wavelength solution?", bool, True)
+    force_linear = config.Field("Force linear wavelength solution?", bool, None,
+                                optional=True)
+    output_wave_scale = config.ChoiceField("Output wavelength scale", str,
+                                           allowed={"reference": "Reference input",
+                                                    "linear": "Linear",
+                                                    #"loglinear": "Log-linear",
+                                                    },
+                                           default="linear", optional=False)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
                                      float, 0.001, min=0.)
 
@@ -552,6 +569,30 @@ class resampleToCommonFrameConfig(config.Config):
             raise ValueError("Maximum 3 of w1, w2, dw, npix must be specified")
         if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
             raise ValueError("Ending wavelength must be greater than starting wavelength")
+        if self.npix is not None and self.dw is not None and self.w1 is None and self.w2 is None:
+            raise ValueError("Cannot specify npix and dw without either w1 or w2")
+
+        if self.force_linear is not None:
+            with warnings.catch_warnings():
+                warnings.simplefilter("always", DeprecationWarning)
+                warnings.warn("The parameter 'force_linear' has been deprecated. "
+                              "Please use 'output_wave_scale' instead.",
+                              category=DeprecationWarning)
+            self.output_wave_scale = "linear" if self.force_linear else "reference"
+
+        if self.output_wave_scale == "linear" and self.dw is not None and self.dw < 0.01:
+            raise ValueError(f"Requested dispersion of {self.dw} < 0.01 nm/pixel")
+
+        if (self.output_wave_scale == "reference" and
+                [self.w1, self.w2, self.dw, self.npix].count(None) < 4):
+            raise ValueError("Cannot specify grid parameters if "
+                             "output_wave_scale='reference'")
+
+        # We rely on an analytical inverse to the wavelength solution that is
+        # only valid over the extent of its extension. Extrapolating it could
+        # lead to large errors. TODO: gwcs's numerical inverse?
+        if self.output_wave_scale == "reference" and not self.trim_spectral:
+            raise ValueError("Must set trim_spectral=True if output_wave_scale='reference'")
 
 
 class separateSkyConfig(parameters_preprocess.separateSkyConfig):

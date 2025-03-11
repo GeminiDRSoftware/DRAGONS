@@ -14,6 +14,7 @@ Notes
     - ndim, degree, domain_start, domain_end, c0, [c1, c2, c3...] : standard
     Chebyshev1D definition of the aperture centre (in pixels) as a function of
     pixel in the dispersion direction
+    pixel in the dispersion direction
 
     - aper_lower : location of bottom of aperture relative to centre (always
     negative)
@@ -35,7 +36,6 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
-from copy import deepcopy
 
 from specutils.utils.wcs_utils import air_to_vac
 
@@ -46,10 +46,8 @@ from gempy.library.wavecal import LineList
 from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
-from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
-from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from geminidr.gnirs import primitives_gnirs_longslit
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
@@ -106,6 +104,7 @@ def test_extract_1d_spectra_with_sky_lines():
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)
+
 
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename',
@@ -388,6 +387,7 @@ def test_sky_correct_from_slit_with_multiple_sources():
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
+
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_shift', [0, -1.2, 2.75])
 def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
@@ -402,6 +402,7 @@ def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
     shift = getattr(transform, 'offset_1')
     assert shift == pytest.approx(in_shift)
 
+
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_shift', [-16, 7.7])
 def test_adjust_wavelength_zero_point_overlarge_shift(in_shift,
@@ -414,47 +415,30 @@ def test_adjust_wavelength_zero_point_overlarge_shift(in_shift,
     with pytest.raises(ValueError):
         p.adjustWavelengthZeroPoint(shift=in_shift).pop()
 
-@pytest.mark.skip("Primitive is broken in this branch. Need to merge enh/telluric2")
+
+@pytest.mark.skip("Results derived from incorrect code")
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize('filename,instrument',
-                         [('N20220706S0337', 'GNIRS'),
-                          ('N20110331S0400', 'GNIRS'),
-                          ('N20150511S0123', 'GNIRS'),
-                          ('N20220718S0140', 'GNIRS'),
-                          ('N20130827S0128', 'GNIRS'),
-                          ('S20140610S0077', 'F2'),
-                          ('S20210430S0138', 'F2'),
-                          ('S20150629S0230', 'F2'),
-                          ('S20210709S0035', 'F2'),
-                          ('S20170215S0111', 'F2'),
-                          ('S20180125S0028', 'F2'),
-                          ('N20050918S0135', 'NIRI'),
-                          ('N20050627S0040', 'NIRI'),
-                          ('N20070615S0118', 'NIRI'),
-                          ('N20061114S0193', 'NIRI'),
+@pytest.mark.parametrize('filename,result',
+                         [('N20220706S0337', 0.0005),
+                          ('N20110331S0400', 0.1696875),
+                          ('N20150511S0123', -0.0273750),
+                          ('N20220718S0140', 2.083875),
+                          ('N20130827S0128', -3.2903125),
+                          #('S20140610S0077', -1.755625),
+                          #('S20210430S0138', 0.2556250),
+                          #('S20150629S0230', 0.3927500),
+                          #('S20210709S0035', 0.3030625),
+                          #('S20170215S0111', 0.0551250),
+                          #('S20180125S0028', -0.046375),
+                          ('N20050918S0135', 0.6130625),
+                          ('N20050627S0040', -0.059625),
+                          ('N20070615S0118', -0.029875),
+                          ('N20061114S0193', 0.1915000),
                           ])
-def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
+def test_adjust_wavelength_zero_point_auto_shift(filename, result,
                                                  change_working_dir,
                                                  path_to_inputs):
-    # Dictionary of shift values (in pixels) for each file.
-    results = {'N20220706S0337': 0.0005, # GNIRS 111/mm 0.10" LongBlue
-               'N20110331S0400': 0.1696875,  # GNIRS 111/mm 0.30" ShortBlue
-               'N20150511S0123': -0.0273750, # GNIRS 32/mm  0.45" ShortBlue
-               'N20220718S0140': 2.083875,   # GNIRS 32/mm  0.10" LongBlue
-               'N20130827S0128': -3.2903125, # GNIRS 10/mm  0.10" LongBlue
-               'S20140610S0077': -1.755625,  # F2    R3K 1pix-slit f/16
-               'S20210430S0138': 0.2556250,  # F2    R3K 2pix-slit f/16
-               'S20150629S0230': 0.3927500,  # F2    JH  3pix-slit f/16
-               'S20210709S0035': 0.3030625,  # F2    JH  4pix-slit f/16
-               'S20170215S0111': 0.0551250,  # F2    HK  6pix-slit f/16
-               'S20180125S0028': -0.046375,  # F2    JH  8pix-slit f/16
-               'N20050918S0135': 0.6130625,  # NIRI  Hgrism f6-6pix
-               'N20050627S0040': -0.059625,  # NIRI  Hgrism f6-6pix
-               'N20070615S0118': -0.029875,  # NIRI  Jgrism f6-6pix
-               'N20061114S0193': 0.1915000,  # NIRI  Kgrism f6-2pix
-               }
-
     classes_dict = {'GNIRS': GNIRSLongslit,
                     'F2': F2Longslit,
                     'NIRI': NIRILongslit}
@@ -463,14 +447,12 @@ def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
     centers = {'N20130827S0128': 800,
                'N20220718S0140': 300,
                'S20140610S0077': 600}
-    try:
-        center = centers[filename]
-    except KeyError:
-        center = None
+    center = centers.get(filename)
 
     with change_working_dir(path_to_inputs):
         ad = astrodata.open(filename + '_wavelengthSolutionAttached.fits')
 
+    instrument = ad.instrument()
     p = classes_dict[instrument]([ad])
     ad_out = p.adjustWavelengthZeroPoint(center=center, shift=None).pop()
     transform = ad_out[0].wcs.get_transform('pixels',
@@ -478,7 +460,38 @@ def test_adjust_wavelength_zero_point_auto_shift(filename, instrument,
     param = 'offset_0' if instrument == 'NIRI' else 'offset_1'
     shift = getattr(transform, param)
 
-    assert shift == pytest.approx(results[filename])
+    assert shift == pytest.approx(result, abs=0.001)
+
+
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+@pytest.mark.parametrize('filename,center,shift',
+                         [('N20220706S0337', 300, 2),
+                         ])
+def test_adjust_wavelength_zero_point_controlled(filename, center, shift,
+                                                 path_to_inputs):
+    """
+    Artificially shift a spectrogram along the dispersion axis and check
+    that the shift is recovered by adjustWavelengthZeroPoint(). This assumes
+    that the wavelength solution is correct and there is no significant
+    flexure to within the tolerance (0.1 pixels).
+    """
+    classes_dict = {'GNIRS': GNIRSLongslit,
+                    'F2': F2Longslit,
+                    'NIRI': NIRILongslit}
+
+    ad = astrodata.open(os.path.join(path_to_inputs,
+                                     filename + '_wavelengthSolutionAttached.fits'))
+    p = GNIRSLongslit([ad])
+
+    dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
+    ad[0].data = np.roll(ad[0].data, -shift, axis=dispaxis)
+    ad_out = p.adjustWavelengthZeroPoint(center=center, shift=None).pop()
+
+    m_flex = ad_out[0].wcs.get_transform('pixels', 'wavelength_scale_adjusted')
+    measured_shift = getattr(m_flex, f'offset_{1 - dispaxis}')
+    assert measured_shift == pytest.approx(shift, abs=0.1)
+
 
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_file,instrument',
@@ -518,6 +531,7 @@ def test_mask_beyond_slit(in_file, instrument, change_working_dir,
 
     assert ad_compare(ad_out, ref, compare=['attributes'], max_miss=size*0.001)
 
+
 @pytest.mark.skip("Needs redoing/moving, think about how best to test slit rectification")
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('filename,instrument',
@@ -550,6 +564,7 @@ def test_slit_rectification(filename, instrument, change_working_dir,
 
     for coeff in ('c1', 'c2', 'c3'):
         np.testing.assert_allclose(ad_out[0].SLITEDGE[coeff], 0, atol=0.25)
+
 
 def test_trace_apertures():
     # Input parameters ----------------
@@ -613,8 +628,27 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
     assert warn == warning_given
 
 
-def test_resample_spec_table():
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+def test_get_sky_spectrum(path_to_inputs, path_to_refs):
+    # Spectrum of F2 OH-emission sky lines for plotting
+    # We use the _wavelengthSolutionDetermined file because thw WAVE model
+    # is a Chebyshev1D, as required. (In normal reduction, a Cheb1D will be
+    # provided bto _get_sky_spectrum() y determineWavelengthSolution,
+    # regardless of the state of the input file.)
+    ad_f2 = astrodata.open(os.path.join(
+        path_to_inputs, 'S20180114S0104_wavelengthSolutionDetermined.fits'))
+    wave_model = am.get_named_submodel(ad_f2[0].wcs.forward_transform, 'WAVE')
 
+    p = F2Longslit([])
+    refplot_data_f2 = p._get_sky_spectrum(wave_model=wave_model, ext=ad_f2[0])
+    ref_refplot_spec_f2 = np.loadtxt(
+        os.path.join(path_to_refs, "S20180114S0104_refplot_spec.dat"))
+
+    np.testing.assert_allclose(ref_refplot_spec_f2, refplot_data_f2["refplot_spec"], atol=1e-3)
+
+
+def test_resample_spec_table():
     waves_air = np.arange(3500, 7500.001, 100) * u.AA
     waves_vac = air_to_vac(waves_air)
     bandpass = np.full(waves_air.size, 5.) * u.nm
@@ -632,57 +666,12 @@ def test_resample_spec_table():
                for i, bw in enumerate(t['WIDTH'].quantity)])
     np.testing.assert_allclose(t['FLUX'].data, 1.0)
 
-@pytest.mark.preprocessed_data
-@pytest.mark.regression
-def test_make_atran_linelist(change_working_dir, path_to_inputs, path_to_refs):
-    # GNIRS L-band, sky emission
-    ad_em = astrodata.open(os.path.join(path_to_inputs, 'N20100820S0214_varAdded.fits'))
-    model_params_em = {"site": 'mk', "alt": "13825ft", "start_wvl": 3040.96658,
-                          "end_wvl": 3359.0334199999998, "spec_range": 318.06684,
-                           "wv_content": 5.0, "resolution": 1760.0, "cenwave": 3200.0,
-                           "in_vacuo": True, "absorption": False, "nlines": 100}
-    # GNIRS J-band, sky absorption in object spectrum
-    ad_abs = astrodata.open(os.path.join(path_to_inputs, 'N20121221S0199_aperturesFound.fits'))
-    model_params_abs = {"site": 'mk', "alt": "13825ft", "start_wvl": 1057.2100999999998,
-                          "end_wvl": 1108.7898999999998, "spec_range": 51.5798,
-                           "wv_content": 1.0, "resolution": 17520.0, "cenwave": 1082.9999999999998,
-                           "in_vacuo": True, "absorption": True, "nlines": 50}
-    p = primitives_spect.Spect([])
-    p._get_cenwave_accuracy = lambda x: 10  # kludge FIX to preserve behaviour
-    linelist_em,_ = p._make_atran_linelist(ext=ad_em[0], filename=None, model_params=model_params_em)
-    linelist_abs,_ = p._make_atran_linelist(ext=ad_abs[0], filename=None, model_params=model_params_abs)
-    with change_working_dir(path_to_refs):
-        ref_linelist_em = np.loadtxt("N20100820S0214_atran_linelist.dat")
-        ref_linelist_abs = np.loadtxt("N20121221S0199_atran_linelist.dat")
-
-    np.testing.assert_allclose(linelist_em, ref_linelist_em, atol=1e-3)
-    np.testing.assert_allclose(linelist_abs, ref_linelist_abs, atol=1e-3)
-
-@pytest.mark.preprocessed_data
-@pytest.mark.regression
-def test_make_refplot_data(change_working_dir, path_to_inputs, path_to_refs):
-    # F2 OH-emission sky lines
-    ad_f2 = astrodata.open(os.path.join(path_to_inputs, 'S20180114S0104_varAdded.fits'))
-    model_params_f2 = {"site": 'cp', "alt": "8980ft", "start_wvl": 1090.3740000000003,
-                          "end_wvl": 2660.71, "spec_range": 1570.336,
-                           "wv_content": 10.0, "resolution": 350, "cenwave": 1875.5420000000001,
-                           "in_vacuo": True, "absorption": False, "nlines": 50}
-
-    p = primitives_spect.Spect([])
-    p._get_cenwave_accuracy = lambda x: 10  # kludge FIX to preserve behaviour
-    refplot_data_f2 = p._make_refplot_data(ext=ad_f2[0], model_params=model_params_f2,
-                                    refplot_linelist=LineList(os.path.join(path_to_inputs, "nearIRsky.dat")))
-    with change_working_dir(path_to_refs):
-        ref_refplot_spec_f2 = np.loadtxt("S20180114S0104_refplot_spec.dat")
-        ref_refplot_linelist_f2 = np.loadtxt("S20180114S0104_refplot_linelist.dat")
-
-    np.testing.assert_allclose(ref_refplot_spec_f2, refplot_data_f2["refplot_spec"], atol=1e-3)
-    np.testing.assert_allclose(ref_refplot_linelist_f2, refplot_data_f2["refplot_linelist"], atol=1e-3)
 
 def compare_frames(frame1, frame2):
     """Compare the important stuff of two CoordinateFrame instances"""
     for attr in ("naxes", "axes_type", "axes_order", "unit", "axes_names"):
         assert getattr(frame1, attr) == getattr(frame2, attr)
+
 
 #@pytest.mark.skip
 @pytest.mark.preprocessed_data

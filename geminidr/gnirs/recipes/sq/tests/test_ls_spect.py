@@ -22,37 +22,37 @@ datasets = {
         "arcs": ['N20121212S0231_arc.fits'],
         "flats": [f'N20121212S{i:04d}.fits' for i in range(233, 238)],
         "sci":  [f"N20121212S{i:04d}.fits" for i in range(242, 246)],
-        "user_pars": []
+        "user_pars": {}
         },
     "GN-2017A-Q-87-284": {
         "arcs": ['N20170609S0136_arc.fits'],
         "flats": [f'N20170609S{i:04d}.fits' for i in range(131, 136)],
         "sci":  [f"N20170609S{i:04d}.fits" for i in range(127, 131)],
-        "user_pars": []
+        "user_pars": {}
         },
     "GN-2017B-Q-85-216": {
         "arcs": ['N20180201S0065_arc.fits'],
         "flats": [f'N20180201S{i:04d}.fits' for i in range(60, 66)],
         "sci":  [f"N20180201S{i:04d}.fits" for i in range(52, 56)],
-        "user_pars": []
+        "user_pars": {}
         },
     "GN-2017B-Q-81-99": {
         "arcs": ['N20180114S0121_arc.fits'],
         "flats": [f'N20180114S{i:04d}.fits' for i in range(125, 133)],
         "sci":  [f"N20180114S{i:04d}.fits" for i in range(121, 125)],
-        "user_pars": []
+        "user_pars": {}
         },
     "GN-2019A-FT-207-46": {
         "arcs": ['N20190410S0212_arc.fits'],
         "flats": [f'N20190410S{i:04d}.fits' for i in range(220, 228)],
         "sci":  [f"N20190410S{i:04d}.fits" for i in range(212, 216)],
-        "user_pars": []
+        "user_pars": {}
         },
     "GN-2020A-Q-227-36": {
         "arcs": ['N20200707S0097_arc.fits'],
         "flats": [f'N20200707S{i:04d}.fits' for i in range(101, 111)],
         "sci":  [f'N20200707S{i:04d}.fits' for i in range(97, 101)],
-        "user_pars": []
+        "user_pars": {}
         }
     }
 
