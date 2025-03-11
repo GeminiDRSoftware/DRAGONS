@@ -36,7 +36,7 @@ def niri_images(niri_image):
     return NIRIImage(adinputs)
 
 @pytest.fixture
-def niriprim(path_to_common_inputs):
+def niriprim():
     file_path = download_from_archive("N20190120S0287.fits")
     ad = astrodata.open(file_path)
     p = NIRIImage([ad])
