@@ -557,7 +557,8 @@ class resampleToCommonFrameConfig(config.Config):
     output_wave_scale = config.ChoiceField("Output wavelength scale", str,
                                            allowed={"reference": "Reference input",
                                                     "linear": "Linear",
-                                                    "loglinear": "Log-linear"},
+                                                    #"loglinear": "Log-linear",
+                                                    },
                                            default="linear", optional=False)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
                                      float, 0.001, min=0.)
