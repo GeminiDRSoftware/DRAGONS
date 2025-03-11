@@ -1,7 +1,5 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_spect.py file, in alphabetical order.
-from multiprocessing.managers import Value
-
 import warnings
 
 from astropy import table, units as u
