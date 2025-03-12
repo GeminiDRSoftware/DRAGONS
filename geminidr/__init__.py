@@ -16,6 +16,7 @@ import gc
 import pickle
 import warnings
 import weakref
+import re
 
 from copy import deepcopy
 from inspect import isclass, currentframe
@@ -190,6 +191,14 @@ class PrimitivesBASE:
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
         self.user_params      = uparms if isinstance(uparms, dict) else dict(uparms) if uparms else {}
+
+        # remove quotes from string values.  This happens when quotes are used
+        # in the @-file.  The shell removes the quotes automatically.
+        quote_pattern = "^[\"\'](.+)[\"\']$"
+        for key, value in self.user_params.items():
+            if isinstance(value, str):
+                self.user_params[key] = re.sub(quote_pattern, r"\1", value)
+
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict.copy()
