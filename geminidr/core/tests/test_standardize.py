@@ -162,6 +162,6 @@ class TestStandardize:
 
             # These two are explicitly ignored in ad_compare() as otherwise we
             # would need to update all the reference files every release.
-            for kw in ['PROCSOFT', 'PROCSVER']:
+            for kw in ['PROCSOFT', 'PROCSVER', 'PROCMODE']:
                 assert kw in adout.phu
             assert adout.phu['PROCSOFT'] == 'DRAGONS'

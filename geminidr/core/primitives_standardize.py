@@ -357,8 +357,9 @@ class Standardize(PrimitivesBASE):
     def standardizeHeaders(self, adinputs=None, **params):
         """
         This primitive is used to standardize the headers of data. It adds
-        the ORIGNAME, PROCSOFT and PROCSVER keywords and then calls the
-        standardizeObservatoryHeaders and standardizeInstrumentHeaders primitives.
+        the ORIGNAME, PROCSOFT, PROCSVER and PROCMODE keywords and then calls
+        the standardizeObservatoryHeaders and standardizeInstrumentHeaders
+        primitives.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -372,6 +373,7 @@ class Standardize(PrimitivesBASE):
             # Deliberately overwrite any existing values
             ad.phu.set('PROCSOFT', 'DRAGONS', 'Data Processing Software used')
             ad.phu.set('PROCSVER', rs_version, 'DRAGONS software version')
+            ad.phu.set('PROCMODE', self.mode, 'Processing Mode [sq|ql|qa]')
 
         adinputs = self.standardizeObservatoryHeaders(adinputs,
                     **self._inherit_params(params, "standardizeObservatoryHeaders"))

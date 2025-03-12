@@ -295,11 +295,11 @@ class ADCompare:
     the same. Various properties (both data and metadata) can be compared
     """
     # These are the keywords relating to a FITS WCS that we won't check
-    # because we check the gWCS objects instead and to the DRAGONS version
+    # because we check the gWCS objects instead and to the DRAGONS PROCxxxx
     # headers, because that would mean updating every reference file every time
-    # the version changes.
+    # the version changes (for PROCSVER)
     fits_keys = {'WCSAXES', 'WCSDIM', 'RADESYS', 'BITPIX', 'PROCSOFT',
-                                                           'PROCSVER'}
+                 'PROCSVER', 'PROCMODE'}
     for i in range(1, 6):
         fits_keys.update([f'CUNIT{i}', f'CTYPE{i}', f'CDELT{i}', f'CRVAL{i}',
                           f'CRPIX{i}'])
