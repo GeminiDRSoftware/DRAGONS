@@ -770,7 +770,7 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
         threshold to cut data
     keep_bad: bool
         if True, keeps the output peak list the same size as the input list,
-        with None values for the peaks that didn't converge
+        with NaN values for the peaks that didn't converge
 
     Returns
     -------
@@ -798,8 +798,8 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
         xc = int(peak + 0.5)
         if xc < 0 or xc > data.size:
             if keep_bad:
-                final_peaks.append(None)
-                peak_values.append(None)
+                final_peaks.append(np.nan)
+                peak_values.append(np.nan)
             continue
         xc = np.argmax(data[max(xc - 1, 0):min(xc + 2, npts)]) + xc - 1
         x1 = int(xc - halfwidth - 1)
@@ -807,8 +807,8 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
         m = mask[x1:x2]
         if x1 < 0 or x2 > data.size - 1 or np.isnan(data[xc]) or np.sum(~m) < 4:
             if keep_bad:
-                final_peaks.append(None)
-                peak_values.append(None)
+                final_peaks.append(np.nan)
+                peak_values.append(np.nan)
             continue
         data_min = data[x1:x2].min()
         data_snippet = data[x1:x2] - data_min
@@ -860,8 +860,8 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
             peak_values.append(peak_value + data_min)
         else:
             if keep_bad:
-                final_peaks.append(None)
-                peak_values.append(None)
+                final_peaks.append(np.nan)
+                peak_values.append(np.nan)
     return final_peaks, peak_values
 
 

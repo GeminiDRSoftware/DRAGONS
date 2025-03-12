@@ -320,13 +320,18 @@ class Preprocess(PrimitivesBASE):
                                               if abs(sky_dict[k] - sci_time) <= seconds])
 
                     # Now create a sky list of the appropriate length
-                    if num_matching_skies < min_skies:
-                        log.warning("\nFound fewer skies matching the time criterium"
-                                    " than requested \n"
-                                    "by the min_skies parameter.  "
-                                    "Ignoring the time parameter. \n"
+                    print(ad.filename, num_matching_skies, min_skies, len(sky_dict), seconds)
+                    if num_matching_skies < min_skies <= len(sky_dict):
+                        log.warning(f"Found fewer skies ({num_matching_skies}) "
+                                    "matching the time criterion than requested\n"
+                                    f"by 'min_skies' ({min_skies}). "
+                                    "Ignoring the time parameter.\n"
                                     "Enforcing min_skies.")
                         log.warning("To enforce the time parameter, set min_skies to 0.")
+                    elif num_matching_skies < min_skies:
+                        log.warning(f"Found fewer skies ({num_matching_skies}) "
+                                    f"than requested by 'min_skies' ({min_skies}).\n"
+                                    "Using as many skies as possible.")
                     num_skies = min(max_skies or len(sky_list),
                                     max(min_skies or 0, num_matching_skies))
                     sky_list = sky_list[:num_skies]
@@ -338,11 +343,12 @@ class Preprocess(PrimitivesBASE):
                 if sky_list:
                     sky_table = Table(names=('SKYNAME',),
                                       data=[[sky.filename for sky in sky_list]])
-                    log.stdinfo(f"\nThe sky frames associated with {ad.filename} are:")
+                    log.stdinfo(f"The sky frames associated with {ad.filename} are:")
                     for sky in sky_list:
                         log.stdinfo(f"  {sky.filename}")
                     ad.SKYTABLE = sky_table
                     has_skytable[i] = True
+                    log.stdinfo("")
                 else:
                     log.warning(f"No sky frames available for {ad.filename}")
 

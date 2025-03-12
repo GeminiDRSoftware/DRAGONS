@@ -8,7 +8,9 @@ import os
 
 from importlib import import_module
 
-from geminidr.core import Spect
+from astropy.modeling import models
+
+from geminidr.core import Spect, Telluric
 from .primitives_f2 import F2
 from . import parameters_f2_spect
 from gemini_instruments.f2.lookup import dispersion_offset_mask, resolving_power
@@ -23,7 +25,7 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 # ------------------------------------------------------------------------------
 @parameter_override
 @capture_provenance
-class F2Spect(Spect, F2):
+class F2Spect(Telluric, Spect, F2):
     """
     This is the class containing all of the preprocessing primitives
     for the F2Spect level of the type hierarchy tree. It inherits all
@@ -100,35 +102,11 @@ class F2Spect(Spect, F2):
         ----------
         suffix: str/None
             suffix to be added to output files
-
         """
-
-        log = self.log
-        timestamp_key = self.timestamp_keys[self.myself()]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
         super().standardizeWCS(adinputs, **params)
-
         for ad in adinputs:
-            # Need to exclude darks from having a spectroscopic WCS added as
-            # they don't have a SPECT tag and will gum up the works. This only
-            # needs to be done for F2's makeLampFlat as it uses flats minus
-            # darks to remove dark current.
-            if 'DARK' in ad.tags:
-                log.stdinfo(f"{ad.filename} is a DARK, continuing")
-                continue
-
-            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-            # Apply central wavelength offset
-            if ad.dispersion() is None:
-                raise ValueError(f"Unknown dispersion for {ad.filename}")
-            cenwave = self._get_actual_cenwave(ad[0], asNanometers=True)
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave,
-                                       pointing=ad[0].wcs(1024, 1024))
-
-            # Timestamp. Suffix was updated in the super() call
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            self._add_longslit_wcs(ad, pointing="center")
         return adinputs
-
 
     def determineDistortion(self, adinputs=None, **params):
         """
@@ -216,7 +194,6 @@ class F2Spect(Spect, F2):
             adoutputs.extend(super().determineDistortion([ad], **these_params))
         return adoutputs
 
-
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
         This F2-specific primitive sets the default order in case it's None.
@@ -301,9 +278,21 @@ class F2Spect(Spect, F2):
             Updated objects with a `.WAVECAL` attribute and improved wcs for
             each slice
         """
+        log=self.log
         adoutputs = []
         for ad in adinputs:
             these_params = params.copy()
+
+            # The peak locations are slightly dependent on the width of the
+            # Ricker filter used in the peak finding, so control that
+            try:
+                slitwidth = int(ad.focal_plane_mask().replace('pix-slit', ''))
+            except AttributeError:  # fpm() is returning None
+                log.warning(f"Cannot determine slit width for {ad.filename}")
+            else:
+                these_params["fwidth"] = 2 + 0.5 * slitwidth
+                log.stdinfo(f"Setting fwidth={these_params['fwidth']}")
+
             min_snr_isNone = True if these_params["min_snr"] is None else False
 
             if "ARC" in ad.tags:
@@ -323,82 +312,87 @@ class F2Spect(Spect, F2):
                         these_params["min_snr"] = 10
 
             if min_snr_isNone:
-                self.log.stdinfo(f'Parameter "min_snr" is set to None. '
-                                 f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
+                log.stdinfo('Parameter "min_snr" is set to None. '
+                            f'Using min_snr={these_params["min_snr"]} '
+                            f'for {ad.filename}')
             
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
 
-    def _get_arc_linelist(self, ext, waves=None):
+    def _get_linelist(self, wave_model=None, ext=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
-        isHK_JH = ext.disperser(pretty=True) == "HK" and \
-                    ext.filter_name(pretty=True) == "JH"
+        isHK_JH = (ext.disperser(pretty=True) == "HK" and
+                   ext.filter_name(pretty=True) == "JH")
         if 'ARC' in ext.tags:
-            linelist = 'argon.dat'
             # For HK grism + JH filter the second order is preserved by default
             # (as per IS request), so use the line list with the second order lines
             # for this mode
-            if isHK_JH:
-                linelist = 'lowresargon_with_2nd_ord.dat'
+            filename = 'lowresargon_with_2nd_ord.dat' if isHK_JH else 'argon.dat'
         else:
             # In case of wavecal from sky OH emission use this line list:
-            linelist = 'nearIRsky.dat'
-            if isHK_JH:
-                linelist = 'nearIRsky_with_2nd_order.dat'
+            filename = 'nearIRsky_with_2nd_order.dat' if isHK_JH else 'nearIRsky.dat'
 
-        self.log.stdinfo(f"Using linelist '{linelist}'")
-        filename = os.path.join(lookup_dir, linelist)
-        return wavecal.LineList(filename)
+        self.log.stdinfo(f"Using linelist '{filename}'")
+        linelist = wavecal.LineList(os.path.join(lookup_dir, filename))
 
+        # Attach a synthetic sky spectrum if using sky lines
+        if 'ARC' not in ext.tags:
+            linelist.reference_spectrum = self._get_sky_spectrum(wave_model, ext)
 
-    def _get_actual_cenwave(self, ext, asMicrometers=False, asNanometers=False, asAngstroms=False):
+        return linelist
+
+    @staticmethod
+    def _convert_peak_to_centroid(ext):
         """
-        For some instruments (NIRI, F2) wavelenght at the central pixel
-        can differ significantly from the descriptor value.
+        Returns a function that converts the location of the peak of an arc
+        (or sky) line to the location of its centroid (also works on an array
+        of locations). This is required due to the poor and spatially-varying
+        line spread function of F2, which produces skewed lines. It's used in
+        the wavecal routine to ensure that the wavelength solution is correct
+        in terms of line centroids. This can be lead to incorrect results if
+        the wavelength of a line in the science data is measured from its peak
+        (or nadir).
+
+        These cubic polynomials have all been derived by fitting to shifts
+        measured from synthetic data using the LSF in geminidr.f2.lookups.lsf
+        with the constraint that the shift is zero at row 1061 (therefore
+        the Chebyshev coefficients c0 and c2 are the same, and c0 is not
+        listed).
 
         Parameters
         ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        ext: single-slice AstroData
+            the extension for which the shifts are to be calculation
 
         Returns
         -------
-        float
-            Actual cenral wavelenght
+        callable:
+            a callable that modifies a pixel value (or array thereof) of a
+            line peak to the centroid
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        output_units = "meters" # By default
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        index = (ext.disperser(pretty=True), ext.filter_name(keepID=True))
-        mask = dispersion_offset_mask.get(index, None)
-        cenwave_offset = mask.cenwaveoffset if mask else None
-        actual_cenwave = ext.central_wavelength() + \
-                  abs(ext.dispersion()) * cenwave_offset
-        actual_cenwave = gmu.convert_units('meters', actual_cenwave, output_units)
-        return actual_cenwave
+        # (c1, c2, c3) Chebyshev coefficients for each slit width
+        coefficients = {1: (4.471281214, -0.062329556, 1.324079642),
+                        2: (4.138404874, -0.054101213, 1.306253510),
+                        3: (3.739663083, -0.048616217, 1.248004911),
+                        4: (3.328556440, -0.042899206, 1.166940684),
+                        6: (2.595923451, -0.029713970, 0.990172698),
+                        8: (1.966203933, -0.017133596, 0.801233150),
+                        }
+        try:
+            slitwidth = int(ext.focal_plane_mask().replace('pix-slit', ''))
+        except AttributeError:  # fpm() is returning None
+            raise ValueError(f"Cannot determine slit width for {ext.filename}")
+        try:
+            c1, c2, c3 = coefficients[slitwidth]
+        except KeyError:
+            raise ValueError(f"Slit width {slitwidth} for {ext.filename}"
+                             "unknown")
 
-
-    def _get_resolution(self, ext):
-        # For F2 grisms resolution peaks in the middle of tthe filter and drops
-        # dramatically on both sides. Use "average" resolution from the LUT,
-        # (within 70% of filter's range, see F2 web pages).
-        fpmask = ext.focal_plane_mask(pretty=True)
-        if 'pix-slit' in fpmask:
-            slit_width= int(fpmask.replace('pix-slit', ''))
-        else:
-            slit_width = fpmask
-        disperser = ext.disperser(pretty=True)
-        return resolving_power.get(f"{slit_width}", {}).get(f"{disperser}", None)
+        # c0=c2 because the function must evaluate to 0 at the domain midpoint
+        # Domain is (0, 2122) since slit projects on row 1061
+        # The 1061 values are so the model returns the new pixel location
+        # and not the shift (so we don't need to wrap the model)
+        m_tweak = models.Chebyshev1D(degree=3, c0=c2+1061, c1=c1+1061,
+                                     c2=c2, c3=c3, domain=(0, 2122))
+        return m_tweak

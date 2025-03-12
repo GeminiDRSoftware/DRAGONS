@@ -15,6 +15,8 @@ from astrodata import (
 from gemini_instruments.gemini import AstroDataGemini
 from gemini_instruments.common import build_group_id
 
+from .. import gmu
+
 
 def return_dict_for_bundle(desc_fn):
     """
@@ -393,8 +395,8 @@ class AstroDataGhost(AstroDataGemini):
 
     # FIXME Remove once headers corrected
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False): # pragma: no cover
+    @gmu.return_requested_units()
+    def central_wavelength(self): # pragma: no cover
         """
         Dummy to work around current Gemini cal_mgr
         """
@@ -403,21 +405,13 @@ class AstroDataGhost(AstroDataGemini):
 
         if val is None:
             if self.arm() == 'red':
-                val = 7500. * 10**-10
+                val = 750
             elif self.arm() == 'blue':
-                val = 4400. * 10**-10
+                val = 440
             else:
                 return None
 
-
-        if asMicrometers:
-            val *= 10**6
-        elif asNanometers:
-            val *= 10**9
-        elif asAngstroms:
-            val *= 10**10
-
-        return float(val)
+        return val
 
     @astro_data_descriptor
     @return_dict_for_bundle

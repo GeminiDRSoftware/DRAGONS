@@ -207,43 +207,18 @@ class AstroDataGmos(AstroDataGemini):
         return self.hdr.get('AMPNAME')
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False, pretty=False):
+    @gmu.return_requested_units()
+    def central_wavelength(self, pretty=False):
         """
-        Returns the central wavelength in meters or specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
-        pretty : bool
-            If True, return a round up value to the nearest Angstrom.
+        Returns the central wavelength in nm
 
         Returns
         -------
         float
-            The central wavelength setting
+            The central wavelength setting in nm
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
         # Keywords should be the same, but CENTWAVE was only added post-2007
+        # Header value is in microns
         try:
             central_wavelength = self.phu['CENTWAVE']
         except KeyError:
@@ -251,18 +226,12 @@ class AstroDataGmos(AstroDataGemini):
 
         if central_wavelength <= 0.0:
             return None
-        else:
-            converted_central_wavelength = \
-                gmu.convert_units('nanometers', central_wavelength,
-                                     output_units)
-            if pretty:
-                # round it up to the nearest Angstrom.
-                power = gmu.unitDict[output_units] - gmu.unitDict['angstroms']
-                factor = math.pow(10, power)
-                converted_central_wavelength = round(converted_central_wavelength*factor)/factor
 
-            return converted_central_wavelength
+        if pretty:
+            # round it to the nearest Angstrom.
+            central_wavelength = round(10 * central_wavelength) / 10
 
+        return central_wavelength
 
     @astro_data_descriptor
     def detector_name(self, pretty=False):
@@ -461,43 +430,18 @@ class AstroDataGmos(AstroDataGemini):
         return disperser
 
     @astro_data_descriptor
-    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    @gmu.return_requested_units()
+    def dispersion(self):
         """
-        Returns the dispersion in meters per binned pixel as a list (one value per
+        Returns the dispersion in nm per binned pixel as a list (one value per
         extension) or a float if used on a single-extension slice.  It is
         possible to control the units of wavelength using the input arguments.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
 
         Returns
         -------
         list/float
             The dispersion(s)
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
         # This was breaking before
         try:
             grule = float(self.disperser(pretty=True)[1:])
@@ -530,8 +474,7 @@ class AstroDataGmos(AstroDataGemini):
 
         if dispersion is not None:
             grating_order = self.phu.get('GRORDER', 1)
-            dispersion = gmu.convert_units('meters', dispersion / grating_order,
-                                           output_units)
+            dispersion = 1e9 * dispersion / grating_order
 
             if not self.is_single:
                 dispersion = [dispersion] * len(self)
@@ -1167,3 +1110,11 @@ class AstroDataGmos(AstroDataGemini):
             crval = self.phu.get('CRVAL2')
             ctype = self.phu.get('CTYPE2')
         return crval if ctype == 'DEC--TAN' else None
+
+    @gmu.return_requested_units(input_units="nm")
+    def actual_central_wavelength(self):
+        """GMOS-S has not been properly calibrated for red spectra"""
+        cenwave = self.central_wavelength(asNanometers=True)
+        if self.instrument() == "GMOS-S" and cenwave > 950:
+            cenwave += (6.89483617 - 0.00332086 * cenwave) * cenwave - 3555.048
+        return cenwave

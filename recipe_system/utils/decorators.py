@@ -47,7 +47,7 @@ import json
 import traceback
 from contextlib import suppress
 from copy import copy, deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 
 import geminidr
@@ -222,7 +222,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
     none
     """
     try:
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc).replace(tzinfo=None)
         for ad in ret_value:
             if ad.data_label() in provenance_inputs:
                 # output corresponds to an input, we only need to copy from there
@@ -261,7 +261,7 @@ def capture_provenance(fn):
         # Determine if this is a top-level primitive, by checking if the
         # calling function contains a self that is also a primitive
         toplevel = _top_level_primitive()
-        timestamp_start = datetime.utcnow()
+        timestamp_start = datetime.now(timezone.utc).replace(tzinfo=None)
 
         if toplevel:
             provenance_inputs = _get_provenance_inputs(kwargs["adinputs"])

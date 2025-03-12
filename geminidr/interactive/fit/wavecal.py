@@ -123,16 +123,10 @@ class WavelengthSolutionPanel(Fit1DPanel):
 
         # No need to compute wavelengths here as the model_change_handler() does it
         self.absorption = absorption
-        if absorption:
-            spectrum_data_dict = {
-                "wavelengths": np.zeros_like(meta["spectrum"]),
-                "spectrum": -meta["spectrum"],
-            }
-        else:
-            spectrum_data_dict = {
-                "wavelengths": np.zeros_like(meta["spectrum"]),
-                "spectrum": meta["spectrum"],
-            }
+        spectrum_data_dict = {
+            "wavelengths": np.zeros_like(meta["spectrum"]),
+            "spectrum": meta["spectrum"] * (-1 if absorption else 1),
+        }
 
         kwargs["default_model"] = meta["init_models"][0]
 
@@ -153,7 +147,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
             self.refplot_y_axis_label = meta["refplot_y_axis_label"]
             self.refplot_name = meta["refplot_name"]
 
-
         # This line is needed for the initial call to model_change_handler
         self.currently_identifying = False
 
@@ -163,6 +156,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
         if len(x) == 0:
             kwargs["initial_fit"] = meta["fit"]
 
+        # We determine the domain of the model from the initial model fit
+        domain = meta["init_models"][0].domain
         super().__init__(
             visualizer,
             these_fitting_parameters,
@@ -172,6 +167,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
             weights=weights,
             **kwargs,
         )
+        self.model.domain = domain
+        self.model.perform_fit()
 
         # This has to go on the model (and not this TabPanel instance) since
         # the models are returned by the Visualizer, not the TabPanel
@@ -749,13 +746,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
             x = [x]
 
         spectrum = self.spectrum.data["spectrum"]
+        xmin = self.model.domain[0]
 
         # Get points around the line.
         def get_nearby_points(p):
             distance = 5
-            low = max(0, int(p - distance + 0.5))
-            high = min(len(spectrum), int(p + distance + 0.5))
-            return spectrum[low:high]
+            low = max(xmin, int(p - distance + 0.5))
+            high = min(xmin + len(spectrum), int(p + distance + 0.5))
+            return spectrum[low-xmin:high-xmin]
 
         extrema_func = np.amin if self.absorption else np.amax
 
@@ -831,10 +829,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
         eval_data["nonlinear"] = (
             eval_data["model"] - linear_model(eval_data["xlinspace"])
         )
-
-        domain = model.domain
         self.spectrum.data["wavelengths"] = model.evaluate(
-            np.arange(domain[0], domain[1] + 1)
+            np.arange(model.domain[0], model.domain[1] + 1)
+            #self.spectrum.data["pixels"]
         )
 
         # If we recalculated the model while in the middle of identifying a
@@ -883,7 +880,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         wavelength : float
             wavelength in nm
         """
-        print(f"Adding {wavelength} nm at pixel {peak}")
+        #print(f"Adding {wavelength} nm at pixel {peak}")
         if self.model.x.size > 1:
             lower_limit, upper_limit = get_closest(
                 self.model.y, self.model.evaluate(peak)[0]
@@ -921,13 +918,14 @@ class WavelengthSolutionPanel(Fit1DPanel):
         """
         logging.debug("Identifying line: %s %s %s", key, x, y)
 
+        xmin = self.model.domain[0]
         if peak is None:
             x1, x2 = self.p_spectrum.x_range.start, self.p_spectrum.x_range.end
             fwidth = self.model.meta["fwidth"]
 
             interp_pixel = interp1d(
                 self.spectrum.data["wavelengths"],
-                range(len(self.spectrum.data["wavelengths"])),
+                np.arange(*self.model.domain + np.array([0, 1])),
             )
 
             pixel = interp_pixel(x)
@@ -963,9 +961,9 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 pinpoint_data[np.nan_to_num(pinpoint_data) < eps] = eps
 
                 try:
-                    peak = pinpoint_peaks(pinpoint_data, [pixel], None)[0][0]
-                    print(f"Found peak at pixel {peak}")
-
+                    orig_peak = pinpoint_peaks(pinpoint_data, [pixel - xmin],
+                                               None)[0][0]
+                    peak = self.model.meta["peak_to_centroid_func"](orig_peak + xmin)
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
                     return
@@ -1022,7 +1020,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
         lheight = (end - start) * (-0.05 if self.absorption else 0.05)
         # TODO: check what happens here in case of absorption -OS
 
-        height = self.spectrum.data["spectrum"][int(peak + 0.5)]
+        height = self.spectrum.data["spectrum"][int(peak - xmin + 0.5)]
 
         self.new_line_marker.data = {
             "x": [est_wave] * 2,
@@ -1074,7 +1072,7 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 return False
 
         eval_peaks = self.model.evaluate(new_peaks[index])
-        close_to_peak = abs(eval_peaks - x) < (0.025 * (x2 - x1))
+        close_to_peak = abs(eval_peaks - x) < (0.01 * (x2 - x1))
 
         return close_to_peak
 
@@ -1167,7 +1165,6 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 good_data["heights"].append(self.label_height(peak))
                 good_data["residuals"].append(0)
                 good_data["lines"].append(wavestr(unmatched_lines[match]))
-                print("NEW LINE", peak, unmatched_lines[match])
 
         self.model.data.data = good_data
         self.model.perform_fit()

@@ -59,8 +59,8 @@ def test_resampling(adinputs, caplog, offset):
     assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
 
     p.resampleToCommonFrame(dw=0.15)
-    _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
-    assert all(ad[0].shape == (int(512 - 2*offset), 3869) for ad in p.streams['main'])
+    _check_params(caplog.records, 'w1=508.343 w2=1088.393 dw=0.150 npix=3868')
+    assert all(ad[0].shape == (int(512 - 2*offset), 3868) for ad in p.streams['main'])
 
 
 @pytest.mark.gmosls
@@ -75,9 +75,9 @@ def test_resampling_and_trim(adinputs, caplog, offset):
     assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
 
     p.resampleToCommonFrame(dw=0.15, trim_spectral=True)
-    _check_params(caplog.records, 'w1=508.198 w2=978.802 dw=0.150 npix=3139')
+    _check_params(caplog.records, 'w1=614.812 w2=978.862 dw=0.150 npix=2428')
     for ad in p.streams['main']:
-        assert ad[0].shape == (int(512 - 2*offset), 3139)
+        assert ad[0].shape == (int(512 - 2*offset), 2428)
 
     # Location of apertures is not important for this test
     #p.findApertures(max_apertures=1)
@@ -93,7 +93,7 @@ def test_resampling_and_trim(adinputs, caplog, offset):
     #np.testing.assert_allclose(ad[0].APERTURE['c0'], 260.4, atol=0.25)
 
     ad = p.extractSpectra()[0]
-    assert ad[0].shape == (3139,)
+    assert ad[0].shape == (2428,)
 
 
 @pytest.mark.gmosls
@@ -123,15 +123,15 @@ def test_resampling_non_linearize(adinputs, caplog):
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
 
-    p.resampleToCommonFrame(force_linear=False)
-    _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.151 npix=3841')
+    p.resampleToCommonFrame(output_wave_scale="reference", trim_spectral=True)
+    _check_params(caplog.records, 'w1=614.870 w2=978.802 dw=0.151 npix=2407')
     caplog.clear()
     adout = p.resampleToCommonFrame(dw=0.15)
     assert 'ALIGN' in adout[0].phu
-    _check_params(caplog.records, 'w1=508.198 w2=1088.232 dw=0.150 npix=3868')
+    _check_params(caplog.records, 'w1=614.870 w2=978.920 dw=0.150 npix=2428')
 
     adstack = p.stackFrames()
-    assert adstack[0][0].shape == (492, 3868)
+    assert adstack[0][0].shape == (492, 2428)
 
 
 # Local Fixtures and Helper Functions -----------------------------------------

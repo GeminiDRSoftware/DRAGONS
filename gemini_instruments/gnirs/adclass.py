@@ -91,25 +91,17 @@ class AstroDataGnirs(AstroDataGemini):
             return self.phu.get(self._keyword_for('array_name'))
 
     @astro_data_descriptor
-    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    @gmu.return_requested_units()
+    def dispersion(self):
         """
-        Returns the dispersion in meters per pixel as a list (one value per
+        Returns the dispersion in nm per pixel as a list (one value per
         extension) or a float if used on a single-extension slice. It is
         possible to control the units of wavelength using the input arguments.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
 
         Returns
         -------
         list/float
-            The dispersion(s)
+            The dispersion(s) in nm/pixel
         """
 
         grating = self._grating(pretty=True, stripID=True)
@@ -122,29 +114,13 @@ class AstroDataGnirs(AstroDataGemini):
             camera = None
 
         filter = str(self.filter_name(pretty=True))[0]
-        config = f"{grating}, {camera}"
-        dispersion = dispersion_by_config.get(config, {}).get(filter)
+        dispersion = dispersion_by_config.get((grating, camera), {}).get(filter)
 
         if dispersion is None:
             return None
 
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        output_units = "meters" # By default
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-
-        if dispersion is not None:
-            dispersion = gmu.convert_units('angstroms', dispersion, output_units)
-
-            if not self.is_single:
-                dispersion = [dispersion] * len(self)
+        if not self.is_single:
+            dispersion = [dispersion] * len(self)
 
         return dispersion
 

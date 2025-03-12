@@ -3,6 +3,7 @@ from itertools import product as cart_product
 from functools import partial, reduce
 
 import numpy as np
+from astropy.modeling.polynomial import Chebyshev1D
 from scipy.spatial import cKDTree
 from bisect import bisect
 
@@ -45,6 +46,7 @@ class LineList:
         self._units = None
         self._in_vacuo = None
         self._decimals = 3
+        self.reference_spectrum = None
         if filename:
             self.read_linelist(filename)
 
@@ -267,8 +269,12 @@ def find_alternative_solutions(peaks, arc_lines, model, kdsigma, weights=None):
     m_out = fit_it(m_tweak, peak_waves, arc_lines, in_weights=weights)
     diffs = m_out(peak_waves) - peak_waves
     if abs(np.median(diffs)) > 10:
-        new_model = model | m_out
-        new_model.meta["domain"] = model.meta["domain"]
+        # Linear approximation to modified model
+        cheb_params = {k: v for k, v in zip(model.param_names,
+                                            model.parameters)}
+        cheb_params.update({'c0': m_out(model.c0),
+                            'c1': m_out[1](model.c1)})
+        new_model = Chebyshev1D(degree=model.degree, **cheb_params, domain=model.domain)
         return [new_model]
 
 
@@ -379,17 +385,20 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
 
         # Get the data necessary for the reference spectrum plot, to be displayed
         # in a separate plot in the interactive mode
-        if p._show_refplot(ext):
-            # If the refplot_data has been generated earlier as a by-product of ATRAN
-            #  line list generation, we don't need to re-generate it:
-            if input_data["refplot_data"] is not None:
-                input_data.update(input_data["refplot_data"])
-            else:
-                config=ui_params.toDict()
-                refplot_data = p._make_refplot_data(ext=ext, refplot_linelist=input_data["linelist"],
-                                config=config)
-                if refplot_data is not None:
-                    input_data.update(refplot_data)
+        linelist = input_data["linelist"]
+        if linelist.reference_spectrum is not None:
+            if "refplot_linelist" not in linelist.reference_spectrum:
+                # We need to calculate the intensity of the reference spectrum
+                # at the locations of the lines
+                refspec = linelist.reference_spectrum["refplot_spec"]
+                wavelengths = linelist.vacuum_wavelengths(units="nm")
+                # LineList might extend beyond edges of displayed spectrum
+                fluxes = np.interp(wavelengths, *refspec.T,
+                                   left=np.nan, right=np.nan)
+                linelist.reference_spectrum["refplot_linelist"] = np.array(
+                    [wavelengths, fluxes]).T[~np.isnan(fluxes)]
+
+            input_data.update(linelist.reference_spectrum)
 
         input_data["init_models"] = [fit1d.model] + input_data["init_models"]
         data["meta"].append(input_data)
@@ -445,6 +454,47 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
     return input_data, fit1d, acceptable_fit
 
 
+def create_chebyshev(waves, central_wavelength=None, dispersion=None,
+                     max_order=1):
+    """
+    Create a Chebyshev1D Model instance that fits the pixel->wavelength
+    mapping of a 1D AstroNDData object, with the option of overriding the
+    central wavelength and/or dispersion
+
+    Parameters
+    ----------
+    waves: array-like
+        wavelengths of pixels
+    central_wavelength: float
+        estimated wavelength of central pixel (nm)
+    dispersion: float
+        estimated dispersion (nm/pixel)
+    config: Config object
+        contains the maximum order of fit
+
+    Returns
+    -------
+    model: Chebyshev1D
+    """
+    npix = waves.size
+    x = np.arange(npix)
+    dw = abs(np.median(np.diff(waves)))
+    order = 0
+    while order < max_order:
+        order += 1
+        fit1d = fit_1D(waves, points=x, function="chebyshev",
+                       order=order, domain=[0, npix - 1],
+                       niter=0, sigma_lower=None, sigma_upper=None)
+        if fit1d.rms < 0.001 * dw:
+            break
+    model = fit1d.model
+    if central_wavelength is not None:
+        model.c0 = central_wavelength
+    if dispersion is not None:
+        model.c1 = 0.5 * dispersion * (npix - 1)
+    return model
+
+
 def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                        skylines=False, loglevel='stdinfo'):
     """
@@ -487,6 +537,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
      "bounds_setter" : a callable to set the uncertainty on polynomial parameters
     """
     cenwave = config["central_wavelength"]
+    dispersion = config["dispersion"]
 
     log = FakeLog() if config["interactive"] == True else p.log
     # This allows suppression of the terminal log output by calling the function
@@ -498,14 +549,14 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
         const_slit = 'LS' in ext.tags
+        center = config["center"] or int(0.5 * (ext.shape[1 - dispaxis] - 1))
         data, mask, variance, extract_info = peak_finding.average_along_slit(
-            ext, center=config["center"], nsum=config["nsum"],
+            ext, center=center, nsum=config["nsum"],
             combiner=config["combine_method"])
         if const_slit:
             logit("Extracting 1D spectrum from {}s {} to {}".
                   format(direction, extract_info.start + 1, extract_info.stop))
             middle = 0.5 * (extract_info.start + extract_info.stop - 1)
-            axes = {dispaxis: middle}
             location = f"{direction} {int(middle)}"
         else:
             # For non-straight slits, `extract_info` is the 1D
@@ -517,7 +568,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
             logit(f"  ±{config['nsum']/2:.1f} {direction}s "
                   "around polynomial with " + ", ".join(coeffs))
             middle = extract_info(0.5 * (ext.shape[dispaxis] - 1))
-            axes = {dispaxis: middle}
             # TODO: this isn't strictly correct, since it implies extraction
             # at a fixed location.
             location = f"{direction} {int(middle)}"
@@ -526,7 +576,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         mask = ext.mask.copy()
         variance = ext.variance
         location = ""
-        axes = {}
     # Mask bad columns but not saturated/non-linear data points
     if mask is not None:
         mask &= bad_bits
@@ -563,37 +612,43 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
             reject_bad=False, nbright=config.get("nbright", 0))
-    # Get the initial wavelength solution
-    m_init = initial_wavelength_model(
-        ext, central_wavelength=cenwave,
-        dispersion=config["dispersion"], axes=axes)
 
-    waves = m_init([0, 0.5 * (data.size - 1), data.size - 1])
-    dw0 = (waves[2] - waves[0]) / (data.size - 1)
+    # Determine extent of data in spectrum
+    x1 = mask.astype(bool).argmin()
+    x2 = mask.size - mask.astype(bool)[::-1].argmin()
+
+    if dispaxis == 1:
+        _slice = (center, slice(None))
+    else:
+        _slice = (slice(None), center)
+    ndd = ext.nddata[_slice]
+
+    # Get the initial wavelength solution
+    npix = ndd.shape[0]
+    try:
+        ndd.wcs.forward_transform
+    except AttributeError:
+        m_init = models.Chebyshev1D(degree=1, c0=cenwave or ext.central_wavelength(asNanometers=True),
+                                    c1=0.5 * (dispersion or ext.dispersion(asNanometers=True)) * (npix - 1),
+                                    domain=[0, npix - 1])
+    else:
+        m_init = create_chebyshev(
+            ndd.wcs(np.arange(npix))[0], central_wavelength=cenwave,
+            dispersion=dispersion, max_order=config["order"])
+
+    # Convert to appropriate domain
+    cheb = np.polynomial.chebyshev.Chebyshev(m_init.parameters, m_init.domain)
+    coef = {f'c{i}': v for i, v in enumerate (cheb.convert(domain=(x1, x2 - 1)).coef)}
+    m_init = Chebyshev1D(degree=m_init.degree, **coef, domain=(x1, x2 - 1))
+
+    waves = m_init([0, 0.5 * (npix - 1), npix - 1])
+    dw0 = (waves[2] - waves[0]) / (npix - 1)
     logit("Wavelengths at start, middle, end (nm), and dispersion "
           f"(nm/pixel):\n{waves} {dw0:.4f}")
 
-    # Is ATRAN line list used for this mode?
-    uses_atran_linelist = p._uses_atran_linelist(cenwave=ext.central_wavelength(asMicrometers=True),
-                                                 absorption=config.get("absorption", False))
-    refplot_dict = None
-
     if linelist is None:
-        if uses_atran_linelist:
-            # If the mode is supposed to use ATRAN line list, we generate it
-            # on-the-fly (or use a previously generated one). When the line list is
-            # generated on-the-fly, the reference plot data is created as a by-product,
-            # so we return it here to avoid repeating the same calculations later.
-            # Otherwise (in case of existing pre-calculated ATRAN line list)
-            # refplot_dict is expected to be returned as None, and
-            # can be populated in create_interactive_inputs
-             linelist, refplot_dict= p._get_atran_linelist(ext=ext, config=config)
-        else:
-            # Get list of arc lines (probably from a text file dependent on the
-            # input spectrum, so a private method of the primitivesClass). If a
-            # user-defined file, only read it if arc_lines is undefined
-            # (i.e., first time through the loop)
-            linelist = p._get_arc_linelist(waves=m_init(np.arange(data.size)), ext=ext)
+        linelist = p._get_linelist(wave_model=m_init, ext=ext, config=config)
+
     # This wants to be logged even in interactive mode
     sky_or_arc = 'reference sky' if skylines else 'arc'
     msg = f"Found {len(peaks)} peaks and {len(linelist)} {sky_or_arc} lines"
@@ -610,14 +665,24 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                 m_init.extend(alt_models)
                 log.warning("Alternative model(s) found")
                 for i, m in enumerate(alt_models, start=1):
-                    log.warning(f"{i}. Offset {m.right.offset_0.value} "
-                                f"scale {m.right.factor_1.value}")
+                    waves = m([0, 0.5 * (npix - 1), npix - 1])
+                    dw0 = (waves[2] - waves[0]) / (npix - 1)
+                    log.warning(f"{i}. Wavelength at middle, and dispersion "
+                                f"(nm/pixel):\n{waves[1]} {dw0:.4f}")
 
-    return {"spectrum": np.ma.masked_array(data, mask=mask),
+    try:
+        peak_to_centroid_func = p._convert_peak_to_centroid(ext)
+    except AttributeError:
+        peak_to_centroid_func = lambda x: x
+    else:
+        p.log.stdinfo("Applying peak-to-centroid shifts to lines.")
+        peaks = peak_to_centroid_func(peaks)
+
+    return {"spectrum": np.ma.masked_array(data[x1:x2], mask=mask[x1:x2]),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
-            "refplot_data": refplot_dict,
-            "bounds_setter": partial(p._apply_wavelength_model_bounds, ext=ext)}
+            "peak_to_centroid_func": peak_to_centroid_func,
+            "bounds_setter": partial(p._wavelength_model_bounds, ext=ext)}
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,
@@ -625,7 +690,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     """
     Find the best wavelength solution from the set of initial models.
 
-    init_models : list of Model instances
+    init_models : list of Chebyshev1D instances
         starting models
     config : dict
         dictionary of parameters
@@ -654,45 +719,12 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     loglevel = "stdinfo" if config["verbose"] else "fullinfo"
     logit = getattr(log, loglevel)
 
-    # Create an initial fit_1D object using the initial wavelength model
-    # (always the first model in the init_models list) as a fallback in case
-    # don't get a better solution. Since we can't create a fit_1D object
-    # easily we evaluate the model at all pixels and fit. We do this by
-    # fitting increasing orders until we hit the order requested by the
-    # user or reach a low rms. We also construct 1D models for the other
-    # initial_models in the same way.
-    init_models_1d = []
-    for i, model in enumerate(init_models):
-        domain = model.meta["domain"]
-        x = np.arange(*domain)
-        dw = abs(np.diff(model(domain))[0] / np.diff(domain)[0])
-        order = 0
-        while order < config["order"]:
-            order += 1
-            fit1d = fit_1D(model(x), points=x, function="chebyshev",
-                           order=order, domain=domain,
-                           niter=config["niter"], sigma_lower=config["lsigma"],
-                           sigma_upper=config["hsigma"])
-            if fit1d.rms < 0.001 * dw:
-                break
-        fit1d.model.meta["domain"] = domain
-        init_models_1d.append(fit1d.model)
-        if i == 0:
-            fit1d.image = np.array([])
-            fit1d.points = np.array([])
-            fit1d.mask = np.array([], dtype=bool)
-            initial_model_fit = fit1d
-
-        #print("MAKING INIT MODELS")
-        #print(model)
-        #print(fit1d.evaluate([0, 1021]))
-
     best_fit1d = None
     # Iterate over start position models most rapidly
     for min_lines_per_fit, model, loc_start in cart_product(
-            min_lines, init_models_1d, (0.5, 0.3, 0.7)):
-        #print("STARTING", model.parameters, loc_start)
-        domain = model.meta["domain"]
+            min_lines, init_models, (0.5, 0.3, 0.7)):
+        domain = model.domain
+        #print("STARTING", model.parameters, loc_start, domain)
         len_data = np.diff(domain)[0]  # actually len(data)-1
         pixel_start = domain[0] + loc_start * len_data
 
@@ -778,7 +810,13 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 best_fit1d = fit1d
 
     if best_fit1d is None:
-        best_fit1d = initial_model_fit
+        # Hack a fit1D object that represents the original model with no fitted lines
+        best_fit1d = fit_1D(np.arange(5), function="chebyshev", order=1,
+                            niter=0)
+        best_fit1d._models = init_models[0]
+        best_fit1d.image = np.array([])
+        best_fit1d.points = np.array([])
+        best_fit1d.mask = np.array([], dtype=bool)
     return best_fit1d, True
 
 
@@ -826,7 +864,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
     from datetime import datetime
     start_time = datetime.now()
     matches = np.full_like(peaks, -1, dtype=int)
-    len_data = np.diff(model.meta["domain"])[0]
+    len_data = np.diff(model.domain)[0] + 1
     wave_start = model(pixel_start)
     dw_start = np.diff(model([pixel_start - 0.5, pixel_start + 0.5]))[0]
     match_radius = 2 * abs(dw_start)
@@ -842,7 +880,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
             p1 = 0
         npeaks = narc_lines = 0
         while (min(npeaks, narc_lines) < min_lines_this_fit and
-               not (p0 - p1 < 0 and p0 + p1 >= len_data)):
+               not (p0 - p1 < model.domain[0] and p0 + p1 >= model.domain[1])):
             p1 += 1
             i1 = bisect(peaks, p0 - p1)
             i2 = bisect(peaks, p0 + p1)
@@ -861,11 +899,11 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         else:
             m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
-        bounds_setter(m_init)
+        m_init.bounds.update(bounds_setter(m_init))
         if not first:
             m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
         #print("INPUT MODEL")
-        #print(m_init.parameters)
+        #print(m_init.parameters, m_init.domain, m_init(np.arange(0,1001,200)))
         #print(m_init.bounds)
         #print(datetime.now() - start)
 
@@ -951,10 +989,12 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
         new_in_weights *= in_weights
     w0 = m_init.c0.value
     w1 = abs(m_init.c1.value)
-    new_ref_weights = (abs(arc_lines - w0) <= 1.05 * w1).astype(float)
+    max_range = max(1.05 * w1, np.sum([abs(np.diff(v)[0])
+                                       for v in m_init.bounds.values()]))
+    new_ref_weights = (abs(arc_lines - w0) < max_range).astype(float)
     if ref_weights is not None:
         new_ref_weights *= ref_weights
-    new_ref_weights = ref_weights
+    #new_ref_weights = ref_weights
     # Maybe consider two fits here, one with a large kdsigma, and then
     # one with a small one (perhaps the second could use weights)?
     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=k, method='direct')
@@ -1108,13 +1148,14 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         spatial_frame = cf.CoordinateFrame(
             naxes=1, axes_type="SPATIAL", axes_order=(1,),
-            unit=u.pix, name="SPATIAL")
+            unit=u.arcsec, name="SPATIAL")
         output_frame = cf.CompositeFrame(
             [new_spectral_frame, spatial_frame], name='world')
+        slit_model = models.Scale(ext.pixel_scale())
         try:
-            slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}']
+            slit_model = ext.wcs.forward_transform[f'crpix{dispaxis + 1}'] | slit_model
         except IndexError:
-            slit_model = models.Identity(1)
+            pass
         slit_model.name = 'SKY'
         transform = m_final & slit_model
         if dispaxis == 0:
@@ -1126,15 +1167,15 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
                         (output_frame, None)])
 
 
-def create_pdf_plot(data, peaks, arc_lines, title):
+def create_pdf_plot(input_data, peaks, arc_lines, title):
     """
     Create and save a simple pdf plot of the arc spectrum with line
     identifications, useful for checking the validity of the solution.
 
     Parameters
     ----------
-    data: 1d array
-        the arc spectrum
+    input_data: dict
+        the dict from get_all_input_data()
     peaks: 1d array
         pixel locations of peaks
     arc_lines: 1d array
@@ -1146,19 +1187,22 @@ def create_pdf_plot(data, peaks, arc_lines, title):
     -------
     fig: a matplotlib figure
     """
+    data = input_data["spectrum"]
+    xmin, xmax = input_data["init_models"][0].domain
+    pixels = np.arange(xmin, xmax + 1)
     data_max = data.max()
     fig, ax = plt.subplots()
-    ax.plot(data, 'b-')
+    ax.plot(pixels, data, 'b-')
     ax.set_ylim(0, data_max * 1.1)
     if len(arc_lines) and np.diff(arc_lines)[0] / np.diff(peaks)[0] < 0:
-        ax.set_xlim(len(data), -1)
+        ax.set_xlim(xmax + 1, xmin - 1)
     else:
-        ax.set_xlim(-1, len(data))
+        ax.set_xlim(xmin - 1, xmax + 1)
     for p, w in zip(peaks, arc_lines):
         j = int(p + 0.5)
-        ax.plot([p, p], [data[j] + 0.01 * data_max,
-                         data[j] + 0.02 * data_max], 'k-')
-        ax.text(p, data[j] + 0.03 * data_max, str('{:.5f}'.format(w)),
+        ax.plot([p, p], [data[j - xmin] + 0.01 * data_max,
+                         data[j - xmin] + 0.02 * data_max], 'k-')
+        ax.text(p, data[j - xmin] + 0.03 * data_max, str('{:.5f}'.format(w)),
                 horizontalalignment='center', rotation=90, fontdict={'size': 8})
     ax.set_xlabel("Pixel number")
     ax.set_title(title)

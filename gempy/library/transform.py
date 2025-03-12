@@ -37,6 +37,7 @@ Functions:
 import numpy as np
 from copy import deepcopy
 from functools import reduce
+import warnings
 
 from astropy.modeling import models, Model
 from astropy.modeling.core import _model_oper, fix_inputs
@@ -1685,9 +1686,11 @@ def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
     ref_ext = ad if is_single else ad[ref_index]
 
     ad_out.append(dg.output_dict['data'], header=ref_ext.hdr.copy())
-    for key, value in dg.output_dict.items():
-        if key != 'data':  # already done this
-            setattr(ad_out[0], key, value)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=RuntimeWarning)
+        for key, value in dg.output_dict.items():
+            if key != 'data':  # already done this
+                setattr(ad_out[0], key, value)
 
     # Store this information so the calling primitive can access it
     ad_out[0].nddata.meta['transform'] = {'origin': dg.origin,

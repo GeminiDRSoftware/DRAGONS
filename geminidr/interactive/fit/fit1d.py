@@ -10,6 +10,14 @@ which is a subclass of
 
 This is also used across modules such as
 :mod:`~geminidr.interactive.fit.wavecal` to manage specific fitting tasks.
+
+The structure and nomenclature here is esoteric, so here's some help.
+
+Visualizer:
+    .panels = [list of Fit1DPanel instances]
+        Fit1DPanel.model is the corresponding element in Visualizer.fits
+    .fits = [list of InteractiveModel1D instances]
+        InteractiveModel1D.fit is a fit_1D object
 """
 from abc import ABC, abstractmethod
 from collections import namedtuple
