@@ -358,6 +358,25 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adoutputs
 
+    def storeProcessedTelluric(self, adinputs=None, suffix=None):
+        caltype = 'processed_telluric'
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        for ad in adinputs:
+            passes_std = all(hasattr(ext, 'SENSFUNC') for ext in ad)
+            if passes_std:
+                _ = self._markAsCalibration([ad], suffix=suffix,
+                                        primname=self.myself(),
+                                        keyword="PROCSTND")
+            passes_tel = all(hasattr(ext, 'TELLABS') for ext in ad) and \
+                hasattr(ad, 'TELLFIT')
+            # if all of the extensions on this ad have a TELLLABS attribute.
+            # Changes to ad are done in-place.
+            if passes_tel:
+                _ = self._markAsCalibration([ad], suffix=suffix,
+                                           primname=self.myself(), keyword="PROCTELL")
+        self.storeCalibration(adinputs, caltype=caltype)
+        return adinputs
+
 
 ##################
 

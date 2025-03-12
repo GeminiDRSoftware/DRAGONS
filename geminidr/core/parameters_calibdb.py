@@ -74,6 +74,7 @@ class storeCalibrationConfig(config.Config):
                  "processed_pinhole": "processed PINHOLE",
                  "processed_standard": "processed standard",
                  "processed_slitillum": "processed slitillum",
+                 "processed_telluric": "processed telluric",
                  },
         optional=False
     )
@@ -127,3 +128,6 @@ class storeProcessedStandardConfig(config.Config):
 
 class storeProcessedSlitIllumConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitIllum", optional=True)
+
+class storeProcessedTelluricConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_telluric", optional=True)
