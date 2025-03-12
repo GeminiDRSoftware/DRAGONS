@@ -19,6 +19,13 @@ def gaussian_constant_r(w0, dw, r):
     return z / z.sum()
 
 
+def gaussian_constant_fwhm(w0, dw, fwhm):
+    """A Gaussian with specified FWHM"""
+    sigma = 0.42466 * fwhm
+    z = np.exp(-0.5 * (dw / sigma) ** 2)
+    return z / z.sum()
+
+
 def boxcar(w0, dw, width):
     """A boxcar of full-width width nm"""
     z = abs(dw) <= 0.5 * width
@@ -56,9 +63,10 @@ def convolve(w, y, func, dw, sampling=1):
     #start = datetime.now()
     # Calculate size of kernel in pixels
     diffs = np.diff(w)
-    if any(diffs <= 0):
-        raise ValueError("Wavelength array must be monotonically increasing")
-    i = int(dw / diffs.min() + 1)
+    rev = any(diffs < 0)
+    if rev and not all(diffs < 0):
+        raise ValueError("Wavelength array is not monotonic")
+    i = int(dw / abs(diffs).min() + 1)
 
     kernel_size = i + i + 1
     yout = np.zeros_like(y)
@@ -103,9 +111,21 @@ def resample(wout, w, data):
     -------
     resampled array of same size as wout
     """
-    spline = make_interp_spline(w, data, axis=-1, k=3)
+    diffs = np.diff(w)
+    rev_in = any(diffs < 0)
+    if rev_in and not all(diffs < 0):
+        raise ValueError("Input wavelength array is not monotonic")
+    diffs = np.diff(wout)
+    rev_out = any(diffs < 0)
+    if rev_out and not all(diffs < 0):
+        raise ValueError("Output wavelength array is not monotonic")
+
+    _slice = slice(None, None, -1) if rev_in else slice(None)
+    spline = make_interp_spline(w[_slice], data[_slice], axis=-1, k=3)
     spline.extrapolate = False
     edges = at.calculate_pixel_edges(wout)
     int_spline = spline.antiderivative()(edges)
     assert np.all(np.isfinite(int_spline)), "Error in resampling"
+    if rev_out:
+        return -np.diff(int_spline) / abs(np.diff(edges))
     return np.diff(int_spline) / abs(np.diff(edges))

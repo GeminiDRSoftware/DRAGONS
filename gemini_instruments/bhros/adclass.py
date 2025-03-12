@@ -17,48 +17,22 @@ class AstroDataBhros(AstroDataGemini):
         return TagSet({'BHROS', 'SPECT'}, ())
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units(input_units="AA")
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength
 
         Returns
         -------
         float
             The central wavelength setting
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
         # The central_wavelength keyword is in Angstroms
         keyword = self._keyword_for('central_wavelength')
         wave_in_angstroms = self.phu.get(keyword, -1)
         if wave_in_angstroms < 0:
             return None
-        return gmu.convert_units('angstroms', wave_in_angstroms,
-                                 output_units)
+        return wave_in_angstroms
 
     @astro_data_descriptor
     def dec(self):

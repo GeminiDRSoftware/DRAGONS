@@ -3,11 +3,17 @@
 from astrodata import AstroData
 from gempy.library import config
 from geminidr.core import parameters_preprocess
+from . import parameters_gnirs
 
 
 class addMDFConfig(config.Config):
     # Does not use MDF files
     suffix = config.Field("Filename suffix", str, "_mdfAdded", optional=True)
+
+
+class associateSkyConfig(parameters_gnirs.associateSkyConfig):
+    def setDefaults(self):
+        self.min_skies = 2
 
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):

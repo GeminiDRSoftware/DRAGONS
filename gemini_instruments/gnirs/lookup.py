@@ -299,12 +299,12 @@ dispersion_by_config = {
     # "grating, camera".
     # Dictionary values are in the following order:
     # "Filter": dispersion
-    # Dispersion values are in A/pix.
+    # Dispersion values are in nm/pix (updated by CJS 20250109)
     # The dispersion values are based on wvl. coverages for each filter/mode listed in GNIRS instrument pages.
-    ("10/mm, Short")  : {"M": -19.39},
-    ("10/mm, Long")   : {"X": -3.24,  "J": -3.89,   "H": -4.85, "K": -6.47, "L": -9.72, "M": -19.43},
-    ("32/mm, Short")  : {"X": -3.23,  "J": -3.88,   "H": -4.84, "K": -6.46, "L": -9.69, "M": -19.34},
-    ("32/mm, Long")   : {"X": -1.07,  "J": -1.29,   "H": -1.62, "K": -2.16, "L": -3.24, "M": -6.45},
-    ("111/mm, Short") : {"X": -0.92,  "J": -1.10,   "H": -1.39, "K": -1.85, "L": -2.73, "M": -5.62},
-    ("111/mm, Long")  : {"X": -0.309, "J": -0.371,  "H": -0.464,"K": -0.618,"L": -0.922,"M": -1.875}
+    ("10/mm", "Short")  : {"M": -1.939},
+    ("10/mm", "Long")   : {"X": -0.324,  "J": -0.389,   "H": -0.485, "K": -0.647, "L": -0.972, "M": -1.943},
+    ("32/mm", "Short")  : {"X": -0.323,  "J": -0.388,   "H": -0.484, "K": -0.646, "L": -0.969, "M": -1.934},
+    ("32/mm", "Long")   : {"X": -0.107,  "J": -0.129,   "H": -0.162, "K": -0.216, "L": -0.324, "M": -0.645},
+    ("111/mm", "Short") : {"X": -0.092,  "J": -0.110,   "H": -0.139, "K": -0.185, "L": -0.273, "M": -0.562},
+    ("111/mm", "Long")  : {"X": -0.0309, "J": -0.0371,  "H": -0.0464,"K": -0.0618,"L": -0.0922,"M": -0.1875}
 }

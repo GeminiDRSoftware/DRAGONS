@@ -1,26 +1,18 @@
-# import os
-# from copy import deepcopy
-
 from itertools import count
 import os
 
-import astrodata
-from astrodata.testing import ad_compare
-import gemini_instruments
+import astrodata, gemini_instruments
 import numpy as np
 import pytest
 from astrodata.testing import ad_compare, download_from_archive
 from geminidr.core.primitives_preprocess import Preprocess
 from geminidr.gemini.lookups import DQ_definitions as DQ
-# from geminidr.gmos.primitives_gmos_image import GMOSImage
 from geminidr.gsaoi.primitives_gsaoi_image import GSAOIImage
 from geminidr.niri.primitives_niri_image import NIRIImage
 from gempy.library.astrotools import cartesian_regions_to_slices
 from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
                            assert_array_equal)
 
-from recipe_system.cal_service.userdb import UserDB
-from recipe_system.cal_service.caldb import CalReturn
 
 DEBUG = bool(os.getenv('DEBUG', False))
 
@@ -44,16 +36,11 @@ def niri_images(niri_image):
     return NIRIImage(adinputs)
 
 @pytest.fixture
-def niriprim(monkeypatch):
+def niriprim():
     file_path = download_from_archive("N20190120S0287.fits")
     ad = astrodata.open(file_path)
     p = NIRIImage([ad])
-
-    def mock_get_processed_bpm(*args, **kwargs):
-        bpm_file = os.path.join(os.path.dirname(__file__), '../../niri/lookups/BPM/NIRI_bpm.fits')
-        return CalReturn([bpm_file], [None])
-    monkeypatch.setattr(p.caldb, "get_processed_bpm", mock_get_processed_bpm)
-    p.addDQ()
+    p.addDQ(static_bpm=download_from_archive("bpm_20010317_niri_niri_11_full_1amp.fits"))
     return p
 
 

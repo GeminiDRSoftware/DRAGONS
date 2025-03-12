@@ -18,7 +18,6 @@ from importlib import import_module
 import matplotlib
 import numpy as np
 from astropy import units as u
-from astropy.convolution import Gaussian1DKernel, convolve
 from astropy.io.ascii.core import InconsistentTableError
 from astropy.io.registry import IORegistryError
 from astropy.io import fits
@@ -29,6 +28,7 @@ from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from numpy.f2py.crackfortran import verbose
 from numpy.ma.extras import _ezclump
 from scipy import optimize
 from scipy.signal import find_peaks, correlate
@@ -36,15 +36,13 @@ from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
 
 import astrodata
-from gemini_instruments import gmu
 from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from geminidr.gemini.lookups import extinction_data as extinct
-from geminidr.gemini.lookups import qa_constraints, atran_models, oh_synthetic_spectra
+from geminidr.gemini.lookups import extinction_data as extinct, oh_synthetic_spectra
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from geminidr.interactive.fit.tracing import interactive_trace_apertures
@@ -91,6 +89,10 @@ class Spect(Resample):
         Find sky lines and match them to a linelist in order to shift the
         wavelength scale zero point slightly to account for flexure in the
         telescope.
+
+        NB. This only works for longslit data because the wavelength solution
+        is calculated from a vertical/horizontal (depending on orientation)
+        slice and not a curved slice as for GNIRS XD, for example.
 
         Parameters
         ----------
@@ -152,11 +154,12 @@ class Spect(Resample):
         max_shift = params["debug_max_shift"]
         verbose = params["verbose"]
 
-        # Check given shift, if there is one.
-        if shift and abs(shift) > max_shift:
-            raise ValueError("Provided shift is larger than parameter "
-                             f"'debug_max_shift': |{shift:.3g}| > "
-                             f"{max_shift:.3g}")
+        # get_all_input_data() outputs several lines of information
+        # which can be useful but confusing if many files are processed,
+        # so use the verbose parameter to allow users to control it.
+        # loglevel is the level at which the output should be logged,
+        # so higher levels (e.g. stdinfo) print more to the console.
+        loglevel = "stdinfo" if verbose else "fullinfo"
 
         for ad in adinputs:
             log.stdinfo(f"{ad.filename}:")
@@ -214,14 +217,8 @@ class Spect(Resample):
                 else:
                     raise ValueError("Cannot interpret wavelength scale "
                                      f"for {ext.filename}:{ext.id} "
-                                     f"(found '{wave_scale}'")
+                                     f"(found '{wave_scale}')")
 
-                # get_all_input_data() outputs several lines of information
-                # which can be useful but confusing if many files are processed,
-                # so use the verbose parameter to allow users to control it.
-                # loglevel is the level at which the output should be logged,
-                # so higher levels (e.g. stdinfo) print more to the console.
-                loglevel = "stdinfo" if verbose else "fullinfo"
                 try:
                     input_data = wavecal.get_all_input_data(
                         ext, self, config_dict, linelist=None,
@@ -236,16 +233,15 @@ class Spect(Resample):
 
                 spectrum = input_data["spectrum"]
                 init_models = input_data["init_models"]
-                domain = init_models[0].meta["domain"]
                 peaks, weights = input_data["peaks"], input_data["weights"]
                 sky_lines = input_data["linelist"].wavelengths(
                     in_vacuo=config_dict["in_vacuo"], units='nm')
                 sky_weights = input_data["linelist"].weights
                 if sky_weights is None:
-                    sky_weights = np.ones_like(sky_lines)
                     log.debug("No weights were found for the reference linelist")
 
                 m_init = init_models[0]
+                domain = m_init.domain
                 # Fix all parameters in the model so that they don't change
                 # (only the Shift which will be added next).
                 for p in m_init.param_names:
@@ -2484,7 +2480,7 @@ class Spect(Resample):
                     else:
                         wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                         figures.append(wavecal.create_pdf_plot(
-                            input_data["spectrum"], fit1d.points[~fit1d.mask],
+                            input_data, fit1d.points[~fit1d.mask],
                             fit1d.image[~fit1d.mask], f"{ad.filename}:{ext.id}"))
 
             ad.update_filename(suffix=sfx, strip=True)
@@ -3565,7 +3561,6 @@ class Spect(Resample):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        threshold = params["threshold"]
         interactive_reduce = params["interactive"]
 
         fit1d_params = fit_1D.translate_params(params)
@@ -3683,14 +3678,12 @@ class Spect(Resample):
 
             xaxis_label = 'x (pixels)' if dispaxis == 1 else 'y (pixels)'
 
-            data = reconstruct_points(uiparams)
-
             fit1d_arr = list()
 
             if interactive_reduce:
                 all_domains = list()
                 all_fp_init = list()
-                for ext, x in zip(admos, x_arr):
+                for ext in admos:
                     dispaxis = 2 - ext.dispersion_axis()
                     pixels = np.arange(ext.shape[dispaxis])
                     all_domains.append([min(pixels), max(pixels)])
@@ -3716,12 +3709,13 @@ class Spect(Resample):
                                                    enable_regions=True,
                                                    help_text=NORMALIZE_FLAT_HELP_TEXT,
                                                    recalc_inputs_above=False,
-                                                   # modal_message="Recalculating",
+                                                   modal_message="Recalculating",
                                                    ui_params=uiparams,
                                                    mask_glyphs={"threshold": ("square", "orange")})
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 fit1d_arr = visualizer.results()
             else:
+                reconstruct_points(uiparams)  # will populate variables as in scope
                 for ext, masked_data, x, weights, threshold_value \
                         in zip(admos, masked_data_arr, x_arr, weights_arr,
                                saved_thresholds):
@@ -3800,7 +3794,9 @@ class Spect(Resample):
         w2 : float
             Wavelength of last pixel (nm). See Notes below.
         dw : float
-            Dispersion (nm/pixel). See Notes below.
+            Dispersion (nm/pixel) for linearized spectra, or fractional
+            wavelength increase per pixel (w_{i+1} / w_i - 1) for
+            loglinearized spectra. See Notes below.
         npix : int
             Number of pixels in output spectrum. See Notes below.
         conserve : bool
@@ -3813,8 +3809,10 @@ class Spect(Resample):
         trim_spectral: bool
             Output data will cover the intersection (rather than union) of
             the inputs' wavelength coverage?
-        force_linear : bool
-            Force a linear output wavelength solution?
+        output_wave_scale: str ["linear" | "loglinear" | "reference"]
+            what to use for the output wavelength scale(s)
+        single_wave_scale: bool (XD only, otherwise False)
+            for multiple orders, resample to a single wavelength solution?
         dq_threshold : float
             The fraction of a pixel's contribution from a DQ-flagged pixel to
             be considered 'bad' and also flagged.
@@ -3824,8 +3822,6 @@ class Spect(Resample):
         If ``w1`` or ``w2`` are not specified, they are computed from the
         individual spectra: if ``trim_data`` is True, this is the intersection
         of the spectra ranges, otherwise this is the union of all ranges,
-
-        If ``dw`` or ``npix`` are specified, the spectra are linearized.
 
         Returns
         -------
@@ -3844,7 +3840,8 @@ class Spect(Resample):
         interpolant = params["interpolant"]
         trim_spatial = params["trim_spatial"]
         trim_spectral = params["trim_spectral"]
-        force_linear = params.get("force_linear", True)
+        output_spectral = params["output_wave_scale"]
+        single_spectral = params.get("single_wave_scale", True)
         dq_threshold = params["dq_threshold"]
 
         # Check that all ad objects are either 1D or 2D
@@ -3853,8 +3850,16 @@ class Spect(Resample):
             log.warning('Input list empty. Doing nothing.')
             return adinputs
         elif len(ndim) != 1:
-            raise ValueError('inputs must have the same dimension')
+            raise ValueError('inputs must have the same dimensionality')
         ndim = ndim.pop()
+
+        # If we're not resampling everything onto a single wavelength scale,
+        # then the inputs need to have the same number of extensions (orders)
+        num_ext = [len(ad) for ad in adinputs]
+        if not single_spectral and len(set(num_ext)) > 1:
+            raise ValueError("Inputs do not all have the same number of "
+                             "extensions, but single_spectral=False")
+        num_ext = max(num_ext)
 
         if ndim > 1:
             adjust_key = self.timestamp_keys['adjustWCSToReference']
@@ -3886,28 +3891,15 @@ class Spect(Resample):
                                        for ad, r in zip(adinputs,
                                                         ref_pixels_dict[j])]
 
-        # If only one variable is missing we compute it from the others
-        nparams = 4 - [w1, w2, dw, npix].count(None)
-        if nparams == 3:
-            if npix is None:
-                npix = int(np.ceil((w2 - w1) / dw)) + 1
-                w2 = w1 + (npix - 1) * dw
-            elif w1 is None:
-                w1 = w2 - (npix - 1) * dw
-            elif w2 is None:
-                w2 = w1 + (npix - 1) * dw
-            else:
-                dw = (w2 - w1) / (npix - 1)
-
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix), and compute the final bounds (w1out, w2out)
         # if they are not provided
         info = []
-        w1out, w2out, dwout, npixout = w1, w2, dw, npix
-        # Create empty arrays to hold the minimum/maximum wavelengths for each
-        # extension in each ad
-        w1_arr = np.empty((len(adinputs), len(adinputs[0])))
-        w2_arr = np.empty_like(w1_arr)
+        # Create arrays to hold the minimum/maximum wavelengths for each
+        # extension in each AD. Use NaNs in case there are different
+        # numbers of extensions in different ADs.
+        w1_arr = np.full((len(adinputs), len(adinputs[0])), np.nan)
+        w2_arr = np.full_like(w1_arr, np.nan)
         for i, ad in enumerate(adinputs):
             adinfo = []
             for iext, ext in enumerate(ad):
@@ -3922,87 +3914,142 @@ class Spect(Resample):
 
             info.append(adinfo)
 
-        # The outer min()/max() works to find the lowest/highest value from all
-        # extensions, after the inner .max()/.min() has found the appropriate
-        # value for each array across all input ad objects
+        # Compute the output wavelength range for each extension. We can
+        # calculate the overall output range if we're combining to a single
+        # extension later
         if trim_spectral:
-            # Go for the shortest interval in each extension
-            if w1 is None:
-                w1out = min(w1_arr.max(axis=0))
-            if w1 is None:
-                w2out = max(w2_arr.min(axis=0))
+            wave_min = w1_arr.max(axis=0)
+            wave_max = w2_arr.min(axis=0)
         else:
-            # Go for the longest interval
-            if w1 is None:
-                w1out = min(w1_arr.min(axis=0))
-            if w2 is None:
-                w2out = max(w2_arr.max(axis=0))
+            wave_min = w1_arr.min(axis=0)
+            wave_max = w2_arr.max(axis=0)
 
-        if trim_spectral:
-            if w1 is None:
-                w1out = min(w1_arr[0])
-            if w2 is None:
-                w2out  = max(w2_arr[0])
-            if w1 is None or w2 is None:
-                log.fullinfo("Trimming data to size of reference spectra")
+        # create new wavelength scale only if the grid parameters are specified
+        new_wave_scale = (output_spectral != "reference" or
+                          npix is not None or dw is not None)
+        if new_wave_scale:
+            nparams = 4 - [w1, w2, dw, npix].count(None)
+            if w1 is not None:
+                w1 = np.full((num_ext,), w1)
+            if w2 is not None:
+                w2 = np.full((num_ext,), w2)
+            if npix is not None:
+                npix = np.full((num_ext,), npix)
+            if dw is not None:
+                dw = np.full((num_ext,), dw)
 
-        # If more than one extension, find the one with the wavelength model
-        # with the smallest dispersion. If linearizing the wavelength scale,
-        # using the smallest dispersion stops undersampling the blue orders
-        if len(info[0]) > 1:
-            dispersions = np.array([info[0][i]['dw'] for i in range(len(refad))])
-            small_disp_index = dispersions.argmin()
+            # Determine the new wavelength scale(s). We need to compute 3
+            # parameters as the 4th is then calculable. First, we copy the
+            # start and end wavelengths if those aren't specified. If neither
+            # dw nor npix are specified, the behaviour depends on whether we
+            # are resampling to a single wavelength scale: if so, then we want
+            # to preserve the dispersion to avoid undersampling but, if not,
+            # then we want to preserve the number of pixels per extension.
+            while nparams < 3:
+                if w1 is None:
+                    w1 = wave_min
+                elif w2 is None:
+                    w2 = wave_max
+                elif single_spectral and dw is None:
+                    w1 = np.full_like(w1, np.nanmin(w1))
+                    w2 = np.full_like(w2, np.nanmax(w2))
+                    if output_spectral == "linear":
+                        dw = np.array([extinfo['dw'] for adinfo in info
+                                       for extinfo in adinfo])
+                    else:
+                        # dw has been calculated assuming the spectrum is
+                        # linear, so we repeat that assumption
+                        dw = np.array([extinfo['dw'] / extinfo['w2'] - 1
+                                       for adinfo in info for extinfo in adinfo])
+                    dw = np.full_like(w1, dw.min())
+                elif npix is None:
+                    npix = np.array([[ext.shape[dispaxis] for ext in ad]
+                                     for ad in adinputs]).max(axis=0)
+                nparams += 1
 
-        # linearize spectra only if the grid parameters are specified
-        linearize = force_linear or npix is not None or dw is not None
-        if linearize:
-            if npixout is None and dwout is None:
-                # if both are missing, use the reference spectrum
-                index = small_disp_index if len(info[0]) > 1 else 0
-                dwout = info[0][index]['dw']
-            if npixout is None:
-                npixout = int(np.ceil((w2out - w1out) / dwout)) + 1
-            elif dwout is None:
-                dwout = (w2out - w1out) / (npixout - 1)
+            # Now compute the 4th parameter
+            if npix is None:
+                if output_spectral == "linear":
+                    npix = np.ceil((w2 - w1) / dw).astype(int) + 1
+                    w2 = w1 + (npix - 1) * dw
+                else:  # loglinear
+                    npix = np.ceil(np.log(w2 / w1) / np.log(1 + dw) - 1)
+                    w2 = w1 * (1 + dw) ** (npix - 1)
+            elif w1 is None:
+                w1 = w2 - (npix - 1) * dw
+            elif w2 is None:
+                w2 = w1 + (npix - 1) * dw
+            elif output_spectral == "linear":  # dw is None
+                dw = (w2 - w1) / (npix - 1)
+            else:  # dw is None and we're loglinearizing
+                dw = (w2 / w1) ** (1 / (npix - 1)) - 1
 
-        # For cross-dispersed spectra, there is no gaurantee than a non-linear
-        # wavelength scale for a single order will cover the range of the entire
-        # observation, or that its inverse will be good. Therefore, when calling
-        # this primitive for cross-dispersed spectra, it is forced to use a
-        # linear model.
-        if linearize:
-            new_wave_model = models.Scale(dwout) | models.Shift(w1out)
-        else:
-            # compute the inverse model needed to go to the reference
-            # spectrum grid. Due to imperfections in the Chebyshev inverse
-            # we check whether the wavelength limits are the same as the
-            # reference spectrum.
-            index = small_disp_index if len(info[0]) > 1 else 0
-            wave_model_ref = info[0][-1]['wave_model'].copy()
-            wave_model_ref.name = None
-            limits = wave_model_ref.inverse([w1out, w2out])
-            if info[0][index]['w1'] == w1out:
-                limits[0] = round(limits[0])
-            if info[0][index]['w2'] == w2out:
-                limits[1] = round(limits[1])
-                npixout = info[0][index]['npix']
-            pixel_shift = int(np.ceil(limits.min()))
-            new_wave_model = models.Shift(pixel_shift) | wave_model_ref
-            if info[0][index]['w2'] == w2out:
-                npixout = info[0][index]['npix']
-            else:
-               npixout = int(np.floor(new_wave_model.inverse([w1out,
-                                                              w2out]).max()) + 1)
-            dwout = (w2out - w1out) / (npixout - 1)
+            # needs a defined inverse if we're going to do this
+            # new_wave_models = [models.Chebyshev1D(degree=1, c0=0.5 * (this_w1 + this_w2),
+            #                                       c1 = 0.5 * (this_w2 - this_w1),
+            #                                       domain = (0, this_npix - 1),
+            #                                       name='WAVE')
+            #                    for this_w1, this_w2, this_npix in zip(w1, w2, npix)]
+            new_wave_models = []
+            for this_w1, this_dw in zip(w1, dw):
+                if output_spectral == "linear":
+                    new_wave_model = models.Scale(this_dw) | models.Shift(this_w1)
+                else:  # loglinear
+                    new_wave_model = models.Exponential1D(amplitude=this_w1, tau=1. / np.log(1 + this_dw))
+                new_wave_model.name = 'WAVE'
+                new_wave_models.append(new_wave_model)
 
-        new_wave_model.name = 'WAVE'
+        else:  # not linearizing
+            # Use the existing wavelength solution(s) of the reference AD
+            npix = np.empty_like(wave_min, dtype=int)
+            w1, w2 = wave_min, wave_max
+            print(w1)
+            print(w2)
+            new_wave_models = []
+            for iext, (extinfo, this_w1, this_w2) in enumerate(
+                    zip(info[0], wave_min, wave_max)):
+                wave_model_ref = extinfo['wave_model'].copy()
+                limits = wave_model_ref.inverse([this_w1, this_w2])
+                print(limits)
+                # Due to imperfections in the Chebyshev inverse, we check
+                # whether the wavelength limits are the same as the
+                # reference spectrum.
+                if extinfo['w1'] == this_w1:
+                    limits[0] = round(limits[0])
+                if extinfo['w2'] == this_w2:
+                    limits[1] = round(limits[1])
+                pixel_shift = int(np.ceil(limits.min()))
+                print(limits, pixel_shift, wave_model_ref(limits))
+                if pixel_shift:
+                    new_wave_model = models.Shift(pixel_shift) | wave_model_ref
+                else:
+                    new_wave_model = wave_model_ref
+                new_wave_model.name = 'WAVE'
+                new_wave_models.append(new_wave_model)
+
+                this_npix = (np.ceil(limits) - pixel_shift).max()
+                npix[iext] = this_npix
+
+                # The limits of the output data won't be exactly w1 and w2
+                # because we're constrained by the reference's wave_model.
+                # So recalculate this for logging purposes
+                actual_limits = new_wave_model([0, this_npix - 1])
+                w1[iext] = actual_limits.min()
+                w2[iext] = actual_limits.max()
+                print(new_wave_model([0,1,2]))
+                yy = new_wave_model([this_npix-3,this_npix-2,this_npix-1])
+                print(this_npix, yy)
+                print(new_wave_model.inverse(yy))
+
+            # Calculation for all extensions
+            dw = (w2 - w1) / (npix - 1)
+
         # dicts handle models for multiple extensions
         if ndim == 1:
-            new_wcs_models = {i: new_wave_model for i in range(len(adinputs[0]))}
+            new_wcs_models = {i: m for i, m in enumerate(new_wave_models)}
         else:
             new_wcs_models = {i: refad[i].wcs.forward_transform.replace_submodel(
-                'WAVE', new_wave_model) for i in range(len(refad))}
-
+                'WAVE', m) for i, m in enumerate(new_wave_models)}
 
         # Now let's think about the spatial direction
         if ndim > 1:
@@ -4032,18 +4079,18 @@ class Spect(Resample):
                         all_corners_dict[i], axis=1).max(axis=1) -
                         origin_dict[i] + 1)
 
-            for i in range(len(refad)):
-                output_shape_dict[i][dispaxis] = npixout
+            for i, this_npix in enumerate(npix):
+                output_shape_dict[i][dispaxis] = this_npix
                 origin_dict[i][dispaxis] = 0
         else:
             origin_dict = {i: (0,) for i in range(len(adinputs[0]))}
-            output_shape_dict = {i: (npixout,) for i in range(len(adinputs[0]))}
+            output_shape_dict = {i: (this_npix,) for i, this_npix in enumerate(npix)}
 
         adoutputs = []
         for i, ad in enumerate(adinputs):
             flux_calibrated = self.timestamp_keys["fluxCalibrate"] in ad.phu
 
-            for iext, ext in enumerate(ad):
+            for iext, (ext, new_wave_model) in enumerate(zip(ad, new_wave_models)):
                 wave_model = info[i][iext]['wave_model']
                 extn = f"{ad.filename} extension {ext.id}"
                 wave_resample = wave_model | new_wave_model.inverse
@@ -4051,7 +4098,7 @@ class Spect(Resample):
                 wave_resample.inverse = new_wave_model | wave_model.inverse
 
                 # Avoid performing a Cheb and its imperfect inverse
-                if not linearize and new_wave_model[1:] == wave_model:
+                if not new_wave_model and new_wave_model[1:] == wave_model:
                     wave_resample = models.Shift(-pixel_shift)
 
                 if ndim == 1:
@@ -4069,19 +4116,29 @@ class Spect(Resample):
                 this_conserve = conserve_or_interpolate(ext, user_conserve=conserve,
                                         flux_calibrated=flux_calibrated, log=log)
 
-                if i == 0 and not linearize:
+                if i == 0 and not new_wave_scale:
                     log.fullinfo(f"{ad.filename}: No interpolation")
                 msg = "Resampling"
-                if linearize:
-                    msg += " and linearizing"
-                log.stdinfo(f"{msg} {extn}: w1={w1out:.3f} w2={w2out:.3f} "
-                            f"dw={dwout:.3f} npix={npixout}")
+                if new_wave_scale:
+                    msg += f" and {output_spectral}izing"
+                dwstr = (f"{dw[iext]:.6f}" if output_spectral == "loglinear"
+                         else f"{dw[iext]:.3f}")
+                log.stdinfo(f"{msg} {extn}: w1={w1[iext]:.3f} w2={w2[iext]:.3f} "
+                            f"dw={dwstr} npix={npix[iext]}")
 
                 # If we resample to a coarser pixel scale, we may
                 # interpolate over features. We avoid this by subsampling
                 # back to the original pixel scale (approximately).
-                input_dw = info[i][iext]['dw']
-                subsample = int(np.ceil(abs(dwout / input_dw) - 0.1))
+                if new_wave_scale:
+                    input_dw = info[i][iext]['dw']
+                    if output_spectral == "linear":
+                        max_new_dw = dw[iext]
+                    else:  # loglinear
+                        max_new_dw = info[i][iext]['w2'] * dw[iext]
+                    subsample = int(np.ceil(abs(max_new_dw / input_dw) - 0.1))
+                else:
+                    subsample = 1
+
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
 
@@ -4786,6 +4843,88 @@ class Spect(Resample):
 
         return adinputs
 
+    def transferDistortionModel(self, adinputs=None, suffix=None, source=None):
+        """
+        This primitive transfers distortion_model from the AD(s) in another ("source")
+        stream to the ADs in this stream if there was none, to match the WCS structure
+        of processedArc. If the number of ADs in the source stream is larger than
+        in the current stream, it's assumed that there was frame stacking done in the recipe,
+        and the distortion_model gets transferred only if the AD's ORIGNAME keywords are matching.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        source: str
+            name of stream containing ADs whose "distortion_model" you want
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        if source not in self.streams.keys():
+            log.info(f"Stream {source} does not exist so nothing to transfer")
+            return adinputs
+
+        source_length = len(self.streams[source])
+        source_files = self.streams[source]
+        if not source_length > len(adinputs):
+            # If number of files in the source stream is larger than in the current stream, assume
+            # that there was frame stacking done in the recipe.
+            # Do model copying only for the ads that have matching original filenames.
+            source_files = []
+            for ad1 in adinputs:
+                orig_filename = ad1.phu.get('ORIGNAME')
+                for ad2 in self.streams[source]:
+                    if ad2.phu.get('ORIGNAME') == orig_filename:
+                        source_files.append(ad2)
+                        break
+                else:
+                    # Didn't find a match
+                    log.warning(f"No matching frame found for "
+                                f"{orig_filename} in the source stream")
+
+        elif source_length < len(adinputs):
+            log.warning("Incompatible stream lengths: "
+                        f"{len(adinputs)} and {source_length}")
+            return adinputs
+
+        log.stdinfo(f"Transferring distortion model from stream '{source}'")
+
+        # Copy distortion model from ad2 to ad1
+        for ad1, ad2 in zip(*gt.make_lists(adinputs, source_files)):
+            fail = False
+            distortion_models = []
+            for ext1, ext2 in zip(ad1, ad2):
+                wcs1 = ext1.wcs
+                wcs2 = ext2.wcs
+                if 'distortion_corrected' in wcs1.available_frames:
+                    log.warning(f"{ad1.filename}: already contains distortion model. "
+                            " Continuing.")
+                    fail = True
+                    break
+                try:
+                    if 'distortion_corrected' not in wcs2.available_frames:
+                        log.warning("Could not find a 'distortion_corrected' frame "
+                            f"in {ad2.filename} extension {ext2.id} - "
+                            "continuing")
+                        fail = True
+                        break
+                except AttributeError:
+                    fail = True
+                    break
+                else:
+                    if 'rectified' not in wcs2.available_frames:
+                        m_distcorr = wcs2.get_transform(wcs2.input_frame, 'distortion_corrected')
+                    else:
+                        m_distcorr = wcs2.get_transform("rectified", 'distortion_corrected')
+                    distortion_models.append(m_distcorr)
+            if not fail:
+                for ext, dist in zip(ad1, distortion_models):
+                    ext.wcs.insert_frame(ext.wcs.input_frame, dist, cf.Frame2D(name="distortion_corrected"))
+
+                ad1.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
     def write1DSpectra(self, adinputs=None, **params):
         """
         Write 1D spectra to files listing the wavelength and data (and
@@ -4924,7 +5063,7 @@ class Spect(Resample):
 
         return adinputs
 
-    def _get_arc_linelist(self, ext, waves=None):
+    def _get_linelist(self, wave_model=None, *args, **kwargs):
         """
         Returns a list of wavelengths of the arc reference lines used by the
         primitive `determineWavelengthSolution()`, if the user parameter
@@ -4932,17 +5071,13 @@ class Spect(Resample):
 
         Parameters
         ----------
-        waves : array / None
-            (approx) wavelengths of each pixel in nm. This is required in case
-            the linelist depends on resolution or wavelength setting.
+        wave_model : astroy.modeling.models.Chebyshev1D instance
+            model (with domain) defining the wavelength (range) required
 
         Returns
         -------
-        array_like
-            arc line wavelengths
-
-        array_like or None
-            arc line weights
+        gempy.library.wavecal.LineList object
+            arc line wavelengths (and optional weights)
         """
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
@@ -5114,599 +5249,146 @@ class Spect(Resample):
         return (abs(dist_para) <= frac_FOV * slit_length and
                 abs(dist_perp) <= max_perpendicular_offset)
 
-
-    def transferDistortionModel(self, adinputs=None, suffix=None, source=None):
-        """
-        This primitive transfers distortion_model from the AD(s) in another ("source")
-        stream to the ADs in this stream if there was none, to match the WCS structure
-        of processedArc. If the number of ADs in the source stream is larger than
-        in the current stream, it's assumed that there was frame stacking done in the recipe,
-        and the distortion_model gets transferred only if the AD's ORIGNAME keywords are matching.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        source: str
-            name of stream containing ADs whose "distortion_model" you want
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        if source not in self.streams.keys():
-            log.info(f"Stream {source} does not exist so nothing to transfer")
-            return adinputs
-
-        source_length = len(self.streams[source])
-        source_files = self.streams[source]
-        if not source_length > len(adinputs):
-            # If number of files in the source stream is larger than in the current stream, assume
-            # that there was frame stacking done in the recipe.
-            # Do model copying only for the ads that have matching original filenames.
-            source_files = []
-            for ad1 in adinputs:
-                orig_filename = ad1.phu.get('ORIGNAME')
-                for ad2 in self.streams[source]:
-                    if ad2.phu.get('ORIGNAME') == orig_filename:
-                        source_files.append(ad2)
-                        break
-                else:
-                    # Didn't find a match
-                    log.warning(f"No matching frame found for "
-                                f"{orig_filename} in the source stream")
-
-        elif source_length < len(adinputs):
-            log.warning("Incompatible stream lengths: "
-                        f"{len(adinputs)} and {source_length}")
-            return adinputs
-
-        log.stdinfo(f"Transferring distortion model from stream '{source}'")
-
-        # Copy distortion model from ad2 to ad1
-        for ad1, ad2 in zip(*gt.make_lists(adinputs, source_files)):
-            fail = False
-            distortion_models = []
-            for ext1, ext2 in zip(ad1, ad2):
-                wcs1 = ext1.wcs
-                wcs2 = ext2.wcs
-                if 'distortion_corrected' in wcs1.available_frames:
-                    log.warning(f"{ad1.filename}: already contains distortion model. "
-                            " Continuing.")
-                    fail = True
-                    break
-                try:
-                    if 'distortion_corrected' not in wcs2.available_frames:
-                        log.warning("Could not find a 'distortion_corrected' frame "
-                            f"in {ad2.filename} extension {ext2.id} - "
-                            "continuing")
-                        fail = True
-                        break
-                except AttributeError:
-                    fail = True
-                    break
-                else:
-                    if 'rectified' not in wcs2.available_frames:
-                        m_distcorr = wcs2.get_transform(wcs2.input_frame, 'distortion_corrected')
-                    else:
-                        m_distcorr = wcs2.get_transform("rectified", 'distortion_corrected')
-                    distortion_models.append(m_distcorr)
-            if not fail:
-                for ext, dist in zip(ad1, distortion_models):
-                    ext.wcs.insert_frame(ext.wcs.input_frame, dist, cf.Frame2D(name="distortion_corrected"))
-
-                ad1.update_filename(suffix=suffix, strip=True)
-        return adinputs
-
-    def _uses_atran_linelist(self, cenwave, absorption):
-        """
-        Returns True if the observation can use ATRAN line list for the wavecal.
-        By default ATRAN line lists are used in two cases:
-            1) wavecal from sky absorption lines in object spectrum (in XJHK-bands);
-            2) wavecal from sky emission lines in L- and M-band.
-        In these cases (unless the user is providing her own linelist) we
-        generate the line list on-the-fly from an ATRAN model with the parameters
-        closest to the frame's observing conditions, and convolve it to the
-        resolution of the observation.
-
-        Parameters
-        ----------
-        cenwave: float
-            central wavelength in um
-        absorption: bool
-            is wavecal done from absorption lines?
-        """
-        return True if (absorption is True) or (cenwave >= 2.8) else False
-
-    def _get_atran_linelist(self, ext, config):
-        """
-        Returns default filename of the line list generated from an ATRAN
-        model spectrum with model parameters matching the observing conditions
-        and spectral characteristics of the frame (or those, specified by the user).
-        Also returns a dictionary with the data necessary for the reference plot (so
-        that we don't have to re-calculate the linelist for making the reference plot).
-
-        Parameters
-        ----------
-        ext: single-slice AstroData
-            the extension
-        config: Config-like object containing parameters
-
-        Returns
-        -------
-        atran_filename: str
-            full path to the generated ATRAN line list
-        refplot_dict: dict
-            a dictionary containing data for the reference plot
-        """
-        lookup_dir = os.path.dirname(import_module('.__init__',
-                                           self.inst_lookups).__file__)
-        working_dir = os.getcwd()
-
-        refplot_dict = None
-        model_params = self._get_model_params(ext, config)
-
-        atran_linelist = 'atran_linelist_{}_{:.0f}-{:.0f}_wv{:.0f}_r{:.0f}.dat'\
-            .format(model_params["site"],model_params["start_wvl"],
-                    model_params["end_wvl"],model_params["wv_content"]*1000,
-                    model_params["resolution"])
-
-        atran_filename = os.path.join(lookup_dir, atran_linelist)
-        # If there is no pre-calculated ATRAN linelist in the default lookups directory,
-        # create one and save it in the current working directory:
-        if not os.path.exists(atran_filename):
-            atran_filename = os.path.join(working_dir, atran_linelist)
-            self.log.stdinfo(f"Generating a linelist from ATRAN synthetic spectrum")
-            _, refplot_dict = self._make_atran_linelist(ext, filename=atran_filename,
-                                                        model_params=model_params)
-        self.log.stdinfo(f"Using linelist {atran_filename}")
-        return wavecal.LineList(atran_filename), refplot_dict
-
-    def _make_atran_linelist(self, ext, filename, model_params):
-        """
-        Generates line list from a convolved ATRAN spectrum: finds peaks,
-        assings weights, divides spectrum into 10 wavelength bins,
-        selects nlines//10 best lines within each bin, pinpoints the peaks.
-        Saves the linelist to a file, and creates a disctionary with
-        convolved spectrum and line list data to use later for the reference plot.
-
-        Parameters
-        ----------
-        ext: single-slice AstroData
-            the extension
-        filename: str or None
-            full name of the linelist to be saved on disk. If None, the linelist is not saved.
-        model_params: dict
-         A dictionary of observation parameters generated by _get_model_params() function.
-
-        Returns
-        -------
-        atran_linelist: 1d array
-            A list of ATRAN line wavelengths in air/vacuum (nm)
-        refplot_dict: dict
-            a dictionary containing data for the reference plot
-        """
-
-        atran_spec, sampling = self._get_convolved_atran(ext, model_params=model_params)
-
-        inverse_atran_spec = 1 - atran_spec[:,1]
-        fwhm = (model_params["cenwave"] / model_params["resolution"]) * (1 / sampling)
-        peaks, properties = find_peaks(inverse_atran_spec, prominence=0.001, width=(None,5*fwhm))
-        weights = properties["prominences"] / properties["widths"]
-        peaks_with_weights = np.vstack([peaks,weights]).T
-
-        def trim_peaks(peaks, npix, nbins, nlargest, sort=True):
-            """
-            Filters the peaks list, binning it over the range of the whole signal, preserving only the
-            N-largest ones on each bin
-
-            peaks: a 2-column array. The first column is pixel index, the second is signal value
-            npix: total nunmber of pixels
-            nbins: number of desired bins
-            nlargest: number of largest peaks to extract from each bin
-
-            Returns:
-              An array of the same format
-            """
-            pixels_per_bin = npix // nbins
-            padded_npix = npix
-            if npix % nbins != 0:
-                # Not evenly divisible. Adjust!
-                pixels_per_bin += 1
-                padded_npix = pixels_per_bin * nbins
-            weights = np.zeros((padded_npix,), dtype=peaks.dtype)
-            # Put the weights in their place and "bin" the weights array
-            weights[peaks[:,0].astype(int)] = peaks[:,1]
-            binned = weights.reshape((nbins, pixels_per_bin))
-            indices = np.arange(padded_npix).reshape((nbins, pixels_per_bin))
-
-            result = []
-            for row, ind in zip(binned, indices):
-                sorting = np.argpartition(row, -nlargest)
-                sorted_row = row[sorting]
-                nonzeros = sorted_row > 0
-                trimmed_indices = ind[sorting][nonzeros]
-                if len(trimmed_indices) > 0:
-                    result.extend(zip(list(trimmed_indices[-nlargest:]), list(sorted_row[nonzeros][-nlargest:])))
-
-            if sorted:
-                return np.array(sorted(result), dtype=peaks.dtype)
-            else:
-                return np.array(result, dtype=peaks.dtype)
-
-        # For the final line list select n // 10 peaks with largest weights
-        # within each of 10 wavelenght bins.
-        nbins = 10
-        best_peaks = trim_peaks(peaks_with_weights, inverse_atran_spec.shape[0], nbins=nbins,
-                                nlargest=model_params["nlines"]//nbins, sort=True)
-        # Pinpoint peak positions
-        final_peaks, peak_values = peak_finding.pinpoint_peaks(
-            inverse_atran_spec, peaks=best_peaks[:,0],
-            halfwidth=1, keep_bad=True)
-
-        atran_linelist = np.empty([len(final_peaks),3])
-        # wavelenghts
-        atran_linelist[:,0] = final_peaks
-        # intensities
-        atran_linelist[:,1] = peak_values
-        # weights
-        atran_linelist[:,2] = best_peaks[:,1]
-        atran_linelist = atran_linelist[~np.isnan(atran_linelist).any(axis=1), :]
-
-        atran_linelist[:,0] = atran_spec[[int(x) for x in atran_linelist[:,0]]][:,0] + \
-                              [p%1 * sampling for p in atran_linelist[:,0]]
-        atran_linelist = atran_linelist[np.argsort(atran_linelist[:,0])]
-
-        if model_params["absorption"]:
-            atran_linelist[:,1] = 1 - atran_linelist[:,1]
-
-        header = (f"Sky emission line list: {model_params['start_wvl']:.0f}-{model_params['end_wvl']:.0f}nm   \n"
-            "Generated from ATRAN synthetic spectrum (Lord, S. D., 1992, NASA Technical Memorandum 103957) \n"
-            "Model parameters: \n"
-            f"Obs altitude: {model_params['alt']}, Obs latitude: 39 degrees,\n"
-            f"Water vapor overburden: {model_params['wv_content']*1000:.0f} microns, Number of atm. layers: 2,\n"
-            "Zenith angle: 48 deg, Wavelength range: 1.0 - 6.0 microns, Smoothing R:0 \n"
-            "units nanometer\n"
-            "wavelengths IN VACUUM")
-        if filename is not None:
-            np.savetxt(filename, atran_linelist[:,0], fmt=['%.3f'], header = header)
-        else:
-            pass
-
-        # Create data for reference plot using the convolved spectrum and the line
-        # list generated here
-        refplot_dict = self._make_refplot_data(ext=ext, refplot_spec=atran_spec,
-                                refplot_linelist=atran_linelist[:,[0,1]], model_params=model_params)
-        return atran_linelist[:,0], refplot_dict
-
-    def _get_convolved_atran(self, ext, model_params):
-        """
-        Reads a section of an appropriate ATRAN model spectrum file,
-        convolves the spectrum to the resolution of the observation.
-
-        Parameters
-        ----------
-        ext: single-slice AstroData
-            the extension
-        model_params: dict
-         A dictionary of observation parameters generated by _get_model_params() function.
-
-        Returns
-        -------
-        spectrum : ndarray
-            2d array of wavelengths (nm) and atmospheric transmission values
-        sampling: float
-            sampling (nm) of the ATRAN model spectrum
-        """
-        path = list(atran_models.__path__).pop()
-
-        atran_model_filename = os.path.join(path,
-                    'atran_{}_850-6000nm_wv{:.0f}_za48_r0.dat'
-                                            .format(model_params["site"],
-                                                    model_params["wv_content"]*1000))
-        # sampling of the ATRAN model spectra (nm)
-        sampling = 0.01
-        # Starting wavelength of the ATRAN spectrum (nm)
-        spec_start_wvl = 850
-        start_row = int((model_params["start_wvl"] - spec_start_wvl) / sampling)
-        nrows = int(model_params["spec_range"] / sampling)
-        # Read the model spectrum within observation's spec. range
-        atran_spec = np.loadtxt(atran_model_filename, skiprows=start_row,
-                                      max_rows=nrows+1)
-        # Smooth the atran spectrum with a Gaussian with a constant FWHM value,
-        # where FWHM = cenwave / resolution
-        fwhm = (model_params["cenwave"]/ model_params["resolution"]) * (1 / sampling)
-        gauss_kernel = Gaussian1DKernel(fwhm / 2.35) # std = FWHM / 2.35
-        atran_spec[:,1] = convolve(atran_spec[:,1], gauss_kernel,
-                                     boundary='extend')
-
-        return atran_spec, sampling
-
-
-    def _show_refplot(self, ext):
-        """
-        Reference plots are implemented for the wavecal from sky lines
-        """
-        return False if 'ARC' in ext.tags else True
-
-    def _make_refplot_data(self, ext, refplot_linelist, config=None, model_params=None,
-                           refplot_spec=None, refplot_name=None, refplot_y_axis_label=None):
-        """
-        Generate data for the reference plot (reference spectrum, reference plot name, and
-        the label for the y-axis), depending on the type of spectrum used for wavelength calibration,
-        using the supplied line list.
-
-        Parameters
-        ----------
-        ext: single-slice AstroData
-            the extension
-        model_params: dict or None
-         A dictionary of observation parameters generated by _get_model_params() function.
-         Either model_params or config must be not None
-        config: Config-like object containing parameters or None
-            Either model_params or config must be not None
-        refplot_linelist: LineList object or a 2-column nd-array with wavelengths
-                (nm) and line intensities
-        refplot_spec: 2d-array or None
-            two-column nd.array containing reference spectrum wavelengths (nm) and intensities
-        refplot_name: str or None
-            reference plot name string
-        refplot_y_axis_label: str or None
-            reference plot y-axis label string
-
-        Returns
-        -------
-        dict : all the information needed to construct reference spectrum plot:
-        "refplot_spec" : two-column nd.array containing reference spectrum wavelengths
-                        (nm) and intensities
-        "refplot_linelist" : two-column nd.array containing line wavelengths (nm) and
-                            intensities
-        "refplot_name" : reference plot name string
-        "refplot_y_axis_label" : reference plot y-axis label string
-        """
-
-        if config is None and model_params is None:
-            raise ValueError('Either "config" or "model_params" must be not None')
-        if model_params is None:
-            model_params = self._get_model_params(ext, config)
-        resolution = model_params["resolution"]
-        absorption = model_params["absorption"]
-
-        if self._show_refplot(ext):
-            # Use ATRAN models for generating reference plots
-            # for wavecal from sky absorption lines in science spectrum,
-            # and for wavecal from sky emission lines in L- and M-bands
-            if self._uses_atran_linelist(absorption=absorption, cenwave=ext.central_wavelength(asMicrometers=True)):
-                if refplot_spec is None:
-                    refplot_spec, _ = self._get_convolved_atran(ext, model_params)
-                if refplot_y_axis_label is None:
-                    if absorption:
-                        refplot_y_axis_label = "Atmospheric transmission"
-                    else:
-                        refplot_y_axis_label = "Inverse atm. transmission"
-                        refplot_spec[:,1] = 1 - refplot_spec[:,1]
-                if refplot_name is None:
-                    refplot_name = 'ATRAN spectrum (Alt={}, WV={:.1f}mm, AM=1.5, R={:.0f})'\
-                        .format(model_params["alt"],model_params["wv_content"],resolution)
-            else:
-                # Use a set of pre-calculated synthetic spectra for the reference plots
-                # for wavecal from the OH emission sky lines
-                if refplot_spec is None:
-                    path = list(oh_synthetic_spectra.__path__).pop()
-
-                    if resolution >= 15000:
-                        R = 20000
-                    elif (7500 <= resolution < 15000):
-                        R = 10000
-                    elif (3000 <= resolution < 7500):
-                        R = 5000
-                    elif (1000 <= resolution < 3000):
-                        R = 1500
-                    elif (resolution < 1000):
-                        R = 500
-                    oh_spec_filename = os.path.join(path, "oh_conv_{}_XJHK.dat".format(R))
-                    refplot_spec = np.loadtxt(oh_spec_filename, usecols=(0,1))
-
-                    dispersion_axis = 2 - ext.dispersion_axis()
-                    # The next bit estimates the spectral range that wasn't masked
-                    # by the default illumination mask (that mask off second order
-                    # in some GNIRS and F2 modes).
-                    mask = at.transpose_if_needed(ext.mask, transpose=(dispersion_axis == 0))[0]
-                    center = ext.shape[dispersion_axis]//2
-                    center_col = mask[center][:]
-                    new = np.ones(center_col.shape)
-                    new[center_col >= 64] = 0
-                    ind = np.nonzero(new)
-                    first_non_zero_index = ind[0][0]
-                    last_non_zero_index = ind[0][-1]
-                    # Number of illuminated pixels
-                    npix = last_non_zero_index - first_non_zero_index
-                    spec_range = 2 * self._get_cenwave_accuracy(ext) +\
-                                 abs(ext.dispersion(asNanometers=True)) * npix
-                    center_shift = (center - (npix//2 + first_non_zero_index)) * ext.dispersion(asNanometers=True)
-                    start_wvl = model_params["cenwave"] - (0.5 * spec_range) - center_shift
-                    end_wvl = start_wvl + spec_range
-
-                    refplot_spec = refplot_spec[np.logical_and(refplot_spec[:,0] >= start_wvl,
-                                                             refplot_spec[:,0] <= end_wvl)]
-                    if refplot_y_axis_label is None:
-                        refplot_y_axis_label = "Intensity"
-                    if refplot_name is None:
-                        refplot_name = 'Synthetic spectrum of night-sky OH emission (R={:.0f})'.format(R)
-
-        if isinstance(refplot_linelist, wavecal.LineList):
-            # If the provided linelist is a LineList-type object, then it wasn't
-            # generated on-the-fly and its format has to be adjusted.
-            # For the refplot use only line wavelengths, and determine
-            # reference spectrum intensities at the positions of lines in the linelist
-            # (this is needed to determine the line label positions).
-            line_intens = []
-            line_wvls = refplot_linelist.wavelengths(in_vacuo=model_params["in_vacuo"], units="nm")
-            for n, line in enumerate(line_wvls):
-                subtracted = refplot_spec[:,0] - line
-                min_index = np.argmin(np.abs(subtracted))
-                line_intens.append(refplot_spec[min_index,1])
-            refplot_linelist = np.array([line_wvls, line_intens]).T
-            refplot_linelist = refplot_linelist[np.logical_and(refplot_linelist[:,0] >= start_wvl,
-                                                               refplot_linelist[:,0] <= end_wvl)]
-
-        return {"refplot_spec": refplot_spec, "refplot_linelist": refplot_linelist,
-                "refplot_name": refplot_name, "refplot_y_axis_label": refplot_y_axis_label}
-
-
-    def _get_model_params(self, ext, config):
-        """
-        Get the observation parameters needed to select the appropriate
-        ATRAN (or other) model.
-
-        Parameters
-        ----------
-        ext: single-slice AstroData
-            the extension
-        config: Config-like object containing parameters
-
-        Returns
-        ----------
-        dict : all the parameters needed for ATRAN model selection and line
-        list generation:
-        "resolution" : resolution to which ATRAN model spectrum should be convolved (int)
-        "cenwave" : *actual* central wavelength of the observation (float)
-        "in_vacuo" : config["in_vacuo"]
-        "nlines" : maximum number of highest-weight lines in the ATRAN spectrum to
-            be included in the generated linelist (int)
-        "absorption" : are absorption features used for wavecal? (bool)
-        wv_content: float
-            WV band constraints (in mm of precipitable H2O at zenith)
-        site: str
-            observation site
-        alt: str
-            observatory altitude
-        start_wvl: float
-             start wavelength of the spectrum (nm) with a small buffer
-        end_wvl: float
-            start wavelength of the spectrum (nm) with a small buffer
-        spec_range: float
-            spectral range with buffer (nm)
-        """
-
-        if config.get("resolution", None) is None:
-            resolution = round(self._get_resolution(ext),  -1)
-        else:
-            resolution = config["resolution"]
-
-        if config["central_wavelength"] is None:
-            cenwave = self._get_actual_cenwave(ext, asNanometers=True)
-        else:
-            cenwave = config["central_wavelength"]
-
-        in_vacuo = config["in_vacuo"]
-        num_atran_lines = config.get("num_atran_lines", 50)
-        absorption = config.get("absorption", False)
-
-        dispaxis = 2 - ext.dispersion_axis()  # python sense
-        npix = ext.shape[dispaxis]
-        dcenwave = self._get_cenwave_accuracy(ext)
-
-        spec_range = 2 * dcenwave + abs(ext.dispersion(asNanometers=True)) * npix
-        start_wvl = cenwave - (0.5 * spec_range)
-        end_wvl = start_wvl + spec_range
-        observatory = ext.phu['OBSERVAT']
-        param_wv_band = config.get("wv_band", "header")
-        if param_wv_band == "header":
-            wv_band = ext.raw_wv()
-        else:
-            wv_band = int(param_wv_band)
-
-        if wv_band is None:
-            req_wv = ext.requested_wv()
-            self.log.stdinfo(f"Unknown RAWWV for this observation; \n"
-                f" using the constraint value for the requested WV band: '{req_wv}'-percentile")
-            wv_band = req_wv
-
-        if wv_band == 100:
-            # a WV value to use for the case of RAWWV='Any'
-            if observatory == 'Gemini-North':
-                wv_content = 5.
-            elif observatory == 'Gemini-South':
-                wv_content = 10.
-        else:
-            wv_content = qa_constraints.wvBands.get(observatory).get(str(wv_band))
-
-        if observatory == 'Gemini-North':
-            site = 'mk'
-            alt = "13825ft"
-        elif observatory == 'Gemini-South':
-            site = 'cp'
-            alt = "8980ft"
-        return {"site": site, "alt": alt, "start_wvl": start_wvl, "end_wvl": end_wvl,
-                "spec_range": spec_range, "wv_content": wv_content,
-                "resolution": resolution, "cenwave": cenwave, "in_vacuo": in_vacuo,
-                "absorption": absorption, "nlines": num_atran_lines}
-
-
     def _get_resolution(self, ext):
-        # Estimated resolwing power of a spectrum at it's actual central wavelenght,
+        # Estimated resolving power of a spectrum at its actual central wavelength,
         # assuming that it depends on 1/(slit width). This is true only for GNIRS (and GMOS?),
         # for other instruments there should be an instrument-specific implementation.
-        resolution_1pix_slit = self._get_actual_cenwave(ext) / ext.dispersion()
-        slit_width_pix = ext.slit_width()/ext.pixel_scale()
-        return abs(resolution_1pix_slit // slit_width_pix)
+        try:
+            if len(ext.shape) == 1:
+                lsf = self._line_spread_function(ext)
+            else:
+                spataxis = ext.dispersion_axis() - 1  # python sense
+                _slice = tuple(ext.shape[i] // 2 if i == spataxis else None
+                               for i in range(ext.shape))
+                lsf = self._line_spread_function(ext.__class__(
+                    ext.nddata[_slice], phu=ext.phu, is_single=True))
+            return lsf.mean_resolution
+        except (AttributeError, TypeError):
+            resolution_1pix_slit = ext.actual_central_wavelength() / ext.dispersion()
+            slit_width_pix = ext.slit_width() / ext.pixel_scale()
+            return abs(resolution_1pix_slit // slit_width_pix)
 
-    def _get_actual_cenwave(self, ext, asMicrometers=False,
-                            asNanometers=False, asAngstroms=False):
+    def _get_sky_spectrum(self, wave_model, ext):
         """
-        For some instruments (NIRI, F2) wavelenght at the central pixel
-        can differ significantly from the descriptor value.
+        Construct a spectrum of the night sky within a particular wavelength
+        range from a high-resolution list of line wavelengths and
+        brightnesses, by convolving it to a lower spectral resolution.
+
+        This is a method because it needs to know the uncertainty of the
+        wavelength model to provide additional spectral coverage at each
+        end of the spectrum.
 
         Parameters
         ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        wave_model: ``astropy.modeling.models.Chebyshev1D``
+            the current wavelength model (pixel -> wavelength), with an
+            appropriate domain describing the illuminated region
+        ext: single-slice ``AstroData``
+            the extension for which a sky spectrum is being constructed
 
         Returns
         -------
-        float
-            Actual cenral wavelenght
+        dict:
+            "refplot_spec": (N, 2) array of wavelengths and fluxes
+            "refplot_name": str with a name to put above the plot
+            "refplot_y_axis_label": str for the plot's y-axis label
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        output_units = "meters" # By default
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        cenwave = ext.central_wavelength()
-        actual_cenwave = gmu.convert_units('meters', cenwave, output_units)
+        oh_path = list(oh_synthetic_spectra.__path__).pop()
+        resolution = self._get_resolution(ext)
 
-        return actual_cenwave
+        # The wave_model's domain describes the illuminated region
+        wave_model_bounds = self._wavelength_model_bounds(wave_model, ext)
+        try:
+            domain = wave_model.domain
+        except AttributeError:
+            for m in wave_model:
+                if hasattr(m, 'domain'):
+                    domain = m.domain
+                    break
+            else:
+                raise ValueError("No domain in wavelength model")
+        start_wvl, end_wvl = (np.sort(wave_model(domain)) +
+                              np.asarray(wave_model_bounds['c0']) -
+                              np.mean(wave_model_bounds['c0']))
 
-    def _get_cenwave_accuracy(self, ext):
-        # TODO: remove this
-        dispaxis = 2 - ext.dispersion_axis()
-        npix = ext.shape[dispaxis]
-        w1, w2 = am.get_named_submodel(ext.wcs.forward_transform, "WAVE").copy()([0, npix-1])
-        m_wave = models.Chebyshev1D(degree=1, c0=0.5*(w1+w2), c1=0.5*(w2-w1))
-        self._apply_wavelength_model_bounds(m_wave, ext)
-        return 0.5 * abs(np.diff(m_wave.c0.bounds)[0])
+        self.log.stdinfo("Convolving Rousselot et al. (2000) synthetic "
+                         f"sky spectrum to R={int(resolution)}")
+        dw = 0.2 * start_wvl / resolution
+        refplot_waves = np.arange(start_wvl, end_wvl, dw, dtype=np.float32)
+        refplot_data = np.zeros_like(refplot_waves)
+        oh_linelist = wavecal.LineList(os.path.join(oh_path,
+                                                    "ohlist_v2.0_rev.dat"))
+        wlines = oh_linelist.vacuum_wavelengths(units="nm")
+        indices = np.logical_and(wlines > start_wvl, wlines < end_wvl)
+        for wline, fline in zip(wlines[indices], oh_linelist.weights[indices]):
+            sigma = 0.42 * wline / resolution
+            refplot_data += fline * np.exp(-0.5 * ((refplot_waves - wline) / sigma) ** 2)
 
-    def _apply_wavelength_model_bounds(self, model=None, ext=None):
-        # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
-        # the range of parameter space to explore
-        for i, (pname, pvalue) in enumerate(zip(model.param_names, model.parameters)):
-            if i == 0:  # central wavelength
-                prange = 10
-            elif i == 1:  # half the wavelength extent (~dispersion)
-                prange = 0.05 * abs(pvalue)
-            else:  # higher-order terms
-                prange = 20
-            getattr(model, pname).bounds = (pvalue - prange, pvalue + prange)
+        refplot_y_axis_label = "Intensity"
+        refplot_name = ('Synthetic spectrum of night-sky OH emission '
+                        f'(R={int(resolution)})')
+
+        return {"refplot_spec": np.asarray([refplot_waves, refplot_data]).T,
+                "refplot_name": refplot_name,
+                "refplot_y_axis_label": refplot_y_axis_label}
+
+    def _wavelength_model_bounds(self, model=None, ext=None):
+        """
+        Return a set of model bounds to apply to an approximate wavelength
+        solution before fitting to data. Different instruments will have
+        different accuracies so this can be overridden in subclasses.
+
+        Parameters
+        ----------
+        model: `astropy.modeling.models.Chebyshev1D` (preferably)
+            a model representing the current wavelength solution
+        ext: single-slice AstroData
+            the slice containing the spectrum
+
+        Returns
+        -------
+        bounds: dict
+            a dict containing the model bounds that can be applied directly
+            to the model instance
+        """
+        # We may need to cope with a prepended Shift is there's been some
+        # resampling/stacking of inputs for an absorption-line wavecal
+        try:
+            model[0]
+        except TypeError:  # not iterable
+            cheb = model
+        else:
+            for m in model:
+                if isinstance(m, models.Chebyshev1D):
+                    cheb = m
+                    break
+            else:
+                raise NotImplementedError("Do we need this code?")
+                if set(model.param_names) == {'offset_0', 'factor_1', 'offset_2'}:
+                    # Shift (crpix) | Scale (dw) | Shift (cenwave)
+                    c0 = model[2].offset
+                    dw = model[1].factor
+                    c1 = 0.5 * dw * ext.shape[-ext.dispersion_axis()]
+                    bounds = {'c0': (c0 - 10, c0 + 10),
+                              'c1': (c1 - 0.05 * abs(c1), c1 + 0.05 * abs(c1))}
+                    return bounds
+                else:
+                    raise ValueError("Cannot set bounds for model class "
+                                     f"{model.__class__.__name__}")
+
+        if isinstance(cheb, models.Chebyshev1D):
+            for k, v in zip(cheb.param_names, cheb.parameters):
+                if k == 'c0':
+                    bounds = {'c0': (v - 10, v + 10)}
+                elif k == 'c1':
+                    bounds['c1'] = (v - 0.05 * abs(v), v + 0.05 * abs(v))
+                else:
+                    bounds[k] = (v - 20, v + 20)
+        else:
+            raise ValueError("Cannot set bounds for model class "
+                             f"{model.__class__.__name__}")
+
+        return bounds
 
 # -----------------------------------------------------------------------------
 
@@ -5718,7 +5400,7 @@ def _extract_model_info(ext):
         dispaxis = 2 - ext.dispersion_axis()
         wave_model = am.get_named_submodel(ext.wcs.forward_transform, 'WAVE')
     npix = ext.shape[dispaxis]
-    limits = wave_model([0, npix])
+    limits = wave_model([0, npix - 1])
     w1, w2 = min(limits), max(limits)
     dw = (w2 - w1) / (npix - 1)
     return {'wave_model': wave_model, 'w1': w1, 'w2': w2,
@@ -5782,8 +5464,8 @@ def conserve_or_interpolate(ext, user_conserve=None, flux_calibrated=False,
                     f"flux calibrated but units are {ext_unit}")
     if user_conserve is None:
         this_conserve = units_imply_conserve
-        log.stdinfo(f"Setting conserve={this_conserve} for {ext_str} since "
-                    f"units are {ext_unit}")
+        log.fullinfo(f"Setting conserve={this_conserve} for {ext_str} since "
+                     f"units are {ext_unit}")
     else:
         if user_conserve != units_imply_conserve:
             log.warning(f"conserve is set to {user_conserve} but the "

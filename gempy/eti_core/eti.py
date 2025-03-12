@@ -1,5 +1,6 @@
 from multiprocessing import Process, Queue
 from subprocess import STDOUT, CalledProcessError, check_output
+import atexit
 
 from ..utils import logutils
 
@@ -52,15 +53,23 @@ class ETISubprocess:
             self.process.start()
 
         def terminate(self, timeout=2.0):
-            """Terminate the subprocess gracefully (if possible), or force-kill if needed.
+            """
+            Terminate the subprocess gracefully (if possible), or force-kill
+            if needed. If the graceful attempt fails because the queue is
+            already closed (which shouldn't ever happen), this exception is
+            raised after the force-kill.
 
             Parameters
             ----------
             timeout : float
                 Number of seconds to wait before forcing termination.
             """
+            exc = None
             # Send quit message to loop.
-            self.inQueue.put(None)
+            try:
+                self.inQueue.put(None)
+            except ValueError as exc:  # inQueue is closed
+                pass
             self.process.join(timeout=timeout)
 
             # If still alive, force-terminate.
@@ -79,14 +88,15 @@ class ETISubprocess:
             except Exception:
                 pass
 
-            # Reset instance, ensures new subprocess is created.
-            self.instance = None
+            if exc:
+                raise exc
 
     instance = None
 
     def __new__(cls):
         if not ETISubprocess.instance:
             ETISubprocess.instance = ETISubprocess.__ETISubprocess()
+            atexit.register(ETISubprocess.instance.terminate)
         return ETISubprocess.instance
 
     def __getattr__(self, name):

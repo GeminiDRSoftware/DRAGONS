@@ -267,6 +267,7 @@ def gwcs_to_fits(ndd, hdr=None):
                 if wave_tab.ndim == 1:  # Greisen et al. (2006)
                     wcs_dict[f'PS{i}_0'] = wcs.output_frame.axes_names[i-1]
                     wcs_dict[f'PS{i}_1'] = ("WAVELENGTH", "Name of column")
+                    wcs_dict[f'PS{i}_1'] = ("WAVELENGTH", "Name of column")
                     wcs_dict['extensions'] = {wcs.output_frame.axes_names[i-1]:
                                                   Table([wave_tab], names=('WAVELENGTH',))}
                 else:  # make something up here
@@ -412,13 +413,15 @@ def calculate_affine_matrices(func, shape, origin=None):
     points[:, 1:indim + 1] += np.eye(indim) * points[:, 0]
     points[:, indim + 1:] -= np.eye(indim) * points[:, 0]
     if ndim > 1:
-        transformed = np.array(list(zip(*list(func(*point[:indim])
+        transformed = np.array(list(zip(*list(func(*point[indim-1::-1])
                                               for point in points.T)))).T
     else:
         transformed = np.array([func(*points)]).T
+    # Matrix of wcs derivatives wrt input coordinates in python order
     matrix = np.array([[0.5 * (transformed[j + 1, i] - transformed[indim + j + 1, i]) / halfsize[j]
-                        for j in range(indim)] for i in range(ndim)])
-    offset = transformed[0] - np.dot(matrix, halfsize)
+                        for j in range(indim-1, -1, -1)] for i in range(ndim)])
+    offset = transformed[0] - np.dot(matrix, halfsize[::-1])
+
     return AffineMatrices(matrix[::-1, ::-1], offset[::-1])
 
 

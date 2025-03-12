@@ -56,7 +56,7 @@ def test_processed_flat_has_median_around_one(processed_flat):
     """
     for ext in processed_flat:
         data = np.ma.masked_array(ext.data, mask=ext.mask)
-        np.testing.assert_almost_equal(np.median(data.ravel()), 1.0, decimal=3)
+        np.testing.assert_almost_equal(np.ma.median(data.ravel()), 1.0, decimal=3)
 
 
 @pytest.mark.dragons_remote_data
