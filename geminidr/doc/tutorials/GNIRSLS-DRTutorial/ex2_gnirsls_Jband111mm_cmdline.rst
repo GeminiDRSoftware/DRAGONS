@@ -35,10 +35,10 @@ Here is a copy of the table for quick reference.
 +---------------------+----------------------------------------------+
 | Science arcs        || N20180201S0065                              |
 +---------------------+----------------------------------------------+
+| Telluric            || N20180201S0071-74                           |
++---------------------+----------------------------------------------+
 | BPM                 || bpm_20100716_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
-
-.. add telluric
 
 Configuring the interactive interface
 =====================================
@@ -102,7 +102,19 @@ Often two are taken.  We will use both in this case and stack them later.
 
     dataselect ../playdata/example2/*.fits --tags ARC -o arcs.lis
 
-.. telluric
+A list for the telluric
+-----------------------
+DRAGONS does not recognize the telluric star as such.  This is because
+the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  For now, the
+`observation_class` descriptor can be used to differential the telluric
+from the science observations, along with the rejection of the `CAL` tag to
+reject flats and arcs.
+
+::
+
+    dataselect ../playdata/example2/*.fits --xtags=CAL --expr='observation_class=="partnerCal"' -o telluric.lis
+
 
 A list for the science observations
 -----------------------------------
@@ -266,28 +278,87 @@ automatic fit.  If you wanted, you could identify more sky lines manually.
    :width: 600
    :alt: Sky lines fit
 
-.. note::  If the sky lines were too weak and not fit were found, a possible
+.. note::  If the sky lines were too weak and no fit were found, a possible
     solution is to lower the minimum SNR to 5 (down from the default of 10).
     This setting is in the left control panel.  When done, click the the
     "Reconstruct points" button.
 
-.. note:: Lowering the high and low sigma clipping to 2 will help reject some
-    of the weak blended lines that are more inaccurate.
+    When lowering the SNR, lowering the
+    high and low sigma clipping to 2 will help reject some of the weak
+    blended lines that are more inaccurate.
 
+
+Which solution to use?
+----------------------
 Each case will be slightly different.   Whether you decide to use the solution
 from the arc lamp or the sky lines is up to you.
 
+Once you have decided, we recommend that you remove the one you do not want
+to use from the calibration manager database.  Since the arc selected will
+always be the "closest in time" to the science observation, there might be
+cases where the arc will be picked for the last datasets in the sequence while
+the sky line solution will be picked for the first datasets in the sequence.
 
-.. Telluric Correction
+So pick one, remove the other.
+
+::
+
+    caldb remove N20180201S0065_arc.fits  # remove the arc solution
+    ... or ...
+    caldb remove N20180201S0052_arc.fits  # remove the sky line solution
+
+Telluric Standard
+=================
+The telluric standard observed before the science observation is "hip 55627".
+The spectral type of the star is A0V.
+
+To properly calculate and fit a telluric model to the star, we need to know
+its effective temperature.  To properly scale the sensitivity function (to
+use the star as a spectrophotometric standard), we need to know the star's
+magnitude.  Those are inputs to the ``fitTelluric`` primitive.
+
+From Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
+Temperature Sequence"
+(https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt)
+we find that the effective temperature of an A0V star is about 9700 K. Using
+Simbad, we find that the star has a magnitude of K=9.165.
+
+Instead of typing the values on the command line, we will use a parameter file
+to store them.  In a normal text file (here we name it "hip55627.param"), we write::
+
+    -p
+    fitTelluric:bbtemp=9700
+    fitTelluric:magnitude='K=9.165'
+
+Then we can call the ``reduce`` command with the parameter file.  The telluric
+fitting primitive can be run in interactive mode.
+
+Note that the data is recognized by Astrodata as normal GNIRS longslit science
+spectra.  To calculate the telluric correction, we need to specify the telluric
+recipe (``-r reduceTelluric``), otherwise the default science reduction will be
+run.
+
+::
+
+    reduce @telluric.lis -r reduceTelluric @hip55627.param -p fitTelluric:interactive=True
+
+.. todo:: add screenshot of the telluric fit.
+
+.. todo:: discuss the adjustments to the fit.
+
+.. 2nd and bottom plots show waviness.  Increase order to 8 to make it
+   straighter.
+
 
 Science Observations
 ====================
 The science target is a low metallicity M-dwarf.  The sequence is two ABBA
 dithered observations.  DRAGONS will flat field, wavelength calibrate,
-subtract the sky, stack the aligned spectra, and finally extract the source.
+subtract the sky, stack the aligned spectra, extract the source, and finally
+remove telluric features and flux calibrate.
 
-Note that at this time, DRAGONS does not offer tools to do the telluric
-correction and flux calibration.  We are working on it.
+.. Note that at this time, DRAGONS does not offer tools to do the telluric
+   correction and flux calibration.  We are working on it.
 
 Following the wavelength calibration, the default recipe has an optional
 step to adjust the wavelength zero point using the sky lines.  By default,
@@ -297,14 +368,14 @@ adjustment, or try it out, see :ref:`wavzero` to learn how.
 
 This is what one raw image looks like.
 
-.. image:: _graphics/gnirsls_Jband111nm_raw.png
+.. image:: _graphics/gnirsls_Jband111mm_raw.png
    :width: 400
    :alt: raw science image
 
 With all the calibrations in the local calibration manager, one only needs
 to call |reduce| on the science frames to get an extracted spectrum.
 
-.. note::  If you have derived a wavelength solution from both the arcs and
+.. .. note::  If you have derived a wavelength solution from both the arcs and
      the sky lines, as we've done here, you will have two solutions in the
      calibration manager database.  By default, the system will pick the sky
      line solution because the solution is closer in time (same time, in fact)
@@ -315,10 +386,33 @@ to call |reduce| on the science frames to get an extracted spectrum.
      ``-p attachWavelengthSolution:arc=N20180201S0065_arc.fits`` to the
      ``reduce`` command).
 
+.. **** add to the "which one" section how to manually force the use of the
+   other solution if they want to try it. ****
+
+WARNING: The telluric correction and flux calibration are not yet available for
+automatic calibration association.  They need to be specified on the command
+line.  Because it is rather long to type, we can put the information in a
+parameter file.  In a simple text file (here we name it "telluric.param"),
+write::
+
+    -p
+    telluricCorrect:telluric=N20180201S0071_telluric.fits
+    fluxCalibrate:standard=N20180201S0071_telluric.fits
 
 ::
 
-    reduce @sci.lis
+    reduce @sci.lis @telluric.param
+
+To run the reduction with all the interactive tools activated, set the
+``interactive`` parameter to ``True``.
+
+::
+
+   reduce @sci.lis @telluric.param -p interactive=True
+
+.. todo:: Whoa!  findAperture fails big time.  That wasn't happening before.
+    Delete and "f" works though.  So why the heck doesn't the original fit
+    work?
 
 The 2D spectrum looks like this:
 
@@ -330,7 +424,9 @@ The 2D spectrum looks like this:
    :width: 400
    :alt: reduced 2D spectrum
 
-The 1D spectrum looks like this:
+The 1D spectrum before telluric correction and flux calibration looks like this:
+
+.. todo:: fix name of 1d png before correction.  Also add how one gets it.
 
 ::
 
@@ -340,6 +436,13 @@ The 1D spectrum looks like this:
    :width: 400
    :alt: raw science image
 
+.. todo:: screenshot 1D spectrum after telluric correction but no flux calibration
+          State that it was obtained with ``telluricCorrect:write_outputs=True``.
+
+.. todo:: 1D spectrum after both telluric correction and flux calibration
+
+.. Terrible flux calibration.  I even tried to apply it back to the telluric
+   itself, an A0V star, and I get the same wavy shape.  Clearly wrong.
 
 
 .. From Olesja about the using stack vs single for sky line wavecal,

@@ -27,8 +27,9 @@ The calibrations we use for this example are:
   at night right after the science observations.
 * An arc taken in the same configuration as the science and also obtained at
   night at the end of the science observation sequences.
-
-.. * telluric
+* A telluric standard observation taken in the same configuration as the
+  science and obtained at night just before or just after the science
+  observation sequences, and at a similar airmass.
 
 .. warning::  The Bad Pixel Masks (BPMs) are now found in the archive rather
    than packaged with the software.  You must get the static BPM from the
@@ -44,8 +45,7 @@ package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 +---------------------+----------------------------------------------+
 | Science arcs        || N20180201S0065                              |
 +---------------------+----------------------------------------------+
+| Telluric            || N20180201S0071-74                           |
++---------------------+----------------------------------------------+
 | BPM                 || bpm_20100716_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
-
-.. need to add the telluric frames and calibrations when supported.
-.. .. | Telluric || N20180201S0071-74 |

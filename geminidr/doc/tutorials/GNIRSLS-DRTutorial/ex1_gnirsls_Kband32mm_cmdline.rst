@@ -9,9 +9,9 @@ Example 1 - K-band Longslit Point Source - Using the "reduce" command line
 **************************************************************************
 
 In this example, we will reduce the GNIRS K-band longslit observation of
-"SDSSJ162449.00+321702.0", a white dwarf, using the "|reduce|" command that
-is operated directly from the unix shell.  Just open a terminal and load
-the DRAGONS conda environment to get started.
+"SDSSJ162449.00+321702.0", a white dwarf with an M dwarf companion, using
+the "|reduce|" command that is operated directly from the unix shell.  Just
+open a terminal and load the DRAGONS conda environment to get started.
 
 This observation uses the 32 l/mm grating, the short-blue camera, a 0.3 arcsec
 slit, and is set to a central wavelength of 2.2 |um|.   The dither pattern is
@@ -34,6 +34,8 @@ Here is a copy of the table for quick reference.
 | Science flats       || N20170609S0131-135                          |
 +---------------------+----------------------------------------------+
 | Science arcs        || N20170609S0136                              |
++---------------------+----------------------------------------------+
+| Telluric            || N20170609S0118-121                          |
 +---------------------+----------------------------------------------+
 | BPM                 || bpm_20100716_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
@@ -100,12 +102,24 @@ Often two are taken.  We will use both in this case and stack them later.
 
     dataselect ../playdata/example1/*.fits --tags ARC -o arcs.lis
 
-.. telluric
+A list for the telluric
+-----------------------
+DRAGONS does not recognize the telluric star as such.  This is because
+the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  For now, the
+`observation_class` descriptor can be used to differential the telluric
+from the science observations, along with the rejection of the `CAL` tag to
+reject flats and arcs.
+
+::
+
+    dataselect ../playdata/example1/*.fits --xtags=CAL --expr='observation_class=="partnerCal"' -o telluric.lis
+
 
 A list for the science observations
 -----------------------------------
 
-In our case, the science observations can be selected from the observation
+The science observations can be selected from the observation
 class, ``science``, that is how they are differentiated from the telluric
 standards which are ``partnerCal``.
 
@@ -242,17 +256,66 @@ might be a better solution.
    :width: 600
    :alt: Arc line fit
 
+Telluric Standard
+=================
+The telluric standard observed before the science observation is "hip 78649".
+The spectral type of the star is A2.5IV.
 
-.. telluric
+To properly calculate and fit a telluric model to the star, we need to know
+its effective temperature.  To properly scale the sensitivity function (to
+use the star as a spectrophotometric standard), we need to know the star's
+magnitude.  Those are inputs to the ``fitTelluric`` primitive.
+
+From *Boehm-Vitense, E. 1982 ApJ 255, 191 "Effective temperatures of A and
+F stars".*, Table 2, we find that the effective temperature of an A2.5IV star
+is about 8150 K. Using Simbad, we find that the star has a magnitude of
+K=3.925.
+
+Instead of typing the values on the command line, we will use a parameter file
+to store them.  In a normal text file (here we name it "hip78649.param"), we write::
+
+    -p
+    fitTelluric:bbtemp=8150
+    fitTelluric:magnitude='K=3.925'
+
+Then we can call the ``reduce`` command with the parameter file.  The telluric
+fitting primitive can be run in interactive mode.
+
+Note that the data is recognized by Astrodata as normal GNIRS longslit science
+spectra.  To calculate the telluric correction, we need to specify the telluric
+recipe (``-r reduceTelluric``), otherwise the default science reduction will be
+run.
+
+::
+
+    reduce @telluric.lis -r reduceTelluric @hip78649.param -p fitTelluric:interactive=True
+
+.. todo:: add screenshot of the telluric fit.  But I need to decide which of
+   spline3 or chebyshev I need to use.   Can't decide until chebyshev is fixed.
+
+.. todo:: discuss the adjustments to the fit.
+
+.. top plot.  Need legend for the blue line, the red dots, and revise the legend
+     for the black dot ("good" does not tell me what it is)
+.. bottom plot.  need legend for blue line and red line.
+
+.. I have no idea what to do with the stuff on the left.
+.. The Help pop up needs to be adapted to this tool.
+.. Reset does not reset the BB text box.
+.. BB slider does not seem to change the model, even at the extremes.
+.. the magnitude box is ignored.  I can set it to whatever and on the
+   screen logs, it keeps saying K=10.
+
 
 Science Observations
 ====================
-The science target is a white dwarf.  The sequence is one ABBA dither pattern.
-DRAGONS will flatfield, wavelength calibrate, subtract the sky, stack the
-aligned spectra, and finally extract the source.
+The science target is a white dwarf with an M dwarf companion.  The sequence
+is one ABBA dither pattern. DRAGONS will flatfield, wavelength calibrate,
+subtract the sky, stack the aligned spectra, extract the source, and finally remove telluric features and
+flux calibrate.
 
-Note that at this time, DRAGONS does not offer tools to do the telluric
-correction and flux calibration.  We are working on it.
+.. Note that at this time, DRAGONS does not offer tools to do the telluric
+   correction and flux calibration.  We are working on it.
 
 Following the wavelength calibration, the default recipe has an optional
 step to adjust the wavelength zero point using the sky lines.  By default,
@@ -283,56 +346,63 @@ This is what one raw image looks like.
 With all the calibrations in the local calibration manager, one only needs
 to call |reduce| on the science frames to get an extracted spectrum.
 
+WARNING: The telluric correction and flux calibration are not yet available for
+automatic calibration association.  They need to be specified on the command
+line.  Because it is rather long to type, we can put the information in a
+parameter file.  In a simple text file (here we name it "telluric.param"),
+write::
+
+    -p
+    telluricCorrect:telluric=N20170609S0118_telluric.fits
+    fluxCalibrate:standard=N20170609S0118_telluric.fits
+
+Then we can call the ``reduce`` command with the parameter file.
+
 ::
 
-    reduce @sci.lis
+    reduce @sci.lis @telluric.param
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
-
-.. todo::  Atrocious handling of bad pixels in distortionCorrection and
-      possibly stackFrames.  Bad pixels become giant diamonds.  The stacking
-      enhance them!  distortionCorrection:dq_threshold might be too small.
-      Currently 0.001 for all instruments. Selected for GMOS data. Not clear
-      how that number was selected.  Used to be 0.01.  Looks better for GNIRS
-      but still way too big.
-
-      Then there's the stacking.  With only 2 A and 2 B positions, and those
-      big diamonds always in the same position, the changing background sky
-      appears to make them pop.  If the sky levels were the same, I suspect that
-      they would not be visible.  But because it changes, you just need a big
-      change and it will pop up either positive or negative in the individual
-      sky subtracted images.  Then when you stack, they all remain because of
-      the limited number (2 at most) of frames with good pixels but wildly
-      different background flux compared to regions where all 4 can be used.
-      Using stackFrames:zero=True makes the patches less prominent which seems
-      to support this explanation.
+.. telluric.  Legend for red line and black dots.
+..  what is 'apply absorption model rather than data'?
+..  help pop up needs to be adapted to this tool.
+..  is this fit good?
+..  holy shit, the results don't look good.
 
 
 At the ``traceApertures`` step, the fit one gets automatically for this source
-is perfectly reasonable, well
-within the envelope of the source aperture.  To improve the fit, one could
-activate sigma clipping and increase to number of iteration to 3 to get a
-straighter fit that ignores the deviant points at the edges of the spectrum.
-This can be done manually with the interactive tool (try it), or on the command
-line by adding ``-p traceApertures:niter=3`` to the ``reduce`` call.
+is perfectly reasonable, well within the envelope of the source aperture.
+To improve the fit, one could activate sigma clipping and increase to number
+of iteration to 1 to get a straighter fit that ignores the deviant points at
+the edges of the spectrum. This can be done manually with the interactive
+tool (try it), or on the command line by adding ``-p traceApertures:niter=1``
+to the ``reduce`` call.
 
 ::
 
-    reduce @sci.lis -p interactive=True traceApertures:niter=3
+    reduce @sci.lis @telluric.param -p interactive=True traceApertures:niter=1
 
+
+The 2D spectrum before extraction looks like this, with blue wavelengths at
+the bottom and the red-end at the top.
 
 .. image:: _graphics/gnirsls_Kband32mm_2d.png
    :width: 400
    :alt: 2D spectrum
 
-.. blue wavelength bottom, red top
-
+.. todo:: fix name of 1d png before correction.  Also add how one gets it.
 
 .. image:: _graphics/gnirsls_Kband32mm_1d.png
    :width: 600
-   :alt: 1D extracted spectrum
+   :alt: 1D extracted spectrum before telluric correction or flux calibration
+
+.. todo:: screenshot 1D spectrum after telluric correction but no flux calibration
+          State that it was obtained with ``telluricCorrect:write_outputs=True``.
+
+.. todo:: 1D spectrum after both telluric correction and flux calibration
+
 
 
 
