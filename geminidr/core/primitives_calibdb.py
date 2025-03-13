@@ -109,6 +109,12 @@ class CalibDB(PrimitivesBASE):
         self._assert_calibrations(adinputs, cals)
         return adinputs
 
+    def getProcessedTelluric(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_telluric(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
+        return adinputs
+
     def getBPM(self, adinputs=None):
         procmode = 'sq' if self.mode == 'sq' else None
         cals = self.caldb.get_processed_bpm(adinputs, procmode=procmode)
