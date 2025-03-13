@@ -4003,14 +4003,11 @@ class Spect(Resample):
             # Use the existing wavelength solution(s) of the reference AD
             npix = np.empty_like(wave_min, dtype=int)
             w1, w2 = wave_min, wave_max
-            print(w1)
-            print(w2)
             new_wave_models = []
             for iext, (extinfo, this_w1, this_w2) in enumerate(
                     zip(info[0], wave_min, wave_max)):
                 wave_model_ref = extinfo['wave_model'].copy()
                 limits = wave_model_ref.inverse([this_w1, this_w2])
-                print(limits)
                 # Due to imperfections in the Chebyshev inverse, we check
                 # whether the wavelength limits are the same as the
                 # reference spectrum.
@@ -4019,7 +4016,6 @@ class Spect(Resample):
                 if extinfo['w2'] == this_w2:
                     limits[1] = round(limits[1])
                 pixel_shift = int(np.ceil(limits.min()))
-                print(limits, pixel_shift, wave_model_ref(limits))
                 if pixel_shift:
                     new_wave_model = models.Shift(pixel_shift) | wave_model_ref
                 else:
@@ -4036,10 +4032,7 @@ class Spect(Resample):
                 actual_limits = new_wave_model([0, this_npix - 1])
                 w1[iext] = actual_limits.min()
                 w2[iext] = actual_limits.max()
-                print(new_wave_model([0,1,2]))
                 yy = new_wave_model([this_npix-3,this_npix-2,this_npix-1])
-                print(this_npix, yy)
-                print(new_wave_model.inverse(yy))
 
             # Calculation for all extensions
             dw = (w2 - w1) / (npix - 1)

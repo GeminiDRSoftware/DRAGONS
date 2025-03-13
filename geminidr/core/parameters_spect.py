@@ -8,8 +8,12 @@ from astropy.io import registry
 from astrodata import AstroData
 from geminidr.core import parameters_generic
 from gempy.library import config, astrotools as at
+from gempy.utils import logutils
 
 from . import parameters_preprocess
+
+
+log = logutils.get_logger(__name__)
 
 
 def list_of_ints_check(value):
@@ -592,7 +596,9 @@ class resampleToCommonFrameConfig(config.Config):
         # only valid over the extent of its extension. Extrapolating it could
         # lead to large errors. TODO: gwcs's numerical inverse?
         if self.output_wave_scale == "reference" and not self.trim_spectral:
-            raise ValueError("Must set trim_spectral=True if output_wave_scale='reference'")
+            log.warning("output_wave_scale='reference' is incompatible with "
+                        "trim_spectral=True. Setting trim_spectral=False")
+            self.trim_spectral = False
 
 
 class separateSkyConfig(parameters_preprocess.separateSkyConfig):
