@@ -1029,7 +1029,7 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         input image(s)
 
     caltype: str
-        type of calibration ('fringe', 'sky', 'flat' allowed)
+        type of calibration ('fringe', 'sky', 'flat', 'arc' allowed)
 
     keyword_comments: dict
         comments to add to the header of the output
