@@ -200,9 +200,9 @@ class SingleTelluricModel(Fittable1DModel):
         self.pca_params = slice(None, len(names))
         self.cont_params = slice(len(names), None)
         if self.continuum_function == self.spline3:
-            names.extend([f'spl{i:02d}' for i in range(self.order+3)])
+            names.extend([f'spl{i:02d}' for i in range(self.order + 3)])
         else:
-            names.extend([f'cheb{i:02d}' for i in range(self.order)])
+            names.extend([f'cheb{i:02d}' for i in range(self.order + 1)])
         return tuple(names)
 
     @property
@@ -318,7 +318,6 @@ class MultipleTelluricModels(Fittable1DModel):
         for tspek, func, ord in zip(spectra, self.functions, self.orders):
             self.models.append(SingleTelluricModel(
                 tspek=tspek, function=func, order=ord))
-
         self.nparams = []
         self._param_names = self._generate_coeff_names()
         for param_name in self._param_names:
@@ -344,8 +343,8 @@ class MultipleTelluricModels(Fittable1DModel):
                 names.extend([f'm{n}spl{i:02d}' for i in range(ord + 3)])
                 self.nparams.append(ord + 3)
             else:
-                names.extend([f'm{n}cheb{i}' for i in range(ord)])
-                self.nparams.append(ord)
+                names.extend([f'm{n}cheb{i}' for i in range(ord + 1)])
+                self.nparams.append(ord + 1)
         return tuple(names)
 
     def concatenate(self, property='data'):
@@ -404,7 +403,7 @@ class MultipleTelluricModels(Fittable1DModel):
         self.update_individual_models()
         npca_parameters = self.npca_components - 1  # because of the mean
         individual_models = []
-        start_param = npca_parameters
+        start_param = len(self.models[0].pca.param_names)  # includes LSF params
         for m, nparams in zip(self.models, self.nparams):
             these_params = self.parameters[start_param:start_param+nparams]
             this_model = m.continuum_function(these_params)
