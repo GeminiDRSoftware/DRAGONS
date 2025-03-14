@@ -86,6 +86,8 @@ def customize_logger(log=None):
           to have the extra methods added to the root logger
 
     """
+    if log is None:
+        log = logging.getLogger()
 
     # If this logger has already been customized, this is a no-op
     if getattr(log, 'customized_for_dragons', None):
@@ -105,8 +107,6 @@ def customize_logger(log=None):
 
     # Add the extra methods to the given logger to facilitate
     # logging messages with the custom log levels.
-    if log is None:
-        log = logging.getLogger()
 
     # It may be possible to do this more "programmatically"
     # But here's a simple version for now
@@ -237,7 +237,7 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
         An initialized handler or a list of initialized handlers to be added to the
         root logger.
 
-    keep_handers : <bool>
+    keep_handlers : <bool>
         If True, do not remove all existing Handlers. Default is False and will
         remove all existing handlers.
     """
@@ -254,9 +254,12 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
     customize_logger(rootlog)
 
     if not keep_handlers:
-        # Drop all existing handlers
-        for h in rootlog.handlers:
-            rootlog.removeHandler(h)
+        # Drop all existing handlers. We can't simply do a for h in
+        # rootlog.handlers here because of list mutability, and the logger
+        # documentation says we should treat log.handlers as readonly so we
+        # also shouldn't just set it to [] or call handlers.clear()
+        for h in range(len(rootlog.handlers)):
+            rootlog.removeHandler(rootlog.handlers[0])
 
     # Add handlers depending on the logging configuration mode
     if file_name:
