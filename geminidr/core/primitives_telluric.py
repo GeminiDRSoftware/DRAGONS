@@ -294,49 +294,54 @@ class Telluric(Spect):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = "TELLCORR"  # self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        std = params["telluric"]
+        telluric = params["telluric"]
         apply_model = params["apply_model"]
         interactive = params["interactive"]
         shift_tolerance = params["shift_tolerance"]
         apply_shift = params["apply_shift"]
         manual_shift = params["pixel_shift"]
         user_airmass = params["delta_airmass"]
+        do_cal = params["do_cal"]
         sampling = 10
 
-        if params["do_cal"] == 'skip':
-            log.warning("Flux calibration has been turned off.")
+        if do_cal == 'skip':
+            log.warning("Telluric correction has been turned off.")
             return adinputs
 
         # Get a suitable standard (should have a TELLFIT table)
-        if std is None:
-            std_list = self.caldb.get_processed_standard(adinputs)
+        if telluric is None:
+            telluric_list = self.caldb.get_processed_telluric(adinputs)
         else:
-            std_list = (std, None)
+            telluric_list = (telluric, None)
 
         # Provide a standard AD object for every science frame, and an origin
-        for ad, std, origin in zip(*gt.make_lists(adinputs, *std_list,
+        for ad, telluric, origin in zip(*gt.make_lists(adinputs, *telluric_list,
                                     force_ad=(1,))):
             if ad.phu.get(timestamp_key):
                 log.warning(f"{ad.filename}: already processed by "
                             f"{self.myself()}. Continuing.")
                 continue
 
-            if std is None:
-                log.warning(f"No changes will be made to {ad.filename}, "
-                            "since no standard was specified")
-                continue
+            if telluric is None:
+                if 'sq' in self.mode or do_cal == 'force':
+                    raise OSError("No processed telluric listed for "
+                                  f"{ad.filename}")
+                else:
+                    log.warning(f"No changes will be made to {ad.filename}, "
+                                "since no processed telluric was specified")
+                    continue
 
             origin_str = f" (obtained from {origin})" if origin else ""
-            log.stdinfo(f"{ad.filename}: using the standard {std.filename}"
+            log.stdinfo(f"{ad.filename}: using the processed telluric {telluric.filename}"
                         f"{origin_str}")
 
             # Check that all the necessary extensions exist, or bail
             try:
-                tellfit = std.TELLFIT
+                tellfit = telluric.TELLFIT
             except AttributeError:
                 if apply_model:
-                    log.warning(f"{ad.filename}: no TELLFIT table on standard"
-                                f" {std.filename} so cannot apply correction.")
+                    log.warning(f"{ad.filename}: no TELLFIT table on processed telluric"
+                                f" {telluric.filename} so cannot apply correction.")
                     continue
                 header = {}  # can still progress
             else:
@@ -344,10 +349,10 @@ class Telluric(Spect):
                 pca_name = header['pca_name']
                 pca_coeffs = tellfit['PCA coefficients'].data
             if not apply_model:
-                if not all(hasattr(ext_std, "TELLABS") for ext_std in std
-                           if len(ext_std.shape) == 1):
+                if not all(hasattr(ext_telluric, "TELLABS") for ext_telluric in telluric
+                           if len(ext_telluric.shape) == 1):
                     log.warning(f"{ad.filename}: one or more 1D extensions on"
-                                f"standard {std.filename} are missing a "
+                                f"standard {telluric.filename} are missing a "
                                 "TELLABS spectrum. Continuing.")
                     continue
 
@@ -367,7 +372,7 @@ class Telluric(Spect):
             pixel_shifts = []
             tell_int_splines = []
             tellabs_data = []
-            for ext, ext_std in zip(ad, std):
+            for ext, ext_telluric in zip(ad, telluric):
                 if len(ext.shape) > 1:
                     continue
 
@@ -404,7 +409,7 @@ class Telluric(Spect):
                     if apply_model:
                         trans = convolution.resample(tspek.waves, wconv, tconv)
                     else:
-                        trans = ext_std.TELLABS
+                        trans = ext_telluric.TELLABS
 
                     # Old cross-correlation method
                     #pixel_shift = peak_finding.cross_correlate_subpixels(
@@ -431,7 +436,7 @@ class Telluric(Spect):
                                     f"{pixel_shift:.2f} pixels")
                         pixel_shifts.append(pixel_shift)
 
-                tellabs_data.append(ext_std.TELLABS)
+                tellabs_data.append(ext_telluric.TELLABS)
 
             if len(pixel_shifts) > 1:
                 pixel_shift = self._calaculate_mean_pixel_shift(pixel_shifts)
@@ -447,31 +452,31 @@ class Telluric(Spect):
                 #    [ext for ext in ad if len(ext.shape) == 1][0])
                 #lsf_param_names = getattr(lsf, 'parameters', None)
 
-            std_airmass = header.get('AIRMASS', std.airmass())
+            telluric_airmass = header.get('AIRMASS', telluric.airmass())
             sci_airmass = ad.airmass()
             if user_airmass is None:
                 try:
-                    sci_airmass - std_airmass
+                    sci_airmass - telluric_airmass
                 except TypeError:  # if either airmass() returns None
                     log.warning("Cannot determine airmass of target "
-                                f"{ad.filename} and/or standard {std.filename}." +
+                                f"{ad.filename} and/or telluric {telluric.filename}." +
                                 ("" if interactive else " Not performing airmass correction."))
                     # Set values for UI, or ones that will allow a calculation
                     if sci_airmass is None:
-                        sci_airmass = std_airmass or 1.2
-                    if std_airmass is None:
-                        std_airmass = sci_airmass
+                        sci_airmass = telluric_airmass or 1.2
+                    if telluric_airmass is None:
+                        telluric_airmass = sci_airmass
             else:
-                if std_airmass is None:
+                if telluric_airmass is None:
                     if sci_airmass:
-                        std_airmass = sci_airmass - user_airmass
+                        telluric_airmass = sci_airmass - user_airmass
                     else:
-                        std_airmass = 1.2
-                        sci_airmass = std_airmass + user_airmass
+                        telluric_airmass = 1.2
+                        sci_airmass = telluric_airmass + user_airmass
                         log.warning("Cannot determine airmass of standard "
-                                    f"{std.filename} so assuming {std_airmass}.")
+                                    f"{telluric.filename} so assuming {telluric_airmass}.")
                 else:
-                    sci_airmass = std_airmass + user_airmass
+                    sci_airmass = telluric_airmass + user_airmass
 
             config = copy(self.params[self.myself()])
             config.update(**params)
@@ -480,13 +485,13 @@ class Telluric(Spect):
                 "sci_airmass": RangeField(
                     doc="Airmass of target", dtype=float, default=sci_airmass,
                     min=1, max=2.5, inclusiveMax=True),
-                "std_airmass": RangeField(
-                    doc=f"Airmass of telluric", dtype=float, default=std_airmass,
+                "telluric_airmass": RangeField(
+                    doc=f"Airmass of telluric", dtype=float, default=telluric_airmass,
                     min=1, max=2.5, inclusiveMax=True)
             }
             uiparams = UIParameters(
                 config, reinit_params=["pixel_shift", "sci_airmass",
-                                       "std_airmass", "apply_model"],
+                                       "telluric_airmass", "apply_model"],
                 extras=reinit_extras)
 
             tcal = TelluricCorrector(tspek_list, ui_params=uiparams,

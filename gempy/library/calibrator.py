@@ -393,10 +393,10 @@ class TelluricCorrector(Calibrator):
     def perform_fit(self, index, sigma_clipping=None):
         """No fitting, this just divides each spectrum by the absorption model"""
         delta_airmass = (self.reinit_params["sci_airmass"] -
-                         self.reinit_params["std_airmass"])
+                         self.reinit_params["telluric_airmass"])
         trans = self.std_abs[index]
         pix_to_correct = np.logical_and(trans > 0, trans < 1)
-        tau = -np.log(trans[pix_to_correct]) / self.reinit_params["std_airmass"]
+        tau = -np.log(trans[pix_to_correct]) / self.reinit_params["telluric_airmass"]
         trans[pix_to_correct] *= np.exp(-tau * delta_airmass)
         self.abs_final[index][:] = trans
         corrected_data = models.Tabular1D(

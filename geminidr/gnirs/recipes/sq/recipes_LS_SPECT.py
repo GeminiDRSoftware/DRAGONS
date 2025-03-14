@@ -122,7 +122,7 @@ def  makeWavecalFromSkyAbsorption(p):
     p.cleanReadout()
     p.distortionCorrect()
     p.adjustWCSToReference()
-    p.resampleToCommonFrame(force_linear=False)
+    p.resampleToCommonFrame(output_wave_scale='reference', trim_spectral=True)
     #p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
