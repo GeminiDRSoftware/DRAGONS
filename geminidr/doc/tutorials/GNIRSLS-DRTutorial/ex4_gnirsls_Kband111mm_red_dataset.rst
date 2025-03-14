@@ -30,8 +30,9 @@ The calibrations we use for this example are:
   night at the end of the science observation sequences.  The coarse wavelength
   solution that we get from the arc is used as a starting point for the
   computation of the solution derived from telluric absorption lines.
-
-.. * telluric
+* A telluric standard observation taken in the same configuration as the
+  science and obtained at night just before or just after the science
+  observation sequences, and at a similar airmass.
 
 .. warning::  The Bad Pixel Masks (BPMs) are now found in the archive rather
    than packaged with the software.  You must get the static BPM from the
@@ -47,8 +48,8 @@ package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 +---------------------+----------------------------------------------+
 | Science arcs        || N20201026S0114                              |
 +---------------------+----------------------------------------------+
+| Telluric            || N20201026S0120-123                          |
++---------------------+----------------------------------------------+
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
 
-.. need to add the telluric frames and calibrations when supported.
-.. .. | Telluric || N20201026S0120-123 |

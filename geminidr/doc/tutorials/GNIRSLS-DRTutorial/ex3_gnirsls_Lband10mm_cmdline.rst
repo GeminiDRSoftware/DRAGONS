@@ -32,7 +32,9 @@ Here is a copy of the table for quick reference.
 +---------------------+----------------------------------------------+
 | Science flats       || N20180114S0125-132                          |
 +---------------------+----------------------------------------------+
-| BPM                 || bpm_20100716_gnirs_gnirsn_11_full_1amp.fits |
+| Telluric            || N20180114S0113-116                          |
++---------------------+----------------------------------------------+
+| BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
 
 Configuring the interactive interface
@@ -85,6 +87,20 @@ criteria.
 ::
 
     dataselect ../playdata/example3/*.fits --tags FLAT -o flats.lis
+
+A list for the telluric
+-----------------------
+DRAGONS does not recognize the telluric star as such.  This is because
+the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  For now, the
+`observation_class` descriptor can be used to differential the telluric
+from the science observations, along with the rejection of the `CAL` tag to
+reject flats and arcs.
+
+::
+
+    dataselect ../playdata/example3/*.fits --xtags=CAL --expr='observation_class=="partnerCal"' -o telluric.lis
+
 
 A list for the science observations
 -----------------------------------
@@ -187,35 +203,86 @@ To use the sky lines in the science frames, we invoke the
 
     reduce @sci.lis -r makeWavecalFromSkyEmission -p interactive=True
 
-It is very important to inspect the line identification.  Using the defaults,
-like we did above, careful inspection shows that the line identification is
-wrong.  Zooming in, we see the result below, not how the lines do not align.
+In the L-band, it is very important to inspect the line identification.
+Fortunately, in our case, using the default does lead to a correct lines
+identification.
 
-.. image:: _graphics/gnirsls_Lband10mm_wrongarcID.png
+.. note:: If the line identification were to be incorrrect, often changing
+    the minimum SNR for peak detection to 5 and recalculating ("Reconstruct points")
+    will help find the good solution.
+
+.. Using the defaults,
+    like we did above, careful inspection shows that the line identification is
+    wrong.  Zooming in, we see the result below, not how the lines do not align.
+
+.. .. image:: _graphics/gnirsls_Lband10mm_wrongarcID.png
    :width: 600
    :alt: Incorrect arc line identifications
 
-We get a good fit by changing the "Minimum SNR for peak detection" value
-to 5 in the panel on the left and then clicking the "Reconstruct points" button.
+.. We get a good fit by changing the "Minimum SNR for peak detection" value
+  to 5 in the panel on the left and then clicking the "Reconstruct points" button.
 
-.. image:: _graphics/gnirsls_Lband10mm_correctarcID.png
+.. .. image:: _graphics/gnirsls_Lband10mm_correctarcID.png
    :width: 600
    :alt: Correct arc line identifications
 
 
-.. note:: It is possible to set the minimum SNR from the command line by
+.. .. note:: It is possible to set the minimum SNR from the command line by
    adding ``-p determineWavelengthSolution:min_snr=5`` to the ``reduce`` call)
 
 
-.. telluric
+Telluric Standard
+=================
+The telluric standard observed before the science observation is "hip 28910".
+The spectral type of the star is A0V.
+
+To properly calculate and fit a telluric model to the star, we need to know
+its effective temperature.  To properly scale the sensitivity function (to
+use the star as a spectrophotometric standard), we need to know the star's
+magnitude.  Those are inputs to the ``fitTelluric`` primitive.
+
+From Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
+Temperature Sequence"
+(https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt)
+we find that the effective temperature of an A0V star is about 9700 K. Using
+Simbad, we find that the star has a magnitude of K=4.523.
+
+Instead of typing the values on the command line, we will use a parameter file
+to store them.  In a normal text file (here we name it "hip28910.param"), we write::
+
+    -p
+    fitTelluric:bbtemp=9700
+    fitTelluric:magnitude='K=4.523'
+
+Then we can call the ``reduce`` command with the parameter file.  The telluric
+fitting primitive can be run in interactive mode.
+
+Note that the data is recognized by Astrodata as normal GNIRS longslit science
+spectra.  To calculate the telluric correction, we need to specify the telluric
+recipe (``-r reduceTelluric``), otherwise the default science reduction will be
+run.
+
+::
+
+    reduce @telluric.lis -r reduceTelluric @hip28910.param -p fitTelluric:interactive=True
+
+.. The two big telluric absorption features are not modeled deep enough.
+    Adjusting the LSF scaling factor can help, but I don't know if that's
+    legit.  I don't really know how the default is set.
+
+.. todo:: add screenshot of the telluric fit.
+
+.. todo:: discuss the adjustments to the fit.   (right now, no adjustments)
+
 
 Science Observations
 ====================
 The science target is a Be star.  The sequence is one ABBA dither pattern.
 DRAGONS will flatfield, wavelength calibrate, subtract the sky, stack the
-aligned spectra, and finally extract the source.
+aligned spectra, extract the source, and finally
+remove telluric features and flux calibrate.
 
-Note that at this time, DRAGONS does not offer tools to do the telluric
+.. Note that at this time, DRAGONS does not offer tools to do the telluric
 correction and flux calibration.  We are working on it.
 
 This is what one raw image looks like.
@@ -224,19 +291,31 @@ This is what one raw image looks like.
    :width: 400
    :alt: raw science image
 
-With all the calibrations in the local calibration manager, simply call
-|reduce| on the science frames to get an extracted spectrum.
+.. With all the calibrations in the local calibration manager, simply call
+   |reduce| on the science frames to get an extracted spectrum.
+
+WARNING: The telluric correction and flux calibration are not yet available for
+automatic calibration association.  They need to be specified on the command
+line.  Because it is rather long to type, we can put the information in a
+parameter file.  In a simple text file (here we name it "telluric.param"),
+write::
+
+   -p
+    telluricCorrect:telluric=N20180114S0113_telluric.fits
+    fluxCalibrate:standard=N20180114S0113_telluric.fits
 
 ::
 
-    reduce @sci.lis
+    reduce @sci.lis @telluric.param
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
 ::
 
-    reduce @sci.lis -p interactive=True
+    reduce @sci.lis @telluric.param -p interactive=True
+
+.. todo:: The BPM association does seem to work.  ????
 
 The default fits are all good, though the trace can be improved by setting
 the order to 5.

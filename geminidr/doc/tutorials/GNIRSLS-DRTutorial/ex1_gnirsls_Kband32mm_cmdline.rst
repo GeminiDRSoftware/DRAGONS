@@ -305,6 +305,7 @@ run.
 .. BB slider does not seem to change the model, even at the extremes.
 .. the magnitude box is ignored.  I can set it to whatever and on the
    screen logs, it keeps saying K=10.
+.. the Reset button on the left does not reset LSF.
 
 
 Science Observations
@@ -365,7 +366,7 @@ Then we can call the ``reduce`` command with the parameter file.
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
-.. telluric.  Legend for red line and black dots.
+.. telluric.  Legend for red line and black dots.  What's the red line???
 ..  what is 'apply absorption model rather than data'?
 ..  help pop up needs to be adapted to this tool.
 ..  is this fit good?

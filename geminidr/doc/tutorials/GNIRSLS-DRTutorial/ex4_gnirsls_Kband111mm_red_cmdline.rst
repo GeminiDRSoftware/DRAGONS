@@ -35,11 +35,10 @@ Here is a copy of the table for quick reference.
 +---------------------+----------------------------------------------+
 | Science arcs        || N20201026S0114                              |
 +---------------------+----------------------------------------------+
+| Telluric            || N20201026S0120-123                          |
++---------------------+----------------------------------------------+
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
-
-.. need to add the telluric frames and calibrations when supported.
-.. .. | Telluric || N20201026S0120-123 |
 
 Configuring the interactive interface
 =====================================
@@ -99,9 +98,22 @@ Often two are taken.  We will use both in this case and stack them later.
 
 ::
 
-    dataselect ../playdata/example3/*.fits --tags ARC -o arcs.lis
+    dataselect ../playdata/example4/*.fits --tags ARC -o arcs.lis
 
-.. telluric
+A list for the telluric
+-----------------------
+DRAGONS does not recognize the telluric star as such.  This is because
+the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  For now, the
+`observation_class` descriptor can be used to differential the telluric
+from the science observations, along with the rejection of the `CAL` tag to
+reject flats and arcs.
+
+::
+
+    dataselect ../playdata/example4/*.fits --xtags=CAL --expr='observation_class=="partnerCal"' -o telluric.lis
+
+
 
 A list for the science observations
 -----------------------------------
@@ -224,7 +236,7 @@ flats to arcs, therefore we need to specify the processed flat on the
 command line.  Using the flat is optional but it is recommended when using
 an arc lamp.
 
-Turning on the interactive mode is optional.
+Turning on the interactive mode is recommended.
 
 Once the coarse arc is calculated it will automatically be added to the
 calibration database.  We do not want that arc to ever be used during the
@@ -233,7 +245,7 @@ We will feed it to the next step, the only one that needs it, manually.
 
 ::
 
-    reduce @arcs.lis -p flatCorrect:flat=N20180106S0166_flat.fits interactive=True
+    reduce @arcs.lis -p flatCorrect:flat=N20201026S0108_flat.fits interactive=True
     caldb remove N20201026S0114_arc.fits
 
 .. image:: _graphics/gnirsls_Kband111mm_red_arcID.png
@@ -241,6 +253,15 @@ We will feed it to the next step, the only one that needs it, manually.
     :alt: Arc line identifications
 
 .. todo:: info about the arc plots https://www.gemini.edu/instrumentation/gnirs/calibrations#Arc
+
+.. todo::  update screenshot
+
+.. https://www.gemini.edu/sciops/instruments/nirs/Arclampplots/ar9.gif
+
+.. The lamp used is Argon.  The automatic line identification gets it wrong.
+   The two lines on the right are 2385 and 2397.   Then the small one (because
+   of lower response) is 2313.9.   I am VERY right here.  The arc from telluric
+   lines up much closer to the real solution, in the center anyway.
 
 The telluric absorption lines solution
 --------------------------------------
@@ -252,26 +273,30 @@ invoke the ``makeWavecalFromSkyAbsorption`` recipe.  It will get the arc lamp
 solution from the calibration manager automatically and use it as an initial
 approximation.
 
+.. todo:: update the discussion and the screenshot.  With the better arc solution
+    the initial alignment is much closer.
+
 It is strongly recommended to use the interactive mode to visually confirm
 that lines have been properly identified and if not manually identify the
 lines.   Clearing the lines and using "i" to manually identify lines is the
-solution here.  After a few have been identified across the spectrum, click
-"Identify Lines" to fill in more lines automatically.
+solution here.  After a few have been identified across the **entire** spectrum,
+click "Identify Lines" to fill in more lines automatically.
 
 ::
 
     reduce @sci.lis -r makeWavecalFromSkyAbsorption --user_cal processed_arc:N20201026S0114_arc.fits -p  interactive=True prepare:bad_wcs=new
 
-Zooming in on the sky lines, we can better spot discrepancies: the automatic solution is 7 nm
-off.
+Zooming in on the sky lines, we can better spot discrepancies: the automatic
+solution close, yet not quite right, near the center but deviate towards the
+edges.
 
 .. image:: _graphics/gnirsls_Kband111_red_tellmismatch.png
    :width: 600
    :alt: Sky lines misidentification
 
 Clearing the lines and using "i" to manually identify lines is the
-solution here.  After a few have been identified across the spectrum, click
-"Identify Lines" to fill in more lines automatically.
+solution here.  After a few have been identified across **entire** the spectrum,
+click "Identify Lines" to fill in more lines automatically.
 
 .. image:: _graphics/gnirsls_Kband111_red_tellmatch.png
    :width: 600
@@ -290,15 +315,61 @@ solution here.  After a few have been identified across the spectrum, click
 .. todo::  Add a section about recognizing the need for new WCS.
 
 
-.. Telluric Correction
+Telluric Standard
+=================
+The telluric standard observed before the science observation is "hip 117371".
+The spectral type of the star is A1Vn.
+
+To properly calculate and fit a telluric model to the star, we need to know
+its effective temperature.  To properly scale the sensitivity function (to
+use the star as a spectrophotometric standard), we need to know the star's
+magnitude.  Those are inputs to the ``fitTelluric`` primitive.
+
+From Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
+Temperature Sequence"
+(https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt)
+we find that the effective temperature of an A1V star is about 9300 K. Using
+Simbad, we find that the star has a magnitude of K=4.967.
+
+Instead of typing the values on the command line, we will use a parameter file
+to store them.  In a normal text file (here we name it "hip117371.param"), we write::
+
+    -p
+    fitTelluric:bbtemp=9300
+    fitTelluric:magnitude='K=4.967'
+
+Then we can call the ``reduce`` command with the parameter file.  The telluric
+fitting primitive can be run in interactive mode.
+
+Note that the data is recognized by Astrodata as normal GNIRS longslit science
+spectra.  To calculate the telluric correction, we need to specify the telluric
+recipe (``-r reduceTelluric``), otherwise the default science reduction will be
+run.
+
+::
+
+    reduce @telluric.lis -r reduceTelluric @hip117371.param -p prepare:bad_wcs=new interactive=True
+
+.. todo:: The wavelength solution appears to be offset by a fraction of a
+     nanometer but it is quite visible throughout the spectrum in the
+     Telluric Absorption Model plot.    The adjustWaveZeroPt is set to do
+     nothing by default.  Try "None" to activate it and see what it finds.
+     It might be required to set the value manually.
+
+.. todo:: add screenshot of the telluric fit.
+
+.. todo:: discuss the adjustments to the fit.
+
+
 
 Science Observations
 ====================
 The science target is the hypergiant :math:`{\rho}` Cas. The sequence is two
 ABBA dithered observations.  DRAGONS will flat field, wavelength calibrate,
-subtract the sky, stack the aligned spectra, and finally extract the source.
+subtract the sky, stack the aligned spectra, extract the source, and finally
+remove telluric features and flux calibrate.
 
-Note that at this time, DRAGONS does not offer tools to do the telluric
+.. Note that at this time, DRAGONS does not offer tools to do the telluric
 correction and flux calibration.  We are working on it.
 
 Following the wavelength calibration, the default recipe has an optional
@@ -313,12 +384,29 @@ This is what one raw image looks like.
    :width: 400
    :alt: raw science image
 
-With all the calibrations in the local calibration manager, one only needs
-to call |reduce| on the science frames to get an extracted spectrum.
+WARNING: The telluric correction and flux calibration are not yet available for
+automatic calibration association.  They need to be specified on the command
+line.  Because it is rather long to type, we can put the information in a
+parameter file.  In a simple text file (here we name it "telluric.param"),
+write::
+
+    -p
+    telluricCorrect:telluric=N20201026S0120_telluric.fits
+    fluxCalibrate:standard=N20201026S0120_telluric.fits
+
+.. With all the calibrations in the local calibration manager, one only needs
+   to call |reduce| on the science frames to get an extracted spectrum.
 
 ::
 
-    reduce @sci.lis -p prepare:bad_wcs=new
+    reduce @sci.lis @telluric.param -p prepare:bad_wcs=new
+
+To run the reduction with all the interactive tools activated, set the
+``interactive`` parameter to ``True``.
+
+::
+
+   reduce @sci.lis @telluric.param -p prepare:bad_wcs=new interactive=True
 
 The 2D spectrum looks like this:
 
@@ -330,7 +418,11 @@ The 2D spectrum looks like this:
    :width: 400
    :alt: reduced 2D spectrum
 
-The 1D spectrum looks like this:
+The 1D spectrum before telluric correction and flux calibration looks like this:
+
+.. todo:: fix name of 1d png before correction.  Also add how one gets it.
+
+.. todo:: update screenshot.  New one is cleaner.
 
 ::
 
@@ -339,3 +431,14 @@ The 1D spectrum looks like this:
 .. image:: _graphics/gnirsls_Kband111mm_1D.png
    :width: 400
    :alt: raw science image
+
+.. todo:: screenshot 1D spectrum after telluric correction but no flux calibration
+          State that it was obtained with ``telluricCorrect:write_outputs=True``.
+
+.. todo:: 1D spectrum after both telluric correction and flux calibration
+
+.. todo:: that doesn't look right.  It's as if the telluric features were not
+    removed at all.
+
+.. The apply abs model checkbox crashed the primitive when clicked on.
+    ValueError: fp and xp are not of the same length.
