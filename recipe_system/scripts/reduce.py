@@ -73,6 +73,8 @@ def main(args):
     log.info("Logging configured for application: reduce")
     log.info(" ")
 
+    # Note - if you change where this version string comes from, please also
+    # update geminidr.core.primitives_standardize.py::standardizeHeaders
     log.stdinfo("\n\t\t\t--- reduce v{} ---".format(rs_version))
     log.stdinfo("\nRunning on Python {}".format(sys.version.split()[0]))
     r_reduce = Reduce(args)
