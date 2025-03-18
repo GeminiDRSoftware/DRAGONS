@@ -5,7 +5,7 @@ from requests.exceptions import HTTPError
 from requests.exceptions import Timeout
 from requests.exceptions import ConnectionError
 
-from . import get_calconf
+from ..config import globalConf
 from gempy.utils.logutils import get_logger
 from .calrequestlib import generate_md5_digest
 
@@ -42,7 +42,7 @@ class CachedFileGetter(object):
         self.cachedir = None
         self.log = get_logger(__name__)
 
-        calconf = get_calconf()
+        calconf = globalConf.get('calibs')
         if calconf:
             self.cachedir = calconf.get('system_calcache_dir')
 
