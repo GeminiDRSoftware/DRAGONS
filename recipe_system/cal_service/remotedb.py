@@ -11,8 +11,8 @@ import urllib.parse
 import urllib.error
 
 from .caldb import CalDB, CalReturn
-from .calrequestlib import get_cal_requests, generate_md5_digest, get_request
-from .calrequestlib import GetterError
+from .calrequestlib import get_cal_requests, generate_md5_digest
+from .file_getter import GetterError, get_request
 
 UPLOADCOOKIE = "qap_upload_processed_cal_ok"
 
@@ -106,7 +106,7 @@ class RemoteDB(CalDB):
                 if not path.exists(caldir):
                     makedirs(caldir)
                 try:
-                    get_request(calurl, cachefile)
+                    get_request(calurl, cachefile, calmd5)
                 except GetterError as err:
                     for message in err.messages:
                         log.error(message)
