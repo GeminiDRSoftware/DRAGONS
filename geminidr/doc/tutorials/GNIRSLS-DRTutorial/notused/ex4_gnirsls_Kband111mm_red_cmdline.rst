@@ -4,17 +4,17 @@
 
 .. _gnirs_Kband111mm_red_cmdline:
 
-**********************************************************************************************************
-Example 4 -  K-band 2.33 micron Longslit Point Source (111 l/mm grating) - Using the "reduce" command line
-**********************************************************************************************************
+***********************************************************************************************************
+Example 4 -  K-band 2.365 micron Longslit Point Source (111 l/mm grating) - Using the "reduce" command line
+***********************************************************************************************************
 
-We will reduce the GNIRS K-band longslit observation of HD 179821, likely
+We will reduce the GNIRS K-band longslit observation of :math:`{\rho}` Cas,
 a yellow hypergiant star, using the "|reduce|" command that is operated
 directly from the unix shell.  Just open a terminal and load the DRAGONS
 conda environment to get started.
 
-The observation uses the 111 l/mm grating, the long-blue camera, a 0.3 arcsec
-slit, and is centered at 2.33 |um|.  The dither pattern is a ABBA
+The observation uses the 111 l/mm grating, the long-blue camera, a 0.1 arcsec
+slit, and is centered at 2.365 |um|.  The dither pattern is a ABBA-ABBA
 sequence.
 
 The dataset
@@ -29,13 +29,13 @@ The dataset specific to this example is described in:
 Here is a copy of the table for quick reference.
 
 +---------------------+----------------------------------------------+
-| Science             || N20210407S0173-176                          |
+| Science             || N20201026S0100-107                          |
 +---------------------+----------------------------------------------+
-| Science flats       || N20210407S0177-180                          |
+| Science flats       || N20201026S0108-113                          |
 +---------------------+----------------------------------------------+
-| Science arcs        || N20210407S0181-182                          |
+| Science arcs        || N20201026S0114                              |
 +---------------------+----------------------------------------------+
-| Telluric            || N20210407S0188-191                          |
+| Telluric            || N20201026S0120-123                          |
 +---------------------+----------------------------------------------+
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
@@ -105,14 +105,13 @@ A list for the telluric
 DRAGONS does not recognize the telluric star as such.  This is because
 the observations are taken like science data and the GNIRS headers do not
 explicitly state that the observation is a telluric standard.  For now, the
-``observation_class`` descriptor can be used to differential the telluric
-from the science observations, along with the rejection of the ``CAL`` tag to
-reject flats and arcs. The ``observation_class`` can be "partnerCal" or
-"progCal".  In this case, it is "progCal".
+`observation_class` descriptor can be used to differential the telluric
+from the science observations, along with the rejection of the `CAL` tag to
+reject flats and arcs.
 
 ::
 
-    dataselect ../playdata/example4/*.fits --xtags=CAL --expr='observation_class=="progCal"' -o telluric.lis
+    dataselect ../playdata/example4/*.fits --xtags=CAL --expr='observation_class=="partnerCal"' -o telluric.lis
 
 
 
@@ -121,7 +120,7 @@ A list for the science observations
 
 In our case, the science observations can be selected from the observation
 class, ``science``, that is how they are differentiated from the telluric
-standards which are ``partnerCal`` or ``progCal``.
+standards which are ``partnerCal``.
 
 If we had multiple targets, we would need to split them into separate lists. To
 inspect what we have we can use |dataselect| and |showd| together.
@@ -130,20 +129,24 @@ inspect what we have we can use |dataselect| and |showd| together.
 
     dataselect ../playdata/example4/*.fits --expr='observation_class=="science"' | showd -d object
 
-    ----------------------------------------------------
-    filename                                      object
-    ----------------------------------------------------
-    ../playdata/example4/N20210407S0173.fits   HD 179821
-    ../playdata/example4/N20210407S0174.fits   HD 179821
-    ../playdata/example4/N20210407S0175.fits   HD 179821
-    ../playdata/example4/N20210407S0176.fits   HD 179821
+    --------------------------------------------------
+    filename                                    object
+    --------------------------------------------------
+    ../playdata/example4/N20201026S0100.fits   Rho Cas
+    ../playdata/example4/N20201026S0101.fits   Rho Cas
+    ../playdata/example4/N20201026S0102.fits   Rho Cas
+    ../playdata/example4/N20201026S0103.fits   Rho Cas
+    ../playdata/example4/N20201026S0104.fits   Rho Cas
+    ../playdata/example4/N20201026S0105.fits   Rho Cas
+    ../playdata/example4/N20201026S0106.fits   Rho Cas
+    ../playdata/example4/N20201026S0107.fits   Rho Cas
 
 Here we only have one object from the same sequence.  If we had multiple
 objects we could add the object name in the expression.
 
 ::
 
-    dataselect ../playdata/example4/*.fits --expr='observation_class=="science" and object=="HD 179821"' -o sci.lis
+    dataselect ../playdata/example4/*.fits --expr='observation_class=="science" and object=="Rho Cas"' -o sci.lis
 
 Bad Pixel Mask
 ==============
@@ -183,13 +186,16 @@ you run ``normalizeFlat`` in interactive mode you can clearly see the two
 levels.
 
 In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, the fit
-can be improved by activating the sigma clipping with one iteration, setting
-the low sigma to 2 instead of 3, and setting the "grow" parameter to 2.
+two sets of points, with a symmetrical residual fit.  In this case, the
+fit on the far left end can be improved only by setting a *region* to use
+that excludes the diverging points at the very edge.  The improvement is
+marginal and probably not worth it, but we do it here to illustrate the use
+of *regions*.  A region can be defined with the cursor by typing "r", or as
+a string in the region box below the plots.  The active region is highlighted
+in gray.
 
 Note that you are not required to run in interactive mode, but you might want
-to if flat fielding is critical to your program.  Run it interactively and
-see for yourself the difference the adjustments make in this case.
+to if flat fielding is critical to your program.
 
 ::
 
@@ -199,8 +205,7 @@ The interactive tools are introduced in section :ref:`interactive`.
 
 .. image:: _graphics/gnirsls_Kband111mm_red_evenoddflat.png
    :width: 600
-   :alt: Even-odd effect in flats
-
+   :alt: Even-odd effect in flats with gray region
 
 Processed Arc - Wavelength Solution
 ===================================
@@ -208,11 +213,10 @@ Obtaining the wavelength solution for GNIRS longslit data can be a complicated
 topic.  The quality of the results and what to use depends greatly on the
 wavelength regime and the grating.
 
-Our observations are K-band at a central wavelength of 2.33 |um| using
+Our observations are K-band at a central wavelength of 2.365 |um| using
 the 111/mm grating. In that regime, the arc lamp observation contains very
-few lines, five in this case which fortunately are correctly identified.  The
-number of lines can be as low as 2 or 3 in redder settings.
-It is impossible to have an accurate solution from the arc alone.
+few lines, three in this case with only two automatically identified.
+Clearly it would be impossible to have an accurate solution from the arc alone.
 
 The other difficulty is that the OH lines are absent in that regime.  There
 are no emission lines.  There are however a large number of telluric
@@ -232,13 +236,7 @@ flats to arcs, therefore we need to specify the processed flat on the
 command line.  Using the flat is optional but it is recommended when using
 an arc lamp.
 
-Turning on the interactive mode is recommended.  The lines are correctly
-identified in this case, but at redder settings it is not always the case.
-Plots of the arc lamps with wavelength labels can be found here:
-
-https://www.gemini.edu/instrumentation/gnirs/calibrations#Arc
-
-The arc we are processing was taken with the Argon lamp.
+Turning on the interactive mode is recommended.
 
 Once the coarse arc is calculated it will automatically be added to the
 calibration database.  We do not want that arc to ever be used during the
@@ -247,15 +245,23 @@ We will feed it to the next step, the only one that needs it, manually.
 
 ::
 
-    reduce @arcs.lis -p flatCorrect:flat=N20210407S0177_flat.fits interactive=True
-    caldb remove N20210407S0181_arc.fits
+    reduce @arcs.lis -p flatCorrect:flat=N20201026S0108_flat.fits interactive=True
+    caldb remove N20201026S0114_arc.fits
 
 .. image:: _graphics/gnirsls_Kband111mm_red_arcID.png
     :width: 600
     :alt: Arc line identifications
 
+.. todo:: info about the arc plots https://www.gemini.edu/instrumentation/gnirs/calibrations#Arc
+
+.. todo::  update screenshot
+
 .. https://www.gemini.edu/sciops/instruments/nirs/Arclampplots/ar9.gif
 
+.. The lamp used is Argon.  The automatic line identification gets it wrong.
+   The two lines on the right are 2385 and 2397.   Then the small one (because
+   of lower response) is 2313.9.   I am VERY right here.  The arc from telluric
+   lines up much closer to the real solution, in the center anyway.
 
 The telluric absorption lines solution
 --------------------------------------
@@ -267,35 +273,52 @@ invoke the ``makeWavecalFromSkyAbsorption`` recipe.  It will get the arc lamp
 solution from the calibration manager automatically and use it as an initial
 approximation.
 
+.. todo:: update the discussion and the screenshot.  With the better arc solution
+    the initial alignment is much closer.
+
 It is strongly recommended to use the interactive mode to visually confirm
 that lines have been properly identified and if not manually identify the
-lines.
-
-In this case, the automatic identification is correct and no further action
-is needed.
-
-If manually identification was needed, the first step would be to clear the
-lines and then use "i" to identify lines correctly with the help of the top
-plot.  After a few have been identified across the **entire** spectrum,
+lines.   Clearing the lines and using "i" to manually identify lines is the
+solution here.  After a few have been identified across the **entire** spectrum,
 click "Identify Lines" to fill in more lines automatically.
 
 ::
 
-    reduce @sci.lis -r makeWavecalFromSkyAbsorption --user_cal processed_arc:N20210407S0181_arc.fits -p  interactive=True
+    reduce @sci.lis -r makeWavecalFromSkyAbsorption --user_cal processed_arc:N20201026S0114_arc.fits -p  interactive=True prepare:bad_wcs=new
 
-Zooming in on the sky lines, we can better spot discrepancies, if any.
+Zooming in on the sky lines, we can better spot discrepancies: the automatic
+solution close, yet not quite right, near the center but deviate towards the
+edges.
 
-.. image:: _graphics/gnirsls_Kband111mm_red_tellmatch.png
+.. image:: _graphics/gnirsls_Kband111_red_tellmismatch.png
+   :width: 600
+   :alt: Sky lines misidentification
+
+Clearing the lines and using "i" to manually identify lines is the
+solution here.  After a few have been identified across **entire** the spectrum,
+click "Identify Lines" to fill in more lines automatically.
+
+.. image:: _graphics/gnirsls_Kband111_red_tellmatch.png
    :width: 600
    :alt: Correct sky lines identification
 
+.. note:: The World Coordinate System (WCS) values in the header of the science
+   data are not quite accurate enough for a 0.1 arc second slit.  To ensure
+   that the ABBA pattern is recognized as such instead of as a full offset to
+   blank sky, we need to create a new WCS using the offset values stored in
+   the headers.  This is what the extra `prepare:bad_wcs=new` does.  It has
+   nothing to do with the need to use the telluric absorption lines.
 
+   See the section about how to recognize this problem in the Tips & Tricks
+   chapter.
+
+.. todo::  Add a section about recognizing the need for new WCS.
 
 
 Telluric Standard
 =================
-The telluric standard observed before the science observation is "hip 92386".
-The spectral type of the star is A1IV.
+The telluric standard observed before the science observation is "hip 117371".
+The spectral type of the star is A1Vn.
 
 To properly calculate and fit a telluric model to the star, we need to know
 its effective temperature.  To properly scale the sensitivity function (to
@@ -305,18 +328,15 @@ magnitude.  Those are inputs to the ``fitTelluric`` primitive.
 From Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
 Temperature Sequence"
 (https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt)
-we find that the effective temperature of an A1V star is about 9300 K.
-Prieto & del Burgo, 2016, MNRAS, 455, 3864, finds an effective temperature of
-8894 K for HIP 92386 (HD 174240).  The exact temperature should not matter all
-that much.  We are using the Prieto & del Burgo value here. Using
-Simbad, we find that the star has a magnitude of K=6.040.
+we find that the effective temperature of an A1V star is about 9300 K. Using
+Simbad, we find that the star has a magnitude of K=4.967.
 
 Instead of typing the values on the command line, we will use a parameter file
-to store them.  In a normal text file (here we name it "hip92386.param"), we write::
+to store them.  In a normal text file (here we name it "hip117371.param"), we write::
 
     -p
-    fitTelluric:bbtemp=8894
-    fitTelluric:magnitude='K=6.040'
+    fitTelluric:bbtemp=9300
+    fitTelluric:magnitude='K=4.967'
 
 Then we can call the ``reduce`` command with the parameter file.  The telluric
 fitting primitive can be run in interactive mode.
@@ -328,20 +348,7 @@ run.
 
 ::
 
-    reduce @telluric.lis -r reduceTelluric @hip92386.param -p interactive=True
-
-In the top plot the blue line represents the continuum and should "envelop"
-the spectrum (black dots are the data, red line is the telluric model).  If the
-blue line crosses in the middle of the data, for example, this is a sign that
-the wavelength calibration is not correct.  Go back and try to fix the
-wavelength solution.
-
-Here it all looks good.
-
-.. image:: _graphics/gnirsls_Kband111mm_red_fittell_topplot.png
-   :width: 600
-   :alt: fitTelluric top plot showing a good fit of the continuum.
-
+    reduce @telluric.lis -r reduceTelluric @hip117371.param -p prepare:bad_wcs=new interactive=True
 
 .. todo:: The wavelength solution appears to be offset by a fraction of a
      nanometer but it is quite visible throughout the spectrum in the
@@ -349,14 +356,15 @@ Here it all looks good.
      nothing by default.  Try "None" to activate it and see what it finds.
      It might be required to set the value manually.
 
-.. todo:: add screenshot of the telluric fit.  before the zeropoint adjustment
-   and after.
+.. todo:: add screenshot of the telluric fit.
+
+.. todo:: discuss the adjustments to the fit.
+
 
 
 Science Observations
 ====================
-The science target is HD 179821.  It is believed to be either a post-asymtotic
-giant star or a yellow hypergiant. The sequence is one
+The science target is the hypergiant :math:`{\rho}` Cas. The sequence is two
 ABBA dithered observations.  DRAGONS will flat field, wavelength calibrate,
 subtract the sky, stack the aligned spectra, extract the source, and finally
 remove telluric features and flux calibrate.
@@ -376,75 +384,53 @@ This is what one raw image looks like.
    :width: 400
    :alt: raw science image
 
-.. WARNING: The telluric correction and flux calibration are not yet available for
-.. automatic calibration association.  They need to be specified on the command
-.. line.  Because it is rather long to type, we can put the information in a
-.. parameter file.  In a simple text file (here we name it "telluric.param"),
-.. write::
+WARNING: The telluric correction and flux calibration are not yet available for
+automatic calibration association.  They need to be specified on the command
+line.  Because it is rather long to type, we can put the information in a
+parameter file.  In a simple text file (here we name it "telluric.param"),
+write::
 
-..    -p
-..   telluricCorrect:telluric=N20201026S0120_telluric.fits
-..    fluxCalibrate:standard=N20201026S0120_telluric.fits
+    -p
+    telluricCorrect:telluric=N20201026S0120_telluric.fits
+    fluxCalibrate:standard=N20201026S0120_telluric.fits
 
-With all the calibrations in the local calibration manager, one only needs
-to call |reduce| on the science frames to get an extracted spectrum.
+.. With all the calibrations in the local calibration manager, one only needs
+   to call |reduce| on the science frames to get an extracted spectrum.
 
 ::
 
-    reduce @sci.lis
+    reduce @sci.lis @telluric.param -p prepare:bad_wcs=new
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
 ::
 
-   reduce @sci.lis -p interactive=True
+   reduce @sci.lis @telluric.param -p prepare:bad_wcs=new interactive=True
 
-.. todo:: I don't know what I'm seeing in the telluricCorrect plot.
-          What's the red line?  Is it supposed to match the data (black dots)?
-          Probably needs a screenshot with explanation.
-
-The 2D spectrum, without telluric correction and flux
-calibration, looks like this:
+The 2D spectrum looks like this:
 
 ::
 
-    reduce -r display N20210407S0173_2D.fits
+    reduce -r display N20201026S0100_2D.fits
 
 .. image:: _graphics/gnirsls_Kband111mm_2D.png
    :width: 400
-   :alt: reduced 2D spectrum. No telluric correction. No flux calibration.
-
-.. -p extractSpectra:write_outputs=True
-.. -p telluricCorrect:write_outputs=True
+   :alt: reduced 2D spectrum
 
 The 1D spectrum before telluric correction and flux calibration looks like this:
 
-.. image:: _graphics/gnirsls_Kband111mm_extracted.png
-   :width: 400
-   :alt: 1D spectrum before telluric correction and flux calibration
+.. todo:: fix name of 1d png before correction.  Also add how one gets it.
 
-The 1D spectrum after telluric correction but before flux calibration looks
-like this:
-
-.. image:: _graphics/gnirsls_Kband111mm_tellcorrected.png
-   :width: 400
-   :alt: 1D spectrum with telluric correction but no flux calibration
-
-.. todo:: add how one gets the intermediate spectra.
-
-.. todo:: update screenshot with new sensfunc software.
-
-The final spectrum, with telluric correction and flux calibration looks like
-this:
+.. todo:: update screenshot.  New one is cleaner.
 
 ::
 
-    dgsplot N20210407S0173_1D.fits 1
+    dgsplot N20201026S0100_1D.fits 1
 
 .. image:: _graphics/gnirsls_Kband111mm_1D.png
    :width: 400
-   :alt: reduced and calibrated final 1D spectrum
+   :alt: raw science image
 
 .. todo:: screenshot 1D spectrum after telluric correction but no flux calibration
           State that it was obtained with ``telluricCorrect:write_outputs=True``.

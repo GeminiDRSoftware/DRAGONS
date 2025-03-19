@@ -12,11 +12,14 @@ Beyond 2.3 microns K-band Longslit Point Source (111 l/mm grating)
 ==================================================================
 
 In this example, we will reduce a GNIRS K-band longslit observation with a
-central wavelength of 2.365 |um| with the 111 l/mm grating and the Long Blue
-camera.  The dither pattern is a ABBA-ABBA sequence.  The slit width is
-0.1 arcsec.
+central wavelength of 2.33 |um| with the 111 l/mm grating and the Long Blue
+camera.  The dither pattern is a ABBA sequence.  The slit width is
+0.3 arcsec.
 
-The target is the hypergiant :math:`{\rho}` Cas.
+The target is HD 179821, a star with a debated evolutionary state.  It is
+believed to be either a post-asymtotic giant star or a yellow hypergiant.
+There is an interesting discussion of the star based on this data in
+Kraus, M. et al, 2023, Galaxies, volume 11, 76 (https://doi.org/10.3390/galaxies11030076).
 
 The calibrations we use for this example are:
 
@@ -42,13 +45,13 @@ Here is the breakdown of the files.  All the files are included in the tutorial 
 package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 
 +---------------------+----------------------------------------------+
-| Science             || N20201026S0100-107                          |
+| Science             || N20210407S0173-176                          |
 +---------------------+----------------------------------------------+
-| Science flats       || N20201026S0108-113                          |
+| Science flats       || N20210407S0177-180                          |
 +---------------------+----------------------------------------------+
-| Science arcs        || N20201026S0114                              |
+| Science arcs        || N20210407S0181-182                          |
 +---------------------+----------------------------------------------+
-| Telluric            || N20201026S0120-123                          |
+| Telluric            || N20210407S0188-191                          |
 +---------------------+----------------------------------------------+
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+

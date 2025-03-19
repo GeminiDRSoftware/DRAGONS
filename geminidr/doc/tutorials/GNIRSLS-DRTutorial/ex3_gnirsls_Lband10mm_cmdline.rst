@@ -315,10 +315,12 @@ To run the reduction with all the interactive tools activated, set the
 
     reduce @sci.lis @telluric.param -p interactive=True
 
-.. todo:: The BPM association does seem to work.  ????
+.. todo:: The BPM association does not seem to work.  ????
 
 The default fits are all good, though the trace can be improved by setting
 the order to 5.
+
+.. todo:: add intermediate outputs.  pre-telluric, post-telluric no sensfunc.
 
 The final 2D spectrum and the extracted 1D spectrum are shown below.
 

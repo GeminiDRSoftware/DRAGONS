@@ -1,21 +1,22 @@
-.. ex3_gnirsls_Lband10mm_dataset.rst
+.. ex4_gnirsls_Kband111mm_red_dataset.rst
 
 .. include:: symbols.txt
 
-.. _gnirsls_Lband10mm_dataset:
+.. _gnirs_Kband111mm_red_example:
 
 ********************************
-Example 3 - Datasets description
+Example 4 - Datasets description
 ********************************
 
-L-band Longslit Point Source (10 l/mm grating)
-==============================================
-In this example, we will reduce the GNIRS L-band longslit observation
-of a Be-star.
+Beyond 2.3 microns K-band Longslit Point Source (111 l/mm grating)
+==================================================================
 
-This observation uses the 10 l/mm grating, the longred camera, a 0.1 arcsec
-slit, and is centered at 3.7 |um|.  The dither pattern is a standard
-ABBA.
+In this example, we will reduce a GNIRS K-band longslit observation with a
+central wavelength of 2.365 |um| with the 111 l/mm grating and the Long Blue
+camera.  The dither pattern is a ABBA-ABBA sequence.  The slit width is
+0.1 arcsec.
+
+The target is the hypergiant :math:`{\rho}` Cas.
 
 The calibrations we use for this example are:
 
@@ -25,8 +26,10 @@ The calibrations we use for this example are:
   date.)
 * Flats taken in the same configuration as the science.  They were obtained
   at night right after the science observations.
-* Arcs.  No arcs are obtained for L-band data.  The wavelength calibration
-  is done using the sky lines in the science observation.
+* An arc taken in the same configuration as the science and also obtained at
+  night at the end of the science observation sequences.  The coarse wavelength
+  solution that we get from the arc is used as a starting point for the
+  computation of the solution derived from telluric absorption lines.
 * A telluric standard observation taken in the same configuration as the
   science and obtained at night just before or just after the science
   observation sequences, and at a similar airmass.
@@ -39,11 +42,13 @@ Here is the breakdown of the files.  All the files are included in the tutorial 
 package.  They can also be downloaded from the Gemini Observatory Archive (GOA).
 
 +---------------------+----------------------------------------------+
-| Science             || N20180114S0121-124                          |
+| Science             || N20201026S0100-107                          |
 +---------------------+----------------------------------------------+
-| Science flats       || N20180114S0125-132                          |
+| Science flats       || N20201026S0108-113                          |
 +---------------------+----------------------------------------------+
-| Telluric            || N20180114S0113-116                          |
+| Science arcs        || N20201026S0114                              |
++---------------------+----------------------------------------------+
+| Telluric            || N20201026S0120-123                          |
 +---------------------+----------------------------------------------+
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+

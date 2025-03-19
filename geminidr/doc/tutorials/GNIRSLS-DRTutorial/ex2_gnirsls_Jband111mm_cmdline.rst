@@ -414,7 +414,8 @@ To run the reduction with all the interactive tools activated, set the
     Delete and "f" works though.  So why the heck doesn't the original fit
     work?
 
-The 2D spectrum looks like this:
+The 2D spectrum, without telluric correction and flux
+calibration, looks like this:
 
 ::
 
