@@ -597,8 +597,8 @@ class resampleToCommonFrameConfig(config.Config):
         # lead to large errors. TODO: gwcs's numerical inverse?
         if self.output_wave_scale == "reference" and not self.trim_spectral:
             log.warning("output_wave_scale='reference' is incompatible with "
-                        "trim_spectral=True. Setting trim_spectral=False")
-            self.trim_spectral = False
+                        "trim_spectral=False. Setting trim_spectral=True")
+            self.trim_spectral = True
 
 
 class separateSkyConfig(parameters_preprocess.separateSkyConfig):
