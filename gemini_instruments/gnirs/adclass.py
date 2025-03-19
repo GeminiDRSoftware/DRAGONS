@@ -493,6 +493,8 @@ class AstroDataGnirs(AstroDataGemini):
         """
         try:
             camera = self.camera(pretty=True)
+            if camera is None:  # eg. BPMs
+                return None
         except AttributeError:
             return None
 
