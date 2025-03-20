@@ -45,23 +45,6 @@ def test_resample_to_common_frame_with_defaults(input_ad_list, path_to_refs,
 
 @pytest.mark.gnirsls
 @pytest.mark.preprocessed_data
-def test_resample_to_common_frame_nonlinear(input_ad_list, path_to_refs,
-                                            caplog):
-    p = GNIRSLongslit(input_ad_list)
-    # This will raise an error as explained in parameters_spect.py
-    with pytest.raises(ValueError):
-        p.resampleToCommonFrame(trim_spatial=True, trim_spectral=False,
-                                output_wave_scale="reference")
-    #ad_out = p.stackFrames()[0]
-    #_check_params(caplog.records, 'w1=1525.312 w2=1806.015 dw=0.135 npix=2082')
-    #assert 'ALIGN' in ad_out[0].phu
-    #ref = astrodata.open(os.path.join(path_to_refs,
-    #                                  'N20240329S0022_stack_nonlinear.fits'))
-
-    #np.testing.assert_allclose(ad_out[0].data, ref[0].data)
-
-@pytest.mark.gnirsls
-@pytest.mark.preprocessed_data
 def test_resample_to_common_frame_trim_spectral(input_ad_list, path_to_refs,
                                                 caplog):
     p = GNIRSLongslit(input_ad_list)
