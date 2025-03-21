@@ -611,6 +611,6 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
     _write_final(p.streams['main'], suffix)
     _output_filenames = [ad.filename for ad in p.streams['main']]
 
-    log.stdinfo("\nreduce completed successfully.")
+    log.stdinfo("reduce completed successfully.")
 
     return _output_filenames

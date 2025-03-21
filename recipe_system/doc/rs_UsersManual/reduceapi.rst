@@ -68,8 +68,12 @@ using the Gemini data reduction package leads to double the reporting on
 the screen.  More an annoyance than a problem, admittedly.
 
 You are free to provide your own logger, or you can use the fully defined
-logger provided in  DRAGONS. It is recommended that you use the system
-logger as ``Reduce`` is tuned to use the DRAGONS logger.
+logger provided in  DRAGONS. The Gemini primitives use some extra log levels in
+addition to the standard ones. If you provide your own logger and plan to call
+the Gemini primitives, the ``logutils.customize_logger()`` function in
+``gempy.utils`` can be called to add these extra levels to your logger. This is a
+lighter weight alternative to the ``logutils.config()`` function, which will
+also replace any existing Handlers on the logger with the DRAGONS default ones.
 
 Returning to the example above, we could also set the recipe to a custom
 recipe, override a primitive parameters, set a data reduction package, etc.
@@ -229,3 +233,33 @@ upload              <type 'list' of 'str'>     None
     Gemini internal database.  Allowed values are "metrics", "calibs", and
     "science".
 
+Using ``Reduce`` in a python script
+-----------------------------------
+If you use ``Reduce()`` in your own python script, it is imperative to make
+use of the ``if __name__ == "__main__":`` python idiom in your script.
+
+DRAGONS uses SExtractor for its source-finding and, since that's an external
+package, python spawns a subprocess to run it. Unfortunately, the subprocess
+it creates is a copy of the parent process and includes copies of all the
+python objects in that process. In a normal reduction, this means copies of all
+the images you’re reducing and so the memory footprint doubles in size and this
+can be a problem because the reduction is already quite memory-intensive. We
+discovered this the hard way in the early development stages of DRAGONS when
+code would crash with out of memory errors.
+
+Our solution is to create a subprocess as soon as the reduction starts and use
+this subprocess to spawn SExtractor. By creating that subprocess right at the
+start, it hasn't opened any files or done anything and so when it gets copied
+to run SExtractor, the additional memory usage is small. But, the way that this
+subprocess is created involves (effectively) re-importing all the python code
+from the parent and, in your case, the "parent" is your script.
+
+When python imports a module (such as your script) it runs the code, and so
+another instance of your script will start running in the subprocess!
+The solution is to "protect" the reduction part of your code in a way such that
+it isn't run when imported, and only the preamble (import statements and the
+like) is run. This is achieved by means of the python "idiom"
+``if __name__ == "__main__"`` which is described in more detail
+`here <https://realpython.com/if-name-main-python/>`_
+(there are many others on the web) but basically means "only execute the
+following code if I am the parent".
