@@ -73,6 +73,16 @@ class AstroDataGnirs(AstroDataGemini):
 
             return TagSet(['FLAT', 'CAL'])
 
+    @astro_data_tag
+    def _type_standard(self):
+        if self.phu.get('PROCSTND'):
+            return TagSet(['STANDARD', 'CAL'])
+
+    @astro_data_tag
+    def _type_telluric(self):
+        if self.phu.get('PROCTELL'):
+            return TagSet(['TELLURIC', 'CAL'])
+
     @returns_list
     @astro_data_descriptor
     def array_name(self):
@@ -483,6 +493,8 @@ class AstroDataGnirs(AstroDataGemini):
         """
         try:
             camera = self.camera(pretty=True)
+            if camera is None:  # eg. BPMs
+                return None
         except AttributeError:
             return None
 

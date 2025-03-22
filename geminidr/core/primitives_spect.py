@@ -3221,7 +3221,7 @@ class Spect(Resample):
 
             if std is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed stndard listed for "
+                    raise OSError("No processed standard listed for "
                                   f"{ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
