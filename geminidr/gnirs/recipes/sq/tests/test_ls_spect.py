@@ -98,7 +98,7 @@ def test_reduce_ls_spect(path_to_inputs, path_to_refs, change_working_dir,
         # Reducing flats
         flat_filenames = datasets[test_case]["flats"]
         flat_paths = [download_from_archive(f) for f in flat_filenames]
-        cals.append(reduce(flat_paths, f"flat_{test_case}", cals, save_to="processed_flat"))
+        cals = reduce(flat_paths, f"flat_{test_case}", cals, save_to="processed_flat")
 
         # Use a preprocessed arc since we might need to use one from sky lines
         arcs_filenames = datasets[test_case]["arcs"]
