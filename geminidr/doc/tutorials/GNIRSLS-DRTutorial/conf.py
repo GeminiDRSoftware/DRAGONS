@@ -30,6 +30,7 @@ extensions = ['sphinx.ext.intersphinx',
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns.append('notused')
 
 source_suffix = '.rst'
 

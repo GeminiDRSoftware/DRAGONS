@@ -13,7 +13,7 @@ central wavelength beyond 2.3 |um| with the 111 l/mm grating.  The target is
 the hypergiant :math:`{\rho}` Cas.
 
 The particularity of this sequence is that the arc lamp has only two/three???
-lines and the OH and O\ :sub:`2` lines are absent beyond 2.3 |um|.  To get an accurate
+lines and the OH and O\ \ :sub:`2`\  lines are absent beyond 2.3 |um|.  To get an accurate
 wavelength calibration, we have to use the telluric absorption lines in the
 science observations.
 

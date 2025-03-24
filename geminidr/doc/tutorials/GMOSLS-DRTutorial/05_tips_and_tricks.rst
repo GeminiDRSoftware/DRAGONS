@@ -162,8 +162,6 @@ do it.
     plt.plot(x, func(x))
     plt.show()
 
-In the science-approved version of the GMOS longslit support in DRAGONS, there
-will be an interactive tool to inspect and adjust the sensitivity function.
 
 
 

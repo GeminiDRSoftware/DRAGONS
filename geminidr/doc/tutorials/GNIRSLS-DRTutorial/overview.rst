@@ -34,8 +34,11 @@ The reduction can be done in two different ways:
 
 We show how to run the same reduction using both methods.
 
-* :ref:`Kband_example`
+The tutorials are:
 
-.. * : :ref:`L or M band example`
+* :ref:`K-band 32 l/mm grating <gnirsls_Kband32mm_example>`
+* :ref:`J-band 111 l/mm grating <gnirsls_Jband111mm_example>`
+* :ref:`L-band 10 l/mm grating <gnirsls_Lband10mm_example>`
+* :ref:`K-band beyond 2.3 microns 111 l/mm grating <gnirsls_Kband11mm_red_example>`
 
 See the |RSUserInstall| to install the softwae if you have not already.

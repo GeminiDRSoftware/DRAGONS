@@ -189,46 +189,34 @@ The interactive tools are introduced in section :ref:`interactive`.
 
 Processed Arc - Wavelength Solution
 ===================================
-The wavelength solution for L-band and M-band data is derived from the telluric
-emission lines in the science frames.  The quality of the wavelength solution
-depends on the resolution and brightness of the telluric lines.
+The wavelength solution for L-band and M-band data is derived from the peaks
+in the telluric transmission in the science frames.  The quality of the
+wavelength solution depends on the resolution and strength of the telluric
+features.
 
-Wavelength calibration from sky lines is better done in interactive mode
+Wavelength calibration from peaks is better done in interactive mode
 despite our efforts to automate the process.
 
-To use the sky lines in the science frames, we invoke the
+To use the sky transmission peaks in the science frames, we invoke the
 ``makeWavecalFromSkyEmission`` recipe.
 
 ::
 
     reduce @sci.lis -r makeWavecalFromSkyEmission -p interactive=True
 
-In the L-band, it is very important to inspect the line identification.
-Fortunately, in our case, using the default does lead to a correct lines
+In the L-band, it is very important to inspect the feature identification.
+Fortunately, in our case, using the default does lead to a correct feature
 identification.
 
-.. note:: If the line identification were to be incorrrect, often changing
+Zooming in:
+
+.. image:: _graphics/gnirsls_Lband10mm_arcID.png
+   :width: 600
+   :alt: Arc line identifications
+
+.. note:: If the feature identification were to be incorrrect, often changing
     the minimum SNR for peak detection to 5 and recalculating ("Reconstruct points")
     will help find the good solution.
-
-.. Using the defaults,
-    like we did above, careful inspection shows that the line identification is
-    wrong.  Zooming in, we see the result below, not how the lines do not align.
-
-.. .. image:: _graphics/gnirsls_Lband10mm_wrongarcID.png
-   :width: 600
-   :alt: Incorrect arc line identifications
-
-.. We get a good fit by changing the "Minimum SNR for peak detection" value
-  to 5 in the panel on the left and then clicking the "Reconstruct points" button.
-
-.. .. image:: _graphics/gnirsls_Lband10mm_correctarcID.png
-   :width: 600
-   :alt: Correct arc line identifications
-
-
-.. .. note:: It is possible to set the minimum SNR from the command line by
-   adding ``-p determineWavelengthSolution:min_snr=5`` to the ``reduce`` call)
 
 
 Telluric Standard
@@ -266,13 +254,13 @@ run.
 
     reduce @telluric.lis -r reduceTelluric @hip28910.param -p fitTelluric:interactive=True
 
-.. The two big telluric absorption features are not modeled deep enough.
-    Adjusting the LSF scaling factor can help, but I don't know if that's
-    legit.  I don't really know how the default is set.
+.. image:: _graphics/gnirsls_Lband10mm_tellfit.png
+   :width: 600
+   :alt: fit to the telluric standard
 
-.. todo:: add screenshot of the telluric fit.
-
-.. todo:: discuss the adjustments to the fit.   (right now, no adjustments)
+The defaults appear to work well in this case.  The blue end is strongly
+affected by the telluric absorption. It is okay for the blue line, the
+expected continuum, to be above the data.
 
 
 Science Observations
@@ -282,52 +270,55 @@ DRAGONS will flatfield, wavelength calibrate, subtract the sky, stack the
 aligned spectra, extract the source, and finally
 remove telluric features and flux calibrate.
 
-.. Note that at this time, DRAGONS does not offer tools to do the telluric
-correction and flux calibration.  We are working on it.
-
 This is what one raw image looks like.
 
 .. image:: _graphics/gnirsls_Lband10mm_raw.png
    :width: 400
    :alt: raw science image
 
-.. With all the calibrations in the local calibration manager, simply call
-   |reduce| on the science frames to get an extracted spectrum.
-
-WARNING: The telluric correction and flux calibration are not yet available for
-automatic calibration association.  They need to be specified on the command
-line.  Because it is rather long to type, we can put the information in a
-parameter file.  In a simple text file (here we name it "telluric.param"),
-write::
-
-   -p
-    telluricCorrect:telluric=N20180114S0113_telluric.fits
-    fluxCalibrate:standard=N20180114S0113_telluric.fits
+With all the calibrations in the local calibration manager, simply call
+|reduce| on the science frames to get an extracted spectrum.
 
 ::
 
-    reduce @sci.lis @telluric.param
+    reduce @sci.lis
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
 ::
 
-    reduce @sci.lis @telluric.param -p interactive=True
-
-.. todo:: The BPM association does not seem to work.  ????
+    reduce @sci.lis -p interactive=True
 
 The default fits are all good, though the trace can be improved by setting
-the order to 5.
+the order to 5 (interactively or with ``-p traceApertures:order=5``).
 
-.. todo:: add intermediate outputs.  pre-telluric, post-telluric no sensfunc.
-
-The final 2D spectrum and the extracted 1D spectrum are shown below.
+The 2D spectrum before extraction looks like this, with blue wavelengths at
+the bottom and the red-end at the top.
 
 .. image:: _graphics/gnirsls_Lband10mm_2d.png
    :width: 400
    :alt: 2D spectrum
 
+The 1D extracted spectrum before telluric correction or flux calibration,
+obtained with ``-p extractSpectra:write_outputs=True``, looks like this.
+
+.. image:: _graphics/gnirsls_Lband10mm_extracted.png
+   :width: 600
+   :alt: 1D extracted spectrum before telluric correction or flux calibration
+
+The 1D extracted spectrum after telluric correction but before flux
+calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
+like this.
+
+.. image:: _graphics/gnirsls_Lband10mm_tellcor.png
+   :width: 600
+   :alt: 1D extracted spectrum after telluric correction or before flux calibration
+
+And the final spectrum, corrected for telluric features and flux calibrated.
+
 .. image:: _graphics/gnirsls_Lband10mm_1d.png
    :width: 600
-   :alt: 1D extracted spectrum
+   :alt: 1D extracted spectrum after telluric correction and flux calibration
+
+

@@ -14,7 +14,7 @@ K-band sequence, with the 111/mm grating and centered around 2.3um is reduced
 with DRAGONS.  The sequence dithers along the slit.  DRAGONS will do the sky
 subtraction, then stack the aligned spectra automatically.
 
-Because the arc lamp has only three lines and the OH and O_2 lines are absent
+Because the arc lamp has only three lines and the OH and O\ :sub:`2`\  lines are absent
 beyond 2.3um, we will need to get the wavelength calibrations from the
 telluric absorption lines in the science spectrum.
 

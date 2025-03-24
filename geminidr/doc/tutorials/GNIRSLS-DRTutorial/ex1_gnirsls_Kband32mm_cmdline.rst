@@ -210,11 +210,7 @@ wavelength regime and the grating.
 Our configuration in this example is K-band with a central wavelength less
 then 2.3 |um|, using the 32 l/mm grating.  It is expected that the GCAL arc
 lamp will have a sufficient number of lines available.   This is the simplest
-case.
-
-.. todo:: In tips and trick, add a summary table for each regime and what's
-         most likely to work when it comes to wavecal.  (something like my
-         spreadsheet.)
+case.  (See :ref:`gnirsls_wavecal_guide`.)
 
 Because the slit length does not cover the whole array, we want to know where
 the unilluminated areas are located and ignore them when the distortion
@@ -244,9 +240,7 @@ We will see later that the final science spectrum goes about 0.1 |um| beyond
 the coverage.  The solution in the outer area is unconstrained.  If the lines
 of scientific interest are beyond the line list range and wavelength accuracy
 is very important, using sky lines, if strong enough in the science spectrum,
-might be a better solution.
-
-.. todo:: refer to an example using sky lines.
+might be a better solution.  (Refer to :ref:`this example <gnirsls_Jband111mm_cmdline_arc>`.)
 
 .. image:: _graphics/gnirsls_Kband32mm_arc.png
    :width: 600
@@ -290,10 +284,14 @@ run.
 
     reduce @telluric.lis -r reduceTelluric @hip78649.param -p fitTelluric:interactive=True
 
-.. todo:: add screenshot of the telluric fit.  But I need to decide which of
-   spline3 or chebyshev I need to use.   Can't decide until chebyshev is fixed.
+Using a Chebyshev polynomial of order 10 leads to a fit that better follows
+the continuum without being too wavy.  The fit might look a bit high in the
+blue but remember that this is a region where the telluric absorption becomes
+important.
 
-.. todo:: discuss the adjustments to the fit.
+.. image:: _graphics/gnirsls_Kband32mm_tellfit.png
+   :width: 600
+   :alt: fit to the telluric standard
 
 .. top plot.  Need legend for the blue line, the red dots, and revise the legend
      for the black dot ("good" does not tell me what it is)
@@ -314,9 +312,6 @@ The science target is a white dwarf with an M dwarf companion.  The sequence
 is one ABBA dither pattern. DRAGONS will flatfield, wavelength calibrate,
 subtract the sky, stack the aligned spectra, extract the source, and finally remove telluric features and
 flux calibrate.
-
-.. Note that at this time, DRAGONS does not offer tools to do the telluric
-   correction and flux calibration.  We are working on it.
 
 Following the wavelength calibration, the default recipe has an optional
 step to adjust the wavelength zero point using the sky lines.  By default,
@@ -347,21 +342,9 @@ This is what one raw image looks like.
 With all the calibrations in the local calibration manager, one only needs
 to call |reduce| on the science frames to get an extracted spectrum.
 
-WARNING: The telluric correction and flux calibration are not yet available for
-automatic calibration association.  They need to be specified on the command
-line.  Because it is rather long to type, we can put the information in a
-parameter file.  In a simple text file (here we name it "telluric.param"),
-write::
-
-    -p
-    telluricCorrect:telluric=N20170609S0118_telluric.fits
-    fluxCalibrate:standard=N20170609S0118_telluric.fits
-
-Then we can call the ``reduce`` command with the parameter file.
-
 ::
 
-    reduce @sci.lis @telluric.param
+    reduce @sci.lis
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
@@ -369,8 +352,6 @@ To run the reduction with all the interactive tools activated, set the
 .. telluric.  Legend for red line and black dots.  What's the red line???
 ..  what is 'apply absorption model rather than data'?
 ..  help pop up needs to be adapted to this tool.
-..  is this fit good?
-..  holy shit, the results don't look good.
 
 
 At the ``traceApertures`` step, the fit one gets automatically for this source
@@ -383,8 +364,7 @@ to the ``reduce`` call.
 
 ::
 
-    reduce @sci.lis @telluric.param -p interactive=True traceApertures:niter=1
-
+    reduce @sci.lis -p interactive=True traceApertures:niter=1
 
 The 2D spectrum before extraction looks like this, with blue wavelengths at
 the bottom and the red-end at the top.
@@ -393,17 +373,30 @@ the bottom and the red-end at the top.
    :width: 400
    :alt: 2D spectrum
 
-.. todo:: fix name of 1d png before correction.  Also add how one gets it.
+The 1D extracted spectrum before telluric correction or flux calibration,
+obtained with ``-p extractSpectra:write_outputs=True``, looks like this.
 
-.. image:: _graphics/gnirsls_Kband32mm_1d.png
+.. image:: _graphics/gnirsls_Kband32mm_extracted.png
    :width: 600
    :alt: 1D extracted spectrum before telluric correction or flux calibration
 
-.. todo:: screenshot 1D spectrum after telluric correction but no flux calibration
-          State that it was obtained with ``telluricCorrect:write_outputs=True``.
+The 1D extracted spectrum after telluric correction but before flux
+calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
+like this.
 
-.. todo:: 1D spectrum after both telluric correction and flux calibration
+.. image:: _graphics/gnirsls_Kband32mm_tellcor.png
+   :width: 600
+   :alt: 1D extracted spectrum after telluric correction or before flux calibration
 
+And the final spectrum, corrected for telluric features and flux calibrated.
+
+.. image:: _graphics/gnirsls_Kband32mm_1d.png
+   :width: 600
+   :alt: 1D extracted spectrum after telluric correction and flux calibration
+
+Because of the low signal at the edges, it is not unusual for the flux
+calibration to diverge at the extremities; the function is simply not well
+constrained there.
 
 
 

@@ -165,7 +165,7 @@ database:
 
 ::
 
-    caldb add ../playdata/example1/bpm*.fits
+    caldb add ../playdata/example2/bpm*.fits
 
 Master Flat Field
 =================
@@ -206,6 +206,7 @@ of the flat.  The fit leads to residuals that are symmetrical.
 
 The interactive tools are introduced in section :ref:`interactive`.
 
+.. _gnirsls_Jband111mm_cmdline_arc:
 
 Processed Arc - Wavelength Solution
 ====================================
@@ -250,7 +251,7 @@ Here, increasing the order to 4 helps to get a tighter fit.
 
 Using the sky lines
 -------------------
-The spectrum has a number of OH and O\ :sub:`2` sky lines that can be used to
+The spectrum has a number of OH and O\ :sub:`2`\  sky lines that can be used to
 create a wavelength solution.  The calibration can be done on a single frame
 or, in case of multiple input frames, the frames will be stacked.  It is
 recommended to use only one frame for a more precise wavelength solution,
@@ -294,18 +295,27 @@ Each case will be slightly different.   Whether you decide to use the solution
 from the arc lamp or the sky lines is up to you.
 
 Once you have decided, we recommend that you remove the one you do not want
-to use from the calibration manager database.  Since the arc selected will
-always be the "closest in time" to the science observation, there might be
-cases where the arc will be picked for the last datasets in the sequence while
-the sky line solution will be picked for the first datasets in the sequence.
+to use from the calibration manager database.  Since the ``_arc`` file selected
+will always be the "closest in time" to the science observation, there might be
+cases where the lamp solution will be picked for the last datasets in the
+sequence while the sky lines solution will be picked for the first datasets in
+the sequence.
 
 So pick one, remove the other.
 
 ::
 
-    caldb remove N20180201S0065_arc.fits  # remove the arc solution
+    caldb remove N20180201S0065_arc.fits  # remove the lamp solution
     ... or ...
     caldb remove N20180201S0052_arc.fits  # remove the sky line solution
+
+In this tutorial, we remove the lamp solution.
+
+If you were to want to try it anyway for telluric standard reduction
+or the science reduction, you can force its use with the ``--user_cal``
+option on the command line, eg
+``--user_cal processed_arc:N20180201S0065_arc.fits``.
+
 
 Telluric Standard
 =================
@@ -342,12 +352,12 @@ run.
 
     reduce @telluric.lis -r reduceTelluric @hip55627.param -p fitTelluric:interactive=True
 
-.. todo:: add screenshot of the telluric fit.
+Adjusting the order of the spline to 8 leads to more randomized residuals
+(second panel).
 
-.. todo:: discuss the adjustments to the fit.
-
-.. 2nd and bottom plots show waviness.  Increase order to 8 to make it
-   straighter.
+.. image:: _graphics/gnirsls_Jband111mm_tellfit.png
+   :width: 600
+   :alt: raw science image
 
 
 Science Observations
@@ -356,9 +366,6 @@ The science target is a low metallicity M-dwarf.  The sequence is two ABBA
 dithered observations.  DRAGONS will flat field, wavelength calibrate,
 subtract the sky, stack the aligned spectra, extract the source, and finally
 remove telluric features and flux calibrate.
-
-.. Note that at this time, DRAGONS does not offer tools to do the telluric
-   correction and flux calibration.  We are working on it.
 
 Following the wavelength calibration, the default recipe has an optional
 step to adjust the wavelength zero point using the sky lines.  By default,
@@ -375,47 +382,23 @@ This is what one raw image looks like.
 With all the calibrations in the local calibration manager, one only needs
 to call |reduce| on the science frames to get an extracted spectrum.
 
-.. .. note::  If you have derived a wavelength solution from both the arcs and
-     the sky lines, as we've done here, you will have two solutions in the
-     calibration manager database.  By default, the system will pick the sky
-     line solution because the solution is closer in time (same time, in fact)
-     as the science observations.  If you wish to use the lamp solution, either
-     delete the sky line solution from the database
-     (``caldb remove N20180201S0052_arc.fits``) or specify the lamp solution
-     on the command line when you reduce the science frames (add
-     ``-p attachWavelengthSolution:arc=N20180201S0065_arc.fits`` to the
-     ``reduce`` command).
-
-.. **** add to the "which one" section how to manually force the use of the
-   other solution if they want to try it. ****
-
-WARNING: The telluric correction and flux calibration are not yet available for
-automatic calibration association.  They need to be specified on the command
-line.  Because it is rather long to type, we can put the information in a
-parameter file.  In a simple text file (here we name it "telluric.param"),
-write::
-
-    -p
-    telluricCorrect:telluric=N20180201S0071_telluric.fits
-    fluxCalibrate:standard=N20180201S0071_telluric.fits
-
 ::
 
-    reduce @sci.lis @telluric.param
+    reduce @sci.lis
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
 ::
 
-   reduce @sci.lis @telluric.param -p interactive=True
+   reduce @sci.lis -p interactive=True
 
 .. todo:: Whoa!  findAperture fails big time.  That wasn't happening before.
     Delete and "f" works though.  So why the heck doesn't the original fit
     work?
 
-The 2D spectrum, without telluric correction and flux
-calibration, looks like this:
+The 2D spectrum, without telluric correction and flux calibration, looks
+like this:
 
 ::
 
@@ -425,22 +408,32 @@ calibration, looks like this:
    :width: 400
    :alt: reduced 2D spectrum
 
-The 1D spectrum before telluric correction and flux calibration looks like this:
+The 1D extracted spectrum before telluric correction or flux calibration,
+obtained with ``-p extractSpectra:write_outputs=True``, looks like this.
 
-.. todo:: fix name of 1d png before correction.  Also add how one gets it.
+.. image:: _graphics/gnirsls_Jband111mm_extracted.png
+   :width: 600
+   :alt: 1D extracted spectrum before telluric correction or flux calibration
+
+The 1D extracted spectrum after telluric correction but before flux
+calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
+like this.
+
+.. image:: _graphics/gnirsls_Jband111mm_tellcor.png
+   :width: 600
+   :alt: 1D extracted spectrum after telluric correction or before flux calibration
+
+And the final spectrum, corrected for telluric features and flux calibrated.
 
 ::
 
     dgsplot N20180201S0052_1D.fits 1
 
-.. image:: _graphics/gnirsls_Jband111mm_1D.png
-   :width: 400
-   :alt: raw science image
+.. image:: _graphics/gnirsls_Jband111mm_1d.png
+   :width: 600
+   :alt: 1D extracted spectrum after telluric correction and flux calibration
 
-.. todo:: screenshot 1D spectrum after telluric correction but no flux calibration
-          State that it was obtained with ``telluricCorrect:write_outputs=True``.
 
-.. todo:: 1D spectrum after both telluric correction and flux calibration
 
 .. Terrible flux calibration.  I even tried to apply it back to the telluric
    itself, an A0V star, and I get the same wavy shape.  Clearly wrong.

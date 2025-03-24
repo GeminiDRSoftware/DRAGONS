@@ -214,7 +214,7 @@ few lines, five in this case which fortunately are correctly identified.  The
 number of lines can be as low as 2 or 3 in redder settings.
 It is impossible to have an accurate solution from the arc alone.
 
-The other difficulty is that the OH lines are absent in that regime.  There
+The other difficulty is that the OH and O\ :sub:`2`\  lines are absent in that regime.  There
 are no emission lines.  There are however a large number of telluric
 absorption lines.
 
@@ -343,16 +343,6 @@ Here it all looks good.
    :alt: fitTelluric top plot showing a good fit of the continuum.
 
 
-.. todo:: The wavelength solution appears to be offset by a fraction of a
-     nanometer but it is quite visible throughout the spectrum in the
-     Telluric Absorption Model plot.    The adjustWaveZeroPt is set to do
-     nothing by default.  Try "None" to activate it and see what it finds.
-     It might be required to set the value manually.
-
-.. todo:: add screenshot of the telluric fit.  before the zeropoint adjustment
-   and after.
-
-
 Science Observations
 ====================
 The science target is HD 179821.  It is believed to be either a post-asymtotic
@@ -361,30 +351,11 @@ ABBA dithered observations.  DRAGONS will flat field, wavelength calibrate,
 subtract the sky, stack the aligned spectra, extract the source, and finally
 remove telluric features and flux calibrate.
 
-.. Note that at this time, DRAGONS does not offer tools to do the telluric
-correction and flux calibration.  We are working on it.
-
-Following the wavelength calibration, the default recipe has an optional
-step to adjust the wavelength zero point using the sky lines.  By default,
-this step will NOT make any adjustment.  We found that in general, the
-adjustment is so small as being in the noise.  If you wish to make an
-adjustment, or try it out, see :ref:`wavzero` to learn how.
-
 This is what one raw image looks like.
 
 .. image:: _graphics/gnirsls_Kband111mm_raw.png
    :width: 400
    :alt: raw science image
-
-.. WARNING: The telluric correction and flux calibration are not yet available for
-.. automatic calibration association.  They need to be specified on the command
-.. line.  Because it is rather long to type, we can put the information in a
-.. parameter file.  In a simple text file (here we name it "telluric.param"),
-.. write::
-
-..    -p
-..   telluricCorrect:telluric=N20201026S0120_telluric.fits
-..    fluxCalibrate:standard=N20201026S0120_telluric.fits
 
 With all the calibrations in the local calibration manager, one only needs
 to call |reduce| on the science frames to get an extracted spectrum.
@@ -400,12 +371,9 @@ To run the reduction with all the interactive tools activated, set the
 
    reduce @sci.lis -p interactive=True
 
-.. todo:: I don't know what I'm seeing in the telluricCorrect plot.
-          What's the red line?  Is it supposed to match the data (black dots)?
-          Probably needs a screenshot with explanation.
 
-The 2D spectrum, without telluric correction and flux
-calibration, looks like this:
+The 2D spectrum, without telluric correction and flux calibration, with
+blue wavelengths at the bottom and the red-end at the top, looks like this:
 
 ::
 
@@ -415,44 +383,31 @@ calibration, looks like this:
    :width: 400
    :alt: reduced 2D spectrum. No telluric correction. No flux calibration.
 
-.. -p extractSpectra:write_outputs=True
-.. -p telluricCorrect:write_outputs=True
-
-The 1D spectrum before telluric correction and flux calibration looks like this:
+The 1D extracted spectrum before telluric correction or flux calibration,
+obtained with ``-p extractSpectra:write_outputs=True``, looks like this.
 
 .. image:: _graphics/gnirsls_Kband111mm_extracted.png
-   :width: 400
-   :alt: 1D spectrum before telluric correction and flux calibration
+   :width: 590
+   :alt: 1D extracted spectrum before telluric correction or flux calibration
 
-The 1D spectrum after telluric correction but before flux calibration looks
-like this:
+The 1D extracted spectrum after telluric correction but before flux
+calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
+like this.
 
 .. image:: _graphics/gnirsls_Kband111mm_tellcorrected.png
-   :width: 400
-   :alt: 1D spectrum with telluric correction but no flux calibration
+   :width: 600
+   :alt: 1D extracted spectrum after telluric correction or before flux calibration
 
-.. todo:: add how one gets the intermediate spectra.
-
-.. todo:: update screenshot with new sensfunc software.
-
-The final spectrum, with telluric correction and flux calibration looks like
-this:
+And the final spectrum, corrected for telluric features and flux calibrated.
 
 ::
 
     dgsplot N20210407S0173_1D.fits 1
 
 .. image:: _graphics/gnirsls_Kband111mm_1D.png
-   :width: 400
+   :width: 600
    :alt: reduced and calibrated final 1D spectrum
 
-.. todo:: screenshot 1D spectrum after telluric correction but no flux calibration
-          State that it was obtained with ``telluricCorrect:write_outputs=True``.
-
-.. todo:: 1D spectrum after both telluric correction and flux calibration
-
-.. todo:: that doesn't look right.  It's as if the telluric features were not
-    removed at all.
 
 .. The apply abs model checkbox crashed the primitive when clicked on.
     ValueError: fp and xp are not of the same length.

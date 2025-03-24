@@ -12,8 +12,9 @@ packages.
 of each package within some reasonable limit.
 
 * Example 1: `gnirsls_tutorial_datapkg-Kband32mm-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gnirsls_tutorial_datapkg-Kband32mm-v1.tar>`_
-
-.. * Example 2: `gmosls_tutorial_datapkg-largedither-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gmosls_tutorial_datapkg-largedither-v1.tar>`_
+* Example 2: `gnirsls_tutorial_datapkg-Jband111mm-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gnirsls_tutorial_datapkg-Jband111mm-v1.tar>`_
+* Example 3: `gnirsls_tutorial_datapkg-Lband10mm-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gnirsls_tutorial_datapkg-Lband10mm-v1.tar>`_
+* Example 4: `gnirsls_tutorial_datapkg-Kband111mm_red-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gnirsls_tutorial_datapkg-Kband111mm_red-v1.tar>`_
 
 Download the package and unpack it somewhere convenient.
 .. Download one or several packages and unpack them somewhere convenient.

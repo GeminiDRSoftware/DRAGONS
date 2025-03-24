@@ -18,51 +18,51 @@ scenario that most likely applies based on the instrument configuration.
 Below the table, we discuss the various ways to do the wavelength solution
 calculation.
 
-+-------------+------------+--------------+------------------------------------------------------------------------+
-| Bandpass    | Grating    | Central |br| | Advise                                                                 |
-|             |            | Wavelength   |                                                                        |
-+-------------+------------+--------------+------------------------------------------------------------------------+
-| X-band |br| | 10/mm |br| |   Any        | **most likely** The arcs will normally have enough lines and |br|      |
-| J-band |br| | 32/mm |br| |              | reasonable coverage. |br| |br|                                         |
-| H-band      |            |              | **possible improvement** If the OH and O_2 emission lines are |br|     |
-|             |            |              | visible, they can be used instead of the arc. |br| |br|                |
-|             |            |              | **unlikely** If emission lines are not visible (short exposures), |br| |
-|             |            |              | and the arc is not sufficient, the telluric absorption lines  |br|     |
-|             |            |              | can be used.                                                           |
-|             +------------+--------------+------------------------------------------------------------------------+
-|             | 111/mm     |   Any        | **most likely** The arc lines will be very few, 1 to 5, and will |br|  |
-|             |            |              | not offer a good coverage of the spectral range.  OH and O_2 |br|      |
-|             |            |              | lines should be visible, use them. |br| |br|                           |
-|             |            |              | **less likely** If the exposure times are short, the OH and O_2 |br|   |
-|             |            |              | lines might not be visible, the only solution will be to use the |br|  |
-|             |            |              | telluric absorption features.                                          |
-+-------------+------------+--------------+------------------------------------------------------------------------+
-| K-band      | 10/mm |br| |   Any        | **most likely** The arcs will normally have enough lines and |br|      |
-|             | 32/mm |br| |              | reasonable coverage. |br| |br|                                         |
-|             |            |              | **possible improvement** If the OH and O_2 emission lines are |br|     |
-|             |            |              | visible, they can be used instead of the arc. |br| |br|                |
-|             |            |              | **unlikely** If emission lines are not visible (short exposures), |br| |
-|             |            |              | and the arc is not sufficient, the telluric absorption lines  |br|     |
-|             |            |              | can be used.                                                           |
-|             +------------+--------------+------------------------------------------------------------------------+
-|             | 111/mm     |  < 3.3 |um|  | **most likely** The arc lines will be very few, 1 to 5, and will |br|  |
-|             |            |              | not offer a good coverage of the spectral range.  OH and O_2 |br|      |
-|             |            |              | lines should be visible, use them. |br| |br|                           |
-|             |            |              | **less likely** If the exposure times are short, the OH and O_2 |br|   |
-|             |            |              | lines might not be visible, the only solution will be to use the |br|  |
-|             |            |              | telluric absorption features.                                          |
-|             |            +--------------+------------------------------------------------------------------------+
-|             |            |  > 3.3 |um|  | **most likely** The arc lines will be very few, 1 to 5, and will |br|  |
-|             |            |              | not offer a good coverage of the spectral range. There will be no |br| |
-|             |            |              | OH or O_2 lines available.  The telluric absorption features |br|      |
-|             |            |              | **must** be used.                                                      |
-+-------------+------------+--------------+------------------------------------------------------------------------+
-| L-band |br| | Any        |  Any         | No arc lamp observations are taken for the thermal bands. |br| |br|    |
-| M-band      |            |              | The telluric sky emission lines must be used for wavelength |br|       |
-|             |            |              | calibration.  Note that for L-band > 3.8 |um|, the automatic line |br| |
-|             |            |              | identification is often wrong and the use of the interactive |br|      |
-|             |            |              | mode is required.                                                      |
-+-------------+------------+--------------+------------------------------------------------------------------------+
++-------------+------------+--------------+-------------------------------------------------------------------------------+
+| Bandpass    | Grating    | Central |br| | Advise                                                                        |
+|             |            | Wavelength   |                                                                               |
++-------------+------------+--------------+-------------------------------------------------------------------------------+
+| X-band |br| | 10/mm |br| |   Any        | **most likely** The arcs will normally have enough lines and |br|             |
+| J-band |br| | 32/mm |br| |              | reasonable coverage. |br| |br|                                                |
+| H-band      |            |              | **possible improvement** If the OH and O\ :sub:`2`\  emission lines are |br|  |
+|             |            |              | visible, they can be used instead of the arc. |br| |br|                       |
+|             |            |              | **unlikely** If emission lines are not visible (short exposures), |br|        |
+|             |            |              | and the arc is not sufficient, the telluric absorption lines  |br|            |
+|             |            |              | can be used.                                                                  |
+|             +------------+--------------+-------------------------------------------------------------------------------+
+|             | 111/mm     |   Any        | **most likely** The arc lines will be very few, 1 to 5, and will |br|         |
+|             |            |              | not offer a good coverage of the spectral range.  OH and O\ :sub:`2`\  |br|   |
+|             |            |              | lines should be visible, use them. |br| |br|                                  |
+|             |            |              | **less likely** If the exposure times are short, the OH and O\ :sub:`2`\ |br| |
+|             |            |              | lines might not be visible, the only solution will be to use the |br|         |
+|             |            |              | telluric absorption features.                                                 |
++-------------+------------+--------------+-------------------------------------------------------------------------------+
+| K-band      | 10/mm |br| |   Any        | **most likely** The arcs will normally have enough lines and |br|             |
+|             | 32/mm |br| |              | reasonable coverage. |br| |br|                                                |
+|             |            |              | **possible improvement** If the OH and O\ :sub:`2`\  emission lines are |br|  |
+|             |            |              | visible, they can be used instead of the arc. |br| |br|                       |
+|             |            |              | **unlikely** If emission lines are not visible (short exposures), |br|        |
+|             |            |              | and the arc is not sufficient, the telluric absorption lines  |br|            |
+|             |            |              | can be used.                                                                  |
+|             +------------+--------------+-------------------------------------------------------------------------------+
+|             | 111/mm     |  < 3.3 |um|  | **most likely** The arc lines will be very few, 1 to 5, and will |br|         |
+|             |            |              | not offer a good coverage of the spectral range.  OH and O\ :sub:`2`\  |br|   |
+|             |            |              | lines should be visible, use them. |br| |br|                                  |
+|             |            |              | **less likely** If the exposure times are short, the OH and O\ :sub:`2`\ |br| |
+|             |            |              | lines might not be visible, the only solution will be to use the |br|         |
+|             |            |              | telluric absorption features.                                                 |
+|             |            +--------------+-------------------------------------------------------------------------------+
+|             |            |  > 3.3 |um|  | **most likely** The arc lines will be very few, 1 to 5, and will |br|         |
+|             |            |              | not offer a good coverage of the spectral range. There will be |br|           |
+|             |            |              | no OH or O\ :sub:`2`\  lines available. The telluric absorption features |br| |
+|             |            |              | **must** be used.                                                             |
++-------------+------------+--------------+-------------------------------------------------------------------------------+
+| L-band |br| | Any        |  Any         | No arc lamp observations are taken for the thermal bands. |br| |br|           |
+| M-band      |            |              | The peaks in the telluric throughput curve must be used |br|                  |
+|             |            |              | for wavelength calibration.  Note that for L-band > 3.8 |um|, |br|            |
+|             |            |              | the automatic line identification is often wrong and the use |br|             |
+|             |            |              | of the interactive mode is required.                                          |
++-------------+------------+--------------+-------------------------------------------------------------------------------+
 
 
 
@@ -96,21 +96,21 @@ ensure that the lines offer a good coverage the entire spectral range.
 
 From the Emission Lines
 -----------------------
-When OH and O_2 lines are present in the science data, or, in the thermal bands,
-when telluric emission lines are present, it is possible to use those emission
-lines to calculate the wavelength solution.
+When OH and O\ :sub:`2`\  lines are present in the science data, or, in the thermal bands,
+when peaks in the telluric throughput are present, it is possible to use those
+to calculate the wavelength solution.
 
 This is done by running reduce on the science frames and specifying the use
 of the ``makeWavecalFromSkyEmission`` recipe.  The interactive mode is
-recommended to verify and ensure correct line identification.
+recommended to verify and ensure correct line/peak identification.
 
 ::
 
   reduce @sci.lis -r makeWavecalFromSkyEmission -p interactive=True
 
-If the sky lines are bright, it is possible to use only one science observation
-instead of the stack.  This could lead to higher precision as the stack might
-make the lines a touch thicker.
+If the OH and O\ :sub:`2`\  sky lines are bright, it is possible to use only one science
+observation instead of the stack.  This could lead to higher precision as the
+stack might make the lines a touch thicker.
 
 
 From the Absorption Lines
