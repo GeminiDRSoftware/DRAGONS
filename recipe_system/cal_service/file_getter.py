@@ -42,7 +42,7 @@ class CachedFileGetter(object):
         self.cachedir = None
         self.log = get_logger(__name__)
 
-        calconf = globalConf.get('calibs')
+        calconf = globalConf['calibs']
         if calconf:
             self.cachedir = calconf.get('system_calcache_dir')
 
@@ -84,8 +84,8 @@ class CachedFileGetter(object):
             return
 
         # Cache is enabled
-        # Is filename in cache?
-        cachefilename = os.path.join(self.cachedir, filename)
+        # Is cachefilename in cache?
+        cachefilename = os.path.join(self.cachedir, os.path.basename(filename))
         if os.path.exists(cachefilename):
             # Does it have the correct md5?
             cachemd5 = generate_md5_digest(cachefilename)
@@ -98,7 +98,7 @@ class CachedFileGetter(object):
                 self.log.debug(f"Cache miss - file exists but wrong md5: "
                                f"{cachemd5=}, {calmd5=}")
         else:
-            self.log.debug(f"Cache miss - {filename} not in cache")
+            self.log.debug(f"Cache miss - {cachefilename} not in cache")
         # Fetch the URL to the cache
         self.log.debug(f"Fetching {url} to cache file {cachefilename}")
         self._fetchurltofile(url, cachefilename)
