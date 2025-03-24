@@ -31,6 +31,24 @@ Interface Modifications
   "interpolant", as described above.
 * Rename the "threshold" parameter in ``transferObjectMask``
   to "dq_threshold", in line with other primitives.
+* The ``force_linear`` boolean parameter of the spectroscopic
+  ``resampleToCommonFrame`` primitive has been deprecated. Use
+  ``output_wave_scale`` instead, with options ``linear`` and ``reference``
+  corresponding to ``force_linear`` values of ``True`` and ``False``,
+  respectively.
+
+Bug fixes
+---------
+
+**geminidr.core**
+
+* ``resampleToCommonFrame(trim_spectral=True)`` did not work as documented.
+  It trimmed the spectral coverage to the extent of the reference (as
+  ``trim_spatial`` works) instead of to the intersection of the spectral
+  coverages of all inputs. This has been corrected.
+* If not resampling the output spectrum, it is required to set
+  ``trim_spectral=True`` to avoid roundtripping errors in the extrapolated
+  wavelength solution.
 
 3.2.3
 =====

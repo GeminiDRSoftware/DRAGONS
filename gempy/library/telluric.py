@@ -97,8 +97,6 @@ class A0Spectrum:
             # to a log scale since convolution, etc. assumes a constant
             # pixel scale across each output pixel and the raw A0 file has
             # jumps in sampling rate every 500nm.
-            # We then resample to the same wavelength array as the telluric
-            # spectra.
             indices = np.logical_and(waves > 300, waves < 6000)
             wtemp = np.geomspace(300, 6000, indices.size, endpoint=True)
             cls._raw_resolution = wtemp[1] / (wtemp[1] - wtemp[0])
@@ -181,6 +179,21 @@ class TelluricSpectrum:
     def variance(self):
         return self.nddata.variance
 
+    def downsample_if_necessary(self, w, t):
+        """
+        Block-resample a spectrum or spectra if the resolution is much
+        higher than that of the science spectrum. This reduces the time
+        taken to perform the convolutions.
+        """
+        min_dw_data = abs(np.diff(self.waves)).min()
+        min_dw_models = abs(np.diff(w[np.logical_and(w > self.waves.min(),
+                                                     w < self.waves.max())])).min()
+        while min_dw_data > min_dw_models * 10:
+            w = w[1:-1:3]
+            t = t[..., :w.size * 3].reshape(*t.shape[:-1], w.size, 3).mean(axis=-1)
+            min_dw_models *= 3
+        return w, t
+
     def set_pca(self, pca_file=None, lsf_params=None):
         """
         Set the PCA model for the telluric absorption. This is a convenience
@@ -192,11 +205,12 @@ class TelluricSpectrum:
         lsf_params: dict
             parameters for the LSF convolution method
         """
-        w_pca, t_pca = TelluricModels.data(in_vacuo=self.in_vacuo, pca_file=pca_file)
+        w_pca, t_pca = self.downsample_if_necessary(
+            *TelluricModels.data(in_vacuo=self.in_vacuo, pca_file=pca_file))
         if lsf_params:
             # We only need an ArrayInterpolator if some of the params have
             # multiple values. Otherwise we might be constructing a model for
-            # telluricCorrect9) from single parameter values, for example.
+            # telluricCorrect() from single parameter values, for example.
             fixed_params, interp_params = {}, {}
             for k, v in lsf_params.items():
                 try:
@@ -240,8 +254,9 @@ class TelluricSpectrum:
         lsf_kwargs: dict
             parameters to be passed to the LSF convolution method
         """
-        int_spectrum = self.lsf.convolve_and_resample(self.waves, w, data,
-                                                      **lsf_kwargs)
+        int_spectrum = self.lsf.convolve_and_resample(
+            self.waves, *self.downsample_if_necessary(w, data),
+            **lsf_kwargs)
         if hasattr(data, 'unit'):
             self.intrinsic_spectrum = int_spectrum * data.unit
         else:

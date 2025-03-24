@@ -16,6 +16,7 @@ import gc
 import pickle
 import warnings
 import weakref
+import re
 
 from copy import deepcopy
 from inspect import isclass, currentframe
@@ -39,8 +40,6 @@ from .gemini.lookups.source_detection import sextractor_dict
 from recipe_system.cal_service import init_calibration_databases
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.config import load_config
-
-import atexit
 # ------------------------------ caches ---------------------------------------
 # Formerly in cal_service/caches.py
 #
@@ -132,11 +131,6 @@ class dormantViewer:
 # ------------------------------------------------------------------------------
 
 
-def cleanup(process):
-    # Function for the atexit registry to kill the ETISubprocess
-    process.terminate()
-
-
 @parameter_override
 @capture_provenance
 class PrimitivesBASE:
@@ -197,6 +191,14 @@ class PrimitivesBASE:
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
         self.user_params      = uparms if isinstance(uparms, dict) else dict(uparms) if uparms else {}
+
+        # remove quotes from string values.  This happens when quotes are used
+        # in the @-file.  The shell removes the quotes automatically.
+        quote_pattern = "^[\"\'](.+)[\"\']$"
+        for key, value in self.user_params.items():
+            if isinstance(value, str):
+                self.user_params[key] = re.sub(quote_pattern, r"\1", value)
+
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict.copy()
@@ -225,7 +227,6 @@ class PrimitivesBASE:
         # previously.
         gc.collect()
         self.eti_subprocess = ETISubprocess()
-        atexit.register(cleanup, self.eti_subprocess)
 
         # Instantiate a dormantViewer(). Only ds9 for now.
         self.viewer = dormantViewer(self, 'ds9')

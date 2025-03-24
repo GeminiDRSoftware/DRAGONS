@@ -9,7 +9,7 @@ import re
 import math
 import datetime
 import dateutil.parser
-from itertools import chain
+from itertools import chain, combinations
 
 import numpy as np
 
@@ -610,50 +610,23 @@ class AstroDataGemini(AstroData):
         return crpa if abs(crpa) <= 360 else None
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units(input_units="um")
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength
 
         Returns
         -------
         float
             The central wavelength setting
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
         # We assume that the central_wavelength keyword is in microns
         keyword = self._keyword_for('central_wavelength')
-        wave_in_microns = self.phu.get(keyword, -1)
-        # Convert to float if they saved it as a string
-        wave_in_microns = float(wave_in_microns) if isinstance(wave_in_microns, str) else wave_in_microns
+        wave_in_microns = float(self.phu.get(keyword, -1))
+
         if wave_in_microns < 0:
             return None
-        return gmu.convert_units('micrometers', wave_in_microns,
-                             output_units)
+        return wave_in_microns
 
     @astro_data_descriptor
     def coadds(self):
@@ -897,57 +870,27 @@ class AstroDataGemini(AstroData):
                                           stripID, pretty)
 
     @astro_data_descriptor
-    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    @gmu.return_requested_units(input_units="m")
+    def dispersion(self):
         """
-        Returns the dispersion in meters per pixel as a list (one value per
+        Returns the dispersion in nm per pixel as a list (one value per
         extension) or a float if used on a single-extension slice.  It is
         possible to control the units of wavelength using the input arguments.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
 
         Returns
         -------
         list/float
-            The dispersion(s)
+            The dispersion(s) in nm
         """
-        if self._keyword_for('dispersion') in self.hdr:
-            dispersion = self.hdr[self._keyword_for('dispersion')]
-
+        keyword = self._keyword_for('dispersion')
+        if keyword in self.hdr:
+            dispersion = self.hdr[keyword]
         elif self._keyword_for('dispersion') in self.phu:
-            dispersion = self.phu[self._keyword_for('dispersion')]
-
-        else:
-            dispersion = None
-
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
-        if dispersion is not None:
-
-            dispersion = gmu.convert_units('meters', dispersion, output_units)
-
+            dispersion = self.phu[keyword]
             if not self.is_single:
                 dispersion = [dispersion] * len(self)
+        else:
+            return None
 
         return dispersion
 
@@ -2176,13 +2119,21 @@ class AstroDataGemini(AstroData):
             if ext.wcs is None:
                 return None
             yc, xc = [0.5 * l for l in ext.shape]
-            ra, dec = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc])[-2:]
-            cosdec = math.cos(dec[0] * np.pi / 180)
-            a = (ra[2] - ra[0]) * cosdec
-            b = (ra[1] - ra[0]) * cosdec
-            c = dec[2] - dec[0]
-            d = dec[1] - dec[0]
-            return 3600 * np.sqrt(abs(a * d - b * c))
+            coords = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc], with_units=True)
+            if isinstance(coords, SkyCoord):  # pure image
+                return np.median([i.separation(j).arcsec
+                                  for i, j in combinations(coords, 2)])
+            for coo in coords:
+                if isinstance(coo, SkyCoord):
+                    # for spectra the dispersion axis won't change the skycoord
+                    return np.median([i.separation(j).arcsec
+                                      for i, j in combinations(coo, 2)])
+                elif coo.unit.is_equivalent(u.rad):
+                    # ARC spectrum with linear axis in arcsec
+                    return np.median([abs((i - j).to(u.arcsec)).value
+                                      for i, j in combinations(coo, 2)])
+            return None
+
 
         if self.is_single:
             try:
@@ -2247,7 +2198,6 @@ class AstroDataGemini(AstroData):
         """
         return self.phu.get(self._keyword_for('prism'))
 
-
     def _raw_to_percentile(self, descriptor, raw_value):
         """
         Parses the Gemini constraint bands, and returns the percentile
@@ -2268,3 +2218,15 @@ class AstroDataGemini(AstroData):
         """
         val = gmu.parse_percentile(raw_value)
         return val
+
+    def actual_central_wavelength(self, *args, **kwargs):
+        """
+        Return the true central wavelength (in the middle of the detector),
+        to avoid messing the descriptor around. We probably want to revisit
+        what "central wavelength" means, but we don't want to upset the
+        archive.
+
+        This is not a descriptor. The args/kwargs accept whatever unit
+        information central_wavelength() can handle.
+        """
+        return self.central_wavelength(*args, **kwargs)

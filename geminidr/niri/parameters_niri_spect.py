@@ -5,11 +5,18 @@ from astrodata import AstroData
 from gempy.library import config
 from geminidr.core import parameters_spect
 from geminidr.core import parameters_preprocess
+from . import parameters_niri
 
 
 def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
     return True
+
+
+class associateSkyConfig(parameters_niri.associateSkyConfig):
+    def setDefaults(self):
+        self.min_skies = 2
+
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     def setDefaults(self):
@@ -17,6 +24,7 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
         self.min_snr = 10
         self.max_missed = 5
         self.debug_reject_bad = False
+
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     def setDefaults(self):
@@ -30,6 +38,8 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
                                             "median": "median",
                                             "optimal" : "auto-select depending on the mode"},
                                    default="optimal")
+
+
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):
         self.scale_sky = False #MS: IF for whatever reason the exposure times are different between frames being subtracted, that case may require a special treatment

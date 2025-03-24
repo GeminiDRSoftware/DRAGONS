@@ -22,37 +22,46 @@ datasets = {
         "arcs": ['N20121212S0231_arc.fits'],
         "flats": [f'N20121212S{i:04d}.fits' for i in range(233, 238)],
         "sci":  [f"N20121212S{i:04d}.fits" for i in range(242, 246)],
-        "user_pars": []
+        "user_pars": {("telluricCorrect:do_cal", "skip"),
+                      ("fluxCalibrate:do_cal", "skip")}
         },
     "GN-2017A-Q-87-284": {
         "arcs": ['N20170609S0136_arc.fits'],
         "flats": [f'N20170609S{i:04d}.fits' for i in range(131, 136)],
         "sci":  [f"N20170609S{i:04d}.fits" for i in range(127, 131)],
-        "user_pars": []
+        "user_pars": {("telluricCorrect:do_cal", "skip"),
+                      ("fluxCalibrate:do_cal", "skip")}
         },
     "GN-2017B-Q-85-216": {
         "arcs": ['N20180201S0065_arc.fits'],
         "flats": [f'N20180201S{i:04d}.fits' for i in range(60, 66)],
         "sci":  [f"N20180201S{i:04d}.fits" for i in range(52, 56)],
-        "user_pars": []
+        "user_pars": {("telluricCorrect:do_cal", "skip"),
+                      ("fluxCalibrate:do_cal", "skip")}
         },
     "GN-2017B-Q-81-99": {
         "arcs": ['N20180114S0121_arc.fits'],
         "flats": [f'N20180114S{i:04d}.fits' for i in range(125, 133)],
         "sci":  [f"N20180114S{i:04d}.fits" for i in range(121, 125)],
-        "user_pars": []
+        "user_pars": {("telluricCorrect:do_cal", "skip"),
+                      ("fluxCalibrate:do_cal", "skip")}
         },
     "GN-2019A-FT-207-46": {
         "arcs": ['N20190410S0212_arc.fits'],
         "flats": [f'N20190410S{i:04d}.fits' for i in range(220, 228)],
         "sci":  [f"N20190410S{i:04d}.fits" for i in range(212, 216)],
-        "user_pars": []
+        "user_pars": {("telluricCorrect:do_cal", "skip"),
+                      ("fluxCalibrate:do_cal", "skip")}
         },
     "GN-2020A-Q-227-36": {
-        "arcs": ['N20200707S0097_arc.fits'],
+        "bpm": ['bpm_20121101_gnirs_gnirsn_11_full_1amp.fits'],
+        "arcs": ['N20200707S0097_arc.fits'], #makeWavecalFromSkyEmission
         "flats": [f'N20200707S{i:04d}.fits' for i in range(101, 111)],
+        "telluric": ['N20200707S0086.fits'],  # T=8600, K=7.296
+        "standard": ['N20200707S0086.fits'],
         "sci":  [f'N20200707S{i:04d}.fits' for i in range(97, 101)],
-        "user_pars": []
+        "user_pars": {("telluricCorrect:do_cal", "skip"),
+                      ("fluxCalibrate:do_cal", "skip")}
         }
     }
 
@@ -81,6 +90,11 @@ def test_reduce_ls_spect(path_to_inputs, path_to_refs, change_working_dir,
 
         cals = []
 
+        # # Add the bpm
+        # bpm_filename = datasets[test_case]["bpm"]
+        # bpm_path = os.path.join(path_to_inputs, bpm_filename[0])
+        # cals.append(f'processed_bpm:{bpm_path}')
+
         # Reducing flats
         flat_filenames = datasets[test_case]["flats"]
         flat_paths = [download_from_archive(f) for f in flat_filenames]
@@ -90,6 +104,16 @@ def test_reduce_ls_spect(path_to_inputs, path_to_refs, change_working_dir,
         arcs_filenames = datasets[test_case]["arcs"]
         arcs_paths = os.path.join(path_to_inputs, arcs_filenames[0])
         cals.append(f'processed_arc:{arcs_paths}')
+
+        # # Add the telluric
+        # telluric_filename = datasets[test_case]["telluric"]
+        # telluric_path = os.path.join(path_to_inputs, telluric_filename[0])
+        # cals.append(f'processed_telluric:{telluric_path}')
+        #
+        # # Add the flux standard
+        # std_filename = datasets[test_case]["standard"]
+        # std_path = os.path.join(path_to_inputs, std_filename[0])
+        # cals.append(f'processed_standard:{std_path}')
 
         # Reducing science frames
         sci_filenames = datasets[test_case]["sci"]

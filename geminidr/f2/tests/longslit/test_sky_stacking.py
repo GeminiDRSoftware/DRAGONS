@@ -95,7 +95,7 @@ def test_associate_sky_quasi_abcde():
     p = F2Longslit(data)
     p.prepare()
     p.separateSky()
-    p.associateSky()
+    p.associateSky(min_skies=3)
 
     assert set(p.showList()[0].SKYTABLE['SKYNAME']) == set([
                                         'S20210515S0197_skyAssociated.fits',

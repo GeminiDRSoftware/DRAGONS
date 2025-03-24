@@ -28,41 +28,16 @@ class AstroDataTrecs(AstroDataGemini):
             return TagSet(['SPECT'])
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units(input_units="um")
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength in microns
 
         Returns
         -------
         float
             The central wavelength setting
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
         disperser = self.disperser()
         if disperser is None:
             return None
@@ -74,7 +49,7 @@ class AstroDataTrecs(AstroDataGemini):
             wave_in_microns = self.phu.get('HRCENWL')
         else:
             return None
-        return gmu.convert_units('micrometers', wave_in_microns, output_units)
+        return wave_in_microns
 
     @astro_data_descriptor
     def detector_x_offset(self):
@@ -109,44 +84,18 @@ class AstroDataTrecs(AstroDataGemini):
             return None
 
     @astro_data_descriptor
-    def dispersion(self, asMicrometers=False, asNanometers=False,
-                   asAngstroms=False):
+    @gmu.return_requested_units(input_units="um")
+    def dispersion(self):
         """
-        Returns the dispersion in meters per pixel as a list (one value per
+        Returns the dispersion in microns per pixel as a list (one value per
         extension) or a float if used on a single-extension slice.  It is
         possible to control the units of wavelength using the input arguments.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
 
         Returns
         -------
         list/float
             The dispersion(s)
         """
-        # Look for the relevant, which we assume is in meters per pixel
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
         disperser = self.disperser()
         if disperser == 'LowRes-10':
             dispersion = 0.022
@@ -155,8 +104,8 @@ class AstroDataTrecs(AstroDataGemini):
         elif disperser.startswith('HighRes-10'):
             dispersion = 0.0019
         else:
-            dispersion = None
-        return gmu.convert_units('micrometers', dispersion, output_units)
+            return None
+        return dispersion
 
     @returns_list
     @astro_data_descriptor

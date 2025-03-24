@@ -8,10 +8,8 @@ import os
 
 from importlib import import_module
 
-from geminidr.core import Spect
-from gemini_instruments import gmu
-from gempy.gemini import gemini_tools as gt
-from gempy.library import transform, wavecal
+from geminidr.core import Telluric
+from gempy.library import wavecal
 from gemini_instruments.niri import lookup
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -21,7 +19,7 @@ from . import parameters_niri_spect
 
 @parameter_override
 @capture_provenance
-class NIRISpect(Spect, NIRI):
+class NIRISpect(Telluric, NIRI):
     """
     This is the class containing all of the preprocessing primitives for the
     NIRISpect level of the hierarchy tree. It inherits all the primitives from
@@ -43,27 +41,10 @@ class NIRISpect(Spect, NIRI):
         ----------
         suffix: str/None
             suffix to be added to output files
-
         """
-        log = self.log
-        timestamp_key = self.timestamp_keys[self.myself()]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
         super().standardizeWCS(adinputs, **params)
-
         for ad in adinputs:
-            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-            # For NIRI wavelength at central pixel doesn't match the descriptor value
-            cenwave = self._get_actual_cenwave(ad, asNanometers=True)
-            # NIRI's dispersion and spatial axis have the same length.
-            # Different square-shaped ROIs can be used, all centered on the array.
-            dispersion_axis = 2 - ad[0].dispersion_axis()
-            npix = ad[0].shape[1 - dispersion_axis]
-            center = 0.5 * (npix - 1)
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave,
-                                       pointing=ad[0].wcs(center, center))
-
-            # Timestamp. Suffix was updated in the super() call
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            self._add_longslit_wcs(ad, pointing="center")
         return adinputs
 
     def determineWavelengthSolution(self, adinputs=None, **params):
@@ -192,24 +173,29 @@ class NIRISpect(Spect, NIRI):
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
 
-    def _get_arc_linelist(self, ext, waves=None):
+    def _get_linelist(self, wave_model=None, ext=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
                                                    self.inst_lookups).__file__)
         if 'ARC' in ext.tags:
             if 'Xe' in ext.object():
-                linelist ='Ar_Xe.dat'
+                filename ='Ar_Xe.dat'
             elif "Ar" in ext.object():
-                linelist = 'argon.dat'
+                filename = 'argon.dat'
             else:
                 raise ValueError(f"No default line list found for {ext.object()}-type arc. Please provide a line list.")
+        elif config.get("absorption", False) or wave_model.c0 > 2800:
+                return self._get_atran_linelist(wave_model=wave_model, ext=ext, config=config)
         else:
-            # In case of wavecal from sky OH emission use these line lists:
-            linelist = 'nearIRsky.dat'
+            # In case of wavecal from sky OH emission use this line list
+            filename = 'nearIRsky.dat'
 
-        self.log.stdinfo(f"Using linelist {linelist}")
-        filename = os.path.join(lookup_dir, linelist)
+        self.log.stdinfo(f"Using linelist {filename}")
+        linelist = wavecal.LineList(os.path.join(lookup_dir, filename))
+        if 'ARC' not in ext.tags:
+            # Attach a synthetic sky spectrum if using sky lines or absorption
+            linelist.reference_spectrum = self._get_sky_spectrum(wave_model, ext)
 
-        return wavecal.LineList(filename)
+        return linelist
 
     def _get_resolution(self, ad):
         # For NIRI actual resolving power values are much lower than
@@ -225,31 +211,3 @@ class NIRISpect(Spect, NIRI):
         except KeyError:
             return None
         return resolution
-
-    def _get_actual_cenwave(self, ext, asMicrometers=False, asNanometers=False, asAngstroms=False):
-        # For NIRI wavelength at central pixel doesn't match the descriptor value
-
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        output_units = "meters" # By default
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        camera = ext.camera()
-        try:
-            disperser = ext.disperser(stripID=True)[0:6]
-        except TypeError:
-            disperser = None
-        fpmask = ext.focal_plane_mask(stripID=True)
-        try:
-            cenwave = lookup.spec_wavelengths[camera, fpmask, disperser][1]
-        except KeyError:
-            return None
-        actual_cenwave = gmu.convert_units('nanometers', cenwave, output_units)
-
-        return actual_cenwave

@@ -5,6 +5,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from specutils import Spectrum1D, SpectralRegion
 from astropy import units as u
+from astropy.coordinates import SpectralCoord
 from astropy.nddata import NDData, NDDataRef
 import numpy as np
 from astropy.modeling import models
@@ -169,7 +170,7 @@ class Spek1D(AstroDataMixin, NDDataRef):
             else:
                 # Convert to the correct units
                 wave = loc.to(self.spectral_axis.unit, u.spectral())
-                loc_in_pix = self.wcs.world_to_pixel(wave)
+                loc_in_pix = self.wcs.world_to_pixel(SpectralCoord(wave))
             if constrain:
                 loc_in_pix = min(max(loc_in_pix, -0.5), len(self.spectral_axis)-0.5)
             limits.append(float(loc_in_pix))

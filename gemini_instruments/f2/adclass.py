@@ -1,6 +1,8 @@
 import re
 import math
 
+import numpy as np
+
 from astrodata import (astro_data_tag, TagSet, astro_data_descriptor,
                        returns_list, Section)
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
@@ -164,63 +166,32 @@ class AstroDataF2(AstroDataGemini):
         return self._may_remove_component(camera, stripID, pretty)
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units()
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-        For F2, central wavelength is specified for the middle of the
-        grism + filter transmission window, not for the central row.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength in nm
 
         Returns
         -------
         float
             The central wavelength setting
-
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
-        central_wavelength = float(self.phu['WAVELENG'])
+        central_wavelength = float(self.phu['WAVELENG']) * 0.1
 
         filter = self.filter_name(keepID=True)
         # Header value for this filter in early data is incorrect:
         if filter == 'K-long_G0812':
-            central_wavelength = 22000
+            central_wavelength = 2200.0
         # The new JH_G0816 and HK_G0817 filters were installed in 2022, but their
         #  WAVELENG header keywords weren't simultaneously updated, thus the correction.
         if filter == "JH_G0816":
-                central_wavelength = 13385
+                central_wavelength = 1338.5
         if filter == "HK_G0817":
-                central_wavelength = 19000
+                central_wavelength = 1900.0
 
         if central_wavelength < 0.0:
             return None
-
-        else:
-            return gmu.convert_units('angstroms', central_wavelength,
-                                     output_units)
+        return central_wavelength
 
     @astro_data_descriptor
     def data_section(self, pretty=False):
@@ -333,20 +304,12 @@ class AstroDataF2(AstroDataGemini):
         return -offset if self.phu.get('INPORT') == 1 else offset
 
     @astro_data_descriptor
-    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    @gmu.return_requested_units()
+    def dispersion(self):
         """
-        Returns the dispersion in meters per pixel as a list (one value per
+        Returns the dispersion in nm per pixel as a list (one value per
         extension) or a float if used on a single-extension slice. It is
         possible to control the units of wavelength using the input arguments.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
 
         Returns
         -------
@@ -359,22 +322,7 @@ class AstroDataF2(AstroDataGemini):
         mask = dispersion_offset_mask.get(config, None)
         dispersion = float(mask.dispersion if mask else None)
 
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        output_units = "meters" # By default
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-
-        if dispersion is not None:
-            dispersion = gmu.convert_units('nanometers', dispersion, output_units)
-
-            if not self.is_single:
+        if dispersion is not None and not self.is_single:
                 dispersion = [dispersion] * len(self)
 
         return dispersion
@@ -663,19 +611,8 @@ class AstroDataF2(AstroDataGemini):
 
     @astro_data_descriptor
     def pixel_scale(self):
-        """
-        Returns the image scale in arcseconds per pixel
-
-        Returns
-        -------
-        float
-            pixel scale
-        """
-        # Try to use the Gemini-level helper method
-        if 'PREPARED' in self.tags:
-            return self._get_wcs_pixel_scale() or self.phu.get('PIXSCALE')
-        else:
-            return self.phu.get('PIXSCALE')
+        pix_scale = super().pixel_scale()
+        return pix_scale or self.phu['PIXSCALE']
 
     @astro_data_descriptor
     def position_angle(self):
@@ -815,3 +752,13 @@ class AstroDataF2(AstroDataGemini):
     #         ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
     #
     #     return {'lon': ra, 'lat': dec}
+
+    @gmu.return_requested_units(input_units="nm")
+    def actual_central_wavelength(self):
+        index = (self.disperser(pretty=True), self.filter_name(keepID=True))
+        mask = dispersion_offset_mask[index]
+        disp = (self.dispersion(asNanometers=True) if self.is_single else
+                self.dispersion(asNanometers=True)[0])
+        actual_cenwave = (self.central_wavelength(asNanometers=True) -
+                          disp * mask.cenwaveoffset)
+        return np.float32(actual_cenwave)

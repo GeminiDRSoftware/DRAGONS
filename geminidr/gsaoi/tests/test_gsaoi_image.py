@@ -61,9 +61,11 @@ def test_gsaoi_resample_to_refcat(path_to_inputs, adinputs):
     refcoords = ad[0].wcs.invert(t['RAJ2000'].data, t['DEJ2000'].data)
     t = matching.find_alignment_transform(incoords, refcoords, rotate=True, scale=True)
     assert ad[0].shape == (4219, 4226)
+    # Check magnification/rotation is small and doesn't move center of image
     assert_allclose(t.factor_0, 1, atol=1e-3)
     assert_allclose(t.angle_1, 0, atol=0.01)
-    assert_allclose(t.parameters[2:], 0, atol=0.07)
+    center_xy = [0.5 * (length - 1) for length in ad[0].shape[::-1]]
+    assert_allclose(t(*center_xy), center_xy, atol=0.2)
 
 
 @pytest.fixture(scope="function")

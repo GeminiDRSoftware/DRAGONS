@@ -38,7 +38,42 @@ def reduceScience(p):
     p.traceApertures()
     p.storeProcessedScience(suffix="_2D")
     p.extractSpectra()
+    p.telluricCorrect()
+    p.fluxCalibrate()
     p.storeProcessedScience(suffix="_1D")
+
+
+def reduceTelluric(p):
+    """
+    todo: add docstring
+
+    Parameters
+    ----------
+    p : :class:`geminidr.gnirs.primitives_gnirs_longslit.GNIRSLongslit`
+
+    """
+    p.prepare()
+    p.addDQ()
+    # p.nonlinearityCorrect() # non-linearity correction tbd
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True, read_noise=True)
+    p.flatCorrect()
+    p.attachWavelengthSolution()
+    p.adjustWavelengthZeroPoint()
+    p.separateSky()
+    p.associateSky()
+    p.skyCorrect()
+    p.cleanReadout()
+    p.distortionCorrect()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames()
+    p.findApertures(max_apertures=1)
+    p.skyCorrectFromSlit()
+    p.traceApertures()
+    p.extractSpectra()
+    p.fitTelluric()
+    p.storeProcessedTelluric()
 
 
 def  makeWavecalFromSkyEmission(p):
@@ -87,7 +122,7 @@ def  makeWavecalFromSkyAbsorption(p):
     p.cleanReadout()
     p.distortionCorrect()
     p.adjustWCSToReference()
-    p.resampleToCommonFrame(force_linear=False)
+    p.resampleToCommonFrame(output_wave_scale='reference', trim_spectral=True)
     #p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()

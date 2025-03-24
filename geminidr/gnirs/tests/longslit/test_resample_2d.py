@@ -34,27 +34,12 @@ def test_resample_to_common_frame_with_defaults(input_ad_list, path_to_refs,
                                                 caplog):
     p = GNIRSLongslit(input_ad_list)
     p.resampleToCommonFrame(trim_spatial=True, trim_spectral=False,
-                            force_linear=True)
+                            output_wave_scale="linear")
     ad_out = p.stackFrames()[0]
-    _check_params(caplog.records, 'w1=1525.037 w2=1806.015 dw=0.139 npix=2028')
+    _check_params(caplog.records, 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029')
     assert 'ALIGN' in ad_out[0].phu
     ref = astrodata.open(os.path.join(path_to_refs,
                                       'N20240329S0022_stack_defaults.fits'))
-
-    np.testing.assert_allclose(ad_out[0].data, ref[0].data)
-
-@pytest.mark.gnirsls
-@pytest.mark.preprocessed_data
-def test_resample_to_common_frame_nonlinear(input_ad_list, path_to_refs,
-                                            caplog):
-    p = GNIRSLongslit(input_ad_list)
-    p.resampleToCommonFrame(trim_spatial=True, trim_spectral=False,
-                            force_linear=False)
-    ad_out = p.stackFrames()[0]
-    _check_params(caplog.records, 'w1=1525.037 w2=1806.015 dw=0.135 npix=2083')
-    assert 'ALIGN' in ad_out[0].phu
-    ref = astrodata.open(os.path.join(path_to_refs,
-                                      'N20240329S0022_stack_force_linear_False.fits'))
 
     np.testing.assert_allclose(ad_out[0].data, ref[0].data)
 
@@ -64,9 +49,9 @@ def test_resample_to_common_frame_trim_spectral(input_ad_list, path_to_refs,
                                                 caplog):
     p = GNIRSLongslit(input_ad_list)
     p.resampleToCommonFrame(trim_spatial=True, trim_spectral=True,
-                            force_linear=True)
+                            output_wave_scale="linear")
     ad_out = p.stackFrames()[0]
-    _check_params(caplog.records, 'w1=1525.037 w2=1666.576 dw=0.139 npix=1022')
+    _check_params(caplog.records, 'w1=1664.096 w2=1666.589 dw=0.138 npix=19')
     assert 'ALIGN' in ad_out[0].phu
     ref = astrodata.open(os.path.join(path_to_refs,
                                       'N20240329S0022_stack_trim_spectral_True.fits'))
@@ -79,9 +64,10 @@ def test_resample_to_common_frame_trim_spatial(input_ad_list, path_to_refs,
                                                 caplog):
     p = GNIRSLongslit(input_ad_list)
     p.resampleToCommonFrame(trim_spatial=False, trim_spectral=False,
-                            force_linear=True)
+                            output_wave_scale="linear")
     ad_out = p.stackFrames()[0]
-    _check_params(caplog.records, 'w1=1525.037 w2=1806.015 dw=0.139 npix=2028')
+    # This should be the same as test_resample_to_common_frame_with_defaults()
+    _check_params(caplog.records, 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029')
     assert 'ALIGN' in ad_out[0].phu
     ref = astrodata.open(os.path.join(path_to_refs,
                                       'N20240329S0022_stack_trim_spatial_False.fits'))
