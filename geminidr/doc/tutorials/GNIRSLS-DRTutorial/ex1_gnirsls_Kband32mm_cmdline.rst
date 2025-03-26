@@ -310,8 +310,8 @@ Science Observations
 ====================
 The science target is a white dwarf with an M dwarf companion.  The sequence
 is one ABBA dither pattern. DRAGONS will flatfield, wavelength calibrate,
-subtract the sky, stack the aligned spectra, extract the source, and finally remove telluric features and
-flux calibrate.
+subtract the sky, stack the aligned spectra, extract the source, and finally
+remove telluric features and flux calibrate.
 
 Following the wavelength calibration, the default recipe has an optional
 step to adjust the wavelength zero point using the sky lines.  By default,

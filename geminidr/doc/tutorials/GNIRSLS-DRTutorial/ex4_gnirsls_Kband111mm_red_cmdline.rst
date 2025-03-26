@@ -1,4 +1,4 @@
-.. ex4_gnirsls_Kband111mm_red_dataset.rst
+.. ex4_gnirsls_Kband111mm_red_cmdline.rst
 
 .. include:: symbols.txt
 
@@ -288,8 +288,6 @@ Zooming in on the sky lines, we can better spot discrepancies, if any.
 .. image:: _graphics/gnirsls_Kband111mm_red_tellmatch.png
    :width: 600
    :alt: Correct sky lines identification
-
-
 
 
 Telluric Standard
