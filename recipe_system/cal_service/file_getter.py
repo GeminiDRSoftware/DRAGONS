@@ -61,12 +61,12 @@ class CachedFileGetter(object):
                     fp.write(chunk)
             except HTTPError as err:
                 raise GetterError(
-                    ["Could not retrieve {}".format(url), str(err)])
+                    ["Could not retrieve {}".format(url), str(err)]) from err
             except ConnectionError as err:
                 raise GetterError(
-                    ["Unable to connect to url {}".format(url), str(err)])
+                    ["Unable to connect to url {}".format(url), str(err)]) from err
             except Timeout as terr:
-                raise GetterError(["Request timed out", str(terr)])
+                raise GetterError(["Request timed out", str(terr)]) from terr
 
     def get_request(self, url, filename, calmd5):
         # This replaces the old calrequestlib.get_request() function
