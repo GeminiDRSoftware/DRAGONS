@@ -106,10 +106,6 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
         #
         # The reconstruct_points() method will build a new intrinsic_spectrum
         # (which isn't instantaneous) do we don't want to call that
-        #
-        # Because I'm not touching the core DRAGONS code, I have to do some
-        # updates here (e.g., of the mask) that could normally be done by
-        # the listener
         vis = self.visualizer
 
         # This prevents the code trying to re-fit when we update the fitting
@@ -430,6 +426,7 @@ class TelluricVisualizer(Fit1DVisualizer):
                          **kwargs, panel_class=TelluricPanel,
                          help_text=TELLURIC_CORRECT_HELP_TEXT,
                          turbo_tabs=True,
+                         reinit_live=False,
                          mask_glyphs={"stellar": ("inverted_triangle", "red")}
                          )
         self.reconstruct_points_fn = tcal.reconstruct_points
@@ -489,6 +486,24 @@ class TelluricVisualizer(Fit1DVisualizer):
             self.ui_params.values[lsf_param] = getattr(self.fitted_model, lsf_param).value
         # Ensures that the calibrator knows the lsf_scaling params have been set
         self.calibrator.set_fitting_params(self.ui_params)
+
+    def reset_reinit_panel(self, param=None):
+        """
+        Reset all the parameters in the Tracing TabPanel (leftmost column).
+        If a param is provided, it resets only this parameter in particular.
+        A class-specific method is required here because the widgets in the
+        reinit panel have immediate callbacks sto refit the data that would be
+        called, leading to multiple fits.
+
+        Parameters
+        ----------
+        param : str
+            Parameter name
+        """
+        self.actively_fitting = True
+        super().reset_reinit_panel(param=param)
+        self.actively_fitting = False
+        self.reconstruct_points()
 
     def rescale_intrinsic_spectrum(self, old, new):
         """
@@ -553,11 +568,12 @@ class TelluricVisualizer(Fit1DVisualizer):
             # This actually performs all the fits
             self.fits[0].perform_fit()
 
-            # We don't need (or want) to do this since perform_fit() does it
-            # and will unblock the GUI
-            #self.modal_widget.disabled = False
+            # The lsf_params may be updated from "None" to their new values
+            # which will trigger a callback if we don't suppress it
+            self.actively_fitting = True
             for pnl in self.panels:
                 pnl.reset_view()
+            self.actively_fitting = False
 
         self.do_later(fn)
 

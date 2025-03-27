@@ -167,6 +167,7 @@ class TelluricCalibrator(Calibrator):
         return [tspek.mask.astype(bool) for tspek in self.spectra]
 
     def reconstruct_points(self, *args, **kwargs):
+        print("TelluricCalibrator.reconstruct_points()")
         print("REINIT", self.reinit_params)
         magnitude = self.reinit_params["magnitude"]
         w0, f0 = at.Magnitude(magnitude, abmag=self.reinit_params["abmag"]).properties()
@@ -213,6 +214,7 @@ class TelluricCalibrator(Calibrator):
             points masked in the fit
         """
         # Extract the fitting parameters for this panel
+        print("TelluricCalibrator.perform_fit()")
         params = {k: v[index] for k, v in self.fit_params.items()}
 
         # Start by updating fitting parameters to the value in the
@@ -225,6 +227,7 @@ class TelluricCalibrator(Calibrator):
 
     def perform_all_fits(self, sigma_clipping=None):
         """"""
+        print("")
         print("CALIBRATOR.PERFORM"+"-"*40)
         data = self.concatenate('data')
         mask = self.concatenate('mask').astype(bool)
@@ -289,6 +292,8 @@ class TelluricCalibrator(Calibrator):
             tspek.nddata.mask = orig_mask
 
         m_final.update_individual_models()
+        print("UDPATED MODELS")
+        print("")
         return m_final, new_mask
 
     # Methods above should be common to all classes
