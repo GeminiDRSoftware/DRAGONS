@@ -7,27 +7,18 @@ import hashlib
 
 from gempy.utils import logutils
 
-# GetterError is needed by a module that imports this one
-from .file_getter import get_file_iterator, GetterError
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 # Currently delivers transport_request.calibration_search fn.
 #calibration_search = cal_search_factory()
 # ------------------------------------------------------------------------------
-def get_request(url, filename):
-    iterator = get_file_iterator(url)
-    with open(filename, 'wb') as fd:
-        for chunk in iterator:
-            fd.write(chunk)
-    return filename
 
 
 def generate_md5_digest(filename):
-    md5 = hashlib.md5()
-    fdata = open(filename, 'rb').read()
-    md5.update(fdata)
-    return md5.hexdigest()
+    with open(filename, 'rb') as f:
+        digest = hashlib.file_digest(f, "md5")
+    return digest.hexdigest()
 
 
 class CalibrationRequest:
