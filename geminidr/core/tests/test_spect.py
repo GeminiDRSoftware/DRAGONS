@@ -392,15 +392,19 @@ def test_sky_correct_from_slit_with_multiple_sources():
 @pytest.mark.parametrize('in_shift', [0, -1.2, 2.75])
 def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
                                             path_to_inputs):
+    """Apply a shift and confirm that the WCS has changed correctly"""
     with change_working_dir(path_to_inputs):
         ad = astrodata.open('N20220706S0337_wavelengthSolutionAttached.fits')
 
+    dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
+    pixels = np.arange(ad[0].shape[dispaxis])
+    waves = ad[0].wcs(ad[0].shape[1 - dispaxis] // 2, pixels)[0]
+
     p = GNIRSLongslit([ad])
     ad_out = p.adjustWavelengthZeroPoint(shift=in_shift).pop()
-    transform = ad_out[0].wcs.get_transform('pixels',
-                                            'wavelength_scale_adjusted')
-    shift = getattr(transform, 'offset_1')
-    assert shift == pytest.approx(in_shift)
+    new_waves = ad_out[0].wcs(ad[0].shape[1 - dispaxis] // 2,
+                              pixels - in_shift)[0]
+    np.testing.assert_allclose(waves, new_waves)
 
 
 @pytest.mark.preprocessed_data
@@ -482,7 +486,7 @@ def test_adjust_wavelength_zero_point_controlled(filename, center, shift,
 
     ad = astrodata.open(os.path.join(path_to_inputs,
                                      filename + '_wavelengthSolutionAttached.fits'))
-    p = GNIRSLongslit([ad])
+    p = classes_dict[ad.instrument()]([ad])
 
     dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
     ad[0].data = np.roll(ad[0].data, -shift, axis=dispaxis)
