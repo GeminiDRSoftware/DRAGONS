@@ -711,6 +711,7 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
 
     return model, m_final, m_inverse
 
+
 def get_named_submodel(model, name):
     """
     Extracts a named submodel from a CompoundModel. astropy allows
@@ -745,3 +746,32 @@ def get_named_submodel(model, name):
         raise IndexError("Multiple components found using '{}' as name\n"
                          "at indices {}".format(name, found))
     return model[found[0]]
+
+
+def replace_submodel_in_gwcs(wcs, name, model):
+    """
+    This replaces a named submodel in a gWCS object with a new model,
+    maintaining the overall pipeline.
+
+    Parameters
+    ----------
+    wcs: `gwcs.wcs.WCS`
+        the gWCS object to be modified
+    name: str
+        name of the model to be replaced
+    model: `astropy.modeling.Model`
+        model instance to insert in place of the named model
+
+    Returns
+    -------
+    `gwcs.wcs.WCS`: modified gWCS object
+    """
+    new_pipeline = []
+    for step in wcs.pipeline:
+        try:
+            new_transform = step.transform.replace_submodel(name, model)
+        except (AttributeError, ValueError):  # AttrError if transform is None
+            new_pipeline.append(step)
+        else:
+            new_pipeline.append((step.frame, new_transform))
+    return wcs.__class__(new_pipeline)
