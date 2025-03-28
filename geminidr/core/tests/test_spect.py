@@ -489,12 +489,16 @@ def test_adjust_wavelength_zero_point_controlled(filename, center, shift,
     p = classes_dict[ad.instrument()]([ad])
 
     dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
+    pixels = np.arange(ad[0].shape[dispaxis])
+    waves = ad[0].wcs([center] * pixels.size, pixels)[0]
+    dw = abs(np.diff(waves)).mean()
+
+    dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
     ad[0].data = np.roll(ad[0].data, -shift, axis=dispaxis)
     ad_out = p.adjustWavelengthZeroPoint(center=center, shift=None).pop()
 
-    m_flex = ad_out[0].wcs.get_transform('pixels', 'wavelength_scale_adjusted')
-    measured_shift = getattr(m_flex, f'offset_{1 - dispaxis}')
-    assert measured_shift == pytest.approx(shift, abs=0.1)
+    new_waves = ad_out[0].wcs([center] * pixels.size, pixels - shift)[0]
+    np.testing.assert_allclose(waves, new_waves, atol=0.1*dw)
 
 
 @pytest.mark.preprocessed_data
