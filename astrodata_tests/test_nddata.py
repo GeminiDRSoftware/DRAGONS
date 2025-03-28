@@ -126,6 +126,9 @@ def test_wcs_slicing():
     out_frame = Frame2D(name="out_frame")
     nd.wcs = gWCS([(in_frame, models.Identity(2)),
                    (out_frame, None)])
+    # Because of gWcs 0.24.0 issue #558
+    nd.wcs = gWCS([(in_frame, models.Shift(0) & models.Shift(0)),
+                   (out_frame, None)])
     assert nd.wcs(10, 10) == (10, 10)
     assert nd[10:].wcs(10, 10) == (10, 20)
     assert nd[..., 10:].wcs(10, 10) == (20, 10)
