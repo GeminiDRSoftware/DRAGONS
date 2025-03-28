@@ -284,16 +284,14 @@ class PrimitiveVisualizer(ABC):
 
             self.widgets[fname].update(**kwargs)
 
-            # This code is called when reinit_live has been set to False
-            # (to avoid repeated callbacks) so won't actually do anything
-            # # Update Text Field via callback function
-            # values = self.widgets[fname]._callbacks.get("value", [])
-            # for callback in values:
-            #     callback("value", old=old, new=reset_value)
-            #
-            # throt = self.widgets[fname]._callbacks.get("value_throttled", [])
-            # for callback in throt:
-            #     callback(attrib="value_throttled", old=old, new=reset_value)
+            # Update Text Field via callback function
+            values = self.widgets[fname]._callbacks.get("value", [])
+            for callback in values:
+                callback("value", old=old, new=reset_value)
+
+            throt = self.widgets[fname]._callbacks.get("value_throttled", [])
+            for callback in throt:
+                callback(attrib="value_throttled", old=old, new=reset_value)
 
     def build_reset_button(self, extra_handler_fn=None):
         reset_reinit_button = bm.Button(
