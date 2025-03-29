@@ -397,13 +397,13 @@ def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
         ad = astrodata.open('N20220706S0337_wavelengthSolutionAttached.fits')
 
     dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
+    center = ad[0].shape[1 - dispaxis] // 2
     pixels = np.arange(ad[0].shape[dispaxis])
-    waves = ad[0].wcs(ad[0].shape[1 - dispaxis] // 2, pixels)[0]
+    waves = ad[0].wcs([center] * pixels.size, pixels)[0]
 
     p = GNIRSLongslit([ad])
     ad_out = p.adjustWavelengthZeroPoint(shift=in_shift).pop()
-    new_waves = ad_out[0].wcs(ad[0].shape[1 - dispaxis] // 2,
-                              pixels - in_shift)[0]
+    new_waves = ad_out[0].wcs([center] * pixels.size, pixels - in_shift)[0]
     np.testing.assert_allclose(waves, new_waves)
 
 
