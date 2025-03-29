@@ -110,39 +110,24 @@ class Spect(Resample):
             Print additional information on the fitting process.
         """
 
-        def _add_shift_model_to_wcs(shift, dispaxis, ext):
-            """ Create a model to shift the wavelength scale by and add to WCS
-
-            This function creates a compound model of two Shift models in
-            parallel, with the one in the `dispaxis` direction getting the value
-            of `shift`. This allows the resulting compound model to applied to
-            a WCS without any special handling for different spectral axis
-            orientations.
+        def _add_shift_model_to_wcs(shift, ext):
+            """
+            Modify the wavelength model by prepending a pixel shift
 
             Parameters
             ----------
             shift : float
-                The shift to apply, in pixels (will be converted to wavelength)
-            dispaxis : int, 0 or 1
-                The dispersion axis, in the Python sense
+                The shift to apply, in pixels
             ext : Astrodata extension
                 The extension to apply the shift to.
             """
-            dx, dy = 0, 0
-            if dispaxis == 0:
-                dy = shift
-            elif dispaxis == 1:
-                dx = shift
-            else:
-                raise ValueError("'dispaxis' must be 0 (vertical) or "
-                                 "1 (horizontal)")
-
-            # This should work for both orientations without having to code
-            # them separately.
-            model = models.Shift(dx) & models.Shift(dy)
-            model.name = 'FLEXCORR'
-            ext.wcs.insert_frame(ext.wcs.input_frame, model,
-                                 cf.Frame2D(name="wavelength_scale_adjusted"))
+            if shift:
+                wave_model = ext.wcs.forward_transform['WAVE'].copy()
+                wave_model.name = None
+                new_wave_model = (models.Shift(shift) | wave_model)
+                new_wave_model.name = "WAVE"
+                ext.wcs = am.replace_submodel_in_gwcs(ext.wcs, "WAVE",
+                                                      new_wave_model)
 
         # Set up log
         log = self.log
@@ -179,7 +164,7 @@ class Spect(Resample):
                     else:
                         msg = "    Shifted wavelength scale for extension "\
                               f"{ext.id} by {shift:0.4g} pixels"
-                    _add_shift_model_to_wcs(shift, dispaxis, ext)
+                    _add_shift_model_to_wcs(shift, ext)
                     log.stdinfo(msg)
                     continue
 
@@ -269,7 +254,7 @@ class Spect(Resample):
                 log.stdinfo(f"    Shifted wavelength scale for "
                             f"extension {ext.id} by {shift_final:0.4g} "
                             f"pixels ({shift_final * dw:0.4g} nm)")
-                _add_shift_model_to_wcs(shift_final, dispaxis, ext)
+                _add_shift_model_to_wcs(shift_final, ext)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

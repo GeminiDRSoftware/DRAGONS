@@ -392,15 +392,19 @@ def test_sky_correct_from_slit_with_multiple_sources():
 @pytest.mark.parametrize('in_shift', [0, -1.2, 2.75])
 def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
                                             path_to_inputs):
+    """Apply a shift and confirm that the WCS has changed correctly"""
     with change_working_dir(path_to_inputs):
         ad = astrodata.open('N20220706S0337_wavelengthSolutionAttached.fits')
 
+    dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
+    center = ad[0].shape[1 - dispaxis] // 2
+    pixels = np.arange(ad[0].shape[dispaxis])
+    waves = ad[0].wcs([center] * pixels.size, pixels)[0]
+
     p = GNIRSLongslit([ad])
     ad_out = p.adjustWavelengthZeroPoint(shift=in_shift).pop()
-    transform = ad_out[0].wcs.get_transform('pixels',
-                                            'wavelength_scale_adjusted')
-    shift = getattr(transform, 'offset_1')
-    assert shift == pytest.approx(in_shift)
+    new_waves = ad_out[0].wcs([center] * pixels.size, pixels - in_shift)[0]
+    np.testing.assert_allclose(waves, new_waves)
 
 
 @pytest.mark.preprocessed_data
@@ -482,15 +486,19 @@ def test_adjust_wavelength_zero_point_controlled(filename, center, shift,
 
     ad = astrodata.open(os.path.join(path_to_inputs,
                                      filename + '_wavelengthSolutionAttached.fits'))
-    p = GNIRSLongslit([ad])
+    p = classes_dict[ad.instrument()]([ad])
+
+    dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
+    pixels = np.arange(ad[0].shape[dispaxis])
+    waves = ad[0].wcs([center] * pixels.size, pixels)[0]
+    dw = abs(np.diff(waves)).mean()
 
     dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
     ad[0].data = np.roll(ad[0].data, -shift, axis=dispaxis)
     ad_out = p.adjustWavelengthZeroPoint(center=center, shift=None).pop()
 
-    m_flex = ad_out[0].wcs.get_transform('pixels', 'wavelength_scale_adjusted')
-    measured_shift = getattr(m_flex, f'offset_{1 - dispaxis}')
-    assert measured_shift == pytest.approx(shift, abs=0.1)
+    new_waves = ad_out[0].wcs([center] * pixels.size, pixels - shift)[0]
+    np.testing.assert_allclose(waves, new_waves, atol=0.1*dw)
 
 
 @pytest.mark.preprocessed_data
