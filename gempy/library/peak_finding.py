@@ -969,7 +969,9 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
         lower, upper = extrema[i-1][0], extrema[i+1][0]
         targets = [threshold * extrema[i][1] +
                    (1 - threshold) * extrema[j][1] for j in (i-1, i+1)]
-        i1, i2, p = int(lower), int(upper+1), int(true_peak+0.5)
+        # 0.999 is needed to avoid bringing in an extra pixel if the upper
+        # limit is the last pixel (or unmasked pixel) in the data
+        i1, i2, p = int(lower), int(upper+0.999), int(true_peak+0.5)
 
         limits = []
         for target, _slice in zip(targets, (slice(i1, p+2), slice(p-1, i2+1))):
