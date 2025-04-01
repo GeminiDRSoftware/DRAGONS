@@ -1552,7 +1552,7 @@ def interactive_find_source_apertures(ext, ui_params=None, filename=None, **kwar
     if not filename and hasattr(ext, "orig_filename"):
         filename = ext.orig_filename
     fsav = FindSourceAperturesVisualizer(
-        model, ui_params=ui_params, filename_info=ext.filename
+        model, ui_params=ui_params, filename_info=filename
     )
     interactive_fitter(fsav)
     return fsav.result()
