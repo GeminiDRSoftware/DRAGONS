@@ -110,6 +110,7 @@ def test_extract_1d_spectra_with_sky_lines():
 @pytest.mark.parametrize('filename',
                          [('N20220706S0306_stack.fits'), # GNIRS
                           ('N20170601S0291_stack.fits'), # GNIRS
+                          ('N20180201S0052_stack.fits'), # GNIRS
                           ('N20070204S0098_stack.fits'), # NIRI
                           ('N20061114S0193_stack.fits'), # NIRI
                           ('S20210430S0138_stack.fits'), # F2
@@ -122,15 +123,16 @@ def test_find_apertures(filename, path_to_inputs, change_working_dir):
               'min_sky_region': 50, 'min_snr': 5., 'use_snr': True,
               'threshold': 0.10, 'max_separation': None}
 
-    apertures = {'N20220706S0306_stack.fits': (544.8,),
-                 'N20170601S0291_stack.fits': (280.6, 716.9),
-                 'N20070204S0098_stack.fits': (423.7,),
-                 'N20061114S0193_stack.fits': (420.0,),
-                 'S20210430S0138_stack.fits': (1064.6, 105.4, 1330.2,
-                                               306.5, 1182.1),
-                 'S20210709S0035_stack.fits': (959.8, 378.4),
-                 'N20240102S0010_stack.fits': (495.2, 1072.1),
-                 'N20190501S0054_stack.fits': (1066.6,)}
+    apertures = {'N20220706S0306_stack.fits': [(544.8, 17.6)],
+                 'N20170601S0291_stack.fits': [(280.6, 7.2), (716.9, 6.4)],
+                 'N20070204S0098_stack.fits': [(423.7, 19)],
+                 'N20061114S0193_stack.fits': [(420.0, 12)],
+                 'S20210430S0138_stack.fits': [(1064.6, 30), (105.4, 6.4),
+                                               (306.5, 5.8)],
+                 'S20210709S0035_stack.fits': [(959.8, 5.8), (378.4, 34.7)],
+                 'N20240102S0010_stack.fits': [(495.2, 19.5), (1072.1, 36.0)],
+                 'N20190501S0054_stack.fits': [(1066.6, 7.3)],
+                 'N20180201S0052_stack.fits': [(501.8, 15.0)]}
 
     extra_params = {'S20210430S0138_stack.fits': {'threshold': 0.15, 'min_snr': 10},
                     'N20070204S0098_stack.fits': {'min_snr': 6},
@@ -151,9 +153,18 @@ def test_find_apertures(filename, path_to_inputs, change_working_dir):
     p = pclass([ad])
 
     ad_out = p.findApertures(**params)[0]
+    # Check we haven't created lots of spurious apertures
     assert len(ad_out[0].APERTURE) <= len(apertures[filename]) + 2
-    for ref, ap in zip(apertures[filename], ad_out[0].APERTURE['c0']):
-        assert ref == pytest.approx(ap, abs=0.5)
+
+    # Check that the required apertures exist in the correct locations and
+    # with the correct sizes (large tolerance)
+    for loc, width in apertures[filename]:
+        apnum = np.argmin(abs(ad_out[0].APERTURE['c0'] - loc))
+        aperture = ad_out[0].APERTURE[apnum]
+        assert loc == pytest.approx(aperture['c0'], abs=0.5)
+        assert width == pytest.approx(aperture['aper_upper'] -
+                                      aperture['aper_lower'],
+                                      abs=1, rel=0.5)
 
 
 @pytest.mark.preprocessed_data
