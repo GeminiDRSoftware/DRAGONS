@@ -320,7 +320,6 @@ class Preprocess(PrimitivesBASE):
                                               if abs(sky_dict[k] - sci_time) <= seconds])
 
                     # Now create a sky list of the appropriate length
-                    print(ad.filename, num_matching_skies, min_skies, len(sky_dict), seconds)
                     if num_matching_skies < min_skies <= len(sky_dict):
                         log.warning(f"Found fewer skies ({num_matching_skies}) "
                                     "matching the time criterion than requested\n"
