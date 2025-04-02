@@ -31,11 +31,11 @@ def test_flux_calibrate_binning(path_to_inputs, std_filenames):
     for sci_filename in std_filenames:
         outputs = {}
         for std_filename in std_filenames:
-            ad_sci = astrodata.open(os.path.join(path_to_inputs, sci_filename))
+            ad_sci = astrodata.from_file(os.path.join(path_to_inputs, sci_filename))
             arm = ad_sci.arm()
             sci_xbin, sci_ybin = ad_sci.detector_x_bin(), ad_sci.detector_y_bin()
             p = GHOSTSpect([ad_sci])
-            ad_std = astrodata.open(os.path.join(path_to_inputs, std_filename))
+            ad_std = astrodata.from_file(os.path.join(path_to_inputs, std_filename))
             xbin, ybin = ad_std.detector_x_bin(), ad_std.detector_y_bin()
             outputs[(xbin, ybin)] = p.fluxCalibrate(standard=ad_std).pop()
 

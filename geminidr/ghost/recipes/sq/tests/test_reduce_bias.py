@@ -17,7 +17,7 @@ datasets = ["S20230513S0439.fits"]
 @pytest.fixture
 def input_filename(change_working_dir, request):
     with change_working_dir():
-        ad = astrodata.open(download_from_archive(request.param))
+        ad = astrodata.from_file(download_from_archive(request.param))
         p = GHOSTBundle([ad])
         adoutputs = p.splitBundle()
         return_dict = {}
@@ -42,6 +42,6 @@ def test_reduce_bias(change_working_dir, path_to_inputs, input_filename, arm, pa
         makeProcessedBias(p)
         assert len(p.streams['main']) == 1
         output_filename = p.streams['main'][0].filename
-        adout = astrodata.open(os.path.join("calibrations", "processed_bias", output_filename))
-        adref = astrodata.open(os.path.join(path_to_refs, output_filename))
+        adout = astrodata.from_file(os.path.join("calibrations", "processed_bias", output_filename))
+        adref = astrodata.from_file(os.path.join(path_to_refs, output_filename))
         assert ad_compare(adref, adout, ignore_kw=['PROCBIAS'])

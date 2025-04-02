@@ -19,7 +19,7 @@ def main():
     args = _parse_args()
     filename = args.filename
 
-    ad = astrodata.open(filename)
+    ad = astrodata.from_file(filename)
 
     data = ad[0].data
     mask = ad[0].mask

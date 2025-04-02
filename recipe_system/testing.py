@@ -40,9 +40,9 @@ def get_master_arc(path_to_inputs, change_working_dir):
 
         if pre_process:
             with change_working_dir():
-                master_arc = astrodata.open(arc_filename)
+                master_arc = astrodata.from_file(arc_filename)
         else:
-            master_arc = astrodata.open(
+            master_arc = astrodata.from_file(
                 os.path.join(path_to_inputs, arc_filename))
 
         return master_arc
@@ -144,7 +144,7 @@ def reduce_flat(change_working_dir):
             reduce.runr()
 
             master_flat = reduce.output_filenames.pop()
-            master_flat_ad = astrodata.open(master_flat)
+            master_flat_ad = astrodata.from_file(master_flat)
 
         return master_flat_ad
 
@@ -169,7 +169,7 @@ def ref_ad_factory(path_to_refs):
     def _reference_ad(filename):
         print(f"Loading reference file: {filename}")
         path = os.path.join(path_to_refs, filename)
-        return astrodata.open(path)
+        return astrodata.from_file(path)
 
     return _reference_ad
 

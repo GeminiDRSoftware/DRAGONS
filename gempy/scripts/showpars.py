@@ -40,7 +40,7 @@ def get_pars(filename, adpkg=None, drpkg=None):
     if adpkg is not None:
         import_module(adpkg)
 
-    ad = astrodata.open(filename)
+    ad = astrodata.from_file(filename)
 
     dtags = set(list(ad.tags)[:])
     instpkg = ad.instrument(generic=True).lower()

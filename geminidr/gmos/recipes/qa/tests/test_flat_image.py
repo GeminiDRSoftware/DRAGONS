@@ -117,7 +117,7 @@ def test_make_processed_flat(
         shutil.rmtree('calibrations/')
         [os.remove(f) for f in glob.glob('*_forStack.fits')]
 
-        ad = astrodata.open(r.output_filenames[0])
+        ad = astrodata.from_file(r.output_filenames[0])
 
     for ext in ad:
         data = np.ma.masked_array(ext.data, mask=ext.mask)
@@ -198,7 +198,7 @@ def create_master_bias_for_tests():
         paths = [download_from_archive(f) for f in filenames]
 
         f = paths[0]
-        ad = astrodata.open(f)
+        ad = astrodata.from_file(f)
 
         if not os.path.exists(f.replace('.fits', '_bias.fits')):
             print(f"  Creating input file:\n")

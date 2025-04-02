@@ -20,13 +20,13 @@ def test_transfer_object_mask(path_to_inputs, path_to_refs, dataset):
     """
     Test the transferObjectMask primitive
     """
-    ad_donor = astrodata.open(os.path.join(path_to_inputs, dataset))
-    ad_target = astrodata.open(os.path.join(path_to_inputs, object_mask_datasets[dataset]))
+    ad_donor = astrodata.from_file(os.path.join(path_to_inputs, dataset))
+    ad_target = astrodata.from_file(os.path.join(path_to_inputs, object_mask_datasets[dataset]))
     p = NIRIImage([ad_target])
     p.streams['donor'] = [ad_donor]
     adout = p.transferObjectMask(source="donor", dq_threshold=0.01, dilation=1.5,
                                  interpolant="linear").pop()
     adout.write(overwrite=True)
-    adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
+    adref = astrodata.from_file(os.path.join(path_to_refs, adout.filename))
 
     assert_array_equal(adout[0].OBJMASK, adref[0].OBJMASK)

@@ -20,4 +20,4 @@ def test_insert_descriptor_values(ad):
 @pytest.fixture(scope='function')
 def ad():
     ad_path = download_from_archive("N20150123S0337.fits")
-    return astrodata.open(ad_path)
+    return astrodata.from_file(ad_path)

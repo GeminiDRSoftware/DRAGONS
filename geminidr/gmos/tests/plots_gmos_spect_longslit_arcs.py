@@ -137,8 +137,8 @@ class PlotGmosSpectLongslitArcs:
         output_file = os.path.join(self.output_folder, self.name + ".fits")
         reference_file = os.path.join(self.ref_folder, self.name + ".fits")
 
-        ad = astrodata.open(output_file)
-        ad_ref = astrodata.open(reference_file)
+        ad = astrodata.from_file(output_file)
+        ad_ref = astrodata.from_file(reference_file)
 
         self.show_distortion_map(ad)
         self.show_distortion_model_difference(ad, ad_ref)

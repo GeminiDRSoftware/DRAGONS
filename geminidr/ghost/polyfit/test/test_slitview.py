@@ -26,7 +26,7 @@ class TestSlitView():
         flat_arr = np.zeros((160, 160))
         slitv_fn = get_polyfit_filename(
             None, 'slitv', res, datetime.date(2016, 11, 20), None, 'slitvmod')
-        slitvpars = astrodata.open(slitv_fn).TABLE[0]
+        slitvpars = astrodata.from_file(slitv_fn).TABLE[0]
         sv = polyfit.slitview.SlitView(
             data_arr, flat_arr, slitvpars=slitvpars, mode=res)
         # import pdb; pdb.set_trace()
@@ -130,11 +130,11 @@ class TestSlitView():
 @pytest.mark.ghostslit
 @pytest.mark.parametrize("filename, results", SEEING_ESTIMATES)
 def test_seeing_estimate(filename, results, path_to_inputs):
-    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
     slitv_fn = get_polyfit_filename(
         None, 'slitv', ad.res_mode(), ad.ut_date(), None, 'slitvmod')
     sv = polyfit.slitview.SlitView(
-        ad[0].data, None, slitvpars=astrodata.open(slitv_fn).TABLE[0],
+        ad[0].data, None, slitvpars=astrodata.from_file(slitv_fn).TABLE[0],
         mode=ad.res_mode())
     m = sv.model_profile(ad[0].data)
     for k, v in m.items():

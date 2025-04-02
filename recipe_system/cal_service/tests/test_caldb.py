@@ -82,7 +82,7 @@ def test_retrieval(path_to_inputs, change_working_dir):
                 cal_file = os.path.join(path_to_inputs, cal)
                 caldb.add_cal(cal_file)
 
-            ad_sci = astrodata.open(os.path.join(path_to_inputs, sci))
+            ad_sci = astrodata.from_file(os.path.join(path_to_inputs, sci))
             for caltype, calfile in cals.items():
                 cal_return = caldb.get_calibrations([ad_sci], caltype=caltype)
                 assert len(cal_return) == 1

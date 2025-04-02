@@ -122,7 +122,7 @@ def ad(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
-        ad = astrodata.open(path)
+        ad = astrodata.from_file(path)
     else:
         raise FileNotFoundError(path)
 
@@ -168,7 +168,7 @@ def create_inputs_recipe():
 
         print('Downloading files...')
         sci_path = download_from_archive(filename)
-        sci_ad = astrodata.open(sci_path)
+        sci_ad = astrodata.from_file(sci_path)
         data_label = sci_ad.data_label()
 
         print('Reducing pre-processed data:')

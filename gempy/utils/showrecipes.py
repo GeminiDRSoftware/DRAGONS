@@ -38,7 +38,7 @@ def showrecipes(_file, adpkg=None, drpkg=None):
 
     # Find the file and open it with astrodata
     try:
-        ad = astrodata.open(_file)
+        ad = astrodata.from_file(_file)
         tags = ad.tags
     except AstroDataError:
         result += ("There was an issue using the selected file, please check "
@@ -151,7 +151,7 @@ def showprims(_file, mode='sq', recipe='_default', adpkg=None, drpkg=None):
 
     # Find the file and open it with astrodata
     try:
-        ad = astrodata.open(_file)
+        ad = astrodata.from_file(_file)
         tags = ad.tags
     except AstroDataError:
         print("There was an issue using the selected file, please check "

@@ -28,8 +28,8 @@ def test_gsaoi_adjust_wcs_no_refcat(change_working_dir, path_to_refs, adinputs):
         p.resampleToCommonFrame(interpolant="linear")
         p.writeOutputs()
         for ad in p.streams['main']:
-            ad = astrodata.open(ad.filename)
-            ref_ad = astrodata.open(os.path.join(path_to_refs, ad.filename))
+            ad = astrodata.from_file(ad.filename)
+            ref_ad = astrodata.from_file(os.path.join(path_to_refs, ad.filename))
             # CJS: The outputs I get on my MacBook apparently do not agree with
             # those on the Jenkins server, so need to increase the tolerances.
             # This should still be fine.
@@ -72,6 +72,6 @@ def test_gsaoi_resample_to_refcat(path_to_inputs, adinputs):
 def adinputs(path_to_inputs):
     adinputs = []
     for i in range(148, 151):
-        adinputs.append(astrodata.open(
+        adinputs.append(astrodata.from_file(
             os.path.join(path_to_inputs, f'S20200305S{i:04d}_sourcesDetected.fits')))
     return adinputs

@@ -26,7 +26,7 @@ ext_widths = (157, 130, 135, 159, 197, 245)
 # Local fixtures and helper functions ----------------------------------
 @pytest.fixture(scope='function')
 def adinputs(path_to_inputs):
-    return [astrodata.open(os.path.join(path_to_inputs, f))
+    return [astrodata.from_file(os.path.join(path_to_inputs, f))
             for f in test_datasets]
 
 def _check_params(records, expected):

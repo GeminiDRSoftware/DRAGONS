@@ -22,7 +22,7 @@ datasets_and_locations = [("S20200122S0020.fits", 747),
 @pytest.mark.parametrize("filename,start_row", datasets_and_locations)
 def test_add_illum_mask_position(filename, start_row):
     file_on_disk = download_from_archive(filename)
-    ad = astrodata.open(file_on_disk)
+    ad = astrodata.from_file(file_on_disk)
 
     p = GMOSLongslit([ad])
     p.prepare()
@@ -41,7 +41,7 @@ def test_add_illum_mask_position(filename, start_row):
 @pytest.mark.gmosls
 def test_add_illum_mask_position_amp5(path_to_inputs, path_to_common_inputs):
     """Test of bad-amp5 GMOS-S data"""
-    adinputs = [astrodata.open(os.path.join(
+    adinputs = [astrodata.from_file(os.path.join(
         path_to_inputs, f"S20220927S{i:04d}_prepared.fits"))
         for i in (190, 191)]
     bpmfile = os.path.join(path_to_common_inputs,

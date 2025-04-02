@@ -66,7 +66,7 @@ def ad_slit():
     # scale by fluxes
     slitv_fn = polyfit_lookup.get_polyfit_filename(
         None, 'slitv', 'std', ad.ut_date(), ad.filename, 'slitvmod')
-    slitvpars = astrodata.open(slitv_fn)
+    slitvpars = astrodata.from_file(slitv_fn)
     sview = SlitView(None, None, slitvpars.TABLE[0], mode=ad.res_mode())
     slit_data = sview.fake_slitimage(seeing=0.7)
     for ext in ad:

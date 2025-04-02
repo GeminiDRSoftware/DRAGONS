@@ -26,7 +26,7 @@ def test_oiwfs_not_used_in_observation(caplog, filename):
     """
     caplog.set_level(logging.DEBUG)
     file_path = download_from_archive(filename)
-    ad = astrodata.open(file_path)
+    ad = astrodata.from_file(file_path)
 
     p = GMOSImage([ad])
     p.addOIWFSToDQ()
@@ -50,7 +50,7 @@ def test_warn_if_dq_does_not_exist(caplog, filename):
     """
     caplog.set_level(logging.DEBUG)
     file_path = download_from_archive(filename)
-    ad = astrodata.open(file_path)
+    ad = astrodata.from_file(file_path)
 
     p = GMOSImage([ad])
     p.addOIWFSToDQ()
@@ -74,7 +74,7 @@ def test_add_oiwfs_runs_normally(caplog, ext_num, filename, x0, y0):
     """
     caplog.set_level(logging.DEBUG)
     file_path = download_from_archive(filename)
-    ad = astrodata.open(file_path)
+    ad = astrodata.from_file(file_path)
 
     p = GMOSImage([ad])
     p.addDQ()
@@ -114,7 +114,7 @@ def test_add_oiwfs_warns_when_wfs_if_not_in_field(caplog, filename):
     """
     caplog.set_level(logging.DEBUG)
     file_path = download_from_archive(filename)
-    ad = astrodata.open(file_path)
+    ad = astrodata.from_file(file_path)
 
     p = GMOSImage([ad])
     p.addDQ()

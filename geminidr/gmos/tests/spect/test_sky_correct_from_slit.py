@@ -66,7 +66,7 @@ def test_regression_sky_correct_from_slit(filename, params, refname,
                                           path_to_refs):
 
     path = os.path.join(path_to_inputs, filename)
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
 
     with change_working_dir():
         logutils.config(file_name=f'log_regression_{ad.data_label()}.txt')
@@ -74,7 +74,7 @@ def test_regression_sky_correct_from_slit(filename, params, refname,
         p.skyCorrectFromSlit(**params)
         sky_subtracted_ad = p.writeOutputs(outfilename=refname).pop()
 
-    ref_ad = astrodata.open(os.path.join(path_to_refs, refname))
+    ref_ad = astrodata.from_file(os.path.join(path_to_refs, refname))
 
     # Require that <1% of unmasked pixels differ by >1 sigma
     for ext, ref_ext in zip(sky_subtracted_ad, ref_ad):
@@ -121,7 +121,7 @@ def create_inputs_recipe():
         sci_path = download_from_archive(filename)
         arc_path = download_from_archive(pars['arc'])
 
-        sci_ad = astrodata.open(sci_path)
+        sci_ad = astrodata.from_file(sci_path)
         data_label = sci_ad.data_label()
 
         print('Reducing ARC for {:s}'.format(data_label))

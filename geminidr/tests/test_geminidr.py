@@ -29,7 +29,7 @@ def test_unrecognized_uparm(parm, expected):
     testfile = download_from_archive("N20160524S0119.fits")
 
     with pytest.raises(UnrecognizedParameterException) as upe:
-        GMOSLongslit(astrodata.open(testfile), mode='sq', ucals={}, uparms=parm, upload=None, config_file=None)
+        GMOSLongslit(astrodata.from_file(testfile), mode='sq', ucals={}, uparms=parm, upload=None, config_file=None)
     assert expected in str(upe.value)
 
 

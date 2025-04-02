@@ -13,13 +13,13 @@ from geminidr.niri.primitives_niri_longslit import NIRILongslit
 # ---- Fixtures ---------------------------------------------------------------
 @pytest.fixture
 def niri_abba():
-    return [astrodata.open(download_from_archive(f)) for f in
+    return [astrodata.from_file(download_from_archive(f)) for f in
             ('N20100602S0437.fits', 'N20100602S0438.fits',
              'N20100602S0439.fits', 'N20100602S0440.fits')]
 
 @pytest.fixture
 def niri_abcde():
-    return [astrodata.open(download_from_archive(f)) for f in
+    return [astrodata.from_file(download_from_archive(f)) for f in
             ('N20070204S0098.fits',
              'N20070204S0099.fits',
              'N20070204S0100.fits',
@@ -110,7 +110,7 @@ def test_associate_sky_abcde(niri_abcde):
                'N20070204S0103.fits': [2, 3, 4, 6],
                'N20070204S0104.fits': [3, 4, 5]}
 
-    # data = [astrodata.open(download_from_archive(f)) for f in niri_abcde]
+    # data = [astrodata.from_file(download_from_archive(f)) for f in niri_abcde]
 
     p = NIRILongslit(niri_abcde)
     # Some frames have bad WCS information, so use 'fix' to take care of it.
@@ -127,7 +127,7 @@ def test_associate_sky_abcde(niri_abcde):
 @pytest.mark.dragons_remote_data
 @pytest.mark.nirils
 def test_associate_sky_abcde_exclude_some(niri_abcde):
-    # data = [astrodata.open(download_from_archive(f)) for f in niri_abcde]
+    # data = [astrodata.from_file(download_from_archive(f)) for f in niri_abcde]
 
     p = NIRILongslit(niri_abcde)
     p.prepare(bad_wcs='fix')

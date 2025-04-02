@@ -33,7 +33,7 @@ def test_adjust_wcs_with_correlation(files, path_to_inputs, caplog):
     in test_resample_2d.py
     """
     caplog.set_level(20)
-    adinputs = [astrodata.open(os.path.join(path_to_inputs, f)) for f in files]
+    adinputs = [astrodata.from_file(os.path.join(path_to_inputs, f)) for f in files]
     pixel_scale = adinputs[0].pixel_scale()
     centers = [ad[0].APERTURE['c0'][0] for ad in adinputs]
 

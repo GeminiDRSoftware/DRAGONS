@@ -44,14 +44,14 @@ def test_convert_to_cal_header(caltype, obj, change_working_dir):
     """Check that header keywords have been updated and
     """
     # A random NIRI image
-    ad = astrodata.open(astrodata.testing.download_from_archive('N20200127S0023.fits'))
+    ad = astrodata.from_file(astrodata.testing.download_from_archive('N20200127S0023.fits'))
     ad_out = gt.convert_to_cal_header(ad, caltype=caltype, keyword_comments=keyword_comments)
 
     # FITS WCS keywords only get changed at write-time, so we need to
     # write the file to disk and read it back in to confirm.
     with change_working_dir():
         ad_out.write("temp.fits", overwrite=True)
-        ad = astrodata.open("temp.fits")
+        ad = astrodata.from_file("temp.fits")
 
         assert ad.observation_type() == caltype.upper()
         # Let's not worry about upper/lowercase
@@ -71,7 +71,7 @@ def test_fit_continuum_slit_image(fname, fwhm, change_working_dir):
         log_file = 'log_{}.log'.format(fname.replace('.fits', ''))
         logutils.config(file_name=log_file)
 
-        ad = astrodata.open(astrodata.testing.download_from_archive(fname))
+        ad = astrodata.from_file(astrodata.testing.download_from_archive(fname))
         p = GMOSImage([ad])
         p.prepare(attach_mdf=True)
         p.addDQ()
@@ -114,7 +114,7 @@ def test_measure_bg_from_image_fake_sections(section, gaussfit, fake_image):
 @pytest.mark.parametrize("gaussfit", [True, False])
 def test_measure_bg_from_image_real(gaussfit):
     # A random GMOS-N image
-    ad = astrodata.open(astrodata.testing.download_from_archive("N20191210S0338.fits"))
+    ad = astrodata.from_file(astrodata.testing.download_from_archive("N20191210S0338.fits"))
     mean, stddev, nsamples = gt.measure_bg_from_image(
         ad[8].nddata[ad[8].data_section().asslice()], gaussfit=gaussfit)
     assert abs(mean - 807) < 1

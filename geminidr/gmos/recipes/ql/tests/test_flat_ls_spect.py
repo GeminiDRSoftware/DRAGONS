@@ -181,7 +181,7 @@ def processed_flat(change_working_dir, path_to_inputs, request):
 
     flat_filename = request.param
     flat_path = download_from_archive(flat_filename)
-    flat_raw = astrodata.open(flat_path)
+    flat_raw = astrodata.from_file(flat_path)
 
     master_bias = os.path.join(path_to_inputs, associated_calibrations[flat_filename])
     calibration_files = ['processed_bias:{}'.format(master_bias)]
@@ -201,7 +201,7 @@ def processed_flat(change_working_dir, path_to_inputs, request):
         shutil.rmtree('calibrations/')
 
         _processed_flat_filename = reduce.output_filenames.pop()
-        _processed_flat = astrodata.open(_processed_flat_filename)
+        _processed_flat = astrodata.from_file(_processed_flat_filename)
 
     return _processed_flat
 
@@ -261,7 +261,7 @@ def create_master_bias_for_tests():
 
         print('Downloading files...')
         sci_path = download_from_archive(filename)
-        sci_ad = astrodata.open(sci_path)
+        sci_ad = astrodata.from_file(sci_path)
         data_label = sci_ad.data_label()
 
         bias_paths = [download_from_archive(f) for f in bias_files]

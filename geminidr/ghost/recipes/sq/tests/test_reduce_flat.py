@@ -20,7 +20,7 @@ datasets = [("S20230513S0463.fits", "S20230513S0439.fits")]
 @pytest.fixture
 def input_filename(change_working_dir, request):
     with change_working_dir():
-        ad = astrodata.open(download_from_archive(request.param))
+        ad = astrodata.from_file(download_from_archive(request.param))
         p = GHOSTBundle([ad])
         adoutputs = p.splitBundle()
         return_dict = {}
@@ -55,8 +55,8 @@ def test_reduce_flat(change_working_dir, input_filename, bias, arm,
         makeProcessedFlat(p)
         assert len(p.streams['main']) == 1
         output_filename = p.streams['main'][0].filename
-        adout = astrodata.open(os.path.join("calibrations", "processed_flat", output_filename))
-        adref = astrodata.open(os.path.join(path_to_refs, output_filename))
+        adout = astrodata.from_file(os.path.join("calibrations", "processed_flat", output_filename))
+        adref = astrodata.from_file(os.path.join(path_to_refs, output_filename))
         assert ad_compare(adref, adout, ignore_kw=['PROCFLAT'])
 
         # Comparison doesn't include "exotic" extensions

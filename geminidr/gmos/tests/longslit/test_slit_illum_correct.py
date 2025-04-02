@@ -171,7 +171,7 @@ def input_data(request, path_to_inputs):
         path = os.path.join(path_to_inputs, filename)
 
         if os.path.exists(path):
-            _ad = astrodata.open(path)
+            _ad = astrodata.from_file(path)
         else:
             raise FileNotFoundError(path)
 
@@ -310,7 +310,7 @@ def create_twilight_inputs():
         bias_path = [download_from_archive(f) for f in cals['bias']]
         twilight_path = [download_from_archive(f) for f in cals['twilight']]
 
-        twilight_ad = astrodata.open(twilight_path[0])
+        twilight_ad = astrodata.from_file(twilight_path[0])
         data_label = twilight_ad.data_label()
 
         print('Reducing BIAS for {:s}'.format(data_label))
@@ -326,7 +326,7 @@ def create_twilight_inputs():
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             p = GMOSLongslit(
-                [astrodata.open(f) for f in twilight_path])
+                [astrodata.from_file(f) for f in twilight_path])
             p.prepare()
             p.addDQ(static_bpm=None)
             p.addVAR(read_noise=True)
@@ -384,7 +384,7 @@ def create_quartz_inputs():
         print('Download raw files')
         quartz_path = [download_from_archive(f) for f in cals['quartz']]
 
-        quartz_ad = astrodata.open(quartz_path[0])
+        quartz_ad = astrodata.from_file(quartz_path[0])
         data_label = quartz_ad.data_label()
 
         print('Reducing quartz lamp:')
@@ -392,7 +392,7 @@ def create_quartz_inputs():
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             p = GMOSLongslit(
-                [astrodata.open(f) for f in quartz_path])
+                [astrodata.from_file(f) for f in quartz_path])
             p.prepare()
             p.addDQ(static_bpm=None)
             p.addVAR(read_noise=True)

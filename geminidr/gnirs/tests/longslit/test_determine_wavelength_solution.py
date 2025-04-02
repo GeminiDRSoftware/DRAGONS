@@ -254,7 +254,7 @@ def test_regression_determine_wavelength_solution(
             if record.levelname == "WARNING":
                 assert "No acceptable wavelength solution found" not in record.message
 
-    ref_ad = astrodata.open(os.path.join(path_to_refs, wcalibrated_ad.filename))
+    ref_ad = astrodata.from_file(os.path.join(path_to_refs, wcalibrated_ad.filename))
     model = am.get_named_submodel(wcalibrated_ad[0].wcs.forward_transform, "WAVE")
     ref_model = am.get_named_submodel(ref_ad[0].wcs.forward_transform, "WAVE")
 
@@ -313,7 +313,7 @@ def ad(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
-        ad = astrodata.open(path)
+        ad = astrodata.from_file(path)
     else:
         raise FileNotFoundError(path)
 
@@ -556,7 +556,7 @@ def create_inputs_recipe():
         print('Downloading files...')
         basename = filename.split("_")[0] + ".fits"
         sci_path = download_from_archive(basename)
-        sci_ad = astrodata.open(sci_path)
+        sci_ad = astrodata.from_file(sci_path)
         data_label = sci_ad.data_label()
 
         print('Reducing pre-processed data:')
@@ -582,7 +582,7 @@ def create_inputs_recipe():
         arc_path = download_from_archive(filename)
         flat_path = [download_from_archive(f) for f in cals['flat']]
 
-        arc_ad = astrodata.open(arc_path)
+        arc_ad = astrodata.from_file(arc_path)
         data_label = arc_ad.data_label()
 
         logutils.config(file_name='log_flat_{}.txt'.format(data_label))
@@ -617,7 +617,7 @@ def create_inputs_recipe():
         flat_path = [download_from_archive(f) for f in cals['flat']]
         arc_arc_path = [download_from_archive(f) for f in cals['arc']]
 
-        arc_ad = astrodata.open(arc_path)
+        arc_ad = astrodata.from_file(arc_path)
         data_label = arc_ad.data_label()
 
         logutils.config(file_name='log_flat_{}.txt'.format(data_label))
@@ -674,7 +674,7 @@ def create_refs_recipe():
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
     for filename, params in input_pars:
-        ad = astrodata.open(os.path.join('inputs', filename))
+        ad = astrodata.from_file(os.path.join('inputs', filename))
         p = GNIRSLongslit([ad])
         p.determineWavelengthSolution(**{**determine_wavelength_solution_parameters,
                                          **params})

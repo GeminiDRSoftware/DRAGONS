@@ -24,7 +24,7 @@ def test_split_bundle(change_working_dir, path_to_refs):
     S20230214S0025 has 1 blue, 3 red, and 5 slit images
     """
     with change_working_dir():
-        ad = astrodata.open(download_from_archive("S20230214S0025.fits"))
+        ad = astrodata.from_file(download_from_archive("S20230214S0025.fits"))
     p = GHOSTBundle([ad])
     p.splitBundle()
 
@@ -47,5 +47,5 @@ def test_split_bundle(change_working_dir, path_to_refs):
     assert len(sciexp) == 4
 
     for adout in blue_files + red_files + slit_files:
-        adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
+        adref = astrodata.from_file(os.path.join(path_to_refs, adout.filename))
         assert ad_compare(adref, adout, ignore_kw=['GHOSTDR'])

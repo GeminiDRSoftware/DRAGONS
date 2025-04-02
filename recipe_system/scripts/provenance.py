@@ -32,7 +32,7 @@ if __name__ == "__main__":
     options, args = parse_args()
     for arg in args:
         try:
-            ad = astrodata.open(arg)
+            ad = astrodata.from_file(arg)
             print(f"Reading Provenance for {arg}\n")
             print(provenance_summary(ad, provenance=options.provenance, history=options.history))
         except astrodata.AstroDataError:

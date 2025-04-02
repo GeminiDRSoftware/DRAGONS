@@ -211,7 +211,7 @@ class Bookkeeping(PrimitivesBASE):
                 # the files to retain their orig_filename attributes, which
                 # would otherwise change upon loading.
                 orig_filename = ad.orig_filename
-                adinputs[i] = astrodata.open(ad.filename)
+                adinputs[i] = astrodata.from_file(ad.filename)
                 adinputs[i].orig_filename = orig_filename
         return adinputs
 
@@ -259,7 +259,7 @@ class Bookkeeping(PrimitivesBASE):
         adinputs = []
         for f in all_files:
             try:
-                adinputs.insert(0, astrodata.open(f))
+                adinputs.insert(0, astrodata.from_file(f))
             except astrodata.AstroDataError:
                 log.stdinfo("   Cannot open {}".format(f))
             if len(adinputs) >= max_frames:

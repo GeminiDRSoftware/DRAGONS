@@ -95,7 +95,7 @@ def test_spectral_wcs_stability(science, arc, save_and_reload,
         assert abs(mean) < 0.1 * dw
 
     with change_working_dir():
-        ad_sci = astrodata.open(os.path.join(path_to_inputs, science))
+        ad_sci = astrodata.from_file(os.path.join(path_to_inputs, science))
         p = GMOSLongslit([ad_sci])
         p.prepare()
         p.addDQ()
@@ -105,10 +105,10 @@ def test_spectral_wcs_stability(science, arc, save_and_reload,
         p.addVAR(poisson_noise=True)
         if save_and_reload:
             p.writeOutputs()
-            ad_sci = astrodata.open(ad_sci.filename)
+            ad_sci = astrodata.from_file(ad_sci.filename)
             p = GMOSLongslit([ad_sci])
 
-        ad_arc = astrodata.open(os.path.join(path_to_inputs, arc))
+        ad_arc = astrodata.from_file(os.path.join(path_to_inputs, arc))
         wtable = ad_arc[0].WAVECAL
         arc_wave_peaks = wtable["wavelengths"]
         fwidth = wtable["coefficients"][list(wtable["name"]).index("fwidth")]

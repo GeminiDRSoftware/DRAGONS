@@ -29,7 +29,7 @@ def test_cut_slits(adinputs, path_to_inputs):
     Check that, upon the slits being cut out, input coordinates are recovered
     successfully when transformed to world coordinates and back.
     """
-    p = GNIRSCrossDispersed([astrodata.open(os.path.join(path_to_inputs, adinputs))])
+    p = GNIRSCrossDispersed([astrodata.from_file(os.path.join(path_to_inputs, adinputs))])
     adout = p.cutSlits()[0]
     abs_diff = 20 if 'Long' in adout.camera() else 6 # Roughly 1" for both
 

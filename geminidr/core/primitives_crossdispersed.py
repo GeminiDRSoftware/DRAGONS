@@ -220,7 +220,7 @@ class CrossDispersed(Spect, Preprocess):
                 else:
                     cut_section = Section(x1=0, x2=ext.shape[1], y1=y1, y2=y2)
                 log.stdinfo(f"Cutting slit {i+1} in extension {ext.id} "
-                            f"from {cut_section.asIRAFsection()}")
+                            f"from {cut_section.as_iraf_section()}")
                 adout.append(deepcopy(ext.nddata[cut_section.asslice()]))
                 adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
                 adout[-1].SLITEDGE["c0"] -= y1
@@ -280,7 +280,7 @@ class CrossDispersed(Spect, Preprocess):
                 # (e.g., MOS data from MOS), and will need to update
                 # the array_section keyword then as well.
                 adout[-1].hdr[detsec_kw] = (
-                    cut_section.asIRAFsection(binning=binnings),
+                    cut_section.as_iraf_section(binning=binnings),
                     self.keyword_comments.get(detsec_kw))
 
         return adout

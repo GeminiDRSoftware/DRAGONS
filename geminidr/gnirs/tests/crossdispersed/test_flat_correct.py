@@ -40,7 +40,7 @@ def ad(path_to_inputs, request):
     """Return AD object in input directory"""
     path = os.path.join(path_to_inputs, request.param)
     if os.path.exists(path):
-        return astrodata.open(path)
+        return astrodata.from_file(path)
     raise FileNotFoundError(path)
 
 

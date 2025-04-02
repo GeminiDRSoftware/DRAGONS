@@ -34,7 +34,7 @@ def test_simple_correlation_test(path_to_inputs, offset):
     """A simple correlation test that uses a single image, shifted, to avoid
     difficulties in centroiding. Placed here because it uses datasets and
     functions in this module"""
-    adinputs = [astrodata.open(os.path.join(path_to_inputs, test_datasets[0]))
+    adinputs = [astrodata.from_file(os.path.join(path_to_inputs, test_datasets[0]))
                 for i in (0, 1, 2)]
     add_fake_offset(adinputs, offset=offset)
     p = GMOSLongslit(adinputs)
@@ -162,13 +162,13 @@ def add_fake_offset(adinputs, offset=10):
 
 @pytest.fixture(scope='function')
 def adinputs(path_to_inputs):
-    return [astrodata.open(os.path.join(path_to_inputs, f))
+    return [astrodata.from_file(os.path.join(path_to_inputs, f))
             for f in test_datasets]
 
 
 @pytest.fixture(scope='function')
 def adinputs2(path_to_inputs):
-    return [astrodata.open(os.path.join(path_to_inputs, f))
+    return [astrodata.from_file(os.path.join(path_to_inputs, f))
             for f in test_datasets2]
 
 
@@ -216,16 +216,16 @@ def create_inputs_recipe():
         sci_path = download_from_archive(fname)
         arc_path = download_from_archive(arc_fname)
 
-        sci_ad = astrodata.open(sci_path)
+        sci_ad = astrodata.from_file(sci_path)
         data_label = sci_ad.data_label()
 
         print('Reducing ARC for {:s}'.format(data_label))
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))
 
         if os.path.exists(arc_fname.replace('.fits', '_distortionDetermined.fits')):
-            arc = astrodata.open(arc_fname.replace('.fits', '_distortionDetermined.fits'))
+            arc = astrodata.from_file(arc_fname.replace('.fits', '_distortionDetermined.fits'))
         else:
-            p = GMOSLongslit([astrodata.open(arc_path)])
+            p = GMOSLongslit([astrodata.from_file(arc_path)])
             p.prepare()
             p.addDQ(static_bpm=None)
             p.addVAR(read_noise=True)

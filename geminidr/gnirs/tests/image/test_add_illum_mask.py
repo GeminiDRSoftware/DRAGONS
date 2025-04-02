@@ -26,9 +26,9 @@ DATASETS = (("N20110627S0031.fits", (625, 445)),  # ShortBlue, Wings, off-centre
 @pytest.mark.parametrize("filename,result", DATASETS)
 def test_add_illum_mask(filename, result, change_working_dir, path_to_inputs):
     if filename.startswith("N2022"):
-        ad = astrodata.open(os.path.join(path_to_inputs, filename))
+        ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
     else:
-        ad = astrodata.open(download_from_archive(filename))
+        ad = astrodata.from_file(download_from_archive(filename))
     with change_working_dir():
         p = GNIRSImage([ad])
         p.prepare()  # bad_wcs="ignore")

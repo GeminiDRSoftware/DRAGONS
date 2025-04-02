@@ -159,7 +159,7 @@ def ad(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
-        ad = astrodata.open(path)
+        ad = astrodata.from_file(path)
     else:
         raise FileNotFoundError(path)
 
@@ -189,7 +189,7 @@ def arc_ad(path_to_inputs, request):
 
     if os.path.exists(path):
         print(f"Reading input arc: {path}")
-        arc_ad = astrodata.open(path)
+        arc_ad = astrodata.from_file(path)
     else:
         raise FileNotFoundError(path)
 
@@ -229,8 +229,8 @@ def create_inputs_recipe():
         sci_path = download_from_archive(filename)
         arc_path = download_from_archive(cals['arc'])
 
-        sci_ad = astrodata.open(sci_path)
-        arc_ad = astrodata.open(arc_path)
+        sci_ad = astrodata.from_file(sci_path)
+        arc_ad = astrodata.from_file(arc_path)
         data_label = sci_ad.data_label()
 
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))

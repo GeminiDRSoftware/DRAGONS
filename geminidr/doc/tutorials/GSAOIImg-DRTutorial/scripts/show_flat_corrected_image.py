@@ -19,7 +19,7 @@ def main():
     # filename = 'S20170505S0102_flatCorrected.fits'
     filename = get_filename()
 
-    ad = astrodata.open(filename)
+    ad = astrodata.from_file(filename)
     print(ad.info())
 
     fig = plt.figure(num=filename, figsize=(8, 8))

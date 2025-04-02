@@ -4,7 +4,7 @@
 #                                                            primitives_stack.py
 # ------------------------------------------------------------------------------
 import astrodata
-from astrodata.fits import windowedOp
+from astrodata.fits import windowed_operation
 
 import numpy as np
 from astropy import table
@@ -332,7 +332,7 @@ class Stack(PrimitivesBASE):
             with_uncertainty = True  # Since all stacking methods return variance
             with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
                                              for ad in adinputs)
-            result = windowedOp(stack_function,
+            result = windowed_operation(stack_function,
                                 [ad[index].nddata for ad in adinputs],
                                 scale=sfactors,
                                 zero=zfactors,

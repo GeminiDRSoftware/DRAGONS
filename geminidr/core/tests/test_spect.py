@@ -138,7 +138,7 @@ def test_find_apertures(filename, path_to_inputs, change_working_dir):
                     'S20210709S0035_stack.fits': {'min_snr': 10}}
 
     with change_working_dir(path_to_inputs):
-        ad = astrodata.open(filename)
+        ad = astrodata.from_file(filename)
 
     try: # Check for custom parameter values for individual tests
         params.update(extra_params[filename])
@@ -158,7 +158,7 @@ def test_find_apertures(filename, path_to_inputs, change_working_dir):
 
 @pytest.mark.preprocessed_data
 def test_create_new_aperture(path_to_inputs):
-    ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
     p = GNIRSLongslit([ad])
 
     # Test creating a new aperture
@@ -181,7 +181,7 @@ def test_create_new_aperture(path_to_inputs):
 
 @pytest.mark.preprocessed_data
 def test_create_new_aperture_warnings_and_errors(path_to_inputs, caplog):
-    ad = astrodata.open(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, 'S20060826S0305_2D.fits'))
     p = GNIRSLongslit([ad])
 
     # Check that only passing one 'aper' parameter raises a ValueError
@@ -394,7 +394,7 @@ def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
                                             path_to_inputs):
     """Apply a shift and confirm that the WCS has changed correctly"""
     with change_working_dir(path_to_inputs):
-        ad = astrodata.open('N20220706S0337_wavelengthSolutionAttached.fits')
+        ad = astrodata.from_file('N20220706S0337_wavelengthSolutionAttached.fits')
 
     dispaxis = 2 - ad.dispersion_axis()[0]  # python sense
     center = ad[0].shape[1 - dispaxis] // 2
@@ -413,7 +413,7 @@ def test_adjust_wavelength_zero_point_overlarge_shift(in_shift,
                                                       change_working_dir,
                                                       path_to_inputs):
     with change_working_dir(path_to_inputs):
-        ad = astrodata.open('N20220706S0337_wavelengthSolutionAttached.fits')
+        ad = astrodata.from_file('N20220706S0337_wavelengthSolutionAttached.fits')
 
     p = GNIRSLongslit([ad])
     with pytest.raises(ValueError):
@@ -454,7 +454,7 @@ def test_adjust_wavelength_zero_point_auto_shift(filename, result,
     center = centers.get(filename)
 
     with change_working_dir(path_to_inputs):
-        ad = astrodata.open(filename + '_wavelengthSolutionAttached.fits')
+        ad = astrodata.from_file(filename + '_wavelengthSolutionAttached.fits')
 
     instrument = ad.instrument()
     p = classes_dict[instrument]([ad])
@@ -484,7 +484,7 @@ def test_adjust_wavelength_zero_point_controlled(filename, center, shift,
                     'F2': F2Longslit,
                     'NIRI': NIRILongslit}
 
-    ad = astrodata.open(os.path.join(path_to_inputs,
+    ad = astrodata.from_file(os.path.join(path_to_inputs,
                                      filename + '_wavelengthSolutionAttached.fits'))
     p = classes_dict[ad.instrument()]([ad])
 
@@ -523,11 +523,11 @@ def test_mask_beyond_slit(in_file, instrument, change_working_dir,
                     'F2': F2Longslit,
                     'NIRI': NIRILongslit}
 
-    ad = astrodata.open(os.path.join(path_to_inputs,
+    ad = astrodata.from_file(os.path.join(path_to_inputs,
                                      in_file + '_slitEdgesDetermined.fits'))
     p = classes_dict[instrument]([ad])
     ad_out = p.maskBeyondSlit().pop()
-    ref = astrodata.open(os.path.join(path_to_refs,
+    ref = astrodata.from_file(os.path.join(path_to_refs,
                                       in_file + '_maskedBeyondSlit.fits'))
     # Find the size of the smallest extension in the file; we don't need the
     # mask to match *exactly*, so as long as the mismatch isn't more than 0.1 of
@@ -564,7 +564,7 @@ def test_slit_rectification(filename, instrument, change_working_dir,
                     'NIRI': NIRILongslit}
 
     with change_working_dir(path_to_inputs):
-        ad = astrodata.open(filename)
+        ad = astrodata.from_file(filename)
 
     p = classes_dict[instrument]([ad])
 
@@ -644,7 +644,7 @@ def test_get_sky_spectrum(path_to_inputs, path_to_refs):
     # is a Chebyshev1D, as required. (In normal reduction, a Cheb1D will be
     # provided bto _get_sky_spectrum() y determineWavelengthSolution,
     # regardless of the state of the input file.)
-    ad_f2 = astrodata.open(os.path.join(
+    ad_f2 = astrodata.from_file(os.path.join(
         path_to_inputs, 'S20180114S0104_wavelengthSolutionDetermined.fits'))
     wave_model = am.get_named_submodel(ad_f2[0].wcs.forward_transform, 'WAVE')
 
@@ -706,15 +706,15 @@ def test_transfer_distortion_model(change_working_dir, path_to_inputs, path_to_r
         p.findApertures()
         p.determineWavelengthSolution(absorption=True)
     """
-    ad_no_dist_model = astrodata.open(os.path.join(path_to_inputs, 'N20121221S0199_wavelengthSolutionDetermined.fits'))
-    ad_with_dist_model = astrodata.open(os.path.join(path_to_inputs, 'N20121221S0199_wavelengthSolutionAttached.fits'))
+    ad_no_dist_model = astrodata.from_file(os.path.join(path_to_inputs, 'N20121221S0199_wavelengthSolutionDetermined.fits'))
+    ad_with_dist_model = astrodata.from_file(os.path.join(path_to_inputs, 'N20121221S0199_wavelengthSolutionAttached.fits'))
     p = primitives_gnirs_longslit.GNIRSLongslit([ad_no_dist_model])
     p.streams["with_distortion_model"] = ad_with_dist_model
     ad_with_dist_model_transferred = p.transferDistortionModel(source="with_distortion_model")
     p.writeOutputs()
     with change_working_dir(path_to_refs):
         ref_with_dist_model_transferred = \
-        astrodata.open(os.path.join(path_to_refs, "N20121221S0199_distortionModelTransferred.fits"))
+        astrodata.from_file(os.path.join(path_to_refs, "N20121221S0199_distortionModelTransferred.fits"))
 
     # Compare output WCS as well as pixel values (by evaluating it at the
     # ends of the ranges, since there are multiple ways of constructing an

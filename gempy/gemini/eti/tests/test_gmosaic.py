@@ -61,7 +61,7 @@ class TestGmosaic:
         from gempy.gemini.eti import gmosaiceti
 
         # where is the fits diff tool?
-        ad = astrodata.open(TestGmosaic.gmos_file)
+        ad = astrodata.from_file(TestGmosaic.gmos_file)
         inputs = []
         parameters = TESTDEFAULTPARAMS
         gmosaic_task = \

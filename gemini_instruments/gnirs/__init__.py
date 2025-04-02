@@ -5,5 +5,5 @@ from ..gemini import addInstrumentFilterWavelengths
 from .adclass import AstroDataGnirs
 from .lookup import filter_wavelengths
 
-factory.addClass(AstroDataGnirs)
+factory.add_class(AstroDataGnirs)
 addInstrumentFilterWavelengths('GNIRS', filter_wavelengths)

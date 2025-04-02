@@ -36,7 +36,7 @@ files = ['N20180114S0121_stack.fits', # LongRed
 def test_sky_correct_from_slit(file, order, function, change_working_dir,
                                path_to_inputs):
 
-    ad = astrodata.open(os.path.join(path_to_inputs, file))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, file))
 
     p = GNIRSLongslit([deepcopy(ad)])
     ad_out = p.skyCorrectFromSlit(order=order, function=function, **parameters)[0]

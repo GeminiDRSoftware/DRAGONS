@@ -31,10 +31,10 @@ def test_distortion_correct(filename, path_to_inputs, path_to_refs,
                             change_working_dir):
 
     with change_working_dir(path_to_inputs):
-        ad_in = astrodata.open(filename)
+        ad_in = astrodata.from_file(filename)
 
     with change_working_dir(path_to_refs):
-        ad_ref = astrodata.open(filename.replace('_readoutCleaned.fits',
+        ad_ref = astrodata.from_file(filename.replace('_readoutCleaned.fits',
                                                  '_distortionCorrected.fits'))
 
     p = GNIRSLongslit([ad_in])

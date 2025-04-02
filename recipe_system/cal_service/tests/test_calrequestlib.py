@@ -17,7 +17,7 @@ from geminidr.gmos.primitives_gmos_longslit import GMOSClassicLongslit
 @pytest.mark.dragons_remote_data
 def test_get_cal_requests_dictdescriptor():
     path = astrodata.testing.download_from_archive("S20221209S0007.fits")
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
     requests = get_cal_requests([ad], 'bias')
     # This descriptor works off the decomposed per-arm values for x/y binning
     # so it's a good test that this worked with a dictionary-based descriptor

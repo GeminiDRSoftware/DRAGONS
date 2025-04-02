@@ -178,7 +178,7 @@ class GMOS(Gemini, CCD):
             #     # When we create the new AD object, it needs to retain the
             #     # filename information
             #     orig_path = ad.path
-            #     ad = astrodata.open(hdulist)
+            #     ad = astrodata.from_file(hdulist)
             #     ad.path = orig_path
 
             # KL Commissioning GMOS-N Hamamatsu.  Headers are not fully

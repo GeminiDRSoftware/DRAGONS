@@ -13,7 +13,7 @@ def test_synthetic_slit_profile(path_to_inputs):
     with a synthetic slit profile. The output is not checked"""
     sci_filename = "S20230513S0229_red001_arraysTiled.fits"
     raw_flat_filename = "S20230511S0035.fits"
-    ad = astrodata.open(os.path.join(path_to_inputs, sci_filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, sci_filename))
     arm = ad.arm()
     processed_flat = os.path.join(
         path_to_inputs,

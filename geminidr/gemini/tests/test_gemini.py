@@ -16,7 +16,7 @@ from geminidr.f2.primitives_f2 import F2
 # @pytest.fixture(scope='module')
 # def ad(path_to_inputs):
 #
-#     return astrodata.open(
+#     return astrodata.from_file(
 #         os.path.join(path_to_inputs, 'N20020829S0026.fits'))
 
 # --- Delete me? ---
@@ -140,7 +140,7 @@ def test_standardize_wcs_create_new(dataset):
     filenames = [f"{dataset[0][:10]}{{:04d}}.fits".format(i)
                  for i in range(start, start+dataset[1])]
     files = [download_from_archive(f) for f in filenames]
-    adinputs = [astrodata.open(f) for f in files]
+    adinputs = [astrodata.from_file(f) for f in files]
 
     # Remove third dimension
     if adinputs[0].instrument() == "F2":

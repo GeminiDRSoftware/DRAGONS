@@ -55,7 +55,7 @@ def tile_all(request):
     return request.param
 
 def test_gmos_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_all):
-    raw_ad = astrodata.open(raw_ad_path)
+    raw_ad = astrodata.from_file(raw_ad_path)
 
     # Ensure it's tagged IMAGE so we can get an imaging WCS and can use SkyCoord
     raw_ad.phu['GRATING'] = 'MIRROR'
@@ -101,7 +101,7 @@ def test_gmos_wcs_stability(raw_ad_path, do_prepare, do_overscan_correct, tile_a
 
     # Now write the file to disk and read it back in and check WCS stability
     ad.write(TEMPFILE, overwrite=True)
-    ad = astrodata.open(TEMPFILE)
+    ad = astrodata.from_file(TEMPFILE)
 
     c = SkyCoord(*ad[new_ref_index].wcs(x, y), unit="deg")
     assert c0.separation(c) < 1e-9 * u.arcsec

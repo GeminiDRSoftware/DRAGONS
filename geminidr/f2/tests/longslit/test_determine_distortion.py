@@ -287,7 +287,7 @@ def ad(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
-        ad = astrodata.open(path)
+        ad = astrodata.from_file(path)
     else:
         raise FileNotFoundError(path)
 
@@ -501,7 +501,7 @@ def create_inputs_recipe():
         flat_darks_paths = [download_from_archive(f) for f in cals['flat_darks']]
         flat_path = [download_from_archive(f) for f in cals['flat']]
 
-        arc_ad = astrodata.open(arc_path)
+        arc_ad = astrodata.from_file(arc_path)
         data_label = arc_ad.data_label()
 
         logutils.config(file_name='log_arc_darks_{}.txt'.format(data_label))
@@ -556,7 +556,7 @@ def create_refs_recipe():
     print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
     for filename, params in input_pars:
-        ad = astrodata.open(os.path.join('inputs', filename))
+        ad = astrodata.from_file(os.path.join('inputs', filename))
         p = F2Longslit([ad])
         p.determineDistortion(**{**fixed_parameters_for_determine_distortion,
                                          **params})

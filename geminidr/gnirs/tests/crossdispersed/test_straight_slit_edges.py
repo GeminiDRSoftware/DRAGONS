@@ -18,7 +18,7 @@ from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 @pytest.mark.gnirsxd
 @pytest.mark.parametrize('filename', ["N20130821S0308_stack.fits"])
 def test_edges_and_slit_centers(filename, path_to_inputs):
-    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
     # Clear the mask so only pixels beyond the edge are masked
     for ext in ad:
         ext.mask = None
@@ -31,7 +31,7 @@ def test_edges_and_slit_centers(filename, path_to_inputs):
     p.cutSlits()
     ad_masked = p.maskBeyondSlit().pop()
 
-    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
     p = GNIRSCrossDispersed([ad])
     ad = p.flatCorrect(flat=ad_masked).pop()
     for ext in ad:

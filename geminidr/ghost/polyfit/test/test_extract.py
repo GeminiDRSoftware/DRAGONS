@@ -45,7 +45,7 @@ class TestExtractor(object):
                                        datetime.date(2016, 11, 20), None, caltype)
                   for caltype in ('xmod', 'wavemod', 'spatmod', 'specmod',
                                   'rotmod')]
-        ga.spectral_format_with_matrix(*[astrodata.open(fn)[0].data
+        ga.spectral_format_with_matrix(*[astrodata.from_file(fn)[0].data
                                        for fn in fnames])
 
         # Stand up the Slitview, and run necessary functions
@@ -54,7 +54,7 @@ class TestExtractor(object):
         sv = slitview.SlitView(
             slit_image=np.loadtxt(os.path.join(TEST_DATA_DIR, 'slitimage.dat')),
             flat_image=np.loadtxt(os.path.join(TEST_DATA_DIR, 'slitflat.dat')),
-            slitvpars=astrodata.open(slitv_fn).TABLE[0], mode=res)
+            slitvpars=astrodata.from_file(slitv_fn).TABLE[0], mode=res)
 
         ext = extract.Extractor(ga, sv)
 
