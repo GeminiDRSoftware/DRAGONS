@@ -313,6 +313,14 @@ class Spect(Resample):
         if {len(ad[0].shape) for ad in adinputs} != {2}:
             raise ValueError("All inputs must be two dimensional")
 
+        # We need to subtract the median signal from the slit profile.
+        # In the thermal IR, the background can be highly variable and
+        # corss-correlating a +ve background with a -ve background creates
+        # an xcorr that's a big trough, making it hard to locate a peak.
+        def slit_profile(ext, section=None):
+            raw_profile = peak_finding.stack_slit(ext, section=section)
+            return raw_profile - np.median(raw_profile)
+
         # Use first image in list as reference
         refad = adinputs[0]
         ref_sky_model_dict = {i: am.get_named_submodel(
@@ -323,7 +331,7 @@ class Spect(Resample):
         log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
         if any('sources' in m for m in methods):
-            ref_profile_dict = {i: peak_finding.stack_slit(refad[i], section=region)
+            ref_profile_dict = {i: slit_profile(refad[i], section=region)
                                 for i in range(len(refad))}
         if 'sources_wcs' in methods:
             # World coords are the same for each slit.
@@ -362,7 +370,7 @@ class Spect(Resample):
                     # Cross-correlate to find real offset and compare. Only look
                     # for a peak in the range defined by "tolerance".
                     if 'sources' in method:
-                        profile = peak_finding.stack_slit(ad[iext], section=region)
+                        profile = slit_profile(ad[iext], section=region)
                         corr = np.correlate(ref_profile_dict[iext],
                                             profile, mode='full')
                         expected_peak = corr.size // 2 + hdr_offset
@@ -401,6 +409,8 @@ class Spect(Resample):
 
                         if debug_plots:
                             fig, ax = plt.subplots()
+                            print(f"Comparing {ad.filename} to reference {refad.filename} "
+                                  f"(expected peak at {expected_peak - corr.size // 2})")
                             print(f"Using {len(widths)} sigma widths {min_peak_width} to {max_peak_width}")
                             print("Peaks at ", np.asarray(peaks) - corr.size // 2)
                             print(f"Using {offset}")
