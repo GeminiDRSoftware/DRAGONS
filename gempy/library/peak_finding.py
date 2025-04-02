@@ -982,7 +982,7 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
                 warnings.simplefilter("ignore", UserWarning)
                 spline = at.fit_spline_to_data(
                     data[_slice], mask=None if mask is None else mask[_slice],
-                    variance=0.01 * stddev[_slice]**2, k=min(npts-1, 3))
+                    variance=0.01 * stddev[_slice]**2, k=1)
 
             limit = peak_limit(spline, true_peak-_slice.start,
                                0 if _slice.start==i1 else npts-1,
