@@ -36,6 +36,11 @@ Interface Modifications
   ``output_wave_scale`` instead, with options ``linear`` and ``reference``
   corresponding to ``force_linear`` values of ``True`` and ``False``,
   respectively.
+* The spectroscopic version of ``adjustWCSToReference`` now has an additional
+  option, "wcs", which uses the absolute WCS information to align. This is
+  equivalent to the old option "None", which was available as a fallback
+  method. This is now the default fallback method, with "None" resulting in
+  an exception if the primary method does not provide valid offsets.
 
 Bug fixes
 ---------

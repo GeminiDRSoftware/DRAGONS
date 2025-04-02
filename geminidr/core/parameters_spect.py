@@ -58,14 +58,16 @@ class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",
                           str, "_wcsCorrected", optional=True)
     method = config.ChoiceField("Alignment method", str,
-                                allowed={"sources_wcs": "Match sources using WCS",
-                                         "sources_offsets": "Match sources using telescope offsets",
+                                allowed={"sources_wcs": "Cross-correlate slit profile using WCS",
+                                         "sources_offsets": "Cross-correlate slit profile using telescope offsets",
+                                         "wcs": "Use WCS (no adjustment)",
                                          "offsets": "Use telescope offsets only"},
                                 default="sources_wcs", optional=False)
     fallback = config.ChoiceField("Fallback method", str,
-                                  allowed={"sources_offsets": "Match sources using telescope offsets",
+                                  allowed={"sources_offsets": "Cross-correlate slit profile using telescope offsets",
+                                           "wcs": "Use WCS (no adjustment)",
                                            "offsets": "Use telescope offsets only"},
-                                  default="offsets", optional=True)
+                                  default="wcs", optional=True)
     region = config.Field("Pixel section for measuring the spatial profile",
                            str, None, optional=True, check=validate_regions_int)
     tolerance = config.RangeField("Maximum distance from the header offset, "

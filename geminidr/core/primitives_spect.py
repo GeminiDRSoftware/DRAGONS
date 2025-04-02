@@ -344,8 +344,12 @@ class Spect(Resample):
             for iext, ext in enumerate(ad):
                 offset = None
                 for method in methods:
-                    if method is None:
+                    if method == "wcs":
                         break
+                    elif method is None:
+                        raise ValueError("'fallback' method has been set to "
+                                         "None and no offsets have been "
+                                         f"determined for {ad.filename}")
 
                     dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
