@@ -60,7 +60,7 @@ class cleanReadoutConfig(config.Config):
                                allowed={"default": "perform pattern removal if pattern in strong enough",
                                         "force": "force pattern removal",
                                         "skip": "skip primitive"},
-                               default="default", optional=False)
+                               default="skip", optional=False)
     debug_canny_sigma = config.RangeField("Standard deviation for smoothing of Canny edge-finding", float, 3, min=1)
 
 
