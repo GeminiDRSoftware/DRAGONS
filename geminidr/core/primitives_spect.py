@@ -1242,7 +1242,7 @@ class Spect(Resample):
 
                 new_apnum = min(set(range(1, max(existing_apnums) + 2)) -
                                 set(existing_apnums))
-                log.stdinfo(f"Adding new aperture {apnum} to {ad.filename} "
+                log.stdinfo(f"Adding new aperture {new_apnum} to {ad.filename} "
                             f"extension {ext.id}.")
                 new_row['number'] = new_apnum
                 ext.APERTURE.add_row(new_row)
