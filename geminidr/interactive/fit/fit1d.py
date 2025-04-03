@@ -2124,6 +2124,7 @@ def fit1d_figure(
     xlabel=None,
     ylabel=None,
     model=None,
+    fit_line_legend=None,
     plot_ratios=True,
     plot_residuals=True,
     enable_user_masking=True,
@@ -2151,6 +2152,9 @@ def fit1d_figure(
 
     model : InteractiveModel1D
         object containing the fit information
+
+    fit_line_legend : str/None
+        string to include in legend for fit line
 
     plot_ratios : bool
         make a ratios plot?
@@ -2194,12 +2198,14 @@ def fit1d_figure(
         **model.mask_rendering_kwargs(),
     )
 
+    kwargs = {"legend_label": fit_line_legend} if fit_line_legend else {}
     p_main.line(
         x=xline,
         y=yline,
         source=model.evaluation,
         line_width=3,
         color="crimson",
+        **kwargs
     )
 
     if plot_residuals:

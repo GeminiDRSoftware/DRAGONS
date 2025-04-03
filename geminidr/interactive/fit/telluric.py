@@ -12,15 +12,16 @@ from gempy.library import astrotools as at
 
 from geminidr.interactive.interactive import (
     connect_region_model, FitQuality)
+from geminidr.interactive.interactive_config import interactive_conf
 from ..controls import Controller
 from .fit1d import (
-    Fit1DPanel, Fit1DVisualizer, InfoPanel, fit1d_figure, Fit1DRegionListener,
-    InteractiveModel, InteractiveModel1D)
+    Fit1DPanel, Fit1DVisualizer, Glyph, InfoPanel, fit1d_figure,
+    Fit1DRegionListener, InteractiveModel, InteractiveModel1D)
 from ..styles import dragons_styles
 
 from gempy.library.telluric_models import Planck, get_good_pixels
 
-from .help import TELLURIC_CORRECT_HELP_TEXT
+from .help import FIT_TELLURIC_HELP_TEXT, TELLURIC_CORRECT_HELP_TEXT
 
 
 ############################ stuff for fitTelluric ############################
@@ -284,10 +285,11 @@ class TelluricPanel(Fit1DPanel):
         p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
                                       xpoint=self.xpoint, ypoint=self.ypoint,
                                       xlabel=self.xlabel, ylabel=self.ylabel,
+                                      fit_line_legend="fit",
                                       model=self.model, plot_ratios=False,
                                       enable_user_masking=True)
         p_main.line(x='waves', y='continuum', source=self.model.aux_data,
-                    line_width=2, color='blue')
+                    line_width=2, color='blue', legend_label="airmass=0")
 
         if self.enable_regions:
             self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
@@ -326,9 +328,11 @@ class TelluricPanel(Fit1DPanel):
         p_intrinsic.width_policy = 'fit'
         p_intrinsic.sizing_mode = 'stretch_width'
         p_intrinsic.step(x='waves', y='corrected', source=self.model.aux_data,
-                         line_width=2, color="crimson")
-        intrinsic_line = p_intrinsic.step(x='waves', y='intrinsic_spectrum', source=self.model.aux_data,
-                         line_width=2, color="blue", mode="center")
+                         line_width=2, color="crimson", legend_label="corrected")
+        intrinsic_line = p_intrinsic.step(
+            x='waves', y='intrinsic_spectrum', source=self.model.aux_data,
+            line_width=2, color="blue", mode="center", legend_label="intrinsic"
+        )
         # We only want to scale to the intrinsic spectrum
         p_intrinsic.y_range.renderers = [intrinsic_line]
 
@@ -424,7 +428,7 @@ class TelluricVisualizer(Fit1DVisualizer):
         self.actively_fitting = True
         super().__init__(init_data, all_fp_init,
                          **kwargs, panel_class=TelluricPanel,
-                         help_text=TELLURIC_CORRECT_HELP_TEXT,
+                         help_text=FIT_TELLURIC_HELP_TEXT,
                          turbo_tabs=True,
                          reinit_live=False,
                          mask_glyphs={"stellar": ("inverted_triangle", "red")}
@@ -623,6 +627,8 @@ class TelluricVisualizer(Fit1DVisualizer):
 ############################ stuff for telluricCorrect ############################
 
 class InteractiveTelluricCorrection(InteractiveModel1D):
+    Good = Glyph("data", "circle", interactive_conf().bokeh_data_color)
+
     def __init__(self, visualizer):
         self.visualizer = visualizer
         self.my_fit_index = len(visualizer.fits)
@@ -667,10 +673,12 @@ class TelluricCorrectPanel(Fit1DPanel):
         p_main, _ = fit1d_figure(width=self.width, height=self.height,
                                  xpoint=self.xpoint, ypoint=self.ypoint,
                                  xlabel=self.xlabel, ylabel=self.ylabel,
+                                 fit_line_legend="corrected spectrum",
                                  model=self.model, plot_residuals=False,
                                  plot_ratios=False, enable_user_masking=False)
         # Since we only have "good" points, we don't need a legend
-        p_main.legend.visible = False
+        # -- or so I thought, but I've been overruled.
+        # p_main.legend.visible = False
         self.p_main = p_main
         self.reset_view()
         return [p_main]
@@ -705,6 +713,7 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
 
         super().__init__(init_data, all_fp_init,
                          **kwargs, panel_class=TelluricCorrectPanel,
+                         help_text=TELLURIC_CORRECT_HELP_TEXT,
                          turbo_tabs=True, reinit_live=True,
                          )
 

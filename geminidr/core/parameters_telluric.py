@@ -44,7 +44,7 @@ class telluricCorrectConfig(parameters_generic.calRequirementConfig):
     suffix = config.Field("Filename suffix", str, "_telluricCorrected", optional=True)
     telluric = config.ListField("File with telluric model", (AstroData, str), None,
                                 optional=True, single=True)
-    apply_model = config.Field("Apply the absorption model rather than the data?",
+    apply_model = config.Field("Apply the synthetic absorption rather than the data?",
                                bool, True, optional=False)
     interactive = config.Field("Tweak correction interactively?", bool, False)
     pixel_shift = config.RangeField("Shift in pixels", float, None, min=-5, max=5,

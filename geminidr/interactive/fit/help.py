@@ -352,14 +352,56 @@ SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
 """ + PLOT_TOOLS_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
 
 
-TELLURIC_CORRECT_HELP_TEXT = """
+FIT_TELLURIC_HELP_TEXT = """
 <h2>Help</h2>
 <p>
     This primitive calculates the sensitivity of the instrument and the
-    transmission of the atmosphere by fitting a combination of a sensitivity
-    curve and a telluric absorption model to the data. For cross-dispersed
-    data with multiple orders, the sensitivity curves are calculated
-    independently, but a single absorption model applies to all the data.
+    transmission of the atmosphere by fitting a combination of a smooth
+    sensitivity curve and a telluric absorption model (constructed from
+    PCA components convolved with a model line spread function) to the
+    data. For cross-dispersed data with multiple orders, the sensitivity
+    curves are calculated independently, but a single absorption model
+    applies to all the data.
+</p>
+<p>
+    In the top plot, the red line is the fit to the data, while the blue line
+    shows what the counts would be in the absence of any telluric absorption
+    or, equivalently, the intrinsic stellar spectrum convolved with the
+    calculated sensitivity function. Regions of strong stellar absorption will
+    be initially masked due to prevent the fit being affected by mismatches
+    between the model A0V spectrum and the spectrum of the observed star, but
+    can be unmasked.
+</p>
+<p>    
+    The third plot shows the calculated telluric absorption. The green line
+    (labeled "model") shows the sum of the fitted PCA components, while the
+    blue line (labeled "data") shows the difference between the data and the
+    blue line in the top plot. Either of these absorption spectra can be
+    applied by the telluricCorrect primitive. Differences between these two
+    lines can indicated regions where the continuum is not being well-fit.
+</p>
+<p>    
+    The final plot shows the model instrinsic spectrum of the star in flux
+    density units (blue line) and the self-corrected data using the calculated
+    sensitivity function and PCA absorption model (red line).
+</p>
+<p>
+    The instrinsic stellar spectrum used in this primitive is an A0V model
+    stellar atmosphere from France Allard, modified by the ratio between
+    Planck functions for the chosen blackbody temperature and 9650K. Changes
+    to the blackbody temperature will result in an immediate re-fit, which
+    is fairly quick. Changes to the magnitude (including between Vega and
+    AB-based magnitudes) will only be visible in the flux scale of the bottom
+    plot.
+</p>
+<p>
+    Additional sliders such as "LSF scaling" that lie below the Magnitude
+    checkbox apply modifications to the
+    model line spread function to improve the fit. This parameter is set to
+    the best-fit value when the original fit is performed (or when the "Reset"
+    button is activated) but not when the fit is modified by changes to the
+    blackbody temperature or the fitting parameters in the rightmost panel. It
+    should be modified with care.
 </p>
 <h3>Fitting parameters</h3>
 <dl>""" + FIT1D_PARAMETERS_HELP_WITH_GROW + """
@@ -372,3 +414,25 @@ TELLURIC_CORRECT_HELP_TEXT = """
 </dd>
 </dl>
 """ + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
+
+
+TELLURIC_CORRECT_HELP_TEXT = """
+<h2>Help</h2>
+<p>
+    This GUI does not perform any fitting, but presents the result from
+    applying a telluric correction to the object spectrum.
+</p>
+<p>
+    The absorption spectrum can be shifted using the slider, text box, or
+    nudge buttons, and the airmasses of the target and telluric can be
+    modified from the values in their respective headers to improve the
+    correction.
+</p>
+<p>
+    One of two absorption spectra can be used to correct the object spectrum,
+    corresponding to the blue and green lines in the panel of the fitTelluric
+    GUI. Depending on the quality of the fit and the accuracy of the model
+    line spread function, either the synthetic absorption from the PCA model
+    or the empirical data-derived absorption may provide a better result.
+</p>
+"""
