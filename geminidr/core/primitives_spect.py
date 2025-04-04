@@ -352,13 +352,10 @@ class Spect(Resample):
             for iext, ext in enumerate(ad):
                 offset = None
                 for method in methods:
-                    if method == "wcs":
-                        break
-
                     dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
                     # Calculate offset determined by header (WCS or offsets)
-                    if method == 'sources_wcs':
+                    if 'wcs' in method:
                         coords = ad[iext].wcs.backward_transform(
                             *world_coords)
                         hdr_offset = ref_coords_dict[iext][dispaxis] - coords[dispaxis]
@@ -420,7 +417,7 @@ class Spect(Resample):
                             ax.set_title(f"{ad.filename}:{ext.id}")
                             plt.show()
 
-                    elif method == 'offsets':
+                    elif method is not None:
                         offset = hdr_offset
 
                     if offset is not None:
