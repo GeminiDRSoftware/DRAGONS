@@ -209,9 +209,11 @@ class DragonsConsoleFormatter(logging.Formatter):
     def format(self, record):
         # Levels for which to emit short form
         if record.levelname in self.short_levels:
-            return self._short_formatter.format(record)
+            msg = self._short_formatter.format(record)
+            return msg.replace('\n', '\n' + self._indent_str())
         else:
-            return self._long_formatter.format(record)
+            msg = self._long_formatter.format(record)
+            return msg.replace('\n', '\n' + self._indent_str() + record.levelname + ' - ')
 
 
 def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
