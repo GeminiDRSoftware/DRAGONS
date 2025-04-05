@@ -473,24 +473,25 @@ class Spect(Resample):
                         ext.reset(ext.data[_slice],
                                   mask=None if ext.mask is None else ext.mask[_slice],
                                   variance=None if ext.variance is None else ext.variance[_slice])
+
+                        # Fix the APERTURE table to account for the image flip
+                        try:
+                            aptable = ext.APERTURE
+                        except AttributeError:
+                            pass
+                        else:
+                            aptable['c0'] = ext.shape[ext.dispersion_axis() - 1] - 1 - aptable['c0']
+                            for i in range(1, 10):
+                                try:
+                                    aptable[f'c{i}'] *= -1
+                                except KeyError:
+                                    break
+                            aplow = -aptable['aper_lower']
+                            aptable['aper_lower'] = -aptable['aper_upper']
+                            aptable['aper_upper'] = aplow
+
                     new_sky_model = models.Shift(offset) | ref_sky_model_dict[iext]
                     ext.wcs = am.replace_submodel_in_gwcs(ext.wcs, 'SKY', new_sky_model)
-
-                    # Fix the APERTURE table to account for the image flip
-                    try:
-                        aptable = ext.APERTURE
-                    except AttributeError:
-                        pass
-                    else:
-                        aptable['c0'] = ext.shape[ext.dispersion_axis() - 1] - 1 - aptable['c0']
-                        for i in range(1, 10):
-                            try:
-                                aptable[f'c{i}'] *= -1
-                            except KeyError:
-                                break
-                        aplow = -aptable['aper_lower']
-                        aptable['aper_lower'] = -aptable['aper_upper']
-                        aptable['aper_upper'] = aplow
 
                 ad.phu['SLITOFF'] = offset
             else:
@@ -4192,7 +4193,8 @@ class Spect(Resample):
                 # Currently this is accurate to <0.1 pixel for GMOS.
                 # TODO? Define APERTURE as a function of wavelength, not pixel.
                 if ndim == 2 and hasattr(ext, 'APERTURE'):
-                    offset = spatial_offset.offset.value
+                    offset = (spatial_offset.offset.value -
+                              origin_dict[iext][1 - dispaxis])
                     log.fullinfo("Shifting aperture locations by "
                                  f"{offset:.2f} pixels")
                     apmodels = [am.table_to_model(row) for row in ext.APERTURE]
