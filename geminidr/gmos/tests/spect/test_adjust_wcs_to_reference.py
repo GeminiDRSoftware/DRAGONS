@@ -16,6 +16,16 @@ datasets = [
 ]
 
 
+# Datasets and expected offsets
+flip_datasets = [('N20240904S0010_skyCorrected.fits', None),
+                 ('N20240904S0011_skyCorrected.fits', -124.5),
+                 ('N20240907S0029_skyCorrected.fits', 156.5),
+                 ('N20240907S0030_skyCorrected.fits', 33.2),
+                 ('N20240908S0021_skyCorrected.fits', 30.0),
+                 ('N20240908S0022_skyCorrected.fits', 153.5),
+                 ]
+
+
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
@@ -56,6 +66,32 @@ def test_adjust_wcs_with_correlation(files, path_to_inputs, caplog):
     c0 = skycoords[0]
     for c in skycoords[1:]:
         assert c0.separation(c).arcsecond < 0.5 * pixel_scale
+
+
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+def test_adjust_and_resample_with_flip(path_to_inputs, caplog):
+    """
+    Check that adjustWCSToReference() copes when some data are taken at an
+    antiparallel slit PA.
+    """
+    caplog.set_level(20)
+    adinputs = [astrodata.open(os.path.join(path_to_inputs, f[0]))
+                for f in flip_datasets]
+    p = GMOSLongslit(adinputs)
+    p.adjustWCSToReference(tolerance=3)
+    offsets = [float(rec.message.split()[-2]) for rec in caplog.records
+               if 'pixels' in rec.message]
+
+    # Check offsets are what's expected
+    for offset, expected in zip(offsets, flip_datasets[1:]):
+        assert offset == pytest.approx(expected[1], abs=0.5)
+
+    # Check that the APERTURE table has been flipped and shifted by
+    # checking the brightest source
+    p.resampleToCommonFrame()
+    for ad in p.streams['main']:
+        assert ad[0].APERTURE['c0'][0] == pytest.approx(1773.6, abs=1)
 
 
 # Todo: Implement recipe to create input files
