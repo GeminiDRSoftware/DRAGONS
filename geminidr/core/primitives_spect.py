@@ -321,6 +321,14 @@ class Spect(Resample):
             raw_profile = peak_finding.stack_slit(ext, section=section)
             return raw_profile - np.median(raw_profile)
 
+        def slit_pa(ext):
+            """Return the PA of the slit (left-to-right or bottom-to-top)"""
+            coords = [(0, length - 1) for length in ext.shape[::-1]]
+            spataxis = ext.dispersion_axis() - 1  # python sense
+            coords[spataxis] = (np.mean(coords[spataxis]),) * 2
+            slit_ends = ext.wcs.pixel_to_world(*coords)[1]
+            return slit_ends[0].position_angle(slit_ends[1]).to(u.deg).value
+
         # Use first image in list as reference
         refad = adinputs[0]
         ref_sky_model_dict = {i: am.get_named_submodel(
@@ -330,6 +338,8 @@ class Spect(Resample):
             model.name = None
         log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
+        refpa = slit_pa(refad[0])
+
         if any('sources' in m for m in methods):
             ref_profile_dict = {i: slit_profile(refad[i], section=region)
                                 for i in range(len(refad))}
@@ -343,12 +353,25 @@ class Spect(Resample):
                                for k in range(len(refad))}
 
         # The reference doesn't go through the loop so update it now
-        gt.mark_history(adinputs[0], primname=self.myself(), keyword=timestamp_key)
-        adinputs[0].update_filename(suffix=params["suffix"], strip=True)
+        gt.mark_history(refad, primname=self.myself(),
+                        keyword=timestamp_key)
+        refad.update_filename(suffix=params["suffix"], strip=True)
 
         for ad in adinputs[1:]:
             # Go through the slices and record all the offsets
             offsets = []
+            this_pa = slit_pa(ad[0])
+            log.debug(f"PAs of reference and {ad.filename}: {refpa} {this_pa}")
+            pa_diff = abs(refpa - this_pa)
+            flipped = pa_diff > 90
+            if flipped:
+                log.warning(f"Slit flip detected for image {ad.filename} - "
+                            "please check aligned images.")
+                pa_diff -= 180
+            if abs(pa_diff) > 1:
+                log.warning(f"{ad.filename}: slit PA difference of "
+                            f"{abs(pa_diff):.2f} degrees")
+
             for iext, ext in enumerate(ad):
                 offset = None
                 for method in methods:
@@ -359,15 +382,23 @@ class Spect(Resample):
                         coords = ad[iext].wcs.backward_transform(
                             *world_coords)
                         hdr_offset = ref_coords_dict[iext][dispaxis] - coords[dispaxis]
-                    elif dispaxis == 1:
-                        hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
+                        if flipped:
+                            hdr_offset += (2 * coords[dispaxis] -
+                                           (ext.shape[1 - dispaxis] - 1))
                     else:
-                        hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
+                        if dispaxis == 1:
+                            hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
+                        else:
+                            hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
+                        if flipped:
+                            hdr_offset *= -1
 
                     # Cross-correlate to find real offset and compare. Only look
                     # for a peak in the range defined by "tolerance".
                     if 'sources' in method:
                         profile = slit_profile(ad[iext], section=region)
+                        if flipped:
+                            profile = profile[::-1]
                         corr = np.correlate(ref_profile_dict[iext],
                                             profile, mode='full')
                         expected_peak = corr.size // 2 + hdr_offset
@@ -434,32 +465,36 @@ class Spect(Resample):
                 if integer_offsets:
                     offset = np.round(offset)
                 log.stdinfo(f"{ad.filename}: applying offset of {offset:.2f} pixels")
+
                 for iext, ext in enumerate(ad):
-                    wcs = ext.wcs
-                    frames = wcs.available_frames
-                    for input_frame, output_frame in zip(frames[:-1], frames[1:]):
-                        t = wcs.get_transform(input_frame, output_frame)
-                        try:
-                            sky_model = am.get_named_submodel(t, 'SKY')
-                        except IndexError:
-                            pass
-                        else:
-                            new_sky_model = models.Shift(offset) | ref_sky_model_dict[iext]
-                            new_sky_model.name = 'SKY'
-                            ext.wcs.set_transform(
-                                input_frame, output_frame, t.replace_submodel(
-                                    'SKY', new_sky_model))
-                            break
+                    if flipped:
+                        _slice = (slice(None, None, -1) if dispaxis == 1 else
+                                  (slice(None), slice(None, None, -1)))
+                        ext.reset(ext.data[_slice],
+                                  mask=None if ext.mask is None else ext.mask[_slice],
+                                  variance=None if ext.variance is None else ext.variance[_slice])
+                    new_sky_model = models.Shift(offset) | ref_sky_model_dict[iext]
+                    ext.wcs = am.replace_submodel_in_gwcs(ext.wcs, 'SKY', new_sky_model)
+
+                    # Fix the APERTURE table to account for the image flip
+                    try:
+                        aptable = ext.APERTURE
+                    except AttributeError:
+                        pass
                     else:
-                        raise OSError("Cannot find 'SKY' model in WCS for "
-                                      f"{ad.filename}:{ext.id}")
+                        aptable['c0'] = ext.shape[ext.dispersion_axis() - 1] - 1 - aptable['c0']
+                        for i in range(1, 10):
+                            try:
+                                aptable[f'c{i}'] *= -1
+                            except KeyError:
+                                break
+                        aplow = -aptable['aper_lower']
+                        aptable['aper_lower'] = -aptable['aper_upper']
+                        aptable['aper_upper'] = aplow
+
                 ad.phu['SLITOFF'] = offset
             else:
-                no_offset_msg = f"Cannot determine offset for {ad.filename}"
-                if 'sq' in self.mode:
-                    raise OSError(no_offset_msg)
-                else:
-                    log.warning(no_offset_msg)
+                raise RuntimeError(f"Cannot determine offset for {ad.filename}")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
