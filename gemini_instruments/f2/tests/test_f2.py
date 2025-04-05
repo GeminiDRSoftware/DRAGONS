@@ -31,7 +31,7 @@ F2_DESCRIPTORS_TYPES = [
 def ad(request):
     filename = request.param
     file_path = astrodata.testing.download_from_archive(filename)
-    return astrodata.open(file_path)
+    return astrodata.from_file(file_path)
 
 
 @pytest.mark.dragons_remote_data

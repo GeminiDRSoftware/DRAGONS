@@ -139,7 +139,7 @@ def input_ad_list(path_to_inputs):
         input_path = os.path.join(path_to_inputs, input_fname)
 
         if os.path.exists(input_path):
-            ad = astrodata.open(input_path)
+            ad = astrodata.from_file(input_path)
         else:
             raise FileNotFoundError(input_path)
 
@@ -185,7 +185,7 @@ def create_inputs_recipe():
         sci_path = download_from_archive(filename)
         arc_path = [download_from_archive(f) for f in cals['arcs']]
 
-        sci_ad = astrodata.open(sci_path)
+        sci_ad = astrodata.from_file(sci_path)
         data_label = sci_ad.data_label()
 
         print('Reducing ARC for {:s}'.format(data_label))

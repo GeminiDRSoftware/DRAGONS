@@ -17,7 +17,7 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("filename", ["hip93667_109_ad.fits"])
 def test_fit_telluric(path_to_inputs, path_to_refs, filename):
-    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
 
     pm = PrimitiveMapper(ad.tags, ad.instrument(generic=True).lower(),
                          mode='sq', drpkg='geminidr')
@@ -26,7 +26,7 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename):
     adout = p.fitTelluric(magnitude="K=5.241", bbtemp=9650,
                           shift_tolerance=None).pop()
 
-    adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
+    adref = astrodata.from_file(os.path.join(path_to_refs, adout.filename))
     assert ad_compare(adout, adref)
     assert np.allclose(adout[0].TELLFIT['PCA coefficients'].data,
                        adref[0].TELLFIT['PCA coefficients'].data)
@@ -44,7 +44,7 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename):
                          ])
 def test_get_atran_linelist(filename, model_params, change_working_dir,
                              path_to_inputs, path_to_refs):
-    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
     p = GNIRSLongslit([])
     wave_model = am.get_named_submodel(ad[0].wcs.forward_transform, 'WAVE')
     linelist = p._get_atran_linelist(wave_model=wave_model, ext=ad[0],

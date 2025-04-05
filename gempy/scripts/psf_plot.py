@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 def main():
     filename = sys.argv[1]
 
-    ad = astrodata.open(filename)
+    ad = astrodata.from_file(filename)
     objcat = ad[0].OBJCAT
     catx = objcat.field("X_IMAGE")
     caty = objcat.field("Y_IMAGE")

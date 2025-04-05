@@ -21,7 +21,7 @@ datasets = [("S20230514S0006.fits", {"bias": "S20230513S0439.fits",
 @pytest.fixture
 def input_filename(change_working_dir, request):
     with change_working_dir():
-        ad = astrodata.open(download_from_archive(request.param))
+        ad = astrodata.from_file(download_from_archive(request.param))
         p = GHOSTBundle([ad])
         adoutputs = p.splitBundle()
         return_dict = {}
@@ -59,8 +59,8 @@ def test_reduce_arc(input_filename, caldict, arm, path_to_inputs, path_to_refs):
     makeProcessedArc(p)
     assert len(p.streams['main']) == 1
     output_filename = p.streams['main'][0].filename
-    adout = astrodata.open(os.path.join("calibrations", "processed_arc", output_filename))
-    adref = astrodata.open(os.path.join(path_to_refs, output_filename))
+    adout = astrodata.from_file(os.path.join("calibrations", "processed_arc", output_filename))
+    adref = astrodata.from_file(os.path.join(path_to_refs, output_filename))
     # Changed timestamp kw from STCKARCS -> STACKARC and don't have time to
     # re-upload reference, so just add these to the "ignore" list
     assert ad_compare(adref, adout, ignore_kw=['PROCARC', 'STACKARC', 'STCKARCS'])

@@ -5,6 +5,6 @@ from ..gemini import addInstrumentFilterWavelengths
 from .adclass import AstroDataGmos
 from .lookup import filter_wavelengths
 
-factory.addClass(AstroDataGmos)
+factory.add_class(AstroDataGmos)
 # Use the generic GMOS name for both GMOS-N and GMOS-S
 addInstrumentFilterWavelengths('GMOS', filter_wavelengths)

@@ -127,7 +127,7 @@ class OutAtList(GmosaicFile):
         log.debug("OutAtList recover()")
         adlist = []
         for i, tmpname in enumerate(self.diskoutlist):
-            ad = astrodata.open(tmpname)
+            ad = astrodata.from_file(tmpname)
             ad.filename = self.ad_name[i]
             ad = gemini_tools.obsmode_del(ad)
             adlist.append(ad)

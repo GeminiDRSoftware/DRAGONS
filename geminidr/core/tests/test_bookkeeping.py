@@ -144,7 +144,7 @@ class TestBookkeeping:
         filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
                      for i in range(104, 109)]
 
-        adinputs = [astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', f))
+        adinputs = [astrodata.from_file(os.path.join(TESTDATAPATH, 'NIRI', f))
                     for f in filenames]
 
         # Add one image twice, just for laughs; it should appear only once
@@ -180,7 +180,7 @@ class TestBookkeeping:
         filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
                      for i in range(104, 106)]
 
-        adinputs = [astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', f))
+        adinputs = [astrodata.from_file(os.path.join(TESTDATAPATH, 'NIRI', f))
                     for f in filenames]
 
         p = NIRIImage(adinputs)

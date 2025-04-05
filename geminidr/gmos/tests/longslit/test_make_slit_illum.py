@@ -287,7 +287,7 @@ def test_split_mosaic_into_extensions_metadata(filename):
     """
     Tests that the metadata is correctly propagated to the split object.
     """
-    ad = astrodata.open(download_from_archive(filename))
+    ad = astrodata.from_file(download_from_archive(filename))
 
     p = primitives_gmos_longslit.GMOSLongslit([ad])
     p.prepare()
@@ -328,7 +328,7 @@ def ad(request, path_to_inputs):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
-        ad = astrodata.open(path)
+        ad = astrodata.from_file(path)
     else:
         raise FileNotFoundError(path)
 
@@ -388,7 +388,7 @@ def create_inputs_recipe():
         twilight_path = [download_from_archive(f) for f in cals['twilight']]
         bias_path = [download_from_archive(f) for f in cals['bias']]
 
-        twilight_ad = astrodata.open(twilight_path[0])
+        twilight_ad = astrodata.from_file(twilight_path[0])
         data_label = twilight_ad.data_label()
 
         print('Reducing BIAS for {:s}'.format(data_label))
@@ -406,7 +406,7 @@ def create_inputs_recipe():
             warnings.simplefilter("ignore")
 
             p = primitives_gmos_longslit.GMOSLongslit(
-                [astrodata.open(f) for f in twilight_path])
+                [astrodata.from_file(f) for f in twilight_path])
 
             p.prepare()
             p.addDQ(static_bpm=None)

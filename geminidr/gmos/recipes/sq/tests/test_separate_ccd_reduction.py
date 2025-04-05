@@ -37,7 +37,7 @@ def test_separate_ccd_reduction_astrometry(change_working_dir):
             r.recipename = recipe_name
             r.suffix = f"_{recipe_name}"
             r.runr()
-            adoutputs.append(astrodata.open(r._output_filenames[0]))
+            adoutputs.append(astrodata.from_file(r._output_filenames[0]))
 
     p = GMOSImage(adoutputs)
     p.detectSources()

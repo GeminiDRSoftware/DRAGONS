@@ -21,7 +21,7 @@ TESFILE2 = "S20190808S0048_varAdded.fits"  # R400 at 0.740 um
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('bkgmodel', ['both', 'object', 'skyline', 'none'])
 def test_cosmics_on_mosaiced_data(path_to_inputs, caplog, bkgmodel):
-    ad = astrodata.open(os.path.join(path_to_inputs, TESFILE1))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, TESFILE1))
     ext = ad[0]
 
     # add some additional fake cosmics
@@ -62,7 +62,7 @@ def test_cosmics_on_mosaiced_data(path_to_inputs, caplog, bkgmodel):
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('bkgmodel', ['both', 'object', 'skyline', 'none'])
 def test_cosmics(path_to_inputs, caplog, bkgmodel):
-    ad = astrodata.open(os.path.join(path_to_inputs, TESFILE2))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, TESFILE2))
 
     for ext in ad:
         # add some additional fake cosmics
@@ -124,7 +124,7 @@ def create_inputs_recipe():
     print('Current working directory:\n    {!s}'.format(path.cwd()))
 
     for fname in fnames:
-        sci_ad = astrodata.open(download_from_archive(fname))
+        sci_ad = astrodata.from_file(download_from_archive(fname))
         data_label = sci_ad.data_label()
 
         print('===== Reducing pre-processed data =====')

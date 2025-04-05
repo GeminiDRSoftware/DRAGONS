@@ -11,7 +11,7 @@ filename = 'N20190120S0287.fits'
 @pytest.fixture()
 def ad():
     path = astrodata.testing.download_from_archive(filename)
-    return astrodata.open(path)
+    return astrodata.from_file(path)
 
 
 @pytest.mark.xfail(reason="AstroFaker changes the AstroData factory")

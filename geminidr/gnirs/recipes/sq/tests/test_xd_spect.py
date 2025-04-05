@@ -97,11 +97,11 @@ def test_reduce_xd_spect(path_to_inputs, path_to_refs, change_working_dir,
         output = reduce(sci_paths, f"sci_{test_case}", cals,
                         user_pars=upars,
                         return_output=True)
-        ad_out_2d = astrodata.open(output[0].replace("1D", "2D"))
-        ad_out_1d = astrodata.open(output[0])
+        ad_out_2d = astrodata.from_file(output[0].replace("1D", "2D"))
+        ad_out_1d = astrodata.from_file(output[0])
         single = "single" if single_wave_scale else "notsingle"
         ref_filename = output[0].replace("_", f"_{single}_")
-        ad_ref_1d = astrodata.open(os.path.join(path_to_refs, ref_filename))
+        ad_ref_1d = astrodata.from_file(os.path.join(path_to_refs, ref_filename))
 
         # Check fewer than 3 apertures extracted
         assert len(ad_out_2d[0].APERTURE) < 3
@@ -169,7 +169,7 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
 # -- Fixtures -----------------------------------------------------------------
 @pytest.fixture(scope='function')
 def gnirs_files(files):
-    return [astrodata.open(download_from_archive(f) for f in files)]
+    return [astrodata.from_file(download_from_archive(f) for f in files)]
 
 @pytest.fixture(scope='module')
 def keep_data(request):

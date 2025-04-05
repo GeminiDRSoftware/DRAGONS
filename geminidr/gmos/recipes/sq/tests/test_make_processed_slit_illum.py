@@ -62,7 +62,7 @@ def processed_slit_illum(change_working_dir, path_to_inputs, request):
     """
     twi_filename = request.param
     twi_path = download_from_archive(twi_filename)
-    twi_ad = astrodata.open(twi_path)
+    twi_ad = astrodata.from_file(twi_path)
 
     print(twi_ad.tags)
 
@@ -86,7 +86,7 @@ def processed_slit_illum(change_working_dir, path_to_inputs, request):
         reduce.runr()
 
         _processed_twi_filename = reduce.output_filenames.pop()
-        _processed_twi = astrodata.open(_processed_twi_filename)
+        _processed_twi = astrodata.from_file(_processed_twi_filename)
 
     return _processed_twi
 

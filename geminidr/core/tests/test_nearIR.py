@@ -113,7 +113,7 @@ def test_remove_first_frame_by_filename():
                           "S20070131S0105",  # GNIRS XD spectrum
                           ])
 def test_clean_readout(in_file, path_to_inputs, path_to_refs):
-    ad = astrodata.open(os.path.join(path_to_inputs,
+    ad = astrodata.from_file(os.path.join(path_to_inputs,
                                      in_file + '_skyCorrected.fits'))
 
     # Must use the correct default parameters, since this is a test that the
@@ -124,7 +124,7 @@ def test_clean_readout(in_file, path_to_inputs, path_to_refs):
     p = pclass([ad])
     ad_out = p.cleanReadout(clean="default")[0]
 
-    ref = astrodata.open(os.path.join(path_to_refs, ad.filename))
+    ref = astrodata.from_file(os.path.join(path_to_refs, ad.filename))
     assert ad_compare(ad_out, ref, atol=0.01)
 
 
@@ -146,7 +146,7 @@ def test_clean_readout(in_file, path_to_inputs, path_to_refs):
                           "N20231112S0136",  # GNIRS LS
                           ])
 def test_clean_fftreadout(in_file, path_to_inputs, path_to_refs):
-    ad = astrodata.open(os.path.join(path_to_inputs, in_file + '_skyCorrected.fits'))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, in_file + '_skyCorrected.fits'))
     # Must use the correct default parameters, since this is a test that the
     # defaults haven't changed
     pm = PrimitiveMapper(ad.tags, ad.instrument(generic=True).lower(),
@@ -154,5 +154,5 @@ def test_clean_fftreadout(in_file, path_to_inputs, path_to_refs):
     pclass = pm.get_applicable_primitives()
     p = pclass([ad])    
     ad_out = p.cleanFFTReadout(clean="default")[0]
-    ref = astrodata.open(os.path.join(path_to_refs, in_file + '_readoutFFTCleaned.fits'))
+    ref = astrodata.from_file(os.path.join(path_to_refs, in_file + '_readoutFFTCleaned.fits'))
     assert ad_compare(ad_out, ref, atol=0.01)

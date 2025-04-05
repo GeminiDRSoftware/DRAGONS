@@ -13,7 +13,7 @@ from geminidr.f2.primitives_f2_longslit import F2Longslit
 # ---- Fixtures ---------------------------------------------------------------
 @pytest.fixture
 def f2_abba():
-    return [astrodata.open(download_from_archive(f)) for f in
+    return [astrodata.from_file(download_from_archive(f)) for f in
             ('S20200301S0071.fits', 'S20200301S0072.fits',
              'S20200301S0073.fits', 'S20200301S0074.fits')]
 
@@ -90,7 +90,7 @@ def test_associate_sky_quasi_abcde():
              'S20210515S0203.fits', 'S20210515S0206.fits',
              'S20210515S0208.fits']
 
-    data = [astrodata.open(download_from_archive(f)) for f in files]
+    data = [astrodata.from_file(download_from_archive(f)) for f in files]
 
     p = F2Longslit(data)
     p.prepare()

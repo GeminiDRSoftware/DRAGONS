@@ -24,7 +24,7 @@ test_files = [
 def ad(request):
     filename = request.param
     path = astrodata.testing.download_from_archive(filename)
-    return astrodata.open(path)
+    return astrodata.from_file(path)
 
 
 @pytest.mark.dragons_remote_data
@@ -40,7 +40,7 @@ def test_can_return_ad_length(ad):
 @pytest.mark.dragons_remote_data
 def test_instrument():
     path = astrodata.testing.download_from_archive("S20221209S0007.fits")
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
     assert ad.phu['INSTRUME'] == 'GHOST'
     assert ad.instrument() == 'GHOST'
 
@@ -48,7 +48,7 @@ def test_instrument():
 @pytest.mark.dragons_remote_data
 def test_various_tags():
     path = astrodata.testing.download_from_archive("S20221209S0007.fits")
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
     # assert 'STD' in ad.tags  #STD is no longer a tag
     assert 'GHOST' in ad.tags
     assert 'BUNDLE' in ad.tags
@@ -57,7 +57,7 @@ def test_various_tags():
 @pytest.mark.dragons_remote_data
 def test_detector_x_bin():
     path = astrodata.testing.download_from_archive("S20221209S0007.fits")
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
     xbin = ad.detector_x_bin()
     # should be a dict, since we are a bundle
     assert(isinstance(xbin, dict))
@@ -66,7 +66,7 @@ def test_detector_x_bin():
 @pytest.mark.dragons_remote_data
 def test_ut_datetime():
     path = astrodata.testing.download_from_archive("S20221209S0007.fits")
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
     udt = ad.ut_datetime()
     # Check against expected UT Datetime, this descriptor also exercises the nascent PHU logic
     assert(abs(udt - datetime(2022, 12, 8, 20, 52, 22)) < timedelta(seconds=1))
@@ -75,7 +75,7 @@ def test_ut_datetime():
 @pytest.mark.dragons_remote_data
 def test_data_label():
     path = astrodata.testing.download_from_archive("S20221209S0007.fits")
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
     dl = ad.data_label()
     # Check against expected UT Datetime, this descriptor also exercises the nascent PHU logic
     assert(dl == 'GS-ENG-GHOST-COM-3-123-001')
@@ -84,21 +84,21 @@ def test_data_label():
 @pytest.mark.dragons_remote_data
 def test_tab_bias():
     path = astrodata.testing.download_from_archive("S20221208S0089.fits")
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
     assert('BIAS' in ad.tags)
 
 
 @pytest.mark.dragons_remote_data
 def test_tab_flat():
     path = astrodata.testing.download_from_archive("S20221209S0026.fits")
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
     assert('FLAT' in ad.tags)
 
 
 @pytest.mark.dragons_remote_data
 def test_tab_arc():
     path = astrodata.testing.download_from_archive("S20221208S0064.fits")
-    ad = astrodata.open(path)
+    ad = astrodata.from_file(path)
     assert('ARC' in ad.tags)
 
 

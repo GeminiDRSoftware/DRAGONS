@@ -18,7 +18,7 @@ def test_longslit_wcs(change_working_dir, filename):
     """
     with change_working_dir():
         file_path = download_from_archive(filename)
-        ad = astrodata.open(file_path)
+        ad = astrodata.from_file(file_path)
         p = GNIRSLongslit([ad])
         coords1 = ad[0].wcs(X, Y)
         p.prepare()
@@ -26,7 +26,7 @@ def test_longslit_wcs(change_working_dir, filename):
         assert len(coords2) == 3
         np.testing.assert_allclose(coords1, coords2[1:], atol=1e-6)
         ad.write("test.fits", overwrite=True)
-        ad2 = astrodata.open("test.fits")
+        ad2 = astrodata.from_file("test.fits")
         assert "FITS-WCS" not in ad2.phu  # not APPROXIMATE
         coords3 = ad[0].wcs(X, Y)
         assert len(coords3) == 3

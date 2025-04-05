@@ -19,7 +19,7 @@ def main():
 
     filename = get_stack_filename()
 
-    ad = astrodata.open(filename)
+    ad = astrodata.from_file(filename)
 
     fig = plt.figure(num=filename, figsize=(7, 4.5))
     fig.suptitle(os.path.basename(filename), y=0.97)

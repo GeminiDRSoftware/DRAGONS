@@ -37,7 +37,7 @@ def test_adjust_wcs_with_correlation(files, path_to_inputs, caplog):
     params = {'max_apertures': 1, 'percentile': 80, 'min_sky_region': 50,
               'min_snr': 5.0, 'use_snr': True, 'threshold': 0.1, 'section': ""}
 
-    adinputs = [astrodata.open(os.path.join(path_to_inputs, f)) for f in files]
+    adinputs = [astrodata.from_file(os.path.join(path_to_inputs, f)) for f in files]
     pixel_scale = adinputs[0].pixel_scale()
     centers = []
     # GMOS version can use pre-found apertures; GNIRS doesn't have findApertures()

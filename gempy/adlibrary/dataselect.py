@@ -139,7 +139,7 @@ def select_data(inputs, tags=[], xtags=[], expression='True', adpkg=None):
 
     selected_data = []
     for input in inputs:
-        ad = astrodata.open(input)
+        ad = astrodata.from_file(input)
         adtags = ad.tags
         if set(tags).issubset(adtags) and \
                not len(set(xtags).intersection(adtags)) and \

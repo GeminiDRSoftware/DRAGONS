@@ -14,7 +14,7 @@ def test_skip_primitive(change_working_dir, primitive_name, num_outputs):
     """Reduce some biases and confirm that the correct thing is skipped (or not)"""
     with change_working_dir():
         files = [download_from_archive(f"N20210101S{i:04d}.fits") for i in range(534, 537)]
-        adinputs = [astrodata.open(f) for f in files]
+        adinputs = [astrodata.from_file(f) for f in files]
         p = GMOS(adinputs, uparms={f'{primitive_name}:skip_primitive': True})
         makeProcessedBias(p)
         assert len(p.streams['main']) == num_outputs

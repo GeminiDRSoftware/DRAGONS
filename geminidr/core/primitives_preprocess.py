@@ -269,7 +269,7 @@ class Preprocess(PrimitivesBASE):
             # Produce a list of AD objects from the sky frame/list
             ad_skies = sky if isinstance(sky, list) else [sky]
             ad_skies = [ad if isinstance(ad, astrodata.AstroData) else
-                           astrodata.open(ad) for ad in ad_skies]
+                           astrodata.from_file(ad) for ad in ad_skies]
         else:  # get from sky stream (put there by separateSky)
             ad_skies = self.streams.get('sky', [])
 
@@ -1540,7 +1540,7 @@ class Preprocess(PrimitivesBASE):
                     break
             else:
                 try:
-                    sky = astrodata.open(filename)
+                    sky = astrodata.from_file(filename)
                 except astrodata.AstroDataError:
                     log.warning(f"Cannot find a sky file named {filename}. "
                                 "Ignoring it.")

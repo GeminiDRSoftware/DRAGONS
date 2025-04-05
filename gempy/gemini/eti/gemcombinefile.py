@@ -114,7 +114,7 @@ class OutFile(GemcombineFile):
 
     def recover(self):
         log.debug("OufileETIFile recover()")
-        ad = astrodata.open(self.tmp_name)
+        ad = astrodata.from_file(self.tmp_name)
         ad.filename = self.ad_name
         ad = gemini_tools.obsmode_del(ad)
         log.fullinfo(self.tmp_name + " was loaded into memory")

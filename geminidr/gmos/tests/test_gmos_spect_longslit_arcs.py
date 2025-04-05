@@ -202,7 +202,7 @@ class ConfigTest:
 
     @staticmethod
     def reduce(filename):
-        _p = GMOSLongslit([astrodata.open(filename)])
+        _p = GMOSLongslit([astrodata.from_file(filename)])
         _p.viewer = geminidr.dormantViewer(_p, None)
 
         _p.prepare()
@@ -264,7 +264,7 @@ class TestGmosSpectLongslitArcs:
             pytest.fail("Reference file not found: {}".format(reference))
 
         ad_out = config.ad
-        ad_ref = astrodata.open(reference)
+        ad_ref = astrodata.from_file(reference)
 
         for ext_out, ext_ref in zip(ad_out, ad_ref):
             model = am.get_named_submodel(ext_out.wcs.forward_transform, 'WAVE')
@@ -294,7 +294,7 @@ class TestGmosSpectLongslitArcs:
             pytest.fail("Reference file not found: {}".format(reference))
 
         ad_out = config.ad
-        ad_ref = astrodata.open(reference)
+        ad_ref = astrodata.from_file(reference)
 
         # Test reduced arcs are similar
         for ext_out, ext_ref in zip(ad_out, ad_ref):
@@ -326,7 +326,7 @@ class TestGmosSpectLongslitArcs:
 
         p = GMOSLongslit([])
 
-        ad_out = astrodata.open(output)
+        ad_out = astrodata.from_file(output)
         ad_out_corrected_with_out = p.distortionCorrect([ad_out], arc=output)[0]
         ad_out_corrected_with_ref = p.distortionCorrect([ad_out], arc=reference)[0]
 
@@ -372,7 +372,7 @@ class TestGmosSpectLongslitArcs:
 
         # B600:0.500 HAM, ROI="Central Spectrum" ---
         cs = Config("N20171016S0010.fits")
-        cs.ad = astrodata.open(os.path.join(cs.output_dir, cs.filename))
+        cs.ad = astrodata.from_file(os.path.join(cs.output_dir, cs.filename))
 
         # B600:0.500 HAM, ROI="Full Frame" ---
         ff = Config("N20171016S0127.fits")
@@ -423,7 +423,7 @@ class TestGmosSpectLongslitArcs:
         # if not os.path.exists(reference):
         #     pytest.fail('Reference file not found: {}'.format(reference))
         #
-        # ad_ref = astrodata.open(reference)
+        # ad_ref = astrodata.from_file(reference)
 
         os.rename(filename, os.path.join(config.output_dir, filename))
         # Evaluate them ---

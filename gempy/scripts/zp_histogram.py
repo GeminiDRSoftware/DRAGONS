@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 def main():
     filename = sys.argv[1]
 
-    ad = astrodata.open(filename)
+    ad = astrodata.from_file(filename)
     objcat = ad[0].OBJCAT
 
     # check if there's a REFCAT.  If not, then the OBJCAT will be

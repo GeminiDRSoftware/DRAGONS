@@ -34,5 +34,5 @@ def test_saturation_level_modification_in_overscan_correct(raw_ad):
 @pytest.fixture(scope='function')
 def raw_ad(request):
     filename = request.param
-    raw_ad = astrodata.open(download_from_archive(filename))
+    raw_ad = astrodata.from_file(download_from_archive(filename))
     return raw_ad

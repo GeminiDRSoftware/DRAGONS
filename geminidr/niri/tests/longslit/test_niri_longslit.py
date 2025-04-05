@@ -15,7 +15,7 @@ from geminidr.niri.primitives_niri_longslit import NIRILongslit
 @pytest.mark.dragons_remote_data
 def test_addMDF():
 
-    p = NIRILongslit([astrodata.open(
+    p = NIRILongslit([astrodata.from_file(
             download_from_archive('N20100620S0116.fits'))])
     ad = p.prepare()[0]  # Includes addMDF() as a step.
 

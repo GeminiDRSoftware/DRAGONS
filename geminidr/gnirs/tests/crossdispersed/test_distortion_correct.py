@@ -30,7 +30,7 @@ params_distcorr = {'interpolant': 'poly3', 'subsample': 1, 'dq_threshold': 0.001
 @pytest.mark.parametrize("filename", test_files)
 def test_distortion_correct_coords_roundtrip(filename, path_to_inputs):
 
-    ad_in = astrodata.open(os.path.join(path_to_inputs, filename))
+    ad_in = astrodata.from_file(os.path.join(path_to_inputs, filename))
 
     abs_diff = 10 if 'Long' in ad_in.camera() else 6 # Roughly 1" for both
 

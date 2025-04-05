@@ -398,7 +398,7 @@ class AstroDataGemini(AstroData):
 
     def _parse_section(self, keyword, pretty):
         try:
-            value_filter = lambda x: (x.asIRAFsection() if pretty else x)
+            value_filter = lambda x: (x.as_iraf_section() if pretty else x)
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':

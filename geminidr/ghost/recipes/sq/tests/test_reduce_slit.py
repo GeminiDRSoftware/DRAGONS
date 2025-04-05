@@ -27,13 +27,13 @@ sci_datasets = [("S20230513S0232_slit.fits", {"processed_bias": "S20230513S0012_
 @pytest.mark.parametrize("input_filename", bias_datasets)
 def test_reduce_slit_bias(input_filename, path_to_inputs, path_to_refs, change_working_dir):
     """Test the complete reduction of slitviewer bias frames"""
-    ad = astrodata.open(os.path.join(path_to_inputs, input_filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, input_filename))
     p = GHOSTSlit([ad])
     with change_working_dir():
         makeProcessedSlitBias(p)
         output_filename = p.streams['main'][0].filename
-        adout = astrodata.open(os.path.join("calibrations", "processed_bias", output_filename))
-        adref = astrodata.open(os.path.join(path_to_refs, output_filename))
+        adout = astrodata.from_file(os.path.join("calibrations", "processed_bias", output_filename))
+        adref = astrodata.from_file(os.path.join(path_to_refs, output_filename))
         assert ad_compare(adref, adout, ignore_kw=['PROCBIAS'])
 
 
@@ -43,15 +43,15 @@ def test_reduce_slit_bias(input_filename, path_to_inputs, path_to_refs, change_w
 def test_reduce_slit_flat(input_filename, processed_bias, path_to_inputs,
                           path_to_refs, change_working_dir):
     """Test the complete reduction of slitviewer flat frames"""
-    ad = astrodata.open(os.path.join(path_to_inputs, input_filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, input_filename))
     processed_bias = os.path.join(path_to_inputs, processed_bias)
     ucals = {"processed_bias": processed_bias}
     p = GHOSTSlit([ad], ucals=ucals)
     with change_working_dir():
         makeProcessedSlitFlat(p)
         output_filename = p.streams['main'][0].filename
-        adout = astrodata.open(os.path.join("calibrations", "processed_slitflat", output_filename))
-        adref = astrodata.open(os.path.join(path_to_refs, output_filename))
+        adout = astrodata.from_file(os.path.join("calibrations", "processed_slitflat", output_filename))
+        adref = astrodata.from_file(os.path.join(path_to_refs, output_filename))
         assert ad_compare(adref, adout, ignore_kw=['PRSLITFL'])
 
 
@@ -61,15 +61,15 @@ def test_reduce_slit_flat(input_filename, processed_bias, path_to_inputs,
 def test_reduce_slit_arc(input_filename, caldict, path_to_inputs,
                          path_to_refs, change_working_dir):
     """Test the complete reduction of slitviewer arc frames"""
-    ad = astrodata.open(os.path.join(path_to_inputs, input_filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, input_filename))
     ucals = {k: os.path.join(path_to_inputs, v)
              for k, v in caldict.items()}
     p = GHOSTSlit([ad], ucals=ucals)
     with change_working_dir():
         makeProcessedSlitArc(p)
         output_filename = p.streams['main'][0].filename
-        adout = astrodata.open(os.path.join("calibrations", "processed_slit", output_filename))
-        adref = astrodata.open(os.path.join(path_to_refs, output_filename))
+        adout = astrodata.from_file(os.path.join("calibrations", "processed_slit", output_filename))
+        adref = astrodata.from_file(os.path.join(path_to_refs, output_filename))
         assert ad_compare(adref, adout, ignore_kw=['PRSLITIM'])
 
 
@@ -79,13 +79,13 @@ def test_reduce_slit_arc(input_filename, caldict, path_to_inputs,
 def test_reduce_slit_science(input_filename, caldict, path_to_inputs,
                              path_to_refs, change_working_dir):
     """Test the complete reduction of slitviewer science frames"""
-    ad = astrodata.open(os.path.join(path_to_inputs, input_filename))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, input_filename))
     ucals = {k: os.path.join(path_to_inputs, v)
              for k, v in caldict.items()}
     p = GHOSTSlit([ad], ucals=ucals)
     with change_working_dir():
         makeProcessedSlit(p)
         for output_filename in [ad.filename for ad in p.streams['main']]:
-            adout = astrodata.open(os.path.join("calibrations", "processed_slit", output_filename))
-            adref = astrodata.open(os.path.join(path_to_refs, output_filename))
+            adout = astrodata.from_file(os.path.join("calibrations", "processed_slit", output_filename))
+            adref = astrodata.from_file(os.path.join(path_to_refs, output_filename))
             assert ad_compare(adref, adout, ignore_kw=['PRSLITIM'])

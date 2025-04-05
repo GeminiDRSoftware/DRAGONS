@@ -38,7 +38,7 @@ def test_resample_to_common_frame_with_defaults(input_ad_list, path_to_refs,
     ad_out = p.stackFrames()[0]
     _check_params(caplog.records, 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029')
     assert 'ALIGN' in ad_out[0].phu
-    ref = astrodata.open(os.path.join(path_to_refs,
+    ref = astrodata.from_file(os.path.join(path_to_refs,
                                       'N20240329S0022_stack_defaults.fits'))
 
     np.testing.assert_allclose(ad_out[0].data, ref[0].data)
@@ -54,7 +54,7 @@ def test_resample_to_common_frame_trim_spectral(input_ad_list, path_to_refs,
     ad_out = p.stackFrames()[0]
     _check_params(caplog.records, 'w1=1664.096 w2=1666.589 dw=0.138 npix=19')
     assert 'ALIGN' in ad_out[0].phu
-    ref = astrodata.open(os.path.join(path_to_refs,
+    ref = astrodata.from_file(os.path.join(path_to_refs,
                                       'N20240329S0022_stack_trim_spectral_True.fits'))
 
     np.testing.assert_allclose(ad_out[0].data, ref[0].data)
@@ -71,7 +71,7 @@ def test_resample_to_common_frame_trim_spatial(input_ad_list, path_to_refs,
     # This should be the same as test_resample_to_common_frame_with_defaults()
     _check_params(caplog.records, 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029')
     assert 'ALIGN' in ad_out[0].phu
-    ref = astrodata.open(os.path.join(path_to_refs,
+    ref = astrodata.from_file(os.path.join(path_to_refs,
                                       'N20240329S0022_stack_trim_spatial_False.fits'))
 
     np.testing.assert_allclose(ad_out[0].data, ref[0].data)
@@ -113,7 +113,7 @@ def input_ad_list(path_to_inputs):
         input_path = os.path.join(path_to_inputs, input_fname)
 
         if os.path.exists(input_path):
-            ad = astrodata.open(input_path)
+            ad = astrodata.from_file(input_path)
         else:
             raise FileNotFoundError(input_path)
 

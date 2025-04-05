@@ -26,7 +26,7 @@ from geminidr.niri.primitives_niri_image import NIRIImage
 def ad(path_to_inputs):
     """Has been run through prepare, addDQ, overscanCorrect, detectSources,
        addReferenceCatalog, determineAstrometricSolution"""
-    ad = astrodata.open(os.path.join(path_to_inputs, "N20150624S0106_astrometryCorrected.fits"))
+    ad = astrodata.from_file(os.path.join(path_to_inputs, "N20150624S0106_astrometryCorrected.fits"))
     return ad
 
 
@@ -148,7 +148,7 @@ def test_measureIQ(caplog, ad):
 def test_measureIQ_no_objcat_AO(caplog):
     """Confirm we get a report with AO seeing if no OBJCAT"""
     caplog.set_level(logging.DEBUG)
-    ad = astrodata.open(download_from_archive("N20131215S0156.fits"))
+    ad = astrodata.from_file(download_from_archive("N20131215S0156.fits"))
     p = NIRIImage([ad])
     p.measureIQ()
 
@@ -167,7 +167,7 @@ def test_measureIQ_no_objcat_AO(caplog):
 def test_measure_IQ_GMOS_thru_slit(caplog):
     """Measure on a GMOS thru-slit LS observation"""
     caplog.set_level(logging.DEBUG)
-    ad = astrodata.open(download_from_archive("N20180521S0099.fits"))
+    ad = astrodata.from_file(download_from_archive("N20180521S0099.fits"))
     p = GMOSImage([ad])
     p.prepare(attach_mdf=True)
     p.addDQ()
@@ -185,7 +185,7 @@ def test_measure_IQ_GMOS_thru_slit(caplog):
 @pytest.mark.dragons_remote_data
 def test_measureIQ_no_objcat():
     """Confirm the primitive doesn't crash with no OBJCAT"""
-    ad = astrodata.open(download_from_archive("N20180105S0064.fits"))
+    ad = astrodata.from_file(download_from_archive("N20180105S0064.fits"))
     p = GMOSImage([ad])
     p.measureIQ()[0]
 
@@ -193,7 +193,7 @@ def test_measureIQ_no_objcat():
 @pytest.mark.dragons_remote_data
 def test_measureIQ_no_objcat_GSAOI():
     """Confirm the primitive doesn't for GSAOI with no OBJCAT"""
-    ad = astrodata.open(download_from_archive("S20150528S0112.fits"))
+    ad = astrodata.from_file(download_from_archive("S20150528S0112.fits"))
     p = NIRIImage([ad])
     p.measureBG()[0]
 
@@ -201,6 +201,6 @@ def test_measureIQ_no_objcat_GSAOI():
 @pytest.mark.dragons_remote_data
 def test_measureBG_no_zeropoint(caplog):
     """Confirm the primitive doesn't crash with no nominal_photometric_zeropoint"""
-    ad = astrodata.open(download_from_archive("N20131215S0152.fits"))
+    ad = astrodata.from_file(download_from_archive("N20131215S0152.fits"))
     p = NIRIImage([ad])
     p.measureBG()[0]

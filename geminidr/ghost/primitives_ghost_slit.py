@@ -641,7 +641,7 @@ def _total_obj_flux(log, res, ut_date, filename, data, flat_data=None, binning=2
     slitv_fn = polyfit_lookup.get_polyfit_filename(log, 'slitv',
                                                    res, ut_date, filename,
                                                    'slitvmod')
-    slitvpars = astrodata.open(slitv_fn)
+    slitvpars = astrodata.from_file(slitv_fn)
     svobj = SlitView(data, flat_data, slitvpars.TABLE[0], mode=res,
                      microns_pix=4.54*180/50, binning=binning)  # OK to pass None for flat
     reds = svobj.object_slit_profiles(

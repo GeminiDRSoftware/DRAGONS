@@ -155,9 +155,9 @@ class GHOSTSpect(GHOST):
         arc_before_file = params["arc_before"]
         arc_after_file = params["arc_after"]
         if arc_before_file:
-            arc_before = astrodata.open(arc_before_file)
+            arc_before = astrodata.from_file(arc_before_file)
         if arc_after_file:
-            arc_after = astrodata.open(arc_after_file)
+            arc_after = astrodata.from_file(arc_after_file)
 
         input_frame = adwcs.pixel_frame(2)
         output_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
@@ -1003,10 +1003,10 @@ class GHOSTSpect(GHOST):
                 poly_spat = self._get_polyfit_filename(ad, 'spatmod')
                 poly_spec = self._get_polyfit_filename(ad, 'specmod')
                 poly_rot = self._get_polyfit_filename(ad, 'rotmod')
-                wpars = astrodata.open(poly_wave)
-                spatpars = astrodata.open(poly_spat)
-                specpars = astrodata.open(poly_spec)
-                rotpars = astrodata.open(poly_rot)
+                wpars = astrodata.from_file(poly_wave)
+                spatpars = astrodata.from_file(poly_spat)
+                specpars = astrodata.from_file(poly_spec)
+                rotpars = astrodata.from_file(poly_rot)
             except IOError:
                 log.warning("Cannot open required initial model files; "
                             "skipping")
@@ -1355,11 +1355,11 @@ class GHOSTSpect(GHOST):
                 poly_spec = self._get_polyfit_filename(ad, 'specmod')
                 poly_rot = self._get_polyfit_filename(ad, 'rotmod')
                 slitv_fn = self._get_slitv_polyfit_filename(ad)
-                wpars = astrodata.open(poly_wave)
-                spatpars = astrodata.open(poly_spat)
-                specpars = astrodata.open(poly_spec)
-                rotpars = astrodata.open(poly_rot)
-                slitvpars = astrodata.open(slitv_fn)
+                wpars = astrodata.from_file(poly_wave)
+                spatpars = astrodata.from_file(poly_spat)
+                specpars = astrodata.from_file(poly_spec)
+                rotpars = astrodata.from_file(poly_rot)
+                slitvpars = astrodata.from_file(slitv_fn)
             except IOError:
                 log.warning("Cannot open required initial model files for {};"
                             " skipping".format(ad.filename))
@@ -1728,11 +1728,11 @@ class GHOSTSpect(GHOST):
                 poly_spec = self._get_polyfit_filename(ad, 'specmod')
                 poly_rot = self._get_polyfit_filename(ad, 'rotmod')
                 slitv_fn = self._get_slitv_polyfit_filename(ad)
-                wpars = astrodata.open(poly_wave)
-                spatpars = astrodata.open(poly_spat)
-                specpars = astrodata.open(poly_spec)
-                rotpars = astrodata.open(poly_rot)
-                slitvpars = astrodata.open(slitv_fn)
+                wpars = astrodata.from_file(poly_wave)
+                spatpars = astrodata.from_file(poly_spat)
+                specpars = astrodata.from_file(poly_spec)
+                rotpars = astrodata.from_file(poly_rot)
+                slitvpars = astrodata.from_file(slitv_fn)
             except IOError:
                 raise RuntimeError("Cannot open required initial model files; "
                                    "skipping")
@@ -1853,11 +1853,11 @@ class GHOSTSpect(GHOST):
                 poly_spec = self._get_polyfit_filename(ad, 'specmod')
                 poly_rot = self._get_polyfit_filename(ad, 'rotmod')
                 slitv_fn = self._get_slitv_polyfit_filename(ad)
-                wpars = astrodata.open(poly_wave)
-                spatpars = astrodata.open(poly_spat)
-                specpars = astrodata.open(poly_spec)
-                rotpars = astrodata.open(poly_rot)
-                slitvpars = astrodata.open(slitv_fn)
+                wpars = astrodata.from_file(poly_wave)
+                spatpars = astrodata.from_file(poly_spat)
+                specpars = astrodata.from_file(poly_spec)
+                rotpars = astrodata.from_file(poly_rot)
+                slitvpars = astrodata.from_file(slitv_fn)
             except IOError:
                 raise RuntimeError("Cannot open required initial model files; "
                                    "skipping")
@@ -2292,9 +2292,9 @@ class GHOSTSpect(GHOST):
                 log.stdinfo(f'Found spatmod: {poly_spat}')
                 slitv_fn = self._get_slitv_polyfit_filename(ad)
                 log.stdinfo(f'Found slitvmod: {slitv_fn}')
-                xpars = astrodata.open(poly_xmod)
-                spatpars = astrodata.open(poly_spat)
-                slitvpars = astrodata.open(slitv_fn)
+                xpars = astrodata.from_file(poly_xmod)
+                spatpars = astrodata.from_file(poly_spat)
+                slitvpars = astrodata.from_file(slitv_fn)
             except IOError:
                 log.warning("Cannot open required initial model files; "
                             "skipping")
@@ -2341,9 +2341,9 @@ class GHOSTSpect(GHOST):
                     poly_wave = self._get_polyfit_filename(ad, 'wavemod')
                     poly_spec = self._get_polyfit_filename(ad, 'specmod')
                     poly_rot = self._get_polyfit_filename(ad, 'rotmod')
-                    wpars = astrodata.open(poly_wave)
-                    specpars = astrodata.open(poly_spec)
-                    rotpars = astrodata.open(poly_rot)
+                    wpars = astrodata.from_file(poly_wave)
+                    specpars = astrodata.from_file(poly_spec)
+                    rotpars = astrodata.from_file(poly_rot)
                 except IOError:
                     log.warning("Cannot open required initial model files "
                                 "for PIXELMODEL; skipping")
@@ -2493,7 +2493,7 @@ class GHOSTSpect(GHOST):
         # If the arc is retrieved from user_cals then it will ignore 'ARCBEFOR'
         # and the same file will be returned twice, but we don't want that
         if arc_ad:
-            arc_ad = astrodata.open(arc_ad)
+            arc_ad = astrodata.from_file(arc_ad)
             correct_timing = before == (arc_ad.ut_datetime() < ad.ut_datetime())
             return arc_ad if correct_timing else None
         return None

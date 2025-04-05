@@ -1227,7 +1227,7 @@ def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 new_ad.append(ext.nddata[detsec.asslice()])
                 new_ad[-1].SLITEDGE = auxext.SLITEDGE
                 new_ad[-1].hdr[ad._keyword_for('detector_section')] =\
-                    detsec.asIRAFsection(binning=(xbin, ybin))
+                    detsec.as_iraf_section(binning=(xbin, ybin))
                 new_ad[-1].hdr['SPECORDR'] = auxext.hdr['SPECORDR']
 
                 # By default, when a section is cut out of an array the WCS is
@@ -1728,7 +1728,7 @@ def make_lists(*args, **kwargs):
             for x in set(_list):
                 if x not in ad_map_dict:
                     try:
-                        ad_map_dict.update({x: astrodata.open(x)
+                        ad_map_dict.update({x: astrodata.from_file(x)
                                             if isinstance(x, str) else x})
                     except OSError:
                         ad_map_dict.update({x: None})
@@ -2383,7 +2383,7 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
                 for i, (oldsec, newsec) in enumerate(zip(sections, new_sections), start=1):
                     #oldsec, newsec = Section(*oldsec), Section(*newsec)
-                    datasecStr = oldsec.asIRAFsection()
+                    datasecStr = oldsec.as_iraf_section()
                     log.fullinfo(f'For {ad.filename} extension {ext.id}, '
                                  f'keeping the data from the section {datasecStr}')
                     newslice = newsec.asslice()
@@ -2406,7 +2406,7 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                     continue
 
                 # Update logger with the section being kept
-                datasecStr = datasec.asIRAFsection()
+                datasecStr = datasec.as_iraf_section()
                 log.fullinfo(f'For {ad.filename} extension {ext.id}, keeping '
                              f'the data from the section {datasecStr}')
 

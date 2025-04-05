@@ -19,7 +19,7 @@ datasets = [("N20210129S0304.fits", # 32 l/mm Short camera
 @pytest.mark.parametrize("dataset", datasets, indirect=False)
 def test_flat_correct(dataset, change_working_dir):
     with change_working_dir():
-        adinputs = [astrodata.open(download_from_archive(filename)) for
+        adinputs = [astrodata.from_file(download_from_archive(filename)) for
                     filename in dataset]
 
         p = GNIRSCrossDispersed(adinputs)

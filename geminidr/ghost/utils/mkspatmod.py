@@ -19,9 +19,9 @@ def get_fibre_separation(p):
     ad, ad_slitflat = p.streams['main']
     #p.getProcessedSlitFlat(refresh=False)
     #slitflat = p._get_cal(ad, 'processed_slitflat')
-    #ad_slitflat = astrodata.open(slitflat)
+    #ad_slitflat = astrodata.from_file(slitflat)
     slitv_fn = p._get_slitv_polyfit_filename(ad)
-    slitvpars = astrodata.open(slitv_fn)
+    slitvpars = astrodata.from_file(slitv_fn)
     sv = SlitView(None, ad_slitflat[0].data, slitvpars.TABLE[0],
                   mode=ad.res_mode())
     slit_models = sv.model_profile(flat_image=ad_slitflat[0].data)
@@ -36,7 +36,7 @@ def get_xpars(p):
     ad = p.streams['main'][0]
     poly_xmod = p._get_polyfit_filename(ad, 'xmod')
     print(f"Using XMOD {poly_xmod}")
-    xpars = astrodata.open(poly_xmod)
+    xpars = astrodata.from_file(poly_xmod)
     return xpars[0].data
 
 
@@ -45,7 +45,7 @@ def get_initial_spatmod(p):
     ad = p.streams['main'][0]
     poly_spat = p._get_polyfit_filename(ad, 'spatmod')
     print(f"Using SPATMOD {poly_spat}")
-    spatpars = astrodata.open(poly_spat)
+    spatpars = astrodata.from_file(poly_spat)
     return spatpars[0].data
 
 
@@ -229,8 +229,8 @@ if __name__ == "__main__":
         slitflat_filename = sys.argv[2]
     except IndexError:
         print("Usage: mkspatmod.py <flat_filename> <slitflat_filename>")
-    flat = astrodata.open(flat_filename)
-    slitflat = astrodata.open(slitflat_filename)
+    flat = astrodata.from_file(flat_filename)
+    slitflat = astrodata.from_file(slitflat_filename)
     assert ({'FLAT', 'PROCESSED'}.issubset(flat.tags) and
             'SLIT' not in flat.tags), f"{flat.filename} is not a FLAT"
     assert flat.res_mode() == "std", "Must be run on SR data"

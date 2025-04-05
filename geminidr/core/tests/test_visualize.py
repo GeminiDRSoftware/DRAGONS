@@ -158,7 +158,7 @@ def input_ads(path_to_inputs, request):
     input_data_list = []
     for p in input_paths:
         if os.path.exists(p):
-            input_data_list.append(astrodata.open(p))
+            input_data_list.append(astrodata.from_file(p))
         else:
             raise FileNotFoundError(p)
 
@@ -202,7 +202,7 @@ def create_inputs():
         arc_paths = [download_from_archive(f) for f in arc_list]
 
         cals = []
-        raw_ads = [astrodata.open(p) for p in raw_paths]
+        raw_ads = [astrodata.from_file(p) for p in raw_paths]
         data_label = raw_ads[0].data_label()
         print('Current working directory:\n    {:s}'.format(os.getcwd()))
 
