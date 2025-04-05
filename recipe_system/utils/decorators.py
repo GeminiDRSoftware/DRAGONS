@@ -288,6 +288,14 @@ def parameter_override(fn):
         # calling function contains a self that is also a primitive
         toplevel = _top_level_primitive()
 
+        # The first thing on the stack is the decorator, so check the name
+        # of the function calling that... don't indent or log if it's the
+        # same as this primitive.
+        try:
+            caller = inspect.stack()[1].function
+        except (AttributeError, IndexError):
+            caller = None
+
         # Start with the config file to get list of parameters
         # Copy to avoid permanent changes; shallow copy is OK
         if pname not in pobj.params:
@@ -300,7 +308,8 @@ def parameter_override(fn):
 
         # Find user parameter overrides
         params = userpar_override(pname, list(config), pobj.user_params)
-        set_logging(pname)
+        if caller != pname:
+            set_logging(pname)
 
         if toplevel:
             for k, v in kwargs.items():
@@ -370,7 +379,8 @@ def parameter_override(fn):
 
         if write_after:
             pobj.writeOutputs(stream=outstream)
-        unset_logging()
+        if caller != pname:
+            unset_logging()
         gc.collect()
         return ret_value
     return gn
