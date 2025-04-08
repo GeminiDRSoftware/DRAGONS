@@ -131,6 +131,9 @@ def test_wcs_slicing():
     assert nd[..., 10:].wcs(10, 10) == (20, 10)
     assert nd[:, 5].wcs(10) == (5, 10)
     assert nd[20, -10:].wcs(0) == (40, 20)
+    # and with flips
+    assert nd[::-1].wcs(10, 10) == (10, 39)
+    assert nd[:, ::-1].wcs(10, 10) == (39, 10)
 
 
 def test_access_to_other_planes(testnd):
