@@ -491,6 +491,7 @@ class Spect(Resample):
                             aptable['aper_upper'] = aplow
 
                     new_sky_model = models.Shift(offset) | ref_sky_model_dict[iext]
+                    new_sky_model.name = 'SKY'
                     ext.wcs = am.replace_submodel_in_gwcs(ext.wcs, 'SKY', new_sky_model)
 
                 ad.phu['SLITOFF'] = offset
