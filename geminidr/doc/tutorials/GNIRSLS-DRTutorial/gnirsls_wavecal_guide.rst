@@ -58,7 +58,7 @@ calculation.
 |             |            |              | **must** be used.                                                             |
 +-------------+------------+--------------+-------------------------------------------------------------------------------+
 | L-band |br| | Any        |  Any         | No arc lamp observations are taken for the thermal bands. |br| |br|           |
-| M-band      |            |              | The peaks in the telluric throughput curve must be used |br|                  |
+| M-band      |            |              | The emission features in the sky spectrum must be used |br|                  |
 |             |            |              | for wavelength calibration.  Note that for L-band > 3.8 |um|, |br|            |
 |             |            |              | the automatic line identification is often wrong and the use |br|             |
 |             |            |              | of the interactive mode is required.                                          |

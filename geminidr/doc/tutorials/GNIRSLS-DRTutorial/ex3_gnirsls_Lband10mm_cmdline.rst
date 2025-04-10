@@ -189,10 +189,10 @@ The interactive tools are introduced in section :ref:`interactive`.
 
 Processed Arc - Wavelength Solution
 ===================================
-The wavelength solution for L-band and M-band data is derived from the peaks
-in the telluric transmission in the science frames.  The quality of the
-wavelength solution depends on the resolution and strength of the telluric
-features.
+The wavelength solution for L-band and M-band data is derived from the
+wavelengths of strong peaks in the emission spectrum of the sky.  The
+quality of the wavelength solution depends on the width and strength
+of the telluric features.
 
 Wavelength calibration from peaks is better done in interactive mode
 despite our efforts to automate the process.
