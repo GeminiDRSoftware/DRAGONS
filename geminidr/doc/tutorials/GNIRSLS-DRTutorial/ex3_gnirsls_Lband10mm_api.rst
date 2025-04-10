@@ -307,11 +307,17 @@ its effective temperature.  To properly scale the sensitivity function (to
 use the star as a spectrophotometric standard), we need to know the star's
 magnitude.  Those are inputs to the ``fitTelluric`` primitive.
 
-From Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
+The default effective temperature of 9650 K is typical of an A0V star, which
+is the most common spectral tupe used as a tellurc standard. Different
+sources give values between 9500 K and 9750 K and, for example,
+Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
 Temperature Sequence"
 (https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt)
-we find that the effective temperature of an A0V star is about 9700 K. Using
-Simbad, we find that the star has a magnitude of K=4.523.
+quotes the effective temperature of an A0V star as 9700 K. The precise
+value has only a small effect on the derived sensitivity and even less
+effect on the telluric correction, so the temperature from any reliable
+source can be used. Using Simbad, we find that the star has a magnitude
+of K=4.523, which is the closest waveband to our observation.
 
 Note that the data is recognized by Astrodata as normal GNIRS longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
