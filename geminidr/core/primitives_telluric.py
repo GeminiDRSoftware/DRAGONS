@@ -591,7 +591,7 @@ class Telluric(Spect):
         else:
             wv_content = qa_constraints.wvBands[observatory].get(str(wv_band))
 
-        resolution = self._get_resolution(ext)
+        resolution = config.get("resolution") or self._get_resolution(ext)
         # The wave_model's domain describes the illuminated region
         wave_model_bounds = self._wavelength_model_bounds(wave_model, ext)
         try:
