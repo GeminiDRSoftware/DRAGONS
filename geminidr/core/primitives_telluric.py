@@ -117,6 +117,11 @@ class Telluric(Spect):
                 title_overrides=title_overrides,
                 placeholders={"magnitude": ""})
 
+            apertures = set(ad.hdr.get('APERTURE')) - {None}
+            aperture_to_use = min(apertures)
+            if len(apertures) > 1:
+                log.warning(f"Multiple apertures found: using {aperture_to_use}")
+
             pixel_shift = None
             for (modify, inter) in iter_list:
                 # Prepare for fitting for each 1D extension. We need to do
@@ -128,7 +133,8 @@ class Telluric(Spect):
                     spectral_indices = []
                     start = datetime.now()
                     for i, ext in enumerate(ad):
-                        if len(ext.shape) == 1:
+                        if (len(ext.shape) == 1 and
+                                ext.hdr.get('APERTURE') == aperture_to_use):
                             lsf = self._line_spread_function(ext)
                             axis_name = ext.wcs.output_frame.axes_names[0]
                             in_vacuo = axis_name == "WAVE"
@@ -233,16 +239,19 @@ class Telluric(Spect):
             tellfit_table.meta.update(lsf_param_dict)
             ad.TELLFIT = tellfit_table
 
-            # Also attach data divided by continuum?
-            # Problem with intrinsic absorption not being fitted perfectly
-            for ext, tspek, stellar_mask, tmodel in zip(ad, tcal.spectra, tcal.stellar_mask, m_final.models):
-                absorption = tspek.data / tmodel.continuum(tspek.waves)
-                goodpix = ~(tspek.mask | stellar_mask).astype(bool)
-                spline = make_interp_spline(tspek.waves[goodpix],
-                                            absorption[goodpix], k=3)
-                spline.extrapolate = False  # will return np.nan outside range
-                ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
-                #ext.TELLABS2 = absorption
+            # Attach results to correct extensions in telluric AD object
+            result_index = 0
+            for ext in ad:
+                if (len(ext.shape) == 1 and
+                        ext.hdr.get('APERTURE') == aperture_to_use):
+                    absorption = tspek.data / m_final.models[result_index].continuum(tspek.waves)
+                    goodpix = ~(tspek.mask | tcal.stellar_mask[result_index]).astype(bool)
+                    spline = make_interp_spline(tcal.spectra[result_index].waves[goodpix],
+                                                absorption[goodpix], k=3)
+                    spline.extrapolate = False  # will return np.nan outside range
+                    ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
+                    #ext.TELLABS2 = absorption
+                    result_index += 1
 
             # We have to correct for exposure time and add the SENSFUNC units
             # The models are hardcoded to return the correct units
@@ -302,7 +311,6 @@ class Telluric(Spect):
         manual_shift = params["pixel_shift"]
         user_airmass = params["delta_airmass"]
         do_cal = params["do_cal"]
-        sampling = 10
 
         if do_cal == 'skip':
             log.warning("Telluric correction has been turned off.")
@@ -335,26 +343,53 @@ class Telluric(Spect):
             log.stdinfo(f"{ad.filename}: using the processed telluric {telluric.filename}"
                         f"{origin_str}")
 
+            # In case there are multiple apertures in the telluric
+            aperture_to_use = min(set(ad.hdr.get('APERTURE')) - {None})
+
             # Check that all the necessary extensions exist, or bail
             try:
                 tellfit = telluric.TELLFIT
             except AttributeError:
-                if apply_model:
-                    log.warning(f"{ad.filename}: no TELLFIT table on processed telluric"
-                                f" {telluric.filename} so cannot apply correction.")
-                    continue
+                has_model = False
+                # if apply_model:
+                #     log.warning(f"{ad.filename}: no TELLFIT table on processed telluric"
+                #                 f" {telluric.filename} so cannot apply correction.")
+                #     continue
                 header = {}  # can still progress
             else:
+                has_model = True
                 header = tellfit.meta['header']
                 pca_name = header['pca_name']
                 pca_coeffs = tellfit['PCA coefficients'].data
-            if not apply_model:
-                if not all(hasattr(ext_telluric, "TELLABS") for ext_telluric in telluric
-                           if len(ext_telluric.shape) == 1):
-                    log.warning(f"{ad.filename}: one or more 1D extensions on"
-                                f"standard {telluric.filename} are missing a "
-                                "TELLABS spectrum. Continuing.")
+
+            has_data = True
+            tellabs_dict = {}
+            for ext_telluric in telluric:
+                if (ext_telluric.hdr.get('APERTURE') == aperture_to_use and
+                        len(ext_telluric.shape) == 1):
+                    try:
+                        tellabs_dict[ext_telluric.hdr.get('SPECORDR')] = \
+                            ext_telluric.TELLABS
+                    except AttributeError:
+                        tellabs_dict = {}  # makes it easier to find errors
+                        has_data = False
+                        break
+
+            # TODO: If we're interactive we can override apply_model if necessary
+            if not interactive:
+                if apply_model and not has_model:
+                    log.warning(f"{ad.filename} has no TELLFIT model but "
+                                "apply_model=True. Continuing.")
                     continue
+                elif not apply_model and not has_data:
+                    log.warning(f"{ad.filename}: one or more 1D extensions on"
+                                f" standard {telluric.filename} are missing a"
+                                " TELLABS spectrum. Continuing.")
+                    continue
+            elif not (has_data and has_model):
+                log.warning(f"{ad.filename} does not have the necessary "
+                            "telluric information to be used. Continuing.")
+                continue
 
             # We're hot to go! (as Chappell Roan would say)
             # First is to get a cross-correlation estimate, unless one has
@@ -372,7 +407,9 @@ class Telluric(Spect):
             pixel_shifts = []
             tell_int_splines = []
             tellabs_data = []
-            for ext, ext_telluric in zip(ad, telluric):
+            tab_labels = []
+
+            for ext in ad:
                 if len(ext.shape) > 1:
                     continue
 
@@ -409,7 +446,7 @@ class Telluric(Spect):
                     if apply_model:
                         trans = convolution.resample(tspek.waves, wconv, tconv)
                     else:
-                        trans = ext_telluric.TELLABS
+                        trans = tellabs_dict[ext.hdr.get('SPECORDR')]
 
                     # Old cross-correlation method
                     #pixel_shift = peak_finding.cross_correlate_subpixels(
@@ -436,7 +473,16 @@ class Telluric(Spect):
                                     f"{pixel_shift:.2f} pixels")
                         pixel_shifts.append(pixel_shift)
 
-                tellabs_data.append(ext_telluric.TELLABS)
+                if has_data:
+                    tellabs_data.append(tellabs_dict[ext.hdr.get('SPECORDR')])
+                label = f"Aperture {ext.hdr['APERTURE']}"
+                try:
+                    order = ext.hdr['SPECORDR']
+                except KeyError:
+                    pass
+                else:
+                    label += f" Order {order}"
+                tab_labels.append(label)
 
             if len(pixel_shifts) > 1:
                 pixel_shift = self._calaculate_mean_pixel_shift(pixel_shifts)
@@ -504,7 +550,7 @@ class Telluric(Spect):
             if interactive:
                 data_units = "adu" if ad.is_in_adu() else "electron"
                 visualizer = TelluricCorrectVisualizer(
-                    tcal, tab_name_fmt=lambda i: f"Order {i+1}",
+                    tcal, tab_name_fmt=lambda i: tab_labels[i],
                     xlabel="Wavelength (nm)", ylabel=f"Signal ({data_units})",
                     title="Telluric Correct",
                     primitive_name=self.myself(),
