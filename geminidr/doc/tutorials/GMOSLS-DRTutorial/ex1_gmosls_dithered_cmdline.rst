@@ -270,13 +270,13 @@ the |atfile| documentation.
 
 Master Flat Field
 =================
-GMOS longslit flat field are normally obtained at night along with the
+GMOS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.  The
 matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
 read speed must match.
 
-Because of the flexure, GMOS longslit flat field are not stacked.  Each is
+Because of the flexure, GMOS longslit flat fields are not stacked.  Each is
 reduced and used individually.  The default recipe takes that into account.
 
 We can send all the flats, regardless of characteristics, to |reduce| and each

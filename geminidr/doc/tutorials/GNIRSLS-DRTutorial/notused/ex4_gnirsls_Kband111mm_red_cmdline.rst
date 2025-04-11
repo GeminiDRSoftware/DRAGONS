@@ -168,7 +168,7 @@ database:
 
 Master Flat Field
 =================
-GNIRS longslit flat field are normally obtained at night along with the
+GNIRS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.
 
 The GNIRS longslit flatfield requires only lamp-on flats.  Subtracting darks
@@ -180,7 +180,7 @@ The flats will be stacked.
 
     reduce @flats.lis
 
-GNIRS data is affected by a "odd-even" effect where alternate rows in the
+GNIRS data are affected by a "odd-even" effect where alternate rows in the
 GNIRS science array have gains that differ by approximately 10 percent.  When
 you run ``normalizeFlat`` in interactive mode you can clearly see the two
 levels.
@@ -341,7 +341,7 @@ to store them.  In a normal text file (here we name it "hip117371.param"), we wr
 Then we can call the ``reduce`` command with the parameter file.  The telluric
 fitting primitive can be run in interactive mode.
 
-Note that the data is recognized by Astrodata as normal GNIRS longslit science
+Note that the data are recognized by Astrodata as normal GNIRS longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``-r reduceTelluric``), otherwise the default science reduction will be
 run.

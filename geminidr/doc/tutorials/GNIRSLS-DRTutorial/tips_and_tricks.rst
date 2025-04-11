@@ -26,7 +26,7 @@ applies no shift.  The parameter can be set to a value set my you, eg.
 measure the shift for you by setting ``shift`` to ``None``.  This will trigger
 the algorithm that tries to calculate the shift on it's own.
 
-
+.. todo:: prepare:bad_wcs=new
 
 .. _getBPM:
 

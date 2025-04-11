@@ -233,7 +233,7 @@ To add the BPM included in the data package to the local calibration database:
 
 Master Flat Field
 =================
-GNIRS longslit flat field are normally obtained at night along with the
+GNIRS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.
 
 The GNIRS longslit flatfield requires only lamp-on flats.  Subtracting darks
@@ -249,7 +249,7 @@ The flats will be stacked.
     reduce_flats.files.extend(flats)
     reduce_flats.runr()
 
-GNIRS data is affected by a "odd-even" effect where alternate rows in the
+GNIRS data are affected by a "odd-even" effect where alternate rows in the
 GNIRS science array have gains that differ by approximately 10 percent.  When
 you run ``normalizeFlat`` in interactive mode you can clearly see the two
 levels.
@@ -424,7 +424,7 @@ effect on the telluric correction, so the temperature from any reliable
 source can be used. Using Simbad, we find that the star has a magnitude
 of K=9.165.
 
-Note that the data is recognized by Astrodata as normal GNIRS longslit science
+Note that the data are recognized by Astrodata as normal GNIRS longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``reduceTelluric``), otherwise the default science reduction will be
 run.
