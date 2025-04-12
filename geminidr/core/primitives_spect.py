@@ -612,6 +612,23 @@ class Spect(Resample):
         else:
             arc_list = (arc, None)
 
+        # Issue a warning if all inputs with a given central wavelength aren't
+        # all using the same arc. This is beneficial for NIR spectroscopy where
+        # each observation may have its own arc (possibly derived from the sky
+        # emission in its own frames) and the final frame of one observation
+        # may be closer in time to the first frame of the next observation than
+        # it is to the first frame of its own observation.
+        if hasattr(arc_list, 'files') and len(arc_list) > 1:  # it's a CalReturn
+            cenwaves = np.array([ad.central_wavelength(asNanometers=True)
+                                 for ad in adinputs])
+            for cenwave in set(cenwaves):
+                indices = np.where(cenwaves==cenwave)[0]
+                if len(set([arc_list[i][0] for i in indices])) > 1:
+                    warnmsg = "More than one arc is being used"
+                    if len(set(cenwaves)) > 1:
+                        warnmsg += f" for central wavelength {cenwave:.1f}nm"
+                    log.warning(warnmsg)
+
         fail = False
 
         adoutputs = []
