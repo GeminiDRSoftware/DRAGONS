@@ -90,6 +90,10 @@ Set up the Calibration Service
     :ref:`cal_service`, specifically the these sections:
     :ref:`cal_service_config` and :ref:`cal_service_api`.
 
+We recommend that you clean up your working directory (``playground``) and
+start a fresh calibration database (``caldb.init(wipe=True)``) when you start a new
+example.
+
 Create file lists
 =================
 The next step is to create input file lists.  The module ``dataselect`` helps

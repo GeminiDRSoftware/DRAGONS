@@ -60,6 +60,9 @@ Set up the Local Calibration Manager
     :ref:`cal_service`, specifically the these sections:
     :ref:`cal_service_config` and :ref:`cal_service_cmdline`.
 
+We recommend that you clean up your working directory (``playground``) and
+start a fresh calibration database (``caldb init -w``) when you start a new
+example.
 
 Create file lists
 =================
