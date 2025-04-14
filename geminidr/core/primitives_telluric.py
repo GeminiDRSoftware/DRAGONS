@@ -250,7 +250,6 @@ class Telluric(Spect):
                                                 absorption[goodpix], k=3)
                     spline.extrapolate = False  # will return np.nan outside range
                     ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
-                    #ext.TELLABS2 = absorption
                     result_index += 1
 
             # We have to correct for exposure time and add the SENSFUNC units
@@ -368,14 +367,23 @@ class Telluric(Spect):
                 if (ext_telluric.hdr.get('APERTURE') == aperture_to_use and
                         len(ext_telluric.shape) == 1):
                     try:
-                        tellabs_dict[ext_telluric.hdr.get('SPECORDR')] = \
-                            ext_telluric.TELLABS
+                        tellabs = ext_telluric.TELLABS
                     except AttributeError:
                         tellabs_dict = {}  # makes it easier to find errors
                         has_data = False
                         break
+                    else:
+                        # Save the telluric spectrum as a spline so that it
+                        # can be interpolated onto any wavelength solution
+                        # order=3 seems to cause some ringing, and order=1 is
+                        # what the TelluricCorrector uses anyway
+                        tell_waves = ext_telluric.wcs(np.arange(
+                            ext_telluric.data.size))
+                        tellabs_dict[ext_telluric.hdr.get('SPECORDR')] = \
+                            make_interp_spline(tell_waves[~np.isnan(tellabs)],
+                                               tellabs[~np.isnan(tellabs)], k=1)
 
-            # TODO: If we're interactive we can override apply_model if necessary
+                            # TODO: If we're interactive we can override apply_model if necessary
             if not interactive:
                 if apply_model and not has_model:
                     log.warning(f"{ad.filename} has no TELLFIT model but "
@@ -474,7 +482,9 @@ class Telluric(Spect):
                         pixel_shifts.append(pixel_shift)
 
                 if has_data:
-                    tellabs_data.append(tellabs_dict[ext.hdr.get('SPECORDR')])
+                    # Interpolate telluric spectrum onto science wavelengths
+                    tellabs_data.append(tellabs_dict[ext.hdr.get('SPECORDR')](tspek.waves))
+
                 label = f"Aperture {ext.hdr['APERTURE']}"
                 try:
                     order = ext.hdr['SPECORDR']
