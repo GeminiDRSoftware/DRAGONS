@@ -15,7 +15,7 @@ version = '4.0'
 #release = '4.0.0'
 #rtdurl = 'v'+release
 release = '4.0.x'
-rtfurl = 'release-'+release
+rtdurl = 'release-'+release
 #rtdurl = 'latest'
 
 today = 'May 2025'

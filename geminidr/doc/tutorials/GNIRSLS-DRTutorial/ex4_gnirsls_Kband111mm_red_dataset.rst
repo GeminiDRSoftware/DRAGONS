@@ -2,7 +2,7 @@
 
 .. include:: symbols.txt
 
-.. _gnirs_Kband111mm_red_dataset:
+.. _gnirsls_Kband111mm_red_dataset:
 
 ********************************
 Example 4 - Datasets description

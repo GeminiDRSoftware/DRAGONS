@@ -2,7 +2,7 @@
 
 .. include:: symbols.txt
 
-.. _gnirs_Kband111mm_red_api:
+.. _gnirsls_Kband111mm_red_api:
 
 *****************************************************************************************************
 Example 4 -K-band 2.33 micron Longslit Point Source (111 l/mm grating) - Using the "Reduce" class API

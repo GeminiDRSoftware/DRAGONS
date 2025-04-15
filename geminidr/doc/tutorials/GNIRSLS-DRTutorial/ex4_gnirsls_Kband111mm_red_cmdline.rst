@@ -2,7 +2,7 @@
 
 .. include:: symbols.txt
 
-.. _gnirs_Kband111mm_red_cmdline:
+.. _gnirsls_Kband111mm_red_cmdline:
 
 **********************************************************************************************************
 Example 4 -  K-band 2.33 micron Longslit Point Source (111 l/mm grating) - Using the "reduce" command line

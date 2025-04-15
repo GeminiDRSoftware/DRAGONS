@@ -486,7 +486,7 @@ spectrum.
     reduce_science.files.extend(scitarget)
     reduce_science.runr()
 
-.. todos:: Crashes.  Is that due to the apertures?  Work when
+.. todo:: Crashes.  Is that due to the apertures?  Work when
     I correct the apertures interatively.  Can it deal with more
     than one aperture?
 
