@@ -43,12 +43,12 @@ author = 'DRAGONS Team'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-version = '4.0-dev'  # The short X.Y version.
-#release = '3.2.2'  # The full version, including alpha/beta/rc tags.
+version = '4.0'  # The short X.Y version.
+#release = '4.0.0'  # The full version, including alpha/beta/rc tags.
 #rtdurl = 'v'+release
-#release = '3.2.x'
-#rtdurl = 'release-'+release
-rtdurl = 'latest'
+release = '4.0.x'
+rtdurl = 'release-'+release
+#rtdurl = 'latest'
 
 
 # -- General configuration -----------------------------------------------------
@@ -103,7 +103,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = '2025'
+today = 'May 2025'
 
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
