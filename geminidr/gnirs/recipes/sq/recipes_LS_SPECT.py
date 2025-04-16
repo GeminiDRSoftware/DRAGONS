@@ -4,15 +4,15 @@ Default is "reduceScience".
 """
 recipe_tags = {'GNIRS', 'SPECT', 'LS'}
 
+
 def reduceScience(p):
     """
-    To be updated as development continues: This recipe processes GNIRS longslit
-    spectroscopic data, currently up to basic spectral extraction without telluric correction.
+    Reduce GNIRS longslit spectroscopic data, including stacking, extraction,
+    telluric correction, and flux calibration.
 
     Parameters
     ----------
     p : :class:`geminidr.gnirs.primitives_gnirs_longslit.GNIRSLongslit`
-
     """
     # todo: [Chris] I suspect scaleCountsToReference() could go back in but presumably hasn't been looked at whether it does something weird. skyCorrectFromSlit() should probably work OK, but it might also be better if it's before adjustWCSToReference(), so any residual sky is removed before that resampling takes place.
     p.prepare()
@@ -45,12 +45,13 @@ def reduceScience(p):
 
 def reduceTelluric(p):
     """
-    todo: add docstring
+    Reduce GNIRS longslit observations of a telluric standard, including
+    fitting the telluric absorption features to provide an absorption profile
+    and a sensitivity function.
 
     Parameters
     ----------
     p : :class:`geminidr.gnirs.primitives_gnirs_longslit.GNIRSLongslit`
-
     """
     p.prepare()
     p.addDQ()
