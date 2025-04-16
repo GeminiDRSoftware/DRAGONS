@@ -31,7 +31,6 @@ def reduceScience(p):
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame(conserve=True)
-    # p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
     p.skyCorrectFromSlit()  # This needs testing.
@@ -124,7 +123,6 @@ def  makeWavecalFromSkyAbsorption(p):
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame(output_wave_scale='reference', trim_spectral=True)
-    #p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
     p.determineWavelengthSolution(absorption=True)
