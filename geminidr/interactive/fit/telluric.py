@@ -744,7 +744,9 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
         def _shift_pixels(row, shift):
             # Update the pixel shift value in the TextInput widget, which
             # will update the Slider and the model
-            row.children[-1].value = self.calibrator.reinit_params["pixel_shift"] + shift
+            row.children[-1].value = np.round(
+                self.calibrator.reinit_params["pixel_shift"] + shift,
+                decimals=3)
 
         if shiftpixel_row is not None:
             buttons = []
