@@ -37,7 +37,7 @@ class fitTelluricConfig(config.core_1Dfitting_config):
 
     def setDefaults(self):
         self.niter = 1
-        self._fields['order'].max = 20
+        self._fields['order'].max = 30
 
 
 class telluricCorrectConfig(parameters_generic.calRequirementConfig):
