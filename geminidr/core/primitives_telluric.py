@@ -282,6 +282,18 @@ class Telluric(Spect):
         function is derived for each extension of each input AD, and an
         airmass correction is also applied.
 
+        Alternatively, the data-derived telluric absorption can be applied,
+        which is stored as a 1D TELLABS array in the telluric, and is simply
+        the ratio of the telluric spectrum to the zero-airmass model spectrum
+        computed by fitTelluric().
+
+        A pixel shift between the telluric spectrum and the science spectrum
+        can be calculated before the correct, and this shift may be permanently
+        applied to the output science spectrum's wavelength solution. The
+        shift is determined by looking at the highest-frequency Fourier
+        component of the corrected spectrum, to identify the "ringing" that
+        arises from a wavelength offset.
+
         There is no need for the TELLFIT table to be on a spectrum taken
         with the same set-up or even the same instrument as the input ADs.
 
@@ -294,6 +306,22 @@ class Telluric(Spect):
             of telluric absorption fit
         apply_model: bool
             apply a correction from the PCA model rather than the data?
+        interactive: bool
+            run primitive interactively using GUI?
+        shift_tolerance: float/None
+            minimum allowed tolerance when calculating pixel shift between
+            telluric and science spectra. If None, then no shift is
+            calculated. If a shift is less than this value, then it is not
+            applied.
+        apply_shift: bool
+            apply the pixel shift permanently to the wavelength solution of
+            the corrected science spectrum?
+        pixel_shift: float/None
+            apply a shift of this value, or (if None), calculate the pixel
+            shift between the telluric and science spectra
+        delta_airmass: float/None
+            if not None, override the header airmass of the telluric by adding
+            this value to the airmass of the science spectrum
         do_cal: str ["procmode" | "force" | "skip"]
             Perform this calibration? ("skip" skips, the others will attempt
             but be OK if no suitable calibration is found)
@@ -553,9 +581,6 @@ class Telluric(Spect):
             tcal = TelluricCorrector(tspek_list, ui_params=uiparams,
                                      tellabs_data=tellabs_data,
                                      tell_int_splines=tell_int_splines)
-
-            print("REINIT PARAMS")
-            print(tcal.reinit_params)
 
             if interactive:
                 data_units = "adu" if ad.is_in_adu() else "electron"
