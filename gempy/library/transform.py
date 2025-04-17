@@ -1639,6 +1639,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
     # Create the blocks (individual physical detectors)
     if is_single:
         blocks = [Block(ad)]
+    elif len(ad) == 1:
+        blocks = [Block(ad[0])]
     else:
         array_info = gt.array_information(ad)
         blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
