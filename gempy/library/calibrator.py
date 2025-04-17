@@ -5,10 +5,13 @@ from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
 from astropy import units as u
 
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 
-from .telluric import A0Spectrum, TelluricModels, TelluricSpectrum
+from astrodata.nddata import NDAstroData
+
+from .telluric import A0Spectrum, TelluricSpectrum
 from .telluric_models import MultipleTelluricModels, Planck
 
 from datetime import datetime
@@ -407,6 +410,29 @@ class TelluricCorrector(Calibrator):
         corrected_data = models.Tabular1D(
             points=self.x[index], lookup_table=at.divide0(self.spectra[index].data, trans))
         return corrected_data
+
+    def absorption_spectra(self):
+        """
+        When there is a pixel shift, the absorption spectrum derived from the
+        telluric spectrum can't be extrapolated and so will have NaNs at one
+        end, which will be propagated into the telluric-corrected science
+        spectrum. We want these pixels to have values but to be masked, and
+        this method performs that change.
+        """
+        for abs_spek in self.abs_final:
+            mask = np.where(np.isnan(abs_spek), DQ.no_data, DQ.good)
+            if mask.sum() == 0:
+                yield abs_spek
+
+            data = abs_spek.copy()
+            first_unmasked = mask.argmin()
+            if first_unmasked == 0:  # masked pixels are at the end
+                last_unmasked = mask[::-1].argmin() + 1
+                data[-last_unmasked:] = data[-(last_unmasked+1)]
+            else:  # masked pixels are at the start
+                data[:first_unmasked] = data[first_unmasked]
+            result = NDAstroData(data=data, mask=mask)
+            yield result
 
     # def perform_all_fits(self):
     #     # This needs to return a model that describes the "fit" for each

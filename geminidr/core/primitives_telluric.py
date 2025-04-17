@@ -411,7 +411,7 @@ class Telluric(Spect):
                             make_interp_spline(tell_waves[~np.isnan(tellabs)],
                                                tellabs[~np.isnan(tellabs)], k=1)
 
-                            # TODO: If we're interactive we can override apply_model if necessary
+            # TODO: If we're interactive we can override apply_model if necessary
             if not interactive:
                 if apply_model and not has_model:
                     log.warning(f"{ad.filename} has no TELLFIT model but "
@@ -482,7 +482,7 @@ class Telluric(Spect):
                     if apply_model:
                         trans = convolution.resample(tspek.waves, wconv, tconv)
                     else:
-                        trans = tellabs_dict[ext.hdr.get('SPECORDR')]
+                        trans = tellabs_dict[ext.hdr.get('SPECORDR')](tspek.waves)
 
                     # Old cross-correlation method
                     #pixel_shift = peak_finding.cross_correlate_subpixels(
@@ -598,12 +598,14 @@ class Telluric(Spect):
             else:
                 tcal.perform_all_fits()
 
+            abs_spectra = tcal.absorption_spectra()
             i_model = 0
             for ext in ad:
                 if len(ext.shape) > 1:
                     continue
 
-                ext.divide(tcal.abs_final[i_model])
+                ext.divide(next(abs_spectra))
+                #ext.divide(tcal.abs_final[i_model])
                 i_model += 1
 
                 if apply_shift:
@@ -698,7 +700,6 @@ class Telluric(Spect):
             log.stdinfo(f"Using generic linelist {atran_linelist}")
         except FileNotFoundError:
             try:  # prevent using previously-created linelist (for now)
-                linelist = LineList("X")
                 linelist = LineList(atran_linelist)
                 log.stdinfo("Using previously-created linelist in current "
                             f"directory {atran_linelist}")
