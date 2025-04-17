@@ -44,8 +44,7 @@ send to it.  With the "get" and "store" options, the database will be used
 by DRAGONS to automatically *get* matching calibrations and to automatically
 *store* master calibrations that you produce.  If you remove the "store" option
 you will have to ``caldb add`` (command line) or ``caldb.add_cal()`` (API)
-your calibration product yourself (like what needed to be done in DRAGONS
-v3.0).
+your calibration product yourself.
 
 .. note:: The tilde (``~``) in the path above refers to your home directory.
    Also, mind the dot in ``.dragons``.
@@ -86,8 +85,9 @@ From the API, the calibration database is initialized as follows:
     caldb.init()
 
 
-The calibration service is now ready to use.  To delete the existing database
-and start fresh, use the "wipe" option: ``caldb.init(wipe=True)``.
+The calibration service is now ready to use.
+.. To delete the existing database and start fresh, use the "wipe" option: ``caldb.init(wipe=True)``.
+    April2025, the wipe option appears to be broken.  
 
 You can manually add processed calibrations with ``caldb.add_cal(<filename>)``,
 list the database content with ``caldb.list_files()``, and

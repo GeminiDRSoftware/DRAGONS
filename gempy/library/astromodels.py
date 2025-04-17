@@ -1,4 +1,4 @@
-# Copyright(c) 2019-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2019-2025 Association of Universities for Research in Astronomy, Inc.
 #
 # astromodels.py
 #

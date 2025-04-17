@@ -56,6 +56,7 @@ Improvements
     offsets and/or target and position angle information.  The option to
     control this is ``prepare:bad_wcs``
 
+
 Interface Modifications
 -----------------------
 
@@ -87,6 +88,14 @@ Interface Modifications
   equivalent to the old option "None", which was available as a fallback
   method. This is now the default fallback method, with "None" resulting in
   an exception if the primary method does not provide valid offsets.
+
+**calibration database**
+
+Any calibration database created with a version of DRAGONS prior to 4.0.0 will
+not be compatible because v4.0 uses a new version of the archive code which
+defines the underlying database schema (conda package ``fitsstorage``). You
+will need to create a new database and ``caldb add`` your calibrations to it.
+
 
 Bug fixes
 ---------

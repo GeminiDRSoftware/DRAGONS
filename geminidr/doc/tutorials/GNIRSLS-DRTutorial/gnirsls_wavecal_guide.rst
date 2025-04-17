@@ -97,12 +97,12 @@ ensure that the lines offer a good coverage the entire spectral range.
 From the Emission Lines
 -----------------------
 When OH and O\ :sub:`2`\  lines are present in the science data, or, in the thermal bands,
-when peaks in the telluric throughput are present, it is possible to use those
+when emission features in the sky spectrum are present, it is possible to use those
 to calculate the wavelength solution.
 
 This is done by running reduce on the science frames and specifying the use
 of the ``makeWavecalFromSkyEmission`` recipe.  The interactive mode is
-recommended to verify and ensure correct line/peak identification.
+recommended to verify and ensure correct line identification.
 
 ::
 

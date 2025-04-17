@@ -48,8 +48,8 @@ In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
     browser = your_preferred_browser
 
 The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
-the interactive tools using that browser.  The allowed strings are "safari",
-"chrome", and "firefox".
+the interactive tools using that browser.  The allowed strings are "**safari**",
+"**chrome**", and "**firefox**".
 
 Set up the Local Calibration Manager
 ====================================
@@ -74,10 +74,11 @@ on how you like to organize your raw data.
 The DRAGONS data reduction pipeline does not organize the data for you.  You
 have to do it.  However, DRAGONS provides tools to help you with that.
 
-The first step is to create input file lists.  The tool "|dataselect|" helps
-with that.  It uses Astrodata tags and "|descriptors|" to select the files and
+The first step is to create input file lists.  The tool "|dataselect|" helps.
+It uses Astrodata tags and |descriptors| to select the files and
 send the filenames to a text file that can then be fed to "|reduce|".  (See the
-|astrodatauser| for information about Astrodata.)
+|astrodatauser| for information about Astrodata and for a list
+of |descriptors|.)
 
 First, navigate to the ``playground`` directory in the unpacked data package::
 
@@ -86,9 +87,9 @@ First, navigate to the ``playground`` directory in the unpacked data package::
 
 A list for the flats
 --------------------
-The GNRIS flats will be stack together.  Therefore it is important to ensure
+The GNIRS flats will be stacked together.  Therefore it is important to ensure
 that the flats in the list are compatible with each other.  You can use
-`dataselect` to narrow down the selection as required.  Here, we have only
+"|dataselect|" to narrow down the selection as required.  Here, we have only
 the flats that were taken with the science and we do not need extra selection
 criteria.
 
@@ -98,8 +99,8 @@ criteria.
 
 A list for the arcs
 -------------------
-The GNIRS longslit arc was obtained at the end of the science observation.
-Often two are taken.  We will use both in this case and stack them later.
+The GNIRS longslit arc were obtained at the end of the science observation.
+Often two are taken.  We will use both in this example and stack them later.
 
 ::
 
@@ -107,11 +108,11 @@ Often two are taken.  We will use both in this case and stack them later.
 
 A list for the telluric
 -----------------------
-DRAGONS does not recognize the telluric star as such.  This is because
-the observations are taken like science data and the GNIRS headers do not
-explicitly state that the observation is a telluric standard.  For now, the
-`observation_class` descriptor can be used to differential the telluric
-from the science observations, along with the rejection of the `CAL` tag to
+DRAGONS does not recognize the telluric star as such.  This is because, at
+Gemini, the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  In most cases,
+the ``observation_class`` descriptor can be used to differentiate the telluric
+from the science observations, along with the rejection of the ``CAL`` tag to
 reject flats and arcs.
 
 ::
@@ -122,11 +123,11 @@ reject flats and arcs.
 A list for the science observations
 -----------------------------------
 
-The science observations can be selected from the observation
-class, ``science``, that is how they are differentiated from the telluric
-standards which are ``partnerCal``.
+The science observations can be selected from the "observation class"
+``science``.  This is how they are differentiated from the telluric
+standards which are set to ``partnerCal``.
 
-If we had multiple targets, we would need to split them into separate list. To
+If we had multiple targets, we would need to split them into separate lists. To
 inspect what we have we can use |dataselect| and |showd| together.
 
 ::
@@ -328,13 +329,13 @@ typical and why the default is set to do nothing.
 
 .. note::  In this observation, there is only one real source to extract.  If there
    were multiple sources in the slit, regardless of whether they are of
-   interest to the program, DRAGONS will locate them, trace them, and extract
+   interest to the program or not, DRAGONS will locate them, trace them, and extract
    them automatically. Each extracted spectrum is stored in an individual
    extension in the output multi-extension FITS file.
 
-   The automatic source detection in this case does find two extra spurious
-   sources at the extreme left edge of the cross-section.  They are not real
-   sources.  Just ignore them or remove them in interactive mode.
+   The automatic source detection in this case does find one extra spurious
+   sources at the extreme left edge of the cross-section.  It is not a real
+   source.  Just ignore it or remove it in interactive mode.
 
 This is what one raw image looks like.
 
@@ -351,10 +352,6 @@ to call |reduce| on the science frames to get an extracted spectrum.
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
-
-.. telluric.  Legend for red line and black dots.  What's the red line???
-..  what is 'apply absorption model rather than data'?
-..  help pop up needs to be adapted to this tool.
 
 
 At the ``traceApertures`` step, the fit one gets automatically for this source
@@ -392,6 +389,10 @@ like this.
    :alt: 1D extracted spectrum after telluric correction or before flux calibration
 
 And the final spectrum, corrected for telluric features and flux calibrated.
+
+::
+
+    dgsplot N20170609S0127_1D.fits 1
 
 .. image:: _graphics/gnirsls_Kband32mm_1d.png
    :width: 600

@@ -34,8 +34,8 @@ The calibrations we use for this example are:
   solution that we get from the arc is used as a starting point for the
   computation of the solution derived from telluric absorption lines.
 * A telluric standard observation taken in the same configuration as the
-  science and obtained at night just before or just after the science
-  observation sequences, and at a similar airmass.
+  science and obtained at night, in this case, just after the science
+  observation sequence, and at a similar airmass.
 
 .. warning::  The Bad Pixel Masks (BPMs) are now found in the archive rather
    than packaged with the software.  You must get the static BPM from the

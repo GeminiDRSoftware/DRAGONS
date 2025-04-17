@@ -1,4 +1,4 @@
-# Copyright(c) 2016,2018,2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2016,2018,2020-2022 Association of Universities for Research in Astronomy, Inc.
 
 from collections.abc import Iterable
 

@@ -44,8 +44,8 @@ In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
     browser = your_preferred_browser
 
 The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
-the interactive tools using that browser.  The allowed strings are "safari",
-"chrome", and "firefox".
+the interactive tools using that browser.  The allowed strings are "**safari**",
+"**chrome**", and "**firefox**".
 
 Importing libraries
 -------------------
@@ -61,7 +61,7 @@ Importing libraries
     from gempy.adlibrary import dataselect
 
 The ``dataselect`` module will be used to create file lists for the
-biases, the flats, the arcs, the standard, and the science observations.
+biases, the flats, the arcs, the telluric star, and the science observations.
 The ``Reduce`` class is used to set up and run the data
 reduction.
 
@@ -119,9 +119,9 @@ We show several usage examples below.
 
 A list for the flats
 --------------------
-The GNRIS flats will be stack together.  Therefore it is important to ensure
+The GNIRS flats will be stacked together.  Therefore it is important to ensure
 that the flats in the list are compatible with each other.  You can use
-`dataselect` to narrow down the selection as required.  Here, we have only
+"|dataselect|" to narrow down the selection as required.  Here, we have only
 the flats that were taken with the science and we do not need extra selection
 criteria.
 
@@ -133,11 +133,11 @@ criteria.
 
 A list for the telluric
 -----------------------
-DRAGONS does not recognize the telluric star as such.  This is because
-the observations are taken like science data and the GNIRS headers do not
-explicitly state that the observation is a telluric standard.  For now, the
-`observation_class` descriptor can be used to differential the telluric
-from the science observations, along with the rejection of the `CAL` tag to
+DRAGONS does not recognize the telluric star as such.  This is because, at
+Gemini, the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  In most cases,
+the ``observation_class`` descriptor can be used to differentiate the telluric
+from the science observations, along with the rejection of the ``CAL`` tag to
 reject flats and arcs.
 
 .. code-block:: python
@@ -154,7 +154,7 @@ reject flats and arcs.
 A list for the science observations
 -----------------------------------
 
-In our case, the science observations can be selected from the observation
+The science observations can be selected from the observation
 class, ``science``, that is how they are differentiated from the telluric
 standards which are ``partnerCal``.
 
@@ -192,7 +192,7 @@ objects we could add the object name in the expression.
         all_files,
         [],
         ['CAL'],
-        dataselect.expr_parser('object=="HD41335"')
+        dataselect.expr_parser(observation_class=="science" and 'object=="HD41335"')
     )
 
 Bad Pixel Mask
@@ -273,7 +273,7 @@ of the telluric features.
 Wavelength calibration from peaks is better done in interactive mode
 despite our efforts to automate the process.
 
-To use the sky transmission peaks in the science frames, we invoke the
+TTo use the emission features in the sky spectrum, we invoke the
 ``makeWavecalFromSkyEmission`` recipe.
 
 .. code-block:: python
@@ -296,7 +296,7 @@ Zooming in:
    :width: 600
    :alt: Arc line identifications
 
-.. note:: If the feature identification were to be incorrrect, often changing
+.. tip:: If the feature identification were to be incorrrect, often changing
     the minimum SNR for peak detection to 5 and recalculating ("Reconstruct points")
     will help find the good solution.
 
@@ -312,7 +312,7 @@ use the star as a spectrophotometric standard), we need to know the star's
 magnitude.  Those are inputs to the ``fitTelluric`` primitive.
 
 The default effective temperature of 9650 K is typical of an A0V star, which
-is the most common spectral tupe used as a tellurc standard. Different
+is the most common spectral type used as a telluric standard. Different
 sources give values between 9500 K and 9750 K and, for example,
 Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
 Temperature Sequence"
@@ -414,6 +414,12 @@ like this.
    :alt: 1D extracted spectrum after telluric correction or before flux calibration
 
 And the final spectrum, corrected for telluric features and flux calibrated.
+
+::
+
+   from gempy.adlibrary import plotting
+   ad = astrodata.open(reduce_science.output_filenames[0])
+   plotting.dgsplot_matplotlib(ad, 1)
 
 .. image:: _graphics/gnirsls_Lband10mm_1d.png
    :width: 600

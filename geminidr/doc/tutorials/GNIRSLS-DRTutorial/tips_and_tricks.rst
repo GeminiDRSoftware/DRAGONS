@@ -26,7 +26,28 @@ applies no shift.  The parameter can be set to a value set my you, eg.
 measure the shift for you by setting ``shift`` to ``None``.  This will trigger
 the algorithm that tries to calculate the shift on it's own.
 
-.. todo:: prepare:bad_wcs=new
+.. _badWCS:
+
+Fix Bad WCS
+===========
+
+In GNIRS data, it is not uncommon for the World Coordinate System (WCS) values
+in the headers to be wrong in the raw data.  In the step `prepare`, which
+every recipes starts with, a primitives called ``standardizeWCS`` inspect the
+coordinates and looks for relative discrepancies between the WCS of the all
+the files relative to the first one.  Correct WCS values are essential to
+sky association and to the alignment of the frames before stacking.
+
+If the reduction crashes with this message::
+
+    "ValueError: Some files have bad WCS information and user has requested an exit"
+
+it means that the WCS values in the headers of at least one file are wrong.
+
+This can be fixed.  ``standardizeWCS`` can try to fix things.  For GNIRS
+longslit data, using the option ``-p prepare:bad_wcs=new`` seems to work
+reliably.
+
 
 .. _getBPM:
 
@@ -34,7 +55,7 @@ Get the BPMs
 ============
 
 Getting Bad Pixel Masks from the archive
-========================================
+----------------------------------------
 Starting with DRAGONS v3.1, the static bad pixel masks (BPMs) are now handled as
 calibrations. They are downloadable from the archive instead of being packaged
 with the software.  There are various ways to get the BPMs.
@@ -72,7 +93,8 @@ The BPMs are now handled like other calibrations.  This means that they are
 also downloaded from the archive.  From the archive search form, once you
 have identified your science data, select the "Load Associated Calibrations"
 (which turns to "View Calibrations" once the table is loaded).  The BPM will
-show up with the green background.
+show up with the green background and unlike on the screenshot below, they
+are now located at the bottom of the primary list.
 
 .. image:: _graphics/bpmassociated.png
    :scale: 100%
@@ -113,6 +135,26 @@ stored in FITS headers.
     plt.xlabel(f'Wavelength ({units})')
     plt.ylabel(f'Signal ({ad[0].hdr["BUNIT"]})')
     plt.plot(wavelength, data)
+    plt.show()
+
+
+Inspect the telluric model
+==========================
+The telluric model is stored in the processed telluric star file.
+To inspect the telluric model, you can use the following Python code.
+
+.. code-block:: python
+    :linenos:
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    import astrodata
+    import gemini_instruments
+
+    ad = astrodata.open('N20210407S0188_telluric.fits')
+    w = ad[0].wcs(np.arange(ad[0].data.size))
+    plt.plot(w, ad[0].TELLABS)
     plt.show()
 
 

@@ -1,4 +1,4 @@
-# Copyright(c) 2016-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2016-2025 Association of Universities for Research in Astronomy, Inc.
 #
 #
 #                                                                  gemini_python
