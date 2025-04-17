@@ -1320,7 +1320,7 @@ class DataGroup:
         isinf = np.isinf(input_array)
         if isnan.any() or isinf.any():
             log.warning(f"There are {isnan.sum()} NaN and {isinf.sum()} inf "
-                        f"values in the {output_key} array. Setting to zero.")
+                        f"values in the {output_key[0]} array. Setting to zero.")
             input_array[isnan | isinf] = 0
 
         # We want to transform any DQ bit arrays into floats so we can sample
