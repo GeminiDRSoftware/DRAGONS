@@ -220,8 +220,8 @@ class TelluricSpectrum:
                         interp_params[k] = v
                 except TypeError:
                     fixed_params[k] = v
-            print("FIXED ", fixed_params)
-            print("INTERP", interp_params)
+            # print("FIXED ", fixed_params)
+            # print("INTERP", interp_params)
             if interp_params:
                 pca_data = np.stack([self.lsf.convolve_and_resample(
                     self.waves, w_pca, t_pca, **fixed_params,

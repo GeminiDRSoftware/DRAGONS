@@ -122,13 +122,12 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
         for k, v in self.fitting_parameters.items():
             if k in vis.calibrator.fit_params:
                 vis.calibrator.fit_params[k][self.my_fit_index] = v
-                print(f"Updating {k} to value {v}")
 
         # Update the user mask. Since this method is called as soon as
         # a mask is updated in one panel, we know that changes could only
         # have happened to this panel
         mask = [m not in ('good', self.SigmaClipped.name) for m in self.mask]
-        print("STARTING PERFORM FIT")
+        # print("STARTING PERFORM FIT")
         vis.calibrator.user_mask[self.my_fit_index][~vis.calibrator.mask[self.my_fit_index]] = np.asarray(mask)
 
         # This is where we diverge because of the complexity of Telluric
@@ -486,7 +485,7 @@ class TelluricVisualizer(Fit1DVisualizer):
         # suppressed fitting when creating the Panels (special for Telluric)
         self.fits[0].perform_fit()
         for lsf_param in self.calibrator.lsf_parameter_bounds:
-            print("LSF_PARAM", lsf_param, getattr(self.fitted_model, lsf_param))
+            # print("LSF_PARAM", lsf_param, getattr(self.fitted_model, lsf_param))
             self.ui_params.values[lsf_param] = getattr(self.fitted_model, lsf_param).value
         # Ensures that the calibrator knows the lsf_scaling params have been set
         self.calibrator.set_fitting_params(self.ui_params)

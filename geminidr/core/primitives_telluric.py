@@ -164,11 +164,11 @@ class Telluric(Spect):
 
                             tspek_list.append(tspek)
                             spectral_indices.append(i)
-                    print(datetime.now() - start, "Making Calibrator() object")
+                    # print(datetime.now() - start, "Making Calibrator() object")
                     if not tspek_list:
                         raise ValueError(f"No 1D spectra found in {ad.filename}")
                     tcal = TelluricCalibrator(tspek_list, ui_params=uiparams)
-                    print(datetime.now() - start, "Made Calibrator() object")
+                    # print(datetime.now() - start, "Made Calibrator() object")
 
                 if inter:
                     visualizer = TelluricVisualizer(
