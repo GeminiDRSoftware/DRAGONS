@@ -504,7 +504,8 @@ class Telluric(Spect):
                                     f"peak for {ext.id}")
                         pixel_shift = None  # needs to exist for later
                     else:
-                        pixel_shift = 0.01 * np.round(np.interp(best, np.arange(fft_all.size), dx_all))
+                        pixel_shift = 0.01 * np.round(np.interp(
+                            best[0], np.arange(fft_all.size), dx_all))
                         log.stdinfo(f"Shift for extension {ext.id} is "
                                     f"{pixel_shift:.2f} pixels")
                         pixel_shifts.append(pixel_shift)
