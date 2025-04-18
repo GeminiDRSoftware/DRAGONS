@@ -192,7 +192,7 @@ objects we could add the object name in the expression.
         all_files,
         [],
         ['CAL'],
-        dataselect.expr_parser(observation_class=="science" and 'object=="HD41335"')
+        dataselect.expr_parser('observation_class=="science" and object=="HD41335"')
     )
 
 Bad Pixel Mask

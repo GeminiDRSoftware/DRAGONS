@@ -501,7 +501,9 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
 ::
 
-    dgsplot N20210407S0173_1D.fits 1
+   from gempy.adlibrary import plotting
+   ad = astrodata.open(reduce_science.output_filenames[0])
+   plotting.dgsplot_matplotlib(ad, 1)
 
 .. image:: _graphics/gnirsls_Kband111mm_1D.png
    :width: 600

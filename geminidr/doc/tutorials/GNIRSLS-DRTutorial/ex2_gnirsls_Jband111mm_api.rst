@@ -447,7 +447,7 @@ run.
                 ])
     reduce_telluric.runr()
 
-Adjusting the order of the spline to 8 leads to more randomized residuals
+Adjusting the order of the spline to 9 leads to more randomized residuals
 (second panel).
 
 .. image:: _graphics/gnirsls_Jband111mm_tellfit.png
@@ -486,9 +486,6 @@ spectrum.
     reduce_science.files.extend(scitarget)
     reduce_science.runr()
 
-.. todo:: Crashes.  Is that due to the apertures?  Work when
-    I correct the apertures interatively.  Can it deal with more
-    than one aperture?
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
@@ -501,6 +498,9 @@ To run the reduction with all the interactive tools activated, set the
     reduce_science.files.extend(scitarget)
     reduce_science.uparms = dict([('interactive', True)])
     reduce_science.runr()
+
+The second aperture detected by `findApertures` is just a spurious detection.
+In interactive mode, you can remove it.  Or leave, it won't hurt anything.
 
 The 2D spectrum, without telluric correction and flux calibration, looks
 like this:

@@ -252,8 +252,6 @@ Here, increasing the order to 4 helps to get a tighter fit.
    :width: 600
    :alt: Arc line fit
 
-.. todo:: Mark says that there are more lines in the screenshot compared to
-    what is found by default.   Check that and update the screenshot or the text.
 
 Using the sky lines
 -------------------
@@ -345,9 +343,6 @@ effect on the telluric correction, so the temperature from any reliable
 source can be used. Using Simbad, we find that the star has a magnitude
 of J=9.2.
 
-.. todo::  Update example to use a J-band magnitude instead of K-band.  Then
-     update the screenshots.
-
 Instead of typing the values on the command line, we will use a parameter file
 to store them.  In a normal text file (here we name it "hip55627.param"), we write::
 
@@ -367,7 +362,7 @@ run.
 
     reduce @telluric.lis -r reduceTelluric @hip55627.param -p fitTelluric:interactive=True
 
-Adjusting the order of the spline to 8 leads to more randomized residuals
+Adjusting the order of the spline to 9 leads to more randomized residuals
 (second panel).
 
 .. image:: _graphics/gnirsls_Jband111mm_tellfit.png
@@ -408,9 +403,8 @@ To run the reduction with all the interactive tools activated, set the
 
    reduce @sci.lis -p interactive=True
 
-.. todo:: Whoa!  findAperture fails big time.  That wasn't happening before.
-    Delete and "f" works though.  So why the heck doesn't the original fit
-    work?
+The second aperture detected by `findApertures` is just a spurious detection.
+In interactive mode, you can remove it.  Or leave, it won't hurt anything.
 
 The 2D spectrum, without telluric correction and flux calibration, looks
 like this:

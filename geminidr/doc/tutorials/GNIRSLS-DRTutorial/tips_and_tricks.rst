@@ -46,7 +46,9 @@ it means that the WCS values in the headers of at least one file are wrong.
 
 This can be fixed.  ``standardizeWCS`` can try to fix things.  For GNIRS
 longslit data, using the option ``-p prepare:bad_wcs=new`` seems to work
-reliably.
+reliably. Eg.::
+
+   reduce @sci.lis -p prepare:bad_wcs=new
 
 
 .. _getBPM:
@@ -108,7 +110,9 @@ are now located at the bottom of the primary list.
 Plot a 1-D spectrum
 ===================
 The ``dgsplot`` tool can be used to plot and inspect a 1-D spetrum in a
-matplotlib window.
+matplotlib window. Eg.::
+
+    dgsplot N20210407S0173_1D.fits 1
 
 If you want to plot the spectrum in your own Python script, here's what
 you can do.  This will use the correct WCS as opposed to the approximation

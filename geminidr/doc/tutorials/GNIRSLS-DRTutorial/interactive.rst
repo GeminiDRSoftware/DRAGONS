@@ -135,9 +135,6 @@ The interface when using sky features:
    :width: 600
    :alt: determineWavelengthSolution for sky features
 
-
-.. todo:: screenshot tellurc absorption
-
 In both cases, the interface allows the user to point to specific lines to
 delete them or to identify them (ie. assign a wavelength).  Modifications to
 the line identification plot will be reflected in the fit below it.
@@ -203,7 +200,7 @@ normalizeFlat
    :width: 600
    :alt: normalizeFlat
 
-.. todo:  GNIRS normalizeFlat screenshot
+
 
 The ``normalizeFlat`` tool simply fits a function to the flat signal to
 normalize it.  The slider at the top defaults to
