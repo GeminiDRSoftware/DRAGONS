@@ -10,6 +10,7 @@ import numpy as np
 
 from scipy.interpolate import make_interp_spline
 from scipy.signal import find_peaks
+from scipy.stats import gmean
 
 from astropy.convolution import Gaussian1DKernel, convolve
 from astropy.modeling import models
@@ -118,7 +119,7 @@ class Telluric(Spect):
                 placeholders={"magnitude": ""})
 
             apertures = set(ad.hdr.get('APERTURE')) - {None}
-            aperture_to_use = min(apertures)
+            aperture_to_use = min(apertures) if apertures else None
             if len(apertures) > 1:
                 log.warning(f"Multiple apertures found: using {aperture_to_use}")
 
@@ -182,10 +183,10 @@ class Telluric(Spect):
                     geminidr.interactive.server.interactive_fitter(visualizer)
                     m_final = visualizer.results()
                 else:
-                    # Before measuring the wavelength shift, we perform a fit
+                    # Before measuring the pixel shift, we perform a fit
                     # so that we have the best model for cross-correlation
                     if modify:
-                        log.stdinfo("Calculating wavelength shift(s)")
+                        log.stdinfo("Calculating pixels shift(s)")
                     m_final, mask = tcal.perform_all_fits()
                 pca_coeffs, fit_models = m_final.fit_results()
 
@@ -196,8 +197,16 @@ class Telluric(Spect):
                         if len(ext.shape) > 1:
                             continue
 
+                        # We need to define "typical" lsf_param values in
+                        # order to evaluate the absorption for xcorr
+                        if lsf_param_names:
+                            pca_parameters = np.r_[pca_coeffs,
+                                                   [gmean(v) for v in lsf_params.values()]]
+                        else:
+                            pca_parameters = pca_coeffs
+
                         pixel_shift = peak_finding.cross_correlate_subpixels(
-                            tspek.nddata, tspek.pca.evaluate(None, pca_coeffs),
+                            tspek.nddata, tspek.pca.evaluate(None, pca_parameters),
                             sampling)
                         if pixel_shift is None:
                             log.warning("Cannot determine cross-correlation"
@@ -207,10 +216,6 @@ class Telluric(Spect):
                             log.stdinfo(f"Shift for extension {ext.id} is "
                                         f"{pixel_shift:.2f} pixels")
                             pixel_shifts.append(pixel_shift)
-
-                        #fig, ax = plt.subplots()
-                        #ax.plot(np.arange(xcorr.size) - xcorr.size // 2, xcorr)
-                        #plt.show()
 
                     if len(ad) > 1:
                         pixel_shift = self._calaculate_mean_pixel_shift(pixel_shifts)
@@ -371,7 +376,8 @@ class Telluric(Spect):
                         f"{origin_str}")
 
             # In case there are multiple apertures in the telluric
-            aperture_to_use = min(set(ad.hdr.get('APERTURE')) - {None})
+            apertures = set(ad.hdr.get('APERTURE')) - {None}
+            aperture_to_use = min(apertures) if apertures else None
 
             # Check that all the necessary extensions exist, or bail
             try:
@@ -514,7 +520,10 @@ class Telluric(Spect):
                     # Interpolate telluric spectrum onto science wavelengths
                     tellabs_data.append(tellabs_dict[ext.hdr.get('SPECORDR')](tspek.waves))
 
-                label = f"Aperture {ext.hdr['APERTURE']}"
+                try:
+                    label = f"Aperture {ext.hdr['APERTURE']}"
+                except KeyError:
+                    label = ""
                 try:
                     order = ext.hdr['SPECORDR']
                 except KeyError:
