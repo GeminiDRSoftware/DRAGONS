@@ -297,7 +297,11 @@ class Telluric(Spect):
         applied to the output science spectrum's wavelength solution. The
         shift is determined by looking at the highest-frequency Fourier
         component of the corrected spectrum, to identify the "ringing" that
-        arises from a wavelength offset.
+        arises from a wavelength offset. Note that if apply_model=False and the
+        "data"-derived telluric absorption spectrum is used, then the output
+        science spectrum will be modified to match that of the telluric. If the
+        model absorption spectrum is used, its wavelength scale is obviously
+        correct.
 
         There is no need for the TELLFIT table to be on a spectrum taken
         with the same set-up or even the same instrument as the input ADs.

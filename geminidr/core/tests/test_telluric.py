@@ -33,8 +33,8 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename):
     assert ad_compare(adout, adref)
 
     # Compare PCA coefficients
-    assert np.allclose(adout[0].TELLFIT['PCA coefficients'].data,
-                       adref[0].TELLFIT['PCA coefficients'].data)
+    assert np.allclose(adout.TELLFIT['PCA coefficients'].data,
+                       adref.TELLFIT['PCA coefficients'].data)
 
     # Compare data-derived absorption
     assert np.allclose(adout[0].TELLABS, adref[0].TELLABS)
