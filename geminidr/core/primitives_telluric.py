@@ -482,7 +482,6 @@ class Telluric(Spect):
                     spline = make_interp_spline(wconv, tconv, axis=-1, k=3)
                     spline.extrapolate = False
                     tell_int_splines.append(spline.antiderivative())
-                    print("TELL INT SPLINE", wconv.min(), wconv.max())
 
                 if pixel_shift is None:
                     if apply_model:
@@ -607,16 +606,15 @@ class Telluric(Spect):
             else:
                 tcal.perform_all_fits()
 
+            if apply_shift:
+                log.stdinfo(f"Applying shift of {pixel_shift} pixels "
+                            f"to {ad.filename}")
             abs_spectra = tcal.absorption_spectra()
-            i_model = 0
             for ext in ad:
                 if len(ext.shape) > 1:
                     continue
 
                 ext.divide(next(abs_spectra))
-                #ext.divide(tcal.abs_final[i_model])
-                i_model += 1
-
                 if apply_shift:
                     ext.wcs.insert_transform(
                         ext.wcs.input_frame, models.Shift(pixel_shift),
