@@ -499,22 +499,27 @@ class Telluric(Spect):
                     #pixel_shift = 0.01 * np.round(pixel_shift * 100)
 
                     pixels = np.arange(ext.shape[0])
-                    dx_all = np.arange(-10, 10.001, 0.05)
-                    fft_all = np.zeros_like(dx_all)
+                    # We want to avoid integer shifts since they produce
+                    # artifacts because there's no interpolation and smoothing
+                    dx_all = np.arange(-5.1667, 5.1667, 0.33333)
+                    fft_all = np.empty_like(dx_all)
                     for i, dx in enumerate(dx_all):
                         shift_trans = np.interp(pixels + dx, pixels, trans,
                                                 left=np.nan, right=np.nan)
-                        fft_all[i] = abs(np.fft.fft(at.divide0(ext.data,
-                                                               shift_trans))[0])
+                        # Avoid edge effects by clipping pixels
+                        fft_all[i] = abs(np.fft.fft(at.divide0(ext.data[10:-10],
+                                                               shift_trans[10:-10]))[0])
+
                     try:
-                        best = peak_finding.pinpoint_peaks(-fft_all, [fft_all.argmin()])[0]
+                        best = peak_finding.pinpoint_peaks(
+                            -fft_all, [fft_all.argmin()], halfwidth=3)[0]
                     except IndexError:
                         log.warning("Cannot determine cross-correlation"
                                     f"peak for {ext.id}")
                         pixel_shift = None  # needs to exist for later
                     else:
-                        pixel_shift = 0.01 * np.round(np.interp(
-                            best[0], np.arange(fft_all.size), dx_all))
+                        pixel_shift = np.round(np.interp(
+                            best[0], np.arange(fft_all.size), dx_all), decimals=2)
                         log.stdinfo(f"Shift for extension {ext.id} is "
                                     f"{pixel_shift:.2f} pixels")
                         pixel_shifts.append(pixel_shift)

@@ -15,8 +15,10 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize("filename", ["hip93667_109_ad.fits"])
-def test_fit_telluric(path_to_inputs, path_to_refs, filename):
+@pytest.mark.parametrize("filename,mag,bbtemp",
+                         [("hip93667_109_ad.fits", "K=5.241", 9650)]
+                         )
+def test_fit_telluric(path_to_inputs, path_to_refs, filename, mag, bbtemp):
     """
     Overall regression test for fitTelluric() with some parameters fixed
     """
@@ -26,7 +28,7 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename):
                          mode='sq', drpkg='geminidr')
     pclass = pm.get_applicable_primitives()
     p = pclass([ad])
-    adout = p.fitTelluric(magnitude="K=5.241", bbtemp=9650,
+    adout = p.fitTelluric(magnitude=mag, bbtemp=bbtemp,
                           shift_tolerance=None).pop()
 
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
@@ -37,21 +39,34 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename):
                        adref.TELLFIT['PCA coefficients'].data)
 
     # Compare data-derived absorption
-    assert np.allclose(adout[0].TELLABS, adref[0].TELLABS)
+    for ext_out, ext_ref in zip(adout, adref):
+        assert np.allclose(ext_out.TELLABS, ext_ref.TELLABS)
 
-    # Compare evaluations of SENSFUNCs
-    sensfunc_out = am.table_to_model(adout[0].SENSFUNC)
-    sensfunc_ref = am.table_to_model(adref[0].SENSFUNC)
-    pixels = np.arange(adout[0].data.size)
-    assert np.allclose(sensfunc_out(pixels), sensfunc_ref(pixels))
+        # Compare evaluations of SENSFUNCs
+        sensfunc_out = am.table_to_model(ext_out.SENSFUNC)
+        sensfunc_ref = am.table_to_model(ext_ref.SENSFUNC)
+        pixels = np.arange(ext_out.data.size)
+        assert np.allclose(sensfunc_out(pixels), sensfunc_ref(pixels))
 
 
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize("filename,shift", [("hip93667_109_ad.fits", 0.18)])
-def test_fit_telluric_xcorr(path_to_inputs, caplog, filename, shift):
+@pytest.mark.parametrize("filename,telluric,shift",
+                         [("N20171214S0147_extracted.fits", "N20171214S0163_telluric_selfwavecal.fits", True, 0),
+                          ("N20171214S0147_extracted.fits", "N20171214S0163_telluric_selfwavecal.fits", False, 0),
+                          ("N20171214S0147_extracted.fits", "N20171214S0163_telluric.fits", True, 0),
+                          ("N20171214S0147_extracted.fits", "N20171214S0163_telluric.fits", False, -0.35),
+                          ])
+def test_telluric_correct_xcorr(path_to_inputs, caplog, filename, telluric,
+                                apply_model, shift):
     """
-    Test of the cross-correlation in fitTelluric
+    Test of the cross-correlation in telluricCorrect.
+
+    The original dataset used here (N20171214S0147_extracted.fits) has a good
+    wavelength solution. So the shift should be zero if apply_model=True,
+    regardless of the telluric. Two tellurics are used: the "selfwavecal" one
+    has a good wavelength solution, so the shift should be zero; the other one
+    has a poor solution so a shift of -0.35 pixels should be found.
     """
     ad = astrodata.open(os.path.join(path_to_inputs, filename))
 
@@ -59,13 +74,22 @@ def test_fit_telluric_xcorr(path_to_inputs, caplog, filename, shift):
                          mode='sq', drpkg='geminidr')
     pclass = pm.get_applicable_primitives()
     p = pclass([ad])
-    adout = p.fitTelluric(magnitude="K=5.241", bbtemp=9650,
-                          shift_tolerance=0)
+    adout = p.telluricCorrect(telluric=telluric, shift_tolerance=0,
+                              apply_model=apply_model)
+    assert adout[0].data.dtype == np.float32
 
     for record in caplog.records:
         fields = record.message.split()
         if fields[0].lower() == "shift":
             assert float(fields[-2]) == pytest.approx(shift, abs=0.1)
+
+
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+@pytest.mark.parametrize("filename,shift", [("hip93667_109_ad.fits", 0.18)])
+def test_telluric_correct_xcorr(path_to_inputs, caplog, filename, shift):
+    pass
+
 
 
 @pytest.mark.preprocessed_data
