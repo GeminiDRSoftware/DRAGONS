@@ -3,11 +3,16 @@ import pytest
 
 import os
 
+from astropy.modeling import fitting, models
+from astropy import units as u
+from gwcs import coordinate_frames as cf
+from gwcs.wcs import WCS as gWCS
+
 import astrodata, gemini_instruments
 from astrodata.testing import ad_compare
 
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
-from geminidr.core.primitives_telluric import make_linelist
+from geminidr.core.primitives_telluric import make_linelist, GaussianLineSpreadFunction
 from gempy.library import astromodels as am
 
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
@@ -51,7 +56,14 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename, mag, bbtemp):
 
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize("filename,telluric,shift",
+@pytest.mark.parametrize("filename,shift", [("hip93667_109_ad.fits", 0.18)])
+def test_fit_telluric_xcorr(path_to_inputs, caplog, filename, shift):
+    pass
+
+
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+@pytest.mark.parametrize("filename,telluric,apply_model,shift",
                          [("N20171214S0147_extracted.fits", "N20171214S0163_telluric_selfwavecal.fits", True, 0),
                           ("N20171214S0147_extracted.fits", "N20171214S0163_telluric_selfwavecal.fits", False, 0),
                           ("N20171214S0147_extracted.fits", "N20171214S0163_telluric.fits", True, 0),
@@ -84,12 +96,28 @@ def test_telluric_correct_xcorr(path_to_inputs, caplog, filename, telluric,
             assert float(fields[-2]) == pytest.approx(shift, abs=0.1)
 
 
-@pytest.mark.preprocessed_data
-@pytest.mark.regression
-@pytest.mark.parametrize("filename,shift", [("hip93667_109_ad.fits", 0.18)])
-def test_telluric_correct_xcorr(path_to_inputs, caplog, filename, shift):
-    pass
+@pytest.mark.parametrize("resolution", [300, 500, 1000, 2000])
+def test_gaussian_line_spread_function(resolution):
+    """Basic test that we convolve correctly"""
+    wave_model = models.Scale(0.01) | models.Shift(300)
+    flux = np.zeros((70000,), dtype=np.float32)
+    flux[5000::10000] = 1000
+    ext = astrodata.NDAstroData(data=flux)
 
+    input_frame = astrodata.wcs.pixel_frame(naxes=1)
+    output_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm, axes_names=("WAVE",))
+    ext.wcs = gWCS([(input_frame, wave_model),
+                    (output_frame, None)])
+
+    lsf = GaussianLineSpreadFunction(ext, resolution=resolution)
+    for w0 in range(350, 951, 100):
+        wout, fout = lsf.convolve((w0-50, w0+50), lsf.all_waves, flux)
+        m_init = models.Gaussian1D(mean=w0)
+        fit_it = fitting.TRFLSQFitter()
+        m_final = fit_it(m_init, wout, fout)
+        assert m_final.mean == pytest.approx(w0, abs=0.01)
+        assert m_final.stddev * 2.35482 == pytest.approx(w0 / resolution,
+                                                         rel=0.01)
 
 
 @pytest.mark.preprocessed_data

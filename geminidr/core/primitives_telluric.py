@@ -924,7 +924,7 @@ class LineSpreadFunction(ABC):
 
         Parameters
         ----------
-        waves: array
+        waves: sequence
             provides min and max wavelengths for output convolved spectra
         w: array
             wavelengths of thing to be convolved
@@ -940,7 +940,7 @@ class LineSpreadFunction(ABC):
         """
         convolution_list = self.convolutions(**kwargs)
         dw = sum(x[1] for x in convolution_list)
-        w1, w2 = waves.min() - 1.05 * dw, waves.max() + 1.05 * dw
+        w1, w2 = np.min(waves) - 1.05 * dw, np.max(waves) + 1.05 * dw
         windices = np.logical_and(w > w1, w < w2)
         spectra = data[..., windices]
         for conv_func, dw in convolution_list:
