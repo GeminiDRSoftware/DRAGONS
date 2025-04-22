@@ -18,6 +18,20 @@ from gempy.library import astromodels as am
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
 
+@pytest.fixture
+def ext_linear_wavelength():
+    """A basic linear wavelength solution with a few delta functions"""
+    wave_model = models.Scale(0.01) | models.Shift(300)
+    flux = np.zeros((70000,), dtype=np.float32)
+    flux[5000::10000] = 1000
+    ext = astrodata.NDAstroData(data=flux)
+    input_frame = astrodata.wcs.pixel_frame(naxes=1)
+    output_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm, axes_names=("WAVE",))
+    ext.wcs = gWCS([(input_frame, wave_model),
+                    (output_frame, None)])
+    return ext
+
+
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("filename,mag,bbtemp",
@@ -56,9 +70,34 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename, mag, bbtemp):
 
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize("filename,shift", [("hip93667_109_ad.fits", 0.18)])
-def test_fit_telluric_xcorr(path_to_inputs, caplog, filename, shift):
-    pass
+@pytest.mark.parametrize("filename,magnitude,bbtemp,shift",
+                         [("hip93667_109_ad.fits", "K=5.241", 9650, 0.18)])
+def test_fit_telluric_xcorr(path_to_inputs, caplog, filename,
+                            magnitude, bbtemp, shift):
+    """
+    Test of the cross-correlation in fitTelluric.
+
+    The correct shift has been determined empirically using the GUI.
+    """
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+
+    pm = PrimitiveMapper(ad.tags, ad.instrument(generic=True).lower(),
+                         mode='sq', drpkg='geminidr')
+    pclass = pm.get_applicable_primitives()
+    p = pclass([ad])
+    adout = p.fitTelluric(magnitude=magnitude, bbtemp=bbtemp,
+                          shift_tolerance=0).pop()
+
+    for record in caplog.records:
+        fields = record.message.split()
+        if fields[0].lower() == "shift":
+            assert float(fields[-2]) == pytest.approx(shift, abs=0.1)
+
+    # Also check some things here to avoid writing another test that will
+    # have to run the primitive again
+    assert hasattr(adout, "TELLFIT")
+    assert adout[0].data.dtype == np.float32
+    assert adout[0].TELLABS.dtype == np.float32
 
 
 @pytest.mark.preprocessed_data
@@ -97,21 +136,12 @@ def test_telluric_correct_xcorr(path_to_inputs, caplog, filename, telluric,
 
 
 @pytest.mark.parametrize("resolution", [300, 500, 1000, 2000])
-def test_gaussian_line_spread_function(resolution):
+def test_gaussian_line_spread_function(ext_linear_wavelength, resolution):
     """Basic test that we convolve correctly"""
-    wave_model = models.Scale(0.01) | models.Shift(300)
-    flux = np.zeros((70000,), dtype=np.float32)
-    flux[5000::10000] = 1000
-    ext = astrodata.NDAstroData(data=flux)
-
-    input_frame = astrodata.wcs.pixel_frame(naxes=1)
-    output_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm, axes_names=("WAVE",))
-    ext.wcs = gWCS([(input_frame, wave_model),
-                    (output_frame, None)])
-
-    lsf = GaussianLineSpreadFunction(ext, resolution=resolution)
+    lsf = GaussianLineSpreadFunction(ext_linear_wavelength, resolution=resolution)
     for w0 in range(350, 951, 100):
-        wout, fout = lsf.convolve((w0-50, w0+50), lsf.all_waves, flux)
+        wout, fout = lsf.convolve((w0-50, w0+50), lsf.all_waves,
+                                  ext_linear_wavelength.data)
         m_init = models.Gaussian1D(mean=w0)
         fit_it = fitting.TRFLSQFitter()
         m_final = fit_it(m_init, wout, fout)
