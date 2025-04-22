@@ -86,8 +86,8 @@ def test_telluric_correct_xcorr(path_to_inputs, caplog, filename, telluric,
                          mode='sq', drpkg='geminidr')
     pclass = pm.get_applicable_primitives()
     p = pclass([ad])
-    adout = p.telluricCorrect(telluric=telluric, shift_tolerance=0,
-                              apply_model=apply_model)
+    adout = p.telluricCorrect(telluric=os.path.join(path_to_inputs, telluric),
+                              shift_tolerance=0, apply_model=apply_model).pop()
     assert adout[0].data.dtype == np.float32
 
     for record in caplog.records:
