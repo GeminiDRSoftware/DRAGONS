@@ -19,14 +19,25 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
 
 @pytest.fixture
-def ext_linear_wavelength():
-    """A basic linear wavelength solution with a few delta functions"""
-    wave_model = models.Scale(0.01) | models.Shift(300)
-    flux = np.zeros((70000,), dtype=np.float32)
-    flux[5000::10000] = 1000
+def ext(request):
+    npix = 20000  # actually there will be 1 more than this
+    if request.param == "linear":
+        wave_model = models.Scale(700 / npix) | models.Shift(300)
+    elif request.param == "loglinear":
+        wave_model = models.Exponential1D(amplitude=300, tau=npix/np.log(10/3))
+    else:
+        raise ValueError(f"Don't know {request.param}")
+    flux = np.zeros((npix+1,), dtype=np.float32)
+
+    # Put lines at 350, 450, ..., 950nm
+    waves = wave_model(np.arange(flux.size))
+    for linewave in range(350, 951, 100):
+        flux[np.argmin(abs(linewave - waves))] = 1000
+
     ext = astrodata.NDAstroData(data=flux)
     input_frame = astrodata.wcs.pixel_frame(naxes=1)
-    output_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm, axes_names=("WAVE",))
+    output_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
+                                    axes_names=("WAVE",))
     ext.wcs = gWCS([(input_frame, wave_model),
                     (output_frame, None)])
     return ext
@@ -135,17 +146,33 @@ def test_telluric_correct_xcorr(path_to_inputs, caplog, filename, telluric,
             assert float(fields[-2]) == pytest.approx(shift, abs=0.1)
 
 
+@pytest.mark.parametrize("ext", ["linear", "loglinear"], indirect=True)
 @pytest.mark.parametrize("resolution", [300, 500, 1000, 2000])
-def test_gaussian_line_spread_function(ext_linear_wavelength, resolution):
+def test_gaussian_line_spread_function_convolve(ext, resolution):
     """Basic test that we convolve correctly"""
-    lsf = GaussianLineSpreadFunction(ext_linear_wavelength, resolution=resolution)
+    lsf = GaussianLineSpreadFunction(ext, resolution=resolution)
     for w0 in range(350, 951, 100):
-        wout, fout = lsf.convolve((w0-50, w0+50), lsf.all_waves,
-                                  ext_linear_wavelength.data)
-        m_init = models.Gaussian1D(mean=w0)
+        wout, fout = lsf.convolve((w0-50, w0+50), lsf.all_waves, ext.data)
+        m_init = models.Gaussian1D(amplitude=fout.max(), mean=w0)
         fit_it = fitting.TRFLSQFitter()
         m_final = fit_it(m_init, wout, fout)
-        assert m_final.mean == pytest.approx(w0, abs=0.01)
+        assert m_final.mean == pytest.approx(wout[fout.argmax()], abs=0.01)
+        assert m_final.stddev * 2.35482 == pytest.approx(w0 / resolution,
+                                                         rel=0.01)
+
+
+@pytest.mark.parametrize("ext", ["linear", "loglinear"], indirect=True)
+@pytest.mark.parametrize("resolution", [300, 500, 1000, 2000])
+def test_gaussian_line_spread_function_convolve_and_resample(ext, resolution):
+    """Basic test that we convolve and resample correctly"""
+    lsf = GaussianLineSpreadFunction(ext, resolution=resolution)
+    for w0 in range(350, 951, 100):
+        wout = np.arange(w0-20, w0+20, 0.01)
+        fout = lsf.convolve_and_resample(wout, lsf.all_waves, ext.data)
+        m_init = models.Gaussian1D(amplitude=fout.max(), mean=w0)
+        fit_it = fitting.TRFLSQFitter()
+        m_final = fit_it(m_init, wout, fout)
+        assert m_final.mean == pytest.approx(wout[fout.argmax()], abs=0.01)
         assert m_final.stddev * 2.35482 == pytest.approx(w0 / resolution,
                                                          rel=0.01)
 
