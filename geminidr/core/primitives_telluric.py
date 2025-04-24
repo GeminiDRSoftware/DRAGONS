@@ -746,19 +746,12 @@ class Telluric(Spect):
         resampling = max(int(0.5 * atran_spec.size / np.diff(domain)[0]), 1)
         refplot_spec = refplot_spec[:, ::resampling]
 
+        refplot_spec[1] = 1 - refplot_spec[1]
         if linelist is None:
             # Invert spectrum because we want the wavelengths of troughs
-            refplot_spec[1] = 1 - refplot_spec[1]
             linelist_data = make_linelist(refplot_spec,
                                           resolution=resolution,
                                           num_lines=config.get('num_atran_lines', 50))
-            # In L and M bands, the sky spectrum has emission where the ATRAN
-            # spectrum has absorption, so keep the inverted version for display.
-            # But if we're actually matching absorption features, then we want
-            # to display the original version, so revert it.
-            if absorption:
-                refplot_spec[1] = 1 - refplot_spec[1]
-
             header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm\n"
                       f"Generated at R={int(resolution)} from ATRAN synthetic spectrum "
                       "(Lord, S. D., 1992, NASA Technical Memorandum 103957)\n"
@@ -772,6 +765,13 @@ class Telluric(Spect):
             #np.savetxt(atran_linelist, linelist_data, fmt=['%.3f', '%.3f'], header=header)
             np.savetxt(atran_linelist, linelist_data[:, 0], fmt=['%.3f'], header=header)
             linelist = LineList(atran_linelist)
+
+        # In L and M bands, the sky spectrum has emission where the ATRAN
+        # spectrum has absorption, so keep the inverted version for display.
+        # But if we're actually matching absorption features, then we want
+        # to display the original version, so revert it.
+        if absorption:
+            refplot_spec[1] = 1 - refplot_spec[1]
 
         refplot_name = (f'ATRAN spectrum (Alt={altitude}ft, WV={wv_content}mm,'
                         f'AM=1.5, R={resolution:.0f})')
