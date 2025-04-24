@@ -308,6 +308,9 @@ class CalReturn:
         for ret in (self.files, self.origins):
             yield ret
 
+    def __getitem__(self, value):
+        return self.items()[value]
+
     def items(self):
         return list((file, origin) for file, origin in zip(self.files,
                                                            self.origins))

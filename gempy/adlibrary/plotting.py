@@ -9,7 +9,7 @@ COLORS = ['blue', 'orange', 'green', 'red', 'purple',
 
 
 
-def dgsplot_matplotlib(ad, aperture, ignore_mask):
+def dgsplot_matplotlib(ad, aperture, ignore_mask=False):
     plot_data = _setup_dgsplots(ad, aperture, ignore_mask)
 
     plt.title(plot_data['title'])
@@ -22,7 +22,7 @@ def dgsplot_matplotlib(ad, aperture, ignore_mask):
     return
 
 
-def dgsplot_bokeh(ad, aperture, ignore_mask):
+def dgsplot_bokeh(ad, aperture, ignore_mask=False):
     plot_data = _setup_dgsplots(ad, aperture, ignore_mask)
 
     # Default is to write this file where the dgsplot executable script is located.

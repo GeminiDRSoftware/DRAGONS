@@ -47,8 +47,8 @@ In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
     browser = your_preferred_browser
 
 The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
-the interactive tools using that browser.  The allowed strings are "safari",
-"chrome", and "firefox".
+the interactive tools using that browser.  The allowed strings are "**safari**",
+"**chrome**", and "**firefox**".
 
 Importing libraries
 -------------------
@@ -64,7 +64,7 @@ Importing libraries
     from gempy.adlibrary import dataselect
 
 The ``dataselect`` module will be used to create file lists for the
-biases, the flats, the arcs, the standard, and the science observations.
+biases, the flats, the arcs, the telluric star, and the science observations.
 The ``Reduce`` class is used to set up and run the data
 reduction.
 
@@ -90,10 +90,23 @@ Set up the Calibration Service
     :ref:`cal_service`, specifically the these sections:
     :ref:`cal_service_config` and :ref:`cal_service_api`.
 
+We recommend that you clean up your working directory (``playground``) and
+delete the old calibration database before you start.  Create a fresh one.
+
+.. start a fresh calibration database (``caldb.init(wipe=True)``) when you start a new
+    example.  "wipe" appears to be broken.
+
 Create file lists
 =================
-The next step is to create input file lists.  The module ``dataselect`` helps
-with that.  It uses Astrodata tags and |descriptors| to select the files and
+This data set contains science and calibration frames. For some programs, it
+could contain different observed targets and different exposure times
+depending on how you like to organize your raw data.
+
+The DRAGONS data reduction pipeline does not organize the data for you.
+You have to do it. However, DRAGONS provides tools to help you with that.
+
+The next step is to create input file lists.  The module "|dataselect|" helps.
+It uses Astrodata tags and |descriptors| to select the files and
 store the filenames to a Python list that can then be fed to the ``Reduce``
 class. (See the |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
@@ -118,9 +131,9 @@ We show several usage examples below.
 
 A list for the flats
 --------------------
-The GNRIS flats will be stack together.  Therefore it is important to ensure
+The GNIRS flats will be stacked together.  Therefore it is important to ensure
 that the flats in the list are compatible with each other.  You can use
-`dataselect` to narrow down the selection as required.  Here, we have only
+"|dataselect|" to narrow down the selection as required.  Here, we have only
 the flats that were taken with the science and we do not need extra selection
 criteria.
 
@@ -132,7 +145,7 @@ criteria.
 
 A list for the arcs
 -------------------
-The GNIRS longslit arc was obtained at the end of the science observation.
+The GNIRS longslit arc were obtained at the end of the science observation.
 Often two are taken.  We will use both in this case and stack them later.
 
 .. code-block:: python
@@ -144,11 +157,11 @@ Often two are taken.  We will use both in this case and stack them later.
 
 A list for the telluric
 -----------------------
-DRAGONS does not recognize the telluric star as such.  This is because
-the observations are taken like science data and the GNIRS headers do not
-explicitly state that the observation is a telluric standard.  For now, the
-`observation_class` descriptor can be used to differential the telluric
-from the science observations, along with the rejection of the `CAL` tag to
+DRAGONS does not recognize the telluric star as such.  This is because, at
+Gemini, the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  In most cases,
+the ``observation_class`` descriptor can be used to differentiate the telluric
+from the science observations, along with the rejection of the ``CAL`` tag to
 reject flats and arcs.
 
 .. code-block:: python
@@ -165,9 +178,9 @@ reject flats and arcs.
 A list for the science observations
 -----------------------------------
 
-The science observations can be selected from the observation
-class, ``science``, that is how they are differentiated from the telluric
-standards which are ``partnerCal``.
+The science observations can be selected from the "observation class"
+``science``.  This is how they are differentiated from the telluric
+standards which are set to ``partnerCal``.
 
 First, let's have a look at the list of objects.
 
@@ -204,7 +217,7 @@ objects we could add the object name in the expression.
         all_files,
         [],
         ['CAL'],
-        dataselect.expr_parser('object=="SDSSJ162449.00+321702.0"')
+        dataselect.expr_parser('observation_class=="science" and object=="SDSSJ162449.00+321702.0"')
     )
 
 Bad Pixel Mask
@@ -230,7 +243,7 @@ To add the BPM included in the data package to the local calibration database:
 
 Master Flat Field
 =================
-GNIRS longslit flat field are normally obtained at night along with the
+GNIRS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.
 
 The GNIRS longslit flatfield requires only lamp-on flats.  Subtracting darks
@@ -246,7 +259,7 @@ The flats will be stacked.
     reduce_flats.files.extend(flats)
     reduce_flats.runr()
 
-GNIRS data is affected by a "odd-even" effect where alternate rows in the
+GNIRS data are affected by a "odd-even" effect where alternate rows in the
 GNIRS science array have gains that differ by approximately 10 percent.  When
 you run ``normalizeFlat`` in interactive mode you can clearly see the two
 levels.
@@ -360,7 +373,7 @@ F stars".*, Table 2, we find that the effective temperature of an A2.5IV star
 is about 8150 K. Using Simbad, we find that the star has a magnitude of
 K=3.925.
 
-Note that the data is recognized by Astrodata as normal GNIRS longslit science
+Note that the data are recognized by Astrodata as normal GNIRS longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``reduceTelluric``), otherwise the default science reduction will be
 run.
@@ -411,9 +424,10 @@ typical and why the default is set to do nothing.
    them automatically. Each extracted spectrum is stored in an individual
    extension in the output multi-extension FITS file.
 
-   The automatic source detection in this case does find two extra spurious
-   sources at the extreme left edge of the cross-section.  They are not real
-   sources.  Just ignore them or remove them in interactive mode.
+   The automatic source detection in this case does find one extra spurious
+   sources at the extreme left edge of the cross-section.  It is not a real
+   source.  Just ignore it or remove it in interactive mode.
+
 
 This is what one raw image looks like.
 
@@ -441,8 +455,8 @@ is perfectly reasonable, well within the envelope of the source aperture.
 To improve the fit, one could activate sigma clipping and increase to number
 of iteration to 1 to get a straighter fit that ignores the deviant points at
 the edges of the spectrum. This can be done manually with the interactive
-tool (try it), or on the command line by adding ``-p traceApertures:niter=1``
-to the ``reduce`` call.
+tool (try it), or by specifying the user parameter value
+``('traceApertures:niter', 1)`` in the ``Reduce`` object.
 
 .. code-block:: python
     :linenos:
@@ -481,6 +495,12 @@ like this.
    :alt: 1D extracted spectrum after telluric correction or before flux calibration
 
 And the final spectrum, corrected for telluric features and flux calibrated.
+
+::
+
+   from gempy.adlibrary import plotting
+   ad = astrodata.open(reduce_science.output_filenames[0])
+   plotting.dgsplot_matplotlib(ad, 1)
 
 .. image:: _graphics/gnirsls_Kband32mm_1d.png
    :width: 600

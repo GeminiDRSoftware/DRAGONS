@@ -1,46 +1,101 @@
 .. changes.rst
 
+.. include:: symbols.txt
+
 .. _changes:
 
 ***********
 Change Logs
 ***********
 
-4.0.0 - In DEVELOPMENT
+4.0.0
 =====
 
-This release includes new support for longslit spectroscopic data from the
-near-infrared facility instruments F2, GNIRS, and NIRI, as well as the
-cross-dispersed mode of GNIRS.
+This major release includes new support for near-infrared spectroscopic data.
+Specifically, we are introducing support for GNIRS longslit data.
+
+Many improvements and bug fixes have been included in this release.  Below
+we list the most notable ones.
 
 New Features
 ------------
 
-Additional interpolation modes during resampling.
-  Cubic and quintic polynomial interpolation are now available. The "order"
-  parameter that was previously used to designate the order of spline
-  interpolation has been replaced by a string parameter that can take the
-  value "nearest", "linear", "poly3", "poly5", "spline3", or "spline5".
+Full support for the reduction of GNIRS longslit spectroscopy data.
+  GNIRS longslit data reduction can now be performed in DRAGONS.  Full support
+  from raw data to telluric and flux calibrated data is available. All GNIRS
+  wavebands are supported, X, J, H, K, as well as L and M.  All three
+  dispersers, 10 l/mm, 32 l/mm, and 111 l/mm are supported.
+
+  The software offers algorithms and tools to help with the wavelength
+  calibration.  Wavelength calibrations from arc lamp, OH and |O2| sky lines,
+  and from telluric features are all supported.  The tutorial includes a
+  guide to help you choose the best wavelength calibration method for your data.
+
+  Algorithms and tools are includes to help with the measurment of the
+  telluric model and the sensitivity function and then for the correction of
+  the telluric features present in the data.
+
+
+
+Improvements
+------------
+**geminidr.core**
+
+  * Additional interpolation modes during resampling.
+
+    Cubic and quintic polynomial interpolation are now available. The "order"
+    parameter that was previously used to designate the order of spline
+    interpolation has been replaced by a string parameter, "interpolant" that
+    can take the value "nearest", "linear", "poly3", "poly5", "spline3", or
+    "spline5".
+
+  * Better ability to correct WCS
+
+    ``standardizeWCS`` provides options for dealing with incorrect values in
+    the FITS headers by constructing new WCS models from the telescope
+    offsets and/or target and position angle information.  The option to
+    control this is ``prepare:bad_wcs``
+
 
 Interface Modifications
 -----------------------
 
 **geminidr.core**
+**geminidr.ghost**
 
-* Rename the "order" parameter in the various resample primitives to
-  "interpolant", as described above.
-* Rename the "threshold" parameter in ``transferObjectMask``
-  to "dq_threshold", in line with other primitives.
+* Rename the ``order`` parameter to ``interpolant`` in the following primitives:
+
+  * ``resampleToCommonFrame``
+  * ``transferObjectMask``
+  * ``distortionCorrect``
+  * ``linearizeSpectra``
+  * ``combineNodAndShuffleBeams``
+  * ``mosaicDetectors``
+  * ``shiftImages``
+  * ``combineOrders``
+
+**geminidr.core**
+
+* Rename the ``threshold`` parameter in ``transferObjectMask`` to
+  ``dq_threshold``, in line with other primitives.
 * The ``force_linear`` boolean parameter of the spectroscopic
   ``resampleToCommonFrame`` primitive has been deprecated. Use
   ``output_wave_scale`` instead, with options ``linear`` and ``reference``
   corresponding to ``force_linear`` values of ``True`` and ``False``,
   respectively.
 * The spectroscopic version of ``adjustWCSToReference`` now has an additional
-  option, "wcs", which uses the absolute WCS information to align. This is
+  option, ``wcs``, which uses the absolute WCS information to align. This is
   equivalent to the old option "None", which was available as a fallback
   method. This is now the default fallback method, with "None" resulting in
   an exception if the primary method does not provide valid offsets.
+
+**calibration database**
+
+Any calibration database created with a version of DRAGONS prior to 4.0.0 will
+not be compatible because v4.0 uses a new version of the archive code which
+defines the underlying database schema (conda package ``fitsstorage``). You
+will need to create a new database and ``caldb add`` your calibrations to it.
+
 
 Bug fixes
 ---------
@@ -52,8 +107,10 @@ Bug fixes
   ``trim_spatial`` works) instead of to the intersection of the spectral
   coverages of all inputs. This has been corrected.
 * If not resampling the output spectrum, it is required to set
-  ``trim_spectral=True`` to avoid roundtripping errors in the extrapolated
-  wavelength solution.
+  ``trim_spectral=True`` to avoid errors from evaluating the wavelength
+  solution and its inverse beyond its original limits.
+
+----------------------------------------------------------
 
 3.2.3
 =====

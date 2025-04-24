@@ -615,6 +615,14 @@ class AstroDataGhost(AstroDataGemini):
         return ret_value
 
     @astro_data_descriptor
+    def pixel_scale(self):
+        """
+        Overrides AstroDataGemini descriptor that looks at WCS because that
+        will crash as there's no suitable WCS spatial information.
+        """
+        return None
+
+    @astro_data_descriptor
     @return_dict_for_bundle
     def read_mode(self):
         """

@@ -1,4 +1,4 @@
-# Copyright(c) 2006,2016-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2006,2016-2025 Association of Universities for Research in Astronomy, Inc.
 
 """
 The astroTools module contains astronomy specific utility functions

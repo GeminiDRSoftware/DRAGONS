@@ -46,8 +46,8 @@ In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
     browser = your_preferred_browser
 
 The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
-the interactive tools using that browser.  The allowed strings are "safari",
-"chrome", and "firefox".
+the interactive tools using that browser.  The allowed strings are "**safari**",
+"**chrome**", and "**firefox**".
 
 Importing libraries
 -------------------
@@ -63,7 +63,7 @@ Importing libraries
     from gempy.adlibrary import dataselect
 
 The ``dataselect`` module will be used to create file lists for the
-biases, the flats, the arcs, the standard, and the science observations.
+biases, the flats, the arcs, the telluric star, and the science observations.
 The ``Reduce`` class is used to set up and run the data
 reduction.
 
@@ -89,9 +89,13 @@ Set up the Calibration Service
     :ref:`cal_service`, specifically the these sections:
     :ref:`cal_service_config` and :ref:`cal_service_api`.
 
+We recommend that you clean up your working directory (``playground``) and
+start a fresh calibration database (``caldb.init(wipe=True)``) when you start a new
+example.
+
 Create file lists
 =================
-The next step is to create input file lists.  The module ``dataselect`` helps
+The next step is to create input file lists.  The module "|dataselect|" helps
 with that.  It uses Astrodata tags and |descriptors| to select the files and
 store the filenames to a Python list that can then be fed to the ``Reduce``
 class. (See the |astrodatauser| for information about Astrodata and for a list
@@ -117,9 +121,9 @@ We show several usage examples below.
 
 A list for the flats
 --------------------
-The GNRIS flats will be stack together.  Therefore it is important to ensure
+The GNIRS flats will be stacked together.  Therefore it is important to ensure
 that the flats in the list are compatible with each other.  You can use
-`dataselect` to narrow down the selection as required.  Here, we have only
+"|dataselect|" to narrow down the selection as required.  Here, we have only
 the flats that were taken with the science and we do not need extra selection
 criteria.
 
@@ -143,11 +147,11 @@ Often two are taken.  We will use both in this case and stack them later.
 
 A list for the telluric
 -----------------------
-DRAGONS does not recognize the telluric star as such.  This is because
-the observations are taken like science data and the GNIRS headers do not
-explicitly state that the observation is a telluric standard.  For now, the
-`observation_class` descriptor can be used to differential the telluric
-from the science observations, along with the rejection of the `CAL` tag to
+DRAGONS does not recognize the telluric star as such.  This is because, at
+Gemini, the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  In most cases,
+the ``observation_class`` descriptor can be used to differentiate the telluric
+from the science observations, along with the rejection of the ``CAL`` tag to
 reject flats and arcs.
 
 .. code-block:: python
@@ -207,7 +211,7 @@ objects we could add the object name in the expression.
         all_files,
         [],
         ['CAL'],
-        dataselect.expr_parser('object=="target_37"')
+        dataselect.expr_parser('observation_class=="science" and object=="target_37"')
     )
 
 Bad Pixel Mask
@@ -233,7 +237,7 @@ To add the BPM included in the data package to the local calibration database:
 
 Master Flat Field
 =================
-GNIRS longslit flat field are normally obtained at night along with the
+GNIRS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.
 
 The GNIRS longslit flatfield requires only lamp-on flats.  Subtracting darks
@@ -249,7 +253,7 @@ The flats will be stacked.
     reduce_flats.files.extend(flats)
     reduce_flats.runr()
 
-GNIRS data is affected by a "odd-even" effect where alternate rows in the
+GNIRS data are affected by a "odd-even" effect where alternate rows in the
 GNIRS science array have gains that differ by approximately 10 percent.  When
 you run ``normalizeFlat`` in interactive mode you can clearly see the two
 levels.
@@ -364,7 +368,7 @@ automatic fit.  If you wanted, you could identify more sky lines manually.
    :width: 600
    :alt: Sky lines fit
 
-.. note::  If the sky lines were too weak and no fit were found, a possible
+.. tip::  If the sky lines were too weak and no fit were found, a possible
     solution is to lower the minimum SNR to 5 (down from the default of 10).
     This setting is in the left control panel.  When done, click the the
     "Reconstruct points" button.
@@ -385,7 +389,7 @@ cases where the lamp solution will be picked for the last datasets in the
 sequence while the sky lines solution will be picked for the first datasets in
 the sequence.
 
-So pick one, remove the other.
+So pick one, **remove** the other.
 
 .. code-block:: python
     :linenos:
@@ -397,14 +401,14 @@ So pick one, remove the other.
 
 In this tutorial, we remove the lamp solution.
 
-If you were to want to try it anyway for telluric standard reduction
+If you wanted to try it anyway for telluric standard reduction
 or the science reduction, you can force its use by setting the
 ``ucals`` attribute, eg.
 ``reduce_telluric.ucals = dict([('processed_arc', reduce_arcs.output_filenames[0])])``
 
 Telluric Standard
 =================
-The telluric standard observed before the science observation is "hip 55627".
+The telluric standard observed after the science observation is "hip 55627".
 The spectral type of the star is A0V.
 
 To properly calculate and fit a telluric model to the star, we need to know
@@ -412,13 +416,19 @@ its effective temperature.  To properly scale the sensitivity function (to
 use the star as a spectrophotometric standard), we need to know the star's
 magnitude.  Those are inputs to the ``fitTelluric`` primitive.
 
-From Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
+The default effective temperature of 9650 K is typical of an A0V star, which
+is the most common spectral type used as a telluric standard. Different
+sources give values between 9500 K and 9750 K and, for example,
+Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
 Temperature Sequence"
 (https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt)
-we find that the effective temperature of an A0V star is about 9700 K. Using
-Simbad, we find that the star has a magnitude of K=9.165.
+quotes the effective temperature of an A0V star as 9700 K. The precise
+value has only a small effect on the derived sensitivity and even less
+effect on the telluric correction, so the temperature from any reliable
+source can be used. Using Simbad, we find that the star has a magnitude
+of J=9.2.
 
-Note that the data is recognized by Astrodata as normal GNIRS longslit science
+Note that the data are recognized by Astrodata as normal GNIRS longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``reduceTelluric``), otherwise the default science reduction will be
 run.
@@ -432,12 +442,12 @@ run.
     reduce_telluric.recipename = 'reduceTelluric'
     reduce_telluric.uparms = dict([
                 ('fitTelluric:bbtemp', 9700),
-                ('fitTelluric:magnitude', 'K=9.165'),
+                ('fitTelluric:magnitude', 'J=9.2'),
                 ('fitTelluric:interactive', True),
                 ])
     reduce_telluric.runr()
 
-Adjusting the order of the spline to 8 leads to more randomized residuals
+Adjusting the order of the spline to 9 leads to more randomized residuals
 (second panel).
 
 .. image:: _graphics/gnirsls_Jband111mm_tellfit.png
@@ -476,9 +486,6 @@ spectrum.
     reduce_science.files.extend(scitarget)
     reduce_science.runr()
 
-.. todos:: Crashes.  Is that due to the apertures?  Work when
-    I correct the apertures interatively.  Can it deal with more
-    than one aperture?
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
@@ -491,6 +498,9 @@ To run the reduction with all the interactive tools activated, set the
     reduce_science.files.extend(scitarget)
     reduce_science.uparms = dict([('interactive', True)])
     reduce_science.runr()
+
+The second aperture detected by `findApertures` is just a spurious detection.
+In interactive mode, you can remove it.  Or leave, it won't hurt anything.
 
 The 2D spectrum, without telluric correction and flux calibration, looks
 like this:
@@ -526,6 +536,12 @@ like this.
    :alt: 1D extracted spectrum after telluric correction or before flux calibration
 
 And the final spectrum, corrected for telluric features and flux calibrated.
+
+::
+
+   from gempy.adlibrary import plotting
+   ad = astrodata.open(reduce_science.output_filenames[0])
+   plotting.dgsplot_matplotlib(ad, 1)
 
 .. image:: _graphics/gnirsls_Jband111mm_1d.png
    :width: 600

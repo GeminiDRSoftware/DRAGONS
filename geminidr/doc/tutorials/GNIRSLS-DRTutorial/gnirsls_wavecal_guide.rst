@@ -58,7 +58,7 @@ calculation.
 |             |            |              | **must** be used.                                                             |
 +-------------+------------+--------------+-------------------------------------------------------------------------------+
 | L-band |br| | Any        |  Any         | No arc lamp observations are taken for the thermal bands. |br| |br|           |
-| M-band      |            |              | The peaks in the telluric throughput curve must be used |br|                  |
+| M-band      |            |              | The emission features in the sky spectrum must be used |br|                   |
 |             |            |              | for wavelength calibration.  Note that for L-band > 3.8 |um|, |br|            |
 |             |            |              | the automatic line identification is often wrong and the use |br|             |
 |             |            |              | of the interactive mode is required.                                          |
@@ -97,12 +97,12 @@ ensure that the lines offer a good coverage the entire spectral range.
 From the Emission Lines
 -----------------------
 When OH and O\ :sub:`2`\  lines are present in the science data, or, in the thermal bands,
-when peaks in the telluric throughput are present, it is possible to use those
+when emission features in the sky spectrum are present, it is possible to use those
 to calculate the wavelength solution.
 
 This is done by running reduce on the science frames and specifying the use
 of the ``makeWavecalFromSkyEmission`` recipe.  The interactive mode is
-recommended to verify and ensure correct line/peak identification.
+recommended to verify and ensure correct line identification.
 
 ::
 
