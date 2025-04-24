@@ -173,10 +173,15 @@ class DragonsIndentingFormatter(logging.Formatter):
         self._indent_level = indent_level
 
     def indent_record(self, record):
-        if isinstance(record.msg, str):
-            # Update the record.msg to prepend the indent to each line
-            record.msg = (self._indent_str() +
-                          record.msg.replace('\n', '\n' + self._indent_str()))
+        # Need to avoid running this multiple times on the same record by
+        # different handlers using this formatter
+        if not hasattr(record, "indented"):
+            if isinstance(record.msg, str):
+                # Update the record.msg to prepend the indent to each line
+                record.indented = True
+                record.msg = (self._indent_str() +
+                              record.msg.replace('\n',
+                                                 '\n' + self._indent_str()))
         return record
 
     def modify_record(self, record):
