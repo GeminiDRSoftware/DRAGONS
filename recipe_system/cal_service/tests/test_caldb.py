@@ -11,6 +11,8 @@ from recipe_system.config import globalConf
 
 from geminidr.gmos.primitives_gmos_longslit import GMOSClassicLongslit
 
+from recipe_system.cal_service.localmanager import LocalManagerError
+
 CAL_DICT = {"N20180303S0131_nopixels.fits":
                 {"processed_bias": "N20180302S0528_bias_nopixels.fits"}}
 
@@ -45,6 +47,36 @@ def test_config_parsing(standard_config):
     assert isinstance(p.caldb[1], cal_service.LocalDB)
     assert p.caldb[2].name == "fits"
     assert isinstance(p.caldb[2], cal_service.RemoteDB)
+
+
+def test_localcaldb_init(tmp_path):
+    """Test that caldb.init() for the local calibration manager works
+    as expected"""
+
+    # Configure DRAGONS to use database filename in the tmp_path
+    dbfile = os.path.join(tmp_path, 'test.db')
+    f = io.StringIO(f"[calibs]\ndatabases = {dbfile} get")
+    globalConf.read_file(f)
+
+    # Get a local caldb instance
+    caldb = cal_service.set_local_database()
+
+    # Initially, it should not exist
+    assert os.path.exists(dbfile) is False
+
+    # Init the DB, check that it now exists and note the mtime for later
+    caldb.init()
+    assert os.path.exists(dbfile) is True
+    mtime = os.path.getmtime(dbfile)
+
+    # Init it again, we should get an error
+    with pytest.raises(LocalManagerError):
+        caldb.init()
+
+    # Init it again with wipe=True and check new file exists
+    caldb.init(wipe=True)
+    assert os.path.exists(dbfile) is True
+    assert os.path.getmtime(dbfile) > mtime
 
 
 @pytest.mark.preprocessed_data
