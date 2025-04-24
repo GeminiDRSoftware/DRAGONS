@@ -202,3 +202,25 @@ def test_weighted_sigma_clip():
     mean_astropy = sigma_clipped_stats(x, sigma=2, cenfunc='mean')[0]
     mean_astrotools = at.weighted_sigma_clip(x, sigma=2).mean()
     assert mean_astropy == pytest.approx(mean_astrotools)
+
+
+def test_magnitude_wavelengths():
+    """
+    Confirm behaviour that a Quantity is returned without units, and
+    a float if units are provided
+    """
+    m = at.Magnitude("J=10")
+    assert isinstance(m.wavelength(), u.Quantity)
+    assert m.wavelength().to(u.um).value == pytest.approx(1.25, abs=0.01)
+    assert m.wavelength(units="um") == pytest.approx(1.25, abs=0.01)
+
+
+@pytest.mark.parametrize("filter_name", [k for k in at.Magnitude.VEGA_INFO])
+def test_magnitude_flux_densities_ab(filter_name):
+    """
+    Check that we get the same flux density for all things with ABmag=0
+    """
+    m = at.Magnitude(f"{filter_name}=0", abmag=True)
+    assert isinstance(m.flux_density(), u.Quantity)
+    assert m.flux_density().to("Jy").value == pytest.approx(3630, rel=0.001)
+    assert m.flux_density(units="Jy") == pytest.approx(3630, rel=0.001)

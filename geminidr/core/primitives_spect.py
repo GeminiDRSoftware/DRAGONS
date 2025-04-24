@@ -2527,7 +2527,9 @@ class Spect(Resample):
                         wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                         figures.append(wavecal.create_pdf_plot(
                             input_data, fit1d.points[~fit1d.mask],
-                            fit1d.image[~fit1d.mask], f"{ad.filename}:{ext.id}"))
+                            fit1d.image[~fit1d.mask],
+                            title=f"{ad.filename}:{ext.id}",
+                            absorption=absorption))
 
             ad.update_filename(suffix=sfx, strip=True)
             if figures:
