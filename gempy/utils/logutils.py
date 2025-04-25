@@ -173,15 +173,14 @@ class DragonsIndentingFormatter(logging.Formatter):
         self._indent_level = indent_level
 
     def indent_record(self, record):
-        # Need to avoid running this multiple times on the same record by
-        # different handlers using this formatter
-        if not hasattr(record, "indented"):
-            if isinstance(record.msg, str):
-                # Update the record.msg to prepend the indent to each line
-                record.indented = True
-                record.msg = (self._indent_str() +
-                              record.msg.replace('\n',
-                                                 '\n' + self._indent_str()))
+        # Don't try to modify non-string records
+        if isinstance(record.msg, str):
+            # Update the record.msg to prepend the indent to each line. Note
+            # that this is actually a local copy of the record (see format()
+            # method)
+            record.indented = True
+            record.msg = (self._indent_str() +
+                          record.msg.replace('\n', '\n' + self._indent_str()))
         return record
 
     def modify_record(self, record):
@@ -189,16 +188,17 @@ class DragonsIndentingFormatter(logging.Formatter):
         return self.indent_record(record)
 
     def format(self, record):
-        record = self.modify_record(record)
+        # We should not modify the record directly as that will affect other
+        # handlers that are passed the same record.
+        local_record = copy.copy(record)
+        local_record = self.modify_record(local_record)
         # DRAGONS also requires custom handling of multi-line log messages, in
         # that it wants each line formatting, as if they were separate messages.
         output_lines = []
-        input_lines = record.msg.split('\n')
+        input_lines = local_record.msg.split('\n')
         for input_line in input_lines:
-            # We must leave record intact for other handlers
-            tmp_record = copy.copy(record)
-            tmp_record.msg = input_line
-            output_lines.append(super().format(tmp_record))
+            local_record.msg = input_line
+            output_lines.append(super().format(local_record))
         return '\n'.join(output_lines)
 
 
@@ -239,7 +239,11 @@ class DragonsConsoleFormatter(DragonsIndentingFormatter):
 
         # We just add the level name to the message for "long" format, rather
         # than updating the format string on the formatter each time, as a
-        # simple update seems not to work
+        # simple update seems not to work.
+
+        # Note that the record here is a local copy of the actual record
+        # (see the superclass format method), so we can modify it here without
+        # affecting other handlers that handle the original record.
         if record.levelname not in self.short_levels:
             levelname = record.levelname + ' - '
             record.msg = (levelname +
