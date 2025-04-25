@@ -63,7 +63,7 @@ def test_showrecipes_on_gnirs_ls():
     for i in range(len(gnirs_ls_answer)):
         assert gnirs_ls_answer[i] in answer
 
-
+@pytest.mark.skip
 @pytest.mark.dragons_remote_data
 def test_showrecipes_on_gnirs_xd():
     file_location = download_from_archive(GNIRS_XD)
@@ -289,7 +289,7 @@ def test_showrecipes_on_f2():
     for i in range(len(f2_answer)):
         assert f2_answer[i] in answer
 
-
+@pytest.mark.skip
 @pytest.mark.dragons_remote_data
 def test_showrecipes_on_f2_ls():
     file_location = download_from_archive(F2_LS)

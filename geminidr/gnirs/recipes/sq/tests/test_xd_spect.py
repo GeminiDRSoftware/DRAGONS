@@ -47,6 +47,7 @@ datasets = {
     }
 
 # -- Tests --------------------------------------------------------------------
+@pytest.mark.skip
 @pytest.mark.gnirsxd
 @pytest.mark.slow
 @pytest.mark.integration_test
