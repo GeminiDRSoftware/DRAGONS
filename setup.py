@@ -115,5 +115,5 @@ setup(name='dragons',
           'Documentation': 'https://dragons.readthedocs.io/',
       },
       # keywords=['astronomy', 'astrophysics', 'science', 'gemini'],
-      python_requires='>=3.10',
+      python_requires='>=3.12',
       )
