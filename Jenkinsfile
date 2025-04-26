@@ -332,7 +332,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh 'tox -e py310-gmos -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmos_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-gmos -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmos_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
                         sh 'tox -e codecov -- -F gmos'
                     }  // end steps
@@ -342,7 +342,7 @@ pipeline {
                             archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
                             junit (
                                 allowEmptyResults: true,
-                                testResults: '.tmp/py310-gmos/reports/*_results.xml'
+                                testResults: '.tmp/py312-gmos/reports/*_results.xml'
                             )
                             echo "Deleting GMOS Tests workspace ${env.WORKSPACE}"
                             cleanWs()
