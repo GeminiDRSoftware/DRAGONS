@@ -40,10 +40,10 @@ version = '4.0'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-#release = '4.0.0'
-#rtdurl = 'v'+release
-release = '4.0.x'
-rtdurl = 'release-'+release
+release = '4.0.0'
+rtdurl = 'v'+release
+#release = '4.0.x'
+#rtdurl = 'release-'+release
 #rtdurl = 'latest'
 
 # -- General configuration ---------------------------------------------------
