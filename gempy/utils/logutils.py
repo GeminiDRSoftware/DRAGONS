@@ -18,18 +18,17 @@ handlers should call customize_logger() to add the extra levels to the logger.
 - config()
 This is the traditional logging configuration method for DRAGONS. It will call
 customize_logger() to set up additional log levels. It will also add file and
-stream (console) handlers to the logger. The console handler gets a custom
-formatter that includes the level name in the output only for non-info-like
-levels.
+stream (console) handlers to the logger. These use custom formatters that
+support indenting and for the console includes the level name in the output
+only for non-info-like levels.
 
 Some other utility methods are provided to support logging in DRAGONS:
 
 - get_logger() gets the root logger, and ensures that customize_logger has been
 run on it.
 
-- update_indent() updates the format strings, and the console log custom
-formatter, to facilitate indenting log messages to reflect call stack depth in
-recipes and primitives.
+- update_indent() updates the custom log formatters to facilitate indenting
+log messages to reflect call stack depth of recipes and primitives.
 """
 
 #
@@ -42,6 +41,7 @@ recipes and primitives.
 import logging
 from logging import handlers
 from collections.abc import Iterable
+import copy
 
 STDFMT = '%(asctime)s %(levelname)-8s - %(message)s'
 DBGFMT = '%(asctime)s %(name)-40s - %(levelname)-8s - %(message)s'
@@ -155,64 +155,102 @@ def get_logger(name=None):
     customize_logger(log)  # This is a no-op if it's already customized
     return log
 
-class DragonsConsoleFormatter(logging.Formatter):
+class DragonsIndentingFormatter(logging.Formatter):
     """
-    Dragons configures (at least) two handlers on the logger. One going to
-    console, which is typically what the user sees when running DRAGONS
-    interactively, and one going to a log file. The format string for the log
-    file is verbose and includes the log level in every message.
-
-    The format string for the console output is much more concise and
-    traditionally only includes the log level for DEBUG and WARNINGS and above.
-    There's no obvious trivial way to conditionally include the level name in
-    the log message, this custom formatter class seems the best way, replacing the
-    previous implementation using custom methods for all the logging calls
-    (.info(), .debug(), etc.).
-
-    In addition, DRAGONS uses indentation in log messages. This handler supports
-    an update_indent() method to support this.
-
+    Formatter subclass that adds methods to support indenting
     """
-
-    # We instantiate two logging.Formatters here, _short_formatter, whose format
-    # string includes an indent and just the message, and_long_formatter, whose
-    # format string includes the indent, the log level name, and the message.
-    # When we format a log record, if record's level name is in our
-    # short_levels list, we call the _short_formatter's format method, otherwise
-    # we call the _long_formatter's format method.
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, fmt=None, *args, **kwargs):
+        super().__init__(fmt=fmt, datefmt='%Y-%m-%d %H:%M:%S', *args, **kwargs)
 
         # Initial indent parameters
         self._indent_level = 0
         self._indent_width = 3
 
-        # Log level names for which to emit short form
-        self.short_levels = ['STATUS', 'STDINFO', 'INFO', 'FULLINFO']
-
-        self._init_formatters()
-
     def _indent_str(self):
         return ' ' * (self._indent_level * self._indent_width)
 
-    def _init_formatters(self):
-        self._short_fmt_str = self._indent_str() + '%(message)s'
-        self._long_fmt_str = self._indent_str() + '%(levelname)s - %(message)s'
-        self._short_formatter = logging.Formatter(self._short_fmt_str)
-        self._long_formatter = logging.Formatter(self._long_fmt_str)
-
     def update_indent(self, indent_level):
         self._indent_level = indent_level
-        self._init_formatters()
+
+    def indent_record(self, record):
+        # Don't try to modify non-string records
+        if isinstance(record.msg, str):
+            # Update the record.msg to prepend the indent to each line. Note
+            # that this is actually a local copy of the record (see format()
+            # method)
+            record.indented = True
+            record.msg = (self._indent_str() +
+                          record.msg.replace('\n', '\n' + self._indent_str()))
+        return record
+
+    def modify_record(self, record):
+        # This can be overridden by subclasses to add more modifications
+        return self.indent_record(record)
 
     def format(self, record):
-        # Levels for which to emit short form
-        if record.levelname in self.short_levels:
-            return self._short_formatter.format(record)
-        else:
-            return self._long_formatter.format(record)
+        # We should not modify the record directly as that will affect other
+        # handlers that are passed the same record.
+        local_record = copy.copy(record)
+        local_record = self.modify_record(local_record)
+        # DRAGONS also requires custom handling of multi-line log messages, in
+        # that it wants each line formatting, as if they were separate messages.
+        output_lines = []
+        input_lines = local_record.msg.split('\n')
+        for input_line in input_lines:
+            local_record.msg = input_line
+            output_lines.append(super().format(local_record))
+        return '\n'.join(output_lines)
 
+
+class DragonsConsoleFormatter(DragonsIndentingFormatter):
+    """
+    Dragons configures (at least) two handlers on the logger. This one going to
+    console, which is typically what the user sees when running DRAGONS
+    interactively, and one going to a log file.
+
+    The format string for the console output is concise and traditionally only
+    includes the log level for DEBUG and WARNINGS and above. There's no obvious
+    trivial way to conditionally include the level name in the log message,
+    this custom formatter class seems the best way, replacing the previous
+    implementation using custom methods for all the logging calls
+    (.info(), .debug(), etc.).
+
+    In addition, DRAGONS uses indentation in log messages. The methods in
+    DragonsIndentingFormatter are used by this class to implement that.
+    """
+
+    # We instantiate two logging.Formatters here, _short_formatter, whose
+    # format string includes just the message, and_long_formatter, whose
+    # format string includes the log level name, and the message.
+    # When we format a log record, if record's level name is in our
+    # short_levels list, we call the _short_formatter's format method, otherwise
+    # we call the _long_formatter's format method.
+
+    def __init__(self, *args, **kwargs):
+        self._short_fmt = '%(message)s'
+        super().__init__(self._short_fmt, *args, **kwargs)
+
+        # Log level names for which to emit short form
+        self.short_levels = ['STATUS', 'STDINFO', 'INFO', 'FULLINFO']
+
+    def modify_record(self, record):
+        # Add the level name to the message here for long levels, then
+        # call self.indent_record()
+
+        # We just add the level name to the message for "long" format, rather
+        # than updating the format string on the formatter each time, as a
+        # simple update seems not to work.
+
+        # Note that the record here is a local copy of the actual record
+        # (see the superclass format method), so we can modify it here without
+        # affecting other handlers that handle the original record.
+        if record.levelname not in self.short_levels:
+            levelname = record.levelname + ' - '
+            record.msg = (levelname +
+                          record.msg.replace('\n', '\n' + levelname))
+
+        record = self.indent_record(record)
+        return record
 
 def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
            additional_handlers=None, keep_handlers=False):
@@ -265,8 +303,8 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
     if file_name:
         filehandler = logging.FileHandler(file_name, mode=fm)
         filehandler.setLevel(file_lvl)
-    stdformat = logging.Formatter(STDFMT, datefmt='%Y-%m-%d %H:%M:%S')
-    dbgformat = logging.Formatter(DBGFMT, datefmt='%Y-%m-%d %H:%M:%S')
+    stdformat = DragonsIndentingFormatter(STDFMT)
+    dbgformat = DragonsIndentingFormatter(DBGFMT)
     consolehandler = logging.StreamHandler()
     consolehandler.setFormatter(DragonsConsoleFormatter())
 
@@ -329,16 +367,8 @@ def update_indent(li=0, mode=''):
     log = logging.getLogger('')
 
     for hndl in log.handlers:
-        if isinstance(hndl.formatter, DragonsConsoleFormatter):
+        if isinstance(hndl.formatter, DragonsIndentingFormatter):
             hndl.formatter.update_indent(li)
-        if isinstance(hndl, logging.FileHandler):
-            if mode == 'debug':
-                ff = logging.Formatter(DBGFMT[:-11] + ' ' * (li * SW) + \
-                    DBGFMT[-11:],'%Y-%m-%d %H:%M:%S')
-            else:
-                ff = logging.Formatter(STDFMT[:-11] + ' ' * (li * SW) + \
-                    STDFMT[-11:],'%Y-%m-%d %H:%M:%S')
-            hndl.setFormatter(ff)
     return
 
 def change_level(new_level=None):
