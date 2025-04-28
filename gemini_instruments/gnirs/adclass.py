@@ -46,7 +46,7 @@ class AstroDataGnirs(AstroDataGemini):
     @astro_data_tag
     def _type_thruslit(self):
         if 'Acq' not in self.phu.get('SLIT', ''):
-            tagset = ['TRHUSLIT']
+            tagset = ['THRUSLIT']
             prism = self.phu.get('PRISM', '')
             if 'MIR' in prism:
                 tagset.append('LS')
