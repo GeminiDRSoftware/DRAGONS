@@ -85,7 +85,7 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.gnirs
+@pytest.mark.gnirsls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("ad,params", input_pars, indirect=['ad'])
