@@ -1028,7 +1028,8 @@ class IQReport(QAReport):
         self.reqband = ad.requested_iq()
         self.instrument = ad.instrument()
         self.is_ao = ad.is_ao()
-        self.image_like = ad.tags.intersection({'IMAGE', 'LS', 'XD', 'MOS'}) == 'IMAGE'
+        self.image_like = ad.tags.intersection(
+            {'IMAGE', 'LS', 'XD', 'MOS'}) == {'IMAGE'}
         self.fitsdict_items.extend(["fwhm", "fwhm_std", "elip", "elip_std",
                                     "nsamples", "adaptive_optics", "ao_seeing",
                                     "strehl", "isofwhm", "isofwhm_std",
@@ -1064,6 +1065,7 @@ class IQReport(QAReport):
         strehl_fn : None/callable
             function to calculate Strehl ratio from "sources" catalog
         """
+        print("IMAGELIKE", self.image_like)
         sources = (gt.clip_sources(ext) if self.image_like
                    else gt.fit_continuum(ext))
         if (len(sources) > 0 and self.is_ao and self.image_like and

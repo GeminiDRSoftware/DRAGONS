@@ -1042,10 +1042,9 @@ def fit_continuum(ad):
 
         # Determine regions for collapsing into 1D spatial profiles
         if 'IMAGE' in tags:
-            # A through-slit image: extract a 1.5-arcsecond wide region about
-            # the slit location. This should be OK irrespective of the actual
-            # slit width and avoids having to work out the width from
-            # instrument-dependent header information.
+            # A through-slit image: extract a region about the slit location.
+            # If we can use the slit width, then that's great, otherwise 1.5
+            # arcseconds will have to do.
             #
             # Unfortunately, there's no information about where the slit is
             # located in the dispersion direction, so we have to attempt to
@@ -1056,7 +1055,10 @@ def fit_continuum(ad):
             peak = np.unravel_index(medfilt(data, kernel_size=3).argmax(),
                                     data.shape)
             centers = [peak[dispaxis]]
-            hwidth = int(0.75 / pixel_scale + 0.5)
+            try:
+                hwidth = int(0.5 * ext.slit_width() / pixel_scale + 0.5)
+            except (TypeError, ValueError):
+                hwidth = int(0.75 / pixel_scale + 0.5)
         else:
             # This is a dispersed 2D spectral image, chop it into 512-pixel
             # (unbinned) sections. This is one GMOS amp, and most detectors
