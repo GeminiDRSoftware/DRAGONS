@@ -1028,7 +1028,7 @@ class IQReport(QAReport):
         self.reqband = ad.requested_iq()
         self.instrument = ad.instrument()
         self.is_ao = ad.is_ao()
-        self.image_like = 'IMAGE' in ad.tags and not hasattr(ad, 'MDF')
+        self.image_like = ad.tags.intersection({'IMAGE', 'LS', 'XD', 'MOS'}) == 'IMAGE'
         self.fitsdict_items.extend(["fwhm", "fwhm_std", "elip", "elip_std",
                                     "nsamples", "adaptive_optics", "ao_seeing",
                                     "strehl", "isofwhm", "isofwhm_std",

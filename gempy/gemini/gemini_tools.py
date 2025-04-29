@@ -21,6 +21,7 @@ from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
 
 from scipy.ndimage import distance_transform_edt
+from scipy.signal import medfilt
 from scipy.special import erf
 
 from gwcs import coordinate_frames as cf
@@ -1399,12 +1400,21 @@ def fit_continuum(ad):
 
         # Determine regions for collapsing into 1D spatial profiles
         if 'IMAGE' in tags:
-            # A through-slit image: extract a 2-arcsecond wide region about
-            # the center. This should be OK irrespective of the actual slit
-            # width and avoids having to work out the width from instrument-
-            # dependent header information.
-            centers = [dispersed_length // 2]
-            hwidth = int(1.0 / pixel_scale + 0.5)
+            # A through-slit image: extract a 1.5-arcsecond wide region about
+            # the slit location. This should be OK irrespective of the actual
+            # slit width and avoids having to work out the width from
+            # instrument-dependent header information.
+            #
+            # Unfortunately, there's no information about where the slit is
+            # located in the dispersion direction, so we have to attempt to
+            # find a bright source...
+            data = ext.data.copy()
+            if ext.mask is not None:
+                data[ext.mask > 0] = -np.inf
+            peak = np.unravel_index(medfilt(data, kernel_size=3).argmax(),
+                                    data.shape)
+            centers = [peak[dispaxis]]
+            hwidth = int(0.75 / pixel_scale + 0.5)
         else:
             # This is a dispersed 2D spectral image, chop it into 512-pixel
             # (unbinned) sections. This is one GMOS amp, and most detectors
