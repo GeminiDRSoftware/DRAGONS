@@ -37,6 +37,9 @@ from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
 
+from gwcs import coordinate_frames as cf
+from gwcs.wcs import WCS as gWCS
+
 from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata, gemini_instruments
@@ -303,6 +306,11 @@ def test_QESpline_optimization():
     )
 
     np.testing.assert_allclose(real_coeffs, 1. / result.x, atol=0.01)
+
+
+@pytest.mark.preprocessed_data
+def test_resample_1d():
+    pass
 
 
 def test_sky_correct_from_slit():
@@ -585,6 +593,23 @@ def test_slit_rectification(filename, instrument, change_working_dir,
         np.testing.assert_allclose(ad_out[0].SLITEDGE[coeff], 0, atol=0.25)
 
 
+@pytest.mark.parametrize("gnirs1d", [np.ones((1000,), dtype=np.float32),
+                                     np.arange(1000, dtype=np.float32)],
+                         indirect=True)
+@pytest.mark.parametrize("wavescale", ["linear", "loglinear"])
+def test_resample1d(gnirs1d, wavescale):
+    """
+    Simple test to resample a synthetic 1D spectrum with a linear wavelength
+    solution to linear and loglinear and check that the flux is conserved.
+    """
+    p = GNIRSLongslit([gnirs1d])
+    sum_before = gnirs1d[0].data.sum()
+    adout = p.resampleToCommonFrame(output_wave_scale=wavescale).pop()
+    sum_after = adout[0].data.sum()
+    # Tolerance allows for edge effects
+    assert sum_after == pytest.approx(sum_before, rtol=0.002)
+
+
 def test_trace_apertures():
     # Input parameters ----------------
     width = 400
@@ -748,6 +773,22 @@ def test_transfer_distortion_model(change_working_dir, path_to_inputs, path_to_r
 
 
 # --- Fixtures and helper functions -------------------------------------------
+
+@pytest.fixture
+def gnirs1d(request, astrofaker):
+    ad = astrofaker.create('GNIRS', mode="SPECT")
+    ad.init_default_extensions()
+    data = request.param
+    mask = np.zeros_like(data, dtype=np.uint16)
+    variance = np.ones_like(data, dtype=np.float32)
+    ad[0].reset(data=data, mask=mask, variance=variance)
+    wave_model = models.Shift(1000) | models.Scale(1)
+    input_frame = astrodata.wcs.pixel_frame(1)
+    output_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
+                                    axes_names=("WAVE",))
+    ad[0].wcs = gWCS([(input_frame, wave_model),
+                      (output_frame, None)])
+    return ad
 
 
 def create_zero_filled_fake_astrodata(height, width):

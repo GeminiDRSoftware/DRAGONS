@@ -3938,6 +3938,8 @@ class Spect(Resample):
                                        r + ref_pixels_dict[j][0]).T.astype(int)
                                        for ad, r in zip(adinputs,
                                                         ref_pixels_dict[j])]
+        else:
+            dispaxis = 0
 
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix), and compute the final bounds (w1out, w2out)
@@ -3990,15 +3992,17 @@ class Spect(Resample):
             # parameters as the 4th is then calculable. First, we copy the
             # start and end wavelengths if those aren't specified. If neither
             # dw nor npix are specified, the behaviour depends on whether we
-            # are resampling to a single wavelength scale: if so, then we want
-            # to preserve the dispersion to avoid undersampling but, if not,
-            # then we want to preserve the number of pixels per extension.
+            # are resampling multiple spectra to a single wavelength scale:
+            # if so, then we want to preserve the dispersion to avoid
+            # undersampling but, if not,  then we want to preserve the number
+            # of pixels per extension.
             while nparams < 3:
+                print(nparams, w1, w2, dw, npix)
                 if w1 is None:
                     w1 = wave_min
                 elif w2 is None:
                     w2 = wave_max
-                elif single_spectral and dw is None:
+                elif single_spectral and num_ext > 1 and dw is None:
                     w1 = np.full_like(w1, np.nanmin(w1))
                     w2 = np.full_like(w2, np.nanmax(w2))
                     if output_spectral == "linear":
@@ -4007,13 +4011,14 @@ class Spect(Resample):
                     else:
                         # dw has been calculated assuming the spectrum is
                         # linear, so we repeat that assumption
-                        dw = np.array([extinfo['dw'] / extinfo['w2'] - 1
+                        dw = np.array([extinfo['dw'] / extinfo['w2']
                                        for adinfo in info for extinfo in adinfo])
                     dw = np.full_like(w1, dw.min())
                 elif npix is None:
                     npix = np.array([[ext.shape[dispaxis] for ext in ad]
                                      for ad in adinputs]).max(axis=0)
                 nparams += 1
+            print(nparams, w1, w2, dw, npix)
 
             # Now compute the 4th parameter
             if npix is None:
@@ -4021,17 +4026,24 @@ class Spect(Resample):
                     npix = np.ceil((w2 - w1) / dw).astype(int) + 1
                     w2 = w1 + (npix - 1) * dw
                 else:  # loglinear
-                    npix = np.ceil(np.log(w2 / w1) / np.log(1 + dw) - 1)
+                    npix = np.ceil(np.log(w2 / w1) / np.log(1 + dw) - 1).astype(int) + 1
                     w2 = w1 * (1 + dw) ** (npix - 1)
             elif w1 is None:
-                w1 = w2 - (npix - 1) * dw
+                if output_spectral == "linear":
+                    w1 = w2 - (npix - 1) * dw
+                else:  # loglinear
+                    w1 = w2 / (1 + dw) ** (npix - 1)
             elif w2 is None:
-                w2 = w1 + (npix - 1) * dw
+                if output_spectral == "linear":
+                    w2 = w1 + (npix - 1) * dw
+                else:  # loglinear
+                    w2 = w1 * (1 + dw) ** (npix - 1)
             elif output_spectral == "linear":  # dw is None
                 dw = (w2 - w1) / (npix - 1)
             else:  # dw is None and we're loglinearizing
                 dw = (w2 / w1) ** (1 / (npix - 1)) - 1
 
+            print("FINAL", w1, w2, dw, npix)
             # needs a defined inverse if we're going to do this
             # new_wave_models = [models.Chebyshev1D(degree=1, c0=0.5 * (this_w1 + this_w2),
             #                                       c1 = 0.5 * (this_w2 - this_w1),
@@ -4080,7 +4092,6 @@ class Spect(Resample):
                 actual_limits = new_wave_model([0, this_npix - 1])
                 w1[iext] = actual_limits.min()
                 w2[iext] = actual_limits.max()
-                yy = new_wave_model([this_npix-3,this_npix-2,this_npix-1])
 
             # Calculation for all extensions
             dw = (w2 - w1) / (npix - 1)
