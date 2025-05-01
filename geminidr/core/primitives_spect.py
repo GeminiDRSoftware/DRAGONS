@@ -3961,8 +3961,12 @@ class Spect(Resample):
                 adinfo.append(model_info)
                 w1_arr[i, iext] = model_info['w1']
                 w2_arr[i, iext] = model_info['w2']
-
             info.append(adinfo)
+
+        # Are we combining multiple spectra with different wavelength settings
+        # into a single spectrum? This is important for later.
+        combining_multiple_wavelengths = (single_spectral and
+                                          len(set(w1_arr.ravel())) > 1)
 
         # Compute the output wavelength range for each extension. We can
         # calculate the overall output range if we're combining to a single
@@ -3997,12 +4001,11 @@ class Spect(Resample):
             # undersampling but, if not,  then we want to preserve the number
             # of pixels per extension.
             while nparams < 3:
-                print(nparams, w1, w2, dw, npix)
                 if w1 is None:
                     w1 = wave_min
                 elif w2 is None:
                     w2 = wave_max
-                elif single_spectral and num_ext > 1 and dw is None:
+                elif combining_multiple_wavelengths and dw is None:
                     w1 = np.full_like(w1, np.nanmin(w1))
                     w2 = np.full_like(w2, np.nanmax(w2))
                     if output_spectral == "linear":
@@ -4018,7 +4021,6 @@ class Spect(Resample):
                     npix = np.array([[ext.shape[dispaxis] for ext in ad]
                                      for ad in adinputs]).max(axis=0)
                 nparams += 1
-            print(nparams, w1, w2, dw, npix)
 
             # Now compute the 4th parameter
             if npix is None:
@@ -4043,7 +4045,6 @@ class Spect(Resample):
             else:  # dw is None and we're loglinearizing
                 dw = (w2 / w1) ** (1 / (npix - 1)) - 1
 
-            print("FINAL", w1, w2, dw, npix)
             # needs a defined inverse if we're going to do this
             # new_wave_models = [models.Chebyshev1D(degree=1, c0=0.5 * (this_w1 + this_w2),
             #                                       c1 = 0.5 * (this_w2 - this_w1),
