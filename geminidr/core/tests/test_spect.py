@@ -43,9 +43,8 @@ from gwcs.wcs import WCS as gWCS
 from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata, gemini_instruments
-from astrodata.testing import ad_compare
+from astrodata.testing import ad_compare, assert_most_close
 from gempy.library import astromodels as am
-from gempy.library.wavecal import LineList
 from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
@@ -306,11 +305,6 @@ def test_QESpline_optimization():
     )
 
     np.testing.assert_allclose(real_coeffs, 1. / result.x, atol=0.01)
-
-
-@pytest.mark.preprocessed_data
-def test_resample_1d():
-    pass
 
 
 def test_sky_correct_from_slit():
@@ -597,17 +591,34 @@ def test_slit_rectification(filename, instrument, change_working_dir,
                                      np.arange(1000, dtype=np.float32)],
                          indirect=True)
 @pytest.mark.parametrize("wavescale", ["linear", "loglinear"])
-def test_resample1d(gnirs1d, wavescale):
+def test_resample1d_conserve(gnirs1d, wavescale):
     """
     Simple test to resample a synthetic 1D spectrum with a linear wavelength
     solution to linear and loglinear and check that the flux is conserved.
     """
+    gnirs1d[0].hdr['BUNIT'] = 'electron'
     p = GNIRSLongslit([gnirs1d])
     sum_before = gnirs1d[0].data.sum()
     adout = p.resampleToCommonFrame(output_wave_scale=wavescale).pop()
     sum_after = adout[0].data.sum()
     # Tolerance allows for edge effects
     assert sum_after == pytest.approx(sum_before, rel=0.002)
+
+
+@pytest.mark.parametrize("gnirs1d", [np.arange(1000, 2000, dtype=np.float32)],
+                         indirect=True)
+@pytest.mark.parametrize("wavescale", ["linear", "loglinear"])
+def test_resample1d_interpolate(gnirs1d, wavescale):
+    """
+    Simple test to resample a synthetic 1D spectrum with a linear wavelength
+    solution to linear and loglinear and check that the data are interpolated.
+    The input spectrum has signal=wavelength so it's easy to check the result.
+    """
+    gnirs1d[0].hdr['BUNIT'] = 'W / (m2 AA)'  # will interpolate
+    p = GNIRSLongslit([gnirs1d])
+    adout = p.resampleToCommonFrame(output_wave_scale=wavescale).pop()
+    waves = adout[0].wcs(np.arange(adout[0].data.size))
+    assert_most_close(waves, adout[0].data, max_miss=2, rtol=1e-5)
 
 
 def test_trace_apertures():

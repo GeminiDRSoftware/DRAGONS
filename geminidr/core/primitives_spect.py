@@ -435,7 +435,7 @@ class Spect(Resample):
                         else:
                             log.warning(f"{ad.filename}:{ext.id} Cross-correlation failed")
 
-                        if debug_plots:
+                        if debug_plots:  # pragma: no cover
                             fig, ax = plt.subplots()
                             print(f"Comparing {ad.filename} to reference {refad.filename} "
                                   f"(expected peak at {expected_peak - corr.size // 2})")
@@ -1552,7 +1552,7 @@ class Spect(Resample):
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
 
-                if debug:
+                if debug:  # pragma: no cover
                     self.viewer.color = "red"
                     spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
                                                 ext.shape[1 - dispaxis] // (step * 10))
@@ -1931,7 +1931,7 @@ class Spect(Resample):
                     log.warning(f"Did not find expected number of {slit_name}s "
                                 f"(found {nfound}, expected {len(slit_lengths)}).")
 
-                if debug_plots:
+                if debug_plots:  # pragma: no cover
                     for pos in edges_1:
                         if pos:
                             plt.axvline(pos, color='Blue', alpha=0.5,
@@ -3148,7 +3148,7 @@ class Spect(Resample):
                 del crmask, skyfit_input
                 gc.collect()
 
-            if debug:
+            if debug:  # pragma: no cover
                 fig, axes = plt.subplots(5, 3, sharex=True, sharey=True,
                                          tight_layout=True)
                 for i, ext in enumerate(ad_tiled):
@@ -4172,6 +4172,8 @@ class Spect(Resample):
                 if i == 0 and not new_wave_scale:
                     log.fullinfo(f"{ad.filename}: No interpolation")
                 msg = "Resampling"
+                if this_conserve:
+                    msg += " (with flux conservation)"
                 if new_wave_scale:
                     msg += f" and {output_spectral}izing"
                 dwstr = (f"{dw[iext]:.6f}" if output_spectral == "loglinear"
