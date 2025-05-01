@@ -607,7 +607,7 @@ def test_resample1d(gnirs1d, wavescale):
     adout = p.resampleToCommonFrame(output_wave_scale=wavescale).pop()
     sum_after = adout[0].data.sum()
     # Tolerance allows for edge effects
-    assert sum_after == pytest.approx(sum_before, rtol=0.002)
+    assert sum_after == pytest.approx(sum_before, rel=0.002)
 
 
 def test_trace_apertures():
