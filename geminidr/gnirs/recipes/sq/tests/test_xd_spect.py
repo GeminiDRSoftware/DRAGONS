@@ -23,16 +23,18 @@ datasets = {
         "flats": [f"N20210129S{i:04d}.fits" for i in range(304, 324)],
         "pinholes": [f"N20210129S{i:04d}.fits" for i in (386, 388, 390, 391, 393)],
         "sci": [f"N20210129S{i:04d}.fits" for i in range(296, 304)],
-        "user_pars": {}
-        },
+        "user_pars": {"telluricCorrect:do_cal": "skip",
+                      "fluxCalibrate:do_cal": "skip"}
+    },
     # 10 l/mm Longblue SXD
     "GN-2013B-Q-41": {
         "arcs": ["N20130821S0301_arc.fits"],
         "flats": [f"N20130821S{i:04d}.fits" for i in range(302, 318)],
         "pinholes": ["N20130821S0556.fits"],
         "sci": [f"N20130821S{i:04d}.fits" for i in range(322, 326)],
-        "user_pars": {}
-        },
+        "user_pars": {"telluricCorrect:do_cal": "skip",
+                      "fluxCalibrate:do_cal": "skip"}
+    },
     # 111 l/mm Shortblue SXD
     # CJS: This in untraceable in the bluest order and produces
     # "aperture off image" warnings
@@ -43,8 +45,11 @@ datasets = {
         "pinholes": [], # No pinhole for this dataset
         "sci": [f"S20060311S{i:04d}.fits" for i in range(237, 241)],
         "user_pars": {'attachPinholeModel:do_cal': 'skip',
-                      'findApertures:ext': '4'}}
+                      'findApertures:ext': '4',
+                      "telluricCorrect:do_cal": "skip",
+                      "fluxCalibrate:do_cal": "skip"}
     }
+}
 
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gnirsxd
