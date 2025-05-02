@@ -49,6 +49,7 @@ class EventsManager:
         postprocess = {
             "local_time" : lambda x: x.strftime("%H:%M:%S.%f"),
             "ut_datetime": lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f"),
+            "central_wavelength": lambda x: float(x),   # np.float32 cannot be json'ed.
         }
 
         mtd_dict = {
