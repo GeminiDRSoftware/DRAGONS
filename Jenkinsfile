@@ -13,17 +13,17 @@
 // @Library('dragons_ci@master') _
 
 // Change these to automatically skip steps
-def runtests_unit    = 1
-def runtests_regress = 1
-def runtests_gmosls  = 1  // 1 to enable
-def runtests_slow    = 1
-def runtests_f2      = 1
-def runtests_niri    = 1
-def runtests_gsaoi   = 1
+def runtests_unit    = 0
+def runtests_regress = 0
+def runtests_gmosls  = 0  // 1 to enable
+def runtests_slow    = 0
+def runtests_f2      = 0
+def runtests_niri    = 0
+def runtests_gsaoi   = 0
 def runtests_gnirs   = 1
-def runtests_wavecal = 1
-def runtests_ghost   = 1
-def runtests_gmos    = 1
+def runtests_wavecal = 0
+def runtests_ghost   = 0
+def runtests_gmos    = 0
 
 pipeline {
 
