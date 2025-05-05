@@ -1,10 +1,16 @@
 .. releasenotes.rst
 
+.. include:: symbols.txt
+
 .. _releasenotes:
 
 *************
 Release Notes
 *************
+
+V4.1.0
+======
+
 
 V4.0.0
 ======
@@ -22,7 +28,7 @@ calibration.  Wavelength calibrations from arc lamp, OH and |O2| sky lines,
 and from telluric features are all supported.  The tutorial includes a
 guide to help you choose the best wavelength calibration method for your data.
 
-Algorithms and tools are includes to help with the measurment of the
+Algorithms and tools are includes to help with the measurement of the
 telluric model and the sensitivity function and then for the correction of
 the telluric features present in the data.
 
