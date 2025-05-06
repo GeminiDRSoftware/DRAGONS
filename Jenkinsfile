@@ -307,11 +307,11 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py312-gnirs/reports/*_results.xml'
                             )
-                            echo "Deleting GNIRS Tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
+                            echo "Not deleting GNIRS Tests workspace ${env.WORKSPACE}"
+                            // cleanWs()
+                            // dir("${env.WORKSPACE}@tmp") {
+                            //   deleteDir()
+                            // }
                         }  // end always
                     }  // end post
                 }  // end stage
