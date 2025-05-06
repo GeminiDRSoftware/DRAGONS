@@ -23,7 +23,7 @@ test_datasets = [
 ]
 
 # Test Definitions ------------------------------------------------------------
-@pytest.mark.f2
+@pytest.mark.f2ls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("ad", test_datasets, indirect=True)
@@ -57,6 +57,7 @@ def test_regression_trace_apertures(ad, change_working_dir, ref_ad_factory):
             np.testing.assert_allclose(desired, actual, atol=0.5)
 
 
+@pytest.mark.f2ls
 @pytest.mark.interactive
 @pytest.mark.parametrize("ad", [test_datasets[0]], indirect=True)
 def test_interactive_trace_apertures(ad, change_working_dir):

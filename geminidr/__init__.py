@@ -231,6 +231,10 @@ class PrimitivesBASE:
         # Instantiate a dormantViewer(). Only ds9 for now.
         self.viewer = dormantViewer(self, 'ds9')
 
+    @property
+    def adinputs(self):
+        return self.streams['main']
+
     def _validate_user_parms(self):
         """
         Validate the user parameters.

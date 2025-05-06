@@ -211,7 +211,7 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
                 row_medians = at.boxcar(row_medians, size=2)
                 #print(row_medians.min(), row_medians.max())
 
-                if debug_plot:
+                if debug_plot:  # pragma: no cover
                     plt.ioff()
                     fig, ax = plt.subplots()
                     ax.plot(row_medians / row_medians.max(), 'b-')
@@ -229,11 +229,11 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
                     # Only keep maxima if the fitted peak value is close to
                     # the actual peak (should remove single-pixel peaks)
                     extrema = peak_finding.get_extrema(xcorr, remove_edge_maxima=False)
-                    if debug_plot:
+                    if debug_plot:  # pragma: no cover
                         print(extrema)
                     maxima = [int(x[0] + 0.5) for x in extrema if x[2]]
 
-                    if debug_plot:
+                    if debug_plot:  # pragma: no cover
                         xpixels = row_medians.size // 2 - mshift + np.arange(xcorr.size)
                         ax.plot(xpixels, xcorr / xcorr.max(), 'r-')
                         ax.plot([row_medians.size // 2] * 2, [0, 1], 'r:')
@@ -477,7 +477,7 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
             ad_outputs.append(slit_response_ad)
 
             # Plotting ------
-            if debug_plot:
+            if debug_plot:  # pragma: no cover
 
                 log.info("Creating plots")
                 palette = copy(plt.cm.cividis)

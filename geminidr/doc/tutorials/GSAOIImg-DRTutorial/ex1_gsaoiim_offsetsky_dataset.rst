@@ -9,7 +9,7 @@ Example 1 - Datasets descriptions
 Crowded with offset to sky
 --------------------------
 
-The data is a GSAOI observation of the resolved outskirt of a nearby galaxy.
+The data are a GSAOI observation of the resolved outskirt of a nearby galaxy.
 The observation is a dither-on-target with offset-to-sky sequence.
 
 The table below contains a summary of the dataset downloaded in the previous

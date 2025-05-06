@@ -168,7 +168,7 @@ fixture_data = {
     #   GNIRS Imaging
     ('GNIRS', 'N20120117S0019.fits'): ['GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     ('GNIRS', 'N20140717S0232.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL',
-                                       'UNPREPARED', 'THRUSLIT'],
+                                       'UNPREPARED', 'THRUSLIT', 'LS'],
     ('GNIRS', 'N20120117S0041.fits'): ['CAL', 'GCAL_IR_ON', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'FLAT', 'GCALFLAT',
                                        'RAW', 'SIDEREAL', 'UNPREPARED', 'LAMPON'],
     ('GNIRS', 'N20120117S0042.fits'): ['CAL', 'GCAL_IR_OFF', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'FLAT', 'GCALFLAT',
@@ -183,7 +183,7 @@ fixture_data = {
     ('GNIRS', 'N20130814S0231.fits'): ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'LS', 'ARC', 'SPECT', 'RAW', 'SIDEREAL',
                                        'UNPREPARED'],
     ('GNIRS', 'N20160624S0263.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL',
-                                       'UNPREPARED', 'THRUSLIT'],
+                                       'UNPREPARED', 'THRUSLIT', 'XD'],
     # for MASK: SLIT does not contain "Acq"
     ('GNIRS', 'N20160624S0264.fits'): ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL',
                                        'UNPREPARED'],

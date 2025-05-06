@@ -1,4 +1,4 @@
-# Copyright(c) 2017-2023 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2017-2025 Association of Universities for Research in Astronomy, Inc.
 
 import numpy as np
 from datetime import datetime

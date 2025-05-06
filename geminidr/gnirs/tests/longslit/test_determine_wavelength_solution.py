@@ -227,6 +227,7 @@ associated_calibrations_absorp = {
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.gnirsls
 @pytest.mark.wavecal
 @pytest.mark.preprocessed_data
 @pytest.mark.regression

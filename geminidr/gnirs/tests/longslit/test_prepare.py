@@ -8,6 +8,7 @@ from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 X = np.arange(1024)
 Y = np.full_like(X, 511)  # row 511 is the slit
 
+@pytest.mark.gnirsls
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("filename", ("N20150108S0306.fits",
                                       "S20050117S0204.fits"))

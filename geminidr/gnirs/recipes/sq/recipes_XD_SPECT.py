@@ -20,12 +20,12 @@ def reduceScience(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
     # p.darkCorrect() # no dark correction for GNIRS data
+    p.flatCorrect()
+    p.attachWavelengthSolution()
     p.separateSky()
     p.associateSky()
     p.skyCorrect()
     p.cleanReadout()
-    p.flatCorrect()
-    p.attachWavelengthSolution()
     p.attachPinholeModel()
     p.distortionCorrect()
     p.adjustWCSToReference()
@@ -33,12 +33,47 @@ def reduceScience(p):
     # p.scaleCountsToReference()  not in NIR LS recipes.
     p.stackFrames(scale=False, zero=False)
     p.findApertures()
-    # p.skyCorrectFromSlit()  not in NIR LS recipes.
+    p.skyCorrectFromSlit()
     p.traceApertures()
-    # p.trimToWavelengthRegions()?  something to trim extensions down?
     p.storeProcessedScience(suffix="_2D")
     p.extractSpectra()
+    p.telluricCorrect()
+    p.fluxCalibrate()
     p.storeProcessedScience(suffix="_1D")
+
+
+def reduceTelluric(p):
+    """
+    Reduce GNIRS longslit observations of a telluric standard, including
+    fitting the telluric absorption features to provide an absorption profile
+    and a sensitivity function.
+
+    Parameters
+    ----------
+    p : :class:`geminidr.gnirs.primitives_gnirs_longslit.GNIRSLongslit`
+    """
+    p.prepare()
+    p.addDQ()
+    # p.nonlinearityCorrect() # non-linearity correction tbd
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True, read_noise=True)
+    p.flatCorrect()
+    p.attachWavelengthSolution()
+    p.separateSky()
+    p.associateSky()
+    p.skyCorrect()
+    p.cleanReadout()
+    p.distortionCorrect()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames(scale=False, zero=False)
+    p.findApertures(max_apertures=1)
+    p.skyCorrectFromSlit()
+    p.traceApertures()
+    p.extractSpectra()
+    p.fitTelluric()
+    p.storeProcessedTelluric()
+
 
 def reduceScienceWithAdjustmentFromSkylines(p):
     """

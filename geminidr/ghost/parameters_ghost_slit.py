@@ -4,6 +4,7 @@ from astrodata import AstroData
 
 from gempy.library import config
 from geminidr.core import parameters_preprocess, parameters_standardize
+from geminidr.core import parameters_visualize
 
 
 class addDQConfig(parameters_standardize.addDQConfig):
@@ -16,6 +17,10 @@ class darkCorrectConfig(parameters_preprocess.darkCorrectConfig):
         self.suffix = "_darkCorrected"
         self.dark = None
         self.do_cal = "skip"
+
+class displayConfig(parameters_visualize.displayConfig):
+    def setDefaults(self):
+        self.tile = False
 
 class fixCosmicRaysConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_CRFixed",

@@ -25,11 +25,11 @@ The calibrations we use for this example are:
   date.)
 * Flats taken in the same configuration as the science.  They were obtained
   at night right after the science observations.
-* Arcs.  No arcs are obtained for L-band data.  The wavelength calibration
+* Arcs.  **No arcs** are obtained for L-band data.  The wavelength calibration
   is done using the sky lines in the science observation.
 * A telluric standard observation taken in the same configuration as the
-  science and obtained at night just before or just after the science
-  observation sequences, and at a similar airmass.
+  science and obtained at night, in this case, just before the science
+  observation sequence, and at a similar airmass.
 
 .. warning::  The Bad Pixel Masks (BPMs) are now found in the archive rather
    than packaged with the software.  You must get the static BPM from the

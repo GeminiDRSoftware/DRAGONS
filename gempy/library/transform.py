@@ -1,4 +1,4 @@
-# Copyright(c) 2018-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2018-2025 Association of Universities for Research in Astronomy, Inc.
 #
 """
 transform.py
@@ -1320,7 +1320,7 @@ class DataGroup:
         isinf = np.isinf(input_array)
         if isnan.any() or isinf.any():
             log.warning(f"There are {isnan.sum()} NaN and {isinf.sum()} inf "
-                        f"values in the {output_key} array. Setting to zero.")
+                        f"values in the {output_key[0]} array. Setting to zero.")
             input_array[isnan | isinf] = 0
 
         # We want to transform any DQ bit arrays into floats so we can sample
@@ -1639,6 +1639,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
     # Create the blocks (individual physical detectors)
     if is_single:
         blocks = [Block(ad)]
+    elif len(ad) == 1:
+        blocks = [Block(ad[0])]
     else:
         array_info = gt.array_information(ad)
         blocks = [Block(ad[arrays], shape=shape) for arrays, shape in

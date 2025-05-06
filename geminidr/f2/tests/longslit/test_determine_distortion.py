@@ -184,7 +184,7 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
-@pytest.mark.f2
+@pytest.mark.f2ls
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("ad,params", input_pars, indirect=['ad'])
@@ -228,7 +228,7 @@ def test_regression_for_determine_distortion_using_wcs(
     np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.07)
 
 
-@pytest.mark.gnirs
+@pytest.mark.f2ls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, params", input_pars, indirect=['ad'])
 def test_fitcoord_table_and_gwcs_match(ad, params, change_working_dir):

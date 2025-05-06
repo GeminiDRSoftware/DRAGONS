@@ -19,13 +19,13 @@ For a tutorial on the reduction of GNIRS keyhole imaging data, see
 |GNIRSImgTut|.
 
 In this tutorial, you will be able to run the examples yourself and experiment
-with the process.  The tutorial comes with a downloadable data package that
+with the process.  The tutorial comes with downloadable data packages that
 contains all the data you need to run the examples presented.  Instructions
 on where to get that package and how to set things up are given in
 :ref:`datasetup`.
 
-The GNIRS longslit tutorial series contains at time a couple scientific
-examples covering non-thermal and thermal bands.
+The GNIRS longslit tutorial series contains four scientific
+examples covering non-thermal and thermal bands, and grating settings.
 
 The reduction can be done in two different ways:
 
@@ -41,4 +41,12 @@ The tutorials are:
 * :ref:`L-band 10 l/mm grating <gnirsls_Lband10mm_example>`
 * :ref:`K-band beyond 2.3 microns 111 l/mm grating <gnirsls_Kband11mm_red_example>`
 
-See the |RSUserInstall| to install the softwae if you have not already.
+See the |RSUserInstall| to install the software if you have not already.
+
+.. tip:: If you are using the tutorials to guide you through the reduction
+          of your own data and you encounter a problem, please review the
+          :ref:`tips_and_tricks` and :ref:`issues_and_limitations` sections.
+          They may contain the solution to your problem.
+
+          Also, please use the :ref:`gnirsls_wavecal_guide` to help you choose
+          the best way to wavelength calibrate your data.

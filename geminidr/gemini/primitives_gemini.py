@@ -448,6 +448,7 @@ class Pointing:
         self.flipped = (self.instrument == "GNIRS" or
                         self.phu.get("INPORT") == 1 and (
                                 "GMOS" in self.instrument or
+                                self.instrument == "GSAOI" or
                                 self.instrument == "NIRI" and not ad.is_ao()))
         # If an offset is positive, it means that an object's pixel coords
         # will *decrease*, so the telescope has moved either up or right.

@@ -5,13 +5,20 @@ from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
 from astropy import units as u
 
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
+from gempy.utils import logutils
 
-from .telluric import A0Spectrum, TelluricModels, TelluricSpectrum
+from astrodata.nddata import NDAstroData
+
+from .telluric import A0Spectrum, TelluricSpectrum
 from .telluric_models import MultipleTelluricModels, Planck
 
 from datetime import datetime
+
+
+log = logutils.get_logger(__name__)
 
 
 class Calibrator(ABC):
@@ -167,8 +174,8 @@ class TelluricCalibrator(Calibrator):
         return [tspek.mask.astype(bool) for tspek in self.spectra]
 
     def reconstruct_points(self, *args, **kwargs):
-        print("TelluricCalibrator.reconstruct_points()")
-        print("REINIT", self.reinit_params)
+        # print("TelluricCalibrator.reconstruct_points()")
+        # print("REINIT", self.reinit_params)
         magnitude = self.reinit_params["magnitude"]
         w0, f0 = at.Magnitude(magnitude, abmag=self.reinit_params["abmag"]).properties()
         if w0 is None:
@@ -182,7 +189,7 @@ class TelluricCalibrator(Calibrator):
             tspek.set_intrinsic_spectrum(wspek, fspek, **lsf_kwargs)
             tspek.pca.set_interpolation_parameters([self.reinit_params[k]
                                                     for k in tspek.lsf.parameters])
-        print(datetime.now() - start, "INTRINSIC DONE")
+        # print(datetime.now() - start, "INTRINSIC DONE")
 
     def initialize_user_mask(self, ui_params=None):
         """We put the stellar mask into the user mask"""
@@ -214,7 +221,6 @@ class TelluricCalibrator(Calibrator):
             points masked in the fit
         """
         # Extract the fitting parameters for this panel
-        print("TelluricCalibrator.perform_fit()")
         params = {k: v[index] for k, v in self.fit_params.items()}
 
         # Start by updating fitting parameters to the value in the
@@ -226,16 +232,30 @@ class TelluricCalibrator(Calibrator):
         return self.perform_all_fits(sigma_clipping=sigma_clipping)
 
     def perform_all_fits(self, sigma_clipping=None):
-        """"""
-        print("")
-        print("CALIBRATOR.PERFORM"+"-"*40)
+        """
+        Fit all spectra simultaneously with separate SENSFUNC models to
+        supply the continuum, and a unified set of PCA coefficients for
+        the telluric absorption.
+
+        Parameters
+        ----------
+        sigma_clipping: bool
+            Are we sigma-clipping?
+
+        Returns
+        -------
+        m_final: MultipleTelluricModels
+            the fit containing all the telluric absorption models
+        new_mask: bool array
+            masked points (including sigma-clipped points)
+        """
         data = self.concatenate('data')
         mask = self.concatenate('mask').astype(bool)
         original_masks = [tspek.mask.copy() for tspek in self.spectra]
         for tspek, user_mask in zip(self.spectra, self.user_mask):
             tspek.nddata.mask |= user_mask
-        print("MASKED PIXEL TOTALS", [tspek.mask.astype(bool).sum()
-                                      for tspek in self.spectra])
+        log.debug("MASKED PIXEL TOTALS", [tspek.mask.astype(bool).sum()
+                                          for tspek in self.spectra])
         m_init = MultipleTelluricModels(
             self.spectra, function=self.fit_params["function"],
             order=self.fit_params["order"])
@@ -245,9 +265,9 @@ class TelluricCalibrator(Calibrator):
         # is NOT to modify the LSF scaling parameters once the GUI is active
         # or if the user has provided values.
         m_init.bounds.update(self.lsf_parameter_bounds)
-        print("REINIT PARAMS", self.reinit_params)
+        # print("REINIT PARAMS", self.reinit_params)
         for k, v in self.lsf_parameter_bounds.items():
-            print("INITIALIZING FIT", k, v, self.reinit_params[k])
+            # print("INITIALIZING FIT", k, v, self.reinit_params[k])
             if self.reinit_params[k] is None:
                 setattr(m_init, k, v[0])
             else:
@@ -285,15 +305,15 @@ class TelluricCalibrator(Calibrator):
             m_final = fit_it(m_init, m_init.waves[~mask], data[~mask],
                              weights=weights[~mask], maxiter=10000)
             new_mask = np.zeros_like(m_init.waves, dtype=bool)
-        print(datetime.now() - start_time, "FINISHED FIT")
+        # print(datetime.now() - start_time, "FINISHED FIT")
 
         # Reset masks to their original values
         for tspek, orig_mask in zip(self.spectra, original_masks):
             tspek.nddata.mask = orig_mask
 
+        # Update the individual SingleTelluricModel instances held by the
+        # MultipleTelluricModels instance
         m_final.update_individual_models()
-        print("UDPATED MODELS")
-        print("")
         return m_final, new_mask
 
     # Methods above should be common to all classes
@@ -399,7 +419,7 @@ class TelluricCorrector(Calibrator):
         """No fitting, this just divides each spectrum by the absorption model"""
         delta_airmass = (self.reinit_params["sci_airmass"] -
                          self.reinit_params["telluric_airmass"])
-        trans = self.std_abs[index]
+        trans = self.std_abs[index].copy()
         pix_to_correct = np.logical_and(trans > 0, trans < 1)
         tau = -np.log(trans[pix_to_correct]) / self.reinit_params["telluric_airmass"]
         trans[pix_to_correct] *= np.exp(-tau * delta_airmass)
@@ -407,6 +427,29 @@ class TelluricCorrector(Calibrator):
         corrected_data = models.Tabular1D(
             points=self.x[index], lookup_table=at.divide0(self.spectra[index].data, trans))
         return corrected_data
+
+    def absorption_spectra(self):
+        """
+        When there is a pixel shift, the absorption spectrum derived from the
+        telluric spectrum can't be extrapolated and so will have NaNs at one
+        end, which will be propagated into the telluric-corrected science
+        spectrum. We want these pixels to have values but to be masked, and
+        this method performs that change.
+        """
+        for abs_spek in self.abs_final:
+            mask = np.where(np.isnan(abs_spek), DQ.no_data, DQ.good)
+            if mask.sum() == 0:
+                yield abs_spek
+
+            data = abs_spek.copy()
+            first_unmasked = mask.argmin()
+            if first_unmasked == 0:  # masked pixels are at the end
+                last_unmasked = mask[::-1].argmin() + 1
+                data[-last_unmasked:] = data[-(last_unmasked+1)]
+            else:  # masked pixels are at the start
+                data[:first_unmasked] = data[first_unmasked]
+            result = NDAstroData(data=data, mask=mask)
+            yield result
 
     # def perform_all_fits(self):
     #     # This needs to return a model that describes the "fit" for each
