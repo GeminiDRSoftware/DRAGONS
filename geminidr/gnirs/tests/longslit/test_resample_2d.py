@@ -32,20 +32,22 @@ test_datasets = ['N20240329S0022_wcsCorrected.fits', # Central wavelength 1.594 
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("wavescale", ["linear", "loglinear"])
 def test_resample_to_common_frame_with_defaults(input_ad_list, path_to_refs,
-                                                wavescale, caplog):
+                                                change_working_dir, wavescale, caplog):
     p = GNIRSLongslit(input_ad_list)
     p.resampleToCommonFrame(trim_spatial=True, trim_spectral=False,
                             output_wave_scale=wavescale)
-    ad_out = p.stackFrames()[0]
-    if wavescale == "linear":
-        _check_params(caplog.records, 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029')
-    else:
-        _check_params(caplog.records, 'w1=1525.174 w2=1806.005 dw=0.000077 npix=2197')
-    assert 'ALIGN' in ad_out[0].phu
-    ref = astrodata.open(os.path.join(
-        path_to_refs, f'N20240329S0022_stack_defaults_{wavescale}.fits'))
+    with change_working_dir():
+        ad_out = p.stackFrames()[0]
+        p.writeOutputs()
+        if wavescale == "linear":
+            _check_params(caplog.records, 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029')
+        else:
+            _check_params(caplog.records, 'w1=1525.174 w2=1806.005 dw=0.000077 npix=2197')
+        assert 'ALIGN' in ad_out[0].phu
+        ref = astrodata.open(os.path.join(
+            path_to_refs, f'N20240329S0022_stack_defaults_{wavescale}.fits'))
 
-    np.testing.assert_allclose(ad_out[0].data, ref[0].data)
+        np.testing.assert_allclose(ad_out[0].data, ref[0].data)
 
 
 @pytest.mark.gnirsls
