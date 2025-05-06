@@ -40,7 +40,7 @@ To activate the interactive mode for **all** the primitives::
      redux.files = [files_to_reduce]
      redux.uparms = dict([('interactive', True)])
 
-To activate the interactive mode for a specific primitive::
+To activate the interactive mode for a specific primitive, eg. ``traceApertures``::
 
    Command line:
      reduce @files.lis -p traceApertures:interactive=True
@@ -105,14 +105,14 @@ modifications.
 Interactive primitives
 ======================
 
-As of DRAGONS v3.1, there are six primitives with an interactive mode.
+There are six primitives with an interactive mode for GMOS longslit.
 
 * :ref:`calculateSensitivity <ui_calculatesensitivity>`
-* :ref:`determineWavelengthSolution <ui_determineWavelengthSolution>`
-* :ref:`findApertures <ui_findApertures>`
-* :ref:`normalizeFlat <ui_normalizeFlat>`
-* :ref:`skyCorrectFromSlit <ui_skyCorrectFromSlit>`
-* :ref:`traceApertures <ui_traceApertures>`
+* :ref:`determineWavelengthSolution <ui_determinesavelengthsolution>`
+* :ref:`findApertures <ui_findapertures>`
+* :ref:`normalizeFlat <ui_normalizeflat>`
+* :ref:`skyCorrectFromSlit <ui_skycorrectfromslit>`
+* :ref:`traceApertures <ui_traceapertures>`
 
 
 .. _ui_calculatesensitivity:
@@ -145,8 +145,8 @@ determineWavelengthSolution
 
 The ``determineWavelengthSolution`` interactive interface allows the user to
 point to specific lines to delete them or to identify them (ie. assign a
-wavelength).  Modification to the top panel will be reflected in the fit below
-it.
+wavelength).  Modifications to the line identification plot will be reflected
+in the fit below it.
 
 Beware that modifications in the "Left Panel" can take a while to be applied
 when "Reconstruct points" is activated.  There is a fair amount of calculations
@@ -166,8 +166,9 @@ findApertures
    :width: 600
    :alt: findApertures
 
-The ``findApertures`` interactive tool plots a cut across the 2D spectrum,
-along the slit, to show where the sources are.  The primitive calculates where
+The ``findApertures`` interactive tool plots a cross section the 2D spectrum,
+along the spatial direction, to show where the sources are located.  The
+primitive calculates where
 it thinks there are spectra and creates apertures for each.  It can get it
 wrong sometimes, especially if you are after a faint source next to on even
 in the skirt of a brighter source.  This is where this interactive tool comes
@@ -191,7 +192,7 @@ The ``normalizeFlat`` tool simply fits a function to the flat signal to
 normalize it.  Note the tabs at the top of the plot with "CCD1", "CCD2", and
 "CCD3".  GMOS has 3 CCDs.  Each is normalized separately.  You can inspect
 the fit for each CCD by clicking on its tab. The slider at the top defaults to
-the center of the pixel array.  You can select a different row if you want.
+the center of the pixel array.  You can select a different column if you want.
 
 The normalization steps generally works well without any interaction but the
 tool is there to visualize the fits if you suspect a problem and need to
@@ -221,7 +222,7 @@ the sky subtraction in that area.  Normally, though the default column (center
 of the pixel array) is sufficient to adjust the fit.
 
 
-.. _ui_traceApertures:
+.. _ui_traceapertures:
 
 traceApertures
 --------------

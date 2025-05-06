@@ -58,16 +58,19 @@ def expr_parser(expression, strict=False):
             pattern = r'(ad.' + re.escape(
                 descriptor) + r')([\(\)]+)([!=<>]+)(\S+)'
             if descriptor in ['ut_time', 'local_time']:
+                item = re.sub(r'\)$', ' )', item)
                 codified_item = \
                     re.sub(pattern,
                            r'\1\2\3datetime.strptime(\4, "%H:%M:%S").time()',
                            item)
             elif descriptor == 'ut_date':
+                item = re.sub(r'\)$', ' )', item)
                 codified_item = \
                     re.sub(pattern,
                            r'\1\2\3datetime.strptime(\4, "%Y-%m-%d").date()',
                            item)
             elif descriptor == 'ut_datetime':
+                item = re.sub(r'\)$', ' )', item)
                 codified_item = \
                     re.sub(pattern,
                            r'\1\2\3datetime.strptime(\4, "%Y-%m-%d %H:%M:%S")',
@@ -77,6 +80,7 @@ def expr_parser(expression, strict=False):
                     re.sub(pattern, r'isclose(\1(),\4)', item)
             elif descriptor == 'central_wavelength' and operator == '==' and \
                 not strict:
+                item = re.sub(r'\)$', ' )', item)
                 codified_item = \
                     re.sub(pattern, r'isclose(\1(),\4, rel_tol=1e-5)', item)
             elif descriptor in ['filter_name', 'detector_name', 'disperser'] \

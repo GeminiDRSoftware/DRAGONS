@@ -1167,7 +1167,8 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
                         (output_frame, None)])
 
 
-def create_pdf_plot(input_data, peaks, arc_lines, title):
+def create_pdf_plot(input_data, peaks, arc_lines, title="",
+                    absorption=False):
     """
     Create and save a simple pdf plot of the arc spectrum with line
     identifications, useful for checking the validity of the solution.
@@ -1182,15 +1183,26 @@ def create_pdf_plot(input_data, peaks, arc_lines, title):
         wavelengths of arc lines
     title: str
         plot title
+    absorption: bool
+        has the wavecal been determined from absorption lines? If so, the
+        input "spectrum" will be invered
 
     Returns
     -------
     fig: a matplotlib figure
     """
-    data = input_data["spectrum"]
+    if absorption:
+        data = -input_data["spectrum"]
+        spacing = -0.01
+        vert_align = "top"
+    else:
+        data = input_data["spectrum"]
+        spacing = 0.01
+        vert_align = "bottom"
     xmin, xmax = input_data["init_models"][0].domain
     pixels = np.arange(xmin, xmax + 1)
     data_max = data.max()
+    spacing *= data_max
     fig, ax = plt.subplots()
     ax.plot(pixels, data, 'b-')
     ax.set_ylim(0, data_max * 1.1)
@@ -1200,10 +1212,11 @@ def create_pdf_plot(input_data, peaks, arc_lines, title):
         ax.set_xlim(xmin - 1, xmax + 1)
     for p, w in zip(peaks, arc_lines):
         j = int(p + 0.5)
-        ax.plot([p, p], [data[j - xmin] + 0.01 * data_max,
-                         data[j - xmin] + 0.02 * data_max], 'k-')
-        ax.text(p, data[j - xmin] + 0.03 * data_max, str('{:.5f}'.format(w)),
-                horizontalalignment='center', rotation=90, fontdict={'size': 8})
+        ax.plot([p, p], [data[j - xmin] + spacing,
+                         data[j - xmin] + 2 * spacing], 'k-')
+        ax.text(p, data[j - xmin] + 3 * spacing, str('{:.5f}'.format(w)),
+                horizontalalignment='center', verticalalignment=vert_align,
+                rotation=90, fontdict={'size': 8})
     ax.set_xlabel("Pixel number")
     ax.set_title(title)
     fig.set_size_inches(17, 11)

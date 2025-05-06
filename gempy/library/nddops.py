@@ -1,4 +1,4 @@
-# Copyright(c) 2017-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2017-2023 Association of Universities for Research in Astronomy, Inc.
 #
 # nddops.py -- operations on NDData objects
 #

@@ -2,7 +2,7 @@
 
 .. include:: symbols.txt
 
-.. _gnirs_Kband111mm_red_api:
+.. _gnirsls_Kband111mm_red_api:
 
 *****************************************************************************************************
 Example 4 -K-band 2.33 micron Longslit Point Source (111 l/mm grating) - Using the "Reduce" class API
@@ -47,8 +47,8 @@ In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
     browser = your_preferred_browser
 
 The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
-the interactive tools using that browser.  The allowed strings are "safari",
-"chrome", and "firefox".
+the interactive tools using that browser.  The allowed strings are "**safari**",
+"**chrome**", and "**firefox**".
 
 Importing libraries
 -------------------
@@ -64,7 +64,7 @@ Importing libraries
     from gempy.adlibrary import dataselect
 
 The ``dataselect`` module will be used to create file lists for the
-biases, the flats, the arcs, the standard, and the science observations.
+biases, the flats, the arcs, the telluric star, and the science observations.
 The ``Reduce`` class is used to set up and run the data
 reduction.
 
@@ -89,6 +89,10 @@ Set up the Calibration Service
     Instructions to configure and use the calibration service are found in
     :ref:`cal_service`, specifically the these sections:
     :ref:`cal_service_config` and :ref:`cal_service_api`.
+
+We recommend that you clean up your working directory (``playground``) and
+start a fresh calibration database (``caldb.init(wipe=True)``) when you start a new
+example.
 
 Create file lists
 =================
@@ -118,9 +122,9 @@ We show several usage examples below.
 
 A list for the flats
 --------------------
-The GNRIS flats will be stack together.  Therefore it is important to ensure
+The GNIRS flats will be stacked together.  Therefore it is important to ensure
 that the flats in the list are compatible with each other.  You can use
-`dataselect` to narrow down the selection as required.  Here, we have only
+"|dataselect|" to narrow down the selection as required.  Here, we have only
 the flats that were taken with the science and we do not need extra selection
 criteria.
 
@@ -143,13 +147,13 @@ Often two are taken.  We will use both in this case and stack them later.
 
 A list for the telluric
 -----------------------
-DRAGONS does not recognize the telluric star as such.  This is because
-the observations are taken like science data and the GNIRS headers do not
+DRAGONS does not recognize the telluric star as such.  This is because, at
+Gemini, the observations are taken like science data and the GNIRS headers do not
 explicitly state that the observation is a telluric standard.  For now, the
 ``observation_class`` descriptor can be used to differential the telluric
 from the science observations, along with the rejection of the ``CAL`` tag to
-reject flats and arcs. The ``observation_class`` can be "partnerCal" or
-"progCal".  In this case, it is "progCal".
+reject flats and arcs. The ``observation_class`` can be ``partnerCal`` or
+``progCal``.  In this case, it is ``progCal``.
 
 .. code-block:: python
     :linenos:
@@ -165,7 +169,7 @@ reject flats and arcs. The ``observation_class`` can be "partnerCal" or
 A list for the science observations
 -----------------------------------
 
-In our case, the science observations can be selected from the observation
+The science observations can be selected from the observation
 class, ``science``, that is how they are differentiated from the telluric
 standards which are ``partnerCal`` or ``progCal``.
 
@@ -231,7 +235,7 @@ database:
 
 Master Flat Field
 =================
-GNIRS longslit flat field are normally obtained at night along with the
+GNIRS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.
 
 The GNIRS longslit flatfield requires only lamp-on flats.  Subtracting darks
@@ -247,7 +251,7 @@ The flats will be stacked.
     reduce_flats.files.extend(flats)
     reduce_flats.runr()
 
-GNIRS data is affected by a "odd-even" effect where alternate rows in the
+GNIRS data are affected by a "odd-even" effect where alternate rows in the
 GNIRS science array have gains that differ by approximately 10 percent.  When
 you run ``normalizeFlat`` in interactive mode you can clearly see the two
 levels.
@@ -288,7 +292,7 @@ It is impossible to have an accurate solution from the arc alone.
 
 The other difficulty is that the OH and O\ :sub:`2`\  lines are absent in that regime.  There
 are no emission lines.  There are however a large number of telluric
-absorption lines.
+absorption lines in the target's spectrum.
 
 Therefore, we will use the arc lamp solution as the starting point for the
 calculation of the solution derived from the telluric absorption lines.
@@ -313,7 +317,7 @@ https://www.gemini.edu/instrumentation/gnirs/calibrations#Arc
 The arc we are processing was taken with the Argon lamp.
 
 Once the coarse arc is calculated it will automatically be added to the
-calibration database.  We do not want that arc to ever be used during the
+calibration database.  We do **not** want that arc to ever be used during the
 reduction of the science data.  So we immediately remove it from the database.
 We will feed it to the next step, the only one that needs it, manually.
 
@@ -340,7 +344,7 @@ The telluric absorption lines solution
 Because only the telluric absorption lines provide a good spectral coverage
 in this configuration, we are forced to use them.
 
-To use the sky lines in the science frames instead of the lamp arcs, we
+To use the telluric absorption lines in the science frames instead of the lamp arcs, we
 invoke the ``makeWavecalFromSkyAbsorption`` recipe.  It will get the arc lamp
 solution from the calibration manager automatically and use it as an initial
 approximation.
@@ -393,7 +397,7 @@ Prieto & del Burgo, 2016, MNRAS, 455, 3864, finds an effective temperature of
 that much.  We are using the Prieto & del Burgo value here. Using
 Simbad, we find that the star has a magnitude of K=6.040.
 
-Note that the data is recognized by Astrodata as normal GNIRS longslit science
+Note that the data are recognized by Astrodata as normal GNIRS longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``-r reduceTelluric``), otherwise the default science reduction will be
 run.
@@ -497,7 +501,9 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
 ::
 
-    dgsplot N20210407S0173_1D.fits 1
+   from gempy.adlibrary import plotting
+   ad = astrodata.open(reduce_science.output_filenames[0])
+   plotting.dgsplot_matplotlib(ad, 1)
 
 .. image:: _graphics/gnirsls_Kband111mm_1D.png
    :width: 600

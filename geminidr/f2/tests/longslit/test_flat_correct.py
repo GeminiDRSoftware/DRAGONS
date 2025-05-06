@@ -19,7 +19,7 @@ datasets = [("S20150629S0230_darkCorrected.fits",
             ]
 
 # -- Tests --------------------------------------------------------------------
-@pytest.mark.gnirsls
+@pytest.mark.f2ls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, flat", datasets, indirect=True)
 def test_flat_correct(ad, flat, ref_ad_factory):

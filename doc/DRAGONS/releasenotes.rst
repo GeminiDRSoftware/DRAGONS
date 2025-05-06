@@ -1,10 +1,37 @@
 .. releasenotes.rst
 
+.. include:: symbols.txt
+
 .. _releasenotes:
 
 *************
 Release Notes
 *************
+
+V4.1.0
+======
+
+
+V4.0.0
+======
+
+This major release includes new support for near-infrared spectroscopic data.
+Specifically, we are introducing support for GNIRS longslit data.
+
+GNIRS longslit data reduction can now be performed in DRAGONS.  Full support
+from raw data to telluric and flux calibrated data is available. All GNIRS
+wavebands are supported, X, J, H, K, as well as L and M.  All three
+dispersers, 10 l/mm, 32 l/mm, and 111 l/mm are supported.
+
+The software offers algorithms and tools to help with the wavelength
+calibration.  Wavelength calibrations from arc lamp, OH and |O2| sky lines,
+and from telluric features are all supported.  The tutorial includes a
+guide to help you choose the best wavelength calibration method for your data.
+
+Algorithms and tools are includes to help with the measurement of the
+telluric model and the sensitivity function and then for the correction of
+the telluric features present in the data.
+
 
 V3.2.3
 ======

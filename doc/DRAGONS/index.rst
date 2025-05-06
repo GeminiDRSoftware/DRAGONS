@@ -38,6 +38,7 @@ Tutorials - Reducing data with DRAGONS
 
 * |GHOSTTut|
 * |GMOSLSTut|
+* |GNIRSLSTut|
 
 DRAGONS Manuals
 ---------------

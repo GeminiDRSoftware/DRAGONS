@@ -30,7 +30,7 @@ class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
         del self.edge2
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
-    order = config.RangeField("Order of fitting function", int, 3, min=0,
+    order = config.RangeField("Order of fitting function", int, 3, min=1,
                               optional=True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment",
                                    (str, int), '50,20',

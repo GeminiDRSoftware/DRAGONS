@@ -17,7 +17,7 @@ datasets = [("N20050918S0134_nonlinearityCorrected.fits",
             ]
 
 # -- Tests --------------------------------------------------------------------
-@pytest.mark.gnirsls
+@pytest.mark.nirils
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, flat", datasets, indirect=True)
 def test_flat_correct(ad, flat, ref_ad_factory):

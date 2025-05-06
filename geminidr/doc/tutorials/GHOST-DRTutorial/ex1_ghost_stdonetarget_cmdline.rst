@@ -293,7 +293,7 @@ the calibrations as they are created.
 Reduce the Flats
 ----------------
 The flats have a 1x1 binning and must match the read mode of the science
-data.  If the science data is binned, the software will bin the 1x1 flats
+data.  If the science data are binned, the software will bin the 1x1 flats
 to match. Reducing the flats takes a little time because of the step to
 trace each of the echelle orders.
 
@@ -332,7 +332,7 @@ Arcs
 The arcs have a 1x1 binning, the read mode does not matter.  It does save
 processing if they are of the same read mode as the flats as otherwise they will need
 their own flats with a matching read mode as well as their own biases.  If the science
-data is binned, the software will bin the 1x1 arcs to match.
+data are binned, the software will bin the 1x1 arcs to match.
 
 A minimum of three arc exposures are required in each arm to eliminate cosmic rays
 (which can look very similar to arc lines). At the time these data were taken,
@@ -487,7 +487,7 @@ scaled to match the level of the first frame and then stacked.  By default,
 the ``scaleCountsToReference`` primitive only scales by the exposure time
 (which is the same for all these exposures), so no scaling will occur.
 This choice of default is to prevent erroneous scaling factors being calculated
-when the signal-to-noise ratio in the data is low, but that is not the case
+when the signal-to-noise ratio in the data are low, but that is not the case
 here so we can trust the ratios calculated by the software.  Setting a tolerance
 of 1 indicates that the calculated ratios should be used whatever they are,
 whereas a value of, for example, 0.1 means that the ratio should only be used

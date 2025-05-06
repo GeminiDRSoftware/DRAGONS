@@ -393,7 +393,7 @@ matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
 read speed must match.
 
-Because of the flexure, GMOS longslit flat field are not stacked.  Each is
+Because of the flexure, GMOS longslit flat fields are not stacked.  Each is
 reduced and used individually.  The default recipe takes that into account.
 
 We can send all the flats, regardless of characteristics, to ``Reduce`` and each

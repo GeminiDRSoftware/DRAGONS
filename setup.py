@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '3.2.3'
+VERSION = '4.1_dev'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -80,28 +80,30 @@ setup(name='dragons',
           'Topic :: Scientific/Engineering :: Astronomy',
       ],
       install_requires=[
-          'asdf>=2.7,!=2.10.0',
-          'astropy>=4.3,!=5.3.0,!=6.1.5,!=6.1.6',
+          'asdf>=2.15',
+          'astropy>=6.0,!=6.1.5,!=6.1.6',
           'astroquery>=0.4',
           'astroscrappy>=1.1',
           'bokeh>=3.0',
           'bottleneck>=1.2',
+        # 'fits_storage>=3.4.0',  # this would need uploading to PyPI first
           'future>=0.17',
-        # 'FitsStorage>=3.4.0',  # this would need uploading to PyPI first
-          'gwcs>=0.15',
-          'holoviews',
+          'gwcs>=0.19,<=0.22.1',
+          'holoviews>=1.20',
           'jinja2>=3.0',
           'jsonschema>=3.0',
-          'matplotlib>=3.1',
-          'numpy>=1.17,<2',
+          'matplotlib>=3.7',
+          'numpy>=1.24,<2.0.0a0',
+          'pandas>=2.0',
           'psutil>=5.6',
           'pyerfa>=1.7',
-          'python-dateutil>=2.5.3',
+          'python-dateutil>=2.8',
           'requests>=2.22',
           'scikit-image>=0.21',
-          'scipy>=1.3',
-          'specutils>=1.1',
+          'scipy>=1.15',
+          'specutils>=1.10',
           'sqlalchemy>=2.0.0',
+          'tornado>=6.3',
       ],
       extras_require={
           'all': ['ginga', 'imexam'],
@@ -113,5 +115,5 @@ setup(name='dragons',
           'Documentation': 'https://dragons.readthedocs.io/',
       },
       # keywords=['astronomy', 'astrophysics', 'science', 'gemini'],
-      python_requires='>=3.7',
+      python_requires='>=3.12',
       )

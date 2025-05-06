@@ -6,7 +6,7 @@ and to be used in the documentation.
 
 # --- Setup Version Here ---
 API = 4
-FEATURE = 0
+FEATURE = 1
 BUG = 0
 TAG = 'dev'
 

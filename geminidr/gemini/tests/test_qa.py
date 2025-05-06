@@ -18,6 +18,7 @@ import logging
 
 from astrodata.testing import download_from_archive
 from geminidr.gmos.primitives_gmos_image import GMOSImage
+from geminidr.gnirs.primitives_gnirs_image import GNIRSImage
 from geminidr.niri.primitives_niri_image import NIRIImage
 
 
@@ -180,6 +181,25 @@ def test_measure_IQ_GMOS_thru_slit(caplog):
             found = True
             assert abs(float(rec.message.split()[2]) - 0.892) < 0.05
     assert found, "FWHM measurement not found in log"
+
+
+@pytest.mark.preprocessed_data  # because it's on Jenkins
+def test_measure_IQ_GNIRSLS_thru_slit(path_to_inputs, caplog):
+    """Measure on a GNIRS thru-slit LS observation"""
+    caplog.set_level(logging.DEBUG)
+    ad = astrodata.open(os.path.join(path_to_inputs, "N20241210S0034.fits"))
+    p = GNIRSImage([ad])
+    p.prepare(attach_mdf=False)
+    p.addDQ(add_illum_mask=False)
+    p.ADUToElectrons()
+    p.measureIQ(display=False)
+    found = False
+    for rec in caplog.records:
+        if 'FWHM measurement' in rec.message:
+            found = True
+            assert abs(float(rec.message.split()[2]) - 0.835) < 0.1
+    assert found, "FWHM measurement not found in log"
+
 
 
 @pytest.mark.dragons_remote_data
