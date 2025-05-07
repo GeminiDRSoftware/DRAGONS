@@ -132,6 +132,7 @@ class Telluric(Spect):
                 if pixel_shift != 0:
                     tspek_list = []
                     spectral_indices = []
+                    spectral_order_names = []
                     start = datetime.now()
                     for i, ext in enumerate(ad):
                         if (len(ext.shape) == 1 and
@@ -165,6 +166,10 @@ class Telluric(Spect):
 
                             tspek_list.append(tspek)
                             spectral_indices.append(i)
+                            try:
+                                spectral_order_names.append(f"Order {ext.hdr['SPECORDR']}")
+                            except KeyError:
+                                spectral_order_names.append(f"Extension {i}")
                     # print(datetime.now() - start, "Making Calibrator() object")
                     if not tspek_list:
                         raise ValueError(f"No 1D spectra found in {ad.filename}")
@@ -173,7 +178,7 @@ class Telluric(Spect):
 
                 if inter:
                     visualizer = TelluricVisualizer(
-                        tcal, tab_name_fmt=lambda i: f"Order {i+1}",
+                        tcal, tab_name_fmt=lambda i: spectral_order_names[i],
                         xlabel="Wavelength (nm)", ylabel=f"Signal ({data_units})",
                         title="Fit Telluric",
                         primitive_name=self.myself(),
@@ -249,6 +254,7 @@ class Telluric(Spect):
             for ext in ad:
                 if (len(ext.shape) == 1 and
                         ext.hdr.get('APERTURE') == aperture_to_use):
+                    tspek = tspek_list[result_index]
                     absorption = tspek.data / m_final.models[result_index].continuum(tspek.waves)
                     goodpix = ~(tspek.mask | tcal.stellar_mask[result_index]).astype(bool)
                     spline = make_interp_spline(tcal.spectra[result_index].waves[goodpix],
