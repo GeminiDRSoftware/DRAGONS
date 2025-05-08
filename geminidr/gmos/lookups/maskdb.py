@@ -8,36 +8,36 @@ illumMask_dict = {
     # GMOS North EEV
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-N_EEV_11_3amp_v1":  "gmos-n_illum_EEV_11_3amp_v1.fits",
-    "GMOS-N_EEV_22_3amp_v1":  "gmos-n_illum_EEV_22_3amp_v1.fits",
+    "GMOS-N_EEV_11_3amp_v1":  "gmos-n_illum_EEV_11_3amp_v1.fits.bz2",
+    "GMOS-N_EEV_22_3amp_v1":  "gmos-n_illum_EEV_22_3amp_v1.fits.bz2",
 
     # GMOS North e2V
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-N_e2v_11_6amp_v1": "gmos-n_illum_e2v_11_6amp_v1.fits",
-    "GMOS-N_e2v_22_6amp_v1": "gmos-n_illum_e2v_22_6amp_v1.fits",
+    "GMOS-N_e2v_11_6amp_v1": "gmos-n_illum_e2v_11_6amp_v1.fits.bz2",
+    "GMOS-N_e2v_22_6amp_v1": "gmos-n_illum_e2v_22_6amp_v1.fits.bz2",
 
     # GMOS North Hamamatsu
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-N_Ham_11_12amp_v1": "gmos-n_illum_HAM_11_12amp_v1.fits",
-    "GMOS-N_Ham_22_12amp_v1": "gmos-n_illum_HAM_22_12amp_v1.fits",
-    "GMOS-N_Ham_44_12amp_v1": "gmos-n_illum_HAM_44_12amp_v1.fits",
+    "GMOS-N_Ham_11_12amp_v1": "gmos-n_illum_HAM_11_12amp_v1.fits.bz2",
+    "GMOS-N_Ham_22_12amp_v1": "gmos-n_illum_HAM_22_12amp_v1.fits.bz2",
+    "GMOS-N_Ham_44_12amp_v1": "gmos-n_illum_HAM_44_12amp_v1.fits.bz2",
 
     # ----
 
     # GMOS South EEV
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-S_EEV_11_3amp_v1": "gmos-s_illum_EEV_11_3amp_v1.fits",
-    "GMOS-S_EEV_22_3amp_v1": "gmos-s_illum_EEV_22_3amp_v1.fits",
+    "GMOS-S_EEV_11_3amp_v1": "gmos-s_illum_EEV_11_3amp_v1.fits.bz2",
+    "GMOS-S_EEV_22_3amp_v1": "gmos-s_illum_EEV_22_3amp_v1.fits.bz2",
 
     # GMOS South Hamamatsu
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-S_Ham_11_12amp_v1": "gmos-s_illum_HAM_11_12amp_v1.fits",
-    "GMOS-S_Ham_22_12amp_v1": "gmos-s_illum_HAM_22_12amp_v1.fits",
-    "GMOS-S_Ham_44_12amp_v1": "gmos-s_illum_HAM_44_12amp_v2.fits",
+    "GMOS-S_Ham_11_12amp_v1": "gmos-s_illum_HAM_11_12amp_v1.fits.bz2",
+    "GMOS-S_Ham_22_12amp_v1": "gmos-s_illum_HAM_22_12amp_v1.fits.bz2",
+    "GMOS-S_Ham_44_12amp_v1": "gmos-s_illum_HAM_44_12amp_v2.fits.bz2",
 
 }
 
