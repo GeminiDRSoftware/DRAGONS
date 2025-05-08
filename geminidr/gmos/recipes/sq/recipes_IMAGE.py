@@ -39,9 +39,7 @@ def reduce(p):
     p.storeProcessedScience(suffix="_image")
     return
 
-
 _default = reduce
-
 
 def reduceSeparateCCDsCentral(p):
     """
@@ -151,6 +149,31 @@ def makeProcessedFringe(p):
     p.makeFringeFrame()
     p.storeProcessedFringe()
     return
+
+
+def reduce_nostack(p):
+    """
+    This recipe performs the standardization and corrections needed to
+    convert the raw input science images into a stacked image.
+
+    Parameters
+    ----------
+    p : GMOSImage object
+        A primitive set matching the recipe_tags.
+    """
+
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.flatCorrect()
+    p.fringeCorrect()
+    p.QECorrect()
+    p.mosaicDetectors()
+    p.detectSources()
 
 
 def alignAndStack(p):

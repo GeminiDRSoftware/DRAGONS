@@ -400,8 +400,13 @@ class GMOSImage(GMOS, Image, Photometry):
 
         for ad in adinputs:
             # If this input hasn't been tiled at all, tile it
-            ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
-                if len(ad)>3 else ad
+            if 'Central Stamp' == ad.detector_roi_setting():
+                ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0]
+                mintrim = 2
+            else:
+                ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
+                    if len(ad)>3 else ad
+                mintrim = 20
 
             # Use CCD2, or the entire mosaic if we can't find a second extn
             try:
@@ -410,8 +415,8 @@ class GMOSImage(GMOS, Image, Photometry):
                 ext = ad_for_stats[0]
 
             # Take off 5% of the width as a border
-            xborder = max(int(0.05 * ext.data.shape[1]), 20)
-            yborder = max(int(0.05 * ext.data.shape[0]), 20)
+            xborder = max(int(0.05 * ext.data.shape[1]), mintrim)
+            yborder = max(int(0.05 * ext.data.shape[0]), mintrim)
             log.fullinfo("Using data section [{}:{},{}:{}] from CCD2 for "
                          "statistics".format(xborder,ext.data.shape[1]-xborder,
                           yborder,ext.data.shape[0]-yborder))
@@ -596,8 +601,13 @@ class GMOSImage(GMOS, Image, Photometry):
         ref_data_region = None
         for ad in adinputs:
             # If this input hasn't been tiled at all, tile it
-            ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
-                if len(ad)>3 else ad
+            if 'Central Stamp' == ad.detector_roi_setting():
+                ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0]
+                mintrim = 2
+            else:
+                ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
+                    if len(ad)>3 else ad
+                mintrim = 20
 
             # Use CCD2, or the entire mosaic if we can't find a second extn
             try:
@@ -611,8 +621,8 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Take off 5% of the width as a border
             if ref_data_region is None:
-                xborder = max(int(0.05 * data.shape[1]), 20)
-                yborder = max(int(0.05 * data.shape[0]), 20)
+                xborder = max(int(0.05 * data.shape[1]), mintrim)
+                yborder = max(int(0.05 * data.shape[0]), mintrim)
                 log.fullinfo(
                     f"Using data section [{xborder+1}:{data.shape[1]-xborder}"
                     f",{yborder+1}:{data.shape[0]-yborder}] from {stat_provider}"
