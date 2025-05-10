@@ -2180,7 +2180,10 @@ class Spect(Resample):
                 try:
                     idx = ext.wcs.available_frames.index('distortion_corrected')
                 except (ValueError, AttributeError):
-                    have_distcorr = False
+                    try:
+                        idx = ext.wcs.available_frames.index('rectified')
+                    except (ValueError, AttributeError):
+                        have_distcorr = False
                 else:
                     have_distcorr = idx > 0
                 if not have_distcorr:
@@ -2239,8 +2242,15 @@ class Spect(Resample):
                     else:  # Keep the step unchanged.
                         new_pipeline.append(step)
 
+                # To avoid continually checking whether we're correcting to
+                # "distortion_corrected" or "rectified", rename the frame to
+                # which we're correcting as "correction_endpoint"
+                new_frame = deepcopy(ext.wcs.pipeline[idx].frame)
+                new_frame.name = "correction_endpoint"
+                new_pipeline.append((new_frame, ext.wcs.pipeline[idx].transform))
+
                 # Now recreate the WCS using the new pipeline.
-                new_pipeline.extend(ext.wcs.pipeline[idx:])
+                new_pipeline.extend(ext.wcs.pipeline[idx+1:])
                 ext.wcs = gWCS(new_pipeline)
 
             if not have_distcorr:
@@ -2264,7 +2274,7 @@ class Spect(Resample):
 
             if mosaic:
                 ad_out = transform.resample_from_wcs(
-                    ad, 'distortion_corrected', interpolant=interpolant,
+                    ad, 'correction_endpoint', interpolant=interpolant,
                     subsample=subsample, parallel=False,
                     threshold=dq_threshold
                 )
@@ -2272,14 +2282,14 @@ class Spect(Resample):
                 for i, ext in enumerate(ad):
                     if i == 0:
                         ad_out = transform.resample_from_wcs(
-                            ext, 'distortion_corrected', interpolant=interpolant,
+                            ext, 'correction_endpoint', interpolant=interpolant,
                             subsample=subsample, parallel=False,
                             threshold=dq_threshold
                         )
                     else:
                         ad_out.append(
                             transform.resample_from_wcs(ext,
-                                                        'distortion_corrected',
+                                                        'correction_endpoint',
                                                         interpolant=interpolant,
                                                         subsample=subsample,
                                                         parallel=False,
