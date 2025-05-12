@@ -584,6 +584,11 @@ class Spect(Resample):
         available after successful line matching) from a processed arc, or
         similar wavelength reference, to the WCS of the input data.
 
+        The distortion correction must go before the rectification model
+        (if one exists) since the rectification model can make large changes
+        to spatial coordinate, but the distortion model was constructed in
+        the original coordinate frame.
+
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
@@ -599,6 +604,8 @@ class Spect(Resample):
             Modified input objects with the WCS updated for each extension.
 
         """
+        # TODO? Should we make the distortion model using input
+        # coordinates from the rectified frame?
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -699,7 +706,7 @@ class Spect(Resample):
             # one block of reading and verifying them
             distortion_models, wave_models, wave_frames = [], [], []
             for ext in arc:
-                wcs = ext.nddata.wcs
+                wcs = ext.wcs
 
                 # Any failures must be handled in the outer loop processing
                 # ADs, so just set the found transforms to empty and present
@@ -867,9 +874,13 @@ class Spect(Resample):
                     # frame at the end (and split a frame from its transform).
                     # This should work whether or not one or more frames
                     # (e.g., "rectified") have been added after the input_frame.
-                    new_pipeline = ad[0].wcs.pipeline[:-2] +\
-                                   [(ad[0].wcs.pipeline[-2].frame, m_distcorr),
-                                   (cf.Frame2D(name='distortion_corrected'), None)]
+                    new_pipeline = [(ad[0].wcs.input_frame, m_distcorr),
+                                    (cf.Frame2D(name='distortion_corrected'), ad[0].wcs.pipeline[0].transform)]
+                    new_pipeline.extend(ad[0].wcs.pipeline[1:-2])
+                    new_pipeline.append((ad[0].wcs.pipeline[-2].frame, None))
+                    # new_pipeline = ad[0].wcs.pipeline[:-2] +\
+                    #                [(ad[0].wcs.pipeline[-2].frame, m_distcorr),
+                    #                (cf.Frame2D(name='distortion_corrected'), None)]
                     ad[0].wcs = gWCS(new_pipeline)
 
                 if wave_model is None:
@@ -878,9 +889,6 @@ class Spect(Resample):
                         fail = True
 
             else:
-                log.warning("Distortion calibration with multiple-extension "
-                            "arcs has not been tested.")
-
                 sky_models, output_frames = [], []
 
                 for i, (ext, ext_arc, dist_model) in enumerate(zip(ad, arc, distortion_models)):
@@ -896,11 +904,14 @@ class Spect(Resample):
                                                         ext_arc.detector_section())]
                     dist_model = (models.Shift(shifts[0] / xbin) &
                                   models.Shift(shifts[1] / ybin)) | dist_model
-                    # This hasn't been tested, but should work in analogy with
-                    # the code above. We can't use insert_frame() here either.
-                    new_pipeline = ext.wcs.pipeline[:-2] +\
-                                   [(ext.wcs.pipeline[-2].frame, m_distcorr),
-                                   (cf.Frame2D(name='distortion_corrected'), None)]
+
+                    new_pipeline = [(ext.wcs.input_frame, dist_model),
+                                    (cf.Frame2D(name='distortion_corrected'), ext.wcs.pipeline[0].transform)]
+                    new_pipeline.extend(ext.wcs.pipeline[1:-2])
+                    new_pipeline.append((ext.wcs.pipeline[-2].frame, None))
+                    # new_pipeline = ext.wcs.pipeline[:-2] +\
+                    #                [(ext.wcs.pipeline[-2].frame, dist_model),
+                    #                (cf.Frame2D(name='distortion_corrected'), None)]
                     ext.wcs = gWCS(new_pipeline)
 
                     if wave_model is None:
@@ -922,7 +933,7 @@ class Spect(Resample):
                     [copy(wave_frame) if isinstance(frame, cf.SpectralFrame)
                      else frame for frame in output_frame], name='world'
                 )
-                ext.wcs.insert_frame('distortion_corrected', t,
+                ext.wcs.insert_frame(ext.wcs.output_frame, t,
                                      new_output_frame)
 
             # Timestamp and update the filename
@@ -2178,14 +2189,15 @@ class Spect(Resample):
 
             for ext in ad:
                 try:
-                    idx = ext.wcs.available_frames.index('distortion_corrected')
+                    idx_dc = ext.wcs.available_frames.index('distortion_corrected')
                 except (ValueError, AttributeError):
-                    try:
-                        idx = ext.wcs.available_frames.index('rectified')
-                    except (ValueError, AttributeError):
-                        have_distcorr = False
-                else:
-                    have_distcorr = idx > 0
+                    idx_dc = -1
+                try:
+                    idx_r = ext.wcs.available_frames.index('rectified')
+                except (ValueError, AttributeError):
+                    idx_r = -1
+                idx = max(idx_dc, idx_r)
+                have_distcorr = idx > 0
                 if not have_distcorr:
                     log.warning('No distortion transformation attached to'
                                 f' {ad.filename}, extension {ext.id}')
