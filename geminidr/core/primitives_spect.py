@@ -557,9 +557,7 @@ class Spect(Resample):
             log.stdinfo(f"{ad.filename}: using the pinhole mask "
                         f"{pinhole.filename}{origin_str}")
             ad = gt.attach_rectification_model(ad, pinhole, log=self.log)
-            try:
-                ad[0].wcs.get_transform("pixels", "rectified")
-            except:
+            if 'rectified' not in ad[0].wcs.available_frames:
                 log.fullinfo("No rectification model from pinhole found "
                              f"for {ad.filename}")
 
