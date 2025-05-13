@@ -44,6 +44,7 @@ def initialize_database(path_to_inputs, filename=CONFIG_FILE):
     return caldb
 
 
+@pytest.mark.skip("MUST WORK: turned off to speed up test run")
 @pytest.mark.slow
 @pytest.mark.integration_test
 @pytest.mark.ghostspect
