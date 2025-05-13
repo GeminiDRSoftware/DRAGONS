@@ -758,27 +758,16 @@ class Spect(Resample):
                 ] * len_ad
                 output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
 
-                # For GMOS with one arc and lots of inputs. The output of either
-                # branch of this code should be a gWCS that ends in
-                # ("distortion_corrected", None) so that the final bit of code can
-                # insert a "world" frame using a munged-together sky model and
-                # wavelength model.
+                # For GMOS with single-extension arc and multiple input extensions
                 if len_ad > 1:
                     # We need to apply the mosaicking geometry, and add the
                     # same distortion correction to each input extension.
                     geotable = import_module('.geometry_conf', self.inst_lookups)
                     transform.add_mosaic_wcs(ad, geotable)
                     for ext in ad:
-                        # TODO: use insert_frame() method
-                        new_pipeline = []
-                        for item in ext.wcs.pipeline:
-                            if item[0].name == 'mosaic':
-                                new_pipeline.extend([(item[0], m_distcorr),
-                                                     (cf.Frame2D(name='distortion_corrected'), None)])
-                                break
-                            else:
-                                new_pipeline.append(item)
-                        ext.wcs = gWCS(new_pipeline)
+                        if 'mosaic' in ext.wcs.available_frames:
+                            ext.wcs.insert_frame('mosaic', m_distcorr,
+                                                 cf.Frame2D(name='distortion_corrected'))
 
                     # We need to consider the different pixel frames of the
                     # science and arc. The input->mosaic transform of the
@@ -869,19 +858,9 @@ class Spect(Resample):
                         m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
                                    models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
                         m_distcorr = m_shift | m_distcorr
-                    # Create a new pipeline for the gWCS here. We can't use
-                    # insert_frame() because we need to chop off the "world"
-                    # frame at the end (and split a frame from its transform).
-                    # This should work whether or not one or more frames
-                    # (e.g., "rectified") have been added after the input_frame.
-                    new_pipeline = [(ad[0].wcs.input_frame, m_distcorr),
-                                    (cf.Frame2D(name='distortion_corrected'), ad[0].wcs.pipeline[0].transform)]
-                    new_pipeline.extend(ad[0].wcs.pipeline[1:-2])
-                    new_pipeline.append((ad[0].wcs.pipeline[-2].frame, None))
-                    # new_pipeline = ad[0].wcs.pipeline[:-2] +\
-                    #                [(ad[0].wcs.pipeline[-2].frame, m_distcorr),
-                    #                (cf.Frame2D(name='distortion_corrected'), None)]
-                    ad[0].wcs = gWCS(new_pipeline)
+
+                    ad[0].wcs.insert_frame(ad[0].wcs.input_frame, m_distcorr,
+                                           cf.Frame2D(name='distortion_corrected'))
 
                 if wave_model is None:
                     log.warning(f"{arc.filename} has no wavelength solution")
@@ -889,6 +868,10 @@ class Spect(Resample):
                         fail = True
 
             else:
+                if len(ad) != len(arc):
+                    raise ValueError("Number of extensions in science and arc "
+                                     f"are not equal ({len(ad)} != {len(arc)})")
+
                 sky_models, output_frames = [], []
 
                 for i, (ext, ext_arc, dist_model) in enumerate(zip(ad, arc, distortion_models)):
@@ -905,14 +888,8 @@ class Spect(Resample):
                     dist_model = (models.Shift(shifts[0] / xbin) &
                                   models.Shift(shifts[1] / ybin)) | dist_model
 
-                    new_pipeline = [(ext.wcs.input_frame, dist_model),
-                                    (cf.Frame2D(name='distortion_corrected'), ext.wcs.pipeline[0].transform)]
-                    new_pipeline.extend(ext.wcs.pipeline[1:-2])
-                    new_pipeline.append((ext.wcs.pipeline[-2].frame, None))
-                    # new_pipeline = ext.wcs.pipeline[:-2] +\
-                    #                [(ext.wcs.pipeline[-2].frame, dist_model),
-                    #                (cf.Frame2D(name='distortion_corrected'), None)]
-                    ext.wcs = gWCS(new_pipeline)
+                    ext.wcs.insert_frame(ad[0].wcs.input_frame, dist_model,
+                                         cf.Frame2D(name='distortion_corrected'))
 
                     if wave_model is None:
                         log.warning(f"{arc.filename} extension {ext.id} has "
@@ -920,6 +897,7 @@ class Spect(Resample):
                         if 'sq' in self.mode:
                             fail = True
 
+            # Now we need to remove the last transform and output frame
             for i, (ext, wave_model, wave_frame, sky_model, output_frame) in \
               enumerate(zip(ad, wave_models, wave_frames, sky_models,
                             output_frames)):
@@ -933,8 +911,12 @@ class Spect(Resample):
                     [copy(wave_frame) if isinstance(frame, cf.SpectralFrame)
                      else frame for frame in output_frame], name='world'
                 )
-                ext.wcs.insert_frame(ext.wcs.output_frame, t,
-                                     new_output_frame)
+                # Put new transform before world frame
+                ext.wcs.set_transform(ext.wcs.available_frames[-2],
+                                      ext.wcs.output_frame, t)
+                # Replace world frame
+                ext.wcs = gWCS(ext.wcs.pipeline[:-1] +
+                               [(new_output_frame, None)])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
