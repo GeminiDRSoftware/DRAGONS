@@ -28,5 +28,25 @@ def makeProcessedBias(p):
     p.storeProcessedBias()
     return
 
+def checkBias(p):
+    """
+    This recipe checks bias frames by processing them, then subtracting a
+    "known good" processed bias from them and computing statistics on the
+    residual.
+    :param p:
+    :return:
+    """
+    p.prepare()
+    p.addDQ(add_illum_mask=False)
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.stackBiases()
+    p.makeIRAFCompatible()
+    p.biasCorrect()
+    p.stats()
+    p.signaltonoiseratio()
+    p.writeOutputs()
+    return
+
 
 _default = makeProcessedBias

@@ -17,7 +17,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am, astrotools as at, transform
 
 from geminidr.core import Bookkeeping, CalibDB, Preprocess
-from geminidr.core import Visualize, Standardize, Stack
+from geminidr.core import Visualize, Standardize, Stack, Stats
 
 from .primitives_qa import QA
 from . import parameters_gemini
@@ -29,7 +29,7 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 @parameter_override
 @capture_provenance
 class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
-             CalibDB):
+             CalibDB, Stats):
     """
     This is the class containing the generic Gemini primitives.
 
