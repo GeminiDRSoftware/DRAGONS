@@ -19,13 +19,13 @@ from astropy.coordinates import SkyCoord
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
+from astropy import units as u
 
 from scipy.ndimage import distance_transform_edt
 from scipy.signal import medfilt
 from scipy.special import erf
 
 from gwcs import coordinate_frames as cf
-from gwcs.utils import CoordinateFrameError
 
 from ..library import astromodels, tracing, astrotools as at
 from ..library.nddops import NDStacker
@@ -236,26 +236,34 @@ def attach_rectification_model(target, source, log=None):
                          f"{len(source)}, {target.filename} not modified.")
 
     for ext_t, ext_s in zip(target, source):
-        # Check that a transform exists, else return `target` unmodified.
         try:
-            new_transform = ext_s.wcs.get_transform("pixels", "rectified")
-        except CoordinateFrameError:
+            rect_frame_index = ext_s.wcs.available_frames.index('rectified')
+        except ValueError:
             # Silently no-op. If it's important to know if a model has been
             # attached, run this same check on the output where this function
             # is called, since the severity of it happening varies by context.
             # (For longslit, it's not a big deal; for e.g. cross-dispersed it's
             # a major problem.)
-            return target
+            continue
 
+        new_transform = ext_s.wcs.get_transform(
+            ext_s.wcs.available_frames[rect_frame_index-1], 'rectified')
         # If a 'rectified' frame exists, just replace the transform.
         # Otherwise add a new frame with the transform.
         try:
-            ext_t.wcs.set_transform('pixels', 'rectified', new_transform)
-        except CoordinateFrameError:
-            ext_t.wcs.insert_frame(ext_t.wcs.input_frame, new_transform,
-                                   cf.Frame2D(name='rectified'))
-        log.fullinfo(f"Rectification model found in {source.filename}. "
-                     f"Attaching to {target.filename}")
+            rect_frame_index = ext_t.wcs.available_frames.index('rectified')
+        except ValueError:
+            # Where to put this transform? On the basis of what we have so far
+            # (LS and XD), it seems like it should be after the last frame
+            # which has a regular 2D pixel frame, so find that.
+            last_pixel_frame = max([i for i, step in enumerate(ext_t.wcs.pipeline)
+                                    if set(step.frame.unit) == {u.pix}])
+            ext_t.wcs.insert_frame(ext_t.wcs.available_frames[last_pixel_frame],
+                                   new_transform, cf.Frame2D(name='rectified'))
+        else:
+            ext_t.wcs.set_transform(
+                ext_t.wcs.available_frames[rect_frame_index-1], 'rectified',
+                new_transform)
 
     return target
 

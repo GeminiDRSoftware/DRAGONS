@@ -75,6 +75,29 @@ def reduceTelluric(p):
     p.storeProcessedTelluric()
 
 
+def  makeWavecalFromSkyEmission(p):
+    """
+    Process GNIRS XD science in order to create wavelength and distortion
+    solutions using sky emission lines.
+
+    Inputs are:
+      * raw science
+      * processed flat
+    """
+
+    p.prepare()
+    p.addDQ()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True, read_noise=True)
+    p.flatCorrect()
+    p.stackFrames()
+    p.attachPinholeModel()
+    p.determineWavelengthSolution()
+    p.determineDistortion(spatial_order=1, step=4)
+    p.storeProcessedArc(force=True)
+    p.writeOutputs()
+
+
 def reduceScienceWithAdjustmentFromSkylines(p):
     """
     To be updated as development continues: This recipe processes GNIRS cross-dispersed

@@ -13,17 +13,18 @@
 // @Library('dragons_ci@master') _
 
 // Change these to automatically skip steps
-def runtests_unit    = 0
-def runtests_regress = 0
-def runtests_gmosls  = 0  // 1 to enable
-def runtests_slow    = 0
-def runtests_f2      = 0
-def runtests_niri    = 0
-def runtests_gsaoi   = 0
-def runtests_gnirs   = 1
-def runtests_wavecal = 0
-def runtests_ghost   = 0
-def runtests_gmos    = 0
+def runtests_unit        = 1
+def runtests_regress     = 1
+def runtests_gmosls      = 1  // 1 to enable
+def runtests_slow        = 1
+def runtests_f2          = 1
+def runtests_niri        = 1
+def runtests_gsaoi       = 1
+def runtests_gnirs       = 1
+def runtests_wavecal     = 1
+def runtests_ghost       = 1
+def runtests_gmos        = 1
+def runtests_ghost_integ = 1
 
 pipeline {
 
@@ -162,6 +163,45 @@ pipeline {
                         }
                     } // end post
                 }
+
+                stage('WaveCal Tests') {
+                    when {
+                        expression { runtests_wavecal == 1 }
+                    }
+
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        DRAGONS_TEST_OUT = "wavecal_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/wavecal/"
+                    }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_dirs.sh'
+                        echo "Running tests"
+                        sh 'tox -e py312-wavecal -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F wavecal'
+                    }  // end steps
+                    post {
+                        always {
+                            echo "Running 'archivePlots' from inside WaveCal Tests"
+                            archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py312-wavecal/reports/*_results.xml'
+                            )
+                            echo "Deleting WaveCal Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }  // end always
+                    }  // end post
+                }  // end stage
+
             } // end parallel
         }
 
@@ -307,11 +347,11 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py312-gnirs/reports/*_results.xml'
                             )
-                            echo "Not deleting GNIRS Tests workspace ${env.WORKSPACE}"
-                            // cleanWs()
-                            // dir("${env.WORKSPACE}@tmp") {
-                            //   deleteDir()
-                            // }
+                            echo "Deleting GNIRS Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
                         }  // end always
                     }  // end post
                 }  // end stage
@@ -354,44 +394,6 @@ pipeline {
                 }  // end stage
             } // end parallel
         }
-
-        stage('WaveCal Tests') {
-            when {
-                expression { runtests_wavecal == 1 }
-            }
-
-            agent { label "master" }
-            environment {
-                MPLBACKEND = "agg"
-                DRAGONS_TEST_OUT = "wavecal_tests_outputs"
-                TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                TMPDIR = "${env.WORKSPACE}/.tmp/wavecal/"
-            }
-            steps {
-                echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
-                checkout scm
-                sh '.jenkins/scripts/setup_dirs.sh'
-                echo "Running tests"
-                sh 'tox -e py312-wavecal -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
-                echo "Reporting coverage"
-                sh 'tox -e codecov -- -F wavecal'
-            }  // end steps
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside WaveCal Tests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: '.tmp/py312-wavecal/reports/*_results.xml'
-                    )
-                    echo "Deleting WaveCal Tests workspace ${env.WORKSPACE}"
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                      deleteDir()
-                    }
-                }  // end always
-            }  // end post
-        }  // end stage
 
         stage('Slower tests') {
             parallel {
@@ -498,6 +500,43 @@ pipeline {
                             junit (
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py312-ghost/reports/*_results.xml'
+                            )
+                            echo "Deleting GHOST Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }
+                    } // end post
+                } // end stage
+
+                stage('GHOST Integration test') {
+                    when {
+                        expression { runtests_ghost_integ == 1 }
+                    }
+
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        DRAGONS_TEST_OUT = "ghost_integ_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/ghost_integ/"
+                    }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        echo "${env.PATH}"
+                        sh '.jenkins/scripts/setup_dirs.sh'
+                        echo "GHOST tests"
+                        sh 'tox -e py312-ghost_integ -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/ghost_integ_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F ghost_integ'
+                    } // end steps
+                    post {
+                        always {
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py312-ghost_integ/reports/*_results.xml'
                             )
                             echo "Deleting GHOST Tests workspace ${env.WORKSPACE}"
                             cleanWs()

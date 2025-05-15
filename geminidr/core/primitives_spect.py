@@ -557,9 +557,7 @@ class Spect(Resample):
             log.stdinfo(f"{ad.filename}: using the pinhole mask "
                         f"{pinhole.filename}{origin_str}")
             ad = gt.attach_rectification_model(ad, pinhole, log=self.log)
-            try:
-                ad[0].wcs.get_transform("pixels", "rectified")
-            except:
+            if 'rectified' not in ad[0].wcs.available_frames:
                 log.fullinfo("No rectification model from pinhole found "
                              f"for {ad.filename}")
 
@@ -584,6 +582,11 @@ class Spect(Resample):
         available after successful line matching) from a processed arc, or
         similar wavelength reference, to the WCS of the input data.
 
+        The distortion correction must go before the rectification model
+        (if one exists) since the rectification model can make large changes
+        to spatial coordinate, but the distortion model was constructed in
+        the original coordinate frame.
+
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
@@ -599,6 +602,8 @@ class Spect(Resample):
             Modified input objects with the WCS updated for each extension.
 
         """
+        # TODO? Should we make the distortion model using input
+        # coordinates from the rectified frame?
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -699,7 +704,7 @@ class Spect(Resample):
             # one block of reading and verifying them
             distortion_models, wave_models, wave_frames = [], [], []
             for ext in arc:
-                wcs = ext.nddata.wcs
+                wcs = ext.wcs
 
                 # Any failures must be handled in the outer loop processing
                 # ADs, so just set the found transforms to empty and present
@@ -751,27 +756,16 @@ class Spect(Resample):
                 ] * len_ad
                 output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
 
-                # For GMOS with one arc and lots of inputs. The output of either
-                # branch of this code should be a gWCS that ends in
-                # ("distortion_corrected", None) so that the final bit of code can
-                # insert a "world" frame using a munged-together sky model and
-                # wavelength model.
+                # For GMOS with single-extension arc and multiple input extensions
                 if len_ad > 1:
                     # We need to apply the mosaicking geometry, and add the
                     # same distortion correction to each input extension.
                     geotable = import_module('.geometry_conf', self.inst_lookups)
                     transform.add_mosaic_wcs(ad, geotable)
                     for ext in ad:
-                        # TODO: use insert_frame() method
-                        new_pipeline = []
-                        for item in ext.wcs.pipeline:
-                            if item[0].name == 'mosaic':
-                                new_pipeline.extend([(item[0], m_distcorr),
-                                                     (cf.Frame2D(name='distortion_corrected'), None)])
-                                break
-                            else:
-                                new_pipeline.append(item)
-                        ext.wcs = gWCS(new_pipeline)
+                        if 'mosaic' in ext.wcs.available_frames:
+                            ext.wcs.insert_frame('mosaic', m_distcorr,
+                                                 cf.Frame2D(name='distortion_corrected'))
 
                     # We need to consider the different pixel frames of the
                     # science and arc. The input->mosaic transform of the
@@ -862,15 +856,9 @@ class Spect(Resample):
                         m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
                                    models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
                         m_distcorr = m_shift | m_distcorr
-                    # Create a new pipeline for the gWCS here. We can't use
-                    # insert_frame() because we need to chop off the "world"
-                    # frame at the end (and split a frame from its transform).
-                    # This should work whether or not one or more frames
-                    # (e.g., "rectified") have been added after the input_frame.
-                    new_pipeline = ad[0].wcs.pipeline[:-2] +\
-                                   [(ad[0].wcs.pipeline[-2].frame, m_distcorr),
-                                   (cf.Frame2D(name='distortion_corrected'), None)]
-                    ad[0].wcs = gWCS(new_pipeline)
+
+                    ad[0].wcs.insert_frame(ad[0].wcs.input_frame, m_distcorr,
+                                           cf.Frame2D(name='distortion_corrected'))
 
                 if wave_model is None:
                     log.warning(f"{arc.filename} has no wavelength solution")
@@ -878,8 +866,9 @@ class Spect(Resample):
                         fail = True
 
             else:
-                log.warning("Distortion calibration with multiple-extension "
-                            "arcs has not been tested.")
+                if len(ad) != len(arc):
+                    raise ValueError("Number of extensions in science and arc "
+                                     f"are not equal ({len(ad)} != {len(arc)})")
 
                 sky_models, output_frames = [], []
 
@@ -896,12 +885,9 @@ class Spect(Resample):
                                                         ext_arc.detector_section())]
                     dist_model = (models.Shift(shifts[0] / xbin) &
                                   models.Shift(shifts[1] / ybin)) | dist_model
-                    # This hasn't been tested, but should work in analogy with
-                    # the code above. We can't use insert_frame() here either.
-                    new_pipeline = ext.wcs.pipeline[:-2] +\
-                                   [(ext.wcs.pipeline[-2].frame, m_distcorr),
-                                   (cf.Frame2D(name='distortion_corrected'), None)]
-                    ext.wcs = gWCS(new_pipeline)
+
+                    ext.wcs.insert_frame(ad[0].wcs.input_frame, dist_model,
+                                         cf.Frame2D(name='distortion_corrected'))
 
                     if wave_model is None:
                         log.warning(f"{arc.filename} extension {ext.id} has "
@@ -909,6 +895,7 @@ class Spect(Resample):
                         if 'sq' in self.mode:
                             fail = True
 
+            # Now we need to remove the last transform and output frame
             for i, (ext, wave_model, wave_frame, sky_model, output_frame) in \
               enumerate(zip(ad, wave_models, wave_frames, sky_models,
                             output_frames)):
@@ -922,8 +909,12 @@ class Spect(Resample):
                     [copy(wave_frame) if isinstance(frame, cf.SpectralFrame)
                      else frame for frame in output_frame], name='world'
                 )
-                ext.wcs.insert_frame('distortion_corrected', t,
-                                     new_output_frame)
+                # Put new transform before world frame
+                ext.wcs.set_transform(ext.wcs.available_frames[-2],
+                                      ext.wcs.output_frame, t)
+                # Replace world frame
+                ext.wcs = gWCS(ext.wcs.pipeline[:-1] +
+                               [(new_output_frame, None)])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -2178,11 +2169,15 @@ class Spect(Resample):
 
             for ext in ad:
                 try:
-                    idx = ext.wcs.available_frames.index('distortion_corrected')
+                    idx_dc = ext.wcs.available_frames.index('distortion_corrected')
                 except (ValueError, AttributeError):
-                    have_distcorr = False
-                else:
-                    have_distcorr = idx > 0
+                    idx_dc = -1
+                try:
+                    idx_r = ext.wcs.available_frames.index('rectified')
+                except (ValueError, AttributeError):
+                    idx_r = -1
+                idx = max(idx_dc, idx_r)
+                have_distcorr = idx > 0
                 if not have_distcorr:
                     log.warning('No distortion transformation attached to'
                                 f' {ad.filename}, extension {ext.id}')
@@ -2239,8 +2234,15 @@ class Spect(Resample):
                     else:  # Keep the step unchanged.
                         new_pipeline.append(step)
 
+                # To avoid continually checking whether we're correcting to
+                # "distortion_corrected" or "rectified", rename the frame to
+                # which we're correcting as "correction_endpoint"
+                new_frame = deepcopy(ext.wcs.pipeline[idx].frame)
+                new_frame.name = "correction_endpoint"
+                new_pipeline.append((new_frame, ext.wcs.pipeline[idx].transform))
+
                 # Now recreate the WCS using the new pipeline.
-                new_pipeline.extend(ext.wcs.pipeline[idx:])
+                new_pipeline.extend(ext.wcs.pipeline[idx+1:])
                 ext.wcs = gWCS(new_pipeline)
 
             if not have_distcorr:
@@ -2264,7 +2266,7 @@ class Spect(Resample):
 
             if mosaic:
                 ad_out = transform.resample_from_wcs(
-                    ad, 'distortion_corrected', interpolant=interpolant,
+                    ad, 'correction_endpoint', interpolant=interpolant,
                     subsample=subsample, parallel=False,
                     threshold=dq_threshold
                 )
@@ -2272,14 +2274,14 @@ class Spect(Resample):
                 for i, ext in enumerate(ad):
                     if i == 0:
                         ad_out = transform.resample_from_wcs(
-                            ext, 'distortion_corrected', interpolant=interpolant,
+                            ext, 'correction_endpoint', interpolant=interpolant,
                             subsample=subsample, parallel=False,
                             threshold=dq_threshold
                         )
                     else:
                         ad_out.append(
                             transform.resample_from_wcs(ext,
-                                                        'distortion_corrected',
+                                                        'correction_endpoint',
                                                         interpolant=interpolant,
                                                         subsample=subsample,
                                                         parallel=False,
