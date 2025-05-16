@@ -31,7 +31,8 @@ class Stats(PrimitivesBASE):
                                       "Mean of unmasked pixel values")
                 ext.hdr['PIXSTDEV'] = (np.std(ext.data[ext.mask==0]),
                                        "Standard Deviation of pixel values")
-
+                ext.hdr['PIXMED'] = (np.median(ext.data[ext.mask == 0]),
+                                     "Median of unmasked of pixel values")
         return adinputs
 
 
