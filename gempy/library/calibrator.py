@@ -440,16 +440,16 @@ class TelluricCorrector(Calibrator):
             mask = np.where(np.isnan(abs_spek), DQ.no_data, DQ.good)
             if mask.sum() == 0:
                 yield abs_spek
-
-            data = abs_spek.copy()
-            first_unmasked = mask.argmin()
-            if first_unmasked == 0:  # masked pixels are at the end
-                last_unmasked = mask[::-1].argmin() + 1
-                data[-last_unmasked:] = data[-(last_unmasked+1)]
-            else:  # masked pixels are at the start
-                data[:first_unmasked] = data[first_unmasked]
-            result = NDAstroData(data=data, mask=mask)
-            yield result
+            else:
+                data = abs_spek.copy()
+                first_unmasked = mask.argmin()
+                if first_unmasked == 0:  # masked pixels are at the end
+                    last_unmasked = mask[::-1].argmin() + 1
+                    data[-last_unmasked:] = data[-(last_unmasked+1)]
+                else:  # masked pixels are at the start
+                    data[:first_unmasked] = data[first_unmasked]
+                result = NDAstroData(data=data, mask=mask)
+                yield result
 
     # def perform_all_fits(self):
     #     # This needs to return a model that describes the "fit" for each
