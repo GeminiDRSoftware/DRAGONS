@@ -204,6 +204,7 @@ class fit_1D:
             astropy_model = issubclass(self.model_class, Model)
         except TypeError:
             astropy_model = False
+        self._astropy_model = astropy_model
 
         # Convert user regions to a Boolean mask for slicing:
         user_reg = ~at.create_mask_from_regions(points, self._slices)
@@ -262,6 +263,7 @@ class fit_1D:
             # Treat single model specially because FittingWithOutlierRemoval
             # fails for "1-model sets" and it should be more efficient anyway:
             image_to_fit = image
+
             if image.ndim == 1:
                 n_models = 1
             elif image.mask is np.ma.nomask:
@@ -276,43 +278,47 @@ class fit_1D:
                     if weights is not None:
                         weights = weights[:, self._good_cols]
 
-            model_set = self.model_class(
-                degree=self.order, n_models=n_models,
-                domain=self.domain,
-                model_set_axis=(None if n_models == 1 else 1),
-                **self.model_args
-            )
+            if n_models > 0:
+                model_set = self.model_class(
+                    degree=self.order, n_models=n_models,
+                    domain=self.domain,
+                    model_set_axis=(None if n_models == 1 else 1),
+                    **self.model_args
+                )
 
-            # Configure iterative linear fitter with rejection:
-            fitter = fitting.FittingWithOutlierRemoval(
-                fitting.LinearLSQFitter(),
-                sigma_clip,
-                niter=self.niter,
-                # additional args are passed to outlier_func, i.e. sigma_clip
-                sigma_lower=self.sigma_lower,
-                sigma_upper=self.sigma_upper,
-                maxiters=1,
-                cenfunc='mean',
-                stdfunc='std',
-                grow=self.grow  # requires AstroPy 4.2 (#10613)
-            )
+                # Configure iterative linear fitter with rejection:
+                fitter = fitting.FittingWithOutlierRemoval(
+                    fitting.LinearLSQFitter(),
+                    sigma_clip,
+                    niter=self.niter,
+                    # additional args are passed to outlier_func, i.e. sigma_clip
+                    sigma_lower=self.sigma_lower,
+                    sigma_upper=self.sigma_upper,
+                    maxiters=1,
+                    cenfunc='mean',
+                    stdfunc='std',
+                    grow=self.grow  # requires AstroPy 4.2 (#10613)
+                )
 
-            # Fit the pixel data with rejection of outlying points:
-            fitted_models, fitted_mask = fitter(
-                model_set,
-                points[user_reg], image_to_fit[user_reg],
-                weights=None if weights is None else weights[user_reg]
-            )
-            self.fit_info = fitter.fit_info
+                # Fit the pixel data with rejection of outlying points:
+                fitted_models, fitted_mask = fitter(
+                    model_set,
+                    points[user_reg], image_to_fit[user_reg],
+                    weights=None if weights is None else weights[user_reg]
+                )
+                self.fit_info = fitter.fit_info
 
-            # Incorporate mask for fitted columns into the full-sized mask:
-            if image.ndim > 1 and n_models < image.shape[1]:
-                # this is quite ugly, but seems the best way to assign to an
-                # array with a mask on both dimensions. This is equivalent to:
-                #   mask[user_reg, masked_cols] = fitted_mask
-                mask[user_reg[:, None] & self._good_cols] = fitted_mask.flat
+                # Incorporate mask for fitted columns into the full-sized mask:
+                if image.ndim > 1 and n_models < image.shape[1]:
+                    # this is quite ugly, but seems the best way to assign to an
+                    # array with a mask on both dimensions. This is equivalent to:
+                    #   mask[user_reg, masked_cols] = fitted_mask
+                    mask[user_reg[:, None] & self._good_cols] = fitted_mask.flat
+                else:
+                    mask[user_reg] = fitted_mask
+
             else:
-                mask[user_reg] = fitted_mask
+                fitted_models = []
 
         else:
             #max_order = len(points) - self.model_args["k"]
@@ -359,20 +365,23 @@ class fit_1D:
         # Convert the mask to the ordering & shape of the input array and
         # save it. Calculate rms. Suppress warnings for no data points
         mask = mask.reshape(self._tmpshape)
-        with np.errstate(invalid="ignore", divide="ignore"):
-            if astropy_model:
-                start = (self.axis + 1) or mask.ndim
-                self.mask = np.rollaxis(mask, 0, start)
-                rms = (np.rollaxis(image.reshape(self._tmpshape), 0, start) -
-                       self.evaluate())[~self.mask].std()
-            else:
-                self.mask = np.rollaxis(mask, -1, self.axis)
-                rms = (np.rollaxis(image.reshape(self._tmpshape), -1, self.axis) -
-                       self.evaluate())[~self.mask].std()
-        self.rms = rms if rms is not np.ma.masked else np.nan
+        if len(fitted_models) > 0:
+            with np.errstate(invalid="ignore", divide="ignore"):
+                if astropy_model:
+                    start = (self.axis + 1) or mask.ndim
+                    self.mask = np.rollaxis(mask, 0, start)
+                    rms = (np.rollaxis(image.reshape(self._tmpshape), 0, start) -
+                           self.evaluate())[~self.mask].std()
+                else:
+                    self.mask = np.rollaxis(mask, -1, self.axis)
+                    rms = (np.rollaxis(image.reshape(self._tmpshape), -1, self.axis) -
+                           self.evaluate())[~self.mask].std()
+            self.rms = rms if rms is not np.ma.masked else np.nan
+        else:
+            self.rms = np.nan
 
         # Plot the fit:
-        if plot:
+        if plot and len(fitted_models) > 0:
             self._plot(origim, index=None if plot is True else plot)
 
     # Basic plot for debugging/inspection (interactive plotting will be handled
@@ -446,9 +455,8 @@ class fit_1D:
             input `image` to which the fit was performed along any other axes.
 
         """
-        astropy_model = isinstance(self._models, Model)
 
-        tmpaxis = 0 if astropy_model else -1
+        tmpaxis = 0 if self._astropy_model else -1
 
         # Determine how to reproduce the correct array shape, orientation and
         # sampling from flattened model output:
@@ -471,23 +479,24 @@ class fit_1D:
         fitvals = np.zeros(stack_shape, dtype=self._dtype)
 
         # Determine the model values we want to return:
-        if astropy_model:
-            if fitvals.ndim > 1 and len(self._models) < fitvals.shape[1]:
-                # If we removed bad columns, we now need to fill them properly
-                # in the output array
-                fitvals[:, self._good_cols] = self._models(points,
-                                                           model_set_axis=False)
+        if np.sum(self._good_cols) > 0:  # skip if no good columns
+            if self._astropy_model:
+                if fitvals.ndim > 1 and len(self._models) < fitvals.shape[1]:
+                    # If we removed bad columns, we now need to fill them properly
+                    # in the output array
+                    fitvals[:, self._good_cols] = self._models(points,
+                                                               model_set_axis=False)
+                else:
+                    fitvals[:] = self._models(points, model_set_axis=False)
             else:
-                fitvals[:] = self._models(points, model_set_axis=False)
-        else:
-            for n, single_model in enumerate(self._models):
-                # Determine model values to be returned (see comment in _fit
-                # about discarding values stored in the spline object):
-                fitvals[n] = single_model(points)
+                for n, single_model in enumerate(self._models):
+                    # Determine model values to be returned (see comment in _fit
+                    # about discarding values stored in the spline object):
+                    fitvals[n] = single_model(points)
 
         # Restore the ordering & shape of the original input array:
         fitvals = fitvals.reshape(tmpshape)
-        if astropy_model:
+        if self._astropy_model:
             fitvals = np.rollaxis(fitvals, 0, (self.axis + 1) or fitvals.ndim)
         else:
             fitvals = np.rollaxis(fitvals, -1, self.axis)
@@ -508,8 +517,8 @@ class fit_1D:
         if len(self._models) > 1:
             raise ValueError("Cannot provide model property if there are "
                              "greater than one models.")
-        astropy_model = isinstance(self._models, Model)
-        if astropy_model:
+
+        if self._astropy_model:
             return self._models
         else:
             return self._models[0]
@@ -523,8 +532,8 @@ class fit_1D:
         offset: float
             amount by which all fits are to be shifted
         """
-        astropy_model = isinstance(self._models, Model)
-        if astropy_model:
+
+        if self._astropy_model:
             self._models.c0 += offset
         else:
             for spline in self._models:
