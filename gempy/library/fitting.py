@@ -479,20 +479,22 @@ class fit_1D:
         fitvals = np.zeros(stack_shape, dtype=self._dtype)
 
         # Determine the model values we want to return:
-        if np.sum(self._good_cols) > 0:  # skip if no good columns
-            if self._astropy_model:
-                if fitvals.ndim > 1 and len(self._models) < fitvals.shape[1]:
-                    # If we removed bad columns, we now need to fill them properly
-                    # in the output array
-                    fitvals[:, self._good_cols] = self._models(points,
-                                                               model_set_axis=False)
-                else:
-                    fitvals[:] = self._models(points, model_set_axis=False)
+       if self._astropy_model and np.sum(self._good_cols) > 0:
+            if fitvals.ndim > 1 and len(self._models) < fitvals.shape[1]:
+                # If we removed bad columns, we now need to fill them properly
+                # in the output array
+                fitvals[:, self._good_cols] = self._models(points,
+                                                           model_set_axis=False)
             else:
-                for n, single_model in enumerate(self._models):
-                    # Determine model values to be returned (see comment in _fit
-                    # about discarding values stored in the spline object):
-                    fitvals[n] = single_model(points)
+                fitvals[:] = self._models(points, model_set_axis=False)
+        else:
+            # For splines.
+            # Also when np.sum(self._good_cols) == 0.  In that case self._models
+            # in an empty list and it will effectively no-op.
+            for n, single_model in enumerate(self._models):
+                # Determine model values to be returned (see comment in _fit
+                # about discarding values stored in the spline object):
+                fitvals[n] = single_model(points)
 
         # Restore the ordering & shape of the original input array:
         fitvals = fitvals.reshape(tmpshape)
