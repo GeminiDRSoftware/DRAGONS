@@ -266,8 +266,10 @@ class fit_1D:
 
             if image.ndim == 1:
                 n_models = 1
+                self._good_cols = [True]
             elif image.mask is np.ma.nomask:
                 n_models = image.shape[1]
+                self._good_cols = [True] * n_models
             else:
                 # remove fully masked columns otherwise this will lead to
                 # Runtime warnings from Numpy because of divisions by zero.
