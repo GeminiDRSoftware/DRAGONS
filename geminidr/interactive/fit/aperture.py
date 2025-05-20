@@ -1220,7 +1220,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # particular, we depend on extracting some information from the model
         # which was not readily available in the primitive.
         self.ui_params = ui_params
-        self.ui_params.fields["max_separation"].min = 5
+        #self.ui_params.fields["max_separation"].min = 5
         self.ui_params.fields["max_separation"].max = self.model.max_width
 
         if self.ui_params.fields["max_separation"].default is None:
