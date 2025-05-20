@@ -479,7 +479,7 @@ class fit_1D:
         fitvals = np.zeros(stack_shape, dtype=self._dtype)
 
         # Determine the model values we want to return:
-       if self._astropy_model and np.sum(self._good_cols) > 0:
+        if self._astropy_model and np.sum(self._good_cols) > 0:
             if fitvals.ndim > 1 and len(self._models) < fitvals.shape[1]:
                 # If we removed bad columns, we now need to fill them properly
                 # in the output array
