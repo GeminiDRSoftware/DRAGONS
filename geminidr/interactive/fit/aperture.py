@@ -1238,11 +1238,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # set to None.
         self.ui_params.fields["max_separation"].optional = False
 
-        # Make the threshold field fit the proper range (0 - 1, not 0 - 10).
-        self.ui_params.fields["threshold"].min = 0
-        self.ui_params.fields["threshold"].max = 1
-
-
     def add_aperture(self):
         """
         Add a new aperture in the middle of the current display area.
