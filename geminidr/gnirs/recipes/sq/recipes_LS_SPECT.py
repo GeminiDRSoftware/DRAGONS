@@ -31,7 +31,7 @@ def reduceScience(p):
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame(conserve=True)
-    p.stackFrames()
+    p.stackFrames(scale=False, zero=False)
     p.findApertures()
     p.skyCorrectFromSlit()  # This needs testing.
     p.traceApertures()
@@ -67,7 +67,7 @@ def reduceTelluric(p):
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
-    p.stackFrames()
+    p.stackFrames(scale=False, zero=False)
     p.findApertures(max_apertures=1)
     p.skyCorrectFromSlit()
     p.traceApertures()
