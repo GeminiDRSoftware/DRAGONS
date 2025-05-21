@@ -52,6 +52,12 @@ class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
         self.threshold = 0.005
 
 
+class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
+    # Sky subtraction is difficult due to the short slit
+    def setDefaults(self):
+        self.debug_allow_noop = True
+
+
 class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):
     """
     Configuration for the tracePinholeApertures() primitive.

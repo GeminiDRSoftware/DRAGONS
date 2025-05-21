@@ -4280,6 +4280,8 @@ class Spect(Resample):
             Show diagnostic plots?
         interactive : bool
             Show interactive interface?
+        debug_allow_noop : bool
+            Allow user to exit GUI and bypass sky subtraction?
 
         Returns
         -------
@@ -4299,6 +4301,7 @@ class Spect(Resample):
         debug_plot = params["debug_plot"]
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
+        allow_noop = params.get("debug_allow_noop", False)
 
         def calc_sky_coords(ad: AstroData, apgrow=0, interactive_mode=False):
             """
@@ -4361,11 +4364,11 @@ class Spect(Resample):
                         csc_sky_weights[zeros] = 1
 
                 # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
-                # chip gaps) to avoid a zillion warnings about insufficient
-                # unmasked points.
+                # chip gaps) or all unilluminated to avoid a zillion warnings
+                # about insufficient unmasked points.
                 if csc_ext.mask is not None:
                     no_data = (np.bitwise_and.reduce(csc_ext.mask, axis=csc_spataxis) &
-                               DQ.no_data).astype(bool)
+                               (DQ.no_data | DQ.unilluminated)).astype(bool)
                     if csc_spataxis == 0:
                         csc_sky_mask ^= no_data
                     else:
@@ -4481,17 +4484,21 @@ class Spect(Resample):
                                                    recalc_inputs_above=True,
                                                    ui_params=ui_params,
                                                    reinit_live=True,
-                                                   mask_glyphs={"aperture": ("inverted_triangle", "lightgray")})
+                                                   mask_glyphs={"aperture": ("inverted_triangle", "lightgray")},
+                                                   allow_noop=allow_noop)
 
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 # Pull out the final parameters to use as inputs doing the real fit
                 fit_results = visualizer.results()
                 final_parms_exts = list()
-                apgrow.append(ui_params.values['aperture_growth'])
-                for fit in fit_results:
-                    final_parms_exts.append(fit.extract_params())
-                final_parms.append(final_parms_exts)
+                if fit_results is None:
+                    log.warning("Not performing sky subtraction")
+                else:
+                    apgrow.append(ui_params.values['aperture_growth'])
+                    for fit in fit_results:
+                        final_parms_exts.append(fit.extract_params())
+                    final_parms.append(final_parms_exts)
         else:
             # making fit params into an array even though it all matches
             # so we can share the same final code with the interactive,
@@ -4500,23 +4507,24 @@ class Spect(Resample):
                 final_parms.append([fit1d_params] * len(ad))
 
         for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
-            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning(f"{ad.filename} has not been distortion corrected."
-                            " Sky subtraction is likely to be poor.")
-            eidx = 0
-            if apgrow:
-                # get value set in the interactive tool
-                apg = apgrow[idx]
-            else:
-                # get value for aperture growth from config
-                apg = params["aperture_growth"]
-            for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
-                spataxis = ext.dispersion_axis() - 1  # python sense
-                sky = np.ma.masked_array(ext.data, mask=sky_mask)
-                sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
-                                   axis=spataxis, plot=debug_plot).evaluate()
-                ext.data -= sky_model
-                eidx = eidx + 1
+            if interactive and fit_results is not None:
+                if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                    log.warning(f"{ad.filename} has not been distortion corrected."
+                                " Sky subtraction is likely to be poor.")
+                eidx = 0
+                if apgrow:
+                    # get value set in the interactive tool
+                    apg = apgrow[idx]
+                else:
+                    # get value for aperture growth from config
+                    apg = params["aperture_growth"]
+                for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
+                    spataxis = ext.dispersion_axis() - 1  # python sense
+                    sky = np.ma.masked_array(ext.data, mask=sky_mask)
+                    sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
+                                       axis=spataxis, plot=debug_plot).evaluate()
+                    ext.data -= sky_model
+                    eidx = eidx + 1
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

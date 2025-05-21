@@ -547,7 +547,7 @@ class Telluric(Spect):
                 tab_labels.append(label)
 
             if len(pixel_shifts) > 1:
-                pixel_shift = self._calaculate_mean_pixel_shift(pixel_shifts)
+                pixel_shift = self._calculate_mean_pixel_shift(pixel_shifts)
             # i.e., pixel shift has been calculated
             if (pixel_shift and manual_shift is None and
                     abs(pixel_shift) < shift_tolerance):
