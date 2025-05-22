@@ -174,7 +174,7 @@ class CrossDispersed(Spect, Preprocess):
         modified AstroData object with multiple extensions
         """
         log = self.log
-        log.stdinfo(f"Calling {self.myself()} on {ad.filename}")
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         adout = astrodata.create(ad.phu)
         adout.filename = ad.filename
