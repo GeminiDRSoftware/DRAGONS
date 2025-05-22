@@ -63,6 +63,7 @@ def reduceTelluric(p):
     p.associateSky()
     p.skyCorrect()
     p.cleanReadout()
+    p.attachPinholeModel()
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
