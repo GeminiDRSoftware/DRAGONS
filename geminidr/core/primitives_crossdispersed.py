@@ -510,3 +510,27 @@ class CrossDispersed(Spect, Preprocess):
         adinputs = super().flatCorrect(adinputs, flat=flat_files, **params)
 
         return adinputs
+
+    def _make_tab_labels(self, ad):
+        """
+        Create tab labels for cross-dispersed data.
+
+        Parameters
+        ----------
+        ad : `~astrodata.AstroData`
+            The AstroData object to be processed.
+
+        Returns
+        -------
+        list
+            A list of tab labels for the given AstroData object.
+        """
+        apertures = ad.hdr.get('APERTURE')
+        orders = ad.hdr.get('SPECORDR')
+        num_ap = len(set(apertures))
+        tab_labels = []
+        for ap, ord in zip(apertures, orders):
+            label = f"Aperture {ap} " if num_ap > 1 else ""
+            label += f"Order {ord}"
+            tab_labels.append(label)
+        return tab_labels

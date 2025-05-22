@@ -1169,11 +1169,12 @@ class Spect(Resample):
 
                 # Get filename to display in visualizer
                 filename_info = getattr(ad, 'filename', '')
+                tab_labels = self._make_tab_labels(ad)
 
                 uiparams = UIParameters(config)
                 visualizer = fit1d.Fit1DVisualizer({"x": all_waves, "y": all_zpt, "weights": all_weights},
                                                    fitting_parameters=all_fp_init,
-                                                   tab_name_fmt=lambda i: f"CCD {i+1}",
+                                                   tab_name_fmt=lambda i: tab_labels[i],
                                                    xlabel=f'Wavelength ({xunits})',
                                                    ylabel=f'Sensitivity ({yunits})',
                                                    domains=all_domains,
@@ -2495,13 +2496,12 @@ class Spect(Resample):
                 reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
 
-                label_fn = ((lambda i: f"Order {ad.hdr['SPECORDR'][i]}")
-                            if 'XD' in ad.tags else (lambda i: f"Slit {i+1}"))
+                tab_labels = self._make_tab_labels(ad)
 
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
-                    tab_name_fmt=label_fn,
+                    tab_name_fmt=lambda i: tab_labels[i],
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
                     absorption=absorption,
@@ -3747,9 +3747,10 @@ class Spect(Resample):
                 else:
                     filename_info = ''
 
+                tab_labels = self._make_tab_labels(ad)
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points,
                                                    all_fp_init,
-                                                   tab_name_fmt=lambda i: f"Array {i}",
+                                                   tab_name_fmt=lambda i: tab_labels[i],
                                                    xlabel=xaxis_label, ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",
@@ -4466,12 +4467,14 @@ class Spect(Resample):
                                       inclusiveMax=True)
                 }
 
+                tab_labels = self._make_tab_labels(ad)
+
                 # get the fit parameters
                 fit1d_params = fit_1D.translate_params(params)
                 ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
                 visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
                                                    fitting_parameters=[fit1d_params] * len(ad),
-                                                   tab_name_fmt=lambda i: f"Slit {i+1}",
+                                                   tab_name_fmt=lambda i: tab_labels[i],
                                                    xlabel='Row' if spataxis == 0 else 'Column',
                                                    ylabel='Signal',
                                                    domains=all_domains,
@@ -5383,6 +5386,22 @@ class Spect(Resample):
         return {"refplot_spec": np.asarray([refplot_waves, refplot_data]).T,
                 "refplot_name": refplot_name,
                 "refplot_y_axis_label": refplot_y_axis_label}
+
+    def _make_tab_labels(self, ad):
+        """
+        Create tab labels for generic spectroscopic data.
+
+        Parameters
+        ----------
+        ad : `~astrodata.AstroData`
+            The AstroData object to be processed.
+
+        Returns
+        -------
+        list
+            A list of tab labels for the given AstroData object.
+        """
+        return [f"Extension {i+1}" for i in range(len(ad))]
 
     def _wavelength_model_bounds(self, model=None, ext=None):
         """
