@@ -153,11 +153,11 @@ class Stack(PrimitivesBASE):
 
         Raises
         ------
-        RuntimeError
+        ValueError
             If the number of extensions in any of the `AstroData` objects is
             different.
 
-        RuntimeError
+        ValueError
             If the shape of any extension in any `AstroData` object is different.
 
         AssertError
