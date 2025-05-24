@@ -55,6 +55,8 @@ class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
 class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
     # Sky subtraction is difficult due to the short slit
     def setDefaults(self):
+        self.function = "chebyshev"
+        self.order = 2
         self.debug_allow_noop = True
 
 

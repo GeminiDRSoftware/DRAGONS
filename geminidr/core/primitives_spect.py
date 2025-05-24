@@ -28,9 +28,8 @@ from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from numpy.f2py.crackfortran import verbose
 from numpy.ma.extras import _ezclump
-from scipy import optimize
+from scipy import ndimage, optimize
 from scipy.signal import find_peaks, correlate
 from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
@@ -4339,7 +4338,8 @@ class Spect(Resample):
                                 (csc_ext.mask & DQ.not_signal).astype(bool))
 
                 # Create an aggregated aperture mask
-                csc_aperture_mask = (np.zeros_like(csc_ext.data, dtype=bool))
+                csc_aperture_mask = np.zeros_like(csc_ext.data, dtype=bool)
+                pure_aperture_mask = np.zeros_like(csc_aperture_mask)
                 try:
                     aptable = csc_ext.APERTURE
                 except AttributeError:
@@ -4352,6 +4352,13 @@ class Spect(Resample):
                                                     aper_upper=row['aper_upper'])
                         aperture_mask = aperture.aperture_mask(csc_ext, grow=apgrow)
                         csc_aperture_mask |= aperture_mask
+                        pure_aperture_mask |= aperture.aperture_mask(csc_ext, grow=0)
+
+                    for beam_shift in csc_ext.nddata.meta.get('negative_beam_offsets', []):
+                        shift = (0, int(np.round(beam_shift)))
+                        if csc_spataxis == 0:
+                            shift = shift[::-1]
+                        csc_aperture_mask |= ndimage.shift(pure_aperture_mask, shift, order=1)
 
                 if csc_ext.variance is None:
                     csc_sky_weights = None
@@ -4429,6 +4436,46 @@ class Spect(Resample):
 
         final_parms = list()
         apgrow = None  # for saving selected aperture_grow values, if interactive
+
+        # Look for negative beams from sky subtraction to help with fitting.
+        # We want to mask bad pixels, which means we can't do FFT correlation
+        # which is faster.
+        for ad in adinputs:
+            if self.timestamp_keys['subtractSky'] in ad.phu:
+                spataxes = np.asarray(ad.dispersion_axis()) - 1
+                min_size = min(ext.shape[spataxis]
+                               for ext, spataxis in zip(ad, spataxes))
+                xcorr_sum = np.zeros((2 * min_size - 1,))
+
+                for ext, spataxis in zip(ad, spataxes):
+                    xcorr_slice = (slice(ext.shape[spataxis] - min_size,
+                                         min_size - ext.shape[spataxis])
+                                   if ext.shape[spataxis] > min_size
+                                   else slice(None))
+                    for i in range(ext.shape[1 - spataxis]):
+                        _slice = i if spataxis == 1 else (None, i)
+                        row = np.ma.masked_array(ext.data[_slice],
+                                                 ext.mask[_slice])
+                        # Without the "maximum" we get a symmetric xcorr array
+                        xcorr_sum += np.ma.correlate(
+                            np.maximum(row, 0), -row, mode='full')[xcorr_slice]
+
+                peak_location = xcorr_sum.argmin()
+                peak_value = -xcorr_sum[peak_location]
+
+                # The idea here is that we can have one -ve beam if it's
+                # as strong as the +ve beam, or two if they're at least
+                # half as strong, etc. To account for noise, we add 1 to
+                # the denominator.
+                possible_beams = sorted(x[:2] for x in peak_finding.get_extrema(xcorr_sum) if x[2])[::-1]
+                beam_locations = [x[0] for i, x in enumerate(possible_beams)
+                                  if x[1] > peak_value / (i + 2)]
+                beam_offsets = np.array(beam_locations) - peak_location
+                log.debug(f"{ad.filename} beam offsets: {beam_offsets}")
+
+                # Store them somewhere for retrieval later
+                for ext in ad:
+                    ext.nddata.meta['negative_beam_offsets'] = beam_offsets
 
         if interactive:
             apgrow = list()
@@ -4509,8 +4556,9 @@ class Spect(Resample):
             for ad in adinputs:
                 final_parms.append([fit1d_params] * len(ad))
 
-        for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
-            if interactive and fit_results is not None:
+        # Subtract sky unless the user has exited the GUI requesting not to
+        if not (interactive and fit_results is None):
+            for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
                 if self.timestamp_keys['distortionCorrect'] not in ad.phu:
                     log.warning(f"{ad.filename} has not been distortion corrected."
                                 " Sky subtraction is likely to be poor.")
@@ -4521,6 +4569,7 @@ class Spect(Resample):
                 else:
                     # get value for aperture growth from config
                     apg = params["aperture_growth"]
+
                 for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
                     spataxis = ext.dispersion_axis() - 1  # python sense
                     sky = np.ma.masked_array(ext.data, mask=sky_mask)
@@ -4528,6 +4577,11 @@ class Spect(Resample):
                                        axis=spataxis, plot=debug_plot).evaluate()
                     ext.data -= sky_model
                     eidx = eidx + 1
+
+        for ad in adinputs:
+            # Clean up the meta
+            for ext in ad:
+                ext.nddata.meta.pop('negative_beam_offsets', None)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
