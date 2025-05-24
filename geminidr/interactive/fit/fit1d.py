@@ -92,7 +92,7 @@ class InteractiveModel(ABC):
             model is updated
         """
         if not callable(listener):
-            raise ValueError("Listeners must be callables")
+            raise TypeError("Listeners must be callables")
 
         self.listeners.append(listener)
 

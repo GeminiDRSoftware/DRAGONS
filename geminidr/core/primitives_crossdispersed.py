@@ -22,8 +22,8 @@ from recipe_system.utils.decorators import (parameter_override,
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from geminidr.core import Spect, Preprocess
+from geminidr import CalibrationNotFoundError
 from . import parameters_crossdispersed
-
 
 @parameter_override
 @capture_provenance
@@ -467,8 +467,8 @@ class CrossDispersed(Spect, Preprocess):
                                     force_ad=(1,))):
             if flat is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                   raise OSError("No processed flat listed for "
-                                 f"{ad.filename}")
+                   raise CalibrationNotFoundError("No processed flat listed "
+                                                  f"for {ad.filename}")
                 else:
                    log.warning(f"No changes will be made to {ad.filename}, "
                                "since no flatfield has been specified")

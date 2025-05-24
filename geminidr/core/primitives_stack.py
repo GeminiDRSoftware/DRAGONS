@@ -203,12 +203,12 @@ class Stack(PrimitivesBASE):
             params["nhigh"] = 0
 
         if len({len(ad) for ad in adinputs}) > 1:
-            raise RuntimeError("Not all inputs have the same number of extensions")
+            raise ValueError("Not all inputs have the same number of extensions")
         # Check that the shapes of all extensions match across the input files
         # (they needn't match within files)
         for i in range(len(adinputs[0])):
             if len({ad[i].nddata.shape for ad in adinputs}) > 1:
-                raise RuntimeError("Not all inputs images have the same shape")
+                raise ValueError("Not all inputs images have the same shape")
 
         # We will determine the average gain from the input AstroData
         # objects and add in quadrature the read noise

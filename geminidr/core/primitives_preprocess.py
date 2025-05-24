@@ -21,7 +21,7 @@ from astropy.table import Table
 from scipy.interpolate import interp1d
 from scipy.ndimage import binary_dilation
 
-from geminidr import PrimitivesBASE
+from geminidr import PrimitivesBASE, CalibrationNotFoundError
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am, astrotools as at
@@ -401,8 +401,8 @@ class Preprocess(PrimitivesBASE):
                         "correctBackgroundToReference")
         # Check that all images have the same number of extensions
         elif not all(len(ad)==len(adinputs[0]) for ad in adinputs):
-            raise OSError("Number of science extensions in input "
-                                    "images do not match")
+            raise ValueError("Number of science extensions in input images do "
+                             "not match")
         else:
             # Loop over input files
             ref_bg_list = None
@@ -494,8 +494,8 @@ class Preprocess(PrimitivesBASE):
 
             if dark is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed dark listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed dark listed "
+                                                   f"for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no dark was specified")
@@ -811,8 +811,8 @@ class Preprocess(PrimitivesBASE):
 
             if flat is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                   raise OSError("No processed flat listed for "
-                                 f"{ad.filename}")
+                   raise CalibrationNotFoundError("No processed flat listed "
+                                                  f"for {ad.filename}")
                 else:
                    log.warning(f"No changes will be made to {ad.filename}, "
                                "since no flatfield has been specified")
@@ -1081,7 +1081,7 @@ class Preprocess(PrimitivesBASE):
         all_image = all('IMAGE' in ad.tags for ad in adinputs)
         all_spect = all('SPECT' in ad.tags for ad in adinputs)
         if not (all_image ^ all_spect):
-            raise TypeError("All inputs must be either IMAGE or SPECT")
+            raise ValueError("All inputs must be either IMAGE or SPECT")
 
         if all_image:
             mkcat = mkcat_image
@@ -1091,7 +1091,7 @@ class Preprocess(PrimitivesBASE):
             all_spect2d = all(len(ad) == 1 and len(ad[0].shape) == 2
                               for ad in adinputs)
             if not (all_spect1d ^ all_spect2d):
-                raise TypeError("All inputs must either be single-extension "
+                raise ValueError("All inputs must either be single-extension "
                                 "2D spectra or multi-extension 1D spectra")
             # Spectral extraction in this primitive does not subtract the sky
             if (all_spect2d and tolerance > 0 and not
