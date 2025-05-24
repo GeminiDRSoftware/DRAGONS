@@ -20,6 +20,7 @@ from astropy import visualization as vis
 from astropy.modeling import models, fitting
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr import CalibrationNotFoundError
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.fitting import fit_1D
@@ -912,9 +913,9 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
 
             if slit_illum_ad is None:
                 if self.mode in ['sq'] or do_cal == 'force':
-                    raise OSError(
-                        "No processed slit illumination listed for {}".format(
-                            ad.filename))
+                    raise CalibrationNotFoundError(
+                        "No processed slit illumination listed for "
+                        f"{ad.filename}")
                 else:
                     log.warning(
                         "No changes will be made to {}, since no slit "

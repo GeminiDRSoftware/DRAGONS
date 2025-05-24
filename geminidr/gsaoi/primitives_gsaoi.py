@@ -164,11 +164,11 @@ class GSAOI(Gemini, NearIR):
         try:
             flat = adinputs[0]
         except IndexError:
-            raise OSError("A SET OF FLATS IS REQUIRED INPUT")
+            raise ValueError("A SET OF FLATS IS REQUIRED INPUT")
         try:
             dark = self.streams['darks'][0]
         except (KeyError, TypeError, IndexError):
-            raise OSError("A SET OF DARKS IS REQUIRED INPUT")
+            raise ValueError("A SET OF DARKS IS REQUIRED INPUT")
 
         for dark_ext, flat_ext in zip(dark, flat):
 

@@ -20,6 +20,7 @@ from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr import CalibrationNotFoundError
 from recipe_system.utils.md5 import md5sum
 
 from .primitives_preprocess import Preprocess
@@ -136,8 +137,8 @@ class Image(Preprocess, Register, Resample):
             # so we'd better have a fringe frame!
             if fringe is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed fringe listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed fringe listed "
+                                                   f"for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no fringe was specified")
@@ -409,7 +410,7 @@ class Image(Preprocess, Register, Resample):
         # before doing this? That would mean we only do one interpolation,
         # not two, and that's definitely better!
         if not all(len(ad) == 1 or ad.instrument() == "GSAOI" for ad in adinputs):
-            raise OSError("All input images must have only one extension.")
+            raise ValueError("All input images must have only one extension.")
 
         if isinstance(reference, str):
             reference = astrodata.open(reference)
@@ -452,7 +453,8 @@ class Image(Preprocess, Register, Resample):
                                 "reference image.")
                     trim_data = True
             if len(reference) != 1:
-                raise OSError("Reference image must have only one extension.")
+                raise ValueError("Reference image must have only one "
+                                 "extension.")
             ref_wcs = reference[0].wcs
 
         if trim_data:

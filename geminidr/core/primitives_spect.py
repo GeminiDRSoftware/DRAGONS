@@ -40,6 +40,7 @@ from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
+from geminidr import CalibrationNotFoundError
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct, oh_synthetic_spectra
@@ -570,7 +571,8 @@ class Spect(Resample):
                                self.myself())
 
         if fail:
-            raise OSError("No suitable pinhole file for one or more input(s)")
+            raise CalibrationNotFoundError("No suitable pinhole file for one "
+                                           "or more input(s)")
 
         return adoutputs
 
@@ -924,8 +926,8 @@ class Spect(Resample):
                 add_provenance(ad, arc.filename, md5sum(arc.path) or "", self.myself())
 
         if fail:
-            raise OSError("No suitable arc calibration for one or more "
-                          "input(s)")
+            raise CalibrationNotFoundError("No suitable arc calibration for "
+                                           "one or more input(s)")
 
         return adoutputs
 
@@ -2300,8 +2302,8 @@ class Spect(Resample):
             adoutputs.append(ad_out)
 
         if fail:
-            raise OSError("One or more input(s) missing distortion "
-                          "calibration; run attachWavelengthSolution first")
+            raise ValueError("One or more input(s) missing distortion "
+                             "calibration; run attachWavelengthSolution first")
 
         return adoutputs
 
@@ -3271,8 +3273,8 @@ class Spect(Resample):
 
             if std is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed standard listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed standard "
+                                                   f"listed for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no standard was specified")

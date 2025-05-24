@@ -18,6 +18,7 @@ from gemini_instruments.f2.lookup import dispersion_offset_mask, resolving_power
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform, wavecal
 from gemini_instruments import gmu
+from geminidr import CalibrationNotFoundError
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -83,9 +84,9 @@ class F2Spect(Telluric, Spect, F2):
                                          dark=None, do_cal='procmode')
             if flat_list[0].phu.get('DARKIM') is None:
                 # No dark was subtracted by darkCorrect:
-                raise RuntimeError("No processed dark found in calibration "
-                                   "database. Please either provide one, or "
-                                   "include a list of darks as input.")
+                raise CalibrationNotFoundError(
+                    "No processed dark found in calibration database. Please "
+                    "either provide one, or include a list of darks as input.")
             return flat_list
 
     def standardizeWCS(self, adinputs=None, **params):

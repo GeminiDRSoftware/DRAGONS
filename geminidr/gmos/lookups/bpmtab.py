@@ -104,7 +104,7 @@ def dragons_bpm(ad, prefix=None):
     elif ad.detector_name(pretty=True).upper()[:3] == 'HAM':
         namps = '12amp'
     else:
-        raise TypeError("Unrecognized detector name")
+        raise ValueError("Unrecognized detector name")
     
     new_bpm_name = nbuffer.format(
         ad.camera().lower(),

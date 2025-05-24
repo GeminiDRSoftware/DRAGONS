@@ -34,6 +34,7 @@ from gempy.library.wavecal import LineList
 from geminidr.interactive.fit.telluric import TelluricCorrectVisualizer, TelluricVisualizer
 
 from . import parameters_telluric
+from geminidr import CalibrationNotFoundError
 
 from datetime import datetime
 
@@ -374,8 +375,8 @@ class Telluric(Spect):
 
             if telluric is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed telluric listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed telluric "
+                                                   f"listed for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no processed telluric was specified")

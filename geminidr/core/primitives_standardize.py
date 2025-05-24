@@ -424,8 +424,9 @@ class Standardize(PrimitivesBASE):
             inst_name = ad.instrument(generic=True)
             if not inst_name in self.tagset:
                 prim_class_name = self.__class__.__name__
-                raise OSError(f"Input file {ad.filename} is {inst_name} data "
-                              f"and not suitable for {prim_class_name} class")
+                raise ValueError(f"Input file {ad.filename} is {inst_name} data"
+                                 f" and not suitable for {prim_class_name} "
+                                 "class")
 
             # Report if this is an image without square binned pixels
             if 'IMAGE' in ad.tags:
@@ -439,9 +440,9 @@ class Standardize(PrimitivesBASE):
                 log.fullinfo(f"The input file has been validated: {ad.filename}"
                              f" contains {len(ad)} extension(s)")
             else:
-                raise OSError(f"The {len(ad)} extension(s) in {ad.filename} "
-                              "does not match the number of extensions "
-                              f"expected in raw {inst_name} data.")
+                raise ValueError(f"The {len(ad)} extension(s) in {ad.filename} "
+                                 "does not match the number of extensions "
+                                 f"expected in raw {inst_name} data.")
 
             if require_wcs:
                 missing_wcs_list.extend([f"{ad.filename}:{ext.id}"

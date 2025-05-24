@@ -377,3 +377,6 @@ class PrimitivesBASE:
         return {k: v for k, v in params.items()
                 if k in list(self.params[primname]) and
                 not (k == "suffix" and not pass_suffix)}
+
+class CalibrationNotFoundError(RuntimeError):
+    pass

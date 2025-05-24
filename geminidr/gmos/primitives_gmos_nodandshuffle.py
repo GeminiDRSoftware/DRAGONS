@@ -18,6 +18,7 @@ from gempy.library import astromodels as am, astrotools as at
 from gempy.library import transform
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr import CalibrationNotFoundError
 from .primitives_gmos import GMOS
 from . import parameters_gmos_nodandshuffle
 
@@ -209,8 +210,8 @@ class GMOSNodAndShuffle(GMOS):
 
             if flat is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                   raise OSError("No processed flat listed for "
-                                 f"{ad.filename}")
+                   raise CalibrationNotFoundError("No processed flat listed "
+                                                  f"for {ad.filename}")
                 else:
                    log.warning(f"No changes will be made to {ad.filename}, "
                                "since no flatfield has been specified")

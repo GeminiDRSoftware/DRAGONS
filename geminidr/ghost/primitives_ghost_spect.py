@@ -33,6 +33,7 @@ from gemini_instruments.gemini import get_specphot_name
 from geminidr.core.primitives_spect import Spect
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct
+from geminidr import CalibrationNotFoundError
 from gempy.library.nddops import NDStacker
 from gempy.library import peak_finding, transform, astrotools as at
 from gempy.adlibrary.manipulate_ad import rebin_data
@@ -173,7 +174,8 @@ class GHOSTSpect(GHOST):
                 arc_after = self._request_bracket_arc(ad, before=False)
 
             if arc_before is None and arc_after is None:
-                raise IOError(f'No valid arcs found for {ad.filename}')
+                raise CalibrationNotFoundError('No valid arcs found for '
+                                               f'{ad.filename}')
 
             log.stdinfo(f'Arcs for {ad.filename}:')
             if arc_before:
@@ -629,7 +631,7 @@ class GHOSTSpect(GHOST):
         adoutputs = []
         numext = set([len(ad) for ad in adinputs])
         if len(numext) != 1:
-            raise IndexError("Not all inputs have the same number of extensions")
+            raise ValueError("Not all inputs have the same number of extensions")
         else:
             numext = numext.pop()
         wave_limits = {arm: np.array([get_wavelength_limits(ext)
@@ -854,8 +856,8 @@ class GHOSTSpect(GHOST):
                         str([_.detector_x_bin() for _ in adinputs]))
             log.stdinfo('Detector y bins: %s' %
                         str([_.detector_y_bin() for _ in adinputs]))
-            raise IOError('Your input list of files contains a mix of '
-                          'different binning modes')
+            raise ValueError('Your input list of files contains a mix of '
+                             'different binning modes')
 
         adinputs_orig = list(adinputs)
         if isinstance(params['dark'], list):
@@ -889,8 +891,8 @@ class GHOSTSpect(GHOST):
                     dark_list_out.append(None)
                     continue
                 else:
-                    raise IOError("No processed dark listed for {}".
-                                  format(ad.filename))
+                    raise CalibrationNotFoundError("No processed dark listed "
+                                                   f"for {ad.filename}")
 
             if dark.detector_x_bin() == ad.detector_x_bin() and \
                     dark.detector_y_bin() == ad.detector_y_bin():
@@ -1255,26 +1257,30 @@ class GHOSTSpect(GHOST):
             # there's no calibration, or it's missing) places a None in the
             # list, allowing a graceful continuation.
             if flat is None:  # can't do anything as no XMOD
-                raise RuntimeError(f"No processed flat listed for {ad.filename}")
+                raise CalibrationNotFoundError("No processed flat listed for "
+                                               f"{ad.filename}")
 
             if slitflat is None:
                 # TBD: can we use a synthetic slitflat (traceFibers in
                 # makeProcessedFlat would need one too)
-                raise RuntimeError(f"No processed slitflat listed for {ad.filename}")
+                raise CalibrationNotFoundError("No processed slitflat listed "
+                                               f"for {ad.filename}")
                 if slit is None:
                     slitflat_filename = "synthetic"
                     slitflat_data = None
                 else:
-                    raise RuntimeError(f"{ad.filename} has a processed slit "
-                                       "but no processed slitflat")
+                    raise CalibrationNotFoundError(
+                        f"{ad.filename} has a processed slit but no processed "
+                        "slitflat")
             else:
                 slitflat_filename = slitflat.filename
                 slitflat_data = slitflat[0].data
 
             if slit is None:
                 if seeing is None:
-                    raise RuntimeError(f"No processed slit listed for {ad.filename}"
-                                       "and no seeing estimate has been provided")
+                    raise CalibrationNotFoundError(
+                        f"No processed slit listed for {ad.filename} and no "
+                        "seeing estimate has been provided")
                 else:
                     slit_filename = f"synthetic (seeing {seeing})"
                     slit_data = None
@@ -1527,15 +1533,15 @@ class GHOSTSpect(GHOST):
 
             if std is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise RuntimeError("No processed standard listed for "
-                                       f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed standard "
+                                                   f"listed for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no standard was specified")
                     continue
 
             if ad.arm() != std.arm():
-                raise RuntimeError(f"{ad.filename} and {std.filename} are "
+                raise ValueError(f"{ad.filename} and {std.filename} are "
                                    "from different GHOST arms.")
 
             origin_str = f" (obtained from {origin})" if origin else ""
@@ -1712,7 +1718,8 @@ class GHOSTSpect(GHOST):
         for ad, slitflat, origin in zip(*gt.make_lists(adinputs, *flat_list,
                                                        force_ad=(1,))):
             if slitflat is None:
-                raise RuntimeError(f"No processed_slitflat found for {ad.filename}")
+                raise CalibrationNotFoundError("No processed_slitflat found "
+                                               f"for {ad.filename}")
 
             res_mode = ad.res_mode()
             arm = GhostArm(arm=ad.arm(), mode=res_mode,
@@ -2280,7 +2287,8 @@ class GHOSTSpect(GHOST):
                 continue
 
             if slit_flat is None:
-                raise RuntimeError(f"No processed_slitflat found for {ad.filename}")
+                raise CalibrationNotFoundError("No processed_slitflat found "
+                                               f"for {ad.filename}")
 
             origin_str = f" (obtained from {origin})" if origin else ""
             log.stdinfo(f"{ad.filename}: using slitflat "
