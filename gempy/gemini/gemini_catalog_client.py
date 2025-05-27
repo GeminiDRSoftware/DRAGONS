@@ -214,7 +214,8 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
         else:
             if warning.category == NoResultsWarning:
                 log.stdinfo(f"No results returned from {server}")
-            elif "retries" in str(warning.message):
+            elif ("retries" in str(warning.message) or
+                  "timed out" in str(warning.message)):
                 log.warning(f"Server {server} appears to be down")
             else:
                 log.warning(f"Unexpected warning from {server}: "
