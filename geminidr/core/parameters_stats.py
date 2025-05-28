@@ -2,7 +2,5 @@ from gempy.library import config
 
 
 class statsConfig(config.Config):
-    pass
+    pre = config.Field('4-character header prefix', str, None, optional=True)
 
-class signaltonoiseratioConfig(config.Config):
-    pass
