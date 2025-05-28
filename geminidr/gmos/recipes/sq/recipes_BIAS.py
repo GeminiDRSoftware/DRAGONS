@@ -30,9 +30,10 @@ def makeProcessedBias(p):
 
 def checkBias(p):
     """
-    This recipe checks bias frames by processing them, then subtracting a
-    "known good" processed bias from them and computing statistics on the
-    residual.
+    This recipe checks bias frames by processing them as regular bias frames
+    (notably including overscan correction), then recording some pixel
+    statistics. We then additionally subtract a "known good" processed bias
+    from them and compute statistics on the residual.
     :param p:
     :return:
     """
@@ -40,12 +41,10 @@ def checkBias(p):
     p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
-    p.stackBiases()
-    p.makeIRAFCompatible()
+    p.stats(pre='OSCO')
     p.biasCorrect()
-    p.stats()
-    p.signaltonoiseratio()
-    p.writeOutputs()
+    p.stats(pre="BICO")
+    p.writeOutputs(strip=True, suffix='_checkBias')
     return
 
 
