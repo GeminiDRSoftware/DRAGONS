@@ -4339,7 +4339,6 @@ class Spect(Resample):
 
                 # Create an aggregated aperture mask
                 csc_aperture_mask = np.zeros_like(csc_ext.data, dtype=bool)
-                pure_aperture_mask = np.zeros_like(csc_aperture_mask)
                 try:
                     aptable = csc_ext.APERTURE
                 except AttributeError:
@@ -4352,8 +4351,11 @@ class Spect(Resample):
                                                     aper_upper=row['aper_upper'])
                         aperture_mask = aperture.aperture_mask(csc_ext, grow=apgrow)
                         csc_aperture_mask |= aperture_mask
-                        pure_aperture_mask |= aperture.aperture_mask(csc_ext, grow=0)
 
+                    # This gets the name "pure" because we may wish to make it
+                    # wih apgrow=0 since the -ve beams and likely to be lower
+                    # S/N than the +ve beam.
+                    pure_aperture_mask = csc_aperture_mask.copy()
                     for beam_shift in csc_ext.nddata.meta.get('negative_beam_offsets', []):
                         shift = (0, int(np.round(beam_shift)))
                         if csc_spataxis == 0:
@@ -4375,8 +4377,8 @@ class Spect(Resample):
                 # chip gaps) or all unilluminated to avoid a zillion warnings
                 # about insufficient unmasked points.
                 if csc_ext.mask is not None:
-                    no_data = (np.bitwise_and.reduce(csc_ext.mask, axis=csc_spataxis) &
-                               (DQ.no_data | DQ.unilluminated)).astype(bool)
+                    no_data = np.logical_and.reduce(
+                        (csc_ext.mask & (DQ.no_data | DQ.unilluminated)).astype(bool), axis=csc_spataxis)
                     if csc_spataxis == 0:
                         csc_sky_mask ^= no_data
                     else:
@@ -4448,30 +4450,34 @@ class Spect(Resample):
                 xcorr_sum = np.zeros((2 * min_size - 1,))
 
                 for ext, spataxis in zip(ad, spataxes):
+                    # If this ext is wider than the minimum, it's xcorr will
+                    # be wider and we need to trim it to the same size.
                     xcorr_slice = (slice(ext.shape[spataxis] - min_size,
                                          min_size - ext.shape[spataxis])
                                    if ext.shape[spataxis] > min_size
                                    else slice(None))
                     for i in range(ext.shape[1 - spataxis]):
-                        _slice = i if spataxis == 1 else (None, i)
+                        _slice = i if spataxis == 1 else (slice(None), i)
                         row = np.ma.masked_array(ext.data[_slice],
+                                                 None if ext.mask is None else
                                                  ext.mask[_slice])
                         # Without the "maximum" we get a symmetric xcorr array
                         xcorr_sum += np.ma.correlate(
                             np.maximum(row, 0), -row, mode='full')[xcorr_slice]
 
+                # This is expected to be at zero shift
                 peak_location = xcorr_sum.argmin()
                 peak_value = -xcorr_sum[peak_location]
 
-                # The idea here is that we can have one -ve beam if it's
-                # as strong as the +ve beam, or two if they're at least
-                # half as strong, etc. To account for noise, we add 1 to
-                # the denominator.
+                # The idea here is that we can have one -ve beam if it's as
+                # strong as the +ve beam, or two if they're at least half as
+                # strong, etc. Because of noise, we add 1 to the denominator.
                 possible_beams = sorted(x[:2] for x in peak_finding.get_extrema(xcorr_sum) if x[2])[::-1]
                 beam_locations = [x[0] for i, x in enumerate(possible_beams)
                                   if x[1] > peak_value / (i + 2)]
                 beam_offsets = np.array(beam_locations) - peak_location
-                log.debug(f"{ad.filename} beam offsets: {beam_offsets}")
+                log.debug(f"{ad.filename} beam offsets: "+" ".join(
+                    [str(x) for x in beam_offsets]))
 
                 # Store them somewhere for retrieval later
                 for ext in ad:
