@@ -41,9 +41,9 @@ def checkBias(p):
     p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
-    p.stats(pre='OSCO')
+    p.stats(prefix='OSCO')
     p.biasCorrect()
-    p.stats(pre="BICO")
+    p.stats(prefix="BICO")
     p.writeOutputs(strip=True, suffix='_checkBias')
     return
 
