@@ -684,6 +684,7 @@ class Telluric(Spect):
         site = {'Gemini-North': 'mk', 'Gemini-South': 'cp'}[observatory]
         altitude = {'Gemini-North': 13825, 'Gemini-South': 8980}[observatory]
         wv_band = config.get("wv_band", "header")
+        num_lines = config.get("num_atran_lines")
         if wv_band == "header":
             wv_band = ext.raw_wv()
             if wv_band is None:
@@ -716,7 +717,7 @@ class Telluric(Spect):
         # A linelist may be in the Gemini lookup directory, or one may
         # have been created in the cwd
         atran_linelist = (f'atran_linelist_{site}_{start_wvl:.0f}-{end_wvl:.0f}'
-                          f'_wv{wv_content:.0f}_r{resolution:.0f}.dat')
+                          f'_wv{wv_content:.0f}_r{resolution:.0f}_nl{num_lines:.0f}.dat')
         try:
             linelist = LineList(os.path.join(LOOKUPS_PATH, atran_linelist))
             log.stdinfo(f"Using generic linelist {atran_linelist}")
