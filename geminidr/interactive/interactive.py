@@ -225,7 +225,7 @@ class PrimitiveVisualizer(ABC):
         if allow_skip:
             self.skip_button = Button(
                 align="center",
-                button_type="warning",
+                button_type="primary",
                 css_classes=["submit_btn"],
                 label="Skip",
                 name="skip_btn",
