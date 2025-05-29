@@ -1905,10 +1905,9 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             sizing_mode="stretch_width",
         )
 
-        buttons = (self.submit_button,)
+        buttons = (self.abort_button, self.submit_button)
         if self.noop_button is not None:
             buttons += (self.noop_button,)
-        buttons += (self.abort_button,)
 
         for btn in buttons:
             btn.align = "end"
