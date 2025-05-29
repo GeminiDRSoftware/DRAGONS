@@ -459,7 +459,6 @@ class Telluric(Spect):
             pixel_shifts = []
             tell_int_splines = []
             tellabs_data = []
-            tab_labels = []
 
             for ext in ad:
                 if len(ext.shape) > 1:
@@ -534,20 +533,8 @@ class Telluric(Spect):
                     # Interpolate telluric spectrum onto science wavelengths
                     tellabs_data.append(tellabs_dict[ext.hdr.get('SPECORDR')](tspek.waves))
 
-                try:
-                    label = f"Aperture {ext.hdr['APERTURE']}"
-                except KeyError:
-                    label = ""
-                try:
-                    order = ext.hdr['SPECORDR']
-                except KeyError:
-                    pass
-                else:
-                    label += f" Order {order}"
-                tab_labels.append(label)
-
             if len(pixel_shifts) > 1:
-                pixel_shift = self._calaculate_mean_pixel_shift(pixel_shifts)
+                pixel_shift = self._calculate_mean_pixel_shift(pixel_shifts)
             # i.e., pixel shift has been calculated
             if (pixel_shift and manual_shift is None and
                     abs(pixel_shift) < shift_tolerance):
@@ -607,6 +594,7 @@ class Telluric(Spect):
                                      tell_int_splines=tell_int_splines)
 
             if interactive:
+                tab_labels = self._make_tab_labels(ad)
                 data_units = "adu" if ad.is_in_adu() else "electron"
                 visualizer = TelluricCorrectVisualizer(
                     tcal, tab_name_fmt=lambda i: tab_labels[i],
