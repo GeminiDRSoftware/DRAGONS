@@ -57,7 +57,7 @@ class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
     def setDefaults(self):
         self.function = "chebyshev"
         self.order = 2
-        self.debug_allow_noop = True
+        self.debug_allow_skip = True
 
 
 class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):

@@ -4280,7 +4280,7 @@ class Spect(Resample):
             Show diagnostic plots?
         interactive : bool
             Show interactive interface?
-        debug_allow_noop : bool
+        debug_allow_skip : bool
             Allow user to exit GUI and bypass sky subtraction?
 
         Returns
@@ -4301,7 +4301,7 @@ class Spect(Resample):
         debug_plot = params["debug_plot"]
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
-        allow_noop = params.get("debug_allow_noop", False)
+        allow_skip = params.get("debug_allow_skip", False)
 
         def calc_sky_coords(ad: AstroData, apgrow=0, interactive_mode=False):
             """
@@ -4541,7 +4541,7 @@ class Spect(Resample):
                                                    ui_params=ui_params,
                                                    reinit_live=True,
                                                    mask_glyphs={"aperture": ("inverted_triangle", "lightgray")},
-                                                   allow_noop=allow_noop)
+                                                   allow_skip=allow_skip)
 
                 geminidr.interactive.server.interactive_fitter(visualizer)
 

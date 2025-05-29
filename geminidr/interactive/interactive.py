@@ -101,7 +101,7 @@ class PrimitiveVisualizer(ABC):
         help_text=None,
         ui_params=None,
         reinit_live=False,
-        allow_noop=False,
+        allow_skip=False,
     ):
         """
         Initialize a visualizer.
@@ -133,7 +133,7 @@ class PrimitiveVisualizer(ABC):
             set in __init__ to PrimitiveVisualizer.reinit_live, but can be
             overridden by subclasses.
 
-        allow_noop : bool
+        allow_skip : bool
             if True, add a button allow the user to exit in a way that does
             not return a fit
         """
@@ -222,20 +222,20 @@ class PrimitiveVisualizer(ABC):
         self.submit_button.on_click(self.submit_button_handler)
         self.submit_button.js_on_change("disabled", callback)
 
-        if allow_noop:
-            self.noop_button = Button(
+        if allow_skip:
+            self.skip_button = Button(
                 align="center",
                 button_type="warning",
                 css_classes=["submit_btn"],
-                label="Exit",
-                name="noop_btn",
+                label="Skip",
+                name="skip_btn",
                 height=55,
                 stylesheets=dragons_styles(),
             )
-            self.noop_button.on_click(self.noop_button_handler)
-            self.noop_button.js_on_change("disabled", callback)
+            self.skip_button.on_click(self.skip_button_handler)
+            self.skip_button.js_on_change("disabled", callback)
         else:
-            self.noop_button = None
+            self.skip_button = None
 
         abort_callback = CustomJS(
             code="""
@@ -477,14 +477,14 @@ class PrimitiveVisualizer(ABC):
             cb,
         )
 
-    def noop_button_handler(self):
+    def skip_button_handler(self):
         """
         Tidy up when the no-op button is activated
         """
         self.return_fit = False
 
         # Trigger the callback via disabling the no-op button
-        self.noop_button.disabled = True
+        self.skip_button.disabled = True
 
     # pylint: disable=unused-argument
     def session_ended(self, sess_context, user_satisfied):
