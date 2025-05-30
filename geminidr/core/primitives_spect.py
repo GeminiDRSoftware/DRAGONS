@@ -4472,7 +4472,8 @@ class Spect(Resample):
                 # The idea here is that we can have one -ve beam if it's as
                 # strong as the +ve beam, or two if they're at least half as
                 # strong, etc. Because of noise, we add 1 to the denominator.
-                possible_beams = sorted(x[:2] for x in peak_finding.get_extrema(xcorr_sum) if x[2])[::-1]
+                possible_beams = sorted(x[:2] for x in peak_finding.get_extrema(
+                    xcorr_sum, remove_edge_maxima=False) if x[2])[::-1]
                 beam_locations = [x[0] for i, x in enumerate(possible_beams)
                                   if x[1] > peak_value / (i + 2)]
                 beam_offsets = peak_location - np.array(beam_locations)
