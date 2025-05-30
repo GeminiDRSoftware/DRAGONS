@@ -20,11 +20,11 @@ from bokeh.models import (
     Spacer,
     Select,
     ColumnDataSource,
-    Whisker,
+    Whisker, InlineStyleSheet,
 )
 
 from geminidr.interactive import server
-from geminidr.interactive.styles import dragons_styles
+from geminidr.interactive.styles import dragons_styles, skip_btn_styles
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import (
@@ -230,7 +230,7 @@ class PrimitiveVisualizer(ABC):
                 label="Skip",
                 name="skip_btn",
                 height=55,
-                stylesheets=dragons_styles(),
+                stylesheets=skip_btn_styles(),
             )
             self.skip_button.on_click(self.skip_button_handler)
             self.skip_button.js_on_change("disabled", callback)

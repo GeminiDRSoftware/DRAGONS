@@ -334,7 +334,7 @@ SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
     increasing the number of masked pixels.
 </p>
 <p>
-    When you are happy with the quality of the fit, click &quot;Accept&quot;
+    When you are happy with the quality of the fit, click &quot;<b>Accept</b>&quot;
     and the fitting parameters will be applied to every line of the data.
     This can be slow for large images, especially if a cubic spline function
     is used.
@@ -345,7 +345,7 @@ SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
     positive profile and masked using the same avoidance zone as the apertures.
     In such data, the fit to the sky may be poorly constrained (especially for
     a short slit) but should be close to zero, and there will be an additional
-    &quot;Skip&quot; button to allow an exit without performing any sky
+    &quot;<b>Skip</b>&quot; button to allow an exit without performing any sky
     subtraction
 </p>
 <h3>Fitting parameters</h3>
