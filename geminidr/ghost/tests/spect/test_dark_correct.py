@@ -52,7 +52,7 @@ def test_darkCorrect_errors(ad_min):
     gs = GHOSTSpect([])
 
     # Passing in data inputs with different binnings
-    with pytest.raises(IOError):
+    with pytest.raises(ValueError):
         ad2 = deepcopy(ad_min)
         ad2[0].hdr.set('CCDSUM', '2 2')
         gs.darkCorrect([ad_min, ad2, ], dark=[dark, dark, ], do_cal="force")
