@@ -4475,7 +4475,7 @@ class Spect(Resample):
                 possible_beams = sorted(x[:2] for x in peak_finding.get_extrema(xcorr_sum) if x[2])[::-1]
                 beam_locations = [x[0] for i, x in enumerate(possible_beams)
                                   if x[1] > peak_value / (i + 2)]
-                beam_offsets = np.array(beam_locations) - peak_location
+                beam_offsets = peak_location - np.array(beam_locations)
                 log.debug(f"{ad.filename} beam offsets: "+" ".join(
                     [str(x) for x in beam_offsets]))
 
