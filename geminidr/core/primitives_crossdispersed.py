@@ -530,7 +530,8 @@ class CrossDispersed(Spect, Preprocess):
         num_ap = len(set(apertures))
         tab_labels = []
         for ap, ord in zip(apertures, orders):
-            label = f"Aperture {ap} " if num_ap > 1 else ""
-            label += f"Order {ord}"
+            label = f"Order {ord}"
+            if num_ap > 1:
+                label = f" Aperture {ap}"
             tab_labels.append(label)
         return tab_labels
