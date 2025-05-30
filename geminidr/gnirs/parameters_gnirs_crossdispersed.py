@@ -57,8 +57,13 @@ class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
     def setDefaults(self):
         self.function = "chebyshev"
         self.order = 2
+        self.aperture_growth = 1
         self.debug_allow_skip = True
 
+class traceAperturesConfig(parameters_spect.traceAperturesConfig):
+    # GNIRS XD benefits from light sigma clipping.
+    def setDefaults(self):
+        self.niter = 1
 
 class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):
     """
