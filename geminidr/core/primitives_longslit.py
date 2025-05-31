@@ -40,6 +40,11 @@ class Longslit(Spect):
         list
             A list of tab labels for the given AstroData object.
         """
+        # If we haven't extracted spectra, then all we have are separate
+        # extensions, so we use the default tab labels.
+        if self.timestamp_keys['extractSpectra'] in ad.phu:
+            return super()._make_tab_labels(ad)
+
         apertures = ad.hdr.get('APERTURE')
         if apertures.count(None) == len(ad):
             tab_labels = [f"Aperture {i+1}" for i in range(len(ad))]

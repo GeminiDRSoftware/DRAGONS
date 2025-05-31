@@ -44,7 +44,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct, oh_synthetic_spectra
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
-from geminidr.interactive.fit.tracing import interactive_trace_apertures
+from geminidr.interactive.fit.tracing import interactive_trace_apertures, trace_apertures_data_provider
 from geminidr.interactive.fit.wavecal import WavelengthSolutionVisualizer
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
@@ -4669,136 +4669,84 @@ class Spect(Resample):
 
         # Main Loop
         for ad in adinputs:
-            for ext in ad:
-
-                # Verify inputs
+            # We need to go through the extensions/apertures to understand
+            # the order of the returned models
+            tab_labels = []
+            for ext, tab_label in zip(ad, self._make_tab_labels(ad)):
                 try:
                     aptable = ext.APERTURE
-                    locations = aptable['c0'].data
-                except (AttributeError, KeyError):
-                    log.warning("Could not find aperture locations in "
-                                f"{ad.filename} extension {ext.id} - continuing")
+                except AttributeError:
+                    continue
+                if len(ad) > 1:
+                    if len(aptable)> 1:
+                        tab_labels.extend([f"{tab_label} Aperture {apnum}" for apnum in aptable["number"]])
+                    else:
+                        tab_labels.append(tab_label)
+                else:
+                    tab_labels.extend([f"Aperture {apnum}" for apnum in aptable["number"]])
+
+            # Set up UIParameters for trace_lines() call
+            _config = self.params[self.myself()]
+            _config.update(**params)
+
+            title_overrides = {
+                'max_missed': 'Max Missed',
+                'max_shift':  'Max Shifted',
+                'nsum':       'Lines to sum',
+                'step':       'Tracing step',
+            }
+            ui_params = UIParameters(_config,
+                                     reinit_params=["max_missed", "max_shift", "nsum", "step"],
+                                     title_overrides=title_overrides)
+
+            if interactive:
+                aperture_models = interactive_trace_apertures(
+                    ad, tab_labels, fit1d_params, ui_params=ui_params)
+            else:
+                traced_data = trace_apertures_data_provider(ad, ui_params)
+
+                # This is duplication of code in interactive_trace_apertures
+                other_data = [
+                    [row["number"], row["c0"]] +
+                    [
+                        ext.APERTURE.meta["header"][kw]
+                        for kw in ("DOMAIN_START", "DOMAIN_END")
+                    ]
+                    for ext in ad
+                    for row in (ext.APERTURE if hasattr(ext, "APERTURE") else [])
+                ]
+
+                aperture_models = []
+                for x, y, (apnum, c0, *domain) in zip(
+                        traced_data["x"], traced_data["y"], other_data):
+                    log.fullinfo(f"Aperture at {c0:.1f} traced from {x.min()} "
+                                 f"to {x.max()}")
+                    try:
+                        _fit_1d = fit_1D(y, domain=domain, order=order,
+                                         points=x, **fit1d_params)
+                    # This hides a multitude of sins, including no points
+                    # returned by the trace, or insufficient points to
+                    # constrain fit. We call fit1d with dummy points to
+                    # ensure we get the same type of result as if it had
+                    # been successful.
+                    except (IndexError, np.linalg.linalg.LinAlgError):
+                        log.warning(f"Unable to trace aperture {apnum}")
+                        _fit_1d = fit_1D(np.full_like(y, c0), domain=domain,
+                            order=0, points=y, **fit1d_params)
+
+                    aperture_models.append(_fit_1d.model)
+
+            # Put the aperture models into the APERTURE tables
+            for ext in ad:
+                try:
+                    aptable = ext.APERTURE
+                except AttributeError:
                     continue
 
-                if debug:
-                    self.viewer.display_image(ext, wcs=False)
-                    self.viewer.width = 2
-                    self.viewer.color = "blue"
-
-                # Set up UIParameters for trace_lines() call
-                _config = self.params[self.myself()]
-                _config.update(**params)
-
-                title_overrides = {
-                    'max_missed': 'Max Missed',
-                    'max_shift':  'Max Shifted',
-                    'nsum':       'Lines to sum',
-                    'step':       'Tracing step',
-                }
-                ui_params = UIParameters(_config,
-                                         reinit_params=["max_missed", "max_shift", "nsum", "step"],
-                                         title_overrides=title_overrides)
-
-                if interactive:
-                    aperture_models = interactive_trace_apertures(
-                        ext, fit1d_params, ui_params=ui_params)
-                else:
-                    dispaxis = 2 - ext.dispersion_axis()  # python sense
-                    aperture_models = []
-
-                    # For efficiency, we would like to trace all sources
-                    #  simultaneously (like we do with arc lines), but we need
-                    #  to start somewhere the source is bright enough, and there
-                    #  may not be a single location where that is true for all
-                    #  sources
-                    all_ref_coords = np.array([])
-                    for i, loc in enumerate(locations):
-                        c0 = int(loc + 0.5)
-
-                        # The coordinates are always returned as (x-coords, y-coords)
-                        traces = tracing.trace_aperture(
-                            ext, loc, ui_params, apnum=i,
-                            viewer=self.viewer if debug else None)
-
-                        # List of traced peak positions
-                        in_coords = np.array([coord for trace in traces for
-                                              coord in trace.input_coordinates()]).T
-                        # List of "reference" positions (i.e., the coordinate
-                        # perpendicular to the line remains constant at its
-                        # initial value
-                        ref_coords = np.array([coord for trace in traces for
-                                               coord in trace.reference_coordinates()]).T
-
-                        if ref_coords.size:
-                            if all_ref_coords.size:
-                                all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
-                                all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
-                            else:
-                                all_ref_coords = ref_coords
-                                all_in_coords = in_coords
-
-                    spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-
-                    for aperture in aptable:
-                        location = aperture['c0']
-                        # Funky stuff to extract the traced coords associated with
-                        # each aperture (there's just a big list of all the coords
-                        # from all the apertures) and sort them by coordinate
-                        # along the spectrum
-                        coords = np.array([list(c1) + list(c2)
-                                           for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
-                                           if c1[dispaxis] == location])
-                        values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
-                        ref_coords, in_coords = values[:2], values[2:]
-
-                        # log aperture
-                        if in_coords.size:
-                            min_value = in_coords[1 - dispaxis].min()
-                            max_value = in_coords[1 - dispaxis].max()
-                            log.fullinfo(f"Aperture at {c0:.1f} traced from {min_value} "
-                                         f"to {max_value}")
-
-                        # Find model to transform actual (x,y) locations to the
-                        # value of the reference pixel along the dispersion axis
-                        try:
-                            # pylint: disable=repeated-keyword
-                            _fit_1d = fit_1D(
-                                in_coords[dispaxis],
-                                domain=[0, ext.shape[dispaxis] - 1],
-                                order=order,
-                                points=in_coords[1 - dispaxis],
-                                **fit1d_params)
-
-
-                        # This hides a multitude of sins, including no points
-                        # returned by the trace, or insufficient points to
-                        # constrain fit. We call fit1d with dummy points to
-                        # ensure we get the same type of result as if it had
-                        # been successful.
-                        except (IndexError, np.linalg.linalg.LinAlgError):
-                            log.warning(
-                                f"Unable to trace aperture {aperture['number']}")
-
-                            # pylint: disable=repeated-keyword
-                            _fit_1d = fit_1D(
-                                np.full_like(spectral_coords, c0),
-                                domain=[0, ext.shape[dispaxis] - 1],
-                                order=0,
-                                points=spectral_coords,
-                                **fit1d_params)
-
-                        else:
-                            if debug:
-                                plot_coords = np.array(
-                                    [spectral_coords,
-                                     _fit_1d.evaluate(spectral_coords)]).T
-                                self.viewer.polygon(plot_coords, closed=False,
-                                                    xfirst=(dispaxis == 1), origin=0)
-
-                        aperture_models.append(_fit_1d.model)
-
-                ext.APERTURE = make_aperture_table(aperture_models,
+                num_aps = len(aptable)
+                ext.APERTURE = make_aperture_table(aperture_models[:num_aps],
                                                    existing_table=aptable)
+                aperture_models = aperture_models[num_aps:]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
