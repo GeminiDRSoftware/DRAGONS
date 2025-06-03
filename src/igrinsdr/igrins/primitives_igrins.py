@@ -899,7 +899,7 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def fixIgrinsHeader(self, adinputs, **params):
-        ad = adinputs[0]
+        # ad = adinputs[0]
 
         for ad in adinputs:
             for ext in ad:
@@ -909,6 +909,14 @@ class Igrins(Gemini, NearIR):
                         ext.hdr[kw] = (1.e5, "Test")
                         # print ("FIX", kw, ext.hdr.comments[kw])
 
+                if "UTSTART" in ext.hdr and "UTDATETI" not in ext.hdr:
+                    ext.hdr["UTDATETI"] = ext.hdr["UTSTART"]
+                    del ext.hdr["UTSTART"]
+
+            # if "UTDATE"
+            if "UTSTART" in ad.phu and "UTDATETI" not in ad.phu:
+                ad.phu["UTDATETI"] = ad.phu["UTSTART"]
+                del ad.phu["UTSTART"]
 
         return adinputs
 

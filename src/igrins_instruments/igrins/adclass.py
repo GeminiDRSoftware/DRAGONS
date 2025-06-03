@@ -1,3 +1,4 @@
+import datetime
 import numpy as np
 from astrodata import (astro_data_tag, astro_data_descriptor,
                        returns_list, TagSet)
@@ -404,3 +405,31 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
     @astro_data_descriptor
     def band(self):
         return self.phu.get('FILTER')
+
+    @staticmethod
+    def _get_udatetime(hdr):
+        utdatetime = hdr.get('UTDATETI', None)
+        if utdatetime is None:
+            utdatetime = hdr.get('UTSTART', None)
+
+        if utdatetime is None:
+            raise KeyError("The header needs UTDATETIME or UTSART")
+
+        return datetime.datetime.fromisoformat(utdatetime)
+
+    @astro_data_descriptor
+    def ut_datetime(self):
+        # FIXME To workaround an issue in dragons4, which try to do
+        # ad.phu['UTSTART'] (primitive_gemini.py:244), we have a primitive that
+        # temporarily rename UTSTART to UTDATETIME. This is a work around for thos cases.
+
+        if self.is_single:
+            return self._get_udatetime(self.hdr)
+        else:
+            try:
+                return self._get_udatetime(self.phu)
+            except KeyError:
+                if len(self):
+                    return self._get_udatetime(self[0].hdr)
+
+
