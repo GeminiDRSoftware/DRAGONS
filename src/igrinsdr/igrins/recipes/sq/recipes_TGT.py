@@ -1,6 +1,6 @@
 from igrinsdr.igrins.primitives_igrins import Igrins
 
-recipe_tags = {'IGRINS', 'SCIENCE'}
+recipe_tags = {'IGRINS', 'SIDEREAL'}
 
 from .recipe_STD import makeStellar
 

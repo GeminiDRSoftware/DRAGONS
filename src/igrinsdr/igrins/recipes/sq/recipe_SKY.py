@@ -20,6 +20,7 @@ def makeProcessedArc(p: Igrins):
         A primitive set matching the recipe_tags.
     """
 
+    p.fixIgrinsHeader()
     p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
