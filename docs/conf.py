@@ -33,7 +33,7 @@ from _version import __version__ as release
 # ones.
 extensions = [
     "sphinx_copybutton",
-    "sphinx_gallery.gen_gallery",
+    # "sphinx_gallery.gen_gallery",
     "sphinx.ext.napoleon",
     "numpydoc",
     'sphinx.ext.autodoc',
