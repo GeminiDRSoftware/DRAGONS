@@ -52,12 +52,6 @@ Below we will us ipython magic commands for aliasing.
 
    .. code:: python
 
-      %matplotlib widget
-
-.. container:: cell
-
-   .. code:: python
-
       import astrodata
       import numpy as np
       import matplotlib.pyplot as plt
@@ -90,87 +84,216 @@ This is identical to “mef_extract.py” included in plp version.
 
    .. code:: python
 
-      !mef_extract 20240429 --mefdir 20240429_demo
+      %cd unbundled_20240429
+      %dataselect_ig --tags BUNDLE ../mef_20240429/N*.fits -o list_of_bundles.txt
 
    .. container:: cell-output cell-output-stdout
 
       ::
 
-         N20240429S0120.fits
-         N20240429S0121.fits
-         N20240429S0122.fits
-         N20240429S0123.fits
-         N20240429S0124.fits
-         N20240429S0125.fits
-         N20240429S0126.fits
-         N20240429S0127.fits
-         N20240429S0128.fits
-         N20240429S0188.fits
-         N20240429S0189.fits
-         N20240429S0190.fits
-         N20240429S0191.fits
-         N20240429S0192.fits
-         N20240429S0193.fits
-         N20240429S0194.fits
-         N20240429S0195.fits
-         N20240429S0196.fits
-         N20240429S0197.fits
-         N20240429S0204.fits
-         N20240429S0365.fits
-         N20240429S0366.fits
-         N20240429S0367.fits
-         N20240429S0368.fits
-         N20240429S0369.fits
-         N20240429S0370.fits
-         N20240429S0371.fits
-         N20240429S0372.fits
-         N20240429S0373.fits
-         N20240429S0374.fits
-         N20240429S0375.fits
-         N20240429S0376.fits
-         N20240429S0377.fits
-         N20240429S0378.fits
-         N20240429S0379.fits
-         N20240429S0380.fits
-         N20240429S0381.fits
-         N20240429S0382.fits
-         N20240429S0383.fits
-         N20240429S0384.fits
+         /media/DATA2024/jjlee/igrins/igrins_indata/unbundled_20240429
 
 .. container:: cell
 
    .. code:: python
 
-      !ls unbundled_20240429/
+      !cat list_of_bundles.txt
 
    .. container:: cell-output cell-output-stdout
 
       ::
 
-         N20240429S0122_H.fits  N20240429S0195_H.fits  N20240429S0373_H.fits
-         N20240429S0122_K.fits  N20240429S0195_K.fits  N20240429S0373_K.fits
-         N20240429S0123_H.fits  N20240429S0196_H.fits  N20240429S0374_H.fits
-         N20240429S0123_K.fits  N20240429S0196_K.fits  N20240429S0374_K.fits
-         N20240429S0124_H.fits  N20240429S0197_H.fits  N20240429S0375_H.fits
-         N20240429S0124_K.fits  N20240429S0197_K.fits  N20240429S0375_K.fits
-         N20240429S0125_H.fits  N20240429S0204_H.fits  N20240429S0376_H.fits
-         N20240429S0125_K.fits  N20240429S0204_K.fits  N20240429S0376_K.fits
-         N20240429S0126_H.fits  N20240429S0365_H.fits  N20240429S0377_H.fits
-         N20240429S0126_K.fits  N20240429S0365_K.fits  N20240429S0377_K.fits
-         N20240429S0127_H.fits  N20240429S0366_H.fits  N20240429S0378_H.fits
-         N20240429S0127_K.fits  N20240429S0366_K.fits  N20240429S0378_K.fits
-         N20240429S0128_H.fits  N20240429S0367_H.fits  N20240429S0379_H.fits
-         N20240429S0128_K.fits  N20240429S0367_K.fits  N20240429S0379_K.fits
-         N20240429S0190_H.fits  N20240429S0368_H.fits  N20240429S0380_H.fits
-         N20240429S0190_K.fits  N20240429S0368_K.fits  N20240429S0380_K.fits
-         N20240429S0191_H.fits  N20240429S0369_H.fits  N20240429S0381_H.fits
-         N20240429S0191_K.fits  N20240429S0369_K.fits  N20240429S0381_K.fits
-         N20240429S0192_H.fits  N20240429S0370_H.fits  N20240429S0382_H.fits
-         N20240429S0192_K.fits  N20240429S0370_K.fits  N20240429S0382_K.fits
-         N20240429S0193_H.fits  N20240429S0371_H.fits  N20240429S0383_H.fits
-         N20240429S0193_K.fits  N20240429S0371_K.fits  N20240429S0383_K.fits
-         N20240429S0194_H.fits  N20240429S0372_H.fits  N20240429S0384_H.fits
-         N20240429S0194_K.fits  N20240429S0372_K.fits  N20240429S0384_K.fits
+         # Includes tags: ['BUNDLE']
+         # Excludes tags: []
+         # Descriptor expression: None
+         ../mef_20240429/N20240429S0120.fits
+         ../mef_20240429/N20240429S0121.fits
+         ../mef_20240429/N20240429S0122.fits
+         ../mef_20240429/N20240429S0123.fits
+         ../mef_20240429/N20240429S0124.fits
+         ../mef_20240429/N20240429S0125.fits
+         ../mef_20240429/N20240429S0126.fits
+         ../mef_20240429/N20240429S0127.fits
+         ../mef_20240429/N20240429S0128.fits
+         ../mef_20240429/N20240429S0188.fits
+         ../mef_20240429/N20240429S0189.fits
+         ../mef_20240429/N20240429S0190.fits
+         ../mef_20240429/N20240429S0191.fits
+         ../mef_20240429/N20240429S0192.fits
+         ../mef_20240429/N20240429S0193.fits
+         ../mef_20240429/N20240429S0194.fits
+         ../mef_20240429/N20240429S0195.fits
+         ../mef_20240429/N20240429S0196.fits
+         ../mef_20240429/N20240429S0197.fits
+         ../mef_20240429/N20240429S0204.fits
+         ../mef_20240429/N20240429S0365.fits
+         ../mef_20240429/N20240429S0366.fits
+         ../mef_20240429/N20240429S0367.fits
+         ../mef_20240429/N20240429S0368.fits
+         ../mef_20240429/N20240429S0369.fits
+         ../mef_20240429/N20240429S0370.fits
+         ../mef_20240429/N20240429S0371.fits
+         ../mef_20240429/N20240429S0372.fits
+         ../mef_20240429/N20240429S0373.fits
+         ../mef_20240429/N20240429S0374.fits
+         ../mef_20240429/N20240429S0375.fits
+         ../mef_20240429/N20240429S0376.fits
+         ../mef_20240429/N20240429S0377.fits
+         ../mef_20240429/N20240429S0378.fits
+         ../mef_20240429/N20240429S0379.fits
+         ../mef_20240429/N20240429S0380.fits
+         ../mef_20240429/N20240429S0381.fits
+         ../mef_20240429/N20240429S0382.fits
+         ../mef_20240429/N20240429S0383.fits
+         ../mef_20240429/N20240429S0384.fits
+
+.. container:: cell
+
+   .. code:: python
+
+      %reduce_ig @list_of_bundles.txt
+
+   .. container:: cell-output cell-output-stdout
+
+      ::
+
+
+                     --- reduce v4.1.0_dev ---
+
+         Running on Python 3.12.2
+         All submitted files appear valid:
+         ../mef_20240429/N20240429S0120.fits ... ../mef_20240429/N20240429S0384.fits, 40 files submitted.
+         ================================================================================
+         RECIPE: processBundle
+         ================================================================================
+            PRIMITIVE: splitBundle
+            ----------------------
+            Splitting N20240429S0120.fits
+            Splitting N20240429S0121.fits
+            Splitting N20240429S0122.fits
+            Splitting N20240429S0123.fits
+            Splitting N20240429S0124.fits
+            Splitting N20240429S0125.fits
+            Splitting N20240429S0126.fits
+            Splitting N20240429S0127.fits
+            Splitting N20240429S0128.fits
+            Splitting N20240429S0188.fits
+            Splitting N20240429S0189.fits
+            Splitting N20240429S0190.fits
+            Splitting N20240429S0191.fits
+            Splitting N20240429S0192.fits
+            Splitting N20240429S0193.fits
+            Splitting N20240429S0194.fits
+            Splitting N20240429S0195.fits
+            Splitting N20240429S0196.fits
+            Splitting N20240429S0197.fits
+            Splitting N20240429S0204.fits
+            Splitting N20240429S0365.fits
+            Splitting N20240429S0366.fits
+            Splitting N20240429S0367.fits
+            Splitting N20240429S0368.fits
+            Splitting N20240429S0369.fits
+            Splitting N20240429S0370.fits
+            Splitting N20240429S0371.fits
+            Splitting N20240429S0372.fits
+            Splitting N20240429S0373.fits
+            Splitting N20240429S0374.fits
+            Splitting N20240429S0375.fits
+            Splitting N20240429S0376.fits
+            Splitting N20240429S0377.fits
+            Splitting N20240429S0378.fits
+            Splitting N20240429S0379.fits
+            Splitting N20240429S0380.fits
+            Splitting N20240429S0381.fits
+            Splitting N20240429S0382.fits
+            Splitting N20240429S0383.fits
+            Splitting N20240429S0384.fits
+            .
+             Wrote N20240429S0122_H.fits in output directory
+             Wrote N20240429S0123_H.fits in output directory
+             Wrote N20240429S0124_H.fits in output directory
+             Wrote N20240429S0125_H.fits in output directory
+             Wrote N20240429S0126_H.fits in output directory
+             Wrote N20240429S0127_H.fits in output directory
+             Wrote N20240429S0128_H.fits in output directory
+             Wrote N20240429S0190_H.fits in output directory
+             Wrote N20240429S0191_H.fits in output directory
+             Wrote N20240429S0192_H.fits in output directory
+             Wrote N20240429S0193_H.fits in output directory
+             Wrote N20240429S0194_H.fits in output directory
+             Wrote N20240429S0195_H.fits in output directory
+             Wrote N20240429S0196_H.fits in output directory
+             Wrote N20240429S0197_H.fits in output directory
+             Wrote N20240429S0204_H.fits in output directory
+             Wrote N20240429S0365_H.fits in output directory
+             Wrote N20240429S0366_H.fits in output directory
+             Wrote N20240429S0367_H.fits in output directory
+             Wrote N20240429S0368_H.fits in output directory
+             Wrote N20240429S0369_H.fits in output directory
+             Wrote N20240429S0370_H.fits in output directory
+             Wrote N20240429S0371_H.fits in output directory
+             Wrote N20240429S0372_H.fits in output directory
+             Wrote N20240429S0373_H.fits in output directory
+             Wrote N20240429S0374_H.fits in output directory
+             Wrote N20240429S0375_H.fits in output directory
+             Wrote N20240429S0376_H.fits in output directory
+             Wrote N20240429S0377_H.fits in output directory
+             Wrote N20240429S0378_H.fits in output directory
+             Wrote N20240429S0379_H.fits in output directory
+             Wrote N20240429S0380_H.fits in output directory
+             Wrote N20240429S0381_H.fits in output directory
+             Wrote N20240429S0382_H.fits in output directory
+             Wrote N20240429S0383_H.fits in output directory
+             Wrote N20240429S0384_H.fits in output directory
+             Wrote N20240429S0122_K.fits in output directory
+             Wrote N20240429S0123_K.fits in output directory
+             Wrote N20240429S0124_K.fits in output directory
+             Wrote N20240429S0125_K.fits in output directory
+             Wrote N20240429S0126_K.fits in output directory
+             Wrote N20240429S0127_K.fits in output directory
+             Wrote N20240429S0128_K.fits in output directory
+             Wrote N20240429S0190_K.fits in output directory
+             Wrote N20240429S0191_K.fits in output directory
+             Wrote N20240429S0192_K.fits in output directory
+             Wrote N20240429S0193_K.fits in output directory
+             Wrote N20240429S0194_K.fits in output directory
+             Wrote N20240429S0195_K.fits in output directory
+             Wrote N20240429S0196_K.fits in output directory
+             Wrote N20240429S0197_K.fits in output directory
+             Wrote N20240429S0204_K.fits in output directory
+             Wrote N20240429S0365_K.fits in output directory
+             Wrote N20240429S0366_K.fits in output directory
+             Wrote N20240429S0367_K.fits in output directory
+             Wrote N20240429S0368_K.fits in output directory
+             Wrote N20240429S0369_K.fits in output directory
+             Wrote N20240429S0370_K.fits in output directory
+             Wrote N20240429S0371_K.fits in output directory
+             Wrote N20240429S0372_K.fits in output directory
+             Wrote N20240429S0373_K.fits in output directory
+             Wrote N20240429S0374_K.fits in output directory
+             Wrote N20240429S0375_K.fits in output directory
+             Wrote N20240429S0376_K.fits in output directory
+             Wrote N20240429S0377_K.fits in output directory
+             Wrote N20240429S0378_K.fits in output directory
+             Wrote N20240429S0379_K.fits in output directory
+             Wrote N20240429S0380_K.fits in output directory
+             Wrote N20240429S0381_K.fits in output directory
+             Wrote N20240429S0382_K.fits in output directory
+             Wrote N20240429S0383_K.fits in output directory
+             Wrote N20240429S0384_K.fits in output directory
+         reduce completed successfully.
+
+.. container:: cell
+
+   .. code:: python
+
+      %cd -
+
+   .. container:: cell-output cell-output-stdout
+
+      ::
+
+         /home/jjlee/git_personal/IGRINSDR/test_i2
 
 .. container:: cell
 
@@ -185,7 +308,7 @@ This is identical to “mef_extract.py” included in plp version.
 
       ::
 
-         Tree(nodes=(Node(icon_style='success', name="'H IGRINS GEMINI SPECT UNPREPARED NORTH VERSION2'", nodes=(Node(i…
+         Tree(nodes=(Node(icon_style='success', name="'IGRINS IGRINS-2 H GEMINI UNPREPARED NORTH SPECT'", nodes=(Node(i…
 
 Running REDUCE
 ==============
@@ -200,7 +323,7 @@ FLAT
 
 Then create a file lising the FALT image from the fixed fits files.
 
-   dataselect_ig –tags FLAT,H indata/20240429/SDCH\*.fits -o
+   dataselect_ig –tags FLAT,H unbundled_20240429/N*_H.fits -o
    list_of_flat_h.txt
 
 For now, you need to make a badpixel file using the flat images. For
@@ -217,7 +340,7 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
 
    .. code:: python
 
-      %dataselect_ig --tags FLAT,H indata/20240429/SDCH*.fits -o list_of_flat_h.txt
+      %dataselect_ig --tags FLAT,H unbundled_20240429/N*_H.fits -o list_of_flat_h.txt
 
 .. container:: cell
 
@@ -232,26 +355,26 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
          # Includes tags: ['FLAT', 'H']
          # Excludes tags: []
          # Descriptor expression: None
-         indata/20240429/SDCH_20240429_0365.fits
-         indata/20240429/SDCH_20240429_0366.fits
-         indata/20240429/SDCH_20240429_0367.fits
-         indata/20240429/SDCH_20240429_0368.fits
-         indata/20240429/SDCH_20240429_0369.fits
-         indata/20240429/SDCH_20240429_0370.fits
-         indata/20240429/SDCH_20240429_0371.fits
-         indata/20240429/SDCH_20240429_0372.fits
-         indata/20240429/SDCH_20240429_0373.fits
-         indata/20240429/SDCH_20240429_0374.fits
-         indata/20240429/SDCH_20240429_0375.fits
-         indata/20240429/SDCH_20240429_0376.fits
-         indata/20240429/SDCH_20240429_0377.fits
-         indata/20240429/SDCH_20240429_0378.fits
-         indata/20240429/SDCH_20240429_0379.fits
-         indata/20240429/SDCH_20240429_0380.fits
-         indata/20240429/SDCH_20240429_0381.fits
-         indata/20240429/SDCH_20240429_0382.fits
-         indata/20240429/SDCH_20240429_0383.fits
-         indata/20240429/SDCH_20240429_0384.fits
+         unbundled_20240429/N20240429S0365_H.fits
+         unbundled_20240429/N20240429S0366_H.fits
+         unbundled_20240429/N20240429S0367_H.fits
+         unbundled_20240429/N20240429S0368_H.fits
+         unbundled_20240429/N20240429S0369_H.fits
+         unbundled_20240429/N20240429S0370_H.fits
+         unbundled_20240429/N20240429S0371_H.fits
+         unbundled_20240429/N20240429S0372_H.fits
+         unbundled_20240429/N20240429S0373_H.fits
+         unbundled_20240429/N20240429S0374_H.fits
+         unbundled_20240429/N20240429S0375_H.fits
+         unbundled_20240429/N20240429S0376_H.fits
+         unbundled_20240429/N20240429S0377_H.fits
+         unbundled_20240429/N20240429S0378_H.fits
+         unbundled_20240429/N20240429S0379_H.fits
+         unbundled_20240429/N20240429S0380_H.fits
+         unbundled_20240429/N20240429S0381_H.fits
+         unbundled_20240429/N20240429S0382_H.fits
+         unbundled_20240429/N20240429S0383_H.fits
+         unbundled_20240429/N20240429S0384_H.fits
 
 .. container:: cell
 
@@ -264,9 +387,9 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
       ::
 
 
-                     --- reduce v3.2.2 ---
+                     --- reduce v4.1.0_dev ---
 
-         Running on Python 3.10.13
+         Running on Python 3.12.2
          All submitted files appear valid:
          unbundled_20240429/N20240429S0365_H.fits ... unbundled_20240429/N20240429S0384_H.fits, 20 files submitted.
          ================================================================================
@@ -284,25 +407,6 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
                -----------------------------
                   PRIMITIVE: standardizeObservatoryHeaders
                   ----------------------------------------
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
                   Updating keywords that are common to all Gemini data
                   .
                   PRIMITIVE: standardizeInstrumentHeaders
@@ -391,10 +495,10 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
                PRIMITIVE: storeCalibration
                ---------------------------
                ~/.dragons/dragons.db: Storing calibrations/processed_bpm/N20240429S0365_H_badpixel.fits as processed_bpm
+               WARNING - Overriding engineering status on file N20240429S0365_H_badpixel.fits
                .
             .
              Wrote N20240429S0365_H_badpixel.fits in output directory
-
          reduce completed successfully.
 
 .. container:: cell
@@ -408,9 +512,9 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
       ::
 
 
-                     --- reduce v3.2.2 ---
+                     --- reduce v4.1.0_dev ---
 
-         Running on Python 3.10.13
+         Running on Python 3.12.2
          All submitted files appear valid:
          unbundled_20240429/N20240429S0365_H.fits ... unbundled_20240429/N20240429S0384_H.fits, 20 files submitted.
          ================================================================================
@@ -428,25 +532,6 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
                -----------------------------
                   PRIMITIVE: standardizeObservatoryHeaders
                   ----------------------------------------
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
                   Updating keywords that are common to all Gemini data
                   .
                   PRIMITIVE: standardizeInstrumentHeaders
@@ -572,12 +657,6 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
             ------------------------
          /home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/procedures/normalize_flat.py:121: RuntimeWarning: All-NaN slice encountered
            s = np.nanmedian(dn,
-         /home/jjlee/miniconda3/envs/dragons/lib/python3.10/site-packages/numpy/core/_methods.py:206: RuntimeWarning: Degrees of freedom <= 0 for slice
-           ret = _var(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
-         /home/jjlee/miniconda3/envs/dragons/lib/python3.10/site-packages/numpy/core/_methods.py:163: RuntimeWarning: invalid value encountered in divide
-           arrmean = um.true_divide(arrmean, div, out=arrmean,
-         /home/jjlee/miniconda3/envs/dragons/lib/python3.10/site-packages/numpy/core/_methods.py:198: RuntimeWarning: invalid value encountered in divide
-           ret = ret.dtype.type(ret / rcount)
             .
             PRIMITIVE: thresholdFlatfield
             -----------------------------
@@ -587,10 +666,10 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
                PRIMITIVE: storeCalibration
                ---------------------------
                ~/.dragons/dragons.db: Storing calibrations/processed_flat/N20240429S0375_H_flat.fits as processed_flat
+               WARNING - Overriding engineering status on file N20240429S0375_H_flat.fits
                .
             .
              Wrote N20240429S0375_H_flat.fits in output directory
-
          reduce completed successfully.
 
 .. container:: cell
@@ -605,7 +684,7 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
       ::
 
          Filename: N20240429S0375_H_flat.fits
-         Tags:
+         Tags: CAL FLAT GCALFLAT GEMINI H IGRINS IGRINS-2 NORTH PREPARED PROCESSED SPECT
 
          Pixels Extensions
          Index  Content                  Type              Dimensions     Format
@@ -625,18 +704,7 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
 
    .. code:: python
 
-      plt.figure()
-      plt.imshow(ad_flat[0].FLAT_ORIGINAL, origin="lower")
-
-   .. container:: cell-output cell-output-display
-
-      ::
-
-         <matplotlib.image.AxesImage at 0x71f9c895ed40>
-
-   .. container:: cell-output cell-output-display
-
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-14-output-2.png
+      %matplotlib inline
 
 .. container:: cell
 
@@ -649,11 +717,11 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
 
       ::
 
-         <matplotlib.image.AxesImage at 0x71f9c8752a40>
+         <matplotlib.image.AxesImage at 0x7b674fd70110>
 
    .. container:: cell-output cell-output-display
 
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-15-output-2.png
+      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-16-output-2.png
 
 SKY
 ===
@@ -663,7 +731,7 @@ the PLP)
 
 Create a file containg sky frames.
 
-   dataselect_ig –tags SKY,H indata/20240429/SDC\*.fits -o
+   dataselect_ig –tags SKY,H unbundled_20240429/N*_H.fits -o
    list_of_sky_h.txt
 
 .. container:: alert alert-info
@@ -680,7 +748,7 @@ We will run reduce, but we need to explicitly set the calibration file.
 
    .. code:: python
 
-      %dataselect_ig --tags SKY,H indata/20240429/SDCH*.fits -o list_of_sky_h.txt
+      %dataselect_ig --tags SKY,H unbundled_20240429/N*_H.fits -o list_of_sky_h.txt
 
 .. container:: cell
 
@@ -695,7 +763,7 @@ We will run reduce, but we need to explicitly set the calibration file.
          # Includes tags: ['SKY', 'H']
          # Excludes tags: []
          # Descriptor expression: None
-         indata/20240429/SDCH_20240429_0204.fits
+         unbundled_20240429/N20240429S0204_H.fits
 
 .. container:: cell
 
@@ -708,15 +776,18 @@ We will run reduce, but we need to explicitly set the calibration file.
       ::
 
 
-                     --- reduce v3.2.2 ---
+                     --- reduce v4.1.0_dev ---
 
-         Running on Python 3.10.13
+         Running on Python 3.12.2
          All submitted files appear valid:
          unbundled_20240429/N20240429S0204_H.fits
          Manually assigned N20240429S0375_H_flat.fits as processed_flat
          ================================================================================
          RECIPE: makeProcessedArc
          ================================================================================
+            PRIMITIVE: fixIgrinsHeader
+            --------------------------
+            .
             PRIMITIVE: prepare
             ------------------
                PRIMITIVE: validateData
@@ -737,6 +808,7 @@ We will run reduce, but we need to explicitly set the calibration file.
                .
                PRIMITIVE: standardizeWCS
                -------------------------
+               WARNING - N20240429S0204_H_observatoryHeadersStandardized.fits (and maybe other files) do not have detector offsets. Cannot check/fix WCS.
                .
             .
             PRIMITIVE: addDQ
@@ -748,9 +820,12 @@ We will run reduce, but we need to explicitly set the calibration file.
             -----------------
             Adding the read noise component of the variance
             .
+            PRIMITIVE: readoutPatternCorrectSky
+            -----------------------------------
+            .
             PRIMITIVE: ADUToElectrons
             -------------------------
-            Converting N20240429S0204_H_varAdded.fits from ADU to electrons by multiplying by the gain
+            Converting N20240429S0204_H_rpc.fits from ADU to electrons by multiplying by the gain
             .
             PRIMITIVE: stackFrames
             ----------------------
@@ -776,7 +851,7 @@ We will run reduce, but we need to explicitly set the calibration file.
             .
             PRIMITIVE: volumeFit
             --------------------
-         /home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/procedures/process_wvlsol_volume_fit.py:66: FutureWarning: The provided callable <function std at 0x7f41ae7cb490> is currently using SeriesGroupBy.std. In a future version of pandas, the provided callable will be used directly. To keep current behavior pass the string "std" instead.
+         /home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/procedures/process_wvlsol_volume_fit.py:66: FutureWarning: The provided callable <function std at 0x73261472d6c0> is currently using SeriesGroupBy.std. In a future version of pandas, the provided callable will be used directly. To keep current behavior pass the string "std" instead.
            ss0_std = ss0.transform(np.std)
             .
             PRIMITIVE: makeSpectralMaps
@@ -790,10 +865,10 @@ We will run reduce, but we need to explicitly set the calibration file.
                PRIMITIVE: storeCalibration
                ---------------------------
                ~/.dragons/dragons.db: Storing calibrations/processed_arc/N20240429S0204_H_arc.fits as processed_arc
+               WARNING - Overriding engineering status on file N20240429S0204_H_arc.fits
                .
             .
              Wrote N20240429S0204_H_arc.fits in output directory
-
          reduce completed successfully.
 
 .. container:: cell
@@ -808,7 +883,7 @@ We will run reduce, but we need to explicitly set the calibration file.
       ::
 
          Filename: N20240429S0204_H_arc.fits
-         Tags:
+         Tags: ARC CAL GEMINI H IGRINS IGRINS-2 NORTH PREPARED PROCESSED SIDEREAL SPECT
 
          Pixels Extensions
          Index  Content                  Type              Dimensions     Format
@@ -845,11 +920,11 @@ We will run reduce, but we need to explicitly set the calibration file.
 
       ::
 
-         <matplotlib.image.AxesImage at 0x71f97e76c9a0>
+         <matplotlib.image.AxesImage at 0x7b674fdaa090>
 
    .. container:: cell-output cell-output-display
 
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-20-output-2.png
+      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-21-output-2.png
 
 .. container:: cell
 
@@ -862,11 +937,11 @@ We will run reduce, but we need to explicitly set the calibration file.
 
       ::
 
-         <matplotlib.image.AxesImage at 0x71f9c8684df0>
+         <matplotlib.image.AxesImage at 0x7b674fc88560>
 
    .. container:: cell-output cell-output-display
 
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-21-output-2.png
+      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-22-output-2.png
 
 .. container:: cell
 
@@ -881,33 +956,45 @@ We will run reduce, but we need to explicitly set the calibration file.
       int64
       float64[2048]
       98
-      1.8111933301142387 .. 1.8360399695657343
+      1.8111845305271381 .. 1.836035401709596
       99
-      1.7933534545680807 .. 1.8179632688639047
+      1.793346677244365 .. 1.8179594968565163
       100
-      1.7758753841772261 .. 1.800252099490029
+      1.7758703120185257 .. 1.8002490469894932
       101
-      1.7587484158815256 .. 1.7828956032269987
+      1.7587447624226658 .. 1.7828931980091172
       102
-      1.7419622663486773 .. 1.7658833476701403
+      1.7419597745563777 .. 1.7658815214669366
       103
-      1.7255070515990916 .. 1.74920530555671
+      1.7255054927289801 .. 1.7492039939027881
+      104
+      1.709372440314816 .. 1.7328509773742082
+      105
+      1.6935515017025407 .. 1.7168132010984456
+      106
+      1.678033905266142 .. 1.7010817441336077
       ...
       ...
+      115
+      1.5507296414785057 .. 1.5719646403767509
+      116
+      1.5378282688044835 .. 1.5588720767301498
+      117
+      1.5251524275689152 .. 1.5460066971159918
       118
-      1.5126951517015044 .. 1.533361864468183
+      1.5126964394220823 .. 1.5333627265242802
       119
-      1.5004531601245925 .. 1.5209338227376323
+      1.5004548168831622 .. 1.5209345840630037
       120
-      1.488420109176072 .. 1.5087162318068306
+      1.4884222553873612 .. 1.5087168748698823
       121
-      1.4765908549262368 .. 1.4967038731770737
+      1.4765936257273986 .. 1.4967043824251922
       122
-      1.4649604220988142 .. 1.484891699447973
+      1.4649639668667247 .. 1.4848920612426426
       123
-      1.4535239972151333 .. 1.4732748273622442
+      1.453528479103312 .. 1.4732750299167972
       124
-      1.442276922070029 .. 1.461848531187029
+      1.4422825175642295 .. 1.461848564506913
 
 A0V
 ===
@@ -915,20 +1002,20 @@ A0V
 Let’s do telluric standar star. We will select images from
 observation_id of ‘GN-2024A-ENG-142-261’.
 
-   dataselect_ig –tags STANDARD,H indata/20240425/SDC\*.fits -o
-   list_of_std_h.txt –expr “observation_id==‘GN-2024A-ENG-142-261’”
+   dataselect_ig –tags STANDARD,H unbundled_20240429/N*_H.fits -o
+   list_of_std_h.txt –expr “observation_id==‘GN-2024A-ENG-142-120’”
 
 Again, we need to explicitly specify calibration files.
 
    reduce_ig @list_of_std_h.txt –user_cal
-   processed_flat:SDCH_20240429_0375_flat.fits
-   processed_arc:SDCH_20240429_0204_arc.fits
+   processed_flat:N20240429S0375_H_flat
+   processed_arc:N20240429S0204_H_arc.fits
 
 .. container:: cell
 
    .. code:: python
 
-      %dataselect_ig --tags STANDARD,H indata/20240429/SDC*.fits -o list_of_std_h.txt --expr "observation_id=='GN-2024A-ENG-142-261'"
+      %dataselect_ig --tags STANDARD,H unbundled_20240429/N*_H.fits -o list_of_std_h.txt --expr "observation_id=='GN-2024A-ENG-142-120'"
 
 .. container:: cell
 
@@ -942,11 +1029,11 @@ Again, we need to explicitly specify calibration files.
 
          # Includes tags: ['STANDARD', 'H']
          # Excludes tags: []
-         # Descriptor expression: observation_id=='GN-2024A-ENG-142-203'
-         unbundled_20240429/N20240429S0125_H.fits
-         unbundled_20240429/N20240429S0126_H.fits
-         unbundled_20240429/N20240429S0127_H.fits
-         unbundled_20240429/N20240429S0128_H.fits
+         # Descriptor expression: observation_id=='GN-2024A-ENG-142-120'
+         unbundled_20240429/N20240429S0194_H.fits
+         unbundled_20240429/N20240429S0195_H.fits
+         unbundled_20240429/N20240429S0196_H.fits
+         unbundled_20240429/N20240429S0197_H.fits
 
 .. container:: cell
 
@@ -959,11 +1046,11 @@ Again, we need to explicitly specify calibration files.
       ::
 
 
-                     --- reduce v3.2.2 ---
+                     --- reduce v4.1.0_dev ---
 
-         Running on Python 3.10.13
+         Running on Python 3.12.2
          All submitted files appear valid:
-         unbundled_20240429/N20240429S0125_H.fits ... unbundled_20240429/N20240429S0128_H.fits, 4 files submitted.
+         unbundled_20240429/N20240429S0194_H.fits ... unbundled_20240429/N20240429S0197_H.fits, 4 files submitted.
          Manually assigned N20240429S0375_H_flat.fits as processed_flat
          Manually assigned N20240429S0204_H_arc.fits as processed_arc
          ================================================================================
@@ -985,9 +1072,6 @@ Again, we need to explicitly specify calibration files.
                   PRIMITIVE: standardizeObservatoryHeaders
                   ----------------------------------------
                   Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
-                  Updating keywords that are common to all Gemini data
                   .
                   PRIMITIVE: standardizeInstrumentHeaders
                   ---------------------------------------
@@ -995,17 +1079,18 @@ Again, we need to explicitly specify calibration files.
                .
                PRIMITIVE: standardizeWCS
                -------------------------
+               WARNING - N20240429S0194_H_observatoryHeadersStandardized.fits (and maybe other files) do not have detector offsets. Cannot check/fix WCS.
                .
             .
             PRIMITIVE: addDQ
             ----------------
-            No BPMs found for N20240429S0125_H_prepared.fits and none supplied by the user.
+            No BPMs found for N20240429S0194_H_prepared.fits and none supplied by the user.
             
-            No BPMs found for N20240429S0126_H_prepared.fits and none supplied by the user.
+            No BPMs found for N20240429S0195_H_prepared.fits and none supplied by the user.
             
-            No BPMs found for N20240429S0127_H_prepared.fits and none supplied by the user.
+            No BPMs found for N20240429S0196_H_prepared.fits and none supplied by the user.
             
-            No BPMs found for N20240429S0128_H_prepared.fits and none supplied by the user.
+            No BPMs found for N20240429S0197_H_prepared.fits and none supplied by the user.
             
             .
             PRIMITIVE: addVAR
@@ -1014,10 +1099,10 @@ Again, we need to explicitly specify calibration files.
             .
             PRIMITIVE: ADUToElectrons
             -------------------------
-            Converting N20240429S0125_H_varAdded.fits from ADU to electrons by multiplying by the gain
-            Converting N20240429S0126_H_varAdded.fits from ADU to electrons by multiplying by the gain
-            Converting N20240429S0127_H_varAdded.fits from ADU to electrons by multiplying by the gain
-            Converting N20240429S0128_H_varAdded.fits from ADU to electrons by multiplying by the gain
+            Converting N20240429S0194_H_varAdded.fits from ADU to electrons by multiplying by the gain
+            Converting N20240429S0195_H_varAdded.fits from ADU to electrons by multiplying by the gain
+            Converting N20240429S0196_H_varAdded.fits from ADU to electrons by multiplying by the gain
+            Converting N20240429S0197_H_varAdded.fits from ADU to electrons by multiplying by the gain
             .
             PRIMITIVE: makeAB
             -----------------
@@ -1033,7 +1118,7 @@ Again, we need to explicitly specify calibration files.
                Combining images.
                
                .
-         /home/jjlee/miniconda3/envs/dragons/lib/python3.10/site-packages/astrodata/nddata.py:32: RuntimeWarning: Negative variance values found. Setting to zero.
+         /home/jjlee/git_personal/DRAGONS/astrodata/nddata.py:32: RuntimeWarning: Negative variance values found. Setting to zero.
            warnings.warn("Negative variance values found. Setting to zero.",
             .
             PRIMITIVE: estimateSlitProfile
@@ -1048,23 +1133,22 @@ Again, we need to explicitly specify calibration files.
             PRIMITIVE: saveDebugImage
             -------------------------
             .
-             Wrote N20240429S0125_H_spec1d.fits in output directory
-
+             Wrote N20240429S0194_H_spec1d.fits in output directory
          reduce completed successfully.
 
 .. container:: cell
 
    .. code:: python
 
-      ad_std = astrodata.open("N20240429S0125_H_spec1d.fits")
+      ad_std = astrodata.open("N20240429S0194_H_spec1d.fits")
       ad_std.info()
 
    .. container:: cell-output cell-output-stdout
 
       ::
 
-         Filename: N20240429S0125_H_spec1d.fits
-         Tags:
+         Filename: N20240429S0194_H_spec1d.fits
+         Tags: CAL GEMINI H IGRINS IGRINS-2 NORTH PREPARED SIDEREAL SPECT STANDARD
 
          Pixels Extensions
          Index  Content                  Type              Dimensions     Format
@@ -1089,7 +1173,7 @@ Again, we need to explicitly specify calibration files.
 
    .. container:: cell-output cell-output-display
 
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-27-output-2.png
+      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-28-output-2.png
 
 .. container:: cell
 
@@ -1101,16 +1185,6 @@ Again, we need to explicitly specify calibration files.
 
    .. container:: cell-output cell-output-display
 
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-28-output-1.png
-
-.. container:: cell
-
-   .. code:: python
-
-      fig
-
-   .. container:: cell-output cell-output-display
-
       .. image:: IGRINSDR_users_manual_files/figure-rst/cell-29-output-1.png
 
 .. container:: cell
@@ -1118,7 +1192,7 @@ Again, we need to explicitly specify calibration files.
    .. code:: python
 
       ax.set_xlim(1.7, 1.75)
-      ax.set_ylim(-4000, 24000)
+      ax.set_ylim(-4000, 28000)
       fig
 
    .. container:: cell-output cell-output-display
@@ -1129,15 +1203,15 @@ Again, we need to explicitly specify calibration files.
 
    .. code:: python
 
-      ad_std_2dspec = astrodata.open("N20240429S0125_H_spec2d.fits")
+      ad_std_2dspec = astrodata.open("N20240429S0194_H_spec2d.fits")
       ad_std_2dspec.info()
 
    .. container:: cell-output cell-output-stdout
 
       ::
 
-         Filename: N20240429S0125_H_spec2d.fits
-         Tags:
+         Filename: N20240429S0194_H_spec2d.fits
+         Tags: CAL GEMINI H IGRINS IGRINS-2 NORTH PREPARED SIDEREAL SPECT STANDARD
 
          Pixels Extensions
          Index  Content                  Type              Dimensions     Format
@@ -1163,15 +1237,15 @@ Again, we need to explicitly specify calibration files.
 
    .. code:: python
 
-      ad_std_debug = astrodata.open("N20240429S0125_H_spec_debug.fits")
+      ad_std_debug = astrodata.open("N20240429S0194_H_spec_debug.fits")
       ad_std_debug.info()
 
    .. container:: cell-output cell-output-stdout
 
       ::
 
-         Filename: N20240429S0125_H_spec_debug.fits
-         Tags:
+         Filename: N20240429S0194_H_spec_debug.fits
+         Tags: CAL GEMINI H IGRINS IGRINS-2 NORTH PREPARED SIDEREAL SPECT STANDARD
 
          Pixels Extensions
          Index  Content                  Type              Dimensions     Format
@@ -1188,20 +1262,20 @@ SCIENCE
 
 For science target, select 900078.
 
-   dataselect_ig –tags SCIENCE,H indata/20240429/SDC\*.fits -o
+   dataselect_ig –tags SCIENCE,H unbundled_20240429/N*_H.fits -o
    list_of_900078_h.txt –expr “object==‘900078’”
 
 Run reduce.
 
    reduce_ig @list_of_900078_h.txt –user_cal
-   processed_flat:SDCH_20240429_0375_flat.fits
-   processed_arc:SDCH_20240429_0204_arc.fits
+   processed_flat:N20240429S0375_H_flat.fits
+   processed_arc:N20240429S0204_H_arc.fits
 
 .. container:: cell
 
    .. code:: python
 
-      %dataselect_ig --tags SCIENCE,H indata/20240429/SDCH*.fits -o list_of_900078_h.txt --expr "object=='T Coronae Borealis'"
+      %dataselect_ig --tags SIDEREAL,H unbundled_20240429/N*_H.fits -o list_of_900078_h.txt --expr "object=='900078'"
 
 .. container:: cell
 
@@ -1213,17 +1287,13 @@ Run reduce.
 
       ::
 
-         # Includes tags: ['SCIENCE', 'H']
+         # Includes tags: ['SIDEREAL', 'H']
          # Excludes tags: []
-         # Descriptor expression: object=='T Coronae Borealis'
-         indata/20240429/SDCH_20240429_0213.fits
-         indata/20240429/SDCH_20240429_0214.fits
-         indata/20240429/SDCH_20240429_0215.fits
-         indata/20240429/SDCH_20240429_0216.fits
-         indata/20240429/SDCH_20240429_0217.fits
-         indata/20240429/SDCH_20240429_0218.fits
-         indata/20240429/SDCH_20240429_0219.fits
-         indata/20240429/SDCH_20240429_0220.fits
+         # Descriptor expression: object=='900078'
+         unbundled_20240429/N20240429S0190_H.fits
+         unbundled_20240429/N20240429S0191_H.fits
+         unbundled_20240429/N20240429S0192_H.fits
+         unbundled_20240429/N20240429S0193_H.fits
 
 .. container:: cell
 
@@ -1236,54 +1306,109 @@ Run reduce.
       ::
 
 
-                     --- reduce v3.2.2 ---
+                     --- reduce v4.1.0_dev ---
 
-         Running on Python 3.10.13
+         Running on Python 3.12.2
          All submitted files appear valid:
-         indata/20240429/SDCH_20240429_0213.fits ... indata/20240429/SDCH_20240429_0220.fits, 8 files submitted.
+         unbundled_20240429/N20240429S0190_H.fits ... unbundled_20240429/N20240429S0193_H.fits, 4 files submitted.
          Manually assigned N20240429S0375_H_flat.fits as processed_flat
          Manually assigned N20240429S0204_H_arc.fits as processed_arc
          ================================================================================
-         RECIPE: fixHeader
+         RECIPE: makeTgt
          ================================================================================
-            PRIMITIVE: fixHeader
-            --------------------
+            PRIMITIVE: checkCALDB
+            ---------------------
             .
-            PRIMITIVE: writeOutputs
+            PRIMITIVE: prepare
+            ------------------
+               PRIMITIVE: validateData
+               -----------------------
+               .
+               PRIMITIVE: standardizeStructure
+               -------------------------------
+               .
+               PRIMITIVE: standardizeHeaders
+               -----------------------------
+                  PRIMITIVE: standardizeObservatoryHeaders
+                  ----------------------------------------
+                  Updating keywords that are common to all Gemini data
+                  .
+                  PRIMITIVE: standardizeInstrumentHeaders
+                  ---------------------------------------
+                  .
+               .
+               PRIMITIVE: standardizeWCS
+               -------------------------
+               WARNING - N20240429S0190_H_observatoryHeadersStandardized.fits (and maybe other files) do not have detector offsets. Cannot check/fix WCS.
+               .
+            .
+            PRIMITIVE: addDQ
+            ----------------
+            No BPMs found for N20240429S0190_H_prepared.fits and none supplied by the user.
+            
+            No BPMs found for N20240429S0191_H_prepared.fits and none supplied by the user.
+            
+            No BPMs found for N20240429S0192_H_prepared.fits and none supplied by the user.
+            
+            No BPMs found for N20240429S0193_H_prepared.fits and none supplied by the user.
+            
+            .
+            PRIMITIVE: addVAR
+            -----------------
+            Adding the read noise component and the Poisson noise component of the variance
+            .
+            PRIMITIVE: ADUToElectrons
+            -------------------------
+            Converting N20240429S0190_H_varAdded.fits from ADU to electrons by multiplying by the gain
+            Converting N20240429S0191_H_varAdded.fits from ADU to electrons by multiplying by the gain
+            Converting N20240429S0192_H_varAdded.fits from ADU to electrons by multiplying by the gain
+            Converting N20240429S0193_H_varAdded.fits from ADU to electrons by multiplying by the gain
+            .
+            PRIMITIVE: makeAB
+            -----------------
+               PRIMITIVE: stackFrames
+               ----------------------
+               Combining 2 inputs with mean and sigclip rejection
+               Combining images.
+               
+               .
+               PRIMITIVE: stackFrames
+               ----------------------
+               Combining 2 inputs with mean and sigclip rejection
+               Combining images.
+               
+               .
+         /home/jjlee/git_personal/DRAGONS/astrodata/nddata.py:32: RuntimeWarning: Negative variance values found. Setting to zero.
+           warnings.warn("Negative variance values found. Setting to zero.",
+            .
+            PRIMITIVE: estimateSlitProfile
+            ------------------------------
+            .
+            PRIMITIVE: extractStellarSpec
+            -----------------------------
+            .
+            PRIMITIVE: saveTwodspec
             -----------------------
-            Writing to file SDCH_20240429_0213_fixed.fits
-            Writing to file SDCH_20240429_0214_fixed.fits
-            Writing to file SDCH_20240429_0215_fixed.fits
-            Writing to file SDCH_20240429_0216_fixed.fits
-            Writing to file SDCH_20240429_0217_fixed.fits
-            Writing to file SDCH_20240429_0218_fixed.fits
-            Writing to file SDCH_20240429_0219_fixed.fits
-            Writing to file SDCH_20240429_0220_fixed.fits
             .
-             Wrote SDCH_20240429_0213_fixed.fits in output directory
-             Wrote SDCH_20240429_0214_fixed.fits in output directory
-             Wrote SDCH_20240429_0215_fixed.fits in output directory
-             Wrote SDCH_20240429_0216_fixed.fits in output directory
-             Wrote SDCH_20240429_0217_fixed.fits in output directory
-             Wrote SDCH_20240429_0218_fixed.fits in output directory
-             Wrote SDCH_20240429_0219_fixed.fits in output directory
-             Wrote SDCH_20240429_0220_fixed.fits in output directory
-
+            PRIMITIVE: saveDebugImage
+            -------------------------
+            .
+             Wrote N20240429S0190_H_spec1d.fits in output directory
          reduce completed successfully.
 
 .. container:: cell
 
    .. code:: python
 
-      ad_tgt = astrodata.open("SDCH_20240429_0213_spec1d.fits")
+      ad_tgt = astrodata.open("N20240429S0190_H_spec1d.fits")
       ad_tgt.info()
 
    .. container:: cell-output cell-output-stdout
 
       ::
 
-         Filename: SDCH_20240429_0213_spec1d.fits
-         Tags: GEMINI H IGRINS NORTH PREPARED SCIENCE SIDEREAL SPECT VERSION2
+         Filename: N20240429S0190_H_spec1d.fits
+         Tags: GEMINI H IGRINS IGRINS-2 NORTH PREPARED SIDEREAL SPECT
 
          Pixels Extensions
          Index  Content                  Type              Dimensions     Format
@@ -1333,7 +1458,7 @@ Run reduce.
    .. code:: python
 
       ax.set_xlim(1.72, 1.75)
-      ax.set_ylim(0.2, 0.8)
+      ax.set_ylim(0., 0.2)
       fig
 
    .. container:: cell-output cell-output-display
