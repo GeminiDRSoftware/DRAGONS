@@ -14,7 +14,8 @@ Documentation
 ^^^^^^^^^^^^^
 
   - `User's Guide <IGRINSDR_users_manual.html>`_
-  - `Developers's Guide <DevelopersGuide.html>`_
+    : The source notebook is available at `here <https://github.com/leejjoon/IGRINSDR/blob/docs/docs/IGRINSDR_users_manual.ipynb>`_
+  - `Developers's Guide <DevelopersGuide.html>`_ : this document is in very early stage.
   - `Notebooks to verify the results <notebooks.html>`_
 
 ..

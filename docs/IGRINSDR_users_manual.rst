@@ -1,19 +1,19 @@
-===================================
-DRAGONS version of IGRINS2 pipeline
-===================================
+==============================================
+DRAGONS-compatible version of IGRINS2 pipeline
+==============================================
 
 .. container:: alert alert-success
 
-   DRAGONS version is in very early stage of development. As of
-   2024-05-01, this is a naive (and partial) translation of original
-   IGRINS plp pipeline. It only support H band spectra, and stellar
-   sources taken with ABBA nodding.
+   DRAGONS-compatible version is in very early stage of development.
+   This is largely a translation of original IGRINS plp pipeline to the
+   DRAGONS framework. For now, it only supports H band spectra, and
+   stellar sources taken with ABBA nodding.
 
 .. container:: alert alert-success
 
-   Plesae understand that the primary purpose of this demo is receive
-   (early) feedback on high-level workflow. But any comment will be
-   welcomed.
+   At this stage of development, plesae understand that the primary
+   purpose of this document is to receive (early) feedback on high-level
+   workflow. But any comment will be welcomed.
 
 Install
 =======
@@ -21,11 +21,15 @@ Install
 If you have not, please consult “Preparation for dragons version.ipynb”
 and install IGRINSDR.
 
-Set up alias
-============
+Setting up
+==========
 
-To reduce number of typing, we make aliases for dataselect and reduce
-that will load ingrisdr packages.
+The original version of this document is a jupyter notebook, mixed with
+shell comannds and python code. It may be better to look at the original
+notebook file.
+
+To reduce number of typing, we make aliases for ``dataselect`` and
+``reduce`` so that they load ingrisdr packages automtically.
 
 On the shell, you may do something like
 
@@ -48,6 +52,8 @@ Below we will us ipython magic commands for aliasing.
 
       alias reduce_ig reduce --drpkg=igrinsdr --adpkg=igrins_instruments
 
+Below are initial import statements for the pyton codes.
+
 .. container:: cell
 
    .. code:: python
@@ -64,26 +70,25 @@ Download data
 We will use engineering data of “gn-2024a-eng-142” which is available
 from Gemini archive. Download data from 2024-04-29.
 
-.. container:: alert alert-info
-
-   If you have followed the plp version of notebook, you can skip this
-   part as you already have data downloaded.
-
 The MEF files from the archive need to be unbundled to H and K bands
-files. For now we use a custom python script, which will be installed
-when IGRINSDR gets installed. Assuming that files from gemini archive is
-extracted in the directory “mef_dir” (the files need to be unzipped if
-zipped). ‘mef_extract’ script will be installed together with IGRINSDR.
-This is identical to “mef_extract.py” included in plp version.
+files. Assuming that files from gemini archive is extracted in the
+directory “mef_20240429” (the files need to be unzipped if zipped).
+‘reduce’ can be used to unbundle these files.
 
 .. code:: bash
 
-   > mef_extract mef_dir 20240429 indata/20240429
+   > dataselect_ig --tags BUNDLE mef_20240429/N*.fits -o list_of_bundles.txt
+   > reduce_ig @list_of_bundles.txt
+
+For the commands below, we will temporarily cd to
+``unbundled_20240429``. The unbundled files will be saved in the working
+directory.
 
 .. container:: cell
 
    .. code:: python
 
+      !mkdir unbundled_20240429
       %cd unbundled_20240429
       %dataselect_ig --tags BUNDLE ../mef_20240429/N*.fits -o list_of_bundles.txt
 
@@ -91,6 +96,7 @@ This is identical to “mef_extract.py” included in plp version.
 
       ::
 
+         mkdir: cannot create directory ‘unbundled_20240429’: File exists
          /media/DATA2024/jjlee/igrins/igrins_indata/unbundled_20240429
 
 .. container:: cell
