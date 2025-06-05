@@ -44,10 +44,20 @@ class Stats(PrimitivesBASE):
 
         for ad in adinputs:
             for ext in ad:
-                ext.hdr[pre+'MEAN'] = (np.mean(ext.data[ext.mask==0]),
-                                      "Mean of unmasked pixel values")
-                ext.hdr[pre+'STDV'] = (np.std(ext.data[ext.mask==0]),
-                                       "Standard Deviation of pixel values")
-                ext.hdr[pre+'MED'] = (np.median(ext.data[ext.mask == 0]),
-                                     "Median of unmasked of pixel values")
+                try:
+                    ext.hdr[pre+'MEAN'] = (np.mean(ext.data[ext.mask==0]),
+                                          "Mean of unmasked pixel values")
+                except ValueError:
+                    # Things like NaN can't be written to FITS headers
+                    pass
+                try:
+                    ext.hdr[pre+'STDV'] = (np.std(ext.data[ext.mask==0]),
+                                           "Standard Deviation of pixel values")
+                except ValueError:
+                    pass
+                try:
+                    ext.hdr[pre+'MED'] = (np.median(ext.data[ext.mask == 0]),
+                                         "Median of unmasked of pixel values")
+                except ValueError:
+                    pass
         return adinputs
