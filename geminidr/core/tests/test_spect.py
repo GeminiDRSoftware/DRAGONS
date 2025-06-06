@@ -28,6 +28,7 @@ Notes
 """
 
 import os
+import logging
 
 import numpy as np
 import pytest
@@ -400,6 +401,44 @@ def test_sky_correct_from_slit_with_multiple_sources():
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
+
+def test_sky_correct_from_slit_negative_beams(caplog):
+    # Input Parameters ----------------
+    width = 200
+    height = 100
+    np.random.seed(0)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+    # We need noise or get_extrema() doesn't work
+    ad[0].data += np.random.randn(*ad[0].data.shape)
+
+    for i in range(1, 4):
+        source_model_parameters = {'c0': 0.25 * i * height, 'c1': 0.0}
+        source = 100 * fake_point_source_spatial_profile(
+            height, width, source_model_parameters, fwhm=0.05 * height)
+        if i == 2:
+            ad[0].data += source
+        else:
+            ad[0].data -= 0.5 * source
+
+    ad[0].APERTURE = get_aperture_table(height, width)
+
+    # Running the test ----------------
+    caplog.set_level(logging.DEBUG)
+    p = primitives_spect.Spect([])
+    ad.phu[p.timestamp_keys['subtractSky']] = '2023-10-01T00:00:00.000'
+    ad_out = p.skyCorrectFromSlit([ad], function="chebyshev", order=2,
+                                  grow=2, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=2)[0]
+
+    passing = False
+    for record in caplog.records:
+        if 'beam offsets' in record.message:
+            fields = record.message.strip().split()
+            assert len(fields) == 5, "Not 2 beam offsets found"
+            passing = np.allclose(sorted([float(x) for x in fields[-2:]]),
+                                  (-0.25 * height, 0.25 * height), atol=0.1)
+    assert passing
 
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_shift', [0, -1.2, 2.75])

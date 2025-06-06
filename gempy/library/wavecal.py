@@ -385,20 +385,20 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
 
         # Get the data necessary for the reference spectrum plot, to be displayed
         # in a separate plot in the interactive mode
-        linelist = input_data["linelist"]
-        if linelist.reference_spectrum is not None:
-            if "refplot_linelist" not in linelist.reference_spectrum:
+        lnlist = input_data["linelist"]
+        if lnlist.reference_spectrum is not None:
+            if "refplot_linelist" not in lnlist.reference_spectrum:
                 # We need to calculate the intensity of the reference spectrum
                 # at the locations of the lines
-                refspec = linelist.reference_spectrum["refplot_spec"]
-                wavelengths = linelist.vacuum_wavelengths(units="nm")
+                refspec = lnlist.reference_spectrum["refplot_spec"]
+                wavelengths = lnlist.vacuum_wavelengths(units="nm")
                 # LineList might extend beyond edges of displayed spectrum
                 fluxes = np.interp(wavelengths, *refspec.T,
                                    left=np.nan, right=np.nan)
-                linelist.reference_spectrum["refplot_linelist"] = np.array(
+                lnlist.reference_spectrum["refplot_linelist"] = np.array(
                     [wavelengths, fluxes]).T[~np.isnan(fluxes)]
 
-            input_data.update(linelist.reference_spectrum)
+            input_data.update(lnlist.reference_spectrum)
 
         input_data["init_models"] = [fit1d.model] + input_data["init_models"]
         data["meta"].append(input_data)

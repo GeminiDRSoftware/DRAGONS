@@ -20,11 +20,11 @@ from bokeh.models import (
     Spacer,
     Select,
     ColumnDataSource,
-    Whisker,
+    Whisker, InlineStyleSheet,
 )
 
 from geminidr.interactive import server
-from geminidr.interactive.styles import dragons_styles
+from geminidr.interactive.styles import dragons_styles, skip_btn_styles
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
 from gempy.library.astrotools import (
@@ -101,6 +101,7 @@ class PrimitiveVisualizer(ABC):
         help_text=None,
         ui_params=None,
         reinit_live=False,
+        allow_skip=False,
     ):
         """
         Initialize a visualizer.
@@ -131,6 +132,10 @@ class PrimitiveVisualizer(ABC):
             If True, recalculate points on any change (default False). This is
             set in __init__ to PrimitiveVisualizer.reinit_live, but can be
             overridden by subclasses.
+
+        allow_skip : bool
+            if True, add a button allow the user to exit in a way that does
+            not return a fit
         """
         global _visualizer
         _visualizer = self
@@ -162,6 +167,8 @@ class PrimitiveVisualizer(ABC):
         self.can_exit_with_bad_fits = False
 
         self.user_satisfied = False
+
+        self.return_fit = True
 
         legend_html = (
             'Plot Tools<br/><img src="dragons/static/bokehlegend.png" />'
@@ -214,6 +221,21 @@ class PrimitiveVisualizer(ABC):
         # callbacks in bokeh)
         self.submit_button.on_click(self.submit_button_handler)
         self.submit_button.js_on_change("disabled", callback)
+
+        if allow_skip:
+            self.skip_button = Button(
+                align="center",
+                button_type="primary",
+                css_classes=["submit_btn"],
+                label="Skip",
+                name="skip_btn",
+                height=55,
+                stylesheets=skip_btn_styles(),
+            )
+            self.skip_button.on_click(self.skip_button_handler)
+            self.skip_button.js_on_change("disabled", callback)
+        else:
+            self.skip_button = None
 
         abort_callback = CustomJS(
             code="""
@@ -454,6 +476,15 @@ class PrimitiveVisualizer(ABC):
             "will exit completely.",
             cb,
         )
+
+    def skip_button_handler(self):
+        """
+        Tidy up when the no-op button is activated
+        """
+        self.return_fit = False
+
+        # Trigger the callback via disabling the no-op button
+        self.skip_button.disabled = True
 
     # pylint: disable=unused-argument
     def session_ended(self, sess_context, user_satisfied):

@@ -1594,6 +1594,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         panel_class=Fit1DPanel,
         reinit_live=False,
         mask_glyphs=None,
+        allow_skip=False,
         **kwargs,
     ):
         """Initializes the Fit1DVisualizer and its parent class.
@@ -1666,12 +1667,17 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             The class of Panel to use in each tab. This allows specific
             operability for each primitive since most of the functions that do
             the work are methods of this class.
+
         reinit_live : bool
             If True, some buttons and parameters will recalculate the data
             points immediately.  If False, the reinit button will be disabled
             until the user clicks the "Recalculate" button. Default is False.
-        mask_glyphs: dict/None
+
+        mask_glyphs : dict/None
             glyphs for rendering additional masks
+
+        allow_skip : bool
+            add a button to allow exit and return unmodified data?
         """
         super().__init__(
             title=title,
@@ -1681,6 +1687,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             help_text=help_text,
             ui_params=ui_params,
             reinit_live=reinit_live,
+            allow_skip=allow_skip,
         )
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
@@ -1898,7 +1905,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             sizing_mode="stretch_width",
         )
 
-        for btn in (self.submit_button, self.abort_button):
+        buttons = (self.abort_button,)
+        if self.skip_button is not None:
+            buttons += (self.skip_button,)
+        buttons += (self.submit_button,)
+
+        for btn in buttons:
             btn.align = "end"
             btn.margin = (0, 5, 0, 0)
             btn.width = 212
@@ -1909,8 +1921,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.submit_button.align = "end"
 
             abort_submit_buttons = row(
-                self.abort_button,
-                self.submit_button,
+                *buttons,
                 align="end",
                 stylesheets=dragons_styles(),
             )
@@ -1926,8 +1937,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         else:
             top_row = column(
-                self.abort_button,
-                self.submit_button,
+                *buttons,
                 align="end",
                 stylesheets=dragons_styles(),
                 css_classes=["top-row"],
@@ -2078,7 +2088,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         -------
         list of `~gempy.library.fitting.fit_1D`
         """
-        return [fit.fit for fit in self.fits]
+        if self.return_fit:
+            return [fit.fit for fit in self.fits]
 
 
 def prep_fit1d_params_for_fit1d(fit1d_params):

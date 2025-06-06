@@ -28,9 +28,8 @@ from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from numpy.f2py.crackfortran import verbose
 from numpy.ma.extras import _ezclump
-from scipy import optimize
+from scipy import ndimage, optimize
 from scipy.signal import find_peaks, correlate
 from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
@@ -45,7 +44,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gemini.lookups import extinction_data as extinct, oh_synthetic_spectra
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
-from geminidr.interactive.fit.tracing import interactive_trace_apertures
+from geminidr.interactive.fit.tracing import interactive_trace_apertures, trace_apertures_data_provider
 from geminidr.interactive.fit.wavecal import WavelengthSolutionVisualizer
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
@@ -1169,11 +1168,12 @@ class Spect(Resample):
 
                 # Get filename to display in visualizer
                 filename_info = getattr(ad, 'filename', '')
+                tab_labels = self._make_tab_labels(ad)
 
                 uiparams = UIParameters(config)
                 visualizer = fit1d.Fit1DVisualizer({"x": all_waves, "y": all_zpt, "weights": all_weights},
                                                    fitting_parameters=all_fp_init,
-                                                   tab_name_fmt=lambda i: f"CCD {i+1}",
+                                                   tab_name_fmt=lambda i: tab_labels[i],
                                                    xlabel=f'Wavelength ({xunits})',
                                                    ylabel=f'Sensitivity ({yunits})',
                                                    domains=all_domains,
@@ -2495,13 +2495,12 @@ class Spect(Resample):
                 reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
                             linelist=linelist, bad_bits=DQ.not_signal)
 
-                label_fn = ((lambda i: f"Order {ad.hdr['SPECORDR'][i]}")
-                            if 'XD' in ad.tags else (lambda i: f"Slit {i+1}"))
+                tab_labels = self._make_tab_labels(ad)
 
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
-                    tab_name_fmt=label_fn,
+                    tab_name_fmt=lambda i: tab_labels[i],
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
                     absorption=absorption,
@@ -3747,9 +3746,10 @@ class Spect(Resample):
                 else:
                     filename_info = ''
 
+                tab_labels = self._make_tab_labels(ad)
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points,
                                                    all_fp_init,
-                                                   tab_name_fmt=lambda i: f"Array {i}",
+                                                   tab_name_fmt=lambda i: tab_labels[i],
                                                    xlabel=xaxis_label, ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",
@@ -4294,6 +4294,8 @@ class Spect(Resample):
             Show diagnostic plots?
         interactive : bool
             Show interactive interface?
+        debug_allow_skip : bool
+            Allow user to exit GUI and bypass sky subtraction?
 
         Returns
         -------
@@ -4313,6 +4315,7 @@ class Spect(Resample):
         debug_plot = params["debug_plot"]
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
+        allow_skip = params.get("debug_allow_skip", False)
 
         def calc_sky_coords(ad: AstroData, apgrow=0, interactive_mode=False):
             """
@@ -4349,7 +4352,7 @@ class Spect(Resample):
                                 (csc_ext.mask & DQ.not_signal).astype(bool))
 
                 # Create an aggregated aperture mask
-                csc_aperture_mask = (np.zeros_like(csc_ext.data, dtype=bool))
+                csc_aperture_mask = np.zeros_like(csc_ext.data, dtype=bool)
                 try:
                     aptable = csc_ext.APERTURE
                 except AttributeError:
@@ -4363,6 +4366,16 @@ class Spect(Resample):
                         aperture_mask = aperture.aperture_mask(csc_ext, grow=apgrow)
                         csc_aperture_mask |= aperture_mask
 
+                    # This gets the name "pure" because we may wish to make it
+                    # wih apgrow=0 since the -ve beams and likely to be lower
+                    # S/N than the +ve beam.
+                    pure_aperture_mask = csc_aperture_mask.copy()
+                    for beam_shift in csc_ext.nddata.meta.get('negative_beam_offsets', []):
+                        shift = (0, int(np.round(beam_shift)))
+                        if csc_spataxis == 0:
+                            shift = shift[::-1]
+                        csc_aperture_mask |= ndimage.shift(pure_aperture_mask, shift, order=1)
+
                 if csc_ext.variance is None:
                     csc_sky_weights = None
                 else:
@@ -4375,11 +4388,11 @@ class Spect(Resample):
                         csc_sky_weights[zeros] = 1
 
                 # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
-                # chip gaps) to avoid a zillion warnings about insufficient
-                # unmasked points.
+                # chip gaps) or all unilluminated to avoid a zillion warnings
+                # about insufficient unmasked points.
                 if csc_ext.mask is not None:
-                    no_data = (np.bitwise_and.reduce(csc_ext.mask, axis=csc_spataxis) &
-                               DQ.no_data).astype(bool)
+                    no_data = np.logical_and.reduce(
+                        (csc_ext.mask & (DQ.no_data | DQ.unilluminated)).astype(bool), axis=csc_spataxis)
                     if csc_spataxis == 0:
                         csc_sky_mask ^= no_data
                     else:
@@ -4440,6 +4453,51 @@ class Spect(Resample):
         final_parms = list()
         apgrow = None  # for saving selected aperture_grow values, if interactive
 
+        # Look for negative beams from sky subtraction to help with fitting.
+        # We want to mask bad pixels, which means we can't do FFT correlation
+        # which is faster.
+        for ad in adinputs:
+            if self.timestamp_keys['subtractSky'] in ad.phu:
+                spataxes = np.asarray(ad.dispersion_axis()) - 1
+                min_size = min(ext.shape[spataxis]
+                               for ext, spataxis in zip(ad, spataxes))
+                xcorr_sum = np.zeros((2 * min_size - 1,))
+
+                for ext, spataxis in zip(ad, spataxes):
+                    # If this ext is wider than the minimum, it's xcorr will
+                    # be wider and we need to trim it to the same size.
+                    xcorr_slice = (slice(ext.shape[spataxis] - min_size,
+                                         min_size - ext.shape[spataxis])
+                                   if ext.shape[spataxis] > min_size
+                                   else slice(None))
+                    for i in range(ext.shape[1 - spataxis]):
+                        _slice = i if spataxis == 1 else (slice(None), i)
+                        row = np.ma.masked_array(ext.data[_slice],
+                                                 None if ext.mask is None else
+                                                 ext.mask[_slice])
+                        # Without the "maximum" we get a symmetric xcorr array
+                        xcorr_sum += np.ma.correlate(
+                            np.maximum(row, 0), -row, mode='full')[xcorr_slice]
+
+                # This is expected to be at zero shift
+                peak_location = xcorr_sum.argmin()
+                peak_value = -xcorr_sum[peak_location]
+
+                # The idea here is that we can have one -ve beam if it's as
+                # strong as the +ve beam, or two if they're at least half as
+                # strong, etc. Because of noise, we add 1 to the denominator.
+                possible_beams = sorted(x[:2] for x in peak_finding.get_extrema(
+                    xcorr_sum, remove_edge_maxima=False) if x[2])[::-1]
+                beam_locations = [x[0] for i, x in enumerate(possible_beams)
+                                  if x[1] > peak_value / (i + 2)]
+                beam_offsets = peak_location - np.array(beam_locations)
+                log.debug(f"{ad.filename} beam offsets: "+" ".join(
+                    [str(x) for x in beam_offsets]))
+
+                # Store them somewhere for retrieval later
+                for ext in ad:
+                    ext.nddata.meta['negative_beam_offsets'] = beam_offsets
+
         if interactive:
             apgrow = list()
             # build config for interactive
@@ -4477,12 +4535,14 @@ class Spect(Resample):
                                       inclusiveMax=True)
                 }
 
+                tab_labels = self._make_tab_labels(ad)
+
                 # get the fit parameters
                 fit1d_params = fit_1D.translate_params(params)
                 ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
                 visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
                                                    fitting_parameters=[fit1d_params] * len(ad),
-                                                   tab_name_fmt=lambda i: f"Slit {i+1}",
+                                                   tab_name_fmt=lambda i: tab_labels[i],
                                                    xlabel='Row' if spataxis == 0 else 'Column',
                                                    ylabel='Signal',
                                                    domains=all_domains,
@@ -4495,17 +4555,21 @@ class Spect(Resample):
                                                    recalc_inputs_above=True,
                                                    ui_params=ui_params,
                                                    reinit_live=True,
-                                                   mask_glyphs={"aperture": ("inverted_triangle", "lightgray")})
+                                                   mask_glyphs={"aperture": ("inverted_triangle", "lightgray")},
+                                                   allow_skip=allow_skip)
 
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 # Pull out the final parameters to use as inputs doing the real fit
                 fit_results = visualizer.results()
                 final_parms_exts = list()
-                apgrow.append(ui_params.values['aperture_growth'])
-                for fit in fit_results:
-                    final_parms_exts.append(fit.extract_params())
-                final_parms.append(final_parms_exts)
+                if fit_results is None:
+                    log.warning("Not performing sky subtraction")
+                else:
+                    apgrow.append(ui_params.values['aperture_growth'])
+                    for fit in fit_results:
+                        final_parms_exts.append(fit.extract_params())
+                    final_parms.append(final_parms_exts)
         else:
             # making fit params into an array even though it all matches
             # so we can share the same final code with the interactive,
@@ -4513,24 +4577,32 @@ class Spect(Resample):
             for ad in adinputs:
                 final_parms.append([fit1d_params] * len(ad))
 
-        for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
-            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning(f"{ad.filename} has not been distortion corrected."
-                            " Sky subtraction is likely to be poor.")
-            eidx = 0
-            if apgrow:
-                # get value set in the interactive tool
-                apg = apgrow[idx]
-            else:
-                # get value for aperture growth from config
-                apg = params["aperture_growth"]
-            for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
-                spataxis = ext.dispersion_axis() - 1  # python sense
-                sky = np.ma.masked_array(ext.data, mask=sky_mask)
-                sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
-                                   axis=spataxis, plot=debug_plot).evaluate()
-                ext.data -= sky_model
-                eidx = eidx + 1
+        # Subtract sky unless the user has exited the GUI requesting not to
+        if not (interactive and fit_results is None):
+            for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
+                if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                    log.warning(f"{ad.filename} has not been distortion corrected."
+                                " Sky subtraction is likely to be poor.")
+                eidx = 0
+                if apgrow:
+                    # get value set in the interactive tool
+                    apg = apgrow[idx]
+                else:
+                    # get value for aperture growth from config
+                    apg = params["aperture_growth"]
+
+                for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
+                    spataxis = ext.dispersion_axis() - 1  # python sense
+                    sky = np.ma.masked_array(ext.data, mask=sky_mask)
+                    sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
+                                       axis=spataxis, plot=debug_plot).evaluate()
+                    ext.data -= sky_model
+                    eidx = eidx + 1
+
+        for ad in adinputs:
+            # Clean up the meta
+            for ext in ad:
+                ext.nddata.meta.pop('negative_beam_offsets', None)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -4611,136 +4683,84 @@ class Spect(Resample):
 
         # Main Loop
         for ad in adinputs:
-            for ext in ad:
-
-                # Verify inputs
+            # We need to go through the extensions/apertures to understand
+            # the order of the returned models
+            tab_labels = []
+            for ext, tab_label in zip(ad, self._make_tab_labels(ad)):
                 try:
                     aptable = ext.APERTURE
-                    locations = aptable['c0'].data
-                except (AttributeError, KeyError):
-                    log.warning("Could not find aperture locations in "
-                                f"{ad.filename} extension {ext.id} - continuing")
+                except AttributeError:
+                    continue
+                if len(ad) > 1:
+                    if len(aptable)> 1:
+                        tab_labels.extend([f"{tab_label} Aperture {apnum}" for apnum in aptable["number"]])
+                    else:
+                        tab_labels.append(tab_label)
+                else:
+                    tab_labels.extend([f"Aperture {apnum}" for apnum in aptable["number"]])
+
+            # Set up UIParameters for trace_lines() call
+            _config = self.params[self.myself()]
+            _config.update(**params)
+
+            title_overrides = {
+                'max_missed': 'Max Missed',
+                'max_shift':  'Max Shifted',
+                'nsum':       'Lines to sum',
+                'step':       'Tracing step',
+            }
+            ui_params = UIParameters(_config,
+                                     reinit_params=["max_missed", "max_shift", "nsum", "step"],
+                                     title_overrides=title_overrides)
+
+            if interactive:
+                aperture_models = interactive_trace_apertures(
+                    ad, tab_labels, fit1d_params, ui_params=ui_params)
+            else:
+                traced_data = trace_apertures_data_provider(ad, ui_params)
+
+                # This is duplication of code in interactive_trace_apertures
+                other_data = [
+                    [row["number"], row["c0"]] +
+                    [
+                        ext.APERTURE.meta["header"][kw]
+                        for kw in ("DOMAIN_START", "DOMAIN_END")
+                    ]
+                    for ext in ad
+                    for row in (ext.APERTURE if hasattr(ext, "APERTURE") else [])
+                ]
+
+                aperture_models = []
+                for x, y, (apnum, c0, *domain) in zip(
+                        traced_data["x"], traced_data["y"], other_data):
+                    log.fullinfo(f"Aperture at {c0:.1f} traced from {x.min()} "
+                                 f"to {x.max()}")
+                    try:
+                        _fit_1d = fit_1D(y, domain=domain, order=order,
+                                         points=x, **fit1d_params)
+                    # This hides a multitude of sins, including no points
+                    # returned by the trace, or insufficient points to
+                    # constrain fit. We call fit1d with dummy points to
+                    # ensure we get the same type of result as if it had
+                    # been successful.
+                    except (IndexError, np.linalg.linalg.LinAlgError):
+                        log.warning(f"Unable to trace aperture {apnum}")
+                        _fit_1d = fit_1D(np.full_like(y, c0), domain=domain,
+                            order=0, points=y, **fit1d_params)
+
+                    aperture_models.append(_fit_1d.model)
+
+            # Put the aperture models into the APERTURE tables
+            for ext in ad:
+                try:
+                    aptable = ext.APERTURE
+                except AttributeError:
                     continue
 
-                if debug:
-                    self.viewer.display_image(ext, wcs=False)
-                    self.viewer.width = 2
-                    self.viewer.color = "blue"
-
-                # Set up UIParameters for trace_lines() call
-                _config = self.params[self.myself()]
-                _config.update(**params)
-
-                title_overrides = {
-                    'max_missed': 'Max Missed',
-                    'max_shift':  'Max Shifted',
-                    'nsum':       'Lines to sum',
-                    'step':       'Tracing step',
-                }
-                ui_params = UIParameters(_config,
-                                         reinit_params=["max_missed", "max_shift", "nsum", "step"],
-                                         title_overrides=title_overrides)
-
-                if interactive:
-                    aperture_models = interactive_trace_apertures(
-                        ext, fit1d_params, ui_params=ui_params)
-                else:
-                    dispaxis = 2 - ext.dispersion_axis()  # python sense
-                    aperture_models = []
-
-                    # For efficiency, we would like to trace all sources
-                    #  simultaneously (like we do with arc lines), but we need
-                    #  to start somewhere the source is bright enough, and there
-                    #  may not be a single location where that is true for all
-                    #  sources
-                    all_ref_coords = np.array([])
-                    for i, loc in enumerate(locations):
-                        c0 = int(loc + 0.5)
-
-                        # The coordinates are always returned as (x-coords, y-coords)
-                        traces = tracing.trace_aperture(
-                            ext, loc, ui_params, apnum=i,
-                            viewer=self.viewer if debug else None)
-
-                        # List of traced peak positions
-                        in_coords = np.array([coord for trace in traces for
-                                              coord in trace.input_coordinates()]).T
-                        # List of "reference" positions (i.e., the coordinate
-                        # perpendicular to the line remains constant at its
-                        # initial value
-                        ref_coords = np.array([coord for trace in traces for
-                                               coord in trace.reference_coordinates()]).T
-
-                        if ref_coords.size:
-                            if all_ref_coords.size:
-                                all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
-                                all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
-                            else:
-                                all_ref_coords = ref_coords
-                                all_in_coords = in_coords
-
-                    spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-
-                    for aperture in aptable:
-                        location = aperture['c0']
-                        # Funky stuff to extract the traced coords associated with
-                        # each aperture (there's just a big list of all the coords
-                        # from all the apertures) and sort them by coordinate
-                        # along the spectrum
-                        coords = np.array([list(c1) + list(c2)
-                                           for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
-                                           if c1[dispaxis] == location])
-                        values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
-                        ref_coords, in_coords = values[:2], values[2:]
-
-                        # log aperture
-                        if in_coords.size:
-                            min_value = in_coords[1 - dispaxis].min()
-                            max_value = in_coords[1 - dispaxis].max()
-                            log.fullinfo(f"Aperture at {c0:.1f} traced from {min_value} "
-                                         f"to {max_value}")
-
-                        # Find model to transform actual (x,y) locations to the
-                        # value of the reference pixel along the dispersion axis
-                        try:
-                            # pylint: disable=repeated-keyword
-                            _fit_1d = fit_1D(
-                                in_coords[dispaxis],
-                                domain=[0, ext.shape[dispaxis] - 1],
-                                order=order,
-                                points=in_coords[1 - dispaxis],
-                                **fit1d_params)
-
-
-                        # This hides a multitude of sins, including no points
-                        # returned by the trace, or insufficient points to
-                        # constrain fit. We call fit1d with dummy points to
-                        # ensure we get the same type of result as if it had
-                        # been successful.
-                        except (IndexError, np.linalg.linalg.LinAlgError):
-                            log.warning(
-                                f"Unable to trace aperture {aperture['number']}")
-
-                            # pylint: disable=repeated-keyword
-                            _fit_1d = fit_1D(
-                                np.full_like(spectral_coords, c0),
-                                domain=[0, ext.shape[dispaxis] - 1],
-                                order=0,
-                                points=spectral_coords,
-                                **fit1d_params)
-
-                        else:
-                            if debug:
-                                plot_coords = np.array(
-                                    [spectral_coords,
-                                     _fit_1d.evaluate(spectral_coords)]).T
-                                self.viewer.polygon(plot_coords, closed=False,
-                                                    xfirst=(dispaxis == 1), origin=0)
-
-                        aperture_models.append(_fit_1d.model)
-
-                ext.APERTURE = make_aperture_table(aperture_models,
+                num_aps = len(aptable)
+                ext.APERTURE = make_aperture_table(aperture_models[:num_aps],
                                                    existing_table=aptable)
+                aperture_models = aperture_models[num_aps:]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -5389,6 +5409,22 @@ class Spect(Resample):
         return {"refplot_spec": np.asarray([refplot_waves, refplot_data]).T,
                 "refplot_name": refplot_name,
                 "refplot_y_axis_label": refplot_y_axis_label}
+
+    def _make_tab_labels(self, ad):
+        """
+        Create tab labels for generic spectroscopic data.
+
+        Parameters
+        ----------
+        ad : `~astrodata.AstroData`
+            The AstroData object to be processed.
+
+        Returns
+        -------
+        list
+            A list of tab labels for the given AstroData object.
+        """
+        return [f"Extension {i+1}" for i in range(len(ad))]
 
     def _wavelength_model_bounds(self, model=None, ext=None):
         """

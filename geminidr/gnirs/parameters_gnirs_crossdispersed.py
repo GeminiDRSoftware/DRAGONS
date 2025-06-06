@@ -52,6 +52,19 @@ class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
         self.threshold = 0.005
 
 
+class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
+    # Sky subtraction is difficult due to the short slit
+    def setDefaults(self):
+        self.function = "chebyshev"
+        self.order = 2
+        self.aperture_growth = 1
+        self.debug_allow_skip = True
+
+class traceAperturesConfig(parameters_spect.traceAperturesConfig):
+    # GNIRS XD benefits from light sigma clipping.
+    def setDefaults(self):
+        self.niter = 1
+
 class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):
     """
     Configuration for the tracePinholeApertures() primitive.

@@ -293,7 +293,7 @@ class findAperturesConfig(config.Config):
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
                            "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.1, min=0, max=1, fix_end_to_max=True)
+                                  float, 0.1, min=0, max=1)
     interactive = config.Field("Use interactive interface", bool, False)
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
                                        int, None, min=1, inclusiveMax=True, optional=True)
@@ -615,6 +615,7 @@ class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
     interactive = config.Field("Run primitive interactively?", bool, False)
+    debug_allow_skip = config.Field("Allow 'Skip' exit from interactive mode?", bool, False)
 
     def setDefaults(self):
         self.order = 5
@@ -631,8 +632,7 @@ class traceAperturesConfig(config.core_1Dfitting_config):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True,
-                                  fix_end_to_max=True)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing",
