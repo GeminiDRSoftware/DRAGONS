@@ -5232,7 +5232,8 @@ class Spect(Resample):
             if isinstance(unit, u.UnrecognizedUnit):
                 # Try chopping off the trailing 's'
                 try:
-                    unit = u.Unit(re.sub(r's$', '', col.unit.name.lower()))
+                    unit = u.Unit(re.sub(r's$', '',
+                                         col.unit.name.lower()))
                 except:
                     unit = None
             if unit is None:
@@ -5244,7 +5245,8 @@ class Spect(Resample):
                 else:
                     if orig_colname == 'FNU':
                         unit = u.Unit("erg cm-2 s-1 Hz-1")
-                    elif orig_colname in ('FLAM', 'FLUX') or np.median(col.data) < 1:
+                    elif (orig_colname in ('FLAM', 'FLUX') or
+                          np.median(col.data) < 1):
                         unit = u.Unit("erg cm-2 s-1 AA-1")
                     else:
                         unit = u.mag
@@ -5253,15 +5255,21 @@ class Spect(Resample):
             # We've created a column called "MAGNITUDE" but it might be a flux
             if col.name == 'MAGNITUDE':
                 try:
-                    unit.to(u.W / u.m ** 3, equivalencies=u.spectral_density(1. * u.m))
+                    unit.to(u.W / u.m ** 3,
+                            equivalencies=u.spectral_density(1. * u.m))
                 except:
                     pass
                 else:
                     col.name = 'FLUX'
 
-        wavecol = spec_table["WAVELENGTH"].quantity
         if in_vacuo is None:
-            in_vacuo = min(wavecol) < 300 * u.nm
+            in_vacuo = min(spec_table["WAVELENGTH"].quantity) < 300 * u.nm
+
+        # The default (and best) specutils vacuum/air conversion has a
+        # singularity in the FUV, so we cut the wavelength scale.
+        # See https://github.com/astropy/specutils/issues/1162
+        spec_table = spec_table[spec_table["WAVELENGTH"] >= 300 * u.nm]
+        wavecol = spec_table["WAVELENGTH"].quantity
 
         if in_vacuo:
             spec_table["WAVELENGTH_VACUUM"] = spec_table["WAVELENGTH"]
