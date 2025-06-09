@@ -3385,9 +3385,17 @@ class Spect(Resample):
                 # Reconstruct the spline and evaluate it at every wavelength
                 sens_factor = sensfunc(waves.to(std_wave_unit).value) * std_flux_unit
                 try:  # conversion from magnitude/logarithmic units
-                    sens_factor = sens_factor.physical
+                    # See comment below
+                    with warnings.catch_warnings(category=RuntimeWarning,
+                                                 action="ignore"):
+                        sens_factor = sens_factor.physical
                 except AttributeError:
                     pass
+
+                # This avoids extrapolative blow-ups when flux-calibrating XD
+                # data that covers the full wavelength range but the standard
+                # only covers a small part.
+                sens_factor[(ext.mask & DQ.no_data) > 0] = 0
 
                 # Apply airmass correction. If none is needed/possible, we
                 # don't need to try to do this
