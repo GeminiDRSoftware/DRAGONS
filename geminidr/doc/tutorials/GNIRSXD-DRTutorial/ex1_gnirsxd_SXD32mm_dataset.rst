@@ -8,8 +8,8 @@
 Example 1 - Datasets description
 ********************************
 
-Dithered Point Source XD with ShortBlue camera and 32 l/mm grating
-==================================================================
+Dithered Point Source XD with ShortBlue + 32 l/mm grating
+=========================================================
 In this example, we will reduce the GNIRS crossed-dispersed observation of
 a supernova type II 54 days after explosion.
 
@@ -18,19 +18,19 @@ arcsec slit.   The dither pattern is the standard ABBA, repeated 5 times.
 
 The calibrations we use for this example are:
 
-* BPM. The bad pixel masks are now found in the Gemini Observatory Archive
+* **BPM**. The bad pixel masks are now found in the Gemini Observatory Archive
   instead of being packaged with the software. They are associated like the
   other calibrations.  (The date in the name is the "valid from"
   date.)
-* Flats taken in the same configuration as the science.  They were obtained
+* **Flats** taken in the same configuration as the science.  They were obtained
   at night right after the science observations.  The flats are two series
   taken with two different lamps to ensure good exposure in each order.  The
   software will combine them appropriately.
-* Pinholes taken in the same configuration as the science.  They were obtained
+* **Pinholes** taken in the same configuration as the science.  They were obtained
   the morning after the science observations.
-* An arc taken in the same configuration as the science and obtained at
+* **Arcs** taken in the same configuration as the science and obtained at
   night at the end of the science observation sequences.
-* A telluric standard observation taken in the same configuration as the
+* A **telluric standard** observation taken in the same configuration as the
   science and obtained at night, in this case, just before the science
   observation sequence, and at a similar airmass.
 
