@@ -12,7 +12,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 
-from geminidr import PrimitivesBASE
+from geminidr import PrimitivesBASE, CalibrationNotFoundError
 from recipe_system.utils.md5 import md5sum
 from . import parameters_ccd
 
@@ -73,8 +73,8 @@ class CCD(PrimitivesBASE):
 
             if bias is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed bias listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed bias listed "
+                                                   f"for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no bias was specified")

@@ -1496,7 +1496,7 @@ class GIRegionModel:
         listener : :class:`~geminidr.interactive.interactive.GIRegionListener`
         """
         if not isinstance(listener, GIRegionListener):
-            raise ValueError("must be a BandListener")
+            raise TypeError("must be a BandListener")
         self.listeners.append(listener)
 
     def clear_regions(self):
