@@ -4,6 +4,7 @@ from collections import namedtuple
 
 DetectorConfig = namedtuple("Config", "readnoise gain well linearlimit nonlinearlimit")
 Config = namedtuple("Config", "mdf offsetsection pixscale mode")
+NonLinCoeffs = namedtuple("NonLinCoeffs", "time_delta gamma eta")
 
 detector_properties = {
     'UNKNOWN': { # GNIRS South
@@ -75,6 +76,36 @@ detector_properties = {
         ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.72, 1.0),
         ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.72, 1.0),
         ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.72, 1.0),
+    },
+}
+
+nonlin_coeffs = {
+    'SN7638228.1.2': {   # GNIRS North - Orginal Detector Controller
+        # Calculated by CJS 2025 June, modelled on NIRI formula
+        # "time_delta" then "gamma" and "eta" for the even rows first,
+        # then the odd rows (0-indexed). "time_delta" is the same for all
+        # rows, but is duplicated here for ease of code-reuse.
+        ('Very Bright Objects', 'Shallow'): [
+            NonLinCoeffs(-0.00927304429432728, 7.31286925e-07, 1.12822847e-11),
+            NonLinCoeffs(-0.00927304429432728, 8.78778457e-07, 4.79246805e-12)],
+        ('Bright Objects', 'Shallow'): [
+            NonLinCoeffs(0.08396650606937735, 7.15637971e-07, 1.15383256e-11),
+            NonLinCoeffs(0.08396650606937735, 5.69215470e-07, 7.12109353e-12)],
+        ('Faint Objects', 'Shallow'): [
+            NonLinCoeffs(1.3876736162675933, 7.80927834e-07, 1.14904418e-11),
+            NonLinCoeffs(1.3876736162675933, 8.25762314e-07, 4.76417974e-12)],
+        ('Very Faint Objects', 'Shallow'): [
+            NonLinCoeffs(2.597328770047285, 5.06924968e-08, 2.39898215e-11),
+            NonLinCoeffs(2.597328770047285, 8.35434220e-08, 1.49121259e-11)],
+        ('Very Bright Objects', 'Deep'): [
+            NonLinCoeffs(0.01030521861815561, 3.65581625e-07, 3.10036318e-12),
+            NonLinCoeffs(0.01030521861815561, 4.74146254e-07, 1.54197057e-12)],
+        ('Bright Objects', 'Deep'): [
+            NonLinCoeffs(0.08232950781117235, 3.67280555e-07, 3.17756003e-12),
+            NonLinCoeffs(0.08232950781117235, 4.50936807e-07, 1.65522683e-12)],
+        ('Faint Objects', 'Deep'): [
+            NonLinCoeffs(1.4466383436198411, 1.76451657e-07, 4.11771903e-12),
+            NonLinCoeffs(1.4466383436198411, 2.73057711e-07, 2.43750647e-12)],
     },
 }
 
