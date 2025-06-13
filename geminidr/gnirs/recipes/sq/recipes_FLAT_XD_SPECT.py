@@ -28,9 +28,7 @@ def makeProcessedFlat(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
-    p.writeOutputs()
     p.nonlinearityCorrect()
-    return
     p.selectFromInputs(tags='GCAL_IR_ON,LAMPON', outstream='IRHigh')
     p.removeFromInputs(tags='GCAL_IR_ON,LAMPON')
     p.stackFlats(stream='main')
