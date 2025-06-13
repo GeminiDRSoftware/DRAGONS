@@ -233,7 +233,14 @@ Processed Pinholes - Distortion Correction
 The pinholes are used to determine the distortion correction.  They will be
 used to rectify the slanted and curved orders on the detector.
 
-They are straightforward to reduce.
+A pinhole observation looks like this:
+
+.. image:: _graphics/gnirsxd_SXD32mm_pinhole.png
+   :width: 400
+   :alt: Pinhole observation
+
+The distortion model is calculated by tracing the dispersed image of each
+pinhole in each order.
 
 ::
 
@@ -250,7 +257,7 @@ Our configuration in this example is cross-dispersed with short-blue camera
 and the 32 l/mm grating.  This configuration generally has a sufficient number
 of lines available in all the orders.
 
-.. todo::  (See :ref:`gnirsls_wavecal_guide`.)
+.. todo::  TBD whether we need a wavecal guide. (See :ref:`gnirsls_wavecal_guide`.)
 
 The illumination mask will be obtained from the processed flat.  The
 processed pinhole will provide the distortion correction.
@@ -268,19 +275,30 @@ interactive mode. To activate the interactive mode:
 
 The interactive tools are introduced in section :ref:`interactive`.
 
+.. todo:: add interactive page.
+
 Each order can be inspected individually by selecting the tabs above the plot.
-In this case, Order 7's fit is much improved by deleting ('d') the blue-most
-identification.
 
-.. todo:: screeshot of Order 7.
+The general shape of the fit for each order should look like this:
 
-.. image:: _graphics/gnirsxd_SXD32mm_arc.png
+.. image:: _graphics/gnirsxd_SXD32mm_arc_order3.png
    :width: 600
-   :alt: Arc line identifications
+   :alt: Arc line identifications and fit for Order 3
 
-.. image:: _graphics/gnirsxd_SXD32mm_arcfit.png
-   :width: 600
-   :alt: Arc line fit
+For this dataset, the fit for Order 7 is much improved by deleting ('d') the
+blue-most identification. Below are the plots before and after the deletion
+of the misidentified line.
+
+.. image:: _graphics/gnirsxd_SXD32mm_arc_order7_before.png
+   :width: 325
+   :alt: Arc line identifications and fit for Order 7 before deletion of
+         blue-most line.
+
+.. image:: _graphics/gnirsxd_SXD32mm_arc_order7_after.png
+   :width: 325
+   :alt: Arc line identifications and fit for Order 7 after deletion of
+         blue-most line.
+
 
 Telluric Standard
 =================
@@ -323,10 +341,38 @@ reduction will be run.
 
     reduce @telluric.lis -r reduceTelluric @hip17030.param -p fitTelluric:interactive=True
 
+The fit for Order 3 looks like this:
 
-.. image:: _graphics/gnirsxd_SXD32mm_tellfit.png
+.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order3.png
    :width: 600
    :alt: fit to the telluric standard
+
+Order 8 needs some discussion.  You will notice many rejected data points marked
+as light blue triangle.  The software by default rejects those points because
+the stellar features in that part of the spectrum are notorious difficult to
+model.
+
+.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8.png
+   :width: 325
+   :alt: fit to the telluric standard
+
+.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_model.png
+   :width: 325
+   :alt: telluric absorption model fit
+
+In our case, the model and the star do fit remarkably well, so we can
+reactivate those points and give the software more points to fit.  Use the
+box selection tool (the dotted line square) to include the blue triangla and
+type "u" to unmask them and reactivate them.
+
+.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_after.png
+   :width: 325
+   :alt: fit to the telluric standard
+
+.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_model_after.png
+   :width: 325
+   :alt: telluric absorption model fit
+
 
 
 Science Observations
@@ -348,6 +394,12 @@ This is what one raw image looks like.
    :width: 400
    :alt: raw science image
 
+What you see are from left to right the cross-dispersed orders, from Order 3
+to Order 8.  The short horizontal features are sky lines.  The "vertical lines"
+are the dispersed science target in each order.  In the raw data, the red end
+is at the bottom and blue at the top.  This will be reversed when the data is
+resampled and the distortion corrected and wavelength calibration are applied.
+
 With all the calibrations in the local calibration manager, one only needs
 to call |reduce| on the science frames to get an extracted spectrum.
 
@@ -358,31 +410,52 @@ to call |reduce| on the science frames to get an extracted spectrum.
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
-
 ::
 
     reduce @sci.lis -p interactive=True
 
-.. todo:: note that for order 8, at skyCorrectFromSlit, the middle row does
-   not have much signal  (refer to raw image).  The fit will look bad.  But
-   if row is set to a higher number, where there is signal, the fit is fine.
+At the ``skyCorrectFromSlit`` step, you will notice that the fit for Order 8
+is not very good.  The row being sampled is in the middle of the image.  If
+you look at the raw image, you will see that there is not much signal for
+Order in the middle row.  Increase the row number (the data has been resampled
+and flipped at this point) using the slider at the top-left of the tool and
+you will see that when there is signal the fit is good.
 
-The 2D spectrum before extraction looks like this, with blue wavelengths at
-the bottom and the red-end at the top.
+.. image:: _graphics/gnirsxd_SXD32mm_skycor_order8_middle.png
+   :width: 600
+   :alt: skyCorrectFromSlit fit to the middle, no signal, row.
 
-.. todo:: they are cut at this point, so need to select which order(s) to show.
+.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_withsignal.png
+   :width: 600
+   :alt: skyCorrectFromSlit fit to a row with signal
+
+When you get to the ``telluricCorrect`` step, you can experiment with the
+shift between the telluric standard and the target.  Both need to be well
+aligned in wavelength to optimize the correction.  In this case, we find
+that a shift of 0.55 pixels significantly improves the correction.
 
 .. image:: _graphics/gnirsxd_SXD32mm_2d.png
-   :width: 400
+   :align: right
+   :width: 200
    :alt: 2D spectrum
 
-The 1D extracted spectrum before telluric correction or flux calibration,
-obtained with ``-p extractSpectra:write_outputs=True``, looks like this.
+A section of 2D spectrum before extraction is shown on the right, with blue wavelengths at
+the bottom and the red-end at the top.  Note that each order has been rectified
+and is being stored in separate extensions in the MEF file.  Here they are
+displayed together, side by side.  (``reduce -r display N20170113S0146_2D.fits``)
 
-.. todo:: one order per extension at this point, so need to select which order(s) to show.
+Each order is extracted separately and stored in separate extensions in the
+MEF file.  The 1D extracted spectrum before telluric correction or flux
+calibration, obtained with ``-p extractSpectra:write_outputs=True``.  You can
+plot all the orders on a common plot with ``dgsplot``. (The ``--thin`` option
+simply plots a thinner line than the default width.)
+
+::
+
+    dgsplot N20170113S0146_extracted.fits 1 --thin
 
 .. image:: _graphics/gnirsxd_SXD32mm_extracted.png
-   :width: 600
+   :width: 450
    :alt: 1D extracted spectrum before telluric correction or flux calibration
 
 The 1D extracted spectrum after telluric correction but before flux
@@ -397,12 +470,16 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
 ::
 
-    dgsplot N20170113S0146_1D.fits 1
+    dgsplot N20170113S0146_1D.fits 1 --thin
 
 .. image:: _graphics/gnirsxd_SXD32mm_1d.png
    :width: 600
    :alt: 1D extracted spectrum after telluric correction and flux calibration
 
+In the final spectrum, the orders are remain separated.  Here they are simply
+plotted one after the other on a common plot.  If you need to stitch the order,
+and maybe stack the common wavelength ranges, you will have to do that with
+your own software.
 
 
 
