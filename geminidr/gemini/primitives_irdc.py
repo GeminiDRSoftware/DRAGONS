@@ -121,8 +121,8 @@ class IRDC(Gemini):
                 log.fullinfo(f"The true total exposure time = {total_exptime}")
                 for desc in ('saturation_level', 'non_linear_level'):
                     current_value = getattr(ext, desc)()
-                    new_value = linearize(np.array(
-                        [current_value * gain / coadds], dtype=np.float32),
+                    new_value = linearize(
+                        np.array([current_value * gain / coadds]),
                         coeffs)[0] * coadds / gain
                     ext.hdr[ad._keyword_for(desc)] = np.round(new_value, 3)
 
