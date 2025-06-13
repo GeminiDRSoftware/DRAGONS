@@ -45,28 +45,17 @@ class IRDC(Gemini):
 
         def linearize(counts, coeffs):
             """Return a linearized version of the counts in electrons per coadd"""
-            # The coefficients might be applicable to all rows, or there
-            # may be separate coefficients for even and odd rows.
-            try:
-                log.fullinfo("Coefficients used = {:.6f} {:.9e} {:.9e}".
-                             format(coeffs.time_delta, coeffs.gamma,
-                                    coeffs.eta))
-            except AttributeError:
-                corrected_counts = np.empty_like(counts)
-                for row, _slice, coeff in zip(
-                        ("even", "odd"),
-                        (slice(0, None, 2), slice(1, None, 2)), coeffs):
-                    log.fullinfo("Coefficients for {} rows = {:.6f} "
-                                 "{:.9e} {:.9e}".format(
-                        row, coeff.time_delta, coeff.gamma, coeff.eta))
-                    corrected_counts[_slice] = (
-                            counts[_slice] * (1 + counts[_slice] *
-                                              (np.float32(coeff.gamma) +
-                                               counts[_slice] * np.float32(coeff.eta))))
-                return corrected_counts
-            else:
-                return counts * (1 + counts * (np.float32(coeffs.gamma) +
-                                               counts * np.float32(coeffs.eta)))
+            # The coefficients are in the form of a {region: coeffs} dictionary.
+            corrected_counts = np.empty_like(counts)
+            for _slice, coeff in coeffs.items():
+                log.debug("Coefficients for {} rows = {:.6f} "
+                             "{:.9e} {:.9e}".format(
+                    _slice, coeff.time_delta, coeff.gamma, coeff.eta))
+                corrected_counts[_slice] = (
+                        counts[_slice] * (1 + counts[_slice] *
+                                          (np.float32(coeff.gamma) +
+                                           counts[_slice] * np.float32(coeff.eta))))
+            return corrected_counts
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -91,7 +80,9 @@ class IRDC(Gemini):
                     log.warning("No nonlinearity coefficients found for "
                                 f"{ad.filename} extension {ext.id} - "
                                 "no correction applied")
-                    continue
+                elif not isinstance(coeffs, dict):
+                    # coeffs apply to entire array
+                    coeffs = {None: coeffs}
 
                 raw_mean_value = np.mean(ext.data) / coadds
                 log.fullinfo("The mean value of the raw pixel data in " \
@@ -115,10 +106,7 @@ class IRDC(Gemini):
 
                 # Correct for the exposure time issue by scaling the counts
                 # to the nominal exposure time
-                try:
-                    time_delta = np.float32(coeffs.time_delta)
-                except AttributeError:
-                    time_delta = np.float32(coeffs[0].time_delta)
+                time_delta = np.float32(np.mean([v.time_delta for v in coeffs.values()]))
                 ext.multiply(exptime / (exptime + time_delta))
 
                 # Determine the mean of the corrected pixel data
