@@ -117,7 +117,7 @@ class GNIRS(IRDC, NearIR):
         except KeyError:
             self.log.warning("No nonlinearity coefficients are available for "
                              "this array/detector controller.")
-            return None
+            return [None] * len(ad)
         read_mode = ad.read_mode()
         well_depth = ad.well_depth_setting()
         return [nonlin_coeffs.get((read_mode,well_depth))] * len(ad)
