@@ -80,6 +80,7 @@ class IRDC(Gemini):
                     log.warning("No nonlinearity coefficients found for "
                                 f"{ad.filename} extension {ext.id} - "
                                 "no correction applied")
+                    continue
                 elif not isinstance(coeffs, dict):
                     # coeffs apply to entire array
                     coeffs = {None: coeffs}
