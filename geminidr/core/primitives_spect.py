@@ -435,7 +435,7 @@ class Spect(Resample):
                         else:
                             log.warning(f"{ad.filename}:{ext.id} Cross-correlation failed")
 
-                        if debug_plots:
+                        if debug_plots:  # pragma: no cover
                             fig, ax = plt.subplots()
                             print(f"Comparing {ad.filename} to reference {refad.filename} "
                                   f"(expected peak at {expected_peak - corr.size // 2})")
@@ -1545,7 +1545,7 @@ class Spect(Resample):
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
 
-                if debug:
+                if debug:  # pragma: no cover
                     self.viewer.color = "red"
                     spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
                                                 ext.shape[1 - dispaxis] // (step * 10))
@@ -1924,7 +1924,7 @@ class Spect(Resample):
                     log.warning(f"Did not find expected number of {slit_name}s "
                                 f"(found {nfound}, expected {len(slit_lengths)}).")
 
-                if debug_plots:
+                if debug_plots:  # pragma: no cover
                     for pos in edges_1:
                         if pos:
                             plt.axvline(pos, color='Blue', alpha=0.5,
@@ -3151,7 +3151,7 @@ class Spect(Resample):
                 del crmask, skyfit_input
                 gc.collect()
 
-            if debug:
+            if debug:  # pragma: no cover
                 fig, axes = plt.subplots(5, 3, sharex=True, sharey=True,
                                          tight_layout=True)
                 for i, ext in enumerate(ad_tiled):
@@ -3387,9 +3387,17 @@ class Spect(Resample):
                 # Reconstruct the spline and evaluate it at every wavelength
                 sens_factor = sensfunc(waves.to(std_wave_unit).value) * std_flux_unit
                 try:  # conversion from magnitude/logarithmic units
-                    sens_factor = sens_factor.physical
+                    # See comment below
+                    with warnings.catch_warnings(category=RuntimeWarning,
+                                                 action="ignore"):
+                        sens_factor = sens_factor.physical
                 except AttributeError:
                     pass
+
+                # This avoids extrapolative blow-ups when flux-calibrating XD
+                # data that covers the full wavelength range but the standard
+                # only covers a small part.
+                sens_factor[(ext.mask & DQ.no_data) > 0] = 0
 
                 # Apply airmass correction. If none is needed/possible, we
                 # don't need to try to do this
@@ -3942,6 +3950,8 @@ class Spect(Resample):
                                        r + ref_pixels_dict[j][0]).T.astype(int)
                                        for ad, r in zip(adinputs,
                                                         ref_pixels_dict[j])]
+        else:
+            dispaxis = 0
 
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix), and compute the final bounds (w1out, w2out)
@@ -3963,8 +3973,12 @@ class Spect(Resample):
                 adinfo.append(model_info)
                 w1_arr[i, iext] = model_info['w1']
                 w2_arr[i, iext] = model_info['w2']
-
             info.append(adinfo)
+
+        # Are we combining multiple spectra with different wavelength settings
+        # into a single spectrum? This is important for later.
+        combining_multiple_wavelengths = (single_spectral and
+                                          len(set(w1_arr.ravel())) > 1)
 
         # Compute the output wavelength range for each extension. We can
         # calculate the overall output range if we're combining to a single
@@ -3994,15 +4008,16 @@ class Spect(Resample):
             # parameters as the 4th is then calculable. First, we copy the
             # start and end wavelengths if those aren't specified. If neither
             # dw nor npix are specified, the behaviour depends on whether we
-            # are resampling to a single wavelength scale: if so, then we want
-            # to preserve the dispersion to avoid undersampling but, if not,
-            # then we want to preserve the number of pixels per extension.
+            # are resampling multiple spectra to a single wavelength scale:
+            # if so, then we want to preserve the dispersion to avoid
+            # undersampling but, if not,  then we want to preserve the number
+            # of pixels per extension.
             while nparams < 3:
                 if w1 is None:
                     w1 = wave_min
                 elif w2 is None:
                     w2 = wave_max
-                elif single_spectral and dw is None:
+                elif combining_multiple_wavelengths and dw is None:
                     w1 = np.full_like(w1, np.nanmin(w1))
                     w2 = np.full_like(w2, np.nanmax(w2))
                     if output_spectral == "linear":
@@ -4011,7 +4026,7 @@ class Spect(Resample):
                     else:
                         # dw has been calculated assuming the spectrum is
                         # linear, so we repeat that assumption
-                        dw = np.array([extinfo['dw'] / extinfo['w2'] - 1
+                        dw = np.array([extinfo['dw'] / extinfo['w2']
                                        for adinfo in info for extinfo in adinfo])
                     dw = np.full_like(w1, dw.min())
                 elif npix is None:
@@ -4025,12 +4040,18 @@ class Spect(Resample):
                     npix = np.ceil((w2 - w1) / dw).astype(int) + 1
                     w2 = w1 + (npix - 1) * dw
                 else:  # loglinear
-                    npix = np.ceil(np.log(w2 / w1) / np.log(1 + dw) - 1)
+                    npix = np.ceil(np.log(w2 / w1) / np.log(1 + dw) - 1).astype(int) + 1
                     w2 = w1 * (1 + dw) ** (npix - 1)
             elif w1 is None:
-                w1 = w2 - (npix - 1) * dw
+                if output_spectral == "linear":
+                    w1 = w2 - (npix - 1) * dw
+                else:  # loglinear
+                    w1 = w2 / (1 + dw) ** (npix - 1)
             elif w2 is None:
-                w2 = w1 + (npix - 1) * dw
+                if output_spectral == "linear":
+                    w2 = w1 + (npix - 1) * dw
+                else:  # loglinear
+                    w2 = w1 * (1 + dw) ** (npix - 1)
             elif output_spectral == "linear":  # dw is None
                 dw = (w2 - w1) / (npix - 1)
             else:  # dw is None and we're loglinearizing
@@ -4084,7 +4105,6 @@ class Spect(Resample):
                 actual_limits = new_wave_model([0, this_npix - 1])
                 w1[iext] = actual_limits.min()
                 w2[iext] = actual_limits.max()
-                yy = new_wave_model([this_npix-3,this_npix-2,this_npix-1])
 
             # Calculation for all extensions
             dw = (w2 - w1) / (npix - 1)
@@ -4164,6 +4184,8 @@ class Spect(Resample):
                 if i == 0 and not new_wave_scale:
                     log.fullinfo(f"{ad.filename}: No interpolation")
                 msg = "Resampling"
+                if this_conserve:
+                    msg += " (with flux conservation)"
                 if new_wave_scale:
                     msg += f" and {output_spectral}izing"
                 dwstr = (f"{dw[iext]:.6f}" if output_spectral == "loglinear"
@@ -5220,7 +5242,8 @@ class Spect(Resample):
             if isinstance(unit, u.UnrecognizedUnit):
                 # Try chopping off the trailing 's'
                 try:
-                    unit = u.Unit(re.sub(r's$', '', col.unit.name.lower()))
+                    unit = u.Unit(re.sub(r's$', '',
+                                         col.unit.name.lower()))
                 except:
                     unit = None
             if unit is None:
@@ -5232,7 +5255,8 @@ class Spect(Resample):
                 else:
                     if orig_colname == 'FNU':
                         unit = u.Unit("erg cm-2 s-1 Hz-1")
-                    elif orig_colname in ('FLAM', 'FLUX') or np.median(col.data) < 1:
+                    elif (orig_colname in ('FLAM', 'FLUX') or
+                          np.median(col.data) < 1):
                         unit = u.Unit("erg cm-2 s-1 AA-1")
                     else:
                         unit = u.mag
@@ -5241,15 +5265,21 @@ class Spect(Resample):
             # We've created a column called "MAGNITUDE" but it might be a flux
             if col.name == 'MAGNITUDE':
                 try:
-                    unit.to(u.W / u.m ** 3, equivalencies=u.spectral_density(1. * u.m))
+                    unit.to(u.W / u.m ** 3,
+                            equivalencies=u.spectral_density(1. * u.m))
                 except:
                     pass
                 else:
                     col.name = 'FLUX'
 
-        wavecol = spec_table["WAVELENGTH"].quantity
         if in_vacuo is None:
-            in_vacuo = min(wavecol) < 300 * u.nm
+            in_vacuo = min(spec_table["WAVELENGTH"].quantity) < 300 * u.nm
+
+        # The default (and best) specutils vacuum/air conversion has a
+        # singularity in the FUV, so we cut the wavelength scale.
+        # See https://github.com/astropy/specutils/issues/1162
+        spec_table = spec_table[spec_table["WAVELENGTH"] >= 300 * u.nm]
+        wavecol = spec_table["WAVELENGTH"].quantity
 
         if in_vacuo:
             spec_table["WAVELENGTH_VACUUM"] = spec_table["WAVELENGTH"]
