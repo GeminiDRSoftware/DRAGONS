@@ -46,19 +46,26 @@ detector_properties = {
         ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
     },
     'SN7638228.1.2': {   # GNIRS North - Orginal Detector Controller
-        # Taken from https://www.gemini.edu/instrumentation/gnirs/components [June 2024]
+        # Readnoise and gain taken from
+        # https://www.gemini.edu/instrumentation/gnirs/components [June 2024]
+        #
+        # Other data calculated by CJS 2025 June from data taken in 2021.
+        # No Deep/Very Faint data were taken.
+        # Response is nonlinear from zero, so "linearlimit" represents where
+        # the *corrected* value deviated by 1%. "nonlinearlimit" is not used
+        # by the code.
         #
         # Dictionary key is the read mode and well depth setting
         # Dictionary values are in the following order:
         # readnoise, gain, well, linearlimit, nonlinearlimit
         # readnoise and well are in units of electrons
-        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.72, 1.0),
-        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.72, 1.0),
-        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.72, 1.0),
-        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.72, 1.0),
-        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.72, 1.0),
-        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.72, 1.0),
-        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.72, 1.0),
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 92000., 0.96, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 91000., 0.96, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 78000., 0.95, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 67000., 0.98, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 209000., 0.93, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 207000., 0.91, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 190000., 0.95, 1.0),
         ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.72, 1.0),
     },
     'SN7638228.1.2+ARC-III': {  # GNIRS North - New Detector Controller [July 2024]
