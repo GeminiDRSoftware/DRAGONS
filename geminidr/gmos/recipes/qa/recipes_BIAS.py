@@ -27,4 +27,37 @@ def makeProcessedBias(p):
     p.storeProcessedBias()
     return
 
+def checkBias1(p):
+    """
+    This recipe checks bias frames by processing them as regular bias frames
+    (notably including overscan correction), then recording some pixel
+    statistics.
+    :param p:
+    :return:
+    """
+    p.prepare()
+    p.addDQ(add_illum_mask=False)
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.stats(prefix='OSCO')
+    p.writeOutputs(strip=True, suffix='_checkBias1')
+    return
+
+def checkBias2(p):
+    """
+    This recipe checks bias frames by processing them as regular bias frames
+    (notably including overscan correction), then subtracting a processed bias
+    and recording some pixel statistics.
+    :param p:
+    :return:
+    """
+    p.prepare()
+    p.addDQ(add_illum_mask=False)
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect(do_cal="force")
+    p.stats(prefix="BICO")
+    p.writeOutputs(strip=True, suffix='_checkBias2')
+    return
+
 _default = makeProcessedBias

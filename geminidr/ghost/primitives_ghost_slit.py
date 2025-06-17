@@ -14,6 +14,7 @@ import astrodata
 from astrodata.provenance import add_provenance
 
 from gempy.gemini import gemini_tools as gt
+from geminidr import CalibrationNotFoundError
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .polyfit import SlitView
@@ -460,7 +461,7 @@ class GHOSTSlit(GHOST):
             if slitflat is None:
                 msg = f"Unable to find slitflat calibration for {ad.filename}"
                 if self.mode == "sq":
-                    raise RuntimeError(msg)
+                    raise CalibrationNotFoundError(msg)
                 log.warning(f"{msg}; calculations may be in error")
                 sv_flat = None
             else:

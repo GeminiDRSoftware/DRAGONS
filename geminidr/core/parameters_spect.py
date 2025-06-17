@@ -563,7 +563,7 @@ class resampleToCommonFrameConfig(config.Config):
     output_wave_scale = config.ChoiceField("Output wavelength scale", str,
                                            allowed={"reference": "Reference input",
                                                     "linear": "Linear",
-                                                    #"loglinear": "Log-linear",
+                                                    "loglinear": "Log-linear",
                                                     },
                                            default="linear", optional=False)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
@@ -615,7 +615,7 @@ class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
     interactive = config.Field("Run primitive interactively?", bool, False)
-    debug_allow_noop = config.Field("Allow no-op exit from interactive mode?", bool, False)
+    debug_allow_skip = config.Field("Allow 'Skip' exit from interactive mode?", bool, False)
 
     def setDefaults(self):
         self.order = 5

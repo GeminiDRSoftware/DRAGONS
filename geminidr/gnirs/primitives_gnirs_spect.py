@@ -13,6 +13,7 @@ from geminidr.core import Telluric
 from .primitives_gnirs import GNIRS
 from . import parameters_gnirs_spect
 
+from gempy.gemini import gemini_tools as gt
 from gempy.library import wavecal
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
@@ -31,6 +32,66 @@ class GNIRSSpect(Telluric, GNIRS):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs_spect)
+
+    def normalizeFlat(self, adinputs=None, **params):
+        """
+        A GNIRS-specific primitive to normalize the spectroscopic flatfield.
+        Because of the odd/even row effect, the trace of the brightness has
+        two loci and can be difficult to fit, sometimes jumping from one locus
+        to the other. This primitive will attempt to remove the odd/even
+        offset temporarily while the fit takes place, by scaling the odd rows
+        by a constance value to match the even rows.
+
+        Parameters
+        ----------
+        suffix : str/None
+            suffix to be added to output files
+        center : int/None
+            central row/column for 1D extraction (None => use middle)
+        nsum : int
+            number of rows/columns to average (about "center")
+        function : str
+            type of function to fit (splineN or polynomial types)
+        order : int
+            Order of the spline fit to be performed
+        lsigma : float/None
+            lower rejection limit in standard deviations
+        hsigma : float/None
+            upper rejection limit in standard deviations
+        niter : int
+            maximum number of rejection iterations
+        grow : float/False
+            growth radius for rejected pixels
+        interactive : bool
+            set to activate an interactive preview to fine tune the input parameters
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            # XD will have multiple extensions at this point
+            all_scaling_data = []
+            for ext in ad:
+                row_values = np.ma.median(np.ma.masked_array(
+                    ext.data, mask=ext.mask), axis=1)
+                bright_enough = row_values[1::2] > 50 * ext.read_noise()
+                if bright_enough.any():
+                    scaling = np.ma.median((row_values[::2] /
+                                            row_values[1::2])[bright_enough])
+                else:
+                    scaling = 1.0
+                log.debug(f"Scaling for {ad.filename}:{ext.id}: {scaling:8.6f}")
+                scaling_data = np.ones_like(ext.data)
+                scaling_data[1::2] *= scaling
+                ext.multiply(scaling_data)
+                all_scaling_data.append(scaling_data)
+
+            # normalizeFlat() operates in-place; we don't need a return value
+            super().normalizeFlat([ad], **params)
+            for ext, scaling_data in zip(ad, all_scaling_data):
+                ext.divide(scaling_data)
+
+        return adinputs
 
     def standardizeWCS(self, adinputs=None, **params):
         """

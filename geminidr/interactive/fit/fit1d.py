@@ -92,7 +92,7 @@ class InteractiveModel(ABC):
             model is updated
         """
         if not callable(listener):
-            raise ValueError("Listeners must be callables")
+            raise TypeError("Listeners must be callables")
 
         self.listeners.append(listener)
 
@@ -1594,7 +1594,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         panel_class=Fit1DPanel,
         reinit_live=False,
         mask_glyphs=None,
-        allow_noop=False,
+        allow_skip=False,
         **kwargs,
     ):
         """Initializes the Fit1DVisualizer and its parent class.
@@ -1676,7 +1676,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         mask_glyphs : dict/None
             glyphs for rendering additional masks
 
-        allow_noop : bool
+        allow_skip : bool
             add a button to allow exit and return unmodified data?
         """
         super().__init__(
@@ -1687,7 +1687,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             help_text=help_text,
             ui_params=ui_params,
             reinit_live=reinit_live,
-            allow_noop=allow_noop,
+            allow_skip=allow_skip,
         )
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
@@ -1905,9 +1905,10 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             sizing_mode="stretch_width",
         )
 
-        buttons = (self.abort_button, self.submit_button)
-        if self.noop_button is not None:
-            buttons += (self.noop_button,)
+        buttons = (self.abort_button,)
+        if self.skip_button is not None:
+            buttons += (self.skip_button,)
+        buttons += (self.submit_button,)
 
         for btn in buttons:
             btn.align = "end"

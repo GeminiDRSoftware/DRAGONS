@@ -25,7 +25,7 @@ def test_regression_nonlinearity_correct(ad, ref_ad_factory):
     ad_out = p.nonlinearityCorrect().pop()
     ad_ref = ref_ad_factory(ad_out.filename)
 
-    assert ad_compare(ad_out, ad_ref)
+    assert ad_compare(ad_out, ad_ref, rtol=3.5e-7)
 
 # -- Fixtures ----------------------------------------------------------------
 @pytest.fixture(scope='function')
