@@ -4,6 +4,7 @@ from collections import namedtuple
 
 DetectorConfig = namedtuple("Config", "readnoise gain well linearlimit nonlinearlimit")
 Config = namedtuple("Config", "mdf offsetsection pixscale mode")
+NonLinCoeffs = namedtuple("NonLinCoeffs", "time_delta gamma eta")
 
 detector_properties = {
     'UNKNOWN': { # GNIRS South
@@ -45,19 +46,26 @@ detector_properties = {
         ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.714286, 1.0),
     },
     'SN7638228.1.2': {   # GNIRS North - Orginal Detector Controller
-        # Taken from https://www.gemini.edu/instrumentation/gnirs/components [June 2024]
+        # Readnoise and gain taken from
+        # https://www.gemini.edu/instrumentation/gnirs/components [June 2024]
+        #
+        # Other data calculated by CJS 2025 June from data taken in 2021.
+        # No Deep/Very Faint data were taken.
+        # Response is nonlinear from zero, so "linearlimit" represents where
+        # the *corrected* value deviated by 1%. "nonlinearlimit" is not used
+        # by the code.
         #
         # Dictionary key is the read mode and well depth setting
         # Dictionary values are in the following order:
         # readnoise, gain, well, linearlimit, nonlinearlimit
         # readnoise and well are in units of electrons
-        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.72, 1.0),
-        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.72, 1.0),
-        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.72, 1.0),
-        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.72, 1.0),
-        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.72, 1.0),
-        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.72, 1.0),
-        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.72, 1.0),
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 92000., 0.96, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 91000., 0.96, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 78000., 0.95, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 67000., 0.98, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 209000., 0.93, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 207000., 0.91, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 190000., 0.95, 1.0),
         ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.72, 1.0),
     },
     'SN7638228.1.2+ARC-III': {  # GNIRS North - New Detector Controller [July 2024]
@@ -78,6 +86,43 @@ detector_properties = {
     },
 }
 
+nonlin_coeffs = {
+    'SN7638228.1.2': {   # GNIRS North - Orginal Detector Controller
+        # Calculated by CJS 2025 June, modelled on NIRI formula
+        # "time_delta" then "gamma" and "eta" for the even rows first,
+        # then the odd rows (0-indexed). "time_delta" is the same for all
+        # rows, but is duplicated here for ease of code-reuse.
+        ('Very Bright Objects', 'Shallow'): {
+            slice(0, None, 2): NonLinCoeffs(-0.00927304429432728, 7.31286925e-07, 1.12822847e-11),
+            slice(1, None, 2): NonLinCoeffs(-0.00927304429432728, 8.78778457e-07, 4.79246805e-12)
+        },
+        ('Bright Objects', 'Shallow'): {
+            slice(0, None, 2): NonLinCoeffs(0.08396650606937735, 7.15637971e-07, 1.15383256e-11),
+            slice(1, None, 2): NonLinCoeffs(0.08396650606937735, 5.69215470e-07, 7.12109353e-12)
+        },
+        ('Faint Objects', 'Shallow'): {
+            slice(0, None, 2): NonLinCoeffs(1.3876736162675933, 7.80927834e-07, 1.14904418e-11),
+            slice(1, None, 2): NonLinCoeffs(1.3876736162675933, 8.25762314e-07, 4.76417974e-12)
+        },
+        ('Very Faint Objects', 'Shallow'): {
+            slice(0, None, 2): NonLinCoeffs(2.597328770047285, 5.06924968e-08, 2.39898215e-11),
+            slice(1, None, 2): NonLinCoeffs(2.597328770047285, 8.35434220e-08, 1.49121259e-11)
+        },
+        ('Very Bright Objects', 'Deep'): {
+            slice(0, None, 2): NonLinCoeffs(0.01030521861815561, 3.65581625e-07, 3.10036318e-12),
+            slice(1, None, 2): NonLinCoeffs(0.01030521861815561, 4.74146254e-07, 1.54197057e-12)
+        },
+        ('Bright Objects', 'Deep'): {
+            slice(0, None, 2): NonLinCoeffs(0.08232950781117235, 3.67280555e-07, 3.17756003e-12),
+            slice(1, None, 2): NonLinCoeffs(0.08232950781117235, 4.50936807e-07, 1.65522683e-12)
+        },
+        ('Faint Objects', 'Deep'): {
+            slice(0, None, 2): NonLinCoeffs(1.4466383436198411, 1.76451657e-07, 4.11771903e-12),
+            slice(1, None, 2): NonLinCoeffs(1.4466383436198411, 2.73057711e-07, 2.43750647e-12)
+        },
+    },
+}
+
 nominal_zeropoints = {
     # There are none defined...
 }
@@ -93,180 +138,6 @@ pixel_scale = {
 # JUST FOR THE config_dict.
 pixel_scale_shrt = 0.15
 pixel_scale_long = 0.05
-
-# NOT USED as far as I can tell. KL [June 2024]
-config_dict = {
-    # Dictionary keys are in the following order:
-    # prism, decker, grating, camera
-    # Used every combination of prism, grating and camera available in
-    #   gnirs$data/nsappwave.fits r1.43, EH, February 1, 2013
-    # Dictionary values are in the following order:
-    # mdf, offsetsection, pixscale, mode
-
-    # ShortBlue_G5513 [GS, decommissioned June 2005], 32/mm
-    ( "MIR_G5511" , "SC_Long" , "32/mm_G5506" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-ls-short-32-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "32/mm_G5506" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "32/mm_G5506" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "32/mm_G5506" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "** ENG 49450 **" , "32/mm_G5506" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    ( "SXD_G5509" , "SC_XD/IFU" , "32/mm_G5506" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-xd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "SC_XD" , "32/mm_G5506" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-xd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "IFU" , "32/mm_G5506" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-xd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # ShortBlue_G5513 [GS, decommissioned June 2005], 111/mm
-    ( "MIR_G5511" , "SC_Long" , "111/mm_G5505" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-ls-short-111-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "111/mm_G5505" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "111/mm_G5505" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "111/mm_G5505" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    ( "SXD_G5509" , "SC_XD/IFU" , "111/mm_G5505" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-xd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "SC_XD" , "111/mm_G5505" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-xd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "IFU" , "111/mm_G5505" , "ShortBlue_G5513" ): Config("gnirs$data/gnirs-xd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # ShortBlue_G5521 [GS, installed June 2005], 32/mm
-    ( "MIR_G5511" , "SC_Long" , "32/mm_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ls-short-32-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "32/mm_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "32/mm_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "32/mm_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "** ENG 49450 **" , "32/mm_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    ( "SXD_G5509" , "SC_XD/IFU" , "32/mm_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "SC_XD" , "32/mm_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "IFU" , "32/mm_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # ShortBlue_G5521 [GS, installed June 2005], 32/mmSB
-    ( "MIR_G5511" , "SC_Long" , "32/mmSB_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ls-short-32-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "32/mmSB_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "32/mmSB_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "32/mmSB_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    ( "SXD_G5509" , "SC_XD/IFU" , "32/mmSB_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "SC_XD" , "32/mmSB_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "IFU" , "32/mmSB_G5506" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # ShortBlue_G5521 [GS, installed June 2005], 111/mm
-    ( "MIR_G5511" , "SC_Long" , "111/mm_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ls-short-111-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "111/mm_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "111/mm_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "111/mm_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    ( "SXD_G5509" , "SC_XD/IFU" , "111/mm_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "SC_XD" , "111/mm_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "IFU" , "111/mm_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # ShortBlue_G5521 [GS, installed June 2005], 111/mmSB
-    ( "MIR_G5511" , "SC_Long" , "111/mmSB_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ls-short-111-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "111/mmSB_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "111/mmSB_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "111/mmSB_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    ( "SXD_G5509" , "SC_XD/IFU" , "111/mmSB_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "SC_XD" , "111/mmSB_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-    ( "SXD_G5509" , "IFU" , "111/mmSB_G5505" , "ShortBlue_G5521" ): Config("gnirs$data/gnirs-xd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # ShortBlue_G5538 [GN, currently in storage, replaced with G5540], 32/mmSB
-    ( "MIR_G5537" , "SC_Long" , "32/mmSB_G5533" , "ShortBlue_G5538" ): Config("gnirs$data/gnirsn-ls-short-32-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-
-    ( "SB+SXD_G5536" , "SCXD_G5531" , "32/mmSB_G5533" , "ShortBlue_G5538" ): Config("gnirs$data/gnirsn-sxd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # ShortBlue_G5538 [GN, currently in storage, replaced with G5540], 111/mmSB
-    ( "MIR_G5537" , "SC_Long" , "111/mmSB_G5534" , "ShortBlue_G5538" ): Config("gnirs$data/gnirsn-ls-short-111-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-
-    ( "SB+SXD_G5536" , "SCXD_G5531" , "111/mmSB_G5534" , "ShortBlue_G5538" ): Config("gnirs$data/gnirsn-sxd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # ShortBlue_G5540 [GN, installed October 2012], 32/mmSB
-    ( "MIR_G5537" , "SC_Long" , "32/mmSB_G5533" , "ShortBlue_G5540" ): Config("gnirs$data/gnirsn-ls-short-32-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-
-    ( "SB+SXD_G5536" , "SCXD_G5531" , "32/mmSB_G5533" , "ShortBlue_G5540" ): Config("gnirs$data/gnirsn-sxd-short-32-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # ShortBlue_G5540 [GN, installed October 2012], 111/mmSB
-    ( "MIR_G5537" , "SC_Long" , "111/mmSB_G5534" , "ShortBlue_G5540" ): Config("gnirs$data/gnirsn-ls-short-111-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-
-    ( "SB+SXD_G5536" , "SCXD_G5531" , "111/mmSB_G5534" , "ShortBlue_G5540" ): Config("gnirs$data/gnirsn-sxd-short-111-mdf.fits", "[1:190,*]", pixel_scale_shrt, "XD"),
-
-    # LongBlue_G5515, 10/mmLB
-    ( "MIR_G5511" , "LC_Long" , "10/mmLB_G5507" , "LongBlue_G5515" ): Config("gnirs$data/gnirsn-ls-long-10-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    ( "LXD_G5508" , "LC_XD" , "10/mmLB_G5507" , "LongBlue_G5515" ): Config("gnirs$data/gnirsn-lxd-long-10-mdf.fits", "[1:190,*]", pixel_scale_long, "XD"),
-
-    ( "SXD_G5509" , "LC_XD" , "10/mmLB_G5507" , "LongBlue_G5515" ): Config("gnirs$data/gnirsn-sxd-long-10-mdf.fits", "[1:190,*]", pixel_scale_long, "XD"),
-
-    # LongBlue_G5515, 32/mmLB
-    ( "MIR_G5511" , "LC_Long" , "32/mmLB_G5506" , "LongBlue_G5515" ): Config("gnirs$data/gnirsn-ls-long-32-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    ( "LXD_G5508" , "LC_XD" , "32/mmLB_G5506" , "LongBlue_G5515" ): Config("gnirs$data/gnirsn-lxd-long-32-mdf.fits", "[1:190,*]", pixel_scale_long, "XD"),
-
-    ( "SXD_G5509" , "LC_XD" , "32/mmLB_G5506" , "LongBlue_G5515" ): Config("gnirs$data/gnirsn-sxd-long-32-mdf.fits", "[1:190,*]", pixel_scale_long, "XD"),
-
-    # LongBlue_G5515, 111/mmLB
-    ( "MIR_G5511" , "LC_Long" , "111/mmLB_G5505" , "LongBlue_G5515" ): Config("gnirs$data/gnirsn-ls-long-111-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    # LongBlue_G5542 [GN, installed October 2009], 10/mmLB
-    ( "MIR_G5537" , "LC_Long" , "10/mmLB_G5532" , "LongBlue_G5542" ): Config("gnirs$data/gnirsn-ls-long-10-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    ( "LB+LXD_G5535" , "LCXD_G5531" , "10/mmLBLX_G5532" , "LongBlue_G5542" ): Config("gnirs$data/gnirsn-lxd-long-10-mdf.fits", "[1:190,*]", pixel_scale_long, "XD"),
-
-    ( "LB+SXD_G5536" , "LCXD_G5531" , "10/mmLBSX_G5532" , "LongBlue_G5542" ): Config("gnirs$data/gnirsn-sxd-long-10-mdf.fits", "[1:190,*]", pixel_scale_long, "XD"),
-
-    # LongBlue_G5542 [GN, installed October 2009], 32/mmLB
-    ( "MIR_G5537" , "LC_Long" , "32/mmLB_G5533" , "LongBlue_G5542" ): Config("gnirs$data/gnirsn-ls-long-32-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    ( "LB+LXD_G5535" , "LCXD_G5531" , "32/mmLB_G5533" , "LongBlue_G5542" ): Config("gnirs$data/gnirsn-lxd-long-32-mdf.fits", "[1:190,*]", pixel_scale_long, "XD"),
-
-    ( "LB+SXD_G5536" , "LCXD_G5531" , "32/mmLB_G5533" , "LongBlue_G5542" ): Config("gnirs$data/gnirsn-sxd-long-32-mdf.fits", "[1:190,*]", pixel_scale_long, "XD"),
-
-    # LongBlue_G5542 [GN, installed October 2009], 111/mmLB
-    ( "MIR_G5537" , "LC_Long" , "111/mmLB_G5534" , "LongBlue_G5542" ): Config("gnirs$data/gnirsn-ls-long-111-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    # ShortRed_G5514 [GS, decommissioned June 2005], 111/mm
-    ( "MIR_G5511" , "SC_Long" , "111/mm_G5505" , "ShortRed_G5514" ): Config("gnirs$data/gnirs-ls-short-111-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "111/mm_G5505" , "ShortRed_G5514" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "111/mm_G5505" , "ShortRed_G5514" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "111/mm_G5505" , "ShortRed_G5514" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    # ShortRed_G5522 [GS, installed June 2005], 32/mmSR
-    ( "MIR_G5511" , "SC_Long" , "32/mmSR_G5506" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ls-short-32-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "32/mmSR_G5506" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "32/mmSR_G5506" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "32/mmSR_G5506" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ifu-short-32-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    # ShortRed_G5522 [GS, installed June 2005]. 111/mm
-    ( "MIR_G5511" , "SC_Long" , "111/mm_G5505" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ls-short-111-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "111/mm_G5505" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "111/mm_G5505" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "111/mm_G5505" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    # ShortRed_G5522 [GS, installed June 2005]. 111/mmSR
-    ( "MIR_G5511" , "SC_Long" , "111/mmSR_G5505" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ls-short-111-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-    ( "MIR_G5511" , "SC_XD/IFU" , "111/mmSR_G5505" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "SC_XD" , "111/mmSR_G5505" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-    ( "MIR_G5511" , "IFU" , "111/mmSR_G5505" , "ShortRed_G5522" ): Config("gnirs$data/gnirs-ifu-short-111-mdf2.fits", "[900:1024,*]", pixel_scale_shrt, "IFU"),
-
-    # ShortRed_G5539 [GN, currently in storage], 32/mmSR
-    ( "MIR_G5537" , "SC_Long", "32/mmSR_G5533", "ShortRed_G5539"): Config("gnirs$data/gnirsn-ls-short-32-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-
-    # ShortRed_G5539 [GN, currently in storage], 111/mmSR
-    ( "MIR_G5537" , "SC_Long", "111/mmSR_G5534", "ShortRed_G5539"): Config("gnirs$data/gnirsn-ls-short-111-mdf.fits", "[850:1024,*]", pixel_scale_shrt, "LS"),
-
-    # LongRed_G5516, 10/mmLR
-    ( "MIR_G5511" , "LC_Long" , "10/mmLR_G5507" , "LongRed_G5516"): Config("gnirs$data/gnirsn-ls-long-10-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    # LongRed_G5516, 32/mmLR
-    ( "MIR_G5511" , "LC_Long" , "32/mmLR_G5506" , "LongRed_G5516" ): Config("gnirs$data/gnirs-ls-long-32-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    # LongRed_G5516. 111/mmLR
-    ( "MIR_G5511" , "LC_Long" , "111/mmLR_G5505" , "LongRed_G5516" ): Config("gnirs$data/gnirs-ls-long-111-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    # LongRed_G5543 [GN, installed October 2009], 10/mmLR
-    ( "MIR_G5537" , "LC_Long" , "10/mmLR_G5532" , "LongRed_G5543"): Config("gnirs$data/gnirsn-ls-long-10-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    # LongRed_G5543 [GN, installed October 2009], 32/mmLR
-    ( "MIR_G5537" , "LC_Long" , "32/mmLR_G5533" , "LongRed_G5543" ): Config("gnirs$data/gnirsn-ls-long-32-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-
-    # LongRed_G5543 [GN, installed October 2009], 111/mmLR
-    ( "MIR_G5537" , "LC_Long" , "111/mmLR_G5534" , "LongRed_G5543" ): Config("gnirs$data/gnirsn-ls-long-111-mdf.fits", "[1:30,*]", pixel_scale_long, "LS"),
-}
 
 # Key is (LNRS, NDAVGS)
 read_modes = {

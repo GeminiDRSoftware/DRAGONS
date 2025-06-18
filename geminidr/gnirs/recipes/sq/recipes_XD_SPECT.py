@@ -54,9 +54,9 @@ def reduceTelluric(p):
     """
     p.prepare()
     p.addDQ()
-    # p.nonlinearityCorrect() # non-linearity correction tbd
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
     p.separateSky()

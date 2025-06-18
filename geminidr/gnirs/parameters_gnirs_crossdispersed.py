@@ -71,5 +71,3 @@ class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):
     """
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.4, min=0.001, max=0.5, inclusiveMax=True)
-    def setDefaults(self):
-        self.start_pos = 255
