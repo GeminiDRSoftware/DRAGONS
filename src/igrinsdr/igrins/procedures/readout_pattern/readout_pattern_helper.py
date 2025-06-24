@@ -5,7 +5,7 @@ from ..bg_mask_helper import make_background_mask_from_combined
 
 from .readout_pattern import pipes, apply as apply_pipe
 
-# from .readout_pattern_guard import remove_pattern_from_guard as remove_readout_pattern_from_guard
+from .readout_pattern_guard import remove_pattern_from_guard as remove_readout_pattern_from_guard
 from .ro_pattern_fft import (get_amp_wise_rfft,
                              make_model_from_rfft)
 
