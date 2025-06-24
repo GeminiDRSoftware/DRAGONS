@@ -51,8 +51,8 @@ def makeProcessedArc(p: Igrins):
 
     p.volumeFit()
 
-    # p.makeSpectralMaps()
-    # p.attachWatTable()
+    p.makeSpectralMaps()
+    p.attachWatTable()
 
     p.storeProcessedArc()
 

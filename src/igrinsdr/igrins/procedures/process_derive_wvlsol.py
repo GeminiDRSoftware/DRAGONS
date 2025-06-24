@@ -50,7 +50,7 @@ def fit_wvlsol(df, xdeg=4, ydeg=3):
     df: pixels, order, wavelength"""
     from .ecfit import fit_2dspec
 
-    xl = df["pixels"].values
+    xl = df["fitted_pixel"].values
     yl = df["order"].values
     zl = df["wavelength"].values
     zlo = zl * yl
