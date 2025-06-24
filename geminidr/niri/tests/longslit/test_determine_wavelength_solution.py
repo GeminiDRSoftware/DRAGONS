@@ -36,7 +36,7 @@ determine_wavelength_solution_parameters = {
     'min_snr': None,
     'debug_min_lines': 15,
     'in_vacuo': True,
-    'num_atran_lines': 100,
+    'num_lines': 100,
     "combine_method": "optimal",
     "wv_band": "header",
     "resolution": None

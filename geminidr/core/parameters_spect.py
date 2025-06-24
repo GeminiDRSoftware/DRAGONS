@@ -202,8 +202,8 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     interactive = config.Field("Display interactive fitter?", bool, False)
-    num_atran_lines = config.RangeField("Number of lines in ATRAN line list", int, 50.,
-                                              min=10, max=300, inclusiveMax=True)
+    num_lines = config.RangeField("Number of lines in the generated line list", int, 50.,
+                                              min=10, max=10000, inclusiveMax=True)
     wv_band = config.ChoiceField("Water Vapor constraint", str,
                                    allowed={"20": "20%-ile",
                                             "50": "50%-ile",

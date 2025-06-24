@@ -42,7 +42,7 @@ from astrodata.provenance import add_provenance
 from geminidr import CalibrationNotFoundError
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from geminidr.gemini.lookups import extinction_data as extinct, oh_synthetic_spectra
+from geminidr.gemini.lookups import extinction_data as extinct
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
 from geminidr.interactive.fit.tracing import interactive_trace_apertures, trace_apertures_data_provider
@@ -82,7 +82,7 @@ class Spect(Resample):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_spect)
-        self.generated_linelist = False
+        self.generated_linelist = None
 
     def adjustWavelengthZeroPoint(self, adinputs=None, **params):
         """
@@ -2394,9 +2394,9 @@ class Spect(Resample):
             Water vapour content (as percentile) to be used for ATRAN model
             selection. If "header", then the value from the header is used.
 
-        num_atran_lines: int/None
+        num_lines: int/None
             Maximum number of lines with largest weigths (within a wvl bin) to be
-            included in the generated ATRAN line list.
+            included in the generated line list.
 
         debug : bool
             Enable plots for debugging.
@@ -2465,9 +2465,12 @@ class Spect(Resample):
                     config, reinit_params=["center", "nsum", "min_snr", "min_sep",
                                            "fwidth", "central_wavelength", "dispersion",
                                                        "in_vacuo"])
-            if self.generated_linelist:
+            if self.generated_linelist is not None:
                 # Add some extra parameters to the UI when the linelist gets generated on-the-fly
-                linelist_pars = {"atran_linelist_pars": ["num_atran_lines", "resolution", "wv_band"]}
+                if self.generated_linelist == "atran":
+                    linelist_pars = {"atran_linelist_pars": ["num_lines", "resolution", "wv_band"]}
+                elif self.generated_linelist == "airglow":
+                    linelist_pars = {"airglow_linelist_pars": ["num_lines"]}
                 uiparams.reinit_params.append(linelist_pars)
 
             uiparams.fields["center"].max = min(

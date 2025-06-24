@@ -173,3 +173,194 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
         """
 
         return ('telescope', '_prism', 'decker', '_grating', 'camera')
+
+    def determineWavelengthSolution(self, adinputs=None, **params):
+        """
+        Determines the wavelength solution for an ARC and updates the wcs
+        with this solution. In addition, the solution and pixel/wavelength
+        matches are stored as an attached `WAVECAL` :class:`~astropy.table.Table`.
+
+        2D input images are converted to 1D by collapsing a slice of the image
+        along the dispersion direction, and peaks are identified. These are then
+        matched to an arc line list, using piecewise-fitting of (usually)
+        linear functions to match peaks to arc lines, using the
+        :class:`~gempy.library.matching.KDTreeFitter`.
+
+        The `.WAVECAL` table contains four columns:
+            ["name", "coefficients", "peaks", "wavelengths"]
+
+        The `name` and the `coefficients` columns contain information to
+        re-create an Chebyshev1D object, plus additional information about
+        the way the spectrum was collapsed. The `peaks` column contains the
+        (1-indexed) position of the lines that were matched to the catalogue,
+        and the `wavelengths` column contains the matched wavelengths.
+
+        This GNIRS-specific primitive sets debug_min_lines, order, min_snr,
+        num_lines and average values depending on the
+        observing mode, as the default value for these parameters is None.
+        It then calls the generic version of the primitive.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+             Mosaicked Arc data as 2D spectral images or 1D spectra.
+
+        suffix : str/None
+            Suffix to be added to output files
+
+        order : int
+            Order of Chebyshev fitting function.
+
+        center : None or int
+            Central row/column for 1D extraction (None => use middle).
+
+        nsum : int, optional
+            Number of rows/columns to average.
+
+        min_snr : float
+            Minimum S/N ratio in line peak to be used in fitting.
+
+        weighting : {'natural', 'relative', 'none'}
+            How to weight the detected peaks.
+
+        fwidth : float/None
+            Expected width of arc lines in pixels. It tells how far the
+            KDTreeFitter should look for when matching detected peaks with
+            reference arcs lines. If None, `fwidth` is determined using
+            `peak_finding.estimate_peak_width`.
+
+        min_sep : float
+            Minimum separation (in pixels) for peaks to be considered distinct
+
+        central_wavelength : float/None
+            central wavelength in nm (if None, use the WCS or descriptor)
+
+        dispersion : float/None
+            dispersion in nm/pixel (if None, use the WCS or descriptor)
+
+        linelist : str/None
+            Name of file containing arc lines. If None, then a default look-up
+            table will be used.
+
+        alternative_centers : bool
+            Identify alternative central wavelengths and try to fit them?
+
+        nbright : int (or may not exist in certain class methods)
+            Number of brightest lines to cull before fitting
+
+        absorption : bool
+            If feature type is absorption (default: "False")
+
+        interactive : bool
+            Use the interactive tool?
+
+        debug : bool
+            Enable plots for debugging.
+
+        num_lines: int/None
+            Number of lines with largest weigths (within a wvl bin) to be used for
+            the generated line list.
+
+        wv_band: {'20', '50', '80', '100', 'header'}
+            Water vapour content (as percentile) to be used for ATRAN model
+            selection. If "header", then the value from the header is used.
+
+        resolution: int/None
+            Resolution of the observation (as l/dl), to which ATRAN spectrum should be
+            convolved. If None, the default value for the instrument/mode is used.
+
+        debug_combiner: {"mean", "median", "none"}
+            Method to use for combining rows/columns when extracting 1D-spectrum.
+            Default: "mean".
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Updated objects with a `.WAVECAL` attribute and improved wcs for
+            each slice
+
+        See Also
+        --------
+        :class:`~geminidr.core.primitives_visualize.Visualize.mosaicDetectors`,
+        :class:`~gempy.library.matching.KDTreeFitter`,
+        """
+        adoutputs = []
+        for ad in adinputs:
+            these_params = params.copy()
+            min_snr_isNone = True if these_params["min_snr"] is None else False
+            order_isNone = True if these_params["order"] is None else False
+
+            disp = ad.disperser(pretty=True)
+            filt = ad.filter_name(pretty=True)
+            cam = ad.camera(pretty=True)
+            cenwave = ad.central_wavelength(asMicrometers=True)
+            log = self.log
+            if 'ARC' not in ad.tags:
+                if these_params["absorption"]:
+                    # The case of wavecal from absorption using ATRAN lines
+                    self.generated_linelist = "atran"
+                else:
+                    # Airglow emission
+                    self.generated_linelist = "airglow"
+
+
+            # if 'ARC' in ad.tags:
+            #     if these_params["min_snr"] is None:
+            #         these_params["min_snr"] = 20
+            #     if these_params["debug_min_lines"] is None:
+            #         these_params["debug_min_lines"] = 100000
+            #
+            #     if these_params["order"] is None:
+            #         if ((filt == "H" and cenwave >= 1.75) or (filt == "K" and cenwave >= 2.2)) \
+            #                 and ((cam.startswith('Long') and disp.startswith('32')) or
+            #                      (cam.startswith('Short') and disp.startswith('111'))):
+            #                 these_params["order"] = 1
+            #         elif disp.startswith('111') and cam.startswith('Long'):
+            #                 these_params["order"] = 1
+            #         else:
+            #             these_params["order"] = 3
+            #
+            # elif these_params["absorption"]:
+            #     # The case of wavecal from absorption using ATRAN lines
+            #     self.generated_linelist = "atran"
+            #     # sigma=2 works better with ATRAN line lists
+            #     these_params["lsigma"] = 2
+            #     these_params["hsigma"] = 2
+            #     if these_params["order"] is None:
+            #         these_params["order"] = 1
+            #     if these_params["min_snr"] is None:
+            #         these_params["min_snr"] = 1
+            #
+            #     if these_params["center"] is None:
+            #         try:
+            #             aptable = ad[0].APERTURE
+            #             these_params["center"] = int(aptable['c0'].data[0])
+            #         except (AttributeError, KeyError):
+            #             log.error("Could not find aperture locations in "
+            #                         f"{ad.filename} - continuing")
+            #             continue
+            #
+            # else:
+            #     # Airglow emission
+            #     self.generated_linelist = "airglow"
+            #     if these_params["min_snr"] is None:
+            #         these_params["min_snr"] = 10
+            #     if these_params["order"] is None:
+            #         these_params["order"] = 3
+            #     if these_params["center"] is None:
+            #         these_params["center"] = 650
+            #
+            # if these_params["debug_min_lines"] is None:
+            #     these_params["debug_min_lines"] = 15
+            # if these_params["num_lines"] is None:
+            #     these_params["num_lines"] = 50
+            #
+            # if min_snr_isNone:
+            #     self.log.stdinfo(f'Parameter "min_snr" is set to None. '
+            #                      f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
+            # if order_isNone:
+            #     self.log.stdinfo(f'Parameter "order" is set to None. '
+            #                      f'Using order={these_params["order"]} for {ad.filename}')
+
+            adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
+        return adoutputs

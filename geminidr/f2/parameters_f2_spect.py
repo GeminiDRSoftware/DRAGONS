@@ -22,7 +22,6 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         self.debug_min_lines = 100000
         del self.absorption
         del self.wv_band
-        del self.num_atran_lines
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
 
 

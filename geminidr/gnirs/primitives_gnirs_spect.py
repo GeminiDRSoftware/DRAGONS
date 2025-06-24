@@ -128,14 +128,11 @@ class GNIRSSpect(Telluric, GNIRS):
         elif config.get("absorption", False) or wave_model.c0 > 2800:
             return self._get_atran_linelist(wave_model=wave_model, ext=ext, config=config)
         else:
-            # In case of wavecal from sky OH emission use this line list
-            filename = 'nearIRsky.dat'
+            # Wavecal from airglow emission
+            return self._get_airglow_linelist(wave_model=wave_model, ext=ext, config=config)
 
         self.log.stdinfo(f"Using linelist {filename}")
         linelist = wavecal.LineList(os.path.join(lookup_dir, filename))
-        if 'ARC' not in ext.tags:
-            # Attach a synthetic sky spectrum if using sky lines or absorption
-            linelist.reference_spectrum = self._get_sky_spectrum(wave_model, ext)
 
         return linelist
 

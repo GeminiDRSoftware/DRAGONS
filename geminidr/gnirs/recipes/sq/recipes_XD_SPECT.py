@@ -99,6 +99,44 @@ def  makeWavecalFromSkyEmission(p):
     p.writeOutputs()
 
 
+def  makeWavecalFromSkyAbsorption(p):
+    """
+    Process GNIRS longslist science in order to create wavelength solution
+    using telluric absorption in the target spectrum. Copy distortion model
+    to the resulting calibration frame from the associated arc.
+
+    Inputs are:
+      * raw science
+      * processed arc
+      * processed flat
+    """
+    p.prepare()
+    p.addDQ()
+    # p.nonlinearityCorrect() # non-linearity correction tbd
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True, read_noise=True)
+    p.flatCorrect()
+    p.attachWavelengthSolution()
+    p.copyInputs(instream="main", outstream="with_distortion_model")
+    p.separateSky()
+    p.associateSky()
+    p.skyCorrect()
+    p.cleanReadout()
+    p.writeOutputs()
+    p.attachPinholeModel()
+    p.distortionCorrect()
+    p.writeOutputs()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame(output_wave_scale='reference', trim_spectral=True)
+    p.writeOutputs()
+    p.stackFrames()
+    p.writeOutputs()
+    p.findApertures()
+    p.determineWavelengthSolution(absorption=True)
+    p.transferDistortionModel(source="with_distortion_model")
+    p.storeProcessedArc(force=True)
+
+
 def reduceScienceWithAdjustmentFromSkylines(p):
     """
     To be updated as development continues: This recipe processes GNIRS cross-dispersed

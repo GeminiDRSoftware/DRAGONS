@@ -305,7 +305,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
         and the `wavelengths` column contains the matched wavelengths.
 
         This GNIRS-specific primitive sets debug_min_lines, order, min_snr,
-        num_atran_lines and average values depending on the
+        num_lines and average values depending on the
         observing mode, as the default value for these parameters is None.
         It then calls the generic version of the primitive.
 
@@ -366,9 +366,9 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
         debug : bool
             Enable plots for debugging.
 
-        num_atran_lines: int/None
+        num_lines: int/None
             Number of lines with largest weigths (within a wvl bin) to be used for
-            the generated ATRAN line list.
+            the generated line list.
 
         wv_band: {'20', '50', '80', '100', 'header'}
             Water vapour content (as percentile) to be used for ATRAN model
@@ -425,7 +425,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
             elif these_params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
                 # The case of wavecal from absorption, or wavecal from telluric
                 # emission in L- and M-bands, both done using ATRAN lines
-                self.generated_linelist = True
+                self.generated_linelist = "atran"
                 # sigma=2 works better with ATRAN line lists
                 these_params["lsigma"] = 2
                 these_params["hsigma"] = 2
@@ -468,15 +468,15 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
                         else:
                             these_params["min_snr"] = 10
 
-                    if these_params["num_atran_lines"] is None:
+                    if these_params["num_lines"] is None:
                         if filt.startswith('M'):
-                            these_params["num_atran_lines"] = 150
+                            these_params["num_lines"] = 150
                         elif filt.startswith('L'):
-                            these_params["num_atran_lines"] = 100
+                            these_params["num_lines"] = 100
                             if ((disp.startswith('111') and cam.startswith('Short')) or
                                 (disp.startswith('32') and cam.startswith('Long'))) and \
                                     3.80 <= cenwave:
-                                these_params["num_atran_lines"] = 300
+                                these_params["num_lines"] = 300
 
                     if these_params["combine_method"] == "optimal":
                         # this is to reduce the impact of hot pixels
@@ -486,6 +486,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
                             these_params["combine_method"] = "mean"
             else:
                 # OH emission
+                self.generated_linelist = "airglow"
                 if these_params["min_snr"] is None:
                     these_params["min_snr"] = 10
                 if these_params["order"] is None:
@@ -495,8 +496,8 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
 
             if these_params["debug_min_lines"] is None:
                 these_params["debug_min_lines"] = 15
-            if these_params["num_atran_lines"] is None:
-                these_params["num_atran_lines"] = 50
+            if these_params["num_lines"] is None:
+                these_params["num_lines"] = 50
             if these_params["combine_method"] == "optimal":
                 these_params["combine_method"] = "mean"
 

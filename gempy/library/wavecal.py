@@ -94,8 +94,9 @@ class LineList:
                 # We accept any case if there's a space before it, or require
                 # all caps, to avoid matching stuff like "Blair & Brown (2010)"
                 if not data_lines:
-                    is_air |= " AIR" in line.upper() or "AIR" in line
-                    is_vacuo |= "VACUUM" in line.upper() or "VACUO" in line.upper()
+                    words = [word.upper() for word in line.strip().split()]
+                    is_air |= "AIR" in words
+                    is_vacuo |= "VACUUM" in line
                     m = r.match(line)
                     if m:
                         try:
@@ -130,6 +131,40 @@ class LineList:
         if (self._weights is not None) and (np.isnan(self._weights).all()):
             self._weights = None
 
+    def vac_to_air(self, wavelengths):
+        """
+        Converts vacuum to air wavelengths
+
+        Parameters
+        ----------
+        wavelength : `Quantity` object (number or sequence)
+            Vacuum wavelengths with an astropy.unit.
+
+        Returns
+        -------
+        air_wavelength : `Quantity` object (number or sequence)
+            Air wavelengths with the same unit as wavelength.
+        """
+
+        return np.round(vac_to_air(wavelengths), decimals=self._decimals)
+
+    def air_to_vac(self, wavelengths):
+        """
+        Converts air to vacuum wavelengths.
+
+        Parameters
+        ----------
+        wavelength : `Quantity` object (number or sequence)
+            Air wavelengths with an astropy.unit.
+
+        Returns
+        -------
+        vac_wavelength : `Quantity` object (number or sequence)
+            Vacuum wavelengths with the same unit as wavelength.
+        """
+
+        return np.round(air_to_vac(wavelengths), decimals=self._decimals)
+
     def wavelengths(self, in_vacuo=None, units=None):
         """Return line wavelengths in air/vacuum (possibly with particular units)"""
         if not in_vacuo in (True, False):
@@ -150,8 +185,7 @@ class LineList:
         """
         wavelengths = self._lines * self.units
         if self._in_vacuo:
-            wavelengths = np.round(vac_to_air(wavelengths),
-                                   decimals=self._decimals)
+            wavelengths = self.vac_to_air(wavelengths)
         if units is None:
             return wavelengths
         elif isinstance(units, str):
@@ -170,13 +204,25 @@ class LineList:
         """
         wavelengths = self._lines * self.units
         if not self._in_vacuo:
-            wavelengths =  np.round(air_to_vac(wavelengths),
-                                    decimals=self._decimals)
+            wavelengths =  self.air_to_vac(wavelengths)
         if units is None:
             return wavelengths
         elif isinstance(units, str):
             units = u.Unit(units)
         return wavelengths.to(units).value
+
+    def convert_refplot_to_air(self):
+        """Convert refplot wavelengths to air (in nanometers)"""
+        units = u.Unit("nm")
+        if self.reference_spectrum is not None:
+            if "refplot_spec" in self.reference_spectrum:
+                refplot_spec = self.reference_spectrum["refplot_spec"]
+                refplot_spec[:, 0] = self.vac_to_air(refplot_spec[:, 0] * units)
+                self.reference_spectrum["refplot_spec"] = refplot_spec
+            if "refplot_linelist" in self.reference_spectrum:
+                refplot_linelist = self.reference_spectrum["refplot_linelist"]
+                refplot_linelist[:, 0] = self.vac_to_air(refplot_linelist[:, 0] * units)
+                self.reference_spectrum["refplot_linelist"] = refplot_linelist
 
 
 def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
@@ -390,6 +436,7 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
             if "refplot_linelist" not in lnlist.reference_spectrum:
                 # We need to calculate the intensity of the reference spectrum
                 # at the locations of the lines
+                params = ui_params.toDict()
                 refspec = lnlist.reference_spectrum["refplot_spec"]
                 wavelengths = lnlist.vacuum_wavelengths(units="nm")
                 # LineList might extend beyond edges of displayed spectrum
@@ -397,7 +444,8 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
                                    left=np.nan, right=np.nan)
                 lnlist.reference_spectrum["refplot_linelist"] = np.array(
                     [wavelengths, fluxes]).T[~np.isnan(fluxes)]
-
+            if not params["in_vacuo"]:
+                lnlist.convert_refplot_to_air()
             input_data.update(lnlist.reference_spectrum)
 
         input_data["init_models"] = [fit1d.model] + input_data["init_models"]

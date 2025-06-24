@@ -32,9 +32,13 @@ class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     order = config.RangeField("Order of fitting function", int, 3, min=1,
                               optional=True)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 20, min=0.1, optional=True)
+
     debug_min_lines = config.Field("Minimum number of lines to fit each segment",
                                    (str, int), '50,20',
                                    check=list_of_ints_check)
+    num_lines = config.RangeField("Number of lines in the generated line list", int, 100,
+                                              min=10, max=10000, inclusiveMax=True, optional=True)
     def setDefaults(self):
         self.in_vacuo = True
 
