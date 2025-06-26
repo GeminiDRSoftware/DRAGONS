@@ -28,7 +28,7 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), None,
                                    check=list_of_ints_check, optional=True)
     num_lines = config.RangeField("Number of lines in the generated line list", int, None,
-                                              min=10, max=10000, inclusiveMax=True, optional=True)
+                                              min=10, max=1000, inclusiveMax=True, optional=True)
     combine_method = config.ChoiceField("Combine method to use in 1D spectrum extraction", str,
                                    allowed={"mean": "mean",
                                             "median": "median",

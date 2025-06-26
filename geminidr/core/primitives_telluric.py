@@ -885,7 +885,7 @@ class Telluric(Spect):
             # Invert spectrum because we want the wavelengths of troughs
             linelist_data = make_linelist(refplot_spec,
                                           resolution=resolution,
-                                          num_lines=config.get('num_atran_lines', 50))
+                                          num_lines=config.get('num_lines', 50))
             header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm\n"
                       f"Generated at R={int(resolution)} from ATRAN synthetic spectrum "
                       "(Lord, S. D., 1992, NASA Technical Memorandum 103957)\n"

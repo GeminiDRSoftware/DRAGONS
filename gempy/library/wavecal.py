@@ -596,7 +596,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     if ext.data.ndim > 1:
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
-        const_slit = 'LS' in ext.tags
+        const_slit = 'LS' in ext.tags or "TRANSFRM" in ext.phu
         center = config["center"] or int(0.5 * (ext.shape[1 - dispaxis] - 1))
         data, mask, variance, extract_info = peak_finding.average_along_slit(
             ext, center=center, nsum=config["nsum"],

@@ -12,6 +12,7 @@ import astrodata, gemini_instruments
 from astrodata.testing import ad_compare
 
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
+from geminidr.f2.primitives_f2_longslit import F2Longslit
 from geminidr.core.primitives_telluric import make_linelist, GaussianLineSpreadFunction
 from gempy.library import astromodels as am
 
@@ -182,10 +183,10 @@ def test_gaussian_line_spread_function_convolve_and_resample(ext, resolution):
 @pytest.mark.parametrize("filename,model_params",
                          # GNIRS L-band, sky emission
                          [('N20100820S0214_wavelengthSolutionDetermined.fits',
-                           {"absorption": False, "nlines": 100}),
+                           {"absorption": False, "num_lines": 100}),
                           # GNIRS J-band, sky absorption in object spectrum
                           ('N20121221S0199_aperturesFound.fits',
-                           {"absorption": True, "nlines": 50}),
+                           {"absorption": True, "num_lines": 50}),
                          ])
 def test_get_atran_linelist(filename, model_params, change_working_dir,
                              path_to_inputs, path_to_refs):
@@ -221,3 +222,28 @@ def test_make_linelist(num_lines):
                                    i in range(10)])
     assert len(linelist) == num_lines
     np.testing.assert_allclose(linelist[:, 0], expected_linelist)
+
+@pytest.mark.skip
+@pytest.mark.preprocessed_data
+@pytest.mark.regression
+def test_get_airglow_linelist(path_to_inputs, path_to_refs):
+    # Spectrum of F2 OH-emission sky lines for plotting
+    # We use the _wavelengthSolutionDetermined file because thw WAVE model
+    # is a Chebyshev1D, as required. (In normal reduction, a Cheb1D will be
+    # provided bto _get_sky_spectrum() y determineWavelengthSolution,
+    # regardless of the state of the input file.)
+    ad_f2 = astrodata.open(os.path.join(
+        path_to_inputs, 'S20180114S0104_wavelengthSolutionDetermined.fits'))
+    wave_model = am.get_named_submodel(ad_f2[0].wcs.forward_transform, 'WAVE')
+
+    p = F2Longslit([])
+    linelist = p._get_airglow_linelist(wave_model=wave_model, ext=ad_f2[0],
+                                       config={"absorption": False, "num_lines": 100})
+    refplot_data_f2 = linelist.reference_spectrum
+    # np.savetxt(os.path.join(path_to_refs, "S20180114S0104_refplot_spec.dat"),
+    #            refplot_data_f2["refplot_spec"])
+    ref_refplot_spec_f2 = np.loadtxt(
+        os.path.join(path_to_refs, "S20180114S0104_refplot_spec.dat"))
+
+    np.testing.assert_allclose(ref_refplot_spec_f2, refplot_data_f2["refplot_spec"], atol=1e-3)
+

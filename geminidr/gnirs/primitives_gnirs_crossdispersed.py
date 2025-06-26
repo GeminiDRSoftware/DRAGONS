@@ -299,68 +299,25 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                 if these_params["absorption"]:
                     # The case of wavecal from absorption using ATRAN lines
                     self.generated_linelist = "atran"
+                    if these_params["order"] is None:
+                        these_params["order"] = 1
+                    if these_params["min_snr"] is None:
+                        these_params["min_snr"] = 1
                 else:
                     # Airglow emission
                     self.generated_linelist = "airglow"
 
+            if these_params["min_snr"] is None:
+                these_params["min_snr"] = 20
+            if these_params["order"] is None:
+                these_params["order"] = 3
 
-            # if 'ARC' in ad.tags:
-            #     if these_params["min_snr"] is None:
-            #         these_params["min_snr"] = 20
-            #     if these_params["debug_min_lines"] is None:
-            #         these_params["debug_min_lines"] = 100000
-            #
-            #     if these_params["order"] is None:
-            #         if ((filt == "H" and cenwave >= 1.75) or (filt == "K" and cenwave >= 2.2)) \
-            #                 and ((cam.startswith('Long') and disp.startswith('32')) or
-            #                      (cam.startswith('Short') and disp.startswith('111'))):
-            #                 these_params["order"] = 1
-            #         elif disp.startswith('111') and cam.startswith('Long'):
-            #                 these_params["order"] = 1
-            #         else:
-            #             these_params["order"] = 3
-            #
-            # elif these_params["absorption"]:
-            #     # The case of wavecal from absorption using ATRAN lines
-            #     self.generated_linelist = "atran"
-            #     # sigma=2 works better with ATRAN line lists
-            #     these_params["lsigma"] = 2
-            #     these_params["hsigma"] = 2
-            #     if these_params["order"] is None:
-            #         these_params["order"] = 1
-            #     if these_params["min_snr"] is None:
-            #         these_params["min_snr"] = 1
-            #
-            #     if these_params["center"] is None:
-            #         try:
-            #             aptable = ad[0].APERTURE
-            #             these_params["center"] = int(aptable['c0'].data[0])
-            #         except (AttributeError, KeyError):
-            #             log.error("Could not find aperture locations in "
-            #                         f"{ad.filename} - continuing")
-            #             continue
-            #
-            # else:
-            #     # Airglow emission
-            #     self.generated_linelist = "airglow"
-            #     if these_params["min_snr"] is None:
-            #         these_params["min_snr"] = 10
-            #     if these_params["order"] is None:
-            #         these_params["order"] = 3
-            #     if these_params["center"] is None:
-            #         these_params["center"] = 650
-            #
-            # if these_params["debug_min_lines"] is None:
-            #     these_params["debug_min_lines"] = 15
-            # if these_params["num_lines"] is None:
-            #     these_params["num_lines"] = 50
-            #
-            # if min_snr_isNone:
-            #     self.log.stdinfo(f'Parameter "min_snr" is set to None. '
-            #                      f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
-            # if order_isNone:
-            #     self.log.stdinfo(f'Parameter "order" is set to None. '
-            #                      f'Using order={these_params["order"]} for {ad.filename}')
+            if min_snr_isNone:
+                self.log.stdinfo(f'Parameter "min_snr" is set to None. '
+                                 f'Using min_snr={these_params["min_snr"]} for {ad.filename}')
+            if order_isNone:
+                self.log.stdinfo(f'Parameter "order" is set to None. '
+                                 f'Using order={these_params["order"]} for {ad.filename}')
 
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs

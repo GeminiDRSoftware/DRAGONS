@@ -190,6 +190,7 @@ class Spect(Resample):
                         "absorption": False,
                         "debug_min_lines": 15,
                         "debug_alternative_centers": False,
+                        "num_lines": 100,
                     }
 
                 wave_scale = ext.wcs.output_frame.axes_names[0]
@@ -2470,7 +2471,7 @@ class Spect(Resample):
                 if self.generated_linelist == "atran":
                     linelist_pars = {"atran_linelist_pars": ["num_lines", "resolution", "wv_band"]}
                 elif self.generated_linelist == "airglow":
-                    linelist_pars = {"airglow_linelist_pars": ["num_lines"]}
+                    linelist_pars = {"airglow_linelist_pars": ["num_lines", "resolution"]}
                 uiparams.reinit_params.append(linelist_pars)
 
             uiparams.fields["center"].max = min(
