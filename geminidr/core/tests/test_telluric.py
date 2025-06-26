@@ -177,7 +177,6 @@ def test_gaussian_line_spread_function_convolve_and_resample(ext, resolution):
         assert m_final.stddev * 2.35482 == pytest.approx(w0 / resolution,
                                                          rel=0.01)
 
-@pytest.mark.skip("skip temporarily, until the reference files can be updated")
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("filename,model_params",
@@ -224,7 +223,6 @@ def test_make_linelist(num_lines):
     np.testing.assert_allclose(linelist[:, 0], expected_linelist)
 
 
-@pytest.mark.skip("skip temporarily, until the reference files can be updated")
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 def test_get_airglow_linelist(path_to_inputs, path_to_refs):
