@@ -2439,7 +2439,7 @@ class Spect(Resample):
                 log.warning(f"Cannot read file {arc_file} - "
                             "using default linelist")
             else:
-                self.generated_linelist = False
+                self.generated_linelist = None
                 log.stdinfo(f"Read arc line list {arc_file}")
 
         for ad in adinputs:
