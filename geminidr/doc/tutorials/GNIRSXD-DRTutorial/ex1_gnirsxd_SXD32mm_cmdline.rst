@@ -349,7 +349,7 @@ The fit for Order 3 looks like this:
 
 Order 8 needs some discussion.  You will notice many rejected data points marked
 as light blue triangle.  The software by default rejects those points because
-the stellar features in that part of the spectrum are notorious difficult to
+the stellar features in that part of the spectrum are notoriouly difficult to
 model.
 
 .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8.png
@@ -361,8 +361,9 @@ model.
    :alt: telluric absorption model fit
 
 In our case, the model and the star do fit remarkably well, so we can
-reactivate those points and give the software more points to fit.  Use the
-box selection tool (the dotted line square) to include the blue triangla and
+reactivate those points and give the software more points to fit.  On the top
+plot, use the
+box selection tool (the dotted line square) to include the blue triangles and
 type "u" to unmask them and reactivate them.
 
 .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_after.png
@@ -442,11 +443,13 @@ that a shift of 0.55 pixels significantly improves the correction.
 A section of 2D spectrum before extraction is shown on the right, with blue wavelengths at
 the bottom and the red-end at the top.  Note that each order has been rectified
 and is being stored in separate extensions in the MEF file.  Here they are
-displayed together, side by side.  (``reduce -r display N20170113S0146_2D.fits``)
+displayed together, side by side.  (``reduce -r display N20170113S0146_2D.fits``,
+launch DS9 first.)
 
 Each order is extracted separately and stored in separate extensions in the
 MEF file.  The 1D extracted spectrum before telluric correction or flux
-calibration, obtained with ``-p extractSpectra:write_outputs=True``.  You can
+calibration, obtained by adding the option
+``-p extractSpectra:write_outputs=True`` to the ``reduce`` call.  You can
 plot all the orders on a common plot with ``dgsplot``. (The ``--thin`` option
 simply plots a thinner line than the default width.)
 
