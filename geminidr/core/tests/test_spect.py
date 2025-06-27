@@ -721,7 +721,7 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
     warning_given = any(record.levelname == 'WARNING' for record in caplog.records)
     assert warn == warning_given
 
-
+@pytest.mark.skip("This function is now part of _get_airglow_linelist() in primitives_telluric")
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 def test_get_sky_spectrum(path_to_inputs, path_to_refs):

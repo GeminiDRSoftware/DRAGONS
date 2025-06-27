@@ -1197,7 +1197,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     A Visualizer specific to determineWavelengthSolution
     """
     def __init__(self, *args, absorption=None, **kwargs):
-        self.num_atran_params = None
+        self.num_linelist_params = None
         super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
                          help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
                          absorption=absorption)
@@ -1207,8 +1207,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         #    labels=["Air", "Vacuum"], active=0)
         #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
         skip_lines = -3
-        if self.num_atran_params is not None:
-            skip_lines = skip_lines - self.num_atran_params - 1
+        if self.num_linelist_params is not None:
+            skip_lines = skip_lines - self.num_linelist_params - 1
 
         calibration_type = "vacuo" if self.ui_params.in_vacuo else "air"
 
@@ -1222,7 +1222,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         )
 
         self.widgets["in_vacuo"].disabled = True
-        del self.num_atran_params
+        del self.num_linelist_params
 
         self.absorption = absorption
 
@@ -1256,16 +1256,19 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     linelist_reinit_params = key.get("atran_linelist_pars")
                     params.reinit_params.remove(key)
                     params.reinit_params = params.reinit_params+linelist_reinit_params
-
+                elif isinstance(key, dict) and "airglow_linelist_pars" in key:
+                    linelist_reinit_params = key.get("airglow_linelist_pars")
+                    params.reinit_params.remove(key)
+                    params.reinit_params = params.reinit_params+linelist_reinit_params
         lst = super().make_widgets_from_parameters(params)
-        # If there are widgets for controlling ATRAN linelist, add
+        # If there are widgets for controlling generated linelist, add
         # a title line above them:
         if linelist_reinit_params is not None:
-            self.num_atran_params = len(linelist_reinit_params)
+            self.num_linelist_params = len(linelist_reinit_params)
             section_title = bm.Div(
-                text="Parameters for ATRAN linelist generation:",
+                text="Parameters for the on-the-fly linelist generation:",
                 align="start", styles={"font-weight":"bold"}, margin=(40,0,20,0))
-            lst.insert((-self.num_atran_params), section_title)
+            lst.insert((-self.num_linelist_params), section_title)
         return lst
 
     def reconstruct_points_additional_work(self, data):

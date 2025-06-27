@@ -44,4 +44,4 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         del self.absorption
         del self.wv_band
         del self.resolution
-        del self.num_atran_lines
+        del self.num_lines

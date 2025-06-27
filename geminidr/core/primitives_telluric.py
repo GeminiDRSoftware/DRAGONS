@@ -22,10 +22,10 @@ from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from geminidr.interactive.interactive import UIParameters
 import geminidr.interactive.server
-from ..gemini.lookups import qa_constraints
+from ..gemini.lookups import qa_constraints, airglow_synthetic_spectra
 
 from gempy.library import astromodels as am, astrotools as at
-from gempy.library import convolution, peak_finding
+from gempy.library import convolution, peak_finding, wavecal
 from gempy.library.config import RangeField
 from gempy.library.calibrator import TelluricCalibrator, TelluricCorrector
 from gempy.library.telluric import TelluricModels, TelluricSpectrum
@@ -642,7 +642,136 @@ class Telluric(Spect):
                          "shifts. Not shifting data.")
         return None
 
-    def _get_atran_linelist(self, wave_model=None, ext=None, config=None):
+    def _get_airglow_linelist(self, wave_model, ext, config):
+        """
+        Return a list of airglow spectral lines to be matched in the wavelength
+        calibration, and a reference plot of a convolved synthetic spectrum,
+        to aid the user in making the correct identifications (which is
+        an attribute of the LineList object).
+
+        The spectrum is constructed within a particular wavelength
+        range from a high-resolution list of line wavelengths and
+        brightnesses, by convolving it to a lower spectral resolution.
+
+        In the region beyond 2.3um the airglow lines
+        are virtually absent, however the atmosphere emission (T~280K) is getting
+        stronger, and so the telluric absorption becomes prominent. Therefore
+        in the region beyond 2.3um we use ATRAN spectrum to calculate linelist
+        and reference spectrum, and stitch it to the airglow spectrum.
+
+        The linelist can be generated on-the-fly by finding peaks in the
+        convolved spectrum, or read from disk if there exists a suitable
+        list for this instrumental setup.
+
+        Parameters
+        ----------
+        wave_model: ``astropy.modeling.models.Chebyshev1D``
+            the current wavelength model (pixel -> wavelength), with an
+            appropriate domain describing the illuminated region
+        ext: single-slice ``AstroData``
+            the extension for which a sky spectrum is being constructed
+        config: ``config.Config`` object
+            containing various parameters
+
+        Returns
+        -------
+        ``wavecal.Linelist``
+            list of lines to match, including data for a reference plot
+        """
+
+        log = self.log
+        airglow_path = list(airglow_synthetic_spectra.__path__).pop()
+        resolution = config.get("resolution") or self._get_resolution(ext)
+        num_lines = config.get("num_lines")
+        in_vac = config.get("in_vacuo", True)
+        medium = 'vacuum' if in_vac else 'air'
+
+        # The wave_model's domain describes the illuminated region
+        wave_model_bounds = self._wavelength_model_bounds(wave_model, ext)
+        try:
+            domain = wave_model.domain
+        except AttributeError:
+            for m in wave_model:
+                if hasattr(m, 'domain'):
+                    domain = m.domain
+                    break
+            else:
+                raise ValueError("No domain in wavelength model")
+        start_wvl, end_wvl = (np.sort(wave_model(domain)) +
+                              np.asarray(wave_model_bounds['c0']) -
+                              np.mean(wave_model_bounds['c0']))
+
+        dw = 0.02 * start_wvl / resolution
+        refplot_waves = np.arange(start_wvl, end_wvl, dw, dtype=np.float32)
+        refplot_data = np.zeros_like(refplot_waves)
+        airglow_linelist = wavecal.LineList(os.path.join(airglow_path,
+                                                    "ohlist_v2.0_rev_o2_added.dat"))
+        wlines = airglow_linelist.vacuum_wavelengths(units="nm")
+        indices = np.logical_and(wlines > start_wvl, wlines < end_wvl)
+        for wline, fline in zip(wlines[indices], airglow_linelist.weights[indices]):
+            sigma = 0.42 * wline / resolution
+            refplot_data += fline * np.exp(-0.5 * ((refplot_waves - wline) / sigma) ** 2)
+        # Around 2300 nm is roughly where the OH lines die off and the telluric spectrum
+        #  starts dominating
+        if end_wvl > 2314:
+            refplot_data = refplot_data[refplot_waves < 2314]
+            refplot_waves = refplot_waves[refplot_waves < 2314]
+
+            atran_data = self._get_atran_linelist(wave_model=wave_model, ext=ext,
+                                                  config=config, for_airglow=True)
+            # Scale atran data to more or less match the observed spectrum and 
+            # airglow spectrum intensity
+            refplot_data = np.concatenate((refplot_data, 3000 * atran_data[1, :]))
+            refplot_waves = np.concatenate((refplot_waves, atran_data[0, :]))
+
+        refplot_spec = np.asarray([refplot_waves, refplot_data])
+
+        airglow_linelist = (f'airglow_linelist_{start_wvl:.0f}-{end_wvl:.0f}'
+                    f'_r{resolution:.0f}_nl{num_lines:.0f}.dat')
+        try:
+            linelist = LineList(os.path.join(airglow_path, airglow_linelist))
+            log.stdinfo(f"Using generic linelist {airglow_linelist}")
+        except FileNotFoundError:
+            try:  # prevent using previously-created linelist (for now)
+                linelist = LineList(airglow_linelist)
+                log.stdinfo("Using previously-created linelist in current "
+                            f"directory {airglow_linelist}")
+            except FileNotFoundError:
+                # We will need to create one on the fly
+                linelist = None
+
+        if linelist is None:
+            # Invert spectrum because we want the wavelengths of troughs
+            linelist_data = make_linelist(refplot_spec,
+                                          resolution=resolution,
+                                          num_lines=num_lines)
+            header = (f"Sky airglow emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm\n"
+                      f"Generated by convolving the high-resolution OH linelist computed by\n"
+                      f"Rousselot et al., 2000, A & A, 354, 1134, "
+                      f"with O2 and other lines added from Oliva et al. (2015, A&A 581, A47) table 2,\n"
+                      f"and O2 lines added from Hanuschik (2003, A&A 407, 1157) table 9,\n"
+                      f" (with wavelengths transformed from air_to_vacuum using Morton (2000, ApJS, 130, 403)),\n"
+                      f" to the approximate resolution of the observation R={int(resolution)}.\n"
+                      f"The lines in the region beyond 2300nm were calculated using ATRAN synthetic spectrum \n"
+                      f"(Lord, S. D., 1992, NASA Technical Memorandum 103957)\n"
+                      "units nanometer\n"
+                      "wavelengths in VACUUM")
+            np.savetxt(airglow_linelist, linelist_data[:, 0], fmt=['%.3f'], header=header)
+            linelist = LineList(airglow_linelist)
+
+        refplot_y_axis_label = "Intensity"
+        refplot_name = ('Synthetic spectrum of night-sky emission '
+                        f'(R={int(resolution)})')
+
+        refplot_data = {"refplot_spec": refplot_spec.T,
+                "refplot_name": refplot_name,
+                "refplot_y_axis_label": refplot_y_axis_label}
+
+        linelist.reference_spectrum = refplot_data
+        return linelist
+
+
+    def _get_atran_linelist(self, wave_model=None, ext=None, config=None, for_airglow=False):
         """
         Return a list of spectral lines to be matched in the wavelength
         calibration, and a reference plot of a convolved synthetic spectrum,
@@ -673,6 +802,9 @@ class Telluric(Spect):
         site = {'Gemini-North': 'mk', 'Gemini-South': 'cp'}[observatory]
         altitude = {'Gemini-North': 13825, 'Gemini-South': 8980}[observatory]
         wv_band = config.get("wv_band", "header")
+        num_lines = config.get("num_lines")
+        in_vac = config.get("in_vacuo", True)
+        medium = 'vacuum' if in_vac else 'air'
         if wv_band == "header":
             wv_band = ext.raw_wv()
             if wv_band is None:
@@ -701,11 +833,16 @@ class Telluric(Spect):
         start_wvl, end_wvl = (np.sort(wave_model(domain)) +
                               np.asarray(wave_model_bounds['c0']) -
                               np.mean(wave_model_bounds['c0']))
-
+        
+        # We are generating a small bit between ~2300 and 2500nm to add to the
+        # airglow reference spectrum
+        if for_airglow:
+            start_wvl = 2314
+        
         # A linelist may be in the Gemini lookup directory, or one may
         # have been created in the cwd
         atran_linelist = (f'atran_linelist_{site}_{start_wvl:.0f}-{end_wvl:.0f}'
-                          f'_wv{wv_content:.0f}_r{resolution:.0f}.dat')
+                          f'_wv{wv_content:.0f}_r{resolution:.0f}_nl{num_lines:.0f}.dat')
         try:
             linelist = LineList(os.path.join(LOOKUPS_PATH, atran_linelist))
             log.stdinfo(f"Using generic linelist {atran_linelist}")
@@ -736,17 +873,25 @@ class Telluric(Spect):
         refplot_spec = np.asarray([waves[wave_range], atran_spec],
                                   dtype=np.float32)
 
+        # Resampling matching the airglow spectra
+        dw = 0.02 * start_wvl / resolution
+        resampling = max(int(dw / sampling), 1)
+        refplot_spec = refplot_spec[:, ::resampling]
+        
         # Resample the reference spectrum so it has about twice as many pixels
         # as the data, to avoid too much plotting overhead
-        resampling = max(int(0.5 * atran_spec.size / np.diff(domain)[0]), 1)
-        refplot_spec = refplot_spec[:, ::resampling]
+        # resampling = max(int(0.5 * atran_spec.size / np.diff(domain)[0]), 1)
+        # refplot_spec = refplot_spec[:, ::resampling]
 
         refplot_spec[1] = 1 - refplot_spec[1]
+        if for_airglow:
+            return refplot_spec
+
         if linelist is None:
             # Invert spectrum because we want the wavelengths of troughs
             linelist_data = make_linelist(refplot_spec,
                                           resolution=resolution,
-                                          num_lines=config.get('num_atran_lines', 50))
+                                          num_lines=config.get('num_lines', 50))
             header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm\n"
                       f"Generated at R={int(resolution)} from ATRAN synthetic spectrum "
                       "(Lord, S. D., 1992, NASA Technical Memorandum 103957)\n"
@@ -845,22 +990,27 @@ def make_linelist(spectrum, resolution=1000, num_bins=10, num_lines=50):
 
     # For the final line list select n // 10 peaks with largest weights
     # within each of 10 wavelength bins.
-    bin_edges = np.linspace(0, flux.size + 1, num_bins + 1)
+
+    # atran and airglow spectra might have slightly different samplings,
+    # so when combined in case of airglow > 2300nm, we need to use
+    # wavelengths rather than pixel indices for bin edges
+    bin_edges_wvl = np.linspace(wavelength[0], wavelength[-1], num_bins + 1)
+    bin_edges = np.array([np.abs(wavelength - wvl).argmin() for wvl in bin_edges_wvl])
+
     best_pixel_peaks = trim_peaks(pixel_peaks, weights, bin_edges,
                                   nlargest=(num_lines + num_bins - 1) // num_bins,
                                   sort=True)
-
     # Pinpoint peak positions, and cull any peaks that couldn't be fit
     # (keep_bad will return location=NaN)
-    atran_linelist = np.vstack(peak_finding.pinpoint_peaks(
+    linelist = np.vstack(peak_finding.pinpoint_peaks(
         flux, peaks=best_pixel_peaks[:, 0], halfwidth=2, keep_bad=True)).T
-    atran_linelist = atran_linelist[~np.isnan(atran_linelist).any(axis=1)]
+    linelist = linelist[~np.isnan(linelist).any(axis=1)]
 
     # Convert back to wavelengths
-    atran_linelist[:, 0] = np.interp(atran_linelist[:, 0],
+    linelist[:, 0] = np.interp(linelist[:, 0],
                                   np.arange(wavelength.size),
                                   wavelength)
-    return atran_linelist
+    return linelist
 
 
 def find_outliers(data, sigma=3, cenfunc=np.median):

@@ -257,9 +257,9 @@ class F2Spect(Telluric, Spect, F2):
         debug : bool
             Enable plots for debugging.
 
-        num_atran_lines: int/None
+        num_lines: int/None
             Number of lines with largest weigths (within a wvl bin) to be used for
-            the generated ATRAN line list.
+            the generated line list.
 
         wv_band: {'20', '50', '80', '100', 'header'}
             Water vapour content (as percentile) to be used for ATRAN model
@@ -302,13 +302,14 @@ class F2Spect(Telluric, Spect, F2):
             else:
                 # Telluric absorption in object spectrum
                 if these_params.get("absorption", False):
-                    self.generated_linelist = True
+                    self.generated_linelist = "atran"
                     these_params["lsigma"] = 2
                     these_params["hsigma"] = 2
                     if these_params["min_snr"] is None:
                         these_params["min_snr"] = 1
                 else:
                     # OH emission
+                    self.generated_linelist = "airglow"
                     if these_params["min_snr"] is None:
                         these_params["min_snr"] = 10
 
@@ -332,14 +333,11 @@ class F2Spect(Telluric, Spect, F2):
             filename = 'lowresargon_with_2nd_ord.dat' if isHK_JH else 'argon.dat'
         else:
             # In case of wavecal from sky OH emission use this line list:
-            filename = 'nearIRsky_with_2nd_order.dat' if isHK_JH else 'nearIRsky.dat'
+            # filename = 'nearIRsky_with_2nd_order.dat' if isHK_JH else 'nearIRsky.dat'
+            return self._get_airglow_linelist(wave_model=wave_model, ext=ext, config=config)
 
         self.log.stdinfo(f"Using linelist '{filename}'")
         linelist = wavecal.LineList(os.path.join(lookup_dir, filename))
-
-        # Attach a synthetic sky spectrum if using sky lines
-        if 'ARC' not in ext.tags:
-            linelist.reference_spectrum = self._get_sky_spectrum(wave_model, ext)
 
         return linelist
 
