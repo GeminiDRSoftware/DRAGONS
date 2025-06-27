@@ -873,9 +873,15 @@ class Telluric(Spect):
         refplot_spec = np.asarray([waves[wave_range], atran_spec],
                                   dtype=np.float32)
 
+        # Resampling matching the airglow spectra
         dw = 0.02 * start_wvl / resolution
         resampling = max(int(dw / sampling), 1)
         refplot_spec = refplot_spec[:, ::resampling]
+        
+        # Resample the reference spectrum so it has about twice as many pixels
+        # as the data, to avoid too much plotting overhead
+        # resampling = max(int(0.5 * atran_spec.size / np.diff(domain)[0]), 1)
+        # refplot_spec = refplot_spec[:, ::resampling]
 
         refplot_spec[1] = 1 - refplot_spec[1]
         if for_airglow:
