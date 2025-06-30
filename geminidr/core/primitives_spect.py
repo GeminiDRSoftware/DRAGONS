@@ -4855,6 +4855,11 @@ class Spect(Resample):
                     data, widths=widths, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)
+                if len(initial_peaks) == 0:
+                    log.error(f"\nNo pinholes found in extension {ext.id}. "
+                              f"Consider lowering the detection \n"
+                              f"threshold, min_snr. (Currently set to {min_snr}.)\n")
+                    raise RuntimeError('No pinholes found.')
 
                 if min_trace_pos is not None and min_trace_pos > len(initial_peaks):
                     log.warning(f"'min_trace_pos' is set to {min_trace_pos} but "
