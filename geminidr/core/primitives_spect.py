@@ -136,6 +136,7 @@ class Spect(Resample):
         sfx = params["suffix"]
         center = params["center"]
         shift = params["shift"]
+        min_snr = params["min_snr"]
         max_shift = params["debug_max_shift"]
         verbose = params["verbose"]
 
@@ -181,7 +182,7 @@ class Spect(Resample):
                         "center": center,
                         "nsum": 10,
                         "fwidth": None,
-                        "min_snr": 10,
+                        "min_snr": min_snr,
                         "min_sep": 2,
                         "weighting": "local",
                         "nbright": 0,
