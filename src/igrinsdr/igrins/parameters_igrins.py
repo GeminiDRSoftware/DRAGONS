@@ -92,7 +92,8 @@ class makeABConfig(config.Config):
 
 class estimateSlitProfileConfig(config.Config):
     do_ab = config.Field("if ABBA is used", bool, True)
-    frac_slit = config.Field("slit fraction to extract", tuple, (0, 1))
+    frac_slit = config.ListField("slit fraction to extract", tuple, [(0, 1)])
+    slit_profile_method = config.Field("slit profile method: column or full", str, "column")
     slit_profile_range = config.Field("x-range of detectors where slit profiles are estimated",
                                       tuple, (800, 2048-800))
 class extractStellarSpecConfig(config.Config):

@@ -1,9 +1,13 @@
 import numpy as np
 from scipy.interpolate import UnivariateSpline
-
+from scipy.ndimage import median_filter
+from numpy.polynomial import Polynomial
+from astropy.stats import biweight_location
+from itertools import cycle
+# from ..igrins_libs.resource_helper_igrins import ResourceHelper
 
 def _get_norm_profile_ab(bins, hh0):
-    peak1, peak2 = max(hh0), -min(hh0)
+    peak1, peak2 = np.nanmax(hh0), -np.nanmin(hh0)
     profile_x = 0.5*(bins[1:]+bins[:-1])
     profile_y = hh0/(peak1+peak2)
 
@@ -11,7 +15,7 @@ def _get_norm_profile_ab(bins, hh0):
 
 
 def _get_norm_profile(bins, hh0):
-    peak1 = max(hh0)
+    peak1 = np.nanmax(hh0)
     profile_x = 0.5*(bins[1:]+bins[:-1])
     profile_y = hh0/peak1
 
@@ -25,7 +29,6 @@ def _get_profile_func_ab(profile_x, profile_y):
     roots = list(profile_.roots())
     #assert(len(roots) == 1)
     integ_list = []
-    from itertools import cycle
     for ss, int_r1, int_r2 in zip(cycle([1, -1]),
                                   [0] + roots,
                                   roots + [1]):
@@ -66,18 +69,28 @@ def extract_slit_profile(ap, ordermap_bpixed, slitpos_map,
 
     if mode == "median":
         s0 = np.array(slit_profile_list)
-        ss = np.sum(np.abs(s0), axis=1)
+        ss = np.nansum(np.abs(s0), axis=1)
 
         hh0 = np.nanmedian(s0/ss[:, np.newaxis], axis=0)
+    elif mode == 'biweight_location':
+        s0 = np.array(slit_profile_list)
+        ss = np.nansum(np.abs(s0), axis=1)
+
+        hh0 = biweight_location(s0/ss[:, np.newaxis], axis=0, ignore_nan=True)
+    elif mode == 'mean':
+        s0 = np.array(slit_profile_list)
+        ss = np.nansum(np.abs(s0), axis=1)
+
+        hh0 = np.nanmean(s0/ss[:, np.newaxis], axis=0)
     else:
-        hh0 = np.sum(slit_profile_list, axis=0)
+        hh0 = np.nansum(slit_profile_list, axis=0)
 
     return bins, hh0, slit_profile_list
 
 
 def make_slitprofile_map(ap, profile,
                          ordermap, slitpos_map,
-                         frac_slit=None):
+                         frac_slit_list=None, slice_indicies=(0,2048)):
 
     # helper = ResourceHelper(obsset)
 
@@ -88,14 +101,15 @@ def make_slitprofile_map(ap, profile,
 
     profile_map = ap.make_profile_map(ordermap,
                                       slitpos_map,
-                                      profile)
+                                      profile, slice_indicies=slice_indicies)
 
     # select portion of the slit to extract
-
-    if frac_slit is not None:
-        frac1, frac2 = min(frac_slit), max(frac_slit)
-        slitpos_msk = (slitpos_map < frac1) | (slitpos_map > frac2)
-        profile_map[slitpos_msk] = np.nan
+    if frac_slit_list:
+        slitpos_msk = np.zeros(slitpos_map.shape, dtype=bool)
+        for frac_slits in frac_slit_list:
+            slitpos_msk[(min(frac_slits) < slitpos_map)
+                        & (slitpos_map <  max(frac_slits))] = np.nan
+        profile_map[~slitpos_msk] = np.nan
 
     return profile_map
 
@@ -106,7 +120,7 @@ def make_slitprofile_map(ap, profile,
 
 def estimate_slit_profile_1d(obsset,
                              x1=800, x2=2048-800,
-                             do_ab=True, frac_slit=None):
+                             do_ab=True, frac_slit_list=None, method='column'):
     """
     return a profile function
 
@@ -115,7 +129,6 @@ def estimate_slit_profile_1d(obsset,
 
     """
 
-    from ..igrins_libs.resource_helper_igrins import ResourceHelper
     helper = ResourceHelper(obsset)
 
     orderflat = helper.get("orderflat")
@@ -124,40 +137,71 @@ def estimate_slit_profile_1d(obsset,
                                           postfix=obsset.basename_postfix).data
     data_minus_flattened = data_minus / orderflat
 
-    from .aperture_helper import get_aperture_from_obsset
-    orders = helper.get("orders")
-    ap = get_aperture_from_obsset(obsset, orders=orders)
+    # from .aperture_helper import get_aperture_from_obsset
+    # orders = helper.get("orders")
+    # ap = get_aperture_from_obsset(obsset, orders=orders)
+    ap = helper.get_aperture(obsset)
 
     ordermap = helper.get("ordermap")
     ordermap_bpixed = helper.get("ordermap_bpixed")
     slitpos_map = helper.get("slitposmap")
 
-    _ = extract_slit_profile(ap,
-                             ordermap_bpixed, slitpos_map,
-                             data_minus_flattened,
-                             x1=x1, x2=x2)
-    bins, hh0, slit_profile_list = _
 
-    if do_ab:
-        profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
-        # profile = get_profile_func_ab(profile_x, profile_y)
-    else:
-        profile_x, profile_y = _get_norm_profile(bins, hh0)
-        # profile = get_profile_func(profile_x, profile_y)
+    
+    if method == 'full': #Old method that used a single profile for the full detector
+        _ = extract_slit_profile(ap,
+                                 ordermap_bpixed, slitpos_map,
+                                 data_minus_flattened,
+                                 x1=x1, x2=x2,
+                                 # mode = 'mean',
+                                 # mode = 'median',
+                                 mode = 'biweight_location',
+                                 )
+        bins, hh0, slit_profile_list = _
+        if do_ab:
+            profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
+            # profile = get_profile_func_ab(profile_x, profile_y)
+        else:
+            profile_x, profile_y = _get_norm_profile(bins, hh0)
+            # profile = get_profile_func(profile_x, profile_y)
+        slit_profile_dict = dict(orders=ap.orders_to_extract,
+                                 ab_mode=do_ab,
+                                 slit_profile_list=slit_profile_list,
+                                 profile_x=profile_x,
+                                 profile_y=profile_y)
+        obsset.store("SLIT_PROFILE_JSON", slit_profile_dict,
+                     postfix=obsset.basename_postfix)
+        profile = _get_profile_func_from_dict(slit_profile_dict)
+        profile_map = make_slitprofile_map(ap, profile,
+                                           ordermap, slitpos_map,
+                                           frac_slit_list=frac_slit_list)
+    elif method == 'column': #New method that uses a running median to find the profile per column
+        profile_map = np.zeros([2048, 2048])
 
-    slit_profile_dict = dict(orders=orders,
-                             ab_mode=do_ab,
-                             slit_profile_list=slit_profile_list,
-                             profile_x=profile_x,
-                             profile_y=profile_y)
+        for i in range(2048):
+            x1 = i - 64 #Range +/- 
+            x2 = i + 64
+            if x1 < 0: x1 = 0
+            if x2 > 2048: x2 = 2048
 
-    obsset.store("SLIT_PROFILE_JSON", slit_profile_dict,
-                 postfix=obsset.basename_postfix)
-
-    profile = _get_profile_func_from_dict(slit_profile_dict)
-    profile_map = make_slitprofile_map(ap, profile,
-                                       ordermap, slitpos_map,
-                                       frac_slit=frac_slit)
+            bins, hh0, slit_profile_list = extract_slit_profile(ap,
+                                     ordermap_bpixed, slitpos_map,
+                                     data_minus_flattened,
+                                     x1=x1, x2=x2,
+                                     mode='median',
+                                     #mode = 'biweight_location',
+                                     )
+            if do_ab:
+                profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
+            else:
+                profile_x, profile_y = _get_norm_profile(bins, hh0)
+                # profile = get_profile_func(profile_x, profile_y)
+            slit_profile_dict = dict(orders=ap.orders_to_extract,
+                                     ab_mode=do_ab,
+                                     slit_profile_list=slit_profile_list,
+                                     profile_x=profile_x,
+                                     profile_y=profile_y)
+            profile_map[:,i] = ap.make_profile_column(ordermap, slitpos_map, _get_profile_func_from_dict(slit_profile_dict), slice_index=i)
 
     hdul = obsset.get_hdul_to_write(([], profile_map))
     obsset.store("slitprofile_fits", hdul, cache_only=True)
@@ -201,9 +245,8 @@ def get_profile_func_extended(obsset, do_ab):
 
 
 def estimate_slit_profile_uniform(obsset,
-                                  do_ab=True, frac_slit=None):
+                                  do_ab=True, frac_slit_list=None):
 
-    from ..igrins_libs.resource_helper_igrins import ResourceHelper
     helper = ResourceHelper(obsset)
 
     ap = helper.get("aperture")
@@ -214,7 +257,7 @@ def estimate_slit_profile_uniform(obsset,
     profile = get_profile_func_extended(obsset, do_ab=do_ab)
     profile_map = make_slitprofile_map(ap, profile,
                                        ordermap, slitpos_map,
-                                       frac_slit=frac_slit)
+                                       frac_slit_list=frac_slit_list)
 
     hdul = obsset.get_hdul_to_write(([], profile_map))
     obsset.store("slitprofile_fits", hdul, cache_only=True)

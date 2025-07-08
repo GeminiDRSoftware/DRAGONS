@@ -1510,34 +1510,75 @@ class Igrins(Gemini, NearIR):
         ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
 
         x1, x2 = params["slit_profile_range"]
-        _ = extract_slit_profile(ap,
-                                 ordermap_bpixed, slitpos_map,
-                                 data_minus_flattened,
-                                 x1=x1, x2=x2)
-        bins, hh0, slit_profile_list = _
 
-        if params["do_ab"]:
-            profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
-            # profile = get_profile_func_ab(profile_x, profile_y)
-        else:
-            profile_x, profile_y = _get_norm_profile(bins, hh0)
-            # profile = get_profile_func(profile_x, profile_y)
+        method = params["slit_profile_method"]
 
-        slit_profile_dict = dict(orders=ap.orders,
-                                 ab_mode=params["do_ab"],
-                                 slit_profile_list=slit_profile_list,
-                                 profile_x=profile_x,
-                                 profile_y=profile_y)
+        if method == 'full': #Old method that used a single profile for the full detector
 
-        tbl = dict_to_table(slit_profile_dict)
-        ad[0].SLITPROFILE = tbl
+            _ = extract_slit_profile(ap,
+                                     ordermap_bpixed, slitpos_map,
+                                     data_minus_flattened,
+                                     x1=x1, x2=x2,
+                                     mode="biweight_location"
+                                     )
+            bins, hh0, slit_profile_list = _
 
-        profile = _get_profile_func_from_dict(slit_profile_dict)
-        profile_map = make_slitprofile_map(ap, profile,
-                                           ordermap, slitpos_map,
-                                           frac_slit=params["frac_slit"])
+            if params["do_ab"]:
+                profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
+                # profile = get_profile_func_ab(profile_x, profile_y)
+            else:
+                profile_x, profile_y = _get_norm_profile(bins, hh0)
+                # profile = get_profile_func(profile_x, profile_y)
 
-        ad[0].SLITPROFILE_MAP = profile_map
+            slit_profile_dict = dict(orders=ap.orders,
+                                     ab_mode=params["do_ab"],
+                                     slit_profile_list=slit_profile_list,
+                                     profile_x=profile_x,
+                                     profile_y=profile_y)
+
+            tbl = dict_to_table(slit_profile_dict)
+            ad[0].SLITPROFILE = tbl
+
+            profile = _get_profile_func_from_dict(slit_profile_dict)
+            profile_map = make_slitprofile_map(ap, profile,
+                                               ordermap, slitpos_map,
+                                               frac_slit_list=params["frac_slit"]
+                                               )
+
+            ad[0].SLITPROFILE_MAP = profile_map
+
+        elif method == 'column': #New method that uses a running median to find the profile per column
+            profile_map = np.zeros([2048, 2048])
+
+            for i in range(2048):
+                x1 = i - 64 #Range +/- 
+                x2 = i + 64
+                if x1 < 0: x1 = 0
+                if x2 > 2048: x2 = 2048
+
+                bins, hh0, slit_profile_list = extract_slit_profile(ap,
+                                         ordermap_bpixed, slitpos_map,
+                                         data_minus_flattened,
+                                         x1=x1, x2=x2,
+                                         mode='median',
+                                         #mode = 'biweight_location',
+                                         )
+                if params["do_ab"]:
+                    profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
+                else:
+                    profile_x, profile_y = _get_norm_profile(bins, hh0)
+                    # profile = get_profile_func(profile_x, profile_y)
+                slit_profile_dict = dict(orders=ap.orders_to_extract,
+                                         ab_mode=params["do_ab"],
+                                         slit_profile_list=slit_profile_list,
+                                         profile_x=profile_x,
+                                         profile_y=profile_y)
+                profile = _get_profile_func_from_dict(slit_profile_dict)
+
+                profile_map[:,i] = ap.make_profile_column(ordermap, slitpos_map,
+                                                          profile, slice_index=i)
+
+            ad[0].SLITPROFILE_MAP = profile_map
 
         return adinputs
 
