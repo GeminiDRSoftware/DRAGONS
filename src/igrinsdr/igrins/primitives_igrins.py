@@ -720,6 +720,35 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
+    # For the unclear reason (we need to check with K.Kaplan),
+    # setReferenceFrame primitive uses first frame data if individual exposure
+    # time is larger than 100. For now, we make a separate stream for the first
+    # frame. After this primitive, the main stream will be stacked.
+    def streamFirstFrame(self, adinputs=None, **params):
+        self.streams["first_frame"] = [adinputs[0]]
+
+        return adinputs
+
+    def setReferenceFrame(self, adinputs, **params):
+        ad_first = self.streams["first_frame"][0]
+        exptime = ad_first[0].exposure_time()
+        #Grab sky frame data.  If exposures are short, stack them, otherwise just use first frame
+        if exptime >= 100.0:
+            print('Sky frames exp time > 30 s.  Using the first frame.')
+            data = ad_first[0].data
+        else:
+            print('Sky frames exp time <= 30 s.  Use combined sky.')
+            # This primitive will be called after stacking, so the adinputs
+            # should contain stacked data.
+            data = adinputs[0][0].data
+
+        from .procedures.flexure_correction import isolate_sky_lines
+        ref_data = isolate_sky_lines(data/exptime)
+        adinputs[0][0].FLEXCORR = ref_data
+
+        return adinputs
+
+
     def estimateNoise(self, adinputs=None, **params):
         """Estimate the noise characteriscs for images in each streams. The resulting
         table is added to a 'ESTIMATED_NOISE' stream

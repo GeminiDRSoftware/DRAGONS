@@ -86,6 +86,12 @@ class makeSpectralMapsConfig(config.Config):
 class attachWatTableConfig(config.Config):
     pass
 
+class streamFirstFrameConfig(config.Config):
+    pass
+
+class setReferenceFrameConfig(config.Config):
+    pass
+
 class makeABConfig(config.Config):
     remove_level = config.Field("readoutpattern remove level", int, 2)
     remove_amp_wise_var = config.Field("remove amp-wise variation if True", bool, False)

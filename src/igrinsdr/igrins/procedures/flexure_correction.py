@@ -3,9 +3,9 @@ from __future__ import print_function
 import numpy as np
 from scipy.ndimage import median_filter, zoom, gaussian_filter1d, binary_dilation, binary_erosion
 from scipy.signal import fftconvolve
-from .estimate_sky import estimate_background, get_interpolated_cubic
-from ..procedures.destriper import destriper, stack128, stack64, get_stripe_pattern64
-from ..igrins_libs.resource_helper_igrins import ResourceHelper
+# from .estimate_sky import estimate_background, get_interpolated_cubic
+# from ..procedures.destriper import destriper, stack128, stack64, get_stripe_pattern64
+# from ..igrins_libs.resource_helper_igrins import ResourceHelper
 from astropy.io import fits
 #import glob
 import copy
@@ -84,28 +84,6 @@ def cross_correlate(reference, data, zoom_amount=1000, maximum_pixel_search=10):
 
 
 	return fft_dx_result #Returns the difference in x pixels and y pixels between the reference and data frames
-
-
-#Create reference frames to flexure correct everything to
-#for the H and K bands. This is the first SKY frame
-def set_reference_frame(obsset):
-	if obsset.recipe_name == 'SKY':
-		#band = get_band(obsset)
-		exptime = get_exptime(obsset)
-		#Grab sky frame data.  If exposures are short, stack them, otherwise just use first frame
-		if exptime >= 100.0:  
-			print('Sky frames exp time > 30 s.  Using the first frame.')
-			hdus = obsset.get_hdus([obsset.get_obsids()[0]]) #Grab first sky frame
-			data = hdus[0].data
-		else:
-			print('Sky frames exp time <= 30 s.  Combining all sky frames.')
-			hdus = obsset.get_hdus(obsset.get_obsids())
-			data_list = [hdu.data for hdu in hdus]
-			data = np.sum(data_list, axis=0)
-		data = isolate_sky_lines(data/exptime)
-		#data /= exptime #Normalize by exposure time
-		hdus_out = obsset.get_hdul_to_write(([], data)) #Store processed for flexure correction sky frames
-		obsset.store('FLEXCORR_FITS', data=hdus_out)
 
 
 #Check 

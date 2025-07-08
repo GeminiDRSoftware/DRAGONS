@@ -36,7 +36,10 @@ def makeProcessedArc(p: Igrins):
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
 
+    p.streamFirstFrame()
     p.stackFrames()
+    p.setReferenceFrame()
+
     p.extractSimpleSpec()
 
     p.identifyOrders()
