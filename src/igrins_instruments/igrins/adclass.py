@@ -11,11 +11,12 @@ from gemini_instruments import igrins
 # by the mapper, we create a new AstroDataIGRINS inheriting from the
 # gemini_instruments.
 
-class _AstroDataIGRINS(igrins.AstroDataIgrins):
+class AstroDataIGRINS_(igrins.AstroDataIgrins):
     # This is a temporary placeholder class. The original gemini_instruments
     # version of AstroDataIgrins could be updated with it contents eventually.
 
     __keyword_dict = dict(
+        exposure_time = "EXPTIME",
         airmass = 'AMSTART',
         wavelength_band = 'BAND',
         detector_name = 'DETECTOR',
@@ -114,7 +115,7 @@ class _AstroDataIGRINS(igrins.AstroDataIgrins):
 
 # This will be shared between IGRINS and IGRINS2
 
-class AstroDataIGRINSBase(_AstroDataIGRINS):
+class AstroDataIGRINSBase(AstroDataIGRINS_):
     # single keyword mapping.  add only the ones that are different
     # from what's already defined in AstroDataGemini.
 
@@ -258,6 +259,11 @@ class AstroDataIGRINSBase(_AstroDataIGRINS):
             ctype = self.phu.get('CTYPE2')
         #return crval if ctype == 'DEC--TAN' else None
         return 1
+
+    @astro_data_descriptor
+    def exposure_time(self):
+        return self.hdr["EXPTIME"]
+
 
 class AstroDataIGRINS(AstroDataIGRINSBase):
     # single keyword mapping.  add only the ones that are different
