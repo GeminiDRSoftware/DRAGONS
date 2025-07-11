@@ -256,7 +256,7 @@ class Telluric(Spect):
                 if (len(ext.shape) == 1 and
                         ext.hdr.get('APERTURE') == aperture_to_use):
                     tspek = tspek_list[result_index]
-                    absorption = tspek.data / m_final.models[result_index].continuum(tspek.waves)
+                    absorption = at.divide0(tspek.data, m_final.models[result_index].continuum(tspek.waves))
                     goodpix = ~(tspek.mask | tcal.stellar_mask[result_index]).astype(bool)
                     spline = make_interp_spline(tcal.spectra[result_index].waves[goodpix],
                                                 absorption[goodpix], k=3)
