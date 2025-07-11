@@ -143,8 +143,17 @@ class TelluricCalibrator(Calibrator):
         # We store this as an attribute here since it's not handled fully
         # by TelluricSpectrum (you can make the mask but it's not applied)
         # and it needs to be accessed by the Visualizer
-        self.stellar_mask = [tspek.make_stellar_mask(r=self.resolution)
-                             for tspek in self.spectra]
+        if ui_params is None:
+            stellar_mask_threshold = ui_params.debug_stellar_mask_threshold
+            stellar_mask_max_extent = ui_params.debug_stellar_mask_max_extent
+        else:
+            stellar_mask_threshold = 1.0
+            stellar_mask_max_extent = 0.
+        self.stellar_mask = [tspek.make_stellar_mask(
+            threshold=stellar_mask_threshold,
+            max_contiguous=stellar_mask_max_extent,
+            r=self.resolution)
+            for tspek in self.spectra]
 
         # Allow instantiation without this and can call later
         if ui_params is not None:
