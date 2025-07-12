@@ -376,7 +376,7 @@ class TelluricPanel(Fit1DPanel):
 
         good = get_good_pixels(model.x, model.aux_data.data['waves'])
 
-        absorption = model.y / model.aux_data.data['continuum'][good]
+        absorption = at.divide0(model.y, model.aux_data.data['continuum'][good])
         goodpix = [m == 'good' for m in model.mask]
         spline = make_interp_spline(model.x[goodpix],
                                     absorption[goodpix], k=3)
