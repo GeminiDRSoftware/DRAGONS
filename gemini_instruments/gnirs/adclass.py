@@ -7,7 +7,7 @@ from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from ..common import build_group_id
 
 from .lookup import detector_properties, nominal_zeropoints, read_modes
-from .lookup import dispersion_by_config
+from .lookup import dispersion_by_config, xd_orders
 from .lookup import pixel_scale
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
@@ -128,8 +128,11 @@ class AstroDataGnirs(AstroDataGemini):
             camera = 'Long'
         else:
             camera = None
-
-        filter = str(self.filter_name(pretty=True))[0]
+        if "XD" in self.tags:
+            order = self._grating_order()
+            filter = xd_orders.get(order, None)
+        else:
+            filter = str(self.filter_name(pretty=True))[0]
         dispersion = dispersion_by_config.get((grating, camera), {}).get(filter)
 
         if dispersion is None:

@@ -22,8 +22,8 @@ from recipe_system.utils.decorators import (parameter_override,
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from geminidr.core import Spect, Preprocess
+from geminidr import CalibrationNotFoundError
 from . import parameters_crossdispersed
-
 
 @parameter_override
 @capture_provenance
@@ -174,7 +174,7 @@ class CrossDispersed(Spect, Preprocess):
         modified AstroData object with multiple extensions
         """
         log = self.log
-        log.stdinfo(f"Calling {self.myself()} on {ad.filename}")
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         adout = astrodata.create(ad.phu)
         adout.filename = ad.filename
@@ -467,8 +467,8 @@ class CrossDispersed(Spect, Preprocess):
                                     force_ad=(1,))):
             if flat is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                   raise OSError("No processed flat listed for "
-                                 f"{ad.filename}")
+                   raise CalibrationNotFoundError("No processed flat listed "
+                                                  f"for {ad.filename}")
                 else:
                    log.warning(f"No changes will be made to {ad.filename}, "
                                "since no flatfield has been specified")
@@ -510,3 +510,28 @@ class CrossDispersed(Spect, Preprocess):
         adinputs = super().flatCorrect(adinputs, flat=flat_files, **params)
 
         return adinputs
+
+    def _make_tab_labels(self, ad):
+        """
+        Create tab labels for cross-dispersed data.
+
+        Parameters
+        ----------
+        ad : `~astrodata.AstroData`
+            The AstroData object to be processed.
+
+        Returns
+        -------
+        list
+            A list of tab labels for the given AstroData object.
+        """
+        apertures = ad.hdr.get('APERTURE')
+        orders = ad.hdr.get('SPECORDR')
+        num_ap = len(set(apertures))
+        tab_labels = []
+        for ap, ord in zip(apertures, orders):
+            label = f"Order {ord}"
+            if num_ap > 1:
+                label = f" Aperture {ap}"
+            tab_labels.append(label)
+        return tab_labels

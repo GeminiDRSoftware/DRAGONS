@@ -13,14 +13,14 @@ from .. import server
 __all__ = ["interactive_trace_apertures", ]
 
 
-def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
+def interactive_trace_apertures(ad, tab_labels, fit1d_params, ui_params: UIParameters):
     """
     Run traceApertures() interactively.
 
     Parameters
     ----------
-    ext : AstroData
-        Single extension extracted from an AstroData object.
+    ad : AstroData
+        Containing APERTURE table(s) on one or more extensions
     config : :class:`geminidr.code.spect.traceAperturesConfig`
         Configuration object containing the parameters from traceApertures().
     fit1d_params : dict
@@ -30,26 +30,29 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
     -------
     list of models describing the aperture curvature
     """
-    ap_table = ext.APERTURE
-    fit_par_list = list()
-    for _ in range(len(ap_table)):
-        fit_par_list.append({x: y for x, y in fit1d_params.items()})
-
     domain_list = [
         [
-            ap_table.meta["header"][kw]
+            ext.APERTURE.meta["header"][kw]
             for kw in ("DOMAIN_START", "DOMAIN_END")
         ]
-        for _ in ap_table
+        for ext in ad
+        for _ in (ext.APERTURE if hasattr(ext, "APERTURE") else [])
     ]
 
-    if (2 - ext.dispersion_axis()) == 1:
-        xlabel = "x / columns [px]"
-        ylabel = "y / rows [px]"
+    fit_par_list = [{x: y for x, y in fit1d_params.items()}] * len(domain_list)
 
+    dispaxes = set(ad.dispersion_axis())
+    if len(dispaxes) > 1:
+        xlabel = "Wavelength axis [px]"
+        ylabel = "Spatial axis [px]"
     else:
-        xlabel = "y / rows [px]"
-        ylabel = "x / columns [px]"
+        if dispaxes.pop() == 1:
+            xlabel = "x / columns [px]"
+            ylabel = "y / rows [px]"
+
+        else:
+            xlabel = "y / rows [px]"
+            ylabel = "x / columns [px]"
 
     help_text = (
         fit_help.DEFAULT_HELP
@@ -59,13 +62,13 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
     )
 
     visualizer = Fit1DVisualizer(
-        lambda ui_params: trace_apertures_data_provider(ext, ui_params),
+        lambda ui_params: trace_apertures_data_provider(ad, ui_params),
         domains=domain_list,
-        filename_info=ext.filename,
+        filename_info=ad.filename,
         fitting_parameters=fit_par_list,
         help_text=help_text,
         primitive_name="traceApertures",
-        tab_name_fmt=lambda i: f"Aperture {i+1}",
+        tab_name_fmt=lambda i: tab_labels[i],
         title="Interactive Trace Apertures",
         xlabel=xlabel,
         ylabel=ylabel,
@@ -81,15 +84,15 @@ def interactive_trace_apertures(ext, fit1d_params, ui_params: UIParameters):
 
 
 # noinspection PyUnusedLocal
-def trace_apertures_data_provider(ext, ui_params):
+def trace_apertures_data_provider(ad, ui_params):
     """
     Function used by the interactive fitter to generate the a list with
     pairs of [x, y] data containing the knots used for tracing.
 
     Parameters
     ----------
-    ext : AstroData
-        Single extension of data containing an .APERTURE table.
+    ad : AstroData
+        Containing APERTURE table(s) on one or more extensions
     ui_params : :class:`~geminidr.interactive.interactive.UIParams`
         UI parameters to use as inputs to generate the points
 
@@ -101,19 +104,21 @@ def trace_apertures_data_provider(ext, ui_params):
         spacial position of the knots.
     """
     data = {"x": [], "y": []}
-    dispaxis = 2 - ext.dispersion_axis()  # python sense
+    for ext, dispaxis in zip(ad, ad.dispersion_axis()):
+        if hasattr(ext, "APERTURE"):
+            for row in ext.APERTURE:
+                loc, apnum = row["c0"], row["number"]
+                traces = tracing.trace_aperture(ext, loc, ui_params, apnum=apnum)
 
-    for loc in ext.APERTURE['c0'].data:
-        traces = tracing.trace_aperture(ext, loc, ui_params)
+                # List of traced peak positions
+                in_coords = np.array([coord for trace in traces for
+                                      coord in trace.input_coordinates()]).T
 
-        # List of traced peak positions
-        in_coords = np.array([coord for trace in traces for
-                              coord in trace.input_coordinates()]).T
+                assert len(in_coords) == 2,\
+                    f"No trace was found at {loc} in {ext.filename}."
 
-        assert len(in_coords) == 2,\
-            f"No trace was found at {loc} in {ext.filename}."
-
-        data["x"].append(in_coords[1 - dispaxis])
-        data["y"].append(in_coords[dispaxis])
+                # dispaxis is NOT in python sense here
+                data["x"].append(in_coords[dispaxis - 1])
+                data["y"].append(in_coords[2 - dispaxis])
 
     return data

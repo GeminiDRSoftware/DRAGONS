@@ -276,9 +276,9 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
         for ad in adinputs:
             if len(ad) == 1:
-                raise OSError(f"{self.myself()} must be run on unmosaicked "
-                              f"GSAOI data, but {ad.filename} has been "
-                              "mosaicked/tiled.")
+                raise ValueError(f"{self.myself()} must be run on unmosaicked "
+                                 f"GSAOI data, but {ad.filename} has been "
+                                 "mosaicked/tiled.")
             # Check we have a REFCAT and at least one OBJCAT to match
             try:
                 refcat = ad.REFCAT
@@ -539,8 +539,9 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 raise ValueError(f"{ad.filename} does not have 4 extensions")
             applied_static = sum("static" in ext.wcs.available_frames for ext in ad)
             if applied_static not in (0, len(ad)):
-                raise OSError(f"Some (but not all) extensions in {ad.filename}"
-                              " have had the static disortion correction applied")
+                raise ValueError(
+                    f"Some (but not all) extensions in {ad.filename} have had "
+                    "the static disortion correction applied")
             # No-op silently
             if applied_static == len(ad):
                 continue

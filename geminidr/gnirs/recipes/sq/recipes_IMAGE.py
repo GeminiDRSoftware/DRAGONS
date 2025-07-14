@@ -22,6 +22,7 @@ def reduce(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(read_noise=True, poisson_noise=True)
+    p.nonlinearityCorrect()
     p.darkCorrect()
     p.flatCorrect()
     p.applyDQPlane()

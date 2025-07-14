@@ -301,41 +301,6 @@ class GMOS(Gemini, CCD):
         """Check the AD has a valid number of extensions"""
         return len(ad) in [1, 2, 3, 4, 6, 12]
 
-    def _get_bpm_filename(self, ad):
-        """
-        Gets bad pixel mask for input GMOS science frame.
-
-        Returns
-        -------
-        str/None: Filename of the appropriate bpms
-        """
-        log = self.log
-        bpm_dir = os.path.join(os.path.dirname(maskdb.__file__), 'BPM')
-
-        inst = ad.instrument()  # Could be GMOS-N or GMOS-S
-        xbin = ad.detector_x_bin()
-        ybin = ad.detector_y_bin()
-        det = ad.detector_name(pretty=True)[:3]
-        amps = '{}amp'.format(3 * ad.phu['NAMPS'])
-        mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
-                            or ad.phu.get(
-                    self.timestamp_keys['tileArrays'])) else ''
-        mode_key = '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
-
-        db_matches = sorted((k, v) for k, v in maskdb.bpm_dict.items() \
-                            if k.startswith(mode_key) and k.endswith(mos))
-
-        # If BPM(s) matched, use the one with the latest version number suffix:
-        if db_matches:
-            bpm = db_matches[-1][1]
-        else:
-            log.warning('No BPM found for {}'.format(ad.filename))
-            return None
-
-        # Prepend standard path if the filename doesn't start with '/'
-        return bpm if bpm.startswith(os.path.sep) else os.path.join(bpm_dir,
-                                                                    bpm)
-
     def _get_illum_mask_filename(self, ad):
         """
         Gets the illumMask filename for an input science frame, using

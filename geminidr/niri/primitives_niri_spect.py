@@ -110,9 +110,9 @@ class NIRISpect(Telluric, NIRI):
         debug : bool
             Enable plots for debugging.
 
-        num_atran_lines: int/None
+        num_lines: int/None
             Number of lines with largest weigths (within a wvl bin) to be used for
-            the generated ATRAN line list.
+            the generated line list.
 
         wv_band: {'20', '50', '80', '100', 'header'}
             Water vapour content (as percentile) to be used for ATRAN model
@@ -150,7 +150,7 @@ class NIRISpect(Telluric, NIRI):
             else:
                 # Telluric absorption and L and M-bands
                 if these_params["absorption"] or ad.central_wavelength(asMicrometers=True) >= 2.8:
-                    self.generated_linelist = True
+                    self.generated_linelist = "atran"
                     these_params["lsigma"] = 2
                     these_params["hsigma"] = 2
                     if these_params["min_snr"] is None:
@@ -160,6 +160,7 @@ class NIRISpect(Telluric, NIRI):
                             these_params["min_snr"] = 1
                 else:
                     # OH emission
+                    self.generated_linelist = "airglow"
                     if these_params["min_snr"] is None:
                         these_params["min_snr"] = 1
 
@@ -184,16 +185,13 @@ class NIRISpect(Telluric, NIRI):
             else:
                 raise ValueError(f"No default line list found for {ext.object()}-type arc. Please provide a line list.")
         elif config.get("absorption", False) or wave_model.c0 > 2800:
-                return self._get_atran_linelist(wave_model=wave_model, ext=ext, config=config)
+            return self._get_atran_linelist(wave_model=wave_model, ext=ext, config=config)
         else:
-            # In case of wavecal from sky OH emission use this line list
-            filename = 'nearIRsky.dat'
+            # Wavecal from airglow emission
+            return self._get_airglow_linelist(wave_model=wave_model, ext=ext, config=config)
 
         self.log.stdinfo(f"Using linelist {filename}")
         linelist = wavecal.LineList(os.path.join(lookup_dir, filename))
-        if 'ARC' not in ext.tags:
-            # Attach a synthetic sky spectrum if using sky lines or absorption
-            linelist.reference_spectrum = self._get_sky_spectrum(wave_model, ext)
 
         return linelist
 

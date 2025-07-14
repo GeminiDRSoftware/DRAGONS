@@ -41,6 +41,7 @@ class adjustWavelengthZeroPointConfig(config.Config):
                                 min=1, optional=True)
     shift = config.RangeField("Shift to apply in pixels (None: determine automatically)",
                               float, 0, min=-2048, max=2048, optional=True)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
     verbose = config.Field("Print extra information", bool, False,
                            optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
@@ -202,8 +203,8 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     interactive = config.Field("Display interactive fitter?", bool, False)
-    num_atran_lines = config.RangeField("Number of lines in ATRAN line list", int, 50.,
-                                              min=10, max=300, inclusiveMax=True)
+    num_lines = config.RangeField("Number of lines in the generated line list", int, 50.,
+                                              min=10, max=1000, inclusiveMax=True)
     wv_band = config.ChoiceField("Water Vapor constraint", str,
                                    allowed={"20": "20%-ile",
                                             "50": "50%-ile",
@@ -293,7 +294,7 @@ class findAperturesConfig(config.Config):
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
                            "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.1, min=0, max=1, fix_end_to_max=True)
+                                  float, 0.1, min=0, max=1)
     interactive = config.Field("Use interactive interface", bool, False)
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
                                        int, None, min=1, inclusiveMax=True, optional=True)
@@ -563,7 +564,7 @@ class resampleToCommonFrameConfig(config.Config):
     output_wave_scale = config.ChoiceField("Output wavelength scale", str,
                                            allowed={"reference": "Reference input",
                                                     "linear": "Linear",
-                                                    #"loglinear": "Log-linear",
+                                                    "loglinear": "Log-linear",
                                                     },
                                            default="linear", optional=False)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
@@ -615,6 +616,7 @@ class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
     interactive = config.Field("Run primitive interactively?", bool, False)
+    debug_allow_skip = config.Field("Allow 'Skip' exit from interactive mode?", bool, False)
 
     def setDefaults(self):
         self.order = 5
@@ -631,8 +633,7 @@ class traceAperturesConfig(config.core_1Dfitting_config):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True,
-                                  fix_end_to_max=True)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing",

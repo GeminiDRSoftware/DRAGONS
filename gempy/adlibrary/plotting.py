@@ -9,14 +9,14 @@ COLORS = ['blue', 'orange', 'green', 'red', 'purple',
 
 
 
-def dgsplot_matplotlib(ad, aperture, ignore_mask=False):
+def dgsplot_matplotlib(ad, aperture, ignore_mask=False, kwargs=None):
     plot_data = _setup_dgsplots(ad, aperture, ignore_mask)
 
     plt.title(plot_data['title'])
     plt.xlabel(plot_data['xaxis'])
     plt.ylabel(plot_data['yaxis'])
     for i, (x, y) in enumerate(zip(plot_data['wavelength'], plot_data['data'])):
-        plt.plot(x, y, color=COLORS[i % len(COLORS)])
+        plt.plot(x, y, color=COLORS[i % len(COLORS)], **kwargs)
     plt.show()
 
     return
@@ -45,31 +45,44 @@ def dgsplot_bokeh(ad, aperture, ignore_mask=False):
 
 
 def _setup_dgsplots(ad, aperture, ignore_mask):
-    if not (0 < aperture <= len(ad)):
-        raise ValueError(f"Aperture {aperture} is invalid "
-                         f"({ad.filename} has {len(ad)} extensions)")
-    data = ad[aperture-1].data
-    mask = ad[aperture-1].mask
-    if mask is None or ignore_mask:  # avoid having to do this later
-        mask = np.zeros_like(data, dtype=DQ.datatype)
-    wcs = ad[aperture-1].wcs
-    nworld_axes = wcs.output_frame.naxes
-    if nworld_axes != 1:
-        raise ValueError(f"{ad.filename} has {nworld_axes} world axes")
-    pix = np.arange(data.shape[-1])
+    exts_to_plot = [ext for ext, apnum in zip(ad, ad.hdr.get("APERTURE")) if apnum == aperture]
+    if not exts_to_plot:
+        if not (0 < aperture <= len(ad)):
+            raise ValueError(f"Aperture {aperture} is invalid "
+                             f"({ad.filename} has {len(ad)} extensions)")
+        exts_to_plot = [ad[aperture-1]]
 
-    setup_plot = {}
-    if data.ndim == 1:
-        setup_plot['data'] = [np.where(mask==0, data, np.nan)]
-        setup_plot['wavelength'] = [wcs(pix).astype(np.float32)]
-    else:
-        setup_plot['data'] = np.where(mask==0, data, np.nan)
-        grid = np.meshgrid(pix, np.arange(data.shape[0]),
-                           sparse=True, indexing='xy')
-        setup_plot['wavelength'] = wcs(*grid)
+    setup_plot = {'data': [], 'wavelength': []}
+    wave_units = set()
+    signal_units = set()
+    for ext in exts_to_plot:
+        nworld_axes = ext.wcs.output_frame.naxes
+        if nworld_axes != 1:
+            raise ValueError(f"{ad.filename} has {nworld_axes} world axes")
 
-    setup_plot['wave_units'] = wcs.output_frame.unit[0]
-    setup_plot['signal_units'] = ad[aperture-1].hdr["BUNIT"]
+        pix = np.arange(ext.data.shape[-1])
+        if ext.data.ndim == 1:
+            setup_plot['data'].append(ext.data if ext.mask is None else
+                                      np.where(ext.mask==0, ext.data, np.nan))
+            setup_plot['wavelength'].append(ext.wcs(pix).astype(np.float32))
+        else:
+            setup_plot['data'].extend(ext.data if ext.mask is None else np.where(ext.mask==0, ext.data, np.nan))
+            grid = np.meshgrid(pix, np.arange(ext.data.shape[0]),
+                               sparse=True, indexing='xy')
+            setup_plot['wavelength'].extend(ext.wcs(*grid).astype(np.float32))
+
+        wave_units.add(ext.wcs.output_frame.unit[0])
+        signal_units.add(ext.hdr["BUNIT"])
+
+    if len(wave_units) > 1:
+        raise ValueError(f"{ad.filename} has different wavelength units in the "
+                         "extensions to be plotted")
+    if len(signal_units) > 1:
+        raise ValueError(f"{ad.filename} has different signal units in the "
+                         f"extensions to be plotted")
+
+    setup_plot['wave_units'] = wave_units.pop()
+    setup_plot['signal_units'] = signal_units.pop()
     setup_plot['title'] = f'{ad.filename} - Aperture {aperture}'
     setup_plot['xaxis'] = f'Wavelength ({setup_plot["wave_units"]})'
     setup_plot['yaxis'] = f'Signal ({setup_plot["signal_units"]})'

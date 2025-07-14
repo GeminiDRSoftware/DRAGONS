@@ -30,11 +30,15 @@ class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
         del self.edge2
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
-    order = config.RangeField("Order of fitting function", int, 3, min=1,
+    order = config.RangeField("Order of fitting function", int, None, min=1,
                               optional=True)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=0.1, optional=True)
+
     debug_min_lines = config.Field("Minimum number of lines to fit each segment",
                                    (str, int), '50,20',
                                    check=list_of_ints_check)
+    num_lines = config.RangeField("Number of lines in the generated line list", int, 50,
+                                              min=10, max=1000, inclusiveMax=True, optional=True)
     def setDefaults(self):
         self.in_vacuo = True
 
@@ -51,6 +55,19 @@ class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     def setDefaults(self):
         self.threshold = 0.005
 
+
+class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
+    # Sky subtraction is difficult due to the short slit
+    def setDefaults(self):
+        self.function = "chebyshev"
+        self.order = 2
+        self.aperture_growth = 1
+        self.debug_allow_skip = True
+
+class traceAperturesConfig(parameters_spect.traceAperturesConfig):
+    # GNIRS XD benefits from light sigma clipping.
+    def setDefaults(self):
+        self.niter = 1
 
 class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):
     """

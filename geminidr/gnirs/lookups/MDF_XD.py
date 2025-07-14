@@ -10,6 +10,64 @@
 # primitives_gnirs_crossdispersed imports this dictionary to find the slit
 # definitions based on a key generated from the 'telescope', '_prism', 'decker',
 # '_grating', and 'camera' attributes of a file.
+
+def get_slit_info(key, central_wavelength=None):
+    """
+    Returns the slit information for GNIRS cross-dispersed data.
+
+    Returns
+    -------
+    tuple
+        A tuple containing slit information: x_ccd, y_ccd, and width_pixels.
+    """
+    if callable(slit_info[key]):
+        info = slit_info[key](central_wavelength)
+    else:
+        info = slit_info[key]
+
+    return info
+
+def _gem_north_lxd_lcxd_111_longblue(central_wavelength):
+    """
+    Returns slit information for the Gemini North Long camera, 111 l/mm grating,
+    LXD configuration.
+
+    Parameters
+    ----------
+    central_wavelength : float
+        The central wavelength in nm to determine the slit positions.
+
+    Returns
+    -------
+    tuple
+        A tuple containing x_ccd, y_ccd, and width_pixels.
+    """
+    if central_wavelength is None:
+        raise ValueError("central_wavelength must be provided for this configuration.")
+    central_wavelength *= 1.e6  # Convert from meters to um (descriptor default)
+
+    # x position calculation based on central wavelength
+    solutions = {
+        # order: (slope, constant)  1 degree polynomial
+        'order3': (-387.148, 1021.51),
+        'order4': (-294.465, 1032.95),
+        'order5': (-309.060, 1215.08),
+        'order6': (-370.932, 1489.49),
+        'order7': (-438.000, 1776.67),  # falls off the detector below 2.06 um
+        # order 8 is hardly visible in the flats. Also can fall off the
+        # detector at some wavelength settings.
+    }
+    x_ccd = []
+    for solution in solutions:
+        slope, constant = solutions[solution]
+        x_ccd.append(slope * central_wavelength + constant)
+
+    x_ccd = tuple(x_ccd)
+    y_ccd = 512
+    width_pixels = 100
+
+    return (x_ccd, y_ccd, width_pixels)
+
 slit_info = {
 
 # Not all configurations have data present in the archive - some notes:
@@ -64,11 +122,8 @@ slit_info = {
     ),
 # North, Long, 111 l/mm, SXD
 # North, Long, 111 l/mm, LXD
-'Gemini-North_LXD_G5535_LCXD_G5531_111/mm_G5534_LongBlue_G5542': (
-    (198, 410, 560, 699, 850),               # x_ccd
-    512,               # y_ccd
-    100                # width_pixels
-    ),
+'Gemini-North_LXD_G5535_LCXD_G5531_111/mm_G5534_LongBlue_G5542':
+    _gem_north_lxd_lcxd_111_longblue,
 
 # ------------------------------- Gemini South --------------------------------
 # -------------------------------  Short camera
@@ -101,3 +156,5 @@ slit_info = {
 # but the configuration isn't meaningfully affected. Define such cases here.
 slit_info['Gemini-South_SXD_G5509_SC_XD_111/mm_G5505_ShortBlue_G5521']  =\
     slit_info['Gemini-South_SXD_G5509_SC_XD_111/mm_G5505_ShortBlue_G5513']
+
+
