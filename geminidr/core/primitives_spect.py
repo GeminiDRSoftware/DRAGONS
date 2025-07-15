@@ -2519,9 +2519,10 @@ class Spect(Resample):
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 for ext, fit1d, image, other in zip(ad, visualizer.results(),
                                                     visualizer.image, visualizer.meta):
-                    if image is not None:
-                        fit1d.image = image
-                        wavecal.update_wcs_with_solution(ext, fit1d, other, config)
+                    if image is None:
+                        image = np.array([])
+                    fit1d.image = image
+                    wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
                 for ext, calc_ext in zip(ad, calc_ad):
                     if len(ad) > 1:
@@ -2529,10 +2530,10 @@ class Spect(Resample):
 
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
                         calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                    wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found")
                     else:
-                        wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                         figures.append(wavecal.create_pdf_plot(
                             input_data, fit1d.points[~fit1d.mask],
                             fit1d.image[~fit1d.mask],
