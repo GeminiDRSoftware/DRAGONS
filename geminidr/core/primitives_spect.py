@@ -4991,6 +4991,11 @@ class Spect(Resample):
 
         # Copy distortion model from ad2 to ad1
         for ad1, ad2 in zip(*gt.make_lists(adinputs, source_files)):
+            if len(ad1) != len(ad2):
+                log.warning(f"Number of extensions in {ad1.filename} and "
+                            f"{ad2.filename} do not match - skipping")
+                continue
+
             fail = False
             distortion_models = []
             for ext1, ext2 in zip(ad1, ad2):
@@ -5003,8 +5008,8 @@ class Spect(Resample):
                     break
                 try:
                     if 'distortion_corrected' not in wcs2.available_frames:
-                        log.warning("Could not find a 'distortion_corrected' frame "
-                            f"in {ad2.filename} extension {ext2.id} - "
+                        log.warning("Could not find a 'distortion_corrected' "
+                            f"frame in {ad2.filename} extension {ext2.id} - "
                             "continuing")
                         fail = True
                         break
@@ -5012,16 +5017,18 @@ class Spect(Resample):
                     fail = True
                     break
                 else:
-                    if 'rectified' not in wcs2.available_frames:
-                        m_distcorr = wcs2.get_transform(wcs2.input_frame, 'distortion_corrected')
-                    else:
-                        m_distcorr = wcs2.get_transform("rectified", 'distortion_corrected')
+                    # Distortion model is the transform immediately before the
+                    # "distortion_corrected" frame, regardless of anything else
+                    frame_index = wcs2.available_frames.index('distortion_corrected')
+                    m_distcorr = wcs2.pipeline[frame_index - 1].transform
                     distortion_models.append(m_distcorr)
+
             if not fail:
                 for ext, dist in zip(ad1, distortion_models):
-                    ext.wcs.insert_frame(ext.wcs.input_frame, dist, cf.Frame2D(name="distortion_corrected"))
-
+                    ext.wcs.insert_frame(ext.wcs.input_frame, dist,
+                                         cf.Frame2D(name="distortion_corrected"))
                 ad1.update_filename(suffix=suffix, strip=True)
+
         return adinputs
 
     def write1DSpectra(self, adinputs=None, **params):
