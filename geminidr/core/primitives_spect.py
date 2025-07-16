@@ -279,6 +279,7 @@ class Spect(Resample):
         method : str ['sources_wcs' | 'sources_offsets' | 'offsets']
             Method to use to compute offsets.
                - 'sources_wcs' matches sources using the WCS
+               - 'wcs' uses the WCS only (aligning based on target coords)
                - 'sources_offset' matches sources using the telescope offset
                - 'offsets' uses the telescope offsets only (QOFFSET keyword).
         fallback : str ['sources_offsets' | 'offsets']
@@ -345,7 +346,7 @@ class Spect(Resample):
         if any('sources' in m for m in methods):
             ref_profile_dict = {i: slit_profile(refad[i], section=region)
                                 for i in range(len(refad))}
-        if 'sources_wcs' in methods:
+        if any('wcs' in m for m in methods):
             # World coords are the same for each slit.
             world_coords = (refad[0].central_wavelength(asNanometers=True),
                             refad.target_ra(), refad.target_dec())
