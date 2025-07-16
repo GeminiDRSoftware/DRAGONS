@@ -923,16 +923,17 @@ class Telluric(Spect):
         if absorption:
             refplot_spec[1] = 1 - refplot_spec[1]
 
-        refplot_name = (f'ATRAN spectrum (Alt={altitude}ft, WV={wv_content}mm,'
-                        f'AM=1.5, R={resolution:.0f})')
-        refplot_y_axis_label = ("Atmospheric transmission" if absorption else
-                                "Inverse atm. transmission")
+        # Don't provide a reference spectrum if the linelist is empty
+        if len(linelist) > 0:
+            refplot_name = (f'ATRAN spectrum (Alt={altitude}ft, WV={wv_content}mm,'
+                            f'AM=1.5, R={resolution:.0f})')
+            refplot_y_axis_label = ("Atmospheric transmission" if absorption else
+                                    "Inverse atm. transmission")
+            refplot_data = {"refplot_spec": refplot_spec.T,
+                    "refplot_name": refplot_name,
+                    "refplot_y_axis_label": refplot_y_axis_label}
+            linelist.reference_spectrum = refplot_data
 
-        refplot_data = {"refplot_spec": refplot_spec.T,
-                "refplot_name": refplot_name,
-                "refplot_y_axis_label": refplot_y_axis_label}
-
-        linelist.reference_spectrum = refplot_data
         return linelist
 
 
