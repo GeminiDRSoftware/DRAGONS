@@ -39,7 +39,7 @@ def checkBias1(p):
     p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
-    p.stats(prefix='OSCO')
+    p.recordPixelStats(prefix='OSCO')
     p.writeOutputs(strip=True, suffix='_checkBias1')
     return
 
@@ -56,7 +56,7 @@ def checkBias2(p):
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.biasCorrect(do_cal="force")
-    p.stats(prefix="BICO")
+    p.recordPixelStats(prefix="BICO")
     p.writeOutputs(strip=True, suffix='_checkBias2')
     return
 
