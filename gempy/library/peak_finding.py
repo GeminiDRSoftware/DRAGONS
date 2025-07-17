@@ -404,7 +404,10 @@ def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
         l = 0 if lowest == 0 else apertures[lowest-1]
         r = 0 if lowest == len(apertures)-1 else apertures[lowest+1]
         if extrema[lowest*2+1][1] < median:
-            merge_with_neighbor(lowest)
+            if len(order) > 1:
+                merge_with_neighbor(lowest)
+            else:  # this is the only peak so we've not found anything
+                return []
         else:
             apertures[lowest] = apnext
             apnext += 1
