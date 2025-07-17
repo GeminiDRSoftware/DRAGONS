@@ -794,7 +794,7 @@ def trace_aperture(ext, location, ui_params, viewer=None, apnum=None):
             at.boxcar(spectrum[good], size=20))]
     if apnum is not None:
         log.stdinfo(f"{ext.filename}: Starting trace of "
-                    f"aperture {apnum+1} at pixel {start+1}")
+                    f"aperture {apnum} at pixel {start+1}")
 
     # The coordinates are always returned as (x-coords, y-coords)
     return trace_lines(

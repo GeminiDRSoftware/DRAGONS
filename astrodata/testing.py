@@ -62,7 +62,7 @@ def assert_most_close(actual, desired, max_miss, rtol=1e-7, atol=0,
         if n_miss > max_miss:
             error_message = (
                     "%g mismatching elements are more than the " % n_miss +
-                    "expected %g." % max_miss +
+                    "expected %g.\n" % max_miss +
                     '\n'.join(e.args[0].split('\n')[3:]))
 
             raise AssertionError(error_message)
@@ -101,7 +101,7 @@ def assert_most_equal(actual, desired, max_miss, verbose=True):
         if n_miss > max_miss:
             error_message = (
                     "%g mismatching elements are more than the " % n_miss +
-                    "expected %g." % max_miss +
+                    "expected %g.\n" % max_miss +
                     '\n'.join(e.args[0].split('\n')[3:]))
 
             raise AssertionError(error_message)

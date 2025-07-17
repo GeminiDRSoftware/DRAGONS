@@ -153,11 +153,11 @@ class Stack(PrimitivesBASE):
 
         Raises
         ------
-        RuntimeError
+        ValueError
             If the number of extensions in any of the `AstroData` objects is
             different.
 
-        RuntimeError
+        ValueError
             If the shape of any extension in any `AstroData` object is different.
 
         AssertError
@@ -203,12 +203,12 @@ class Stack(PrimitivesBASE):
             params["nhigh"] = 0
 
         if len({len(ad) for ad in adinputs}) > 1:
-            raise RuntimeError("Not all inputs have the same number of extensions")
+            raise ValueError("Not all inputs have the same number of extensions")
         # Check that the shapes of all extensions match across the input files
         # (they needn't match within files)
         for i in range(len(adinputs[0])):
             if len({ad[i].nddata.shape for ad in adinputs}) > 1:
-                raise RuntimeError("Not all inputs images have the same shape")
+                raise ValueError("Not all inputs images have the same shape")
 
         # We will determine the average gain from the input AstroData
         # objects and add in quadrature the read noise
@@ -378,9 +378,21 @@ class Stack(PrimitivesBASE):
                 out_refcat['Id'] = list(range(1, len(out_refcat)+1))
                 ad_out.REFCAT = out_refcat
 
-        # Propagate MDF from first input (no checking that they're all the same)
-        if hasattr(adinputs[0], 'MDF'):
-            ad_out.MDF = deepcopy(adinputs[0].MDF)
+        # Propagate other extensions if they're present on all inputs
+        # First, anything top-level (except for REFCAT, handled above,
+        # and PROVENANCE and HISTORY, handled elsewhere)
+        for tname in adinputs[0].tables:
+            if (tname not in ('REFCAT', 'PROVENANCE', 'HISTORY') and
+                    all(hasattr(ad, tname) for ad in adinputs)):
+                log.fullinfo(f"Propagating top-level object {tname}")
+                setattr(ad_out, tname, deepcopy(getattr(adinputs[0], tname)))
+
+        # Then, anything on the extensions
+        for index, (ext, ext_out) in enumerate(zip(adinputs[0], ad_out)):
+            for k, v in ext.nddata.meta['other'].items():
+                if all(hasattr(ad[index], k) for ad in adinputs):
+                    log.fullinfo(f"Propagating {k} on extension {index}")
+                    setattr(ext_out, k, deepcopy(v))
 
         # Set AIRMASS to be the mean of the input values
         try:

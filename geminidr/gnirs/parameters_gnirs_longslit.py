@@ -27,8 +27,8 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=0.1, optional=True)
     debug_min_lines = config.Field("Minimum number of lines to fit each segment", (str, int), None,
                                    check=list_of_ints_check, optional=True)
-    num_atran_lines = config.RangeField("Max number of lines in ATRAN line list", int, None,
-                                              min=10, max=300, inclusiveMax=True, optional=True)
+    num_lines = config.RangeField("Number of lines in the generated line list", int, None,
+                                              min=10, max=1000, inclusiveMax=True, optional=True)
     combine_method = config.ChoiceField("Combine method to use in 1D spectrum extraction", str,
                                    allowed={"mean": "mean",
                                             "median": "median",

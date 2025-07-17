@@ -7,7 +7,7 @@ from gempy.gemini import gemini_tools as gt
 
 from gemini_instruments.gnirs import lookup as adlookup
 from ..core import NearIR
-from ..gemini.primitives_gemini import Gemini
+from ..gemini.primitives_irdc import IRDC
 from . import parameters_gnirs
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
@@ -16,11 +16,10 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 # ------------------------------------------------------------------------------
 @parameter_override
 @capture_provenance
-class GNIRS(Gemini, NearIR):
+class GNIRS(IRDC, NearIR):
     """
-    This is the class containing all of the preprocessing primitives
-    for the F2 level of the type hierarchy tree. It inherits all
-    the primitives from the level above
+    This is the class containing all of the primitives used by all GNIRS
+    modes. It inherits all the primitives from the level above.
     """
     tagset = {"GEMINI", "GNIRS"}
 
@@ -98,3 +97,27 @@ class GNIRS(Gemini, NearIR):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
+
+    def _nonlinearity_coeffs(self, ad):
+        """
+        Returns a list of namedtuples containing the necessary information to
+        perform a nonlinearity correction. The list contains one namedtuple
+        per extension (although normal GNIRS data only has a single extension).
+
+        Returns
+        -------
+        list of namedtuples
+            nonlinearity info (max counts, exptime correction, gamma, eta)
+        """
+        array_name = set(ad.array_name())
+        assert len(array_name) == 1, ("Multiple array names found in {}".
+                                      format(ad.filename))
+        try:
+            nonlin_coeffs = self.inst_adlookup.nonlin_coeffs[array_name.pop()]
+        except KeyError:
+            self.log.warning("No nonlinearity coefficients are available for "
+                             "this array/detector controller.")
+            return [None] * len(ad)
+        read_mode = ad.read_mode()
+        well_depth = ad.well_depth_setting()
+        return [nonlin_coeffs.get((read_mode,well_depth))] * len(ad)

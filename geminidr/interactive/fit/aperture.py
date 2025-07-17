@@ -1220,7 +1220,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # particular, we depend on extracting some information from the model
         # which was not readily available in the primitive.
         self.ui_params = ui_params
-        self.ui_params.fields["max_separation"].min = 5
+        #self.ui_params.fields["max_separation"].min = 5
         self.ui_params.fields["max_separation"].max = self.model.max_width
 
         if self.ui_params.fields["max_separation"].default is None:
@@ -1237,11 +1237,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # Not necessary since the TextBox is disabled and so the user cannot
         # set to None.
         self.ui_params.fields["max_separation"].optional = False
-
-        # Make the threshold field fit the proper range (0 - 1, not 0 - 10).
-        self.ui_params.fields["threshold"].min = 0
-        self.ui_params.fields["threshold"].max = 1
-
 
     def add_aperture(self):
         """

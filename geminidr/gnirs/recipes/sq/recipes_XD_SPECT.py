@@ -54,15 +54,16 @@ def reduceTelluric(p):
     """
     p.prepare()
     p.addDQ()
-    # p.nonlinearityCorrect() # non-linearity correction tbd
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
     p.separateSky()
     p.associateSky()
     p.skyCorrect()
     p.cleanReadout()
+    p.attachPinholeModel()
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
@@ -73,6 +74,63 @@ def reduceTelluric(p):
     p.extractSpectra()
     p.fitTelluric()
     p.storeProcessedTelluric()
+
+
+def  makeWavecalFromSkyEmission(p):
+    """
+    Process GNIRS XD science in order to create wavelength and distortion
+    solutions using sky emission lines.
+
+    Inputs are:
+      * raw science
+      * processed flat
+    """
+
+    p.prepare()
+    p.addDQ()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True, read_noise=True)
+    p.flatCorrect()
+    p.stackFrames()
+    p.attachPinholeModel()
+    p.determineWavelengthSolution()
+    p.determineDistortion(spatial_order=1, step=4)
+    p.storeProcessedArc(force=True)
+    p.writeOutputs()
+
+
+def  makeWavecalFromSkyAbsorption(p):
+    """
+    Process GNIRS longslist science in order to create wavelength solution
+    using telluric absorption in the target spectrum. Copy distortion model
+    to the resulting calibration frame from the associated arc.
+
+    Inputs are:
+      * raw science
+      * processed arc
+      * processed flat
+    """
+    p.prepare()
+    p.addDQ()
+    # p.nonlinearityCorrect() # non-linearity correction tbd
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True, read_noise=True)
+    p.flatCorrect()
+    p.attachWavelengthSolution()
+    p.copyInputs(instream="main", outstream="with_distortion_model")
+    p.separateSky()
+    p.associateSky()
+    p.skyCorrect()
+    p.cleanReadout()
+    p.attachPinholeModel()
+    p.distortionCorrect()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame(output_wave_scale='reference', trim_spectral=True)
+    p.stackFrames()
+    p.findApertures()
+    p.determineWavelengthSolution(absorption=True)
+    p.transferDistortionModel(source="with_distortion_model")
+    p.storeProcessedArc(force=True)
 
 
 def reduceScienceWithAdjustmentFromSkylines(p):

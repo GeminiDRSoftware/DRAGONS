@@ -143,8 +143,17 @@ class TelluricCalibrator(Calibrator):
         # We store this as an attribute here since it's not handled fully
         # by TelluricSpectrum (you can make the mask but it's not applied)
         # and it needs to be accessed by the Visualizer
-        self.stellar_mask = [tspek.make_stellar_mask(r=self.resolution)
-                             for tspek in self.spectra]
+        if ui_params is None:
+            stellar_mask_threshold = 1.0
+            stellar_mask_max_extent = 0.
+        else:
+            stellar_mask_threshold = ui_params.debug_stellar_mask_threshold
+            stellar_mask_max_extent = ui_params.debug_stellar_mask_max_extent
+        self.stellar_mask = [tspek.make_stellar_mask(
+            threshold=stellar_mask_threshold,
+            max_contiguous=stellar_mask_max_extent,
+            r=self.resolution)
+            for tspek in self.spectra]
 
         # Allow instantiation without this and can call later
         if ui_params is not None:
@@ -440,16 +449,16 @@ class TelluricCorrector(Calibrator):
             mask = np.where(np.isnan(abs_spek), DQ.no_data, DQ.good)
             if mask.sum() == 0:
                 yield abs_spek
-
-            data = abs_spek.copy()
-            first_unmasked = mask.argmin()
-            if first_unmasked == 0:  # masked pixels are at the end
-                last_unmasked = mask[::-1].argmin() + 1
-                data[-last_unmasked:] = data[-(last_unmasked+1)]
-            else:  # masked pixels are at the start
-                data[:first_unmasked] = data[first_unmasked]
-            result = NDAstroData(data=data, mask=mask)
-            yield result
+            else:
+                data = abs_spek.copy()
+                first_unmasked = mask.argmin()
+                if first_unmasked == 0:  # masked pixels are at the end
+                    last_unmasked = mask[::-1].argmin() + 1
+                    data[-last_unmasked:] = data[-(last_unmasked+1)]
+                else:  # masked pixels are at the start
+                    data[:first_unmasked] = data[first_unmasked]
+                result = NDAstroData(data=data, mask=mask)
+                yield result
 
     # def perform_all_fits(self):
     #     # This needs to return a model that describes the "fit" for each
