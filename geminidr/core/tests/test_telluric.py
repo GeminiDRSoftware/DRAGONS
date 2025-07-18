@@ -242,5 +242,5 @@ def test_get_airglow_linelist(path_to_inputs, path_to_refs):
     ref_refplot_spec_f2 = np.loadtxt(
         os.path.join(path_to_refs, "S20180114S0104_refplot_spec.dat"))
 
-    np.testing.assert_allclose(ref_refplot_spec_f2, refplot_data_f2["refplot_spec"], atol=1e-3)
-
+    np.testing.assert_allclose(ref_refplot_spec_f2[:, 0], refplot_data_f2["refplot_spec"][:, 0], atol=1e-3)
+    np.testing.assert_allclose(ref_refplot_spec_f2[:, 1], refplot_data_f2["refplot_spec"][:, 1], atol=0.25)  # max numerical diff in flux with numpy 2
