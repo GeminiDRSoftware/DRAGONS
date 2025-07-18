@@ -3289,16 +3289,27 @@ class Spect(Resample):
             origin_str = f" (obtained from {origin})" if origin else ""
             log.stdinfo(f"{ad.filename}: using the standard {std.filename}"
                         f"{origin_str}")
-            len_std, len_ad = len(std), len(ad)
-            if len_std not in (1, len_ad):
-                log.warning(f"{ad.filename} has {len_ad} extensions but "
-                            f"{std.filename} has {len_std} extensions so "
-                            "cannot flux calibrate.")
-                continue
 
             if not all(hasattr(ext, "SENSFUNC") for ext in std):
                 log.warning("SENSFUNC table missing from one or more extensions"
                             f" of {std.filename} so cannot flux calibrate")
+                continue
+
+            # Work out which extensions to use for flux calibration
+            std_indices = None
+            std_orders = std.hdr.get('SPECORDR')
+            ad_orders = ad.hdr.get('SPECORDR')
+            len_std, len_ad = len(std), len(ad)
+            if std_orders.count(None) + ad_orders.count(None) == 0:
+                std_indices = [std_orders.index(ad_order) for ad_order in ad_orders]
+            elif len_std == 1:
+                std_indices = [0] * len_ad
+            elif len_std == len_ad:
+                std_indices = list(range(len_ad))
+            if std_indices is None:
+                log.warning(f"{ad.filename} has {len_ad} extensions but "
+                            f"{std.filename} has {len_std} extensions and "
+                            "cannot determine which extensions to use.")
                 continue
 
             # Since 2D flux calibration just uses the wavelength info for the
@@ -3339,10 +3350,11 @@ class Spect(Resample):
                     log.stdinfo(f"{ad.filename}: Correcting for airmass of "
                                 f"{delta_airmass:5.3f}")
 
-
-            for index, ext in enumerate(ad):
-                ext_std = std[min(index, len_std-1)]
+            for index, (ext, std_index)  in enumerate(zip(ad, std_indices)):
+                ext_std = std[std_index]
                 extname = f"{ad.filename} extension {ext.id}"
+                log.debug(f"Flux calibrating {extname} with {std.filename}"
+                          f" extension {ext_std.id}")
 
                 # Create the correct callable function (we may want to
                 # abstract this in the future)
