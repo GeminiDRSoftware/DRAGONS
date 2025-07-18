@@ -25,7 +25,7 @@ def reduceScience(p):
     p.separateSky()
     p.associateSky()
     p.skyCorrect()
-    p.cleanReadout()
+    # p.cleanReadout()  # algorithm doesn't work on cut data
     p.attachPinholeModel()
     p.distortionCorrect()
     p.adjustWCSToReference()
@@ -62,7 +62,7 @@ def reduceTelluric(p):
     p.separateSky()
     p.associateSky()
     p.skyCorrect()
-    p.cleanReadout()
+    # p.cleanReadout()  # algorithm doesn't work on cut data
     p.attachPinholeModel()
     p.distortionCorrect()
     p.adjustWCSToReference()
@@ -122,7 +122,7 @@ def  makeWavecalFromSkyAbsorption(p):
     p.separateSky()
     p.associateSky()
     p.skyCorrect()
-    p.cleanReadout()
+    # p.cleanReadout()  # algorithm doesn't work on cut data
     p.attachPinholeModel()
     p.distortionCorrect()
     p.adjustWCSToReference()
@@ -157,7 +157,7 @@ def reduceScienceWithAdjustmentFromSkylines(p):
     p.separateSky()
     p.associateSky()
     p.skyCorrect()
-    p.cleanReadout()
+    # p.cleanReadout()  # algorithm doesn't work on cut data
     p.flatCorrect()
     p.transferAttribute(stream="main", source="temp", attribute="wcs")
     p.distortionCorrect()
