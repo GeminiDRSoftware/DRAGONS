@@ -538,6 +538,7 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
     interactive = config.Field("Interactive fitting?", bool, False)
 
     def setDefaults(self):
+        self.niter = 1
         self.order = 20
 
 
@@ -645,6 +646,7 @@ class traceAperturesConfig(config.core_1Dfitting_config):
 
     def setDefaults(self):
         del self.function
+        self.niter = 1
         self.order = 2
 
 
