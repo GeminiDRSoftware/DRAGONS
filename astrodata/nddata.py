@@ -31,7 +31,7 @@ class ADVarianceUncertainty(VarianceUncertainty):
         if value is not None and np.any(value < 0):
             warnings.warn("Negative variance values found. Setting to zero.",
                           RuntimeWarning)
-            value = np.where(value >= 0., value, 0.)
+            value = np.where(value >= 0., value, np.float32(0.))
         VarianceUncertainty.array.fset(self, value)
 
 
