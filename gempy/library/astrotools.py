@@ -682,6 +682,39 @@ def transpose_if_needed(*args, transpose=False, section=slice(None)):
                 else arg.T[section] if transpose else arg[section] for arg in args)
 
 
+def weighted_median(data, weights=None):
+    """
+    Calculate the weighted median of a dataset.
+
+    Parameters
+    ----------
+    data: array-like
+        the data to calculate the median of
+    weights: array-like/None
+        relative weights of the data (None => equal weights)
+
+    Returns
+    -------
+    float: the weighted median value
+    """
+    if weights is None:
+        return np.ma.median(data)
+
+    sorted_indices = np.argsort(data)
+    sorted_data = data[sorted_indices]
+    sorted_weights = weights[sorted_indices]
+
+    cumulative_weights = np.cumsum(sorted_weights)
+    total_weight = cumulative_weights[-1]
+    half_weight = 0.5 * total_weight
+
+    median_index = np.searchsorted(cumulative_weights, half_weight)
+    if cumulative_weights[median_index] == half_weight:
+        return 0.5 * (sorted_data[median_index] + sorted_data[median_index + 1])
+
+    return sorted_data[median_index]
+
+
 def weighted_sigma_clip(data, weights=None, sigma=3, sigma_lower=None,
                         sigma_upper=None, maxiters=5):
     """

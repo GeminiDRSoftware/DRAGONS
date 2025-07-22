@@ -224,3 +224,19 @@ def test_magnitude_flux_densities_ab(filter_name):
     assert isinstance(m.flux_density(), u.Quantity)
     assert m.flux_density().to("Jy").value == pytest.approx(3630, rel=0.001)
     assert m.flux_density(units="Jy") == pytest.approx(3630, rel=0.001)
+
+
+@pytest.mark.parametrize("num_values", [1, 2, 3, 4, 5])
+def test_weighted_median_equal_weights(num_values):
+    x = np.arange(num_values)
+    w = np.ones_like(x)
+    assert at.weighted_median(x, w) == pytest.approx(at.weighted_median(x), abs=0.001)
+
+
+def test_weighted_median_unequal_weights():
+    x = np.arange(10)
+    w = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2])
+    assert at.weighted_median(x, w) == pytest.approx(6, abs=0.001)
+    x = np.arange(9)
+    w = np.array([1, 1, 1, 1, 1, 1, 2, 2, 2])
+    assert at.weighted_median(x, w) == pytest.approx(5.5, abs=0.001)
