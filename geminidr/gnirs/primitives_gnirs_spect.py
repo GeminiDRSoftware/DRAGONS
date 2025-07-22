@@ -80,7 +80,7 @@ class GNIRSSpect(Telluric, GNIRS):
                     scaling = at.weighted_median(ratios, weights=weights)
                 else:
                     scaling = 1.0
-                log.stdinfo(f"Scaling for {ad.filename}:{ext.id}: {scaling:8.6f}")
+                log.debug(f"Scaling for {ad.filename}:{ext.id}: {scaling:8.6f}")
                 scaling_data = np.ones_like(ext.data)
                 scaling_data[1::2] *= scaling
                 ext.multiply(scaling_data)
