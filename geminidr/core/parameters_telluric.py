@@ -34,6 +34,10 @@ class fitTelluricConfig(config.core_1Dfitting_config):
     apply_shift = config.Field("Permanently apply pixel shift?", bool, True)  # debug?
     debug_lsf_sampling = config.RangeField("Number of sample points for each LSF parameter",
                                            int, 5, min=3, optional=False)
+    debug_stellar_mask_threshold = config.RangeField(
+        "Absorption threshold for stellar mask", float, 0.9, min=0.5, max=1.0)
+    debug_stellar_mask_max_extent = config.RangeField(
+        "Maximum extent of a stellar mask region (nm)", float, 40., min=0.)
 
     def setDefaults(self):
         self.niter = 1

@@ -14,7 +14,7 @@ from .primitives_gnirs import GNIRS
 from . import parameters_gnirs_spect
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import wavecal
+from gempy.library import astrotools as at, wavecal
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -74,10 +74,10 @@ class GNIRSSpect(Telluric, GNIRS):
             for ext in ad:
                 row_values = np.ma.median(np.ma.masked_array(
                     ext.data, mask=ext.mask), axis=1)
-                bright_enough = row_values[1::2] > 50 * ext.read_noise()
-                if bright_enough.any():
-                    scaling = np.ma.median((row_values[::2] /
-                                            row_values[1::2])[bright_enough])
+                ratios = at.divide0(row_values[::2], row_values[1::2])
+                weights = np.maximum(row_values[::2], 0.0)
+                if weights.sum() > 0:
+                    scaling = at.weighted_median(ratios, weights=weights)
                 else:
                     scaling = 1.0
                 log.debug(f"Scaling for {ad.filename}:{ext.id}: {scaling:8.6f}")

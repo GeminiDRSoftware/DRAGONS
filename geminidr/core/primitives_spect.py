@@ -136,6 +136,7 @@ class Spect(Resample):
         sfx = params["suffix"]
         center = params["center"]
         shift = params["shift"]
+        min_snr = params["min_snr"]
         max_shift = params["debug_max_shift"]
         verbose = params["verbose"]
 
@@ -181,7 +182,7 @@ class Spect(Resample):
                         "center": center,
                         "nsum": 10,
                         "fwidth": None,
-                        "min_snr": 10,
+                        "min_snr": min_snr,
                         "min_sep": 2,
                         "weighting": "local",
                         "nbright": 0,
@@ -278,6 +279,7 @@ class Spect(Resample):
         method : str ['sources_wcs' | 'sources_offsets' | 'offsets']
             Method to use to compute offsets.
                - 'sources_wcs' matches sources using the WCS
+               - 'wcs' uses the WCS only (aligning based on target coords)
                - 'sources_offset' matches sources using the telescope offset
                - 'offsets' uses the telescope offsets only (QOFFSET keyword).
         fallback : str ['sources_offsets' | 'offsets']
@@ -344,7 +346,7 @@ class Spect(Resample):
         if any('sources' in m for m in methods):
             ref_profile_dict = {i: slit_profile(refad[i], section=region)
                                 for i in range(len(refad))}
-        if 'sources_wcs' in methods:
+        if any('wcs' in m for m in methods):
             # World coords are the same for each slit.
             world_coords = (refad[0].central_wavelength(asNanometers=True),
                             refad.target_ra(), refad.target_dec())
@@ -2518,9 +2520,10 @@ class Spect(Resample):
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 for ext, fit1d, image, other in zip(ad, visualizer.results(),
                                                     visualizer.image, visualizer.meta):
-                    if image is not None:
-                        fit1d.image = image
-                        wavecal.update_wcs_with_solution(ext, fit1d, other, config)
+                    if image is None:
+                        image = np.array([])
+                    fit1d.image = image
+                    wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
                 for ext, calc_ext in zip(ad, calc_ad):
                     if len(ad) > 1:
@@ -2528,10 +2531,10 @@ class Spect(Resample):
 
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
                         calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                    wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found")
                     else:
-                        wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                         figures.append(wavecal.create_pdf_plot(
                             input_data, fit1d.points[~fit1d.mask],
                             fit1d.image[~fit1d.mask],
@@ -3286,16 +3289,27 @@ class Spect(Resample):
             origin_str = f" (obtained from {origin})" if origin else ""
             log.stdinfo(f"{ad.filename}: using the standard {std.filename}"
                         f"{origin_str}")
-            len_std, len_ad = len(std), len(ad)
-            if len_std not in (1, len_ad):
-                log.warning(f"{ad.filename} has {len_ad} extensions but "
-                            f"{std.filename} has {len_std} extensions so "
-                            "cannot flux calibrate.")
-                continue
 
             if not all(hasattr(ext, "SENSFUNC") for ext in std):
                 log.warning("SENSFUNC table missing from one or more extensions"
                             f" of {std.filename} so cannot flux calibrate")
+                continue
+
+            # Work out which extensions to use for flux calibration
+            std_indices = None
+            std_orders = std.hdr.get('SPECORDR')
+            ad_orders = ad.hdr.get('SPECORDR')
+            len_std, len_ad = len(std), len(ad)
+            if std_orders.count(None) + ad_orders.count(None) == 0:
+                std_indices = [std_orders.index(ad_order) for ad_order in ad_orders]
+            elif len_std == 1:
+                std_indices = [0] * len_ad
+            elif len_std == len_ad:
+                std_indices = list(range(len_ad))
+            if std_indices is None:
+                log.warning(f"{ad.filename} has {len_ad} extensions but "
+                            f"{std.filename} has {len_std} extensions and "
+                            "cannot determine which extensions to use.")
                 continue
 
             # Since 2D flux calibration just uses the wavelength info for the
@@ -3336,10 +3350,11 @@ class Spect(Resample):
                     log.stdinfo(f"{ad.filename}: Correcting for airmass of "
                                 f"{delta_airmass:5.3f}")
 
-
-            for index, ext in enumerate(ad):
-                ext_std = std[min(index, len_std-1)]
+            for index, (ext, std_index)  in enumerate(zip(ad, std_indices)):
+                ext_std = std[std_index]
                 extname = f"{ad.filename} extension {ext.id}"
+                log.debug(f"Flux calibrating {extname} with {std.filename}"
+                          f" extension {ext_std.id}")
 
                 # Create the correct callable function (we may want to
                 # abstract this in the future)
@@ -4855,6 +4870,11 @@ class Spect(Resample):
                     data, widths=widths, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)
+                if len(initial_peaks) == 0:
+                    log.error(f"\nNo pinholes found in extension {ext.id}. "
+                              f"Consider lowering the detection \n"
+                              f"threshold, min_snr. (Currently set to {min_snr}.)\n")
+                    raise RuntimeError('No pinholes found.')
 
                 if min_trace_pos is not None and min_trace_pos > len(initial_peaks):
                     log.warning(f"'min_trace_pos' is set to {min_trace_pos} but "
@@ -4984,6 +5004,11 @@ class Spect(Resample):
 
         # Copy distortion model from ad2 to ad1
         for ad1, ad2 in zip(*gt.make_lists(adinputs, source_files)):
+            if len(ad1) != len(ad2):
+                log.warning(f"Number of extensions in {ad1.filename} and "
+                            f"{ad2.filename} do not match - skipping")
+                continue
+
             fail = False
             distortion_models = []
             for ext1, ext2 in zip(ad1, ad2):
@@ -4996,8 +5021,8 @@ class Spect(Resample):
                     break
                 try:
                     if 'distortion_corrected' not in wcs2.available_frames:
-                        log.warning("Could not find a 'distortion_corrected' frame "
-                            f"in {ad2.filename} extension {ext2.id} - "
+                        log.warning("Could not find a 'distortion_corrected' "
+                            f"frame in {ad2.filename} extension {ext2.id} - "
                             "continuing")
                         fail = True
                         break
@@ -5005,16 +5030,18 @@ class Spect(Resample):
                     fail = True
                     break
                 else:
-                    if 'rectified' not in wcs2.available_frames:
-                        m_distcorr = wcs2.get_transform(wcs2.input_frame, 'distortion_corrected')
-                    else:
-                        m_distcorr = wcs2.get_transform("rectified", 'distortion_corrected')
+                    # Distortion model is the transform immediately before the
+                    # "distortion_corrected" frame, regardless of anything else
+                    frame_index = wcs2.available_frames.index('distortion_corrected')
+                    m_distcorr = wcs2.pipeline[frame_index - 1].transform
                     distortion_models.append(m_distcorr)
+
             if not fail:
                 for ext, dist in zip(ad1, distortion_models):
-                    ext.wcs.insert_frame(ext.wcs.input_frame, dist, cf.Frame2D(name="distortion_corrected"))
-
+                    ext.wcs.insert_frame(ext.wcs.input_frame, dist,
+                                         cf.Frame2D(name="distortion_corrected"))
                 ad1.update_filename(suffix=suffix, strip=True)
+
         return adinputs
 
     def write1DSpectra(self, adinputs=None, **params):

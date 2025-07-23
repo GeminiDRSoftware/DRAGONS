@@ -3,6 +3,7 @@ from copy import deepcopy
 from datetime import datetime  # leave it in.  It is used by the eval.
 
 from importlib import import_module
+import numpy as np
 
 import astrodata
 import gemini_instruments
@@ -111,7 +112,7 @@ def evalexpression(ad, expression):
     expression - bool
         evaluated expression, True or False
     """
-    if type(eval(expression)) is not type(True):
+    if type(eval(expression)) not in [type(True), type(np.bool_(True))]:
         raise IOError('Expression does not return a boolean value.')
     return eval(expression)
 

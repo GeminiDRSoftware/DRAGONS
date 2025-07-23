@@ -41,6 +41,7 @@ class adjustWavelengthZeroPointConfig(config.Config):
                                 min=1, optional=True)
     shift = config.RangeField("Shift to apply in pixels (None: determine automatically)",
                               float, 0, min=-2048, max=2048, optional=True)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
     verbose = config.Field("Print extra information", bool, False,
                            optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
@@ -537,6 +538,7 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
     interactive = config.Field("Interactive fitting?", bool, False)
 
     def setDefaults(self):
+        self.niter = 1
         self.order = 20
 
 
@@ -644,6 +646,7 @@ class traceAperturesConfig(config.core_1Dfitting_config):
 
     def setDefaults(self):
         del self.function
+        self.niter = 1
         self.order = 2
 
 

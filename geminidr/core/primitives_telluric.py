@@ -256,7 +256,7 @@ class Telluric(Spect):
                 if (len(ext.shape) == 1 and
                         ext.hdr.get('APERTURE') == aperture_to_use):
                     tspek = tspek_list[result_index]
-                    absorption = tspek.data / m_final.models[result_index].continuum(tspek.waves)
+                    absorption = at.divide0(tspek.data, m_final.models[result_index].continuum(tspek.waves))
                     goodpix = ~(tspek.mask | tcal.stellar_mask[result_index]).astype(bool)
                     spline = make_interp_spline(tcal.spectra[result_index].waves[goodpix],
                                                 absorption[goodpix], k=3)
@@ -862,11 +862,18 @@ class Telluric(Spect):
         atran_models = Table.read(atran_file)
         waves = atran_models['wavelength']
         data = atran_models[f"{site}_wv{wv_content * 1000:.0f}_za48"]
+        sampling = abs(np.diff(waves).mean())
+
+        # We may need to extend the ATRAN spectrum blueward if it doesn't go
+        # far enough
+        npix = int((np.min(waves) - start_wvl) / sampling)
+        if npix > 0:
+            data = np.r_[np.ones(npix), data]
+            waves = np.r_[np.min(waves) - np.arange(npix) * sampling, waves]
 
         # Convolve the appropriate wavelength region with a Gaussian of
         # constant FWHM (only works if wavelength scale is linear)
         wave_range = np.logical_and(waves >= start_wvl, waves <= end_wvl)
-        sampling = abs(np.diff(waves).mean())
         sigma_pix = 0.42 * 0.5 * (start_wvl + end_wvl) / resolution / sampling
         atran_spec = convolve(data[wave_range], Gaussian1DKernel(sigma_pix),
                               boundary='extend')
@@ -892,19 +899,22 @@ class Telluric(Spect):
             linelist_data = make_linelist(refplot_spec,
                                           resolution=resolution,
                                           num_lines=config.get('num_lines', 50))
-            header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm\n"
-                      f"Generated at R={int(resolution)} from ATRAN synthetic spectrum "
-                      "(Lord, S. D., 1992, NASA Technical Memorandum 103957)\n"
-                      "Model parameters:\n"
-                      f"Obs altitude: {altitude}ft, Obs latitude: 39 degrees,\n"
-                      f"Water vapor overburden: {wv_content * 1000:.0f} microns,"
-                      "Number of atm. layers: 2,\n"
-                      "Zenith angle: 48 deg, Wavelength range: 1-6 microns, Smoothing R:0\n"
-                      "units nanometer\n"
-                      "wavelengths IN VACUUM")
-            #np.savetxt(atran_linelist, linelist_data, fmt=['%.3f', '%.3f'], header=header)
-            np.savetxt(atran_linelist, linelist_data[:, 0], fmt=['%.3f'], header=header)
-            linelist = LineList(atran_linelist)
+            if linelist_data is None:
+                linelist = LineList()
+            else:
+                header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm\n"
+                          f"Generated at R={int(resolution)} from ATRAN synthetic spectrum "
+                          "(Lord, S. D., 1992, NASA Technical Memorandum 103957)\n"
+                          "Model parameters:\n"
+                          f"Obs altitude: {altitude}ft, Obs latitude: 39 degrees,\n"
+                          f"Water vapor overburden: {wv_content * 1000:.0f} microns,"
+                          "Number of atm. layers: 2,\n"
+                          "Zenith angle: 48 deg, Wavelength range: 1-6 microns, Smoothing R:0\n"
+                          "units nanometer\n"
+                          "wavelengths IN VACUUM")
+                #np.savetxt(atran_linelist, linelist_data, fmt=['%.3f', '%.3f'], header=header)
+                np.savetxt(atran_linelist, linelist_data[:, 0], fmt=['%.3f'], header=header)
+                linelist = LineList(atran_linelist)
 
         # In L and M bands, the sky spectrum has emission where the ATRAN
         # spectrum has absorption, so keep the inverted version for display.
@@ -913,16 +923,17 @@ class Telluric(Spect):
         if absorption:
             refplot_spec[1] = 1 - refplot_spec[1]
 
-        refplot_name = (f'ATRAN spectrum (Alt={altitude}ft, WV={wv_content}mm,'
-                        f'AM=1.5, R={resolution:.0f})')
-        refplot_y_axis_label = ("Atmospheric transmission" if absorption else
-                                "Inverse atm. transmission")
+        # Don't provide a reference spectrum if the linelist is empty
+        if len(linelist) > 0:
+            refplot_name = (f'ATRAN spectrum (Alt={altitude}ft, WV={wv_content}mm,'
+                            f'AM=1.5, R={resolution:.0f})')
+            refplot_y_axis_label = ("Atmospheric transmission" if absorption else
+                                    "Inverse atm. transmission")
+            refplot_data = {"refplot_spec": refplot_spec.T,
+                    "refplot_name": refplot_name,
+                    "refplot_y_axis_label": refplot_y_axis_label}
+            linelist.reference_spectrum = refplot_data
 
-        refplot_data = {"refplot_spec": refplot_spec.T,
-                "refplot_name": refplot_name,
-                "refplot_y_axis_label": refplot_y_axis_label}
-
-        linelist.reference_spectrum = refplot_data
         return linelist
 
 
@@ -1000,6 +1011,10 @@ def make_linelist(spectrum, resolution=1000, num_bins=10, num_lines=50):
     best_pixel_peaks = trim_peaks(pixel_peaks, weights, bin_edges,
                                   nlargest=(num_lines + num_bins - 1) // num_bins,
                                   sort=True)
+
+    if best_pixel_peaks.size == 0:
+        return None
+
     # Pinpoint peak positions, and cull any peaks that couldn't be fit
     # (keep_bad will return location=NaN)
     linelist = np.vstack(peak_finding.pinpoint_peaks(
