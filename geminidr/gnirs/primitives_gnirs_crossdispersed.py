@@ -69,111 +69,6 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
 
         return adinputs
 
-    def distortionCorrect(self, adinputs=None, **params):
-        """
-        Corrects optical distortion in science frames, using a distortion map
-        (a Chebyshev2D model, usually from a processed arc) that has previously
-        been attached to each input's WCS by attachWavelengthSolution.
-
-        If the input image requires mosaicking, then this is done as part of
-        the resampling, to ensure one, rather than two, interpolations.
-
-        This GNIRS XD version of this primitive adds a further step where the
-        real estate of the distortion-corrected image is trimmed down to the
-        minimum required to contain the data.
-
-        Parameters
-        ----------
-        suffix : str/None
-            Suffix to be added to output files.
-        interpolant : str
-            Type of interpolant
-        subsample : int
-            Pixel subsampling factor.
-        dq_threshold : float
-            The fraction of a pixel's contribution from a DQ-flagged pixel to
-            be considered 'bad' and also flagged.
-        """
-        log = self.log
-        adinputs = super().distortionCorrect(adinputs=adinputs, **params)
-
-        # CJS 20240814: distortion-corrected XD data can have a lot of
-        # unnecessary real estate, so trim this down. By constructing the
-        # distortion model well, we can ensure that all this real estate is
-        # on the right/top of the frame.
-        # TODO: This is probably not the correct place for this and it may
-        # need to be moved as other instrument modes are supported. It can
-        # probably go in the main primitive in Spect but let's wait and see.
-        adoutputs = []
-        for ad in adinputs:
-            adout = astrodata.create(ad.phu)
-            adout.filename = ad.filename
-            adout.orig_filename = ad.orig_filename
-            for ext in ad:
-                # Code generically for the dispersion axis
-                dispaxis = 2 - ext.dispersion_axis()  # python sense
-                fully_masked = (ext.mask & (DQ.no_data | DQ.unilluminated)).astype(
-                    bool).all(axis=dispaxis)
-                first_masked = ext.shape[1-dispaxis] - fully_masked[::-1].argmin()
-                if dispaxis == 0:
-                    adout.append(ext.nddata[:, :first_masked])
-                    log.debug(f"Cutting {ad.filename}:{ext.id} right of "
-                              f"column {first_masked}")
-                else:
-                    adout.append(ext.nddata[:first_masked])
-                    log.debug(f"Cutting {ad.filename}:{ext.id} above row"
-                              f" {first_masked}")
-            adoutputs.append(adout)
-
-        return adoutputs
-
-    def tracePinholeApertures(self, adinputs=None, **params):
-        """
-        This primitive exists to provide some mode-specific values to the
-        tracePinholeApertures() in primitives_spect, since the modes in GNIRS
-        cross-dispersed are different enough to warrant having different values.
-        """
-
-        camera = getattr(adinputs[0], 'camera')()
-
-        if 'Short' in camera:
-            # In the short camera configuration there are four good pinholes
-            # and one that's right on the edge of the slit and isn't consistently
-            # picked up. This setting stops it from being used in the orders it
-            # is found in since it produces a sketchy fit.
-            if params['debug_max_trace_pos'] is None:
-                params['debug_max_trace_pos'] = 4
-                self.log.debug("Setting debug_max_trace_pos to 4 for Short "
-                               "camera.")
-
-        elif 'Long' in camera:
-            # In the long camera configuration the 5th and 6th slits run off the
-            # side of the array, necessitating a start point much closer to the
-            # bottom instead of the default middle-of-the-array.
-            if params['start_pos'] is None:
-                params['start_pos'] = 150
-                self.log.fullinfo("Setting trace start location to row 150 for "
-                                  "Long camera.")
-
-        # Call the parent primitive with the new parameter values.
-        return super().tracePinholeApertures(adinputs=adinputs, **params)
-
-
-    def _get_order_information_key(self):
-        """
-        This function provides a key to the order-specific information needed
-        for updating the WCS when cutting out slits in XD data.
-
-        Returns
-        -------
-        tuple
-            A tuple of strings representing the attributes of the dict key for
-            information on the orders
-
-        """
-
-        return ('telescope', '_prism', 'decker', '_grating', 'camera')
-
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
         Determines the wavelength solution for an ARC and updates the wcs
@@ -321,3 +216,108 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
 
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
+
+    def distortionCorrect(self, adinputs=None, **params):
+        """
+        Corrects optical distortion in science frames, using a distortion map
+        (a Chebyshev2D model, usually from a processed arc) that has previously
+        been attached to each input's WCS by attachWavelengthSolution.
+
+        If the input image requires mosaicking, then this is done as part of
+        the resampling, to ensure one, rather than two, interpolations.
+
+        This GNIRS XD version of this primitive adds a further step where the
+        real estate of the distortion-corrected image is trimmed down to the
+        minimum required to contain the data.
+
+        Parameters
+        ----------
+        suffix : str/None
+            Suffix to be added to output files.
+        interpolant : str
+            Type of interpolant
+        subsample : int
+            Pixel subsampling factor.
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
+        """
+        log = self.log
+        adinputs = super().distortionCorrect(adinputs=adinputs, **params)
+
+        # CJS 20240814: distortion-corrected XD data can have a lot of
+        # unnecessary real estate, so trim this down. By constructing the
+        # distortion model well, we can ensure that all this real estate is
+        # on the right/top of the frame.
+        # TODO: This is probably not the correct place for this and it may
+        # need to be moved as other instrument modes are supported. It can
+        # probably go in the main primitive in Spect but let's wait and see.
+        adoutputs = []
+        for ad in adinputs:
+            adout = astrodata.create(ad.phu)
+            adout.filename = ad.filename
+            adout.orig_filename = ad.orig_filename
+            for ext in ad:
+                # Code generically for the dispersion axis
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                fully_masked = (ext.mask & (DQ.no_data | DQ.unilluminated)).astype(
+                    bool).all(axis=dispaxis)
+                first_masked = ext.shape[1-dispaxis] - fully_masked[::-1].argmin()
+                if dispaxis == 0:
+                    adout.append(ext.nddata[:, :first_masked])
+                    log.debug(f"Cutting {ad.filename}:{ext.id} right of "
+                              f"column {first_masked}")
+                else:
+                    adout.append(ext.nddata[:first_masked])
+                    log.debug(f"Cutting {ad.filename}:{ext.id} above row"
+                              f" {first_masked}")
+            adoutputs.append(adout)
+
+        return adoutputs
+
+    def tracePinholeApertures(self, adinputs=None, **params):
+        """
+        This primitive exists to provide some mode-specific values to the
+        tracePinholeApertures() in primitives_spect, since the modes in GNIRS
+        cross-dispersed are different enough to warrant having different values.
+        """
+
+        camera = getattr(adinputs[0], 'camera')()
+
+        if 'Short' in camera:
+            # In the short camera configuration there are four good pinholes
+            # and one that's right on the edge of the slit and isn't consistently
+            # picked up. This setting stops it from being used in the orders it
+            # is found in since it produces a sketchy fit.
+            if params['debug_max_trace_pos'] is None:
+                params['debug_max_trace_pos'] = 4
+                self.log.debug("Setting debug_max_trace_pos to 4 for Short "
+                               "camera.")
+
+        elif 'Long' in camera:
+            # In the long camera configuration the 5th and 6th slits run off the
+            # side of the array, necessitating a start point much closer to the
+            # bottom instead of the default middle-of-the-array.
+            if params['start_pos'] is None:
+                params['start_pos'] = 150
+                self.log.fullinfo("Setting trace start location to row 150 for "
+                                  "Long camera.")
+
+        # Call the parent primitive with the new parameter values.
+        return super().tracePinholeApertures(adinputs=adinputs, **params)
+
+
+    def _get_order_information_key(self):
+        """
+        This function provides a key to the order-specific information needed
+        for updating the WCS when cutting out slits in XD data.
+
+        Returns
+        -------
+        tuple
+            A tuple of strings representing the attributes of the dict key for
+            information on the orders
+
+        """
+
+        return ('telescope', '_prism', 'decker', '_grating', 'camera')
