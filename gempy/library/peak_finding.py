@@ -130,7 +130,7 @@ def average_along_slit(ext, center=None, offset_from_center=None,
             n1 = center_pix + 1 - 0.5 * nsum
             n2 = center_pix + 1 + 0.5 * nsum
             nddata = NDAstroData(data[:, i], mask=mask[:, i],
-                                 variance=variance[:, i])
+                                 variance=None)
             data_out[i], mask_out[i], variance_out[i] = sum1d(nddata, n1, n2)
 
         # Divide by number of pixels summed to get the mean.
@@ -723,6 +723,10 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
             del peaks[i]
 
     #final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
+    #peak_snrs = at.divide0(np.interp(peaks, np.arange(len(variance)), wavelet_transformed_data[0]),
+    #                       np.sqrt(np.maximum(np.interp(peaks, np.arange(len(variance)), variance), 0)))
+    #final_peaks = np.asarray(peaks)[peak_snrs > min_snr]
+    #peak_snrs = peak_snrs[peak_snrs > min_snr]
     final_peaks = peaks
     peak_snrs = list(snr[int(p + 0.5)] for p in final_peaks)
 

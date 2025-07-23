@@ -649,5 +649,11 @@ def sum1d(ndd, x1, x2, proportional_variance=True):
         var = ((fx1 if proportional_variance else fx1*fx1)*ndd.variance[ix1] +
                ndd.variance[ix1:ix2].sum() +
                (fx2 if proportional_variance else fx2*fx2)*ndd.variance[ix2])
+    else:
+        # calculate_variance returns the uncertainty on the mean
+        var = NDStacker.calculate_variance(
+            ndd.data[ix1+1:ix2, np.newaxis],
+            mask=None if ndd.mask is None else ndd.mask[ix1+1:ix2, np.newaxis],
+            out_data=data/(x2-x1)) * (ix2 - ix1 - 1) ** 2
 
     return NDD(data, mask, var)
