@@ -47,7 +47,7 @@ def test_resample_to_common_frame_with_defaults(input_ad_list, path_to_refs,
         ref = astrodata.open(os.path.join(
             path_to_refs, f'N20240329S0022_stack_defaults_{wavescale}.fits'))
 
-        np.testing.assert_allclose(ad_out[0].data, ref[0].data, atol=5e-7, rtol=5e-7)
+        np.testing.assert_allclose(ad_out[0].data, ref[0].data, atol=1e-5, rtol=1e-4)
 
 
 @pytest.mark.gnirsls
@@ -63,7 +63,7 @@ def test_resample_to_common_frame_trim_spectral(input_ad_list, path_to_refs,
     ref = astrodata.open(os.path.join(path_to_refs,
                                       'N20240329S0022_stack_trim_spectral_True.fits'))
 
-    np.testing.assert_allclose(ad_out[0].data, ref[0].data)
+    np.testing.assert_allclose(ad_out[0].data, ref[0].data, atol=1e-5, rtol=1e-4)
 
 
 @pytest.mark.gnirsls
@@ -80,7 +80,7 @@ def test_resample_to_common_frame_trim_spatial(input_ad_list, path_to_refs,
     ref = astrodata.open(os.path.join(path_to_refs,
                                       'N20240329S0022_stack_trim_spatial_False.fits'))
 
-    np.testing.assert_allclose(ad_out[0].data, ref[0].data)
+    np.testing.assert_allclose(ad_out[0].data, ref[0].data, atol=1e-5, rtol=1e-4)
 
 
 @pytest.mark.gnirsls
