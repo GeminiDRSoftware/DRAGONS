@@ -114,7 +114,8 @@ def return_requested_units(input_units='nm'):
     asNanometers, asAngstroms. Should be replaced by a "units='nm'"
     parameter, but time is limited.
 
-    Returns as np.float32 values to avoid excessive precision
+    Returns Python `float` (or a list thereof) with the same number of digits
+    as np.float32, to avoid excessive precision.
     """
     def inner_decorator(fn):
         @wraps(fn)
@@ -138,9 +139,15 @@ def return_requested_units(input_units='nm'):
             if retval is None:
                 return retval
             if isinstance(retval, list):
-                return [None if v is None else np.float32((v * u.Unit(input_units)).to(output_units).value)
-                        for v in retval]
-            return np.float32((retval * u.Unit(input_units)).to(output_units).value)
+                return [
+                    None if v is None else float(str(np.float32(
+                        (v * u.Unit(input_units)).to(output_units).value
+                    )))
+                    for v in retval
+                ]
+            return float(str(np.float32(
+                (retval * u.Unit(input_units)).to(output_units).value
+            )))
         return gn
     return inner_decorator
 
