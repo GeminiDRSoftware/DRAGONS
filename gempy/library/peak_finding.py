@@ -130,7 +130,7 @@ def average_along_slit(ext, center=None, offset_from_center=None,
             n1 = center_pix + 1 - 0.5 * nsum
             n2 = center_pix + 1 + 0.5 * nsum
             nddata = NDAstroData(data[:, i], mask=mask[:, i],
-                                 variance=None)
+                                 variance=variance[:, i],)
             data_out[i], mask_out[i], variance_out[i] = sum1d(nddata, n1, n2)
 
         # Divide by number of pixels summed to get the mean.
@@ -691,6 +691,17 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     peaks = np.array(new_peaks)
     edge = 2.35482 * np.median(widths)
     peaks = peaks[np.logical_and(peaks > edge, peaks < len(data) - 1 - edge)]
+
+    for pp in peaks:
+        print(pp, snr[int(pp+0.5)])
+
+    from matplotlib import pyplot as plt
+    fig, ax = plt.subplots()
+    pixels = np.arange(data.size)[mask == 0]
+    ax.plot(pixels, data[mask == 0], 'bo')
+    ax.plot(wavelet_transformed_data[0], 'k-')
+    ax.plot(pixels, np.sqrt(variance[mask == 0]), 'r-')
+    plt.show()
 
     # Remove peaks very close to unilluminated/no-data pixels
     # (e.g., chip gaps in GMOS)

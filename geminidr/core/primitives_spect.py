@@ -1509,6 +1509,10 @@ class Spect(Resample):
                             viewer=self.viewer if debug else None,
                             min_line_length=0.1))
 
+                print("TRACES")
+                for trace in traces:
+                    print(trace.input_coordinates())
+
                 # List of traced peak positions
                 in_coords = np.array([coord for trace in traces for
                                       coord in trace.input_coordinates()]).T
