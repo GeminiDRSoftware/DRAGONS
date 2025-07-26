@@ -41,7 +41,8 @@ log = logutils.get_logger(__name__)
 
 @insert_descriptor_values("dispersion_axis")
 def average_along_slit(ext, center=None, offset_from_center=None,
-                       nsum=None, dispersion_axis=None, combiner="mean"):
+                       nsum=None, dispersion_axis=None, combiner="mean",
+                       use_variance=False):
     """
     Calculates the average along the slit and its pixel-by-pixel variance.
 
@@ -59,6 +60,8 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         Number of rows/columns to combine
     combiner : str
         Method to use for combining
+    use_variance : bool
+        use the VAR array to compute the output variance?
 
     Returns
     -------
@@ -100,8 +103,9 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         # of S/N than the VAR plane
         # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
         #  Use "variance=None" to make them pass again.
-        data, mask, variance = NDStacker.combine(data, mask=mask, variance=None,
-                                                 combiner=combiner)
+        data, mask, variance = NDStacker.combine(
+            data, mask=mask, variance=variance if use_variance else None,
+            combiner=combiner)
 
         return data, mask, variance, extract_slice
 
@@ -130,7 +134,7 @@ def average_along_slit(ext, center=None, offset_from_center=None,
             n1 = center_pix + 1 - 0.5 * nsum
             n2 = center_pix + 1 + 0.5 * nsum
             nddata = NDAstroData(data[:, i], mask=mask[:, i],
-                                 variance=variance[:, i],)
+                                 variance=variance[:, i] if use_variance else None)
             data_out[i], mask_out[i], variance_out[i] = sum1d(nddata, n1, n2)
 
         # Divide by number of pixels summed to get the mean.
@@ -671,9 +675,12 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     peaks = sorted([x[1][0] for x in filtered])
 
     # Estimate the SNR from the wavelet-transformed data to remove continuum
+    # Multiply by sqrt(2) to account for the fact that the wavelet has
+    # increased the width of a feature (and hence reduced its height) by
+    # approximately that factor.
     snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
-                    where=variance > 0)
+                    where=variance > 0) * np.sqrt(2)
 
     peaks = [x for x in peaks if snr[x] > min_snr]
 
@@ -691,17 +698,6 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     peaks = np.array(new_peaks)
     edge = 2.35482 * np.median(widths)
     peaks = peaks[np.logical_and(peaks > edge, peaks < len(data) - 1 - edge)]
-
-    for pp in peaks:
-        print(pp, snr[int(pp+0.5)])
-
-    from matplotlib import pyplot as plt
-    fig, ax = plt.subplots()
-    pixels = np.arange(data.size)[mask == 0]
-    ax.plot(pixels, data[mask == 0], 'bo')
-    ax.plot(wavelet_transformed_data[0], 'k-')
-    ax.plot(pixels, np.sqrt(variance[mask == 0]), 'r-')
-    plt.show()
 
     # Remove peaks very close to unilluminated/no-data pixels
     # (e.g., chip gaps in GMOS)
