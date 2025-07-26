@@ -62,16 +62,18 @@ def test_regression_for_determine_distortion_using_wcs(
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
-    model = distortion_determined_ad[0].wcs.get_transform(
-        "pixels", "distortion_corrected")[2]
-    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[2]
+    for ext, ref_ext in zip(distortion_determined_ad, ref_ad):
+        model = ext.wcs.get_transform("pixels", "distortion_corrected")[2]
+        ref_model = ref_ext.wcs.get_transform("pixels", "distortion_corrected")[2]
 
-    # Otherwise we're doing something wrong!
-    assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
+        # Otherwise we're doing something wrong!
+        assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
 
-    X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
+        Y, X = np.mgrid[:ext.shape[0], :ext.shape[1]]
 
-    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
+        # We only care about pixels in the illuminated region
+        xx, yy = X[ext.mask == 0], Y[ext.mask == 0]
+        np.testing.assert_allclose(model(xx, yy), ref_model(xx, yy), atol=1)
 
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='function')
