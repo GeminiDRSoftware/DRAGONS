@@ -20,12 +20,12 @@ from recipe_system.testing import ref_ad_factory
 fixed_parameters_for_determine_distortion = {
     "fwidth": None,
     "id_only": False,
-    "max_missed": 5,
+    "max_missed": 2,
     "max_shift": 0.05,
-    "min_snr": 5.,
+    "min_snr": 10.,
     "nsum": 10,
-    "spectral_order": 4,
-    "min_line_length": 0.,
+    "min_line_length": 0.6,
+    "spectral_order": 2,
     "debug_reject_bad": True
 }
 
