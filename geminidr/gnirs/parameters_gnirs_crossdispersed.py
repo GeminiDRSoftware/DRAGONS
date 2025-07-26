@@ -25,6 +25,7 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
                                int, None, min=0, optional=True)
     def setDefaults(self):
         self.min_snr = 10
+        self.spatial_order = 2
         self.debug_reject_bad = False
 
 
