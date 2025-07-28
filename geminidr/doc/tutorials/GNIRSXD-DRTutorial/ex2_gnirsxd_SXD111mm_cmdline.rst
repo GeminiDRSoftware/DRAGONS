@@ -1,21 +1,22 @@
-.. ex1_gnirsxd_SXD32mm_cmdline.rst
+.. ex2_gnirsxd_SXD111mm_cmdline.rst
 
 .. include:: symbols.txt
 
 .. _gnirsxd_SXD32mm_cmdline:
 
-*****************************************************************
-Example 1 - SXD+32 Point Source - Using the "reduce" command line
-*****************************************************************
+******************************************************************
+Example 2 - SXD+111 Point Source - Using the "reduce" command line
+******************************************************************
 
 In this example, we will reduce the GNIRS crossed-dispersed observation of
-a supernova type II 54 days after explosion using the "|reduce|" command that
+an erupting recurrent nova using the "|reduce|" command that
 is operated directly from the unix shell.  Just open a terminal and load the
 DRAGONS conda environment to get started.
 
-This cross-dispersed observation uses the 32 l/mm grating, the short-blue
-camera, and the 0.675 arcsec slit.   The dither pattern is the standard ABBA
-repeated 5 times.
+This cross-dispersed observation uses the 111 l/mm grating, the short-blue
+camera and the 0.3 arcsec slit.  The dither pattern is the standard ABBA, one
+set for each of the three central wavelength settings.  The results from the
+three wavelength settings will be stitched together at the end.
 
 The dataset
 ===========
@@ -29,18 +30,27 @@ The dataset specific to this example is described in:
 Here is a copy of the table for quick reference.
 
 +---------------------+----------------------------------------------+
-| Science             || N20170113S0146-165                          |
+| Science             || N20190928S0085-88  (1.55 |um|)              |
+|                     || N20190928S0090-93  (1.68 |um|)              |
+|                     || N20190928S0094-97  (1.81 |um|)              |
 +---------------------+----------------------------------------------+
-| Science flats       || N20170113S0168-183                          |
+| Science flats       || N20190928S0117-132 (1.55 |um|)              |
+|                     || N20190928S0135-150 (1.68 |um|)              |
+|                     || N20190928S0153-168 (1.81 |um|)              |
 +---------------------+----------------------------------------------+
-| Pinholes            || N20170113S0569-573                          |
+| Pinholes            || None available                              |
 +---------------------+----------------------------------------------+
-| Science arcs        || N20170113S0166-167                          |
+| Science arcs        || N20190928S0115-116 (1.55 |um|)              |
+|                     || N20190928S0133-134 (1.68 |um|)              |
+|                     || N20190928S0151-152 (1.81 |um|)              |
 +---------------------+----------------------------------------------+
-| Telluric            || N20170113S0123-138                          |
+| Telluric            || N20190928S0103-106 (1.55 |um|)              |
+|                     || N20190928S0107-110 (1.68 |um|)              |
+|                     || N20190928S0111-114 (1.81 |um|)              |
 +---------------------+----------------------------------------------+
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
+
 
 Configuring the interactive interface
 =====================================
@@ -87,52 +97,100 @@ First, navigate to the ``playground`` directory in the unpacked data package::
     cd <path>/gnirsxd_tutorial/playground
 
 
-A list for the flats
---------------------
+Three lists for the flats
+-------------------------
 The GNIRS XD flats are obtained using two different lamps to ensure that each
-order is illuminated at a sufficient level.  The software will stack each set and
-automatically assemble the orders into a new flat with all orders well
-illuminated.   You will use "|dataselect|" to select all the flats associated
-with our science observation.
+order is illuminated at a sufficient level.  The software will stack each set
+and automatically assemble the orders into a new flat with all orders well
+illuminated.
+
+The particularily of this dataset is that there are three central wavelength
+settings that each need to be reduced separately.
+
+You will use "|dataselect|" to select each set of flats associated with the
+configurations used for the science observations.
+
+But first, to see which central wavelengths have been used, run |showd| on
+the flats.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags FLAT -o flats.lis
+    dataselect ../playdata/example2/*.fits --tags FLAT | showd -d central_wavelength
+
+    -------------------------------------------------------------
+    filename                                   central_wavelength
+    -------------------------------------------------------------
+    ../playdata/example2/N20190928S0117.fits             1.55e-06
+    ../playdata/example2/N20190928S0118.fits             1.55e-06
+    ...
+    ../playdata/example2/N20190928S0135.fits             1.68e-06
+    ../playdata/example2/N20190928S0136.fits             1.68e-06
+    ...
+    ../playdata/example2/N20190928S0153.fits             1.81e-06
+    ../playdata/example2/N20190928S0154.fits             1.81e-06
+
+::
+
+    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6' -o flat155.lis
+    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.68e-6' -o flat168.lis
+    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.81e-6' -o flat181.lis
+
+Note that we have downloaded only the September data from that program.  If
+the October data were also in our raw data directory, we would have to add
+a date constraint to the expression, like this:
+
+    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6 and ut_date=="2019-09-28"' -o flatSep155.lis
+
 
 A list for the pinholes
 -----------------------
-The orders are significantly slanted and curved on the detector.  While the
-edges of the orders in the processed flat can be used to determine the
-position of each order, the pinholes observations lead to a more accurate
-model of the order positions.  The pinholes are taken in the same configuration
-as for the science.
+This program does not use a pinholes observation.
+
+The orders in the cross-dispersed raw data are significantly slanted and curved
+on the detector.  A pinhole would trace that curvature.
+
+However, the edges of the orders in the processed flat can be used to determine
+the position of each order, the pinholes observations simply lead to a more
+accurate model of the order positions and of the spatial distortion component.
+
+We do not have pinholes, therefore all steps related to pinholes, their creation
+and their usage will be skipped in this tutorial.
+
+If you had pinholes, you would select them like for the flats above using
+"PINHOLE" instead of "FLAT".
+
+
+Three lists for the arcs
+------------------------
+The GNIRS cross-dispersed arcs were obtained between the telluric and the
+science observation.  Often two are taken for each configuration.  If we
+decide to use both, they will be stacked.
+
+Here, like for the flats, we need to create a list for each of the three
+configurations.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --tags PINHOLE -o pinholes.lis
+    dataselect ../playdata/example2/*.fits --tags ARC --expr='central_wavelength==1.55e-6' -o arc155.lis
+    dataselect ../playdata/example2/*.fits --tags ARC --expr='central_wavelength==1.68e-6' -o arc168.lis
+    dataselect ../playdata/example2/*.fits --tags ARC --expr='central_wavelength==1.81e-6' -o arc181.lis
 
-A list for the arcs
--------------------
-The GNIRS cross-dispersed arcs were obtained at the end of the science
-observation.  Often two are taken.  If we decide to use both, they will be
-stacked.
 
-::
-
-    dataselect ../playdata/example1/*.fits --tags ARC -o arcs.lis
-
-A list for the telluric
------------------------
+Three lists for the telluric
+----------------------------
 DRAGONS does not recognize the telluric star as such.  This is because, at
 Gemini, the observations are taken like science data and the GNIRS headers do not
 explicitly state that the observation is a telluric standard.  In most cases,
 the ``observation_class`` descriptor can be used to differentiate the telluric
 from the science observations, along with the rejection of the ``CAL`` tag to
-reject flats and arcs.
+reject flats and arcs.  Telluric stars will be observed under the ``partnerCal``
+or ``progCal`` classes, the science observation under the ``science`` class.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --xtags=CAL --expr='observation_class=="partnerCal"' -o telluric.lis
+    dataselect ../playdata/example2/*.fits --xtags=CAL --expr='observation_class!="science" and central_wavelength==1.55e-6' -o tel155.lis
+    dataselect ../playdata/example2/*.fits --xtags=CAL --expr='observation_class!="science" and central_wavelength==1.68e-6' -o tel168.lis
+    dataselect ../playdata/example2/*.fits --xtags=CAL --expr='observation_class!="science" and central_wavelength==1.81e-6' -o tel181.lis
 
 
 A list for the science observations
@@ -140,41 +198,51 @@ A list for the science observations
 
 The science observations can be selected from the "observation class"
 ``science``.  This is how they are differentiated from the telluric
-standards which are most often set to ``partnerCal``.
+standards which are set to ``partnerCal`` or ``progCal``.
+
+We already know that we have multiple central_wavelength settings and that we
+will need a list of each.
 
 If we had multiple targets, we would need to split them into separate lists. To
 inspect what we have we can use |dataselect| and |showd| together.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --expr='observation_class=="science"' | showd -d object
+    dataselect ../playdata/example2/*.fits --expr='observation_class=="science"' | showd -d object,central_wavelength
 
-    --------------------------------------------------
-    filename                                    object
-    --------------------------------------------------
-    ../playdata/example1/N20170113S0146.fits   DLT16am
-    ../playdata/example1/N20170113S0147.fits   DLT16am
-    ../playdata/example1/N20170113S0148.fits   DLT16am
-    ...
-    ../playdata/example1/N20170113S0163.fits   DLT16am
-    ../playdata/example1/N20170113S0164.fits   DLT16am
-    ../playdata/example1/N20170113S0165.fits   DLT16am
+    -------------------------------------------------------------------------
+    filename                                      object   central_wavelength
+    -------------------------------------------------------------------------
+    ../playdata/example2/N20190928S0085.fits   V3890 Sgr             1.55e-06
+    ../playdata/example2/N20190928S0086.fits   V3890 Sgr             1.55e-06
+    ../playdata/example2/N20190928S0087.fits   V3890 Sgr             1.55e-06
+    ../playdata/example2/N20190928S0088.fits   V3890 Sgr             1.55e-06
+    ../playdata/example2/N20190928S0090.fits   V3890 Sgr             1.68e-06
+    ../playdata/example2/N20190928S0091.fits   V3890 Sgr             1.68e-06
+    ../playdata/example2/N20190928S0092.fits   V3890 Sgr             1.68e-06
+    ../playdata/example2/N20190928S0093.fits   V3890 Sgr             1.68e-06
+    ../playdata/example2/N20190928S0094.fits   V3890 Sgr             1.81e-06
+    ../playdata/example2/N20190928S0095.fits   V3890 Sgr             1.81e-06
+    ../playdata/example2/N20190928S0096.fits   V3890 Sgr             1.81e-06
+    ../playdata/example2/N20190928S0097.fits   V3890 Sgr             1.81e-06
 
 Here we only have one object from the same sequence.  If we had multiple
 objects we could add the object name in the expression.
 
 ::
 
-    dataselect ../playdata/example1/*.fits --expr='observation_class=="science" and object=="DLT16am"' -o sci.lis
+    dataselect ../playdata/example2/*.fits --expr='observation_class=="science" and central_wavelength==1.55e-6 and object=="V3890 Sgr"' -o sci155.lis
+    dataselect ../playdata/example2/*.fits --expr='observation_class=="science" and central_wavelength==1.68e-6 and object=="V3890 Sgr"' -o sci168.lis
+    dataselect ../playdata/example2/*.fits --expr='observation_class=="science" and central_wavelength==1.81e-6 and object=="V3890 Sgr"' -o sci181.lis
 
 
 Bad Pixel Mask
 ==============
-The bad pixel masks (BPMs) are handled as
-calibrations.  They are downloadable from the archive instead of being
-packaged with the software. They are automatically associated like any other
-calibrations.  This means that the user now must download the BPMs along with
-the other calibrations and add the BPMs to the local calibration manager.
+The bad pixel masks (BPMs) are handled as calibrations.  They are downloadable
+from the archive instead of being packaged with the software. They are
+automatically associated like any other calibrations.  This means that the
+user now must download the BPMs along with the other calibrations and add the
+BPMs to the local calibration manager.
 
 See :ref:`getBPM` in :ref:`tips_and_tricks` to learn about the various ways
 to get the BPMs from the archive.
@@ -184,14 +252,14 @@ database:
 
 ::
 
-    caldb add ../playdata/example1/bpm*.fits
+    caldb add ../playdata/example2/bpm*.fits
+
 
 Master Flat Field
 =================
 GNIRS XD flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.  The
-processed flat is constructed from two sets of stacked lamp-on flats, each
-illuminated
+processed flat is constructed from two sets of stacked lamp-on flats, each illuminated
 differently to ensure that all orders in the reassembled flat are well
 illuminated.  You do not have to worry about the details, as long as you
 pass the two sets of raw flats as input to the ``reduce`` command, the software will take
@@ -200,9 +268,13 @@ care of the assembly.
 The processed flat will also contain the illumination mask that identify the location
 of the illuminated areas in the array, ie, where the orders are located.
 
+Each central wavelength settings must be reduced separately.
+
 ::
 
-    reduce @flats.lis
+    reduce @flat155.lis
+    reduce @flat168.lis
+    reduce @flat181.lis
 
 GNIRS data are affected by a "odd-even" effect where alternate rows in the
 GNIRS science array have gains that differ by approximately 10 percent.  When

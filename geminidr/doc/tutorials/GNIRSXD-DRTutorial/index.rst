@@ -21,6 +21,7 @@ Tutorial Series - GNIRS Cross-dispersed Data Reduction with DRAGONS
    .. datasets
    .. cal_service
    ex1_gnirsxd_SXD32mm
+   ex2_gnirsxd_SXD111mm
    .. gnirsxd_wavecal_guide
    tips_and_tricks
    .. issues_and_limitations
