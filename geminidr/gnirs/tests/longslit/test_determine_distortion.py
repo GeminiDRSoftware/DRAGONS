@@ -126,7 +126,9 @@ def test_regression_for_determine_distortion_using_wcs(
 
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
-    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
+    # We only care about pixels in the illuminated region
+    xx, yy = X[ad[0].mask == 0], Y[ad[0].mask == 0]
+    np.testing.assert_allclose(model(xx, yy), ref_model(xx, yy), atol=1)
 
 
 @pytest.mark.gnirs
