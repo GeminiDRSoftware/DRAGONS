@@ -55,7 +55,7 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                              '_grating', 'camera')
             mdf_key = "_".join(getattr(ad, desc)()
                                for desc in mdf_key_parts)
-            x_ccd, y_ccd, length_pix = get_slit_info(mdf_key, ad.central_wavelength())
+            x_ccd, y_ccd, length_pix = get_slit_info(mdf_key, ad.central_wavelength(), ad._grating_order())
             mdf_table = Table([range(1, len(x_ccd) + 1), x_ccd], names=['slit_id', 'x_ccd'])
             mdf_table['y_ccd'] = y_ccd
             mdf_table['specorder'] = mdf_table['slit_id'] + 2
