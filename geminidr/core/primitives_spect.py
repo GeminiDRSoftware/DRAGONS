@@ -1524,6 +1524,21 @@ class Spect(Resample):
                 ref_coords = np.array([coord for trace in traces for
                                        coord in trace.reference_coordinates()]).T
 
+                # If the frame has a rectification model, then we want to
+                # calculate the distortion transform *after* applying this
+                # model. This is important because, if we only have one line
+                # from which to determine the distortion, the model will only
+                # be a function of X and so we need a vertical spectrum.
+                try:
+                    rect_model = ext.wcs.get_transform(ext.wcs.input_frame,
+                                                       "rectified")
+                except CoordinateFrameError:
+                    has_rect_model = False
+                else:
+                    has_rect_model = True
+                    in_coords = rect_model(*in_coords)
+                    ref_coords = rect_model(*ref_coords)
+
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
@@ -1562,6 +1577,9 @@ class Spect(Resample):
                 if ext.wcs is None:
                     ext.wcs = gWCS([(cf.Frame2D(name="pixels"), model),
                                     (cf.Frame2D(name="world"), None)])
+                elif has_rect_model:
+                    ext.wcs.insert_frame("rectified", model,
+                                         cf.Frame2D(name="distortion_corrected"))
                 else:
                     ext.wcs.insert_frame(ext.wcs.input_frame, model,
                                          cf.Frame2D(name="distortion_corrected"))
@@ -5023,13 +5041,19 @@ class Spect(Resample):
                     # Distortion model is the transform immediately before the
                     # "distortion_corrected" frame, regardless of anything else
                     frame_index = wcs2.available_frames.index('distortion_corrected')
-                    m_distcorr = wcs2.pipeline[frame_index - 1].transform
-                    distortion_models.append(m_distcorr)
+                    distortion_models.append(wcs2.pipeline[frame_index - 1])
 
             if not fail:
-                for ext, dist in zip(ad1, distortion_models):
-                    ext.wcs.insert_frame(ext.wcs.input_frame, dist,
-                                         cf.Frame2D(name="distortion_corrected"))
+                for ext, (previous_frame, m_distcorr) in zip(ad1, distortion_models):
+                    try:
+                        ext.wcs.insert_frame(previous_frame.name, m_distcorr,
+                                             cf.Frame2D(name="distortion_corrected"))
+                    except ValueError:
+                        raise ValueError(
+                            "Input distortion model corrects from "
+                            f"{previous_frame.name} but this frame does not "
+                            f"exist in {ad1.filename}:{ext.id} WCS."
+                        )
                 ad1.update_filename(suffix=suffix, strip=True)
 
         return adinputs
