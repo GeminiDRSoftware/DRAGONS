@@ -11,7 +11,7 @@
 # definitions based on a key generated from the 'telescope', '_prism', 'decker',
 # '_grating', and 'camera' attributes of a file.
 
-def get_slit_info(key, central_wavelength=None):
+def get_slit_info(key, central_wavelength=None, grating_order=None):
     """
     Returns the slit information for GNIRS cross-dispersed data.
 
@@ -21,13 +21,13 @@ def get_slit_info(key, central_wavelength=None):
         A tuple containing slit information: x_ccd, y_ccd, and width_pixels.
     """
     if callable(slit_info[key]):
-        info = slit_info[key](central_wavelength)
+        info = slit_info[key](central_wavelength, grating_order)
     else:
         info = slit_info[key]
 
     return info
 
-def _gem_north_lxd_lcxd_111_longblue(central_wavelength):
+def _gem_north_lxd_lcxd_111_longblue(central_wavelength, grating_order):
     """
     Returns slit information for the Gemini North Long camera, 111 l/mm grating,
     LXD configuration.
@@ -36,7 +36,8 @@ def _gem_north_lxd_lcxd_111_longblue(central_wavelength):
     ----------
     central_wavelength : float
         The central wavelength in nm to determine the slit positions.
-
+    grating_order: int
+        The grating order for which the central wavelength is provided.
     Returns
     -------
     tuple
@@ -45,7 +46,8 @@ def _gem_north_lxd_lcxd_111_longblue(central_wavelength):
     if central_wavelength is None:
         raise ValueError("central_wavelength must be provided for this configuration.")
     central_wavelength *= 1.e6  # Convert from meters to um (descriptor default)
-
+    # Calculate central_wavelength for order 3:
+    central_wavelength_ord3 = central_wavelength * grating_order / 3.0
     # x position calculation based on central wavelength
     solutions = {
         # order: (slope, constant)  1 degree polynomial
@@ -60,7 +62,7 @@ def _gem_north_lxd_lcxd_111_longblue(central_wavelength):
     x_ccd = []
     for solution in solutions:
         slope, constant = solutions[solution]
-        x_ccd.append(slope * central_wavelength + constant)
+        x_ccd.append(slope * central_wavelength_ord3 + constant)
 
     x_ccd = tuple(x_ccd)
     y_ccd = 512
@@ -89,6 +91,12 @@ slit_info = {
 # North, Short, 32 l/mm, LXD
 # North, Short, 111 l/mm, SXD
 'Gemini-North_SXD_G5536_SCXD_G5531_111/mm_G5534_ShortBlue_G5540': (
+    (275, 389, 466, 534, 607, 685),     # x_ccd
+    175,     # y_ccd
+    47            # width_pixels
+    ),
+    # North, Short, 111 l/mm, SXD
+'Gemini-North_SXD_G5536_SCXD_G5531_111/mm_G5534_ShortBlue_G5538': (
     (275, 389, 466, 534, 607, 685),     # x_ccd
     175,     # y_ccd
     47            # width_pixels
