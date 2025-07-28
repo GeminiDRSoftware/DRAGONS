@@ -7,7 +7,6 @@ import astrodata, gemini_instruments
 from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 from geminidr.gnirs.tests.crossdispersed import CREATED_INPUTS_PATH_FOR_TESTS
 
-@pytest.mark.skip("work in progress")
 @pytest.mark.gnirsxd
 @pytest.mark.wavecal
 @pytest.mark.preprocessed_data
@@ -250,6 +249,7 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.skip("work in progress")
 @pytest.mark.gnirsls
 @pytest.mark.wavecal
 @pytest.mark.preprocessed_data
