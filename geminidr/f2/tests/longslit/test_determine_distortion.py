@@ -33,7 +33,7 @@ fixed_parameters_for_determine_distortion = {
     "id_only": False,
     "max_missed": None,
     "max_shift": 0.05,
-    "min_snr": 7.,
+    "min_snr": 10.,
     "nsum": 10,
     "spatial_order": 3,
     "spectral_order": 3,
