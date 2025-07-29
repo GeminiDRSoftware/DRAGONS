@@ -1577,12 +1577,26 @@ class Spect(Resample):
                 if ext.wcs is None:
                     ext.wcs = gWCS([(cf.Frame2D(name="pixels"), model),
                                     (cf.Frame2D(name="world"), None)])
-                elif has_rect_model:
-                    ext.wcs.insert_frame("rectified", model,
-                                         cf.Frame2D(name="distortion_corrected"))
                 else:
-                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
-                                         cf.Frame2D(name="distortion_corrected"))
+                    try:
+                        frame_index = ext.wcs.available_frames.index("distortion_corrected")
+                    except ValueError:
+                        pass
+                    else:
+                        log.warning("Deleting existing distortion model in "
+                                    f"{ad.filename}:{ext.id}")
+                        ext.wcs = ext.wcs.__class__(
+                            ext.wcs.pipeline[:frame_index-1] +
+                            [(ext.wcs.pipeline[frame_index-1].frame,
+                              ext.wcs.pipeline[frame_index].transform)] +
+                            ext.wcs.pipeline[frame_index+1:]
+                        )
+                    if has_rect_model:
+                        ext.wcs.insert_frame("rectified", model,
+                                             cf.Frame2D(name="distortion_corrected"))
+                    else:
+                        ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                             cf.Frame2D(name="distortion_corrected"))
 
                 nsuccess += 1
 
