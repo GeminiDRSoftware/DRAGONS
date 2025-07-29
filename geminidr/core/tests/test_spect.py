@@ -795,7 +795,7 @@ def test_transfer_distortion_model(change_working_dir, path_to_inputs, path_to_r
     ad_no_dist_model = astrodata.open(os.path.join(path_to_inputs, 'N20121221S0199_wavelengthSolutionDetermined.fits'))
     ad_with_dist_model = astrodata.open(os.path.join(path_to_inputs, 'N20121221S0199_wavelengthSolutionAttached.fits'))
     p = primitives_gnirs_longslit.GNIRSLongslit([ad_no_dist_model])
-    p.streams["with_distortion_model"] = ad_with_dist_model
+    p.streams["with_distortion_model"] = [ad_with_dist_model]
     ad_with_dist_model_transferred = p.transferDistortionModel(source="with_distortion_model")
     p.writeOutputs()
     with change_working_dir(path_to_refs):

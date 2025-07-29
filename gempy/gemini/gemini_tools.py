@@ -254,12 +254,9 @@ def attach_rectification_model(target, source, log=None):
             rect_frame_index = ext_t.wcs.available_frames.index('rectified')
         except ValueError:
             # Where to put this transform? On the basis of what we have so far
-            # (LS and XD), it seems like it should be after the last frame
-            # which has a regular 2D pixel frame, so find that.
-            last_pixel_frame = max([i for i, step in enumerate(ext_t.wcs.pipeline)
-                                    if set(step.frame.unit) == {u.pix}])
-            ext_t.wcs.insert_frame(ext_t.wcs.available_frames[last_pixel_frame],
-                                   new_transform, cf.Frame2D(name='rectified'))
+            # (LS and XD), it seems like it should be the first transform.
+            ext_t.wcs.insert_frame(ext_t.wcs.input_frame, new_transform,
+                                   cf.Frame2D(name='rectified'))
         else:
             ext_t.wcs.set_transform(
                 ext_t.wcs.available_frames[rect_frame_index-1], 'rectified',

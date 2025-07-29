@@ -4982,7 +4982,7 @@ class Spect(Resample):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         if source not in self.streams.keys():
-            log.info(f"Stream {source} does not exist so nothing to transfer")
+            log.warning(f"Stream {source} does not exist so nothing to transfer")
             return adinputs
 
         source_length = len(self.streams[source])
@@ -5049,12 +5049,9 @@ class Spect(Resample):
                         ext.wcs.insert_frame(previous_frame.name, m_distcorr,
                                              cf.Frame2D(name="distortion_corrected"))
                     except ValueError:
-                        raise ValueError(
-                            "Input distortion model corrects from "
-                            f"{previous_frame.name} but this frame does not "
-                            f"exist in {ad1.filename}:{ext.id} WCS."
-                        )
-                ad1.update_filename(suffix=suffix, strip=True)
+                        ext.wcs.insert_frame(ext.wcs.input_frame, m_distcorr,
+                                             cf.Frame2D(name="distortion_corrected"))
+                        ad1.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
