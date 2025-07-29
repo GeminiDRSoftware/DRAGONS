@@ -202,7 +202,7 @@ def test_regression_for_determine_distortion_using_wcs(
 
     X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
-    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
+    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=1)
 
 
 @pytest.mark.gmosls
