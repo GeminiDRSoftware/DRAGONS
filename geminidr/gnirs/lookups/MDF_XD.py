@@ -27,6 +27,51 @@ def get_slit_info(key, central_wavelength=None, grating_order=None):
 
     return info
 
+def _dynamic_x_ccd(solutions, central_wavelength, grating_order):
+    """
+    Returns x position information for GNIRS XD orders, given a central
+    wavelength and grating order.  The specific dynamic solution for the
+    configuration needs to be provided.
+
+
+    Parameters
+    ----------
+    solutions: dict
+        1 degree polynomial solution for each order.  Eg:
+        solutions = {
+            # order: (slope, constant)  1 degree polynomial
+            'order3': (-203.125, 806.54),
+            'order4': (-156.250, 814.42),
+            'order5': (-162.500, 905.83),
+            'order6': (-196.875, 1053.79),
+            'order7': (-250.000, 1245.67),
+            'order8': (-318.750, 1480.58),
+        }
+    central_wavelength : float
+        The central wavelength in nm to determine the slit positions.  As
+        returned by the descriptor, default units (nm).
+    grating_order: int
+        The grating order for which the central wavelength is provided.
+    Returns
+    -------
+    list
+        A list containing x_ccd.
+    """
+
+    if central_wavelength is None:
+        raise ValueError("central_wavelength must be provided for this configuration.")
+    central_wavelength *= 1.e6  # Convert from meters to um (descriptor default)
+    # Calculate central_wavelength for order 3:
+    central_wavelength_ord3 = central_wavelength * grating_order / 3.0
+
+    x_ccd = []
+    for solution in solutions:
+        slope, constant = solutions[solution]
+        x_ccd.append(slope * central_wavelength_ord3 + constant)
+
+    return x_ccd
+
+
 def _gem_north_sxd_scxd_111_shortblue_5538(central_wavelength, grating_order):
     """
     Returns slit information for the Gemini North ShortBlue camera, 111 l/mm grating,
@@ -43,12 +88,7 @@ def _gem_north_sxd_scxd_111_shortblue_5538(central_wavelength, grating_order):
     tuple
         A tuple containing x_ccd, y_ccd, and width_pixels.
     """
-    if central_wavelength is None:
-        raise ValueError("central_wavelength must be provided for this configuration.")
-    central_wavelength *= 1.e6  # Convert from meters to um (descriptor default)
-    # Calculate central_wavelength for order 3:
-    central_wavelength_ord3 = central_wavelength * grating_order / 3.0
-    # x position calculation based on central wavelength
+
     solutions = {
         # order: (slope, constant)  1 degree polynomial
         'order3': (-203.125, 806.54),
@@ -58,12 +98,8 @@ def _gem_north_sxd_scxd_111_shortblue_5538(central_wavelength, grating_order):
         'order7': (-250.000, 1245.67),
         'order8': (-318.750, 1480.58),
     }
-    x_ccd = []
-    for solution in solutions:
-        slope, constant = solutions[solution]
-        x_ccd.append(slope * central_wavelength_ord3 + constant)
 
-    x_ccd = tuple(x_ccd)
+    x_ccd = tuple(_dynamic_x_ccd(solutions, central_wavelength, grating_order))
     y_ccd = 512
     width_pixels = 47
 
@@ -86,12 +122,7 @@ def _gem_north_lxd_lcxd_111_longblue(central_wavelength, grating_order):
     tuple
         A tuple containing x_ccd, y_ccd, and width_pixels.
     """
-    if central_wavelength is None:
-        raise ValueError("central_wavelength must be provided for this configuration.")
-    central_wavelength *= 1.e6  # Convert from meters to um (descriptor default)
-    # Calculate central_wavelength for order 3:
-    central_wavelength_ord3 = central_wavelength * grating_order / 3.0
-    # x position calculation based on central wavelength
+
     solutions = {
         # order: (slope, constant)  1 degree polynomial
         'order3': (-387.148, 1021.51),
@@ -102,12 +133,8 @@ def _gem_north_lxd_lcxd_111_longblue(central_wavelength, grating_order):
         # order 8 is hardly visible in the flats. Also can fall off the
         # detector at some wavelength settings.
     }
-    x_ccd = []
-    for solution in solutions:
-        slope, constant = solutions[solution]
-        x_ccd.append(slope * central_wavelength_ord3 + constant)
 
-    x_ccd = tuple(x_ccd)
+    x_ccd = tuple(_dynamic_x_ccd(solutions, central_wavelength, grating_order))
     y_ccd = 512
     width_pixels = 100
 
