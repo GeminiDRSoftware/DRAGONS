@@ -276,46 +276,34 @@ Each central wavelength settings must be reduced separately.
     reduce @flat168.lis
     reduce @flat181.lis
 
-GNIRS data are affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
-
-In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  You can inspect each
-order by selecting the tabs above the plot.
-
-Note that you are not required to run in interactive mode, but you might want
-to if flat fielding is critical to your program.
+It might be useful to run the flat reduction in interactive mode.
 
 ::
 
-    reduce @flats.lis -p interactive=True
+    reduce @flat155.lis -p interactive=True
+    reduce @flat168.lis -p interactive=True
+    reduce @flat181.lis -p interactive=True
 
 The interactive tools are introduced in section :ref:`interactive`.
 
-.. image:: _graphics/gnirsxd_evenoddflat.png
+.. image:: _graphics/gnirsxd_???.png
    :width: 600
-   :alt: Even-odd effect in flats
+   :alt: ???
 
 
-Processed Pinholes - Distortion Correction
-==========================================
-The pinholes are used to determine the distortion correction.  They will be
-used to rectify the slanted and curved orders on the detector.
+Processed Pinholes - Rectification
+==================================
+The pinholes are used to determine the rectification of the slanted and  curved
+orders.
 
-A pinhole observation looks like this:
+This program does not have pinholes associated with it.  It is okay, the
+edges of the orders have been traced when the flats were reduced.  This
+can be used for the rectification.  The spatial axis is not as well sampled
+but depending on the science using just the edges from the flat can be
+sufficient.
 
-.. image:: _graphics/gnirsxd_SXD32mm_pinhole.png
-   :width: 400
-   :alt: Pinhole observation
-
-The distortion model is calculated by tracing the dispersed image of each
-pinhole in each order.
-
-::
-
-    reduce @pinholes.lis
+If you had pinhole observation, just like the flats they would need to be
+reduced each configuration separately (eg. `reduce @pinhole155.lis`)
 
 
 Processed Arc - Wavelength Solution
@@ -324,9 +312,34 @@ Obtaining the wavelength solution for GNIRS cross-dispersed data can be a
 complicated topic.  The quality of the results and what to use depend greatly
 on the wavelength regime and the grating.
 
-Our configuration in this example is cross-dispersed with short-blue camera
-and the 32 l/mm grating.  This configuration generally has a sufficient number
-of lines available in all the orders.
+.. important::
+     Do pay great attention to the wavelength calibration. It is critical
+     to the telluric modelling.  It can be particularly challenging with the
+     111 l/mm grating given the limited wavelength range each order covers.
+
+Our configurations in this example is cross-dispersed with short-blue camera,
+the SXD prism, and the 111 l/mm grating.  With this grating, each order covers
+only a short waveelength range.  Some orders will not contain a sufficient
+number of lines from the arc lamp.  In some cases, we will have to use the
+sky emission lines, or even the telluric absorption features to get an
+accurate enough wavelength solution for an order.
+
+With the 111 l/mm grating, we are likely to end up measuring the wavelength
+solution using multiple techniques and then piecing together solutions into
+one master arc that contains solutions from different techniques.
+
+This is what we will doing here.  We will try to get the most precise
+wavelength solution for each order.  This can be critical to the telluric
+modelling.
+
+KL:  how is it for each cwave?  What the wave range of each order at each
+   cwave?  I'd like to be able to say, range is blah -> this technique.
+
+   Are all cwave in this dataset hyper sensitive to wavecal when it gets to
+   telluric?
+
+
+
 
 .. todo::  TBD whether we need a wavecal guide. (See :ref:`gnirsls_wavecal_guide`.)
 

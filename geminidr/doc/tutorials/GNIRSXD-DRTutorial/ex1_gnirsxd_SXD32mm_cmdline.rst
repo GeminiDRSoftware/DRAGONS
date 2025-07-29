@@ -227,18 +227,16 @@ The interactive tools are introduced in section :ref:`interactive`.
    :alt: Even-odd effect in flats
 
 
-Processed Pinholes - Distortion Correction
-==========================================
-The pinholes are used to determine the distortion correction.  They will be
-used to rectify the slanted and curved orders on the detector.
-
-A pinhole observation looks like this:
+Processed Pinholes - Rectification
+==================================
+The pinholes are used to determine the rectification of the slanted and  curved
+orders. A pinhole observation looks like this:
 
 .. image:: _graphics/gnirsxd_SXD32mm_pinhole.png
    :width: 400
    :alt: Pinhole observation
 
-The distortion model is calculated by tracing the dispersed image of each
+The rectification model is calculated by tracing the dispersed image of each
 pinhole in each order.
 
 ::
