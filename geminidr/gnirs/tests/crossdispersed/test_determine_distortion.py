@@ -25,7 +25,6 @@ fixed_parameters_for_determine_distortion = {
     "min_snr": 10.,
     "nsum": 10,
     "min_line_length": 0.6,
-    "spectral_order": 2,
     "debug_reject_bad": True
 }
 
