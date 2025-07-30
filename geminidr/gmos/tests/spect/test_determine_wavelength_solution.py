@@ -98,7 +98,7 @@ input_pars = [
     ("N20100427S1274_mosaic.fits", dict()),  # R600:0.475 EEV
     ("N20100427S1276_mosaic.fits", dict()),  # R600:0.675 EEV
     ("N20120615S0512_mosaic.fits", dict()),  # R600:0.750 e2v
-    ("N20120615S0513_mosaic.fits", dict()),  # R600:0.950 e2v
+    ("N20120615S0513_mosaic.fits", dict(min_snr=12)),  # R600:0.950 e2v
     ("N20180120S0417_mosaic.fits", dict()),  # R600:0.865 HAM
     # actually closer to 833nm, so use "alternative_centers"
     ("N20180516S0214_mosaic.fits", dict(debug_alternative_centers=True)),  # R600:0.860 HAM
