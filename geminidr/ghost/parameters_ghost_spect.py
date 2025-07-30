@@ -52,7 +52,7 @@ class determineWavelengthSolutionConfig(config.Config):
     flat = config.ListField("Flat field", (str, ad), None,
                             optional=True, single=True)
     min_snr = config.RangeField("Minimum S/N for peak detection",
-                                float, 20, min=10)
+                                float, 25, min=10)
     sigma = config.RangeField("Number of standard deviations for rejecting lines",
                               float, 3, min=1)
     max_iters = config.RangeField("Maximum number of iterations", int, 1, min=1)

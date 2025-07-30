@@ -675,12 +675,13 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     peaks = sorted([x[1][0] for x in filtered])
 
     # Estimate the SNR from the wavelet-transformed data to remove continuum
-    # Multiply by sqrt(2) to account for the fact that the wavelet has
+    # Multiply by 1.25 to account for the fact that the wavelet has
     # increased the width of a feature (and hence reduced its height) by
-    # approximately that factor.
+    # approximately that factor (since the narrowest Ricker filter has 3/4
+    # the width and 1.0^ + 0.75^2 = 1.25^2).
     snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
-                    where=variance > 0) * np.sqrt(2)
+                    where=variance > 0) * 1.25
 
     peaks = [x for x in peaks if snr[x] > min_snr]
 
