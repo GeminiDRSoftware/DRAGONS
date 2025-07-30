@@ -87,7 +87,6 @@ associated_calibrations = {
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.gnirsls
 @pytest.mark.preprocessed_data
-@pytest.mark.regression
 @pytest.mark.parametrize("ad,params", input_pars, indirect=['ad'])
 def test_regression_for_determine_distortion_using_wcs(
         ad, params, change_working_dir, ref_ad_factory):
@@ -159,8 +158,9 @@ def test_fitcoord_table_and_gwcs_match(ad, params, change_working_dir):
                                          **params})
         distortion_determined_ad = p.writeOutputs().pop()
 
-    model = distortion_determined_ad[0].wcs.get_transform(
-        "pixels", "distortion_corrected")
+    model = distortion_determined_ad[0].wcs.pipeline[
+        distortion_determined_ad[0].wcs.available_frames.index(
+            "distortion_corrected")-1].transform
 
     fitcoord = distortion_determined_ad[0].FITCOORD
     fitcoord_model = am.table_to_model(fitcoord[0])

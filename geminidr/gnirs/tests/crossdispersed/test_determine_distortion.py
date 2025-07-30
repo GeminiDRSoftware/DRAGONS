@@ -51,7 +51,6 @@ input_pars = [
 # Tests -----------------------------------------------------------------------
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
-@pytest.mark.regression
 @pytest.mark.parametrize("ad,params", input_pars, indirect=['ad'])
 def test_regression_for_determine_distortion_using_wcs(
         ad, params, change_working_dir, ref_ad_factory):
