@@ -61,21 +61,25 @@ def test_regression_for_determine_distortion_using_wcs(
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
     for ext, ref_ext in zip(distortion_determined_ad, ref_ad):
-        model = ext.wcs.pipeline[
-            ext.wcs.available_frames.index(
-                "distortion_corrected") - 1].transform[2]
-        ref_model = ref_ext.wcs.pipeline[
-            ref_ext.wcs.available_frames.index(
-                "distortion_corrected") - 1].transform[2]
+        # Confirm that the distortion model is placed after the rectification model
+        assert (ext.wcs.avilable_frames.index("distortion_corrected") >
+                ext.wcs.avilable_frames.index("rectified"))
+        assert (ref_ext.wcs.avilable_frames.index("distortion_corrected") >
+                ref_ext.wcs.avilable_frames.index("rectified"))
+
+        model = ext.wcs.get_transform("pixels", "distortion_corrected")
+        ref_model = ref_ext.wcs.get_transform("pixels", "distortion_corrected")
 
         # Otherwise we're doing something wrong!
-        assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
+        assert model[-1].__class__.__name__ == ref_model[-1].__class__.__name__ == "Chebyshev2D"
 
         Y, X = np.mgrid[:ext.shape[0], :ext.shape[1]]
 
         # We only care about pixels in the illuminated region
         xx, yy = X[ext.mask == 0], Y[ext.mask == 0]
-        np.testing.assert_allclose(model(xx, yy), ref_model(xx, yy), atol=1)
+        diffs = model(xx, yy)[1] - ref_model(xx, yy)[1]  # 1 is y-axis in astropy
+        np.testing.assert_allclose(diffs, 0, atol=1)
+
 
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='function')

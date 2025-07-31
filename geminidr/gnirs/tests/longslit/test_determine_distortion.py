@@ -115,22 +115,25 @@ def test_regression_for_determine_distortion_using_wcs(
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
-    model = distortion_determined_ad[0].wcs.pipeline[
-        distortion_determined_ad[0].wcs.available_frames.index(
-            "distortion_corrected")-1].transform[2]
-    ref_model = ref_ad[0].wcs.pipeline[
-        ref_ad[0].wcs.available_frames.index(
-            "distortion_corrected")-1].transform[2]
-    # do_plots(ad, ref_ad)
+
+    # Confirm that the distortion model is placed after the rectification model
+    assert (distortion_determined_ad.wcs.avilable_frames.index("distortion_corrected") >
+            distortion_determined_ad.wcs.avilable_frames.index("rectified"))
+    assert (ref_ad.wcs.avilable_frames.index("distortion_corrected") >
+            ref_ad.wcs.avilable_frames.index("rectified"))
+
+    model = distortion_determined_ad[0].wcs.get_transform("pixels", "distortion_corrected")
+    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")
 
     # Otherwise we're doing something wrong!
-    assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
+    assert model[-1].__class__.__name__ == ref_model[-1].__class__.__name__ == "Chebyshev2D"
 
-    X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
+    Y, X = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
     # We only care about pixels in the illuminated region
     xx, yy = X[ad[0].mask == 0], Y[ad[0].mask == 0]
-    np.testing.assert_allclose(model(xx, yy), ref_model(xx, yy), atol=1)
+    diffs = model(xx, yy)[1] - ref_model(xx, yy)[1]  # 1 is y-axis in astropy
+    np.testing.assert_allclose(diffs, 0, atol=1)
 
 
 @pytest.mark.gnirs
