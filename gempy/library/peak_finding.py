@@ -681,7 +681,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # the width and 1.0^ + 0.75^2 = 1.25^2).
     snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
                     out=np.zeros_like(data, dtype=np.float32),
-                    where=variance > 0) * 1.25
+                    where=variance > 0) * np.sqrt(2)
 
     peaks = [x for x in peaks if snr[x] > min_snr]
 
