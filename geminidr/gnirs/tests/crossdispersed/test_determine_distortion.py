@@ -62,10 +62,10 @@ def test_regression_for_determine_distortion_using_wcs(
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
     for ext, ref_ext in zip(distortion_determined_ad, ref_ad):
         # Confirm that the distortion model is placed after the rectification model
-        assert (ext.wcs.avilable_frames.index("distortion_corrected") >
-                ext.wcs.avilable_frames.index("rectified"))
-        assert (ref_ext.wcs.avilable_frames.index("distortion_corrected") >
-                ref_ext.wcs.avilable_frames.index("rectified"))
+        assert (ext.wcs.available_frames.index("distortion_corrected") >
+                ext.wcs.available_frames.index("rectified"))
+        assert (ref_ext.wcs.available_frames.index("distortion_corrected") >
+                ref_ext.wcs.available_frames.index("rectified"))
 
         model = ext.wcs.get_transform("pixels", "distortion_corrected")
         ref_model = ref_ext.wcs.get_transform("pixels", "distortion_corrected")

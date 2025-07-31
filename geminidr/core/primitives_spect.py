@@ -1537,7 +1537,14 @@ class Spect(Resample):
                 else:
                     has_rect_model = True
                     in_coords = rect_model(*in_coords)
-                    ref_coords = rect_model(*ref_coords)
+                    # For a vertically-dispersed spectrum, the rectification
+                    # model alters X as a function of Y. Therefore, because
+                    # incoords and ref_coords have different Y for the same X,
+                    # putting them *both* through the rectification model will
+                    # produce different X values, which is not what we want.
+                    # S0 replace the X values in ref_coords with the ones in
+                    # in_coords. Coords are *always* (x, y)
+                    ref_coords[dispaxis] = in_coords[dispaxis]
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
