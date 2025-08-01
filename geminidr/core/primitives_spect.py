@@ -1478,64 +1478,72 @@ class Spect(Resample):
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
 
-                # The slit length may be smaller than the width of the slice,
-                # so we need to estimate the slit length and
-                # "min_line_length" is the fraction of that, not the fraction
-                # of the slice width.
-                loc = int(np.median(initial_peaks))
-                if dispaxis == 0:
-                    _slice = ext.mask[loc] & DQ.unilluminated
-                else:
-                    _slice = ext.mask[:, loc] & DQ.unilluminated
-                slit_length_frac = 1 - ((_slice.argmin() +
-                                         _slice[::-1].argmin()) / _slice.size)
+                if len(initial_peaks):
+                    # The slit length may be smaller than the width of the slice,
+                    # so we need to estimate the slit length and
+                    # "min_line_length" is the fraction of that, not the fraction
+                    # of the slice width.
+                    if ext.mask is not None:
+                        loc = int(np.median(initial_peaks))
+                        if dispaxis == 0:
+                            _slice = ext.mask[loc] & DQ.unilluminated
+                        else:
+                            _slice = ext.mask[:, loc] & DQ.unilluminated
+                        slit_length_frac = 1 - ((_slice.argmin() +
+                                                 _slice[::-1].argmin()) / _slice.size)
+                    else:
+                        try:
+                            slit_length_frac = ad.MDF['slitlength_pixels'] / ext.shape[1 - dispaxis]
+                        except (AttributeError, KeyError):
+                            slit_length_frac = 1
 
-                # Straight slits, such as in longslit, can have all the lines
-                # traced simultaneously since they all have the same starting
-                # point. "Curved" slits need to be handled one-by-one. This is
-                # quite a bit slower, so this block of code does the line
-                # tracing based on the slit involved.
-                if constant_slit:
-                    traces = tracing.trace_lines(
-                        # Only need a single `start` value for all lines.
-                        ext, axis=1 - dispaxis,
-                        start=start, initial=initial_peaks,
-                        rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
-                        nsum=nsum, max_missed=max_missed,
-                        max_shift=max_shift * ybin / xbin,
-                        viewer=self.viewer if debug else None,
-                        min_line_length=min_line_length*slit_length_frac)
-
-                else:
-                    traces = []
-                    for peak in initial_peaks:
-                        # Need to start midway along the slit, which varies
-                        # along the dispersion axis. `extract_info` here is the
-                        # polynomial describing that midway line.
-                        start = extract_info(peak)
-                        print("peak, start:", peak, start)
-                        traces.extend(tracing.trace_lines(
+                    # Straight slits, such as in longslit, can have all the lines
+                    # traced simultaneously since they all have the same starting
+                    # point. "Curved" slits need to be handled one-by-one. This is
+                    # quite a bit slower, so this block of code does the line
+                    # tracing based on the slit involved.
+                    if constant_slit:
+                        traces = tracing.trace_lines(
+                            # Only need a single `start` value for all lines.
                             ext, axis=1 - dispaxis,
-                            start=start, initial=[peak],
+                            start=start, initial=initial_peaks,
                             rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
                             nsum=nsum, max_missed=max_missed,
                             max_shift=max_shift * ybin / xbin,
                             viewer=self.viewer if debug else None,
-                            min_line_length=min_line_length*slit_length_frac))
+                            min_line_length=min_line_length*slit_length_frac)
 
-                log.stdinfo(f"Traced {len(traces)} lines")
-                if ext.id == 6 and ad.filename.startswith("S20060311S0321"):
-                    for trace in traces:
-                        print(trace.input_coordinates())
+                    else:
+                        traces = []
+                        for peak in initial_peaks:
+                            # Need to start midway along the slit, which varies
+                            # along the dispersion axis. `extract_info` here is the
+                            # polynomial describing that midway line.
+                            start = extract_info(peak)
+                            traces.extend(tracing.trace_lines(
+                                ext, axis=1 - dispaxis,
+                                start=start, initial=[peak],
+                                rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
+                                nsum=nsum, max_missed=max_missed,
+                                max_shift=max_shift * ybin / xbin,
+                                viewer=self.viewer if debug else None,
+                                min_line_length=min_line_length*slit_length_frac))
 
-                # List of traced peak positions
-                in_coords = np.array([coord for trace in traces for
-                                      coord in trace.input_coordinates()]).T
+                    log.stdinfo(f"Traced {len(traces)} lines")
 
-                # We can't do anything if we have no coordinates
-                if in_coords.size == 0:
-                    log.warning("Failed to trace any lines for "
-                                f"{ad.filename}:{ext.id}")
+                    # List of traced peak positions
+                    in_coords = np.array([coord for trace in traces for
+                                          coord in trace.input_coordinates()]).T
+
+                    # We can't do anything if we have no coordinates
+                    if in_coords.size == 0:
+                        log.warning("Failed to trace any lines for "
+                                    f"{ad.filename}:{ext.id}")
+                        continue
+
+                else:
+                    log.warning("Failed to find any peaks in "
+                                "f{ad.filename}:{ext.id}")
                     continue
 
                 # List of "reference" positions (i.e., the coordinate

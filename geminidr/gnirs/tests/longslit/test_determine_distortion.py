@@ -39,7 +39,6 @@ fixed_parameters_for_determine_distortion = {
     "nsum": 10,
     "spatial_order": 3,
     "spectral_order": None,
-    "min_line_length": None,
     "debug_reject_bad": False
 }
 
