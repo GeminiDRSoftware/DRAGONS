@@ -121,14 +121,6 @@ class GNIRSSpect(Telluric, GNIRS):
                 self.log.stdinfo(f'Parameter "spectral_order" is set to None. '
                                  f'Using spectral_order={these_params["spectral_order"]} for {ad.filename}')
 
-            if these_params["min_line_length"] is None:
-                if cam.startswith('Long'):
-                    these_params["min_line_length"] = 0.8
-                else:
-                    these_params["min_line_length"] = 0.6
-                self.log.stdinfo(f'Parameter "min_line_length" is set to None. '
-                 f'Using min_line_length={these_params["min_line_length"]} for {ad.filename}')
-
             if these_params["max_missed"] is None:
                 if "ARC" in ad.tags:
                     # In arcs with few lines tracing strong horizontal noise pattern can

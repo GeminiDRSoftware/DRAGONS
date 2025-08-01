@@ -1473,10 +1473,22 @@ class Spect(Resample):
                     initial_peaks, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
-                    log.stdinfo(f"Found {len(initial_peaks)} peaks")
-                    print(initial_peaks)
+                    #log.stdinfo(f"Found {len(initial_peaks)} peaks")
+
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
+
+                # The slit length may be smaller than the width of the slice,
+                # so we need to estimate the slit length and
+                # "min_line_length" is the fraction of that, not the fraction
+                # of the slice width.
+                loc = int(np.median(initial_peaks))
+                if dispaxis == 0:
+                    _slice = ext.mask[loc] & DQ.unilluminated
+                else:
+                    _slice = ext.mask[:, loc] & DQ.unilluminated
+                slit_length_frac = 1 - ((_slice.argmin() +
+                                         _slice[::-1].argmin()) / _slice.size)
 
                 # Straight slits, such as in longslit, can have all the lines
                 # traced simultaneously since they all have the same starting
@@ -1492,7 +1504,7 @@ class Spect(Resample):
                         nsum=nsum, max_missed=max_missed,
                         max_shift=max_shift * ybin / xbin,
                         viewer=self.viewer if debug else None,
-                        min_line_length=min_line_length)
+                        min_line_length=min_line_length*slit_length_frac)
 
                 else:
                     traces = []
@@ -1501,6 +1513,7 @@ class Spect(Resample):
                         # along the dispersion axis. `extract_info` here is the
                         # polynomial describing that midway line.
                         start = extract_info(peak)
+                        print("peak, start:", peak, start)
                         traces.extend(tracing.trace_lines(
                             ext, axis=1 - dispaxis,
                             start=start, initial=[peak],
@@ -1508,7 +1521,12 @@ class Spect(Resample):
                             nsum=nsum, max_missed=max_missed,
                             max_shift=max_shift * ybin / xbin,
                             viewer=self.viewer if debug else None,
-                            min_line_length=0.1))
+                            min_line_length=min_line_length*slit_length_frac))
+
+                log.stdinfo(f"Traced {len(traces)} lines")
+                if ext.id == 6 and ad.filename.startswith("S20060311S0321"):
+                    for trace in traces:
+                        print(trace.input_coordinates())
 
                 # List of traced peak positions
                 in_coords = np.array([coord for trace in traces for

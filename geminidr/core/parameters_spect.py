@@ -145,8 +145,8 @@ class determineDistortionConfig(config.Config):
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
-    min_line_length = config.RangeField("Exclude line traces shorter than this fraction of spatial dimension",
-                                        float, 0., min=0., max=1.)
+    min_line_length = config.RangeField("Exclude line traces shorter than this fraction of slit length",
+                                        float, 0.8, min=0., max=1.)
     debug_reject_bad = config.Field("Reject lines with suspiciously high SNR (e.g. bad columns)?", bool, True)
     debug = config.Field("Display line traces on image display?", bool, False)
 

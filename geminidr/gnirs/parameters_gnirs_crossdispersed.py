@@ -19,13 +19,12 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     spectral_order = config.RangeField("Fitting order in spectral direction", int, None, min=1, optional=True)
-    min_line_length = config.RangeField("Exclude line traces shorter than this fraction of spatial dimension",
-                                        float, None, min=0., max=1., optional=True)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                int, None, min=0, optional=True)
     def setDefaults(self):
         self.min_snr = 10
         self.spatial_order = 2
+        self.step = 5
         self.debug_reject_bad = False
 
 
