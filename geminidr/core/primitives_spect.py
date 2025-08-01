@@ -1474,6 +1474,7 @@ class Spect(Resample):
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
                     log.stdinfo(f"Found {len(initial_peaks)} peaks")
+                    print(initial_peaks)
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
 
