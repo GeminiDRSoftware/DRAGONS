@@ -24,7 +24,7 @@ fixed_parameters_for_determine_distortion = {
     "max_shift": 0.05,
     "min_snr": 10.,
     "nsum": 10,
-    "min_line_length": 0.6,
+    "min_line_length": 0.5,
     "debug_reject_bad": True
 }
 

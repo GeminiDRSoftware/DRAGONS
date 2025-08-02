@@ -1390,7 +1390,6 @@ class Spect(Resample):
         debug_reject_bad = params["debug_reject_bad"]
         debug = params["debug"]
 
-        orders = (max(spectral_order, 1), spatial_order)
         fail = False
 
         for ad in adinputs:
@@ -1575,12 +1574,14 @@ class Spect(Resample):
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
+                orders = (max(min(spectral_order, len(traces) - 1), 1),
+                          spatial_order)
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
                                             y_degree=orders[dispaxis],
                                             x_domain=[0, ext.shape[1]-1],
                                             y_domain=[0, ext.shape[0]-1])
 
-                fixed_linear = (spectral_order == 0)
+                fixed_linear = (spectral_order == 0) or len(traces) == 1
                 model, m_final, m_inverse = am.create_distortion_model(
                     m_init, 1-dispaxis, in_coords, ref_coords, fixed_linear)
 

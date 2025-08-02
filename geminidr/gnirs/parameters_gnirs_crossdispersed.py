@@ -25,6 +25,7 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
         self.min_snr = 10
         self.spatial_order = 2
         self.step = 5
+        self.min_line_length = 0.6  # because some orders go off the edge
         self.debug_reject_bad = False
 
 
