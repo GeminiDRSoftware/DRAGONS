@@ -1248,7 +1248,7 @@ class IQReport(QAReport):
             body.append(('(Requested IQ could not be determined)', ''))
 
         # allow comparison if "elip" is None
-        if results.get("elip") or 0 > 0.1:
+        if result.get("elip") != None and results.get("elip", 0) > 0.1:
             body.append(('', 'WARNING: high ellipticity'))
             self.comments.append('High ellipticity')
             if 'NON_SIDEREAL' in self.ad_tags:
