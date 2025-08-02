@@ -3,7 +3,10 @@
 #
 #                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
+import datetime
 import hashlib
+
+import numpy
 
 from gempy.utils import logutils
 
@@ -50,10 +53,73 @@ class CalibrationRequest:
         return retd
 
     def __str__(self):
-        tempStr = "filename: {}\nDescriptors: {}\nTypes: {}"
-        tempStr = tempStr.format(self.filename, self.descriptors, self.tags)
-        return tempStr
+        return (f"filename: {self.filename}\n"
+                f"Descriptors: {self.descriptors}\n"
+                f"Types: {self.tags}")
 
+
+def get_descriptors_dict(ad):
+    # Helper function for get_cal_requests. Builds the descriptors dict that
+    # we post to the calmgr. Called elsewhere (eg in the FitsStorage calmgr
+    # post tests), can be used to build other calmgr post clients
+
+    options = {'central_wavelength': {'asMicrometers': True}}
+
+    desc_dict = {}
+    for desc_name in ad.descriptors:
+        # Check that each descriptor works and returns a sensible value.
+        try:
+            descriptor = getattr(ad, desc_name)
+        except AttributeError:
+            pass
+        else:
+            kwargs = options[desc_name] if desc_name in list(options.keys()) else {}
+            try:
+                dv = _handle_returns(descriptor(**kwargs))
+            except:
+                dv = None
+            # Munge list to value if all item(s) are the same
+            if isinstance(dv, list):
+                dv = dv[0] if all(v == dv[0] for v in dv) else "+".join(
+                    [str(v) for v in dv])
+
+            # Convert datetime types to iso representation
+            if isinstance(dv, (datetime.datetime, datetime.date, datetime.time)):
+                dv = dv.isoformat()
+            # Deal with numpy float types
+            if isinstance(dv, numpy.float32):
+                dv = float(dv)
+
+            desc_dict[desc_name] = dv
+
+
+
+    # Add composite detector_binning to request so we can query Header field of same name in cals
+    dvx = desc_dict["detector_x_bin"] if "detector_x_bin" in desc_dict else None
+    dvy = desc_dict["detector_y_bin"] if "detector_y_bin" in desc_dict else None
+
+    # Quick check to handle when these are dictionaries, i.e. for GHOST data
+    if (dvx is not None) and (dvy is not None):
+        if isinstance(dvx, dict) or isinstance(dvy, dict):
+            # dict always means multi-arm data
+            # We preserve binning if it matches across all arms, else None
+            dvxs = set([x for x in dvx.values() if x is not None])
+            dvys = set([y for y in dvy.values() if y is not None])
+            if len(dvxs) == 1 and len(dvys) == 1:
+                dvx = dvxs.pop()
+                dvy = dvys.pop()
+            else:
+                # No "right" answer for what binning is for file as a whole
+                dvx = None
+                dvy = None
+
+    # By now, we have normalized to single-valued binnings
+    if (dvx is not None) and (dvy is not None):
+        desc_dict["detector_binning"] = "%dx%d" % (dvx, dvy) if dvx is not None and dvy is not None else None
+    else:
+        desc_dict["detector_binning"] = None
+
+    return desc_dict
 
 def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
     """
@@ -75,57 +141,12 @@ def get_cal_requests(inputs, caltype, procmode=None, is_local=True):
        'ad' instance in 'inputs'.
 
     """
-    options = {'central_wavelength': {'asMicrometers': True}}
 
     rq_events = []
     for ad in inputs:
         log.debug("Received calibration request for {}".format(ad.filename))
         rq = CalibrationRequest(ad, caltype, procmode)
-        # Check that each descriptor works and returns a sensible value.
-        desc_dict = {}
-        for desc_name in ad.descriptors:
-            try:
-                descriptor = getattr(ad, desc_name)
-            except AttributeError:
-                pass
-            else:
-                kwargs = options[desc_name] if desc_name in list(options.keys()) else {}
-                try:
-                    dv = _handle_returns(descriptor(**kwargs))
-                except:
-                    dv = None
-                # Munge list to value if all item(s) are the same
-                if isinstance(dv, list):
-                    dv = dv[0] if all(v == dv[0] for v in dv) else "+".join(
-                        [str(v) for v in dv])
-                desc_dict[desc_name] = dv
-
-        # Add composite detector_binning to request so we can query Header field of same name in cals
-        dvx = desc_dict["detector_x_bin"] if "detector_x_bin" in desc_dict else None
-        dvy = desc_dict["detector_y_bin"] if "detector_y_bin" in desc_dict else None
-
-        # Quick check to handle when these are dictionaries, i.e. for GHOST data
-        if (dvx is not None) and (dvy is not None):
-            if isinstance(dvx, dict) or isinstance(dvy, dict):
-                # dict always means multi-arm data
-                # We preserve binning if it matches across all arms, else None
-                dvxs = set([x for x in dvx.values() if x is not None])
-                dvys = set([y for y in dvy.values() if y is not None])
-                if len(dvxs) == 1 and len(dvys) == 1:
-                    dvx = dvxs.pop()
-                    dvy = dvys.pop()
-                else:
-                    # No "right" answer for what binning is for file as a whole
-                    dvx = None
-                    dvy = None
-
-        # By now, we have normalized to single-valued binnings
-        if (dvx is not None) and (dvy is not None):
-            desc_dict["detector_binning"] = "%dx%d" % (dvx, dvy) if dvx is not None and dvy is not None else None
-        else:
-            desc_dict["detector_binning"] = None
-
-        rq.descriptors = desc_dict
+        rq.descriptors = get_descriptors_dict(ad)
         rq_events.append(rq)
     return rq_events
 

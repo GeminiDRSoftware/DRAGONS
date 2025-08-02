@@ -3,8 +3,7 @@
 
 from os import path, makedirs
 from io import BytesIO
-from pprint  import pformat
-from xml.dom import minidom
+import json
 
 import urllib.request
 import urllib.parse
@@ -14,21 +13,7 @@ from .caldb import CalDB, CalReturn
 from .calrequestlib import get_cal_requests, generate_md5_digest
 from .file_getter import GetterError, get_request
 
-UPLOADCOOKIE = "qap_upload_processed_cal_ok"
-
-RESPONSESTR = """########## Request Data BEGIN ##########
-%(sequence)s
-########## Request Data END ##########
-
-########## Calibration Server Response BEGIN ##########
-%(response)s
-########## Calibration Server Response END ##########
-
-########## Nones Report (descriptors that returned None):
-%(nones)s
-########## Note: all descriptors shown above, scroll up.
-        """
-
+UPLOADCOOKIE = None
 
 class RemoteDB(CalDB):
     """
@@ -61,7 +46,7 @@ class RemoteDB(CalDB):
         if not server.startswith("http"):  # allow https://
             server = f"http://{server}"
         self.server = server
-        self._calmgr = f"{self.server}/calmgr"
+        self._calmgr = f"{self.server}/jsoncalmgr"
         self._proccal_url = f"{self.server}/upload_processed_cal"
         self._science_url = f"{self.server}/upload_file"
         self._upload_cookie = upload_cookie or UPLOADCOOKIE
@@ -164,26 +149,23 @@ class RemoteDB(CalDB):
 
 
 def retrieve_calibration(rqurl, rq, howmany=1):
-    sequence = [("descriptors", rq.descriptors), ("types", rq.tags)]
-    postdata = urllib.parse.urlencode(sequence).encode('utf-8')
+    postdata = json.dumps({'tags': list(rq.tags), 'descriptors': rq.descriptors})
     try:
         calrq = urllib.request.Request(rqurl)
-        u = urllib.request.urlopen(calrq, postdata)
+        u = urllib.request.urlopen(calrq, postdata.encode('utf-8'))
         response = u.read()
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
         return None, str(err)
 
     desc_nones = [k for k, v in rq.descriptors.items() if v is None]
-    preerr = RESPONSESTR % {"sequence": pformat(sequence),
-                            "response": response.strip(),
-                            "nones"   : ", ".join(desc_nones) \
-                            if len(desc_nones) > 0 else "No Nones Sent"}
+    preerr = f"{postdata=}\n{response=}\n{desc_nones=}\n"
+
     try:
-        dom = minidom.parseString(response)
-        calurlel = [d.childNodes[0].data
-                    for d in dom.getElementsByTagName('url')[:howmany]]
-        calurlmd5 = [d.childNodes[0].data
-                     for d in dom.getElementsByTagName('md5')[:howmany]]
+        results = json.loads(response)
+        cals = results[0]['cal_info'][0]['cals']
+        calurlel = [d['url'] for d in cals]
+        calurlmd5 = [d['md5'] for d in cals]
+
     except IndexError:
         return None, preerr
 
