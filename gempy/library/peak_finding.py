@@ -98,6 +98,8 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         ext.data, ext.mask, ext.variance,
         transpose=(dispersion_axis == 0), section=extract_slice)
 
+    # The "variance" here is the square of the standard error on the mean
+    # of the pixel values averaged over the section of the slit.
     if constant_slit:
         # Create 1D spectrum; pixel-to-pixel variation is a better indicator
         # of S/N than the VAR plane
@@ -106,8 +108,6 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         data, mask, variance = NDStacker.combine(
             data, mask=mask, variance=variance if use_variance else None,
             combiner=combiner)
-        if not use_variance:
-            variance *= (extract_slice.stop - extract_slice.start - 2)
         return data, mask, variance, extract_slice
 
     else:
