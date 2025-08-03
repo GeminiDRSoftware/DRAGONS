@@ -651,9 +651,11 @@ def sum1d(ndd, x1, x2, proportional_variance=True):
                (fx2 if proportional_variance else fx2*fx2)*ndd.variance[ix2])
     else:
         # calculate_variance returns the standard error on the mean
+        # (~sigma^2/N) but this is a "sum" operation, so we want the sum
+        # of the variance, ~sigma^2*N, and need to multiply accordingly.
         # mask=None because we ignore the mask is the above calculation
         var = NDStacker.calculate_variance(
             ndd.data[ix1+1:ix2, np.newaxis],
-            mask=None, out_data=data/(x2-x1)) * (ix2 - ix1 - 1)
+            mask=None, out_data=data/(x2-x1)) * (ix2 - ix1 - 1) * (x2 - x1)
 
     return NDD(data, mask, var)
