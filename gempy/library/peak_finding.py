@@ -103,7 +103,6 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         # of S/N than the VAR plane
         # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
         #  Use "variance=None" to make them pass again.
-        print(data[:, 985])
         data, mask, variance = NDStacker.combine(
             data, mask=mask, variance=variance if use_variance else None,
             combiner=combiner)
