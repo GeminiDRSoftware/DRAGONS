@@ -295,7 +295,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
 
             if 'ARC' in ad.tags:
                 if these_params["min_snr"] is None:
-                    these_params["min_snr"] = 20
+                    these_params["min_snr"] = 10
                 if these_params["debug_min_lines"] is None:
                     these_params["debug_min_lines"] = 100000
 
