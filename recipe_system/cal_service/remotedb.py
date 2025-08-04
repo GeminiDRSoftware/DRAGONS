@@ -17,6 +17,8 @@ from .file_getter import GetterError, get_request
 
 UPLOADCOOKIE = None
 
+from recipe_system import version
+
 class RemoteDB(CalDB):
     """
     The class for remote calibration databases. It inherits from CalDB, but
@@ -165,6 +167,7 @@ def retrieve_calibration(rqurl, rq, howmany=1):
                            'descriptors': make_dict_json_encodable(rq.descriptors)})
     try:
         calrq = urllib.request.Request(rqurl)
+        rqurl.add_header('User-Agent', 'GeminiDRAGONS ' + version())
         u = urllib.request.urlopen(calrq, postdata.encode('utf-8'))
         response = u.read()
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
@@ -175,7 +178,22 @@ def retrieve_calibration(rqurl, rq, howmany=1):
 
     try:
         results = json.loads(response)
-        cals = results[0]['cal_info'][0]['cals']
+        if len(results) == 0:
+            return None, 'Remote Cal manager returned results for zero files'
+        if len(results) != 1:
+            return None, 'Remote Cal manager returned results for multiple files'
+        cal_info = results[0].get('cal_info')
+        if cal_info is None:
+            return None, 'Remote Cal manager result contained no cal_info item'
+        if len(cal_info) == 0:
+            return None, 'Remote Cal manager result cal_info list empty'
+        if len(cal_info) != 0:
+            return None, 'Remote Cal manager result cal_info list contained multiple entries'
+        cals = results[0]['cal_info'][0].get('cals')
+        if cals is None:
+            return None, 'Remote Cal manager result cals list missing'
+        if len(cals) == 0:
+            return None, 'Remote Cal manager result cals list empty'
         calurlel = [d['url'] for d in cals]
         calurlmd5 = [d['md5'] for d in cals]
 
