@@ -640,7 +640,9 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     -------
     2D array: peak pixels and SNRs (sorted by pixel coordinate)
     """
-    mask = mask.astype(bool) if mask is not None else np.zeros_like(data, dtype=bool)
+    # Non-linear peaks are OK but saturated ones are not
+    mask = ((mask & (DQ.max ^ DQ.saturated)).astype(bool) if mask is not None
+            else np.zeros_like(data, dtype=bool))
 
     max_width = max(widths)
     window_size = 4 * max_width + 1

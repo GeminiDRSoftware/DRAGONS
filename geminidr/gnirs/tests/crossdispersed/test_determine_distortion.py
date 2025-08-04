@@ -20,13 +20,14 @@ from recipe_system.testing import ref_ad_factory
 fixed_parameters_for_determine_distortion = {
     "fwidth": None,
     "id_only": False,
-    "max_missed": 5,
+    "max_missed": 2,
     "max_shift": 0.05,
     "min_snr": 5.,
     "nsum": 10,
-    "spectral_order": 4,
-    "min_line_length": 0.,
-    "debug_reject_bad": True
+    "spatial_order": 2,
+    "spectral_order": 3,
+    "min_line_length": 0.5,
+    "debug_reject_bad": False
 }
 
 input_pars = [
@@ -51,7 +52,6 @@ input_pars = [
 # Tests -----------------------------------------------------------------------
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
-@pytest.mark.regression
 @pytest.mark.parametrize("ad,params", input_pars, indirect=['ad'])
 def test_regression_for_determine_distortion_using_wcs(
         ad, params, change_working_dir, ref_ad_factory):
@@ -62,16 +62,27 @@ def test_regression_for_determine_distortion_using_wcs(
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
-    model = distortion_determined_ad[0].wcs.get_transform(
-        "pixels", "distortion_corrected")[2]
-    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[2]
 
-    # Otherwise we're doing something wrong!
-    assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
+    for ext, ref_ext in zip(distortion_determined_ad, ref_ad):
+        # Confirm that the distortion model is placed after the rectification model
+        assert (ext.wcs.available_frames.index("distortion_corrected") >
+                ext.wcs.available_frames.index("rectified"))
+        assert (ref_ext.wcs.available_frames.index("distortion_corrected") >
+                ref_ext.wcs.available_frames.index("rectified"))
 
-    X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
+        model = ext.wcs.get_transform("pixels", "distortion_corrected")
+        ref_model = ref_ext.wcs.get_transform("pixels", "distortion_corrected")
 
-    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
+        # Otherwise we're doing something wrong!
+        assert model[-1].__class__.__name__ == ref_model[-1].__class__.__name__ == "Chebyshev2D"
+
+        Y, X = np.mgrid[:ext.shape[0], :ext.shape[1]]
+
+        # We only care about pixels in the illuminated region
+        xx, yy = X[ext.mask == 0], Y[ext.mask == 0]
+        diffs = model(xx, yy)[1] - ref_model(xx, yy)[1]  # 1 is y-axis in astropy
+        np.testing.assert_allclose(diffs, 0, atol=1)
+
 
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='function')

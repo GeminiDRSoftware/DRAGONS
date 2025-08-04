@@ -4,6 +4,7 @@ from geminidr.core import parameters_spect
 from geminidr.core import parameters_crossdispersed
 from geminidr.core import parameters_standardize
 from geminidr.core.parameters_standardize import addIllumMaskToDQConfig
+from . import parameters_gnirs_spect
 from gempy.library import config
 
 
@@ -15,6 +16,12 @@ def list_of_ints_check(value):
 class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True
+
+
+class determineDistortionConfig(parameters_gnirs_spect.determineDistortionConfig):
+    def setDefaults(self):
+        self.spatial_order = 2
+        self.min_line_length = 0.5  # because some orders go off the edge
 
 
 class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
