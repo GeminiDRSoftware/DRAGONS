@@ -83,13 +83,6 @@ def get_descriptors_dict(ad):
                 dv = dv[0] if all(v == dv[0] for v in dv) else "+".join(
                     [str(v) for v in dv])
 
-            # Convert datetime types to iso representation
-            if isinstance(dv, (datetime.datetime, datetime.date, datetime.time)):
-                dv = dv.isoformat()
-            # Deal with numpy float types
-            if isinstance(dv, numpy.float32):
-                dv = float(dv)
-
             desc_dict[desc_name] = dv
 
 

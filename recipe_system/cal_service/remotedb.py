@@ -1,6 +1,6 @@
 # Defines the RemoteDB class for calibration returns. This is a high-level
 # interface to FITSstore. It may be subclassed in future
-
+import datetime
 from os import path, makedirs
 from io import BytesIO
 import json
@@ -8,6 +8,8 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
+
+import numpy
 
 from .caldb import CalDB, CalReturn
 from .calrequestlib import get_cal_requests, generate_md5_digest
@@ -148,8 +150,19 @@ class RemoteDB(CalDB):
             raise
 
 
+def make_dict_json_encodable(desc_dict):
+    for d in desc_dict:
+        if isinstance(desc_dict[d],
+                      (datetime.datetime, datetime.date, datetime.time)):
+            desc_dict[d] = desc_dict[d].isoformat()
+        if isinstance(desc_dict[d], numpy.float32):
+            desc_dict[d] = float(desc_dict[d])
+    return desc_dict
+
+
 def retrieve_calibration(rqurl, rq, howmany=1):
-    postdata = json.dumps({'tags': list(rq.tags), 'descriptors': rq.descriptors})
+    postdata = json.dumps({'tags': list(rq.tags),
+                           'descriptors': make_dict_json_encodable(rq.descriptors)})
     try:
         calrq = urllib.request.Request(rqurl)
         u = urllib.request.urlopen(calrq, postdata.encode('utf-8'))
