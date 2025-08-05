@@ -714,15 +714,10 @@ class Spect(Resample):
                 # ADs, so just set the found transforms to empty and present
                 # the warning at the end
                 try:
-                    if 'distortion_corrected' not in wcs.available_frames:
-                        distortion_models = []
-                        break
-                except AttributeError:
-                    distortion_models = []
-                    break
-
-                m_distcorr = wcs.get_transform(wcs.input_frame,
-                                               'distortion_corrected')
+                    m_distcorr = wcs.get_transform(wcs.input_frame,
+                                                   'distortion_corrected')
+                except CoordinateFrameError:
+                    m_distcorr = None
                 distortion_models.append(m_distcorr)
 
                 try:
@@ -735,14 +730,6 @@ class Spect(Resample):
                     wave_models.append(wave_model)
                     wave_frames.extend([frame for frame in wcs.output_frame.frames
                                         if isinstance(frame, cf.SpectralFrame)])
-
-            if not distortion_models:
-                log.warning("Could not find a 'distortion_corrected' frame "
-                            f"in arc {arc.filename} extension {ext.id} - "
-                            "continuing")
-                if 'sq' in self.mode:
-                    fail = True
-                continue
 
             # Determine whether we're producing a single-extension AD
             # or keeping the number of extensions as-is
@@ -767,7 +754,8 @@ class Spect(Resample):
                     geotable = import_module('.geometry_conf', self.inst_lookups)
                     transform.add_mosaic_wcs(ad, geotable)
                     for ext in ad:
-                        if 'mosaic' in ext.wcs.available_frames:
+                        if ('mosaic' in ext.wcs.available_frames and
+                                m_distcorr is not None):
                             ext.wcs.insert_frame('mosaic', m_distcorr,
                                                  cf.Frame2D(name='distortion_corrected'))
 
@@ -859,10 +847,12 @@ class Spect(Resample):
                         # No mosaicking, so we can just do a shift
                         m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
                                    models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
-                        m_distcorr = m_shift | m_distcorr
+                        m_distcorr = (m_shift if m_distcorr is None else
+                                      m_shift | m_distcorr)
 
-                    ad[0].wcs.insert_frame(ad[0].wcs.input_frame, m_distcorr,
-                                           cf.Frame2D(name='distortion_corrected'))
+                    if m_distcorr is not None:
+                        ad[0].wcs.insert_frame(ad[0].wcs.input_frame, m_distcorr,
+                                               cf.Frame2D(name='distortion_corrected'))
 
                 if wave_model is None:
                     log.warning(f"{arc.filename} has no wavelength solution")
@@ -887,11 +877,15 @@ class Spect(Resample):
                     # applying the distortion correction
                     shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
                                                         ext_arc.detector_section())]
-                    dist_model = (models.Shift(shifts[0] / xbin) &
-                                  models.Shift(shifts[1] / ybin)) | dist_model
+                    if shifts.count(0) < len(shifts):
+                        shift_model = (models.Shift(shifts[0] / xbin) &
+                                      models.Shift(shifts[1] / ybin))
+                        dist_model =  (shift_model if dist_model is None else
+                                       shift_model | dist_model)
 
-                    ext.wcs.insert_frame(ad[0].wcs.input_frame, dist_model,
-                                         cf.Frame2D(name='distortion_corrected'))
+                    if dist_model is not None:
+                        ext.wcs.insert_frame(ad[0].wcs.input_frame, dist_model,
+                                             cf.Frame2D(name='distortion_corrected'))
 
                     if wave_model is None:
                         log.warning(f"{arc.filename} extension {ext.id} has "
