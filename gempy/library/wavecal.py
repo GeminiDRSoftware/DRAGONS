@@ -646,14 +646,13 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
         reject_bad=False, nbright=config.get("nbright", 0))
-    if len(peaks) == 0:
-        raise ValueError(f"No peaks were found; perhaps try a lower min_snr value?")
+
     # Do the second iteration of fwidth estimation and peak finding, this time using the number of peaks
     # found after the first fwidth estimation, in order to get more accurate
     # line widths. This step is mostly necessary when doing wavecal from sky lines, as for those
     # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends
     # to be too high.
-    if config["fwidth"] is None:
+    if config["fwidth"] is None and len(peaks):
         fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
         log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
         peaks, weights = find_line_peaks(
