@@ -187,7 +187,7 @@ def retrieve_calibration(rqurl, rq, howmany=1):
             return None, 'Remote Cal manager result contained no cal_info item'
         if len(cal_info) == 0:
             return None, 'Remote Cal manager result cal_info list empty'
-        if len(cal_info) != 0:
+        if len(cal_info) != 1:
             return None, 'Remote Cal manager result cal_info list contained multiple entries'
         cals = results[0]['cal_info'][0].get('cals')
         if cals is None:
