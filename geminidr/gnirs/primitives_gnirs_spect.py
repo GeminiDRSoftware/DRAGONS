@@ -126,7 +126,7 @@ class GNIRSSpect(Telluric, GNIRS):
                     # In arcs with few lines tracing strong horizontal noise pattern can
                     # affect distortion model.Using a lower max_missed value helps to
                     # filter out horizontal noise.
-                    these_params["max_missed"] = 1
+                    these_params["max_missed"] = 1 if 'XD' in ad.tags else 2
                 else:
                     # In science frames we want this parameter be set to a higher value, since
                     # otherwise the line might be abandoned when crossing a bright object spectrum.
