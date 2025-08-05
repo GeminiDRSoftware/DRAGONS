@@ -167,7 +167,7 @@ def retrieve_calibration(rqurl, rq, howmany=1):
                            'descriptors': make_dict_json_encodable(rq.descriptors)})
     try:
         calrq = urllib.request.Request(rqurl)
-        rqurl.add_header('User-Agent', 'GeminiDRAGONS ' + version())
+        calrq.add_header('User-Agent', 'GeminiDRAGONS ' + version())
         u = urllib.request.urlopen(calrq, postdata.encode('utf-8'))
         response = u.read()
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
