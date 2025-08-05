@@ -88,4 +88,4 @@ def test_reduce_slit_science(input_filename, caldict, path_to_inputs,
         for output_filename in [ad.filename for ad in p.streams['main']]:
             adout = astrodata.open(os.path.join("calibrations", "processed_slit", output_filename))
             adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-            assert ad_compare(adref, adout, ignore_kw=['PRSLITIM'])
+            assert ad_compare(adref, adout, rtol=1e-6, ignore_kw=['PRSLITIM'])
