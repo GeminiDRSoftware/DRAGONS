@@ -21,6 +21,7 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
 class determineDistortionConfig(parameters_gnirs_spect.determineDistortionConfig):
     def setDefaults(self):
         self.spatial_order = 2
+        self.step = 5
         self.min_line_length = 0.5  # because some orders go off the edge
 
 
