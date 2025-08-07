@@ -28,10 +28,14 @@ class ADVarianceUncertainty(VarianceUncertainty):
     """
     @VarianceUncertainty.array.setter
     def array(self, value):
-        if value is not None and np.any(value < 0):
-            warnings.warn("Negative variance values found. Setting to zero.",
-                          RuntimeWarning)
-            value = np.where(value >= 0., value, np.float32(0.))
+        if value is not None:
+            neg = value < 0
+            if np.any(neg):
+                warnings.warn(
+                    "Negative variance values found. Setting to zero.",
+                     RuntimeWarning
+                )
+                value[neg] = 0.
         VarianceUncertainty.array.fset(self, value)
 
 
