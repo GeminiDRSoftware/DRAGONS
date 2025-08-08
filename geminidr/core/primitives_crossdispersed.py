@@ -39,6 +39,39 @@ class CrossDispersed(Spect, Preprocess):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_crossdispersed)
 
+    def combineOrders(self, adinputs=None, **params):
+        """
+        Combines the spectral orders in 1D cross-dispersed data into a single
+        spectrum.
+
+        Parameters
+        ----------
+
+        """
+        log = self.log
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params.pop("suffix")
+
+        adoutputs = []
+        for ad in adinputs:
+            if not all(len(ext.shape) == 1 for ext in ad):
+                log.warnings(f"Cannot combine orders in {ad.filename} as all "
+                             "extensions must be 1D spectra.")
+                adoutputs.append(ad)
+                continue
+
+            stack_inputs = self._separate_by_spectral_order(ad)
+            stack_inputs = self.resampleToCommonFrame(stack_inputs, single_wave_scale=True)
+            adout = self.stackFrames(stack_inputs, **params)[0]
+
+            # Timestamp and update the filename
+            gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
+            adout.update_filename(suffix=sfx, strip=True)
+
+            adoutputs.append(adout)
+
+        return adoutputs
+
     def cutSlits(self, adinputs=None, **params):
         """
         Extract slits in images into individual extensions.
