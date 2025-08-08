@@ -585,9 +585,9 @@ class CrossDispersed(Spect, Preprocess):
             ad_out = astrodata.create(ad.phu)
             for ext in ad:
                 if ext.hdr.get('SPECORDR') == order:
-                    # deepcopy(ext) is a full AD object and so would need
-                    # to be sliced in order to be appended.
-                    ad_out.append(deepcopy(ext.nddata))
+                    # This deepcopies in astrodata.core
+                    # TODO: investigate AstroData.append()
+                    ad_out.append(ext)
 
             ad_out.filename = f'_order{order}'.join(os.path.splitext(filename))
             ad_out.orig_filename = f'_order{order}'.join(os.path.splitext(orig_filename))
