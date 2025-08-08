@@ -1,7 +1,15 @@
 import pytest
 
+from copy import deepcopy
+from glob import glob
+
 import numpy as np
 from astropy.io import fits
+from astropy.modeling import models
+from astropy import units as u
+
+from gwcs import coordinate_frames as cf
+from gwcs.wcs import WCS as gWCS
 
 import astrodata
 from geminidr.core.primitives_crossdispersed import CrossDispersed
@@ -24,13 +32,23 @@ def create_ad(request, napertures=2, norders=6):
         interleaved (1, 2, 1, 2, ...)
     """
     contiguous_apertures = request.param
-    ad = astrodata.create(fits.PrimaryHDU())
+    ad = astrodata.create(fits.PrimaryHDU(
+        header=fits.Header({'TELESCOP': 'Gemini-North',
+                            'DATALAB': 'GN-2001-Q-001'})))
+    ad.filename = "N20010101S0001.fits"
+    ad.orig_filename = "N20010101S0001.fits"
+    t = models.Scale(0.1) | models.Shift(1000)
+    output_frame = cf.SpectralFrame(unit=(u.nm,), axes_names=('AWAV',))
+
     for i in range(napertures * norders):
-        ad.append(np.empty((10,10)))
+        ad.append(np.ones((10,), dtype=np.float32))
         ad[-1].hdr['APERTURE'] = (i // norders if contiguous_apertures else
                                   i % napertures) + 1
         ad[-1].hdr['SPECORDR'] = (i % norders if contiguous_apertures else
                                   i // napertures) + 1
+        ad[-1].hdr['BUNIT'] = "adu"
+        ad[-1].wcs = gWCS([(astrodata.wcs.pixel_frame(1), t),
+                           (deepcopy(output_frame), None)])
     return ad
 
 
@@ -45,3 +63,18 @@ def test_separate_by_spectral_order(create_ad):
     for adout in adoutputs:
         assert len(set(adout.hdr['SPECORDR'])) == 1
         assert len(set(adout.hdr['APERTURE'])) == len(adout)
+
+
+@pytest.mark.parametrize('create_ad', (True,), indirect=True)
+def test_write_1d_spectra(create_ad, change_working_dir):
+    p = CrossDispersed([create_ad])
+
+    with change_working_dir():
+        p.write1DSpectra(overwrite=True)
+        output_files = sorted(glob("*.dat"))
+
+        assert len(output_files) == len(create_ad)
+        for f in output_files:
+            data = np.loadtxt(f, skiprows=2).T
+            assert data.shape == (2, 10)
+

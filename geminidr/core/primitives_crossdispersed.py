@@ -512,6 +512,45 @@ class CrossDispersed(Spect, Preprocess):
 
         return adinputs
 
+    def write1DSpectra(self, adinputs=None, **params):
+        """
+        Write 1D spectra to files listing the wavelength and data (and
+        optionally variance and mask) in one of a range of possible formats.
+
+        This is a wrapper around the Spect.write1DSpectra() primitive for
+        cross-dispersed data. It separates the input AstroData object into
+        multiple AstroData objects, each containing a single spectral order,
+        and then calls the parent primitive to write each of these.
+
+        Parameters
+        ----------
+        format : str
+            format for writing output files
+        header : bool
+            write FITS header before data values?
+        extension : str
+            extension to be used in output filenames
+        apertures : str
+            comma-separated list of aperture numbers to write
+        dq : bool
+            write DQ (mask) plane?
+        var : bool
+            write VAR (variance) plane?
+        overwrite : bool
+            overwrite existing files?
+        wave_units: str
+            units of the x (wavelength/frequency) column
+        data_units: str
+            units of the data column
+       """
+        log = self.log
+        for ad in adinputs:
+            log.fullinfo(f"Separating {ad.filename} into spectral orders")
+            adoutputs = self._separate_by_spectral_order(ad)
+            super().write1DSpectra(adinputs=adoutputs, **params)
+
+        return adinputs
+
     @classmethod
     def _separate_by_spectral_order(self, ad):
         """
