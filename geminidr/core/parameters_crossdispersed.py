@@ -1,11 +1,19 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_crossdispersed.py file, in alphabetical order.
 
-from geminidr.core import parameters_generic
 from gempy.library import config
-from astrodata import AstroData
 
-from geminidr.core import parameters_spect
+from geminidr.core import parameters_spect, parameters_stack
+
+
+class combineOrdersConfig(parameters_stack.core_stacking_config):
+    scale = config.Field("Scale images to the same intensity?", bool, False)
+
+    def setDefaults(self):
+        del self.statsec
+        self.suffix = "_ordersCombined"
+        self.operation = "wtmean"
+        self.reject_method = "none"
 
 
 class findAperturesConfig(parameters_spect.findAperturesConfig):

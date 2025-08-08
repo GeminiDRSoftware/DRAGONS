@@ -4,9 +4,9 @@
 #                                                  primitives_crossdispersed.py
 # -----------------------------------------------------------------------------
 
-from abc import abstractmethod
 from copy import deepcopy
 from importlib import import_module
+import os
 
 import astrodata, gemini_instruments
 from astrodata.utils import Section
@@ -25,6 +25,7 @@ from geminidr.core import Spect, Preprocess
 from geminidr import CalibrationNotFoundError
 from . import parameters_crossdispersed
 
+
 @parameter_override
 @capture_provenance
 class CrossDispersed(Spect, Preprocess):
@@ -37,6 +38,39 @@ class CrossDispersed(Spect, Preprocess):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_crossdispersed)
+
+    def combineOrders(self, adinputs=None, **params):
+        """
+        Combines the spectral orders in 1D cross-dispersed data into a single
+        spectrum.
+
+        Parameters
+        ----------
+
+        """
+        log = self.log
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params.pop("suffix")
+
+        adoutputs = []
+        for ad in adinputs:
+            if not all(len(ext.shape) == 1 for ext in ad):
+                log.warnings(f"Cannot combine orders in {ad.filename} as all "
+                             "extensions must be 1D spectra.")
+                adoutputs.append(ad)
+                continue
+
+            stack_inputs = self._separate_by_spectral_order(ad)
+            stack_inputs = self.resampleToCommonFrame(stack_inputs, single_wave_scale=True)
+            adout = self.stackFrames(stack_inputs, **params)[0]
+
+            # Timestamp and update the filename
+            gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
+            adout.update_filename(suffix=sfx, strip=True)
+
+            adoutputs.append(adout)
+
+        return adoutputs
 
     def cutSlits(self, adinputs=None, **params):
         """
@@ -510,6 +544,89 @@ class CrossDispersed(Spect, Preprocess):
         adinputs = super().flatCorrect(adinputs, flat=flat_files, **params)
 
         return adinputs
+
+    def write1DSpectra(self, adinputs=None, **params):
+        """
+        Write 1D spectra to files listing the wavelength and data (and
+        optionally variance and mask) in one of a range of possible formats.
+
+        This is a wrapper around the Spect.write1DSpectra() primitive for
+        cross-dispersed data. It separates the input AstroData object into
+        multiple AstroData objects, each containing a single spectral order,
+        and then calls the parent primitive to write each of these.
+
+        Parameters
+        ----------
+        format : str
+            format for writing output files
+        header : bool
+            write FITS header before data values?
+        extension : str
+            extension to be used in output filenames
+        apertures : str
+            comma-separated list of aperture numbers to write
+        dq : bool
+            write DQ (mask) plane?
+        var : bool
+            write VAR (variance) plane?
+        overwrite : bool
+            overwrite existing files?
+        wave_units: str
+            units of the x (wavelength/frequency) column
+        data_units: str
+            units of the data column
+       """
+        log = self.log
+        for ad in adinputs:
+            log.fullinfo(f"Separating {ad.filename} into spectral orders")
+            adoutputs = self._separate_by_spectral_order(ad)
+            super().write1DSpectra(adinputs=adoutputs, **params)
+
+        return adinputs
+
+    @classmethod
+    def _separate_by_spectral_order(self, ad):
+        """
+        Separate a multi-extension AstroData object into a list of
+        AstroData objects with unique filenames, where all the extensions with
+        a given spectral order are put in a single AD. Each output AD will have
+        as many extensions as there are apertures in the input AD.
+
+        It doesn't check whether each spectral order has the same number
+        of apertures, or sort them in any way.
+
+        Parameters
+        ----------
+        ad : `~astrodata.AstroData`
+            The AstroData object to be processed.
+
+        Returns
+        -------
+        list
+            A list of `~astrodata.AstroData` objects, one per extension in
+            the input `ad`.
+        """
+        orders = set(ad.hdr.get('SPECORDR'))
+        if None in orders:
+            raise ValueError("One or more slices in the input is missing the"
+                             "'SPECORDR' keyword.")
+
+        filename = ad.filename or "XD.fits"
+        orig_filename = ad.orig_filename or filename
+        adoutputs = []
+        for order in orders:
+            ad_out = astrodata.create(ad.phu)
+            for ext in ad:
+                if ext.hdr.get('SPECORDR') == order:
+                    # This deepcopies in astrodata.core
+                    # TODO: investigate AstroData.append()
+                    ad_out.append(ext)
+
+            ad_out.filename = f'_order{order}'.join(os.path.splitext(filename))
+            ad_out.orig_filename = f'_order{order}'.join(os.path.splitext(orig_filename))
+            adoutputs.append(ad_out)
+
+        return adoutputs
 
     def _make_tab_labels(self, ad):
         """
