@@ -4,9 +4,9 @@
 #                                                  primitives_crossdispersed.py
 # -----------------------------------------------------------------------------
 
-from abc import abstractmethod
 from copy import deepcopy
 from importlib import import_module
+import os
 
 import astrodata, gemini_instruments
 from astrodata.utils import Section
@@ -24,6 +24,7 @@ from gempy.library import astromodels as am
 from geminidr.core import Spect, Preprocess
 from geminidr import CalibrationNotFoundError
 from . import parameters_crossdispersed
+
 
 @parameter_override
 @capture_provenance
@@ -510,6 +511,50 @@ class CrossDispersed(Spect, Preprocess):
         adinputs = super().flatCorrect(adinputs, flat=flat_files, **params)
 
         return adinputs
+
+    @classmethod
+    def _separate_by_spectral_order(self, ad):
+        """
+        Separate a multi-extension AstroData object into a list of
+        AstroData objects with unique filenames, where all the extensions with
+        a given spectral order are put in a single AD. Each output AD will have
+        as many extensions as there are apertures in the input AD.
+
+        It doesn't check whether each spectral order has the same number
+        of apertures, or sort them in any way.
+
+        Parameters
+        ----------
+        ad : `~astrodata.AstroData`
+            The AstroData object to be processed.
+
+        Returns
+        -------
+        list
+            A list of `~astrodata.AstroData` objects, one per extension in
+            the input `ad`.
+        """
+        orders = set(ad.hdr.get('SPECORDR'))
+        if None in orders:
+            raise ValueError("One or more slices in the input is missing the"
+                             "'SPECORDR' keyword.")
+
+        filename = ad.filename or "XD.fits"
+        orig_filename = ad.orig_filename or filename
+        adoutputs = []
+        for order in orders:
+            ad_out = astrodata.create(ad.phu)
+            for ext in ad:
+                if ext.hdr.get('SPECORDR') == order:
+                    # deepcopy(ext) is a full AD object and so would need
+                    # to be sliced in order to be appended.
+                    ad_out.append(deepcopy(ext.nddata))
+
+            ad_out.filename = f'_order{order}'.join(os.path.splitext(filename))
+            ad_out.orig_filename = f'_order{order}'.join(os.path.splitext(orig_filename))
+            adoutputs.append(ad_out)
+
+        return adoutputs
 
     def _make_tab_labels(self, ad):
         """
