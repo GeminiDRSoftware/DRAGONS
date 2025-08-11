@@ -702,7 +702,7 @@ class Telluric(Spect):
                               np.mean(wave_model_bounds['c0']))
 
         dw = 0.02 * start_wvl / resolution
-        refplot_waves = np.arange(start_wvl, end_wvl, dw, dtype=np.float32)
+        refplot_waves = np.arange(start_wvl, end_wvl, dw)
         refplot_data = np.zeros_like(refplot_waves)
         airglow_linelist = wavecal.LineList(os.path.join(airglow_path,
                                                     "ohlist_v2.0_rev_o2_added.dat"))
@@ -724,7 +724,7 @@ class Telluric(Spect):
             refplot_data = np.concatenate((refplot_data, 3000 * atran_data[1, :]))
             refplot_waves = np.concatenate((refplot_waves, atran_data[0, :]))
 
-        refplot_spec = np.asarray([refplot_waves, refplot_data])
+        refplot_spec = np.asarray([refplot_waves, refplot_data], dtype=np.float32)
 
         airglow_linelist = (f'airglow_linelist_{start_wvl:.0f}-{end_wvl:.0f}'
                     f'_r{resolution:.0f}_nl{num_lines:.0f}.dat')
