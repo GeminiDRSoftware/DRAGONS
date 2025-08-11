@@ -55,12 +55,14 @@ def stack_nddata(fn):
     The returned arrays are then stuffed back into an NDAstroData object.
     """
     @wraps(fn)
-    def wrapper(instance, sequence, scale=None, zero=None, *args, **kwargs):
+    def wrapper(instance, sequence, global_scaling=None, scale=None, zero=None, *args, **kwargs):
         nddata_list = list(sequence)
         if scale is None:
-            scale = [1.0] * len(nddata_list)
+            scale = np.ones(len(nddata_list), dtype=np.float32)
         if zero is None:
-            zero = [0.0] * len(nddata_list)
+            zero = np.zeros(len(nddata_list), dtype=np.float32)
+        if global_scaling is not None:
+            scale *= global_scaling
 
         # Coerce all data to 32-bit floats. FITS data on disk is big-endian
         # and preserving that datatype will cause problems with Cython
@@ -86,6 +88,11 @@ def stack_nddata(fn):
 
         out_data, out_mask, out_var, rejmap = fn(
             instance, data=data, mask=mask, variance=variance, *args, **kwargs)
+
+        if global_scaling is not None:
+            out_data /= global_scaling
+            if out_var is not None:
+                out_var /= global_scaling * global_scaling
 
         # Can't instantiate NDAstroData with variance
         ret_value = NDAstroData(out_data, mask=out_mask, variance=out_var)

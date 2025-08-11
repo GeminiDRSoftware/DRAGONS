@@ -183,6 +183,7 @@ class Stack(PrimitivesBASE):
         apply_dq = params["apply_dq"]
         separate_ext = params.get("separate_ext", False)
         statsec = params.get("statsec", None)
+        operation = params["operation"]
         reject_method = params["reject_method"]
         save_rejection_map = params["save_rejection_map"]
 
@@ -246,14 +247,21 @@ class Stack(PrimitivesBASE):
         # so we can pass those to the stacking function
         # TODO: Should probably be done better to consider only the overlap
         # regions between frames
-        if scale or zero:
+        # Always calculate these so we can decide if global scaling is needed
+        if scale or zero or operation == "wtmean":
             levels = np.empty((num_img, num_ext), dtype=np.float32)
             for i, ad in enumerate(adinputs):
                 for index in range(num_ext):
                     nddata = (ad[index].nddata.window[:] if statsec is None
                               else ad[index].nddata.window[statsec])
                     #levels[i, index] = np.median(nddata.data)
-                    levels[i, index] = gt.measure_bg_from_image(nddata, value_only=True)
+                    if 'IMAGE' in ad.tags:
+                        levels[i, index] = gt.measure_bg_from_image(nddata, value_only=True)
+                    else:
+                        levels[i, index] = np.ma.median(np.ma.masked_array
+                                                        (nddata.data, mask=nddata.mask))
+
+        if scale or zero:
             if scale and zero:
                 log.warning("Both scale and zero are set. Setting scale=False.")
                 scale = False
@@ -285,6 +293,20 @@ class Stack(PrimitivesBASE):
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
 
+        # For extensions with very large or small data values, the variance
+        # can lead to under/overflows when calculating the weighted mean, so
+        # we rescale the data to values of ~1 to avoid this. For aesthetic
+        # reasons, we compute a scaling that is a power of 10.
+        if operation == "wtmean":
+            print(levels)
+            average_levels_per_ext = np.round(np.log10(np.median(abs(levels), axis=0)))
+            print("AVERAGE", average_levels_per_ext)
+            global_scaling_per_ext = 10 ** np.where(abs(average_levels_per_ext) > 15,
+                                                    -average_levels_per_ext, 0)
+        else:
+            global_scaling_per_ext = [None] * num_ext
+        print("GLOBAL", global_scaling_per_ext)
+
         if reject_method == "varclip" and any(ext.variance is None
                                               for ad in adinputs for ext in ad):
             log.warning("Rejection method 'varclip' has been chosen but some"
@@ -293,9 +315,9 @@ class Stack(PrimitivesBASE):
             reject_method = "sigclip"
 
         log.stdinfo("Combining {} inputs with {} and {} rejection"
-                    .format(num_img, params["operation"], reject_method))
+                    .format(num_img, operation, reject_method))
 
-        stack_function = NDStacker(combine=params["operation"],
+        stack_function = NDStacker(combine=operation,
                                    reject=reject_method,
                                    log=self.log, **params)
 
@@ -334,6 +356,7 @@ class Stack(PrimitivesBASE):
                                              for ad in adinputs)
             result = windowedOp(stack_function,
                                 [ad[index].nddata for ad in adinputs],
+                                global_scaling=global_scaling_per_ext[index],
                                 scale=sfactors,
                                 zero=zfactors,
                                 kernel=kernel,
