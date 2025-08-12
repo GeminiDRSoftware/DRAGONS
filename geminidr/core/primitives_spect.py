@@ -714,10 +714,12 @@ class Spect(Resample):
                 # ADs, so just set the found transforms to empty and present
                 # the warning at the end
                 try:
-                    m_distcorr = wcs.get_transform(wcs.input_frame,
-                                                   'distortion_corrected')
-                except CoordinateFrameError:
+                    dist_frame_index = wcs.available_frames.index('distortion_corrected')
+                except ValueError:
                     m_distcorr = None
+                else:
+                    m_distcorr = wcs.get_transform(wcs.available_frames[dist_frame_index - 1],
+                                                   'distortion_corrected')
                 distortion_models.append(m_distcorr)
 
                 try:
@@ -754,10 +756,22 @@ class Spect(Resample):
                     geotable = import_module('.geometry_conf', self.inst_lookups)
                     transform.add_mosaic_wcs(ad, geotable)
                     for ext in ad:
-                        if ('mosaic' in ext.wcs.available_frames and
-                                m_distcorr is not None):
-                            ext.wcs.insert_frame('mosaic', m_distcorr,
-                                                 cf.Frame2D(name='distortion_corrected'))
+                        try:
+                            mosaic_frame_index = ext.wcs.available_frames.index('mosaic')
+                        except ValueError:
+                            continue
+                        if m_distcorr is not None:
+                            # If there's a "rectified" frame after the mosaic,
+                            # then determineDistortion() will have calculated
+                            # a distortion model for that position.
+                            try:
+                                rectified_frame_index = ext.wcs.available_frames.index('rectified')
+                            except ValueError:
+                                rectified_frame_index = -1
+                            ext.wcs.insert_frame(
+                                ext.wcs.available_frames[max(mosaic_frame_index,
+                                                             rectified_frame_index)],
+                                m_distcorr, cf.Frame2D(name='distortion_corrected'))
 
                     # We need to consider the different pixel frames of the
                     # science and arc. The input->mosaic transform of the
@@ -851,7 +865,9 @@ class Spect(Resample):
                                       m_shift | m_distcorr)
 
                     if m_distcorr is not None:
-                        ad[0].wcs.insert_frame(ad[0].wcs.input_frame, m_distcorr,
+                        prior_frame = ('rectified' if 'rectified' in ad[0].wcs.available_frames
+                                       else ad[0].wcs.input_frame)
+                        ad[0].wcs.insert_frame(prior_frame, m_distcorr,
                                                cf.Frame2D(name='distortion_corrected'))
 
                 if wave_model is None:
@@ -884,7 +900,9 @@ class Spect(Resample):
                                        shift_model | dist_model)
 
                     if dist_model is not None:
-                        ext.wcs.insert_frame(ad[0].wcs.input_frame, dist_model,
+                        prior_frame = ('rectified' if 'rectified' in ext.wcs.available_frames
+                                       else ext.wcs.input_frame)
+                        ext.wcs.insert_frame(prior_frame, dist_model,
                                              cf.Frame2D(name='distortion_corrected'))
 
                     if wave_model is None:
