@@ -19,6 +19,13 @@ cimport cython
 from libc.math cimport sqrt
 from libc.stdlib cimport malloc, free
 
+# This is an interface to
+
+def masked_median(float [:] data, unsigned short [:] mask, int data_size):
+    cdef float med
+    med = median(&data[0], &mask[0], 1, data_size, 1)
+    return med
+
 
 # These functions are used by nddops.py for combining images, especially
 # in the stackFrames() primitive
@@ -27,7 +34,7 @@ from libc.stdlib cimport malloc, free
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef float median(float data[], unsigned short mask[], int has_mask,
-                  int data_size) except? -1:
+                  int data_size, int bad) except? -1:
     """
     One-dimensional true median, with optional masking.
 
@@ -41,6 +48,10 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
         (add description)
     data_size : int
         (add description)
+    bad : int
+        values in the mask lower than this are considered "good". This is
+        1 in general operation, but 65535 when used as part of iterclip
+        because of the way NDStacker handles masking.
 
     Returns
     -------
@@ -56,7 +67,7 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
 
     if has_mask:
         for i in range(data_size):
-            if mask[i] < 65535:
+            if mask[i] < bad:
                 tmp[nused] = data[i]
                 nused += 1
     if nused == 0:  # if not(has_mask) or all(mask)
@@ -141,7 +152,7 @@ cdef void mask_stats(float data[], unsigned short mask[], int has_mask,
         nused = data_size
     mean = sum / float(nused)
     if return_median:
-        result[0] = <double>median(data, mask, has_mask, data_size)
+        result[0] = <double>median(data, mask, has_mask, data_size, 65535)
     else:
         result[0] = mean
     result[1] = sumsq / nused - mean*mean
