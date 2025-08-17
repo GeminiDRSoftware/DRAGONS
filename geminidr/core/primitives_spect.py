@@ -1503,9 +1503,11 @@ class Spect(Resample):
                                                  _slice[::-1].argmin()) / _slice.size)
                     else:
                         try:
-                            slit_length_frac = ad.MDF['slitlength_pixels'] / ext.shape[1 - dispaxis]
+                            slit_length_frac = (ad.MDF['slitlength_pixels'] /
+                                                ext.shape[1 - dispaxis])
                         except (AttributeError, KeyError):
                             slit_length_frac = 1
+                    slit_length_frac = min(slit_length_frac, 1.0)
 
                     # Straight slits, such as in longslit, can have all the lines
                     # traced simultaneously since they all have the same starting
