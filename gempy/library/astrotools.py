@@ -376,7 +376,7 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
     with all `num_ext` detectors from the first image, then from the second
     image, and so on.
 
-    NB. All the NDAstroData objects in the list must have the same shape!
+    NB. All the NDAstroData objects must have the same dimensionality!
 
     This is designed to work on arbitrarily large arrays in a memory-efficient
     manner by repeatedly using the same memory to place the intermediate
@@ -409,11 +409,15 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
     # to check for the presence of attributes without loading the entire array
     test_slice = (slice(0, 1),) * len(nddata_list[0].shape)
 
+    # We have to ensure that the result is large enough in all dimensions since
+    # windowedOp installs the sections using fully-dimensioned slices, rather
+    # than have a 1D array that is later reshaped.
     if result is None:
+        max_shape = tuple(np.array([ndd.shape for ndd in nddata_list]).max(axis=0))
         result = NDAstroData(
-            data=np.empty(nddata_list[0].shape,
+            data=np.empty(max_shape,
                           dtype=nddata_list[0].window[test_slice].data.dtype),
-            mask=np.empty(nddata_list[0].shape, dtype=np.uint16)
+            mask=np.empty(max_shape, dtype=np.uint16)
         )
 
     # We'll be masking points where either of the input pixels is negative
@@ -429,10 +433,11 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
                              np.empty(kernel, dtype=result.mask.dtype))
 
     def subtract(ndd_objects):
-        ndd1, ndd2 = ndd_objects
-        tmp_result._data[:] = ndd1.data - ndd2.data
-        if ndd1.mask is not None and ndd2.mask is not None:
-            tmp_result.mask[:] = np.bitwise_or(ndd1.mask, ndd2.mask)
+        nd1, nd2 = ndd_objects
+        _slice = tuple(slice(0, s) for s in nd1.data.shape)
+        tmp_result._data[_slice] = nd1.data - nd2.data
+        if nd1.mask is not None and nd2.mask is not None:
+            tmp_result.mask[_slice] = np.bitwise_or(nd1.mask, nd2.mask)
         return tmp_result
 
     def divide_and_log(ndd_objects):
@@ -441,11 +446,12 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
         # OK if all the data are noise, and does well with scaliing
         # the least-noisy data to each other, even if this isn't the
         # same level as the reference.
-        ndd1, ndd2 = ndd_objects
-        tmp_result._data[:] = np.log(ndd1.data) - np.log(ndd2.data)
-        tmp_result.mask[:] = np.isnan(tmp_result.data)
-        if ndd1.mask is not None and ndd2.mask is not None:
-            tmp_result.mask |= np.bitwise_or(ndd1.mask, ndd2.mask)
+        nd1, nd2 = ndd_objects
+        _slice = tuple(slice(0, s) for s in ndd1.data.shape)
+        tmp_result._data[_slice] = np.log(nd1.data) - np.log(nd2.data)
+        tmp_result.mask[_slice] = np.isnan(tmp_result.data[_slice])
+        if nd1.mask is not None and nd2.mask is not None:
+            tmp_result.mask[_slice] |= np.bitwise_or(nd1.mask, nd2.mask)
         return tmp_result
 
     func = divide_and_log if return_scaling else subtract
@@ -476,11 +482,13 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
                 windowedOp(func, (ndd1, ndd2), kernel,
                            with_mask=with_mask, result=result)
 
+                _slice = tuple(slice(0, s) for s in ndd1.shape)
                 if with_mask:
-                    median = masked_median(result.data.ravel(), result.mask.ravel(),
+                    median = masked_median(result.data[_slice].ravel(),
+                                           result.mask[_slice].ravel(),
                                            img_size)
                 else:
-                    median = np.median(result.data)
+                    median = np.median(result.data[_slice])
 
                 noverlap = np.sum(result.mask == 0) if with_mask else img_size
                 if separate_ext:

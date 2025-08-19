@@ -687,8 +687,9 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
             meta=deepcopy(sequence[0].meta),
             wcs=sequence[0].wcs,
         )
-    elif result.shape != shape:
-        raise ValueError("Object 'result' has a different shape than the inputs")
+    elif any(inlen > reslen for inlen, reslen in zip(shape, result.shape)):
+        raise ValueError("Object 'result' has a smaller shape ({}) than the "
+                         "inputs ({})".format(result.shape, shape))
     else:  # Don't update these things if they already exist
         if result.meta is None:
             result.meta = deepcopy(sequence[0].meta)
