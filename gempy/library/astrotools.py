@@ -14,6 +14,14 @@ from astropy import stats
 from astropy.coordinates import Angle
 from astropy.modeling import models, fitting
 
+from astrodata.fits import windowedOp
+from astrodata.nddata import NDAstroData
+
+from gempy.library.cython_utils import masked_median
+from gempy.utils import logutils
+
+log = logutils.get_logger(__name__)
+
 
 class Magnitude:
     # Wavelength (nm) and AB-Vega offsets
@@ -176,7 +184,8 @@ def calculate_pixel_edges(centers):
 def calculate_scaling(x, y, sigma_x=None, sigma_y=None, sigma=3, niter=2):
     """
     Determine the optimum value by which to scale inputs so that they match
-    a set of reference values
+    a set of reference values. This works on a pixel-by-pixel basis so can
+    only be used for relatively small arrays.
 
     Parameters
     ----------
@@ -348,6 +357,124 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
                 iterations += 1
 
     return spline
+
+
+def optimal_normalization(nddata_list, result=None, kernel=None,
+                          maxiter=100000, return_scaling=False):
+    """
+    Compute a set of normalization offsets/scale factors to give a list
+    of NDAstroData objects the same overall value. This is done by
+    comparing the differences/ratios of all the unmasked pixels that
+    overlap between each pair of images, and then computing the optimum
+    values.
+
+    This is designed to work on arbitrarily large arrays in a memory-efficient
+    manner by repeatedly using the same memory to place the intermediate
+    results and using windowedOp() to build up the difference/ratio images.
+    Because of this, it is necessary to do some preparatory work by creating
+    the 'result' and 'kernel' objects, unless memory is not an issue.
+
+    Parameters
+    ----------
+    nddata_list: list
+        list of NDAstroData objects, all the same shape
+    result: NDAstroData/None
+        pre-created result object to hold the final result
+    kernel: tuple/None
+        shape of iterative kernel for doing piecewise calculation
+    maxiter: int
+        maximum number of iterations for the minimization
+    return_scaling: bool
+        return scaling factors rather than additive offsets?
+
+    Returns
+    -------
+    ndarray: additive offsets or scaling factors to scale the second and
+        subsequent NDAstroData objects to match the first one
+    """
+    # to check for the presence of attributes without loading the entire array
+    test_slice = (slice(0, 1),) * len(nddata_list[0].shape)
+
+    if result is None:
+        result = NDAstroData(
+            data=np.empty(nddata_list[0].shape,
+                          dtype=nddata_list[0].window[test_slice].data.dtype),
+            mask=np.empty(nddata_list[0].shape, dtype=np.uint16)
+        )
+
+    # We'll be masking points where either of the input pixels is negative
+    # so we need there to be an extant mask for storing that information
+    if return_scaling and result.mask is None:
+        raise ValueError("'return_scaling=True' requires mask")
+
+    if kernel is None:
+        kernel = result.shape
+
+    tmp_result = NDAstroData(data=np.empty(kernel, dtype=result.data.dtype),
+                             mask=None if result.mask is None else
+                             np.empty(kernel, dtype=result.mask.dtype))
+
+    def subtract(ndd_objects):
+        ndd1, ndd2 = ndd_objects
+        tmp_result._data[:] = ndd1.data - ndd2.data
+        if ndd1.mask is not None and ndd2.mask is not None:
+            tmp_result.mask[:] = np.bitwise_or(ndd1.mask, ndd2.mask)
+        return tmp_result
+
+    def divide_and_log(ndd_objects):
+        # This isn't perfect because of the problem of negative
+        # values. However, some experimentation suggests that it's
+        # OK if all the data are noise, and does well with scaliing
+        # the least-noisy data to each other, even if this isn't the
+        # same level as the reference.
+        ndd1, ndd2 = ndd_objects
+        tmp_result._data[:] = np.log(ndd1.data) - np.log(ndd2.data)
+        tmp_result.mask[:] = np.isnan(tmp_result.data)
+        if ndd1.mask is not None and ndd2.mask is not None:
+            tmp_result.mask |= np.bitwise_or(ndd1.mask, ndd2.mask)
+        return tmp_result
+
+    func = divide_and_log if return_scaling else subtract
+
+    img_size = nddata_list[0].size
+    nimg = len(nddata_list)
+    offset_matrix = np.zeros((nimg, nimg))
+    weight_matrix = np.zeros_like(offset_matrix)
+
+    for i, ndd1 in enumerate(nddata_list):
+        for j, ndd2 in enumerate(nddata_list[i+1:], start=i+1):
+            with_mask = np.logical_and(ndd1.window[test_slice].mask is not None,
+                                       ndd2.window[test_slice].mask is not None)
+            windowedOp(func, (ndd1, ndd2), kernel,
+                       with_mask=with_mask, result=result)
+
+            if with_mask:
+                median = masked_median(result.data.ravel(), result.mask.ravel(),
+                                       img_size)
+            else:
+                median = np.median(result.data)
+
+            offset_matrix[i, j] = median
+            weight_matrix[i, j] = (np.sum(result.mask == 0) if with_mask else
+                                   img_size)
+
+    # We're only offsetting images [1:N] (N-1 images)
+    x = np.zeros((nimg - 1,))
+
+    def minfunc(x):
+        offsets = np.r_[[0], x]  # the first image is untouched
+        val = np.sum(weight_matrix * (offset_matrix + offsets[:, np.newaxis] -
+                                      offsets) ** 2)
+        return val
+
+    # Nelder-Mead seems to work best for this problem
+    res = optimize.minimize(minfunc, x, method="Nelder-Mead",
+                            options={'maxiter': maxiter})
+    if not res.success:
+        log.warning("Normalization failed: {}".format(res.message))
+
+    # Return the scaling/offset for the reference as well
+    return np.r_[1.0, np.exp(res.x)] if return_scaling else np.r_[0.0, res.x]
 
 
 def std_from_pixel_variations(array, separation=5, subtract_linear_fits=True,

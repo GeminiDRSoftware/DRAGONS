@@ -8,6 +8,19 @@ from gempy.library import astrotools as at
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
+from astrodata.nddata import NDAstroData
+
+
+@pytest.fixture(scope='module')
+def flat_images():
+    rng = np.random.default_rng(42)
+    images = []
+    for i in range(5):
+        img = NDAstroData(data=rng.normal(loc=50*(i+1), scale=20, size=(100, 100)).astype(np.float32),
+                          mask=(np.random.rand(100, 100) > 0.99).astype(np.uint16))
+        images.append(img)
+    return images
+
 
 def test_array_from_list():
     values = (1, 2, 3)
@@ -183,6 +196,24 @@ def test_cartesian_regions_to_slices():
 
     with pytest.raises(TypeError):
         cart(12)
+
+
+@pytest.mark.parametrize("return_scaling", (True, False))
+def test_optimal_normalization(flat_images, return_scaling):
+    """
+    Quick test to check image scaling/offsetting. This doesn't test the
+    memory-mapping part of the function.
+    """
+    shape = flat_images[0].shape
+    result = NDAstroData(np.empty(shape, dtype=np.float32),
+                         mask=np.empty(shape, dtype=np.uint16))
+    retval = at.optimal_normalization(flat_images, result=result,
+                                      kernel=shape, return_scaling=return_scaling)
+
+    if return_scaling:
+        np.testing.assert_allclose(retval, 1. / (np.arange(len(flat_images)) + 1), rtol=0.01)
+    else:
+        np.testing.assert_allclose(retval, -np.arange(len(flat_images)) * 50, atol=1.0)
 
 
 def test_spherical_offsets_by_pa():
