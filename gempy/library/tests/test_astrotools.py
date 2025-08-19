@@ -13,9 +13,10 @@ from astrodata.nddata import NDAstroData
 
 @pytest.fixture(scope='module')
 def flat_images():
+    # Produce 6 NDAstroData objects with different mean values and some noise.
     rng = np.random.default_rng(42)
     images = []
-    for i in range(5):
+    for i in range(6):
         img = NDAstroData(data=rng.normal(loc=50*(i+1), scale=20, size=(100, 100)).astype(np.float32),
                           mask=(np.random.rand(100, 100) > 0.99).astype(np.uint16))
         images.append(img)
@@ -214,6 +215,29 @@ def test_optimal_normalization(flat_images, return_scaling):
         np.testing.assert_allclose(retval, 1. / (np.arange(len(flat_images)) + 1), rtol=0.01)
     else:
         np.testing.assert_allclose(retval, -np.arange(len(flat_images)) * 50, atol=1.0)
+
+
+@pytest.mark.parametrize("separate_ext", (True, False))
+def test_optimal_normalization_multiple_extensions(flat_images, separate_ext):
+    """
+    Confirm that the function works with multiple extensions, either computing
+    the offsets separately or together.
+    """
+    shape = flat_images[0].shape
+    result = NDAstroData(np.empty(shape, dtype=np.float32),
+                         mask=np.empty(shape, dtype=np.uint16))
+    # Pass the list as 2 images with 3 extensions each
+    retval = at.optimal_normalization(flat_images, result=result,
+                                      kernel=shape, return_scaling=True,
+                                      num_ext=3, separate_ext=separate_ext)
+
+    if separate_ext:
+        assert retval.shape == (3, 2)  # 3 extensions, 2 images
+        np.testing.assert_allclose(retval, [[1., 0.25], [1., 0.4], [1., 0.5]], rtol=0.01)
+    else:
+        # It's the average of the logs of the scaling factors
+        expected = -(np.log(4) + np.log(2.5) + np.log(2)) / 3  # (200,50), (250/100), (300/150)
+        np.testing.assert_allclose(retval, [1, np.exp(expected)], rtol=0.01)
 
 
 def test_spherical_offsets_by_pa():

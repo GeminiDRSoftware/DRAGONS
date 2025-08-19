@@ -359,14 +359,24 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
     return spline
 
 
-def optimal_normalization(nddata_list, result=None, kernel=None,
-                          maxiter=100000, return_scaling=False):
+def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
+                          return_scaling=False, result=None, kernel=None,
+                          maxiter=10000):
     """
     Compute a set of normalization offsets/scale factors to give a list
     of NDAstroData objects the same overall value. This is done by
     comparing the differences/ratios of all the unmasked pixels that
     overlap between each pair of images, and then computing the optimum
     values.
+
+    The function can cope with multi-detector instruments by only comparing
+    the same detector in each image; in such a case, separate normalization
+    factors can be calculated for each detector, or a single overall
+    normalization can be calculated. The `nddata_list` should be ordered
+    with all `num_ext` detectors from the first image, then from the second
+    image, and so on.
+
+    NB. All the NDAstroData objects in the list must have the same shape!
 
     This is designed to work on arbitrarily large arrays in a memory-efficient
     manner by repeatedly using the same memory to place the intermediate
@@ -378,14 +388,18 @@ def optimal_normalization(nddata_list, result=None, kernel=None,
     ----------
     nddata_list: list
         list of NDAstroData objects, all the same shape
+    num_ext: int
+        number of independent fields to compute normalization for
+    separate_ext: bool
+        compute normalization for each set of extensions separately?
+    return_scaling: bool
+        return scaling factors rather than additive offsets?
     result: NDAstroData/None
         pre-created result object to hold the final result
     kernel: tuple/None
         shape of iterative kernel for doing piecewise calculation
     maxiter: int
         maximum number of iterations for the minimization
-    return_scaling: bool
-        return scaling factors rather than additive offsets?
 
     Returns
     -------
@@ -436,45 +450,64 @@ def optimal_normalization(nddata_list, result=None, kernel=None,
 
     func = divide_and_log if return_scaling else subtract
 
-    img_size = nddata_list[0].size
-    nimg = len(nddata_list)
-    offset_matrix = np.zeros((nimg, nimg))
-    weight_matrix = np.zeros_like(offset_matrix)
-
-    for i, ndd1 in enumerate(nddata_list):
-        for j, ndd2 in enumerate(nddata_list[i+1:], start=i+1):
-            with_mask = np.logical_and(ndd1.window[test_slice].mask is not None,
-                                       ndd2.window[test_slice].mask is not None)
-            windowedOp(func, (ndd1, ndd2), kernel,
-                       with_mask=with_mask, result=result)
-
-            if with_mask:
-                median = masked_median(result.data.ravel(), result.mask.ravel(),
-                                       img_size)
-            else:
-                median = np.median(result.data)
-
-            offset_matrix[i, j] = median
-            weight_matrix[i, j] = (np.sum(result.mask == 0) if with_mask else
-                                   img_size)
-
-    # We're only offsetting images [1:N] (N-1 images)
-    x = np.zeros((nimg - 1,))
-
     def minfunc(x):
         offsets = np.r_[[0], x]  # the first image is untouched
         val = np.sum(weight_matrix * (offset_matrix + offsets[:, np.newaxis] -
                                       offsets) ** 2)
         return val
 
-    # Nelder-Mead seems to work best for this problem
-    res = optimize.minimize(minfunc, x, method="Nelder-Mead",
-                            options={'maxiter': maxiter})
-    if not res.success:
-        log.warning("Normalization failed: {}".format(res.message))
+    img_size = nddata_list[0].size
+    nimg = len(nddata_list) // num_ext
+    offset_matrix = np.zeros((nimg, nimg))
+    weight_matrix = np.zeros_like(offset_matrix)
 
-    # Return the scaling/offset for the reference as well
-    return np.r_[1.0, np.exp(res.x)] if return_scaling else np.r_[0.0, res.x]
+    # We're only offsetting images [1:N] (N-1 images)
+    x = np.zeros((nimg - 1,))
+
+    separate_ext = separate_ext and (num_ext > 1)
+    results = np.empty((num_ext, nimg) if separate_ext else (nimg,),
+                       dtype=np.float64)
+
+    for n in range(num_ext):
+        for i, ndd1 in enumerate(nddata_list[n::num_ext]):
+            for j, ndd2 in enumerate(nddata_list[n+(i+1)*num_ext::num_ext], start=i+1):
+                with_mask = np.logical_and(ndd1.window[test_slice].mask is not None,
+                                           ndd2.window[test_slice].mask is not None)
+                windowedOp(func, (ndd1, ndd2), kernel,
+                           with_mask=with_mask, result=result)
+
+                if with_mask:
+                    median = masked_median(result.data.ravel(), result.mask.ravel(),
+                                           img_size)
+                else:
+                    median = np.median(result.data)
+
+                noverlap = np.sum(result.mask == 0) if with_mask else img_size
+                if separate_ext:
+                    offset_matrix[i, j] = median
+                else:  # weighted combination
+                    offset_matrix[i, j] = (offset_matrix[i, j] * weight_matrix[i, j] +
+                                           median * noverlap) / (weight_matrix[i, j] + noverlap)
+                weight_matrix[i, j] += noverlap
+
+        if separate_ext or n == num_ext - 1:
+            # Nelder-Mead seems to work best for this problem
+            res = optimize.minimize(minfunc, x, method="Nelder-Mead",
+                                    options={'maxiter': maxiter})
+            # Include the zero offset for the first image
+            factors = np.r_[0.0, res.x]
+            if not res.success:
+                log.warning("Normalization failed: {}".format(res.message))
+
+            if separate_ext:
+                # Reset the offset matrix for the next extension
+                offset_matrix.fill(0)
+                weight_matrix.fill(0)
+                results[n] = factors
+            else:
+                results[:] = factors
+
+    return np.exp(results) if return_scaling else results
 
 
 def std_from_pixel_variations(array, separation=5, subtract_linear_fits=True,
