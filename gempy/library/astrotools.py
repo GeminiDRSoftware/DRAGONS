@@ -360,8 +360,7 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
 
 
 def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
-                          return_scaling=False, result=None, kernel=None,
-                          maxiter=10000):
+                          return_scaling=False, maxiter=1000000):
     """
     Compute a set of normalization offsets/scale factors to give a list
     of NDAstroData objects the same overall value. This is done by
@@ -380,9 +379,7 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
 
     This is designed to work on arbitrarily large arrays in a memory-efficient
     manner by repeatedly using the same memory to place the intermediate
-    results and using windowedOp() to build up the difference/ratio images.
-    Because of this, it is necessary to do some preparatory work by creating
-    the 'result' and 'kernel' objects, unless memory is not an issue.
+    results.
 
     Parameters
     ----------
@@ -394,11 +391,7 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
         compute normalization for each set of extensions separately?
     return_scaling: bool
         return scaling factors rather than additive offsets?
-    result: NDAstroData/None
-        pre-created result object to hold the final result
-    kernel: tuple/None
-        shape of iterative kernel for doing piecewise calculation
-    maxiter: int
+   maxiter: int
         maximum number of iterations for the minimization
 
     Returns
@@ -409,60 +402,10 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
     # to check for the presence of attributes without loading the entire array
     test_slice = (slice(0, 1),) * len(nddata_list[0].shape)
 
-    # We have to ensure that the result is large enough in all dimensions since
-    # windowedOp installs the sections using fully-dimensioned slices, rather
-    # than have a 1D array that is later reshaped.
-    if result is None:
-        max_shape = tuple(np.array([ndd.shape for ndd in nddata_list]).max(axis=0))
-        result = NDAstroData(
-            data=np.empty(max_shape,
-                          dtype=nddata_list[0].window[test_slice].data.dtype),
-            mask=np.empty(max_shape, dtype=np.uint16)
-        )
+    ext_sizes = [ndd.size for ndd in nddata_list[:num_ext]]
+    result_size = max(ext_sizes) if separate_ext else sum(ext_sizes)
 
-    # We'll be masking points where either of the input pixels is negative
-    # so we need there to be an extant mask for storing that information
-    if return_scaling and result.mask is None:
-        raise ValueError("'return_scaling=True' requires mask")
-
-    if kernel is None:
-        kernel = result.shape
-
-    tmp_result = NDAstroData(data=np.empty(kernel, dtype=result.data.dtype),
-                             mask=None if result.mask is None else
-                             np.empty(kernel, dtype=result.mask.dtype))
-
-    def subtract(ndd_objects):
-        nd1, nd2 = ndd_objects
-        _slice = tuple(slice(0, s) for s in nd1.data.shape)
-        tmp_result._data[_slice] = nd1.data - nd2.data
-        if nd1.mask is not None and nd2.mask is not None:
-            tmp_result.mask[_slice] = np.bitwise_or(nd1.mask, nd2.mask)
-        return tmp_result
-
-    def divide_and_log(ndd_objects):
-        # This isn't perfect because of the problem of negative
-        # values. However, some experimentation suggests that it's
-        # OK if all the data are noise, and does well with scaliing
-        # the least-noisy data to each other, even if this isn't the
-        # same level as the reference.
-        nd1, nd2 = ndd_objects
-        _slice = tuple(slice(0, s) for s in ndd1.data.shape)
-        tmp_result._data[_slice] = np.log(nd1.data) - np.log(nd2.data)
-        tmp_result.mask[_slice] = np.isnan(tmp_result.data[_slice])
-        if nd1.mask is not None and nd2.mask is not None:
-            tmp_result.mask[_slice] |= np.bitwise_or(nd1.mask, nd2.mask)
-        return tmp_result
-
-    func = divide_and_log if return_scaling else subtract
-
-    def minfunc(x):
-        offsets = np.r_[[0], x]  # the first image is untouched
-        val = np.sum(weight_matrix * (offset_matrix + offsets[:, np.newaxis] -
-                                      offsets) ** 2)
-        return val
-
-    img_size = nddata_list[0].size
+    # Prepare all the arrays we need
     nimg = len(nddata_list) // num_ext
     offset_matrix = np.zeros((nimg, nimg))
     weight_matrix = np.zeros_like(offset_matrix)
@@ -474,46 +417,88 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
     results = np.empty((num_ext, nimg) if separate_ext else (nimg,),
                        dtype=np.float64)
 
-    for n in range(num_ext):
-        for i, ndd1 in enumerate(nddata_list[n::num_ext]):
-            for j, ndd2 in enumerate(nddata_list[n+(i+1)*num_ext::num_ext], start=i+1):
-                with_mask = np.logical_and(ndd1.window[test_slice].mask is not None,
-                                           ndd2.window[test_slice].mask is not None)
-                windowedOp(func, (ndd1, ndd2), kernel,
-                           with_mask=with_mask, result=result)
+    tmp_data = np.empty((2, result_size), dtype=np.float32)
+    tmp_mask = np.empty((2, result_size), dtype=np.uint16)
 
-                _slice = tuple(slice(0, s) for s in ndd1.shape)
-                if with_mask:
-                    median = masked_median(result.data[_slice].ravel(),
-                                           result.mask[_slice].ravel(),
-                                           img_size)
-                else:
-                    median = np.median(result.data[_slice])
+    def load_data(ndd_list, data_out, mask_out):
+        start = 0
+        for ndd in ndd_list:
+            size = ndd.size
+            data_out[start:start+size] = ndd.window[:].data.ravel()
+            try:
+                mask_out[start:start+size] = ndd.window[:].mask.ravel()
+            except AttributeError:  # mask is None
+                mask_out[start:start+size] = 0
+            start += size
 
-                noverlap = np.sum(result.mask == 0) if with_mask else img_size
-                if separate_ext:
-                    offset_matrix[i, j] = median
-                else:  # weighted combination
-                    offset_matrix[i, j] = (offset_matrix[i, j] * weight_matrix[i, j] +
-                                           median * noverlap) / (weight_matrix[i, j] + noverlap)
-                weight_matrix[i, j] += noverlap
+    m_init = models.Scale(1.0) if return_scaling else models.Shift(0.0)
+    fit_it = fitting.LinearLSQFitter()
 
-        if separate_ext or n == num_ext - 1:
-            # Nelder-Mead seems to work best for this problem
-            res = optimize.minimize(minfunc, x, method="Nelder-Mead",
-                                    options={'maxiter': maxiter})
-            # Include the zero offset for the first image
-            factors = np.r_[0.0, res.x]
-            if not res.success:
-                log.warning("Normalization failed: {}".format(res.message))
-
+    for n in range(num_ext if separate_ext else 1):
+        for i in range(nimg):
             if separate_ext:
-                # Reset the offset matrix for the next extension
-                offset_matrix.fill(0)
-                weight_matrix.fill(0)
-                results[n] = factors
+                load_data([nddata_list[i*num_ext + n]],
+                          tmp_data[0], tmp_mask[0])
+                result_size = ext_sizes[n]
             else:
-                results[:] = factors
+                load_data(nddata_list[i*num_ext:(i+1)*num_ext],
+                          tmp_data[0], tmp_mask[0])
+            if return_scaling:
+                tmp_mask[0] |= tmp_data[0] <= 0  # avoid log(0) or log(negative)
+
+            for j in range(i+1, nimg):
+                if separate_ext:
+                    load_data([nddata_list[j*num_ext + n]],
+                              tmp_data[1], tmp_mask[1])
+                else:
+                    load_data(nddata_list[j*num_ext:(j+1) * num_ext],
+                              tmp_data[1], tmp_mask[1])
+                if return_scaling:
+                    tmp_mask[1] |= tmp_data[1] <= 0  # avoid log(0) or log(negative)
+
+                tmp_mask[1] |= tmp_mask[0]  # combine masks
+
+                weight_matrix[i, j] = np.sum(tmp_mask[1, :result_size] == 0)
+
+                if return_scaling:
+                    tmp_data[1] /= tmp_data[0]
+                else:
+                    tmp_data[1] -= tmp_data[0]
+
+                med = masked_median(tmp_data[1], tmp_mask[1], result_size)
+                offset_matrix[i, j] = -(np.log(med) if return_scaling else med)
+
+        print(offset_matrix)
+        print(weight_matrix)
+
+        # Scale the offsets so they're O(1) since minimization can fail if
+        # the value to be optimized is too large. See:
+        # https://stackoverflow.com/questions/24767191/scipy-is-not-optimizing-and-returns-desired-error-not-necessarily-achieved-due
+        # This won't be a problem if we're scaling because the logs of all
+        # scaling factors will be O(1)
+        result_scaling = 1 if return_scaling else np.max(abs(offset_matrix))
+        offset_matrix /= result_scaling
+
+        def minfunc(x):
+            offsets = np.r_[[0], x]  # the first image is untouched
+            val = np.sum(weight_matrix * (offset_matrix + offsets[:, np.newaxis] -
+                                          offsets) ** 2)
+            return val
+
+        res = optimize.minimize(minfunc, x, options={'maxiter': maxiter})
+        # Include the zero offset for the first image
+        factors = np.r_[0.0, res.x]
+        if not res.success:
+            log.warning("Normalization failed: {}".format(res.message))
+
+        if separate_ext:
+            # Reset the offset matrix for the next extension
+            offset_matrix.fill(0)
+            weight_matrix.fill(0)
+            results[n] = factors * result_scaling
+        else:
+            results[:] = factors * result_scaling
+
 
     return np.exp(results) if return_scaling else results
 

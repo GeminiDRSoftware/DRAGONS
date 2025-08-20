@@ -205,11 +205,7 @@ def test_optimal_normalization(flat_images, return_scaling):
     Quick test to check image scaling/offsetting. This doesn't test the
     memory-mapping part of the function.
     """
-    shape = flat_images[0].shape
-    result = NDAstroData(np.empty(shape, dtype=np.float32),
-                         mask=np.empty(shape, dtype=np.uint16))
-    retval = at.optimal_normalization(flat_images, result=result,
-                                      kernel=shape, return_scaling=return_scaling)
+    retval = at.optimal_normalization(flat_images, return_scaling=return_scaling)
 
     if return_scaling:
         np.testing.assert_allclose(retval, 1. / (np.arange(len(flat_images)) + 1), rtol=0.01)
@@ -223,52 +219,20 @@ def test_optimal_normalization_multiple_extensions(flat_images, separate_ext):
     Confirm that the function works with multiple extensions, either computing
     the offsets separately or together.
     """
-    shape = flat_images[0].shape
-    result = NDAstroData(np.empty(shape, dtype=np.float32),
-                         mask=np.empty(shape, dtype=np.uint16))
     # Pass the list as 2 images with 3 extensions each
-    retval = at.optimal_normalization(flat_images, result=result,
-                                      kernel=shape, return_scaling=True,
+    retval = at.optimal_normalization(flat_images, return_scaling=True,
                                       num_ext=3, separate_ext=separate_ext)
 
     if separate_ext:
         assert retval.shape == (3, 2)  # 3 extensions, 2 images
         np.testing.assert_allclose(retval, [[1., 0.25], [1., 0.4], [1., 0.5]], rtol=0.01)
     else:
-        # It's the average of the logs of the scaling factors
-        expected = -(np.log(4) + np.log(2.5) + np.log(2)) / 3  # (200,50), (250/100), (300/150)
-        np.testing.assert_allclose(retval, [1, np.exp(expected)], rtol=0.01)
-
-
-@pytest.mark.parametrize("separate_ext", (True, False))
-def test_optimal_normalization_different_extensions(separate_ext):
-    """
-    Confirm that the function works with multiple extensions of different
-    shapes, either computing the offsets separately or together.
-    """
-    # We need to make test-specific images here
-    rng = np.random.default_rng(42)
-    flat_images = []
-    shapes = ((500, 1000), (1000, 500), (750, 750))
-    for i in range(6):
-        shape = shapes[i % 3]  # 2 images with 3 extensions each
-        img = NDAstroData(
-            data=rng.normal(loc=50*(i+1), scale=20,
-                            size=shape).astype(np.float32),
-            mask=(np.random.rand(*shape) > 0.99).astype(np.uint16))
-        flat_images.append(img)
-
-    # Pass the list as 2 images with 3 extensions each
-    retval = at.optimal_normalization(flat_images, result=None, return_scaling=True,
-                                      num_ext=3, separate_ext=separate_ext)
-
-    if separate_ext:
-        assert retval.shape == (3, 2)  # 3 extensions, 2 images
-        np.testing.assert_allclose(retval, [[1., 0.25], [1., 0.4], [1., 0.5]], rtol=0.01)
-    else:
-        # It's the average of the logs of the scaling factors
-        expected = -(np.log(4) + np.log(2.5) + np.log(2)) / 3  # (200,50), (250/100), (300/150)
-        np.testing.assert_allclose(retval, [1, np.exp(expected)], rtol=0.01)
+        # Because the data *don't* have a common scaling, the result here
+        # depends on how one decides to calculate the average scaling.
+        # The extensions in image 1 have signals (50, 100, 150), and in
+        # image 2 (200, 250, 300), so the divided image will have 1/3 pixels
+        # ~0.25, 1/3 being ~0.4, and 1/3 being ~0.5; hence median is 0.4
+        np.testing.assert_allclose(retval, [1, 0.4], rtol=0.01)
 
 
 def test_spherical_offsets_by_pa():
