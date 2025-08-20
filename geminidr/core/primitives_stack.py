@@ -3,6 +3,8 @@
 #
 #                                                            primitives_stack.py
 # ------------------------------------------------------------------------------
+from IPython.terminal.interactiveshell import black_reformat_handler
+
 import astrodata
 from astrodata.fits import windowedOp
 
@@ -11,6 +13,7 @@ from astropy import table
 from copy import deepcopy
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
 from gempy.library.nddops import NDStacker
 
 from geminidr import PrimitivesBASE
@@ -186,6 +189,7 @@ class Stack(PrimitivesBASE):
         operation = params["operation"]
         reject_method = params["reject_method"]
         save_rejection_map = params["save_rejection_map"]
+        old_method = params.get("debug_old_normalization", False)
 
         if statsec:
             statsec = tuple([slice(int(start)-1, int(end))
@@ -243,18 +247,19 @@ class Stack(PrimitivesBASE):
         if memory is not None and (num_img * max(bytes_per_ext) > memory):
             adinputs = self.flushPixels(adinputs)
 
-        # Compute the scale and offset values by accessing the memmapped data
-        # so we can pass those to the stacking function
-        # TODO: Should probably be done better to consider only the overlap
-        # regions between frames
-        # Always calculate these so we can decide if global scaling is needed
-        if scale or zero or operation == "wtmean":
+        if scale and zero:
+            log.warning("Both scale and zero are set. Setting scale=False.")
+            scale = False
+
+        # We need to know the image levels if we're doing the weighted mean
+        # as discussed below. Also if we're using the old scaling.
+        if (scale or zero) and old_method or operation == "wtmean":
             levels = np.empty((num_img, num_ext), dtype=np.float32)
             for i, ad in enumerate(adinputs):
                 for index in range(num_ext):
+                    # Use of 'window' leaves the AD's data memory-mapped
                     nddata = (ad[index].nddata.window[:] if statsec is None
                               else ad[index].nddata.window[statsec])
-                    #levels[i, index] = np.median(nddata.data)
                     if 'IMAGE' in ad.tags:
                         levels[i, index] = gt.measure_bg_from_image(nddata, value_only=True)
                     else:
@@ -262,24 +267,34 @@ class Stack(PrimitivesBASE):
                                                         (nddata.data, mask=nddata.mask))
 
         if scale or zero:
-            if scale and zero:
-                log.warning("Both scale and zero are set. Setting scale=False.")
-                scale = False
-            if separate_ext:
-                # Target value is corresponding extension of first image
-                if scale:
-                    scale_factors = (levels[0] / levels).T
-                else:  # zero=True
-                    zero_offsets = (levels[0] - levels).T
+            if old_method:
+                if separate_ext:
+                    # Target value is corresponding extension of first image
+                    if scale:
+                        scale_factors = (levels[0] / levels).T
+                    else:  # zero=True
+                        zero_offsets = (levels[0] - levels).T
+                else:
+                    # Target value is mean of all extensions of first image
+                    target = np.mean(levels[0])
+                    if scale:
+                        scale_factors = np.tile(target / np.mean(levels, axis=1),
+                                                num_ext).reshape(num_ext, num_img)
+                    else:  # zero=True
+                        zero_offsets = np.tile(target - np.mean(levels, axis=1),
+                                               num_ext).reshape(num_ext, num_img)
             else:
-                # Target value is mean of all extensions of first image
-                target = np.mean(levels[0])
+                # All extensions from AD1 first, then all from AD2, etc.
+                nddata_list = [ext.nddata for ad in adinputs for ext in ad]
+                # Reshaping ensures it's a 2D array
+                values = at.optimal_normalization(
+                    nddata_list, num_ext=num_ext, separate_ext=separate_ext,
+                    return_scaling=scale).reshape(num_ext, num_img)
                 if scale:
-                    scale_factors = np.tile(target / np.mean(levels, axis=1),
-                                            num_ext).reshape(num_ext, num_img)
-                else:  # zero=True
-                    zero_offsets = np.tile(target - np.mean(levels, axis=1),
-                                           num_ext).reshape(num_ext, num_img)
+                    scale_factors = values
+                else:
+                    zero_offsets = values
+
             if scale and np.min(scale_factors) < 0:
                 log.warning("Some scale factors are negative. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
@@ -295,17 +310,13 @@ class Stack(PrimitivesBASE):
 
         # For extensions with very large or small data values, the variance
         # can lead to under/overflows when calculating the weighted mean, so
-        # we rescale the data to values of ~1 to avoid this. For aesthetic
-        # reasons, we compute a scaling that is a power of 10.
+        # we rescale the data to avoid this.
         if operation == "wtmean":
-            print(levels)
             average_levels_per_ext = np.round(np.log10(np.median(abs(levels), axis=0)))
-            print("AVERAGE", average_levels_per_ext)
-            global_scaling_per_ext = 10 ** np.where(abs(average_levels_per_ext) > 15,
+            global_scaling_per_ext = 10 ** np.where(abs(average_levels_per_ext) > 10,
                                                     -average_levels_per_ext, 0)
         else:
             global_scaling_per_ext = [None] * num_ext
-        print("GLOBAL", global_scaling_per_ext)
 
         if reject_method == "varclip" and any(ext.variance is None
                                               for ad in adinputs for ext in ad):
