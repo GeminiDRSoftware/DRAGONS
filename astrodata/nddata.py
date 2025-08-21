@@ -183,14 +183,12 @@ class AstroDataMixin:
     def size(self):
         return np.multiply.reduce(self.shape)
 
-    @property
     def has_mask(self):
         """
         Returns True if the mask is not None without loading the whole array.
         """
         return self.window[(slice(0, 1),) * len(self.shape)].mask is not None
 
-    @property
     def has_variance(self):
         """
         Returns True if the mask is not None without loading the whole array.

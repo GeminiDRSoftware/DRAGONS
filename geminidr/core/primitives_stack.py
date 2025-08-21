@@ -371,7 +371,7 @@ class Stack(PrimitivesBASE):
                 kernel = ((shape[0] + oversubscription - 1) // oversubscription,) + shape[1:]
 
             with_uncertainty = True  # Since all stacking methods return variance
-            with_mask = apply_dq and all(ad[index].nddata.has_mask for ad in adinputs)
+            with_mask = apply_dq and all(ad[index].nddata.has_mask() for ad in adinputs)
             result = windowedOp(stack_function,
                                 [ad[index].nddata for ad in adinputs],
                                 global_scaling=global_scaling_per_ext[index],
