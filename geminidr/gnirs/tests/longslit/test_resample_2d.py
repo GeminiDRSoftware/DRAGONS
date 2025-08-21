@@ -34,53 +34,71 @@ test_datasets = ['N20240329S0022_wcsCorrected.fits', # Central wavelength 1.594 
 def test_resample_to_common_frame_with_defaults(input_ad_list, path_to_refs,
                                                 change_working_dir, wavescale, caplog):
     p = GNIRSLongslit(input_ad_list)
-    p.resampleToCommonFrame(trim_spatial=True, trim_spectral=False,
-                            output_wave_scale=wavescale)
-    with change_working_dir():
-        ad_out = p.stackFrames()[0]
-        p.writeOutputs()
-        if wavescale == "linear":
-            _check_params(caplog.records, 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029')
-        else:
-            _check_params(caplog.records, 'w1=1525.174 w2=1806.005 dw=0.000077 npix=2197')
-        assert 'ALIGN' in ad_out[0].phu
-        ref = astrodata.open(os.path.join(
-            path_to_refs, f'N20240329S0022_stack_defaults_{wavescale}.fits'))
+    ad_out = p.resampleToCommonFrame(trim_spatial=True, trim_spectral=False,
+                                     output_wave_scale=wavescale)
+    if wavescale == "linear":
+        wpars = 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029'
+    else:
+        wpars = 'w1=1525.174 w2=1806.005 dw=0.000077 npix=2197'
+    assert any(wpars in record.message for record in caplog.records)
 
-        np.testing.assert_allclose(ad_out[0].data, ref[0].data, atol=1e-5, rtol=1e-4)
+    with change_working_dir():
+        p.writeOutputs()
+        for ad in ad_out:
+            ad_name = ad.filename.removesuffix('.fits')
+            ref_name = f'{ad_name}_defaults_{wavescale}'
+            assert 'ALIGN' in ad.phu
+            ref = astrodata.open(os.path.join(path_to_refs, f'{ref_name}.fits'))
+
+            try:
+                np.testing.assert_allclose(ad[0].data, ref[0].data, atol=5e-7, rtol=5e-7)
+            except AssertionError as e:
+                raise AssertionError(f'File {ad_name}:\n{e}')
 
 
 @pytest.mark.gnirsls
 @pytest.mark.preprocessed_data
 def test_resample_to_common_frame_trim_spectral(input_ad_list, path_to_refs,
-                                                caplog):
+                                                change_working_dir, caplog):
     p = GNIRSLongslit(input_ad_list)
-    p.resampleToCommonFrame(trim_spatial=True, trim_spectral=True,
-                            output_wave_scale="linear")
-    ad_out = p.stackFrames()[0]
-    _check_params(caplog.records, 'w1=1664.096 w2=1666.589 dw=0.138 npix=19')
-    assert 'ALIGN' in ad_out[0].phu
-    ref = astrodata.open(os.path.join(path_to_refs,
-                                      'N20240329S0022_stack_trim_spectral_True.fits'))
+    ad_out = p.resampleToCommonFrame(trim_spatial=True, trim_spectral=True,
+                                     output_wave_scale="linear")
 
-    np.testing.assert_allclose(ad_out[0].data, ref[0].data, atol=1e-5, rtol=1e-4)
+    wpars = 'w1=1664.096 w2=1666.589 dw=0.138 npix=19'
+    assert any(wpars in record.message for record in caplog.records)
 
+    with change_working_dir():
+        p.writeOutputs()
+        for ad in ad_out:
+            ad_name = ad.filename.removesuffix('.fits')
+            ref_name = f'{ad_name}_trim_spectral_True'
+            assert 'ALIGN' in ad.phu
+            ref = astrodata.open(os.path.join(path_to_refs, f'{ref_name}.fits'))
+            try:
+                np.testing.assert_allclose(ad[0].data, ref[0].data, rtol=5e-7)
+            except AssertionError as e:
+                raise AssertionError(f'File {ad_name}:\n{e}')
 
 @pytest.mark.gnirsls
 @pytest.mark.preprocessed_data
 def test_resample_to_common_frame_trim_spatial(input_ad_list, path_to_refs,
-                                                caplog):
+                                               change_working_dir, caplog):
     p = GNIRSLongslit(input_ad_list)
-    p.resampleToCommonFrame(trim_spatial=False, trim_spectral=False,
-                            output_wave_scale="linear")
-    ad_out = p.stackFrames()[0]
-    # This should be the same as test_resample_to_common_frame_with_defaults()
-    _check_params(caplog.records, 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029')
-    assert 'ALIGN' in ad_out[0].phu
-    ref = astrodata.open(os.path.join(path_to_refs,
-                                      'N20240329S0022_stack_trim_spatial_False.fits'))
+    ad_out = p.resampleToCommonFrame(trim_spatial=False, trim_spectral=False,
+                                     output_wave_scale="linear")
 
-    np.testing.assert_allclose(ad_out[0].data, ref[0].data, atol=1e-5, rtol=1e-4)
+    # This should be the same as test_resample_to_common_frame_with_defaults()
+    wpars = 'w1=1525.174 w2=1806.038 dw=0.138 npix=2029'
+    assert any(wpars in record.message for record in caplog.records)
+
+    with change_working_dir():
+        p.writeOutputs()
+        for ad in ad_out:
+            ad_name = ad.filename.removesuffix('.fits')
+            ref_name = f'{ad_name}_trim_spatial_False'
+            assert 'ALIGN' in ad.phu
+            ref = astrodata.open(os.path.join(path_to_refs, f'{ref_name}.fits'))
+            np.testing.assert_allclose(ad[0].data, ref[0].data, rtol=5e-7)
 
 
 @pytest.mark.gnirsls
@@ -105,11 +123,6 @@ def test_adjust_wavelength_zeropoint_and_resample(input_ad_list):
 
 
 # -- Local fixtures and helper functions --------------------------------------
-def _check_params(records, expected):
-    for record in records:
-        if record.message.startswith('Resampling and linearizing'):
-            assert expected in record.message
-
 @pytest.fixture(scope='function')
 def input_ad_list(path_to_inputs):
 
