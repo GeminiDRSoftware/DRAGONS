@@ -677,7 +677,7 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
         shape = sequence[0].shape
 
     if dtype is None:
-        dtype = sequence[0].window[:1, :1].data.dtype
+        dtype = sequence[0].window[(slice(0, 1),) * len(shape)].data.dtype
 
     if result is None:
         result = NDDataObject(
@@ -719,7 +719,7 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
                         result.meta['other'][k, coords] = v
                     else:
                         result.meta['other'][k] = v
-
+            del out
             gc.collect()
     finally:
         astropy.log.setLevel(log_level)  # and reset
