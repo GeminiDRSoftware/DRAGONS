@@ -45,6 +45,21 @@ def niri_adinputs():
 
 
 @pytest.fixture
+def niri_adinputs_with_noise():
+    rng = np.random.RandomState(42)
+    phu = fits.PrimaryHDU()
+    phu.header.update(OBSERVAT='Gemini-North', INSTRUME='NIRI',
+                      ORIGNAME='N20010101S0001.fits')
+    data = np.ones((1000, 1000))
+    adinputs = []
+    for i in range(6):
+        ad = astrodata.create(phu)
+        ad.append(data + i + rng.normal(scale=0.1, size=data.shape))
+        adinputs.append(ad)
+    return adinputs
+
+
+@pytest.fixture
 def niri_image(astrofaker):
     """Create a fake NIRI image.
 
@@ -143,6 +158,55 @@ def test_stacking_gain_read_noise_propagation(f2_adinputs, caplog):
     assert_allclose(ad.hdr["GAIN"], 8.88/9)
     # Input read_noises are 11.7 and 5
     assert_allclose(ad.hdr["RDNOISE"], 8.996944, atol=0.001)
+
+
+@pytest.mark.parametrize("old_norm", (True, False))
+def test_stacking_with_scaling(niri_adinputs_with_noise, old_norm):
+    """Simple test to scale images and confirm new and old methods"""
+    p = NIRIImage(niri_adinputs_with_noise)
+    ad = p.stackFrames(operation='mean', reject_method='none', scale=True,
+                       debug_old_normalization=old_norm).pop()
+    assert ad[0].data.mean() == pytest.approx(1.0, rel=1e-3)
+
+
+@pytest.mark.parametrize("old_norm", (True, False))
+def test_stacking_with_offsetting(niri_adinputs_with_noise, old_norm):
+    """Simple test to offset images and confirm new and old methods"""
+    p = NIRIImage(niri_adinputs_with_noise)
+    ad = p.stackFrames(operation='mean', reject_method='none', zero=True,
+                       debug_old_normalization=old_norm).pop()
+    assert ad[0].data.mean() == pytest.approx(1.0, rel=1e-3)
+
+
+@pytest.mark.parametrize("old_norm", (False, True))
+@pytest.mark.parametrize("separate_ext", (True, False))
+def test_stacking_with_scaling_separate_ext(niri_adinputs_with_noise, old_norm, separate_ext):
+    adinputs = []
+    # Munge into 2 images with 3 extensions each
+    for i, ad in enumerate(niri_adinputs_with_noise):
+        if i < 2:
+            adinputs.append(ad)
+        else:
+            adinputs[i % 2].append(ad[0])
+
+    for i, ad in enumerate(adinputs):
+        assert ad[0].data.mean() == pytest.approx(i+1, rel=0.01)
+        assert ad[1].data.mean() == pytest.approx(i+3, rel=0.01)
+        assert ad[2].data.mean() == pytest.approx(i+5, rel=0.01)
+
+    p = NIRIImage(adinputs)
+    ad = p.stackFrames(operation='mean', reject_method='none', scale=True,
+                       separate_ext=separate_ext, debug_old_normalization=old_norm).pop()
+
+    if separate_ext:
+        assert ad[0].data.mean() == pytest.approx(1.0, rel=1e-3)
+        assert ad[1].data.mean() == pytest.approx(3.0, rel=1e-3)
+        assert ad[2].data.mean() == pytest.approx(5.0, rel=1e-3)
+    else:
+        # overall scaling will be 0.75, so second image has means (1.5, 3, 4.5)
+        assert ad[0].data.mean() == pytest.approx(1.25, rel=1e-3)
+        assert ad[1].data.mean() == pytest.approx(3.0, rel=1e-3)
+        assert ad[2].data.mean() == pytest.approx(4.75, rel=1e-3)
 
 
 @pytest.mark.parametrize("rejection_method, expected",

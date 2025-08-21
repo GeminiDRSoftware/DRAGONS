@@ -468,9 +468,6 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
                 med = masked_median(tmp_data[1], tmp_mask[1], result_size)
                 offset_matrix[i, j] = -(np.log(med) if return_scaling else med)
 
-        print(offset_matrix)
-        print(weight_matrix)
-
         # Scale the offsets so they're O(1) since minimization can fail if
         # the value to be optimized is too large. See:
         # https://stackoverflow.com/questions/24767191/scipy-is-not-optimizing-and-returns-desired-error-not-necessarily-achieved-due
@@ -498,7 +495,6 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
             results[n] = factors * result_scaling
         else:
             results[:] = factors * result_scaling
-
 
     return np.exp(results) if return_scaling else results
 

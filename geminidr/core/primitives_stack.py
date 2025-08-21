@@ -289,7 +289,11 @@ class Stack(PrimitivesBASE):
                 # Reshaping ensures it's a 2D array
                 values = at.optimal_normalization(
                     nddata_list, num_ext=num_ext, separate_ext=separate_ext,
-                    return_scaling=scale).reshape(num_ext, num_img)
+                    return_scaling=scale)
+                if separate_ext:
+                    values = values.reshape(num_ext, num_img)
+                else:
+                    values = np.tile(values, num_ext).reshape(num_ext, num_img)
                 if scale:
                     scale_factors = values
                 else:
