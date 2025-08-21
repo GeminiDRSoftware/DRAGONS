@@ -11,7 +11,8 @@ CORRECT_PARAMETERS = [('GMOSImage', 'standardizeWCS', ['suffix']),
                        ['suffix', 'apply_dq', 'statsec', 'operation',
                         'reject_method', 'hsigma', 'lsigma', 'mclip',
                         'max_iters', 'nlow', 'nhigh', 'memory',
-                        'save_rejection_map', 'separate_ext', 'debug_pixel']),
+                        'save_rejection_map', 'separate_ext', 'debug_pixel',
+                        'debug_old_normalization']),
                       ]
 
 
