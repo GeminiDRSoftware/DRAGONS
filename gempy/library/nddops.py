@@ -33,7 +33,7 @@ NDD = namedtuple("NDD", "data mask variance")
 # be "bad" when rejecting pixels from the input data. If one takes multiple
 # images of an object and one of those images is saturated, it would clearly
 # be wrong statistically to reject the saturated one.
-BAD = 65535 ^ (DQ.non_linear | DQ.saturated)
+BAD = DQ.max ^ (DQ.non_linear | DQ.saturated)
 
 # A hierarchy of "badness". Pixels in the inputs are considered to be as
 # bad as the worst bit set, so a "bad_pixel" will only be used if there are
