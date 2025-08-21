@@ -399,9 +399,6 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
     ndarray: additive offsets or scaling factors to scale the second and
         subsequent NDAstroData objects to match the first one
     """
-    # to check for the presence of attributes without loading the entire array
-    test_slice = (slice(0, 1),) * len(nddata_list[0].shape)
-
     ext_sizes = [ndd.size for ndd in nddata_list[:num_ext]]
     result_size = max(ext_sizes) if separate_ext else sum(ext_sizes)
 
@@ -430,9 +427,6 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
             except AttributeError:  # mask is None
                 mask_out[start:start+size] = 0
             start += size
-
-    m_init = models.Scale(1.0) if return_scaling else models.Shift(0.0)
-    fit_it = fitting.LinearLSQFitter()
 
     for n in range(num_ext if separate_ext else 1):
         for i in range(nimg):

@@ -235,14 +235,18 @@ class Stack(PrimitivesBASE):
         # Also determine kernel size from offered memory and bytes per pixel
         bytes_per_ext = []
         for ext in adinputs[0]:
-            bytes = 0
-            # Count _data twice to handle temporary arrays
-            bytes += 2 * ext.data.dtype.itemsize
-            if ext.variance is not None:
-                bytes += ext.variance.dtype.itemsize
+            # to check attributes without loading the entire array
+            test_slice = ext.nddata.window[(slice(0, 1),) * len(ext.shape)]
+
+            # Count data twice to handle temporary arrays
+            bytes = 2 * test_slice.data.dtype.itemsize
+            try:
+                bytes += test_slice.variance.dtype.itemsize
+            except AttributeError:  # variance is None
+                pass
 
             bytes += 2  # mask always created
-            bytes_per_ext.append(bytes * np.prod(ext.shape))
+            bytes_per_ext.append(bytes * np.multiply.reduce(ext.shape))
 
         if memory is not None and (num_img * max(bytes_per_ext) > memory):
             adinputs = self.flushPixels(adinputs)
@@ -367,8 +371,7 @@ class Stack(PrimitivesBASE):
                 kernel = ((shape[0] + oversubscription - 1) // oversubscription,) + shape[1:]
 
             with_uncertainty = True  # Since all stacking methods return variance
-            with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
-                                             for ad in adinputs)
+            with_mask = apply_dq and all(ad[index].nddata.has_mask for ad in adinputs)
             result = windowedOp(stack_function,
                                 [ad[index].nddata for ad in adinputs],
                                 global_scaling=global_scaling_per_ext[index],

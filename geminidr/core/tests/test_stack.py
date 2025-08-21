@@ -2,6 +2,8 @@
 Tests for primitives_stack.
 """
 import logging
+import os
+import tracemalloc
 
 import numpy as np
 import pytest
@@ -207,6 +209,27 @@ def test_stacking_with_scaling_separate_ext(niri_adinputs_with_noise, old_norm, 
         assert ad[0].data.mean() == pytest.approx(1.25, rel=1e-3)
         assert ad[1].data.mean() == pytest.approx(3.0, rel=1e-3)
         assert ad[2].data.mean() == pytest.approx(4.75, rel=1e-3)
+
+
+@pytest.mark.niri
+@pytest.mark.parametrize("scale,zero", [(False, False), (True, False), (False, True)])
+def test_memory_control_during_stacking(path_to_inputs, scale, zero):
+    """
+    Test that the memory control during stacking works as expected.
+    """
+    memory = 1  # GB
+    tracemalloc.start()
+    adinputs = [astrodata.open(os.path.join(path_to_inputs, f"stacktest{i:03d}.fits"))
+                for i in range(1, 6)]
+    p = NIRIImage(adinputs)
+    _, start = tracemalloc.get_traced_memory()
+    ad = p.stackFrames(operation='mean', reject_method='none', scale=scale,
+                       zero=zero, memory=memory).pop()
+    adsize = ad[0].nddata.size * 10  # SCI+VAR+DQ
+    current, peak = tracemalloc.get_traced_memory()
+    assert current - start < 1.5 * adsize
+    assert peak - start < 1.5 * adsize + 2e9 * memory
+
 
 
 @pytest.mark.parametrize("rejection_method, expected",
