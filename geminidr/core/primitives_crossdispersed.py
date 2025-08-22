@@ -622,8 +622,13 @@ class CrossDispersed(Spect, Preprocess):
                     # TODO: investigate AstroData.append()
                     ad_out.append(ext)
 
-            ad_out.filename = f'_order{order}'.join(os.path.splitext(filename))
-            ad_out.orig_filename = f'_order{order}'.join(os.path.splitext(orig_filename))
+            # This is painfully convoluted
+            if "_" in filename:
+                ad_out.filename = filename.replace("_", f"order{order}_")
+            else:
+                ad_out.filename = f'order{order}'.join(os.path.splitext(orig_filename))
+            ad_out.orig_filename = ad_out.filename
+            ad.phu['ORIGNAME'] = ad_out.orig_filename
             adoutputs.append(ad_out)
 
         return adoutputs
