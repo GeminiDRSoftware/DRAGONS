@@ -394,6 +394,9 @@ class NDStacker:
             out_data = (_masked_sum(data / variance, mask=mask) /
                         _masked_sum(1 / variance, mask=mask))
             out_var = 1 / _masked_sum(1 / variance, mask=mask)
+        # Input data where all VAR=0. Should be masked
+        if out_mask is not None:
+            out_data[np.logical_and(np.isnan(out_data), out_mask > 0)] = 0
         return out_data, out_mask, out_var
 
     @staticmethod

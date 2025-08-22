@@ -62,6 +62,7 @@ class CrossDispersed(Spect, Preprocess):
 
             stack_inputs = self._separate_by_spectral_order(ad)
             stack_inputs = self.resampleToCommonFrame(stack_inputs, single_wave_scale=True)
+            self.writeOutputs(stack_inputs)
             adout = self.stackFrames(stack_inputs, **params)[0]
 
             # Timestamp and update the filename
@@ -628,7 +629,7 @@ class CrossDispersed(Spect, Preprocess):
             else:
                 ad_out.filename = f'order{order}'.join(os.path.splitext(orig_filename))
             ad_out.orig_filename = ad_out.filename
-            ad.phu['ORIGNAME'] = ad_out.orig_filename
+            ad_out.phu['ORIGNAME'] = ad_out.orig_filename
             adoutputs.append(ad_out)
 
         return adoutputs
