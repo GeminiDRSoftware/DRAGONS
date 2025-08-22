@@ -9,8 +9,6 @@ from gemini_instruments.f2 import AstroDataF2
 import numpy as np
 
 
-FLOAT_TYPES = (float, np.float32, np.float64)
-
 test_files = [
     "S20131121S0094.fits",
     "S20131126S1111.fits",
@@ -21,9 +19,9 @@ test_files = [
 ]
 
 F2_DESCRIPTORS_TYPES = [
-    ('detector_x_offset', FLOAT_TYPES),
-    ('detector_y_offset', FLOAT_TYPES),
-    ('pixel_scale', FLOAT_TYPES),
+    ('detector_x_offset', float),
+    ('detector_y_offset', float),
+    ('pixel_scale', float),
 ]
 
 

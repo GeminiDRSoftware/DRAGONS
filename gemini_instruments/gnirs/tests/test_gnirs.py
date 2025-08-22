@@ -8,8 +8,6 @@ from gemini_instruments.gnirs import AstroDataGnirs
 import numpy as np
 
 
-FLOAT_TYPES = (float, np.float32, np.float64)
-
 test_files = [
     "N20190206S0279.fits",
     "N20190214S0058.fits",
@@ -20,9 +18,9 @@ test_files = [
 
 
 GNIRS_DESCRIPTORS_TYPES = [
-    ('detector_x_offset', FLOAT_TYPES),
-    ('detector_y_offset', FLOAT_TYPES),
-    ('pixel_scale', FLOAT_TYPES),
+    ('detector_x_offset', float),
+    ('detector_y_offset', float),
+    ('pixel_scale', float),
 ]
 
 
@@ -136,11 +134,11 @@ def test_ra_and_dec_always_returns_float(ad, monkeypatch):
     ad : fixture
         Custom fixture that downloads and opens the input file.
     """
-    if isinstance(ad.wcs_ra(), FLOAT_TYPES) or ad.wcs_ra() is None:
-        assert isinstance(ad.ra(), FLOAT_TYPES)
+    if isinstance(ad.wcs_ra(), float) or ad.wcs_ra() is None:
+        assert isinstance(ad.ra(), float)
 
-    if isinstance(ad.wcs_dec(), FLOAT_TYPES) or ad.wcs_dec() is None:
-        assert isinstance(ad.dec(), FLOAT_TYPES)
+    if isinstance(ad.wcs_dec(), float) or ad.wcs_dec() is None:
+        assert isinstance(ad.dec(), float)
 
 
 @pytest.mark.dragons_remote_data

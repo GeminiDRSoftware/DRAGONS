@@ -28,10 +28,14 @@ class ADVarianceUncertainty(VarianceUncertainty):
     """
     @VarianceUncertainty.array.setter
     def array(self, value):
-        if value is not None and np.any(value < 0):
-            warnings.warn("Negative variance values found. Setting to zero.",
-                          RuntimeWarning)
-            value = np.where(value >= 0., value, 0.)
+        if value is not None:
+            neg = value < 0
+            if np.any(neg):
+                warnings.warn(
+                    "Negative variance values found. Setting to zero.",
+                     RuntimeWarning
+                )
+                value[neg] = 0.
         VarianceUncertainty.array.fset(self, value)
 
 
@@ -398,9 +402,9 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
                 return ret
             elif hasattr(source, 'shape'):
                 if section is None or source.shape != self.shape:
-                    return np.array(source, copy=False)
+                    return np.asarray(source)
                 else:
-                    return np.array(source, copy=False)[section]
+                    return np.asarray(source)[section]
             else:
                 return source
 

@@ -29,12 +29,6 @@ def adinputs(path_to_inputs):
     return [astrodata.open(os.path.join(path_to_inputs, f))
             for f in test_datasets]
 
-def _check_params(records, expected):
-    assert len(records) > 0  # make sure caplog is capturing something!
-    for record in records:
-        if record.message.startswith('Resampling and linearizing'):
-            assert expected in record.message
-
 @pytest.fixture(scope="module", autouse=True)
 def setup_log(change_working_dir):
     with change_working_dir():
@@ -49,7 +43,8 @@ def test_resampling_single_wave_scale(adinputs, caplog):
     p.adjustWCSToReference()
     # default is to linearize
     adoutputs = p.resampleToCommonFrame(single_wave_scale=True)
-    _check_params(caplog.records, 'w1=703.309 w2=2519.200 dw=0.237 npix=7660')
+    wpars = 'w1=703.309 w2=2519.200 dw=0.237 npix=7660'
+    assert any(wpars in record.message for record in caplog.records)
     for ad in adoutputs:
         for i, ext in enumerate(ad):
             assert ext.shape == (7660, ext_widths[i])
@@ -62,7 +57,8 @@ def test_resampling_and_w1_w2(adinputs, caplog):
     p.adjustWCSToReference()
     # default is to linearize
     adoutputs = p.resampleToCommonFrame(w1=700.000, w2=2520.160, dw=0.237)
-    _check_params(caplog.records, 'w1=700.000 w2=2520.160 dw=0.237 npix=7681')
+    wpars = 'w1=700.000 w2=2520.160 dw=0.237 npix=7681'
+    assert any(wpars in record.message for record in caplog.records)
     for ad in adoutputs:
         for ext in ad:
             w = ext.wcs(0, np.arange(ext.shape[0]))[0]

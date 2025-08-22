@@ -296,7 +296,8 @@ class FitsLazyLoadable:
         bzero = self._obj._orig_bzero
         if bscale == 1 and bzero == 0:
             return data
-        return (bscale * data + bzero).astype(self.dtype)
+        return (bscale * data +
+                np.array(bzero, dtype=self.dtype)).astype(self.dtype)
 
     def __getitem__(self, sl):
         # TODO: We may want (read: should) create an empty result array before scaling
