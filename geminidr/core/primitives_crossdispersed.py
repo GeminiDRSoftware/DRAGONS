@@ -42,17 +42,57 @@ class CrossDispersed(Spect, Preprocess):
     def combineOrders(self, adinputs=None, **params):
         """
         Combines the spectral orders in 1D cross-dispersed data into a single
+        spectrum. This is done by separating the multiple extensions in each
+        input AstroData object into multiple AstroData objects, each containing
+        a single extension representing a single spectral order. These are
+        then stacked using the stackFrames primitive, to produce a single
         spectrum.
 
         Parameters
         ----------
+        suffix : str
+            Suffix to be added to output files.
+        apply_dq : bool
+            Apply DQ mask to data before combining?
+        nlow, nhigh : int
+            Number of low and high pixels to reject, for the 'minmax' method.
+            The way it works is inherited from IRAF: the fraction is specified
+            as the number of  high  and low  pixels,  the  nhigh and nlow
+            parameters, when data from all the input images are used.  If
+            pixels  have  been  rejected  by offseting,  masking, or
+            thresholding then a matching fraction of the remaining pixels,
+            truncated to an integer, are used.  Thus::
 
+                nl = n * nlow/nimages + 0.001
+                nh = n * nhigh/nimages + 0.001
+
+            where n is the number of pixels  surviving  offseting,  masking,
+            and  thresholding,  nimages  is the number of input images, nlow
+            and nhigh are task parameters  and  nl  and  nh  are  the  final
+            number  of  low  and high pixels rejected by the algorithm.  The
+            factor of 0.001 is to adjust for rounding of the ratio.
+        operation : str
+            Combine method.
+        reject_method : str
+            Pixel rejection method (none, minmax, sigclip, varclip).
+        zero : bool
+            Apply zero-level offset to match background levels?
+        scale : bool
+            Scale images to the same intensity?
+        memory : float or None
+            Available memory (in GB) for stacking calculations.
+        statsec : str
+            Section for statistics.
+        separate_ext : bool
+            Handle extensions separately?
         """
         log = self.log
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params.pop("suffix")
 
         adoutputs = []
+        stack_inputs = []
+        slices = {}
         for ad in adinputs:
             if not all(len(ext.shape) == 1 for ext in ad):
                 log.warnings(f"Cannot combine orders in {ad.filename} as all "
@@ -60,16 +100,32 @@ class CrossDispersed(Spect, Preprocess):
                 adoutputs.append(ad)
                 continue
 
-            stack_inputs = self._separate_by_spectral_order(ad)
-            stack_inputs = self.resampleToCommonFrame(stack_inputs, single_wave_scale=True)
-            self.writeOutputs(stack_inputs)
-            adout = self.stackFrames(stack_inputs, **params)[0]
+            # Keep track of which orders came from the same input AD.
+            # In principle, the DATALAB or ORIGNAME could do this, but
+            # this is safer
+            outputs = self._separate_by_spectral_order(ad)
+            slices[ad.filename] = slice(len(stack_inputs),
+                                        len(stack_inputs) + len(outputs))
+            stack_inputs.extend(outputs)
 
-            # Timestamp and update the filename
-            gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
-            adout.update_filename(suffix=sfx, strip=True)
+        stack_inputs = self.resampleToCommonFrame(stack_inputs, single_wave_scale=True)
 
-            adoutputs.append(adout)
+        # Combine the orders from each input AD without any scaling
+        recombined = []
+        first_params = params.copy()
+        first_params.update({'scale': False, 'zero': False})
+        log.stdinfo("")
+        for k, v in slices.items():
+            log.stdinfo(f"Combining orders from {k}")
+            recombined.extend(self.stackFrames(stack_inputs[v], **first_params))
+
+        log.stdinfo("Combining all input spectra")
+        adout = self.stackFrames(recombined, **params)[0]
+
+        # Timestamp and update the filename
+        gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
+        adout.update_filename(suffix=sfx, strip=True)
+        adoutputs.append(adout)
 
         return adoutputs
 
@@ -585,8 +641,8 @@ class CrossDispersed(Spect, Preprocess):
 
         return adinputs
 
-    @classmethod
-    def _separate_by_spectral_order(self, ad):
+    @staticmethod
+    def _separate_by_spectral_order(ad):
         """
         Separate a multi-extension AstroData object into a list of
         AstroData objects with unique filenames, where all the extensions with
@@ -628,8 +684,6 @@ class CrossDispersed(Spect, Preprocess):
                 ad_out.filename = filename.replace("_", f"order{order}_")
             else:
                 ad_out.filename = f'order{order}'.join(os.path.splitext(orig_filename))
-            ad_out.orig_filename = ad_out.filename
-            ad_out.phu['ORIGNAME'] = ad_out.orig_filename
             adoutputs.append(ad_out)
 
         return adoutputs
