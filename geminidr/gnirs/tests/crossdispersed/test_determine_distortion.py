@@ -24,6 +24,7 @@ fixed_parameters_for_determine_distortion = {
     "max_shift": 0.05,
     "min_snr": 5.,
     "nsum": 10,
+    "step": 10,
     "spatial_order": 2,
     "spectral_order": 3,
     "min_line_length": 0.5,
@@ -63,6 +64,7 @@ def test_regression_for_determine_distortion_using_wcs(
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
 
+    errstr = ""
     for ext, ref_ext in zip(distortion_determined_ad, ref_ad):
         # Confirm that the distortion model is placed after the rectification model
         assert (ext.wcs.available_frames.index("distortion_corrected") >
@@ -81,7 +83,13 @@ def test_regression_for_determine_distortion_using_wcs(
         # We only care about pixels in the illuminated region
         xx, yy = X[ext.mask == 0], Y[ext.mask == 0]
         diffs = model(xx, yy)[1] - ref_model(xx, yy)[1]  # 1 is y-axis in astropy
-        np.testing.assert_allclose(diffs, 0, atol=1)
+        try:
+            np.testing.assert_allclose(diffs, 0, atol=1)
+        except AssertionError as e:
+            errstr += f"Extension {ext.id}\n{str(e)}"
+
+    if errstr:
+        raise AssertionError(errstr)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------
