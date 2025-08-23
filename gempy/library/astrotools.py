@@ -455,7 +455,8 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
                 weight_matrix[i, j] = np.sum(tmp_mask[1, :result_size] == 0)
 
                 if return_scaling:
-                    tmp_data[1] /= tmp_data[0]
+                    with np.errstate(all="ignore"):
+                        tmp_data[1] /= tmp_data[0]
                 else:
                     tmp_data[1] -= tmp_data[0]
 
