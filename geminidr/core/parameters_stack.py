@@ -49,6 +49,8 @@ class core_stacking_config(config.Config):
     debug_pixel = config.RangeField("Debugging pixel location", int, None,
                                     min=0, optional=True)
     save_rejection_map = config.Field("Save rejection map?", bool, False)
+    debug_old_normalization = config.Field("Revert to old normalization method",
+                                           bool, False)
 
 class stackFramesConfig(core_stacking_config):
     separate_ext = config.Field("Handle extensions separately?", bool, True)

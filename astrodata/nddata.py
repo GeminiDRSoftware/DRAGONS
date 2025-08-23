@@ -181,7 +181,19 @@ class AstroDataMixin:
 
     @property
     def size(self):
-        return self._data.size
+        return np.multiply.reduce(self.shape)
+
+    def has_mask(self):
+        """
+        Returns True if the mask is not None without loading the whole array.
+        """
+        return self.window[(slice(0, 1),) * len(self.shape)].mask is not None
+
+    def has_variance(self):
+        """
+        Returns True if the mask is not None without loading the whole array.
+        """
+        return self.window[(slice(0, 1),) * len(self.shape)].variance is not None
 
 
 class FakeArray:
@@ -479,9 +491,9 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
 
         """
         self.data[section] = input.data
-        if self.uncertainty is not None:
+        if self.uncertainty is not None and getattr(input, 'uncertainty', None) is not None:
             self.uncertainty.array[section] = input.uncertainty.array
-        if self.mask is not None:
+        if self.mask is not None and getattr(input, 'mask', None) is not None:
             self.mask[section] = input.mask
 
     def __repr__(self):

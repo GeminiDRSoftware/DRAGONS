@@ -8,6 +8,20 @@ from gempy.library import astrotools as at
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
+from astrodata.nddata import NDAstroData
+
+
+@pytest.fixture(scope='module')
+def flat_images():
+    # Produce 6 NDAstroData objects with different mean values and some noise.
+    rng = np.random.default_rng(42)
+    images = []
+    for i in range(6):
+        img = NDAstroData(data=rng.normal(loc=50*(i+1), scale=20, size=(100, 100)).astype(np.float32),
+                          mask=(np.random.rand(100, 100) > 0.99).astype(np.uint16))
+        images.append(img)
+    return images
+
 
 def test_array_from_list():
     values = (1, 2, 3)
@@ -183,6 +197,42 @@ def test_cartesian_regions_to_slices():
 
     with pytest.raises(TypeError):
         cart(12)
+
+
+@pytest.mark.parametrize("return_scaling", (True, False))
+def test_optimal_normalization(flat_images, return_scaling):
+    """
+    Quick test to check image scaling/offsetting. This doesn't test the
+    memory-mapping part of the function.
+    """
+    retval = at.optimal_normalization(flat_images, return_scaling=return_scaling)
+
+    if return_scaling:
+        np.testing.assert_allclose(retval, 1. / (np.arange(len(flat_images)) + 1), rtol=0.01)
+    else:
+        np.testing.assert_allclose(retval, -np.arange(len(flat_images)) * 50, atol=1.0)
+
+
+@pytest.mark.parametrize("separate_ext", (True, False))
+def test_optimal_normalization_multiple_extensions(flat_images, separate_ext):
+    """
+    Confirm that the function works with multiple extensions, either computing
+    the offsets separately or together.
+    """
+    # Pass the list as 2 images with 3 extensions each
+    retval = at.optimal_normalization(flat_images, return_scaling=True,
+                                      num_ext=3, separate_ext=separate_ext)
+
+    if separate_ext:
+        assert retval.shape == (3, 2)  # 3 extensions, 2 images
+        np.testing.assert_allclose(retval, [[1., 0.25], [1., 0.4], [1., 0.5]], rtol=0.01)
+    else:
+        # Because the data *don't* have a common scaling, the result here
+        # depends on how one decides to calculate the average scaling.
+        # The extensions in image 1 have signals (50, 100, 150), and in
+        # image 2 (200, 250, 300), so the divided image will have 1/3 pixels
+        # ~0.25, 1/3 being ~0.4, and 1/3 being ~0.5; hence median is 0.4
+        np.testing.assert_allclose(retval, [1, 0.4], rtol=0.01)
 
 
 def test_spherical_offsets_by_pa():
