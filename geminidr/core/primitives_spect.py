@@ -4905,8 +4905,12 @@ class Spect(Resample):
             for ext in ad:
 
                 dispaxis = 2 - ext.dispersion_axis() # Python sense
+                if nsum > ext.shape[dispaxis]:
+                    raise ValueError("{} is larger than the size of the data".format(nsum))
+
                 if params['start_pos']:
-                    start = params['start_pos']
+                    start = min(max(params['start_pos'], nsum // 2),
+                                ext.shape[dispaxis] - nsum // 2)
                 else:
                     start = ext.shape[dispaxis] // 2
                 data, mask, variance = ext.data, ext.mask, ext.variance
@@ -4926,9 +4930,10 @@ class Spect(Resample):
                     x_ord, y_ord = spect_ord, 1
                     direction = "column"
 
-                data = ext_data[start, :]
-                mask = ext_mask[start, :]
-                variance = ext_variance[start, :]
+                start_slice = slice(start - nsum // 2, start + nsum // 2)
+                data = ext_data[start_slice].sum(axis=0)
+                mask = np.bitwise_or.reduce(ext_mask[start_slice], axis=0)
+                variance = ext_variance[start_slice].sum(axis=0)
                 # Find peaks; convert width FWHM to sigma. Copied from
                 # determineDistortion
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
