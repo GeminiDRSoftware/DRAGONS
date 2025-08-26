@@ -321,6 +321,7 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
         rootlog.addHandler(consolehandler)
 
     elif mode == 'verbose':
+        rootlog.setLevel(15)
         if file_name:
             filehandler.formatter = stdformat
             rootlog.addHandler(filehandler)
@@ -328,6 +329,7 @@ def config(mode='standard', file_name=None, file_lvl=15, stomp=False,
         rootlog.addHandler(consolehandler)
 
     elif mode == 'debug':
+        rootlog.setLevel(10)
         if file_name:
             filehandler.formatter = dbgformat
             filehandler.setLevel(10)
