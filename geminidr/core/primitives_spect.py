@@ -54,6 +54,7 @@ from gempy.library import peak_finding, tracing, transform, wavecal
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter
+from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
 from gwcs.utils import CoordinateFrameError
 from recipe_system.utils.decorators import parameter_override, capture_provenance
@@ -4931,9 +4932,9 @@ class Spect(Resample):
                     direction = "column"
 
                 start_slice = slice(start - nsum // 2, start + nsum // 2)
-                data = ext_data[start_slice].sum(axis=0)
-                mask = np.bitwise_or.reduce(ext_mask[start_slice], axis=0)
-                variance = ext_variance[start_slice].sum(axis=0)
+                data, mask, variance = NDStacker.mean(
+                    ext.data[start_slice], mask=ext.mask[start_slice],
+                    variance=variance[start_slice])
                 # Find peaks; convert width FWHM to sigma. Copied from
                 # determineDistortion
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
