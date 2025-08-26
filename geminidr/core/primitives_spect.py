@@ -54,6 +54,7 @@ from gempy.library import peak_finding, tracing, transform, wavecal
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter
+from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
 from gwcs.utils import CoordinateFrameError
 from recipe_system.utils.decorators import parameter_override, capture_provenance
@@ -4905,8 +4906,12 @@ class Spect(Resample):
             for ext in ad:
 
                 dispaxis = 2 - ext.dispersion_axis() # Python sense
+                if nsum > ext.shape[dispaxis]:
+                    raise ValueError("{} is larger than the size of the data".format(nsum))
+
                 if params['start_pos']:
-                    start = params['start_pos']
+                    start = min(max(params['start_pos'], nsum // 2),
+                                ext.shape[dispaxis] - nsum // 2)
                 else:
                     start = ext.shape[dispaxis] // 2
                 data, mask, variance = ext.data, ext.mask, ext.variance
@@ -4926,9 +4931,10 @@ class Spect(Resample):
                     x_ord, y_ord = spect_ord, 1
                     direction = "column"
 
-                data = ext_data[start, :]
-                mask = ext_mask[start, :]
-                variance = ext_variance[start, :]
+                start_slice = slice(start - nsum // 2, start + nsum // 2)
+                data, mask, variance = NDStacker.mean(
+                    ext.data[start_slice], mask=ext.mask[start_slice],
+                    variance=variance[start_slice])
                 # Find peaks; convert width FWHM to sigma. Copied from
                 # determineDistortion
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
