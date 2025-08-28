@@ -17,6 +17,8 @@ associate_sky_params = {'time': 600., 'min_skies': 3, 'distance': 1,
 # ---- Fixtures ---------------------------------------------------------------
 @pytest.fixture
 def gnirs_abba():
+    # These frames have an incorrect WCS so we need to sort that out
+    # by running prepare(bad_wcs="new") in the tests.
     return [astrodata.open(download_from_archive(f)) for f in
             ('N20141119S0331.fits', 'N20141119S0332.fits',
              'N20141119S0333.fits', 'N20141119S0334.fits')]
@@ -67,7 +69,7 @@ def test_associate_sky_use_all(gnirs_abba):
     in_sky_names = set([ad.filename for ad in gnirs_abba])
 
     p = GNIRSLongslit(gnirs_abba)
-    p.prepare()
+    p.prepare(bad_wcs="new")
     p.separateSky()
     p.associateSky(distance=0, use_all=True)
 
@@ -82,7 +84,7 @@ def test_associate_sky_use_all(gnirs_abba):
 @pytest.mark.gnirsls
 def test_associate_sky_exclude_all(gnirs_abba):
     p = GNIRSLongslit(gnirs_abba)
-    p.prepare()
+    p.prepare(bad_wcs="new")
     p.separateSky()
     # Offset is 5" so this will exclude skies if 'use_all' is False.
     p.associateSky(distance=10)
@@ -107,7 +109,7 @@ def test_associate_sky_quasi_abcde():
     data = [astrodata.open(download_from_archive(f)) for f in files]
 
     p = GNIRSLongslit(data)
-    p.prepare()
+    p.prepare(bad_wcs="new")
     p.separateSky()
     p.associateSky(**associate_sky_params)
 
