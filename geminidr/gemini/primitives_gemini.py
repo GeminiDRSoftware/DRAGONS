@@ -251,13 +251,14 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                     start += '0' * (15 - len(start))
                 this_starttime = datetime.datetime.combine(
                     ad.ut_date(), datetime.time.fromisoformat(start))
+
             this_obsid = ad.observation_id()
             if last_endtime is not None and (this_obsid != last_obsid or
                     (this_starttime - last_endtime).seconds > max_deadtime):
                 if base_pointing is None:
-                    raise ValueError(f"Now processing {ad.filename} but could "
-                                     "not find a valid pointing in the "
-                                     "previous group")
+                    raise ValueError(f"Now processing {ad.filename} as part "
+                                     "of a new group, but could not find a "
+                                     "valid pointing in the previous group")
                 log.debug(f"Starting new group with {ad.filename}")
                 base_pointing = None
                 last_pointing = None
@@ -433,7 +434,8 @@ class Pointing:
         self.wcs = [ext.wcs for ext in ad]
         self.logit = log_function or print
 
-        self.logit(f"{self.filename} {self.xoffset} {self.yoffset} {self.pa}")
+        self.logit(f"Pointing of {self.filename}")
+        self.logit(f"X, Y offsets: ({self.xoffset:.3f}, {self.yoffset:.3f}) PA={self.pa}")
         self.target_coords = SkyCoord(ad.target_ra(), ad.target_dec(),
                                       unit=u.deg)
         # This returns the CRVALi keywords, which are expected to change
@@ -508,17 +510,28 @@ class Pointing:
         -------
         bool: are these pointings consistent?
         """
+        self.logit("Consistency report between base {} and {}".format(
+            self.filename, other.filename))
         for wcs1, wcs2 in zip(self.wcs, other.wcs):
             try:
                 ra, dec = at.get_center_of_projection(wcs1)
             except TypeError:  # if this returns None
+                self.logit("Could not get center of projection!")
                 return False
             x, y = am.get_named_submodel(wcs1.forward_transform, 'SKY').inverse(ra, dec)
+            self.logit("Base: ({:.7f}, {:.7f}) -> ({:.3f}, {:.3f})".format(ra, dec, x, y))
             x2, y2 = am.get_named_submodel(wcs2.forward_transform, 'SKY').inverse(ra, dec)
+            self.logit("New: ({:.3f}, {:.3f}) => relative offsets "
+                       "({:.3f}, {:.3f})".format(x2, y2, x2-x, y2-y))
             dx = other.xoffset - self.xoffset
             dy = other.yoffset - self.yoffset
+            self.logit("Relative header offsets: ({:.3f}, {:.3f})".format(dx, dy))
             distsq = dx * dx + dy * dy
             if distsq > 100 and (x-x2)**2 + (y-y2)**2 < 0.25 * distsq:
+                self.logit("Scalar distance error!")
+                return False
+            if (abs(dx) > 2 and (x2-x) * dx < 0) or (abs(dy) > 2 and (y2-y) * dy < 0):
+                self.logit("Sign error in one or both axes!")
                 return False
         return True
 
