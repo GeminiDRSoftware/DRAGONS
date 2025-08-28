@@ -407,7 +407,7 @@ class Spect(Resample):
                                             profile, mode='full')
                         expected_peak = corr.size // 2 + hdr_offset
                         # It's reasonable to assume that if the source is
-                        # significantly narrower than the size of the slit
+                        # significantly narrower than the length of the slit
                         # remember these widths are "sigma", not FWHM!
                         min_peak_width = (0.05 if ad.is_ao() else 0.25) / ext.pixel_scale()
                         max_peak_width = min(0.25 * profile.size, 20)
