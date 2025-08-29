@@ -1542,8 +1542,32 @@ class Spect(Resample):
                                 viewer=self.viewer if debug else None,
                                 min_line_length=min_line_length*slit_length_frac))
 
+                    # Traces are always returned in (x, y) order, regardless
+                    # of the dispersion axis
                     log.stdinfo(f"Traced {len(traces)} lines from "
                                 f"{len(initial_peaks)} peaks")
+
+                    # Traces can extend beyond the edge of the illuminated slit
+                    # if adaptive binning has occurred and there's a feature in
+                    # the unilluminated region (for GNIRS notably the quadrant
+                    # boundary halfway up the detector)
+                    try:
+                        edge_models = [am.table_to_model(row)
+                                       for row in ext.SLITEDGE]
+                    except AttributeError:  # no SLITEDGE table
+                        pass
+                    else:
+                        # Go through each trace, find the location of the slit
+                        # edge across from each point, and remove the point if
+                        # it's beyond the edge (with a small tolerance).
+                        for trace in traces:
+                            inco = trace.input_coordinates()
+                            limits = np.asarray([m([point[1-dispaxis] for point in inco])
+                                                 for m in edge_models]).T
+                            for point, lim in zip(inco, limits):
+                                if (point[dispaxis] < min(lim) - 0.5*step or
+                                        point[dispaxis] > max(lim) + 0.5*step):
+                                    trace.remove_point(point)
 
                     # List of traced peak positions
                     in_coords = np.array([coord for trace in traces for
