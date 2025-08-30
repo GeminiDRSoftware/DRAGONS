@@ -4957,8 +4957,8 @@ class Spect(Resample):
 
                 start_slice = slice(start - nsum // 2, start + nsum // 2)
                 data, mask, variance = NDStacker.mean(
-                    ext.data[start_slice], mask=ext.mask[start_slice],
-                    variance=variance[start_slice])
+                    ext_data[start_slice], mask=ext_mask[start_slice],
+                    variance=ext_variance[start_slice])
                 # Find peaks; convert width FWHM to sigma. Copied from
                 # determineDistortion
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
