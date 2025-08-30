@@ -634,7 +634,7 @@ def create_inputs_recipe():
         pinholes_reduce.files.extend(pinholes_path)
         pinholes_reduce.ucals = normalize_ucals(flat_cal)
         if  "N20201225S0290.fits" in pinholes_path[0]:
-            pinholes_reduce.uparms = [('tracePinholeApertures:min_snr', '2')]
+            pinholes_reduce.uparms = [('determinePinholeRectification:min_snr', '2')]
         pinholes_reduce.runr()
         processed_pinholes = pinholes_reduce.output_filenames.pop()
         pinhole_cal = ['processed_pinhole:{}'.format(processed_pinholes)]
@@ -662,7 +662,7 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(read_noise=True, poisson_noise=True)
         p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
-        p.attachPinholeModel(pinhole=processed_pinholes, suffix="_pinholeModelAttached")
+        p.attachPinholeRectification(pinhole=processed_pinholes, suffix="_pinholeRectificationAttached")
 
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()
@@ -676,7 +676,7 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(read_noise=True, poisson_noise=True)
         p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
-        p.attachPinholeModel(pinhole=processed_pinholes, suffix="_pinholeModelAttached")
+        p.attachPinholeRectification(pinhole=processed_pinholes, suffix="_pinholeRectificationAttached")
 
         os.chdir("inputs/")
         processed_sci = p.writeOutputs().pop()
@@ -695,7 +695,7 @@ def create_inputs_recipe():
         p.separateSky()
         p.associateSky()
         p.skyCorrect()
-        p.attachPinholeModel(pinhole=processed_pinholes, suffix="_pinholeModelAttached")
+        p.attachPinholeRectification(pinhole=processed_pinholes, suffix="_pinholeRectificationAttached")
         p.distortionCorrect()
         p.adjustWCSToReference()
         p.resampleToCommonFrame(output_wave_scale='reference', trim_spectral=True)

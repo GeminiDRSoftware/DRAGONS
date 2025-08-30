@@ -21,7 +21,7 @@ def makeProcessedArc(p):
     p.addVAR(poisson_noise=True, read_noise=True)
     p.flatCorrect()
     p.stackFrames()
-    p.attachPinholeModel()
+    p.attachPinholeRectification()
     p.determineWavelengthSolution()
     p.determineDistortion()
     p.storeProcessedArc()

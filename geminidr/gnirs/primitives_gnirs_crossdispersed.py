@@ -127,10 +127,10 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
 
         return adoutputs
 
-    def tracePinholeApertures(self, adinputs=None, **params):
+    def determinePinholeRectification(self, adinputs=None, **params):
         """
         This primitive exists to provide some mode-specific values to the
-        tracePinholeApertures() in primitives_spect, since the modes in GNIRS
+        determinePinholeRectification() in primitives_spect, since the modes in GNIRS
         cross-dispersed are different enough to warrant having different values.
         """
 
@@ -156,7 +156,7 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                                   "Long camera.")
 
         # Call the parent primitive with the new parameter values.
-        return super().tracePinholeApertures(adinputs=adinputs, **params)
+        return super().determinePinholeRectification(adinputs=adinputs, **params)
 
 
     def _get_order_information_key(self):
