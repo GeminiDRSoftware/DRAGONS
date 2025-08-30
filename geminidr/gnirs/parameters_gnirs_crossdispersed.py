@@ -25,6 +25,14 @@ class determineDistortionConfig(parameters_gnirs_spect.determineDistortionConfig
         self.min_line_length = 0.5  # because some orders go off the edge
 
 
+class determinePinholeRectificationConfig(parameters_spect.determinePinholeRectificationConfig):
+    """
+    Configuration for the determinePinholeRectification() primitive.
+    """
+    max_shift = config.RangeField("Maximum shift per pixel in line position",
+                                  float, 0.4, min=0.001, max=0.5, inclusiveMax=True)
+
+
 class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
     # GNIRS XD has narrow slits with more curvature than the longslit flats
     # the default values were calibrated to, so adjust some values.
@@ -36,6 +44,7 @@ class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
         self.debug_nsum = 10
         del self.edge1
         del self.edge2
+
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     order = config.RangeField("Order of fitting function", int, None, min=1,
@@ -50,12 +59,14 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
     def setDefaults(self):
         self.in_vacuo = True
 
+
 class findAperturesConfig(parameters_crossdispersed.findAperturesConfig):
     # For cross-dispersed, allow the user to specify the extension to use for
     # finding apertures in. Will try to be a "best" one if not provided.
     ext = config.RangeField("Extension (1 - 6) to use for finding apertures",
                             int, None, optional=True, min=1, max=6,
                             inclusiveMin=True, inclusiveMax=True)
+
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     # Set flatfield threshold a little lower to avoid masking a region in
@@ -72,14 +83,8 @@ class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
         self.aperture_growth = 1
         self.debug_allow_skip = True
 
+
 class traceAperturesConfig(parameters_spect.traceAperturesConfig):
     # GNIRS XD benefits from light sigma clipping.
     def setDefaults(self):
         self.niter = 1
-
-class tracePinholeAperturesConfig(parameters_spect.tracePinholeAperturesConfig):
-    """
-    Configuration for the tracePinholeApertures() primitive.
-    """
-    max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.4, min=0.001, max=0.5, inclusiveMax=True)

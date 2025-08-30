@@ -21,7 +21,7 @@ def makeProcessedPinhole(p):
     p.addVAR(poisson_noise=True, read_noise=True)
     p.flatCorrect()
     p.stackFrames()
-    p.tracePinholeApertures()
+    p.determinePinholeRectification()
     p.storeProcessedPinhole()
 
 _default = makeProcessedPinhole
