@@ -275,9 +275,7 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
             min_snr_isNone = True if these_params["min_snr"] is None else False
             order_isNone = True if these_params["order"] is None else False
 
-            disp = ad.disperser(pretty=True)
-            filt = ad.filter_name(pretty=True)
-            cam = ad.camera(pretty=True)
+            grating = ad._grating(pretty=True, stripID=True)
             cenwave = ad.central_wavelength(asMicrometers=True)
             log = self.log
             if 'ARC' not in ad.tags:
@@ -288,9 +286,19 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                         these_params["order"] = 1
                     if these_params["min_snr"] is None:
                         these_params["min_snr"] = 1
+                    if these_params["num_lines"] is None:
+                        these_params["num_lines"] = 100
                 else:
                     # Airglow emission
                     self.generated_linelist = "airglow"
+            else:
+                if 'Long' in ad.camera() and grating == "111/mm":
+                    if these_params["order"] is None:
+                        these_params["order"] = 1
+                    if these_params["min_snr"] is None:
+                        these_params["min_snr"] = 10
+
+
 
             if these_params["min_snr"] is None:
                 these_params["min_snr"] = 20
