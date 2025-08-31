@@ -55,79 +55,82 @@ input_pars = [
     # (Input File, params)
     # Arcs
     # 10 l/mm, LongCam, LXD
-    ("N20190613S0173_pinholeModelAttached.fits", dict()), # 1.650um, 0.45" slit
+
+    # OS: I commented out the test cases that contain line misidentifications in any order (they may be useful in the future),
+    # and only left those that have correct solutions in all orders, or no solution at all (due to low signal).
+
+    ("N20190613S0173_pinholeModelAttached.fits", dict()), # 1.650um, 0.45" slit. All orders have correct solution.
     # 32 l/mm ShortCam, SXD
-    ("N20201229S0067_pinholeModelAttached.fits", dict()), # 2.150um, 0.3" slit
-    ("N20210228S0149_pinholeModelAttached.fits", dict()), # 1.65um, 0.68" slit
+    ("N20201229S0067_pinholeModelAttached.fits", dict()), # 2.150um, 0.3" slit. All orders have correct solution.
+    ("N20210228S0149_pinholeModelAttached.fits", dict()), # 1.65um, 0.68" slit. All orders have correct solution.
     # 32 l/mm LongCam, LXD
-    ("N20201224S0198_pinholeModelAttached.fits", dict()), # 1.98um, 0.45" slit
-    ("N20201222S0222_pinholeModelAttached.fits", dict()), # 1.58um, 0.45" slit
+    ("N20201224S0198_pinholeModelAttached.fits", dict(min_snr=5)), # 1.98um, 0.45" slit. All orders have correct solution with min_snr=5
+    ("N20201222S0222_pinholeModelAttached.fits", dict()), # 1.58um, 0.45" slit. All orders have correct solution (last order needs a lower fit order)
     # 111 l/mm ShortCam, SXD
-    ("N20110417S0197_pinholeModelAttached.fits", dict()), # 1.42um, 0.45" slit
-    ("N20110421S0248_pinholeModelAttached.fits", dict()), # 1.53um, 0.3" slit
-    ("N20110421S0270_pinholeModelAttached.fits", dict()), # 1.65um, 0.3" slit
-    ("N20110421S0292_pinholeModelAttached.fits", dict()), # 1.77um, 0.3" slit
+    ("N20160907S0321_pinholeModelAttached.fits", dict()), # 1.53um, 0.3" slit. Misid. in ord. 6 due to missing line in the linelist.
+    ("N20240821S0271_pinholeModelAttached.fits", dict(order=1)), # 1.65um, 0.3" slit. Ok with fit ord=1, otherwise misident in ord. 7 and 8
+    #("N20140803S0102_pinholeModelAttached.fits", dict()), # 1.77um, 0.3" slit. Ord. 7 - misident.
     # 111 l/mm LongCam, LXD
-    ("N20130630S0467_pinholeModelAttached.fits", dict()), # 1.942um, 0.1" slit
-    ("N20130630S0468_pinholeModelAttached.fits", dict()), # 2.002um, 0.1" slit
-    ("N20130630S0469_pinholeModelAttached.fits", dict()), # 2.062um, 0.1" slit
-    ("N20200818S0348_pinholeModelAttached.fits", dict()), # 2.122um, 0.1" slit
-    ("N20200818S0349_pinholeModelAttached.fits", dict()), # 2.182um, 0.1" slit
-    ("N20200818S0350_pinholeModelAttached.fits", dict()), # 2.242um, 0.1" slit
-    ("N20220816S0702_pinholeModelAttached.fits", dict()), # 2.302um, 0.1" slit
-    ("N20220816S0703_pinholeModelAttached.fits", dict()), # 2.362um, 0.1" slit
-    ("N20220816S0704_pinholeModelAttached.fits", dict()), # 2.422um, 0.1" slit
-    ("N20220816S0705_pinholeModelAttached.fits", dict()), # 2.482um, 0.1" slit
+    ("N20130630S0467_pinholeModelAttached.fits", dict()), # 1.942um, 0.1" slit. Order 3 has not arc lines, the rest ok
+    ("N20130630S0468_pinholeModelAttached.fits", dict()), # 2.002um, 0.1" slit. Ok
+    ("N20130630S0469_pinholeModelAttached.fits", dict()), # 2.062um, 0.1" slit. Ok, last order - low signal
+    ("N20200818S0348_pinholeModelAttached.fits", dict()), # 2.122um, 0.1" slit. All orders have correct solution, one line misident.
+    ("N20200818S0349_pinholeModelAttached.fits", dict()), # 2.182um, 0.1" slit. Ok
+    #("N20200818S0350_pinholeModelAttached.fits", dict()), # 2.242um, 0.1" slit.  Only ord 4 and 5 have good solution. Other orders - low signal or to few lines.
+    ("N20220816S0702_pinholeModelAttached.fits", dict()), # 2.302um, 0.1" slit. Only ord. 5 and 6 have solution. Other orders - low signal or to few lines.
+    ("N20220816S0703_pinholeModelAttached.fits", dict()), # 2.362um, 0.1" slit. Ord 4,5,6 have solution, the rest -low signal or to few lines.
+    ("N20220816S0704_pinholeModelAttached.fits", dict()), # 2.422um, 0.1" slit. Only ord 4 and 5 have enough lines for a solution.
+    ("N20220816S0705_pinholeModelAttached.fits", dict()), # 2.482um, 0.1" slit. Ok solution for 3-6.
 
     # Airglow
     # 10 l/mm, LongCam, LXD
-    ("N20190613S0147_pinholeModelAttached.fits", dict()), # 1.650um, 0.45" slit
+    #("N20190613S0147_pinholeModelAttached.fits", dict()), # 1.650um, 0.45" slit. Orders 3-5 correct with min_snr=5, but ord 7 - misident, low snr
     # 32 l/mm ShortCam, SXD
-    ("N20201229S0025_pinholeModelAttached.fits", dict()), # 2.150um, 0.3" slit
-    ("N20210228S0111_pinholeModelAttached.fits", dict()), # 1.65um, 0.68" slit
+    ("N20201229S0029_pinholeModelAttached.fits", dict(min_snr=10)), # 2.150um, 0.3" slit. All orders ok with min_snr=10
+    ("N20210228S0111_pinholeModelAttached.fits", dict(min_snr=5)), # 1.65um, 0.68" slit. All orders correct
     # 32 l/mm LongCam, LXD
-    ("N20201223S0043_pinholeModelAttached.fits", dict()), # 1.98um, 0.45" slit
-    ("N20201222S0188_pinholeModelAttached.fits", dict()), # 1.58um, 0.45" slit
+    ("N20201223S0043_pinholeModelAttached.fits", dict()), # 1.98um, 0.45" slit. Ord 3,4 - ok; 5,6-low signal, no solution
+    #("N20201222S0188_pinholeModelAttached.fits", dict()), # 1.58um, 0.45" slit. Ord 3,4,5-ok with snr=10; 6-misident, 7-no solution(low snr)
     # 111 l/mm ShortCam, SXD
-    ("N20110421S0227_pinholeModelAttached.fits", dict()), # 1.53um, 0.3" slit
-    ("N20110421S0231_pinholeModelAttached.fits", dict()), # 1.65um, 0.3" slit
-    ("N20110421S0235_pinholeModelAttached.fits", dict()), # 1.77um, 0.3" slit
-    # 111 l/mm LongCam, LXD
-    ("N20130630S0158_pinholeModelAttached.fits", dict()), # 1.942um, 0.1" slit
-    ("N20130630S0173_pinholeModelAttached.fits", dict()), # 2.002um, 0.1" slit
-    ("N20130630S0187_pinholeModelAttached.fits", dict()), # 2.062um, 0.1" slit
-    ("N20200818S0104_pinholeModelAttached.fits", dict()), # 2.122um, 0.1" slit
-    ("N20200818S0119_pinholeModelAttached.fits", dict()), # 2.182um, 0.1" slit
-    ("N20200818S0133_pinholeModelAttached.fits", dict()), # 2.242um, 0.1" slit
-    ("N20220816S0388_pinholeModelAttached.fits", dict()), # 2.302um, 0.1" slit
-    ("N20220816S0402_pinholeModelAttached.fits", dict()), # 2.362um, 0.1" slit
-    ("N20220816S0416_pinholeModelAttached.fits", dict()), # 2.422um, 0.1" slit
-    ("N20220816S0430_pinholeModelAttached.fits", dict()), # 2.482um, 0.1" slit
+    ("N20160907S0309_pinholeModelAttached.fits", dict()), # 1.53um, 0.3" slit. Last ord - low signal, no solution.
+    # ("N20240821S0281_pinholeModelAttached.fits", dict()), # 1.65um, 0.3" slit. Ord 3,4,5 - ok, 6,7,8 - misident, or low signal
+    ("N20140803S0125_pinholeModelAttached.fits", dict(min_snr=5)), # 1.77um, 0.3" slit. Last order on signal. Other orders ok with ord=1, or min_snr=5
+    # 111 l/mm LongCam, LX
+    #("N20130630S0158_pinholeModelAttached.fits", dict()), # 1.942um, 0.1" slit. No bright lines.
+    #("N20130630S0173_pinholeModelAttached.fits", dict()), # 2.002um, 0.1" slit. -//-
+    #("N20130630S0187_pinholeModelAttached.fits", dict()), # 2.062um, 0.1" slit. -//-
+    # #("N20200818S0104_pinholeModelAttached.fits", dict()), # 2.122um, 0.1" slit.-//-
+    # ("N20200818S0119_pinholeModelAttached.fits", dict()), # 2.182um, 0.1" slit. -//-
+    #("N20200818S0133_pinholeModelAttached.fits", dict()), # 2.242um, 0.1" slit. -//-
+    # ("N20220816S0388_pinholeModelAttached.fits", dict()), # 2.302um, 0.1" slit -//-
+    # ("N20220816S0402_pinholeModelAttached.fits", dict()), # 2.362um, 0.1" slit -//-
+    # ("N20220816S0416_pinholeModelAttached.fits", dict()), # 2.422um, 0.1" slit -//-
+    # ("N20220816S0430_pinholeModelAttached.fits", dict()), # 2.482um, 0.1" slit -//-
 
     # Absorption
     # 10 l/mm, LongCam, LXD
-    ("N20190613S0140_aperturesFound.fits", dict()), # 1.650um, 0.45" slit
+    ("N20190613S0140_aperturesFound.fits", dict(absorption=True)), # 1.650um, 0.45" slit. Orders 3-6 correct solution
     # 32 l/mm ShortCam, SXD
-    ("N20201229S0018_aperturesFound.fits", dict()), # 2.150um, 0.3" slit
-    ("N20210228S0106_aperturesFound.fits", dict()), # 1.65um, 0.68" slit
+    ("N20201229S0018_aperturesFound.fits", dict(absorption=True)), # 2.150um, 0.3" slit. All orders have correct solution.
+    ("N20210228S0106_aperturesFound.fits", dict(absorption=True)), # 1.65um, 0.68" slit. All orders have correct solution.
     # 32 l/mm LongCam, LXD
-    ("N20201223S0034_aperturesFound.fits", dict()), # 1.98um, 0.45" slit
-    ("N20201222S0173_aperturesFound.fits", dict()), # 1.58um, 0.45" slit
+    ("N20201223S0034_aperturesFound.fits", dict(absorption=True)), # 1.98um, 0.45" slit
+    ("N20201222S0173_aperturesFound.fits", dict(absorption=True)), # 1.58um, 0.45" slit
     # 111 l/mm ShortCam, SXD
-    ("N20110421S0244_aperturesFound.fits", dict()), # 1.53um, 0.3" slit
-    ("N20110421S0266_aperturesFound.fits", dict()), # 1.65um, 0.3" slit
-    ("N20110421S0288_aperturesFound.fits", dict()), # 1.77um, 0.3" slit
+    ("N20110421S0244_aperturesFound.fits", dict(absorption=True)), # 1.53um, 0.3" slit
+    # ("N20110421S0266_aperturesFound.fits", dict()), # 1.65um, 0.3" slit
+    # ("N20110421S0288_aperturesFound.fits", dict()), # 1.77um, 0.3" slit
     # 111 l/mm LongCam, LXD
-    ("N20130630S0305_aperturesFound.fits", dict()), # 1.942um, 0.1" slit
-    ("N20130630S0309_aperturesFound.fits", dict()), # 2.002um, 0.1" slit
-    ("N20130630S0313_aperturesFound.fits", dict()), # 2.062um, 0.1" slit
-    ("N20200818S0030_aperturesFound.fits", dict()), # 2.122um, 0.1" slit
-    ("N20200818S0034_aperturesFound.fits", dict()), # 2.182um, 0.1" slit
-    ("N20200818S0038_aperturesFound.fits", dict()), # 2.242um, 0.1" slit
-    ("N20220816S0472_aperturesFound.fits", dict()), # 2.302um, 0.1" slit
-    ("N20220816S0476_aperturesFound.fits", dict()), # 2.362um, 0.1" slit
-    ("N20220816S0480_aperturesFound.fits", dict()), # 2.422um, 0.1" slit
-    ("N20130630S0313_aperturesFound.fits", dict()), # 2.482um, 0.1" slit
+    ("N20130630S0305_aperturesFound.fits", dict(absorption=True)), # 1.942um, 0.1" slit.  Orders 5 and 6 - lines misidentified
+    ("N20130630S0309_aperturesFound.fits", dict(absorption=True)), # 2.002um, 0.1" slit. Order 6 - no lines (rubbish solution)
+    ("N20130630S0313_aperturesFound.fits", dict(absorption=True)), # 2.062um, 0.1" slit. Only order 3 is fine, the rest is low snr, rubish
+    ("N20200818S0030_aperturesFound.fits", dict(absorption=True)), # 2.122um, 0.1" slit.
+    ("N20200818S0034_aperturesFound.fits", dict(absorption=True)), # 2.182um, 0.1" slit
+    ("N20200818S0038_aperturesFound.fits", dict(absorption=True)), # 2.242um, 0.1" slit; Order 8 has no abs. lines
+    ("N20220816S0472_aperturesFound.fits", dict(absorption=True)), # 2.302um, 0.1" slit
+    ("N20220816S0476_aperturesFound.fits", dict(absorption=True)), # 2.362um, 0.1" slit
+    ("N20220816S0480_aperturesFound.fits", dict(absorption=True)), # 2.422um, 0.1" slit; one order with no arc lines
+    ("N20220816S0484_aperturesFound.fits", dict(absorption=True)), # 2.482um, 0.1" slit, ord 4, 6 and 7 - misidentified lines
 ]
 associated_calibrations = {
     "N20190613S0147.fits": {
@@ -137,7 +140,7 @@ associated_calibrations = {
         'arcs': ["N20190613S0173.fits"],
         'std':  ["N20190613S0140.fits"],
     },
-    "N20201229S0025.fits": {
+    "N20201229S0029.fits": {
         'pinholes': ["N20201225S0290.fits"],
         'flats': ["N20201229S0047.fits",
                   "N20201229S0057.fits"],
@@ -165,27 +168,31 @@ associated_calibrations = {
         'arcs': ["N20201222S0222.fits"],
         'std':  ["N20201222S0173.fits"],
     },
-    "N20110421S0227.fits": {
-        'pinholes': ["N20111122S0099.fits"],
-        'flats': ["N20110421S0250.fits",
-                  "N20110421S0256.fits"],
-        'arcs': ["N20110421S0248.fits"],
-        'std':  ["N20110421S0244.fits"],
+
+    "N20160907S0309.fits": {
+        'pinholes': ["N20160907S0468.fits"],
+        'flats': ["N20160907S0323.fits",
+                  "N20160907S0327.fits"],
+        'arcs': ["N20160907S0321.fits"],
+        'std': ["N20160907S0297.fits"]
     },
-    "N20110421S0231.fits": {
-        'pinholes': ["N20101203S0621.fits"],
-        'flats': ["N20110421S0272.fits",
-                  "N20110421S0278.fits"],
-        'arcs': ["N20110421S0270.fits"],
-        'std':  ["N20110421S0266.fits"],
+
+    "N20240821S0281.fits": {
+        'pinholes': ["N20240821S0346.fits"],
+        'flats': ["N20240821S0261.fits",
+                  "N20240821S0269.fits"],
+        'arcs': ["N20240821S0271.fits"],
+        'std': ["N20240821S0305.fits"]
     },
-    "N20110421S0235.fits": {
-        'pinholes': ["N20111122S0107.fits"],
-        'flats': ["N20110421S0294.fits",
-                  "N20110421S0300.fits"],
-        'arcs': ["N20110421S0292.fits"],
-        'std':  ["N20110421S0288.fits"],
+
+    "N20140803S0125.fits": {
+        'pinholes': ["N20140803S0288.fits"],
+        'flats': ["N20140803S0092.fits",
+                  "N20140803S0100.fits"],
+        'arcs': ["N20140803S0102.fits"],
+        'std': ["N20140803S0060.fits"]
     },
+
     "N20130630S0158.fits": {
         'pinholes': ["N20130630S0457.fits"],
         'flats': ["N20130630S0163.fits"],
@@ -241,10 +248,10 @@ associated_calibrations = {
         'std':  ["N20220816S0480.fits"],
     },
     "N20220816S0430.fits": {
-        'pinholes': ["N20220816S0683.fits"],
+        'pinholes': ["N20220816S0683.fits"], # too faint order 7, pinholes crash
         'flats': ["N20220816S0434.fits"],
         'arcs': ["N20220816S0705.fits"],
-        'std':  ["N20130630S0313.fits"],
+        'std':  ["N20220816S0484.fits"],
     }
 }
 
@@ -633,8 +640,8 @@ def create_inputs_recipe():
         pinholes_reduce = Reduce()
         pinholes_reduce.files.extend(pinholes_path)
         pinholes_reduce.ucals = normalize_ucals(flat_cal)
-        if  "N20201225S0290.fits" in pinholes_path[0]:
-            pinholes_reduce.uparms = [('determinePinholeRectification:min_snr', '2')]
+        if  "N20201225S0290" or "N20130630S0457" or "N20220816S0680" in pinholes_path[0]:
+            pinholes_reduce.uparms = [('tracePinholeApertures:min_snr', '2')]
         pinholes_reduce.runr()
         processed_pinholes = pinholes_reduce.output_filenames.pop()
         pinhole_cal = ['processed_pinhole:{}'.format(processed_pinholes)]
@@ -645,7 +652,7 @@ def create_inputs_recipe():
         arc_reduce = Reduce()
         arc_reduce.files.extend(arc_path)
         arc_reduce.ucals = normalize_ucals(flat_cal + pinhole_cal)
-        if "N20201224S0198.fits" in arc_path[0]:
+        if "N20201224S0198" or "N20130630S0467" in arc_path[0]:
             arc_reduce.uparms = [('determineWavelengthSolution:min_snr', '5')]
         arc_reduce.runr()
         processed_arc =arc_reduce.output_filenames.pop()
@@ -662,7 +669,7 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(read_noise=True, poisson_noise=True)
         p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
-        p.attachPinholeRectification(pinhole=processed_pinholes, suffix="_pinholeRectificationAttached")
+        p.attachPinholeModel(pinhole=processed_pinholes, suffix="_pinholeModelAttached")
 
         os.chdir("inputs/")
         processed_ad = p.writeOutputs().pop()
@@ -676,7 +683,7 @@ def create_inputs_recipe():
         p.ADUToElectrons()
         p.addVAR(read_noise=True, poisson_noise=True)
         p.flatCorrect(flat=processed_flat, suffix="_flatCorrected")
-        p.attachPinholeRectification(pinhole=processed_pinholes, suffix="_pinholeRectificationAttached")
+        p.attachPinholeModel(pinhole=processed_pinholes, suffix="_pinholeModelAttached")
 
         os.chdir("inputs/")
         processed_sci = p.writeOutputs().pop()
@@ -695,7 +702,7 @@ def create_inputs_recipe():
         p.separateSky()
         p.associateSky()
         p.skyCorrect()
-        p.attachPinholeRectification(pinhole=processed_pinholes, suffix="_pinholeRectificationAttached")
+        p.attachPinholeModel(pinhole=processed_pinholes, suffix="_pinholeModelAttached")
         p.distortionCorrect()
         p.adjustWCSToReference()
         p.resampleToCommonFrame(output_wave_scale='reference', trim_spectral=True)
@@ -719,6 +726,7 @@ def create_refs_recipe():
 
     for filename, params in input_pars:
         ad = astrodata.open(os.path.join('inputs', filename))
+        print(f"Reducing {ad.filename}")
         p = GNIRSCrossDispersed([ad])
         p.determineWavelengthSolution(**{**determine_wavelength_solution_parameters,
                                          **params})
