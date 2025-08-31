@@ -130,8 +130,7 @@ def _gem_north_lxd_lcxd_111_longblue(central_wavelength, grating_order):
         'order5': (-309.060, 1215.08),
         'order6': (-370.932, 1489.49),
         'order7': (-438.000, 1776.67),  # falls off the detector below 2.06 um
-        # order 8 is hardly visible in the flats. Also can fall off the
-        # detector at some wavelength settings.
+        'order8': (-528.460, 2134.5),  # order 8 is not visible in the flats below 2.12um
     }
 
     x_ccd = tuple(_dynamic_x_ccd(solutions, central_wavelength, grating_order))
