@@ -1,9 +1,11 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_crossdispersed.py file, in alphabetical order.
 
+from astrodata import AstroData
+
 from gempy.library import config
 
-from geminidr.core import parameters_spect, parameters_stack
+from geminidr.core import parameters_spect, parameters_stack, parameters_generic
 
 
 class combineOrdersConfig(parameters_stack.core_stacking_config):
@@ -36,3 +38,8 @@ class resampleToCommonFrameConfig(parameters_spect.resampleToCommonFrameConfig):
                 [self.w1, self.w2, self.dw, self.npix].count(None) not in (1, 4)):
             raise ValueError("Must specify 0 or 3 resampling parameters "
                              "(w1, w2, dw, npix) if single_wave_scale=False")
+
+
+class applySlitModelConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitModelApplied", optional=True)
+    flat = config.ListField("Flatfield frame", (str, AstroData), None, optional=True, single=True)

@@ -10,6 +10,7 @@ import os
 
 import astrodata, gemini_instruments
 from astrodata.utils import Section
+from astrodata.provenance import add_provenance
 
 from astropy.modeling import models
 from astropy.table import Table, vstack
@@ -18,6 +19,7 @@ from gwcs.wcs import WCS as gWCS
 import numpy as np
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
+from recipe_system.utils.md5 import md5sum
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
@@ -588,13 +590,7 @@ class CrossDispersed(Spect, Preprocess):
             # the flat, since it is calculated from the same SLITEDGE table.
             # (although, as noted below, the one from the flat gets copied).
             # cutSlits() will also sort out the WCS for each cut extension.
-            slitedge = vstack([flat_ext.SLITEDGE for flat_ext in flat],
-                              metadata_conflicts='silent')
-            for i, (flat_detsec, dispaxis) in enumerate(zip(flat.detector_section(),
-                                                            flat.dispersion_axis())):
-                offset = flat_detsec.x1 if dispaxis == 2 else flat_detsec.y1
-                slitedge[i*2:i*2+2]["c0"] += offset
-            ad[0].SLITEDGE = slitedge
+            ad[0].SLITEDGE = self._construct_slitedge_model(ad, flat)
 
         adinputs = self.cutSlits(adinputs, suffix=None)
 
@@ -650,6 +646,89 @@ class CrossDispersed(Spect, Preprocess):
             super().write1DSpectra(adinputs=adoutputs, **params)
 
         return adinputs
+    
+    def applySlitModel(self, adinputs=None, suffix=None, flat=None):
+        """
+        This primitive copies the SLITEDGE table from a corresponding processed flat,
+        extracts slits into individual extensions, combines DQ planes of the
+        ad and the flat, and attaches the rectification model from the flat.
+        
+        If no flatfield is provided, the calibration database will be
+        queried.
+        
+        It does all the same stuff as flatCorrect, without actually dividing
+        the data by the flatfield. It is intended for use in XD arc recipes,
+        where a flatfield in blue orders may have very low illumination and 
+        dividing the arc by the flat may do more harm than good.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        flat: str
+            name of flatfield to use
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        if flat is None:
+            flat_list = self.caldb.get_processed_flat(adinputs)
+        else:
+            flat_list = (flat, None)
+
+        adoutputs = []
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                    force_ad=(1,))):
+            if flat is None:
+                if 'sq' in self.mode:
+                   raise CalibrationNotFoundError("No processed flat listed "
+                                                  f"for {ad.filename}")
+                else:
+                   log.warning(f"No changes will be made to {ad.filename}, "
+                               "since no flatfield has been specified")
+                   continue
+
+            if len(ad) != 1:
+                log.warning(f"{ad.filename} has more than one extension, so "
+                            "the SLITEDGE table will not be copied.")
+                continue
+
+            # Reconstruct the original SLITEDGE model from the flatfield
+            ad[0].SLITEDGE = self._construct_slitedge_model(ad, flat)
+
+            ad_cut = self.cutSlits([ad])[0]
+
+            # Combine the DQ planes with bitwise OR
+            for ad_ext, flat_ext in zip(ad_cut, flat):
+                ad_ext.mask |= flat_ext.mask
+
+            # Try to get a slit rectification model from the flat, and, if one
+            # exists, insert it before the pixels-to-world transform.
+            ad_rect = gt.attach_rectification_model(ad_cut, flat, log=self.log)
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+
+            if 'rectified' not in ad_rect[0].wcs.available_frames:
+                log.fullinfo("No rectification model found "
+                             f"for the flat {flat.filename}{origin_str}")
+                continue
+
+            else:
+                log.stdinfo(f"{ad.filename}: copied rectification model from the flat "
+                         f"{flat.filename}{origin_str}")
+
+            # Update the header and filename, copying QECORR keyword from flat
+            ad_rect.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
+
+            gt.mark_history(ad_rect, primname=self.myself(), keyword=timestamp_key)
+            ad_rect.update_filename(suffix=suffix, strip=True)
+            if flat.path:
+                add_provenance(ad_rect, flat.filename, md5sum(flat.path) or "", self.myself())
+
+            adoutputs.append(ad_rect)
+
+        return adoutputs
 
     @staticmethod
     def _separate_by_spectral_order(ad):
@@ -722,3 +801,37 @@ class CrossDispersed(Spect, Preprocess):
                 label = f" Aperture {ap}"
             tab_labels.append(label)
         return tab_labels
+    
+
+    def _construct_slitedge_model(self, ad, flat):
+        """
+        CJS: For speed of getting something working, we're going to
+        reconstruct the original SLITEDGE model from the flatfield
+        and then use it to cut the science data. So, rather than copy
+        the rectification model from the flat, a completely new one
+        will be constructed, but it will be identical to that one in
+        the flat, since it is calculated from the same SLITEDGE table.
+        (although, as noted below, the one from the flat gets copied).
+        cutSlits() will also sort out the WCS for each cut extension.
+
+        Parameters
+        ----------
+        ad : AstroData
+            The science AstroData object.
+        flat : AstroData
+            The flatfield AstroData object.
+
+        Returns
+        -------
+        astropy.table.Table
+            The reconstructed SLITEDGE table.
+        """
+        slitedge = vstack([flat_ext.SLITEDGE for flat_ext in flat],
+                          metadata_conflicts='silent')
+
+        for i, (flat_detsec, dispaxis, flat_ext) in enumerate(zip(flat.detector_section(),
+                                                        flat.dispersion_axis(),flat)):
+            offset = flat_detsec.x1 if dispaxis == 2 else flat_detsec.y1
+            slitedge[i*2:i*2+2]["c0"] += offset
+
+        return slitedge

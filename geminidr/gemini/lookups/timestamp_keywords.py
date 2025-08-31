@@ -15,6 +15,7 @@ timestamp_keys = {
     "adjustWCSToReference": "CORRWCS",
     "ADUToElectrons": "ADUTOELE",
     "applyDQPlane": "APLDQPLN",
+    "applySlitModel": "APLSLTMDL",
     "applyWCSAdjustment": "CORRWCS",
     "appwave": "APPWAVE",
     "associateSky": "ASSOCSKY",
