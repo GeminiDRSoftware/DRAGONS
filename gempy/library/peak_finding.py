@@ -246,7 +246,11 @@ def estimate_peak_width(data, mask=None, boxcar_size=None, nlines=None):
             widths.append(width)
         goodpix[lo:hi] = False
         niters += 1
-    return sigma_clip(widths).mean()
+
+    if len(widths) == 0:
+        return None
+    else:
+        return sigma_clip(widths).mean()
 
 
 def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):

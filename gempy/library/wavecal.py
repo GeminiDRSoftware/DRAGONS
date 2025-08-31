@@ -629,9 +629,18 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         mask &= bad_bits
         data[mask > 0] = 0.
 
+    # FWHM expected from resolution, in case estimation from data fails
+    exp_fwidth = ((cenwave or ext.central_wavelength(asNanometers=True))
+         / p._get_resolution(ext)
+         / abs(dispersion or ext.dispersion(asNanometers=True)))
+
     if config["fwidth"] is None:
         fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30)
-        logit(f"Estimated feature width: {fwidth:.2f} pixels")
+        if fwidth is None:
+            fwidth = exp_fwidth
+            logit(f"Expected feature width: {fwidth:.2f} pixels")
+        else:
+            logit(f"Estimated feature width: {fwidth:.2f} pixels")
     else:
         fwidth = config["fwidth"]
 
@@ -654,7 +663,11 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     # to be too high.
     if config["fwidth"] is None and len(peaks):
         fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
-        log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
+        if fwidth is None:
+            fwidth = exp_fwidth
+            log.stdinfo(f"Expected feature width: {fwidth:.2f} pixels")
+        else:
+            log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
