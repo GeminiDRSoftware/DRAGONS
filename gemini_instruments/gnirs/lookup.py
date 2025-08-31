@@ -190,11 +190,12 @@ dispersion_by_config = {
     # "Filter": dispersion
     # Dispersion values are in nm/pix (updated by CJS 20250109)
     # The dispersion values are based on wvl. coverages for each filter/mode listed in GNIRS instrument pages.
+    # Z and I are not the real filters used with GNIRS, those are added to accout for the two blues order in XD mode
     ("10/mm", "Short")  : {"M": -1.939},
-    ("10/mm", "Long")   : {"I": -0.244, "Z": -0.273, "X": -0.324,  "J": -0.389,   "H": -0.485, "K": -0.647, "L": -0.972, "M": -1.943},
-    ("32/mm", "Short")  : {"I": -0.244, "Z": -0.273, "X": -0.323,  "J": -0.388,   "H": -0.484, "K": -0.646, "L": -0.969, "M": -1.934},
-    ("32/mm", "Long")   : {             "Z": -0.090, "X": -0.107,  "J": -0.129,   "H": -0.162, "K": -0.216, "L": -0.324, "M": -0.645}, # I is a guesses, the order is only partially visible
-    ("111/mm", "Short") : {"I": -0.069, "Z": -0.079, "X": -0.092,  "J": -0.110,   "H": -0.139, "K": -0.185, "L": -0.273, "M": -0.562}, # all values ok
+    ("10/mm", "Long")   : {"I": -0.242, "Z": -0.277, "X": -0.323,  "J": -0.387,   "H": -0.487, "K": -0.645, "L": -0.972, "M": -1.943},
+    ("32/mm", "Short")  : {"I": -0.242, "Z": -0.275, "X": -0.321,  "J": -0.386,   "H": -0.482, "K": -0.646, "L": -0.969, "M": -1.934},
+    ("32/mm", "Long")   : {             "Z": -0.089, "X": -0.107,  "J": -0.129,   "H": -0.162, "K": -0.216, "L": -0.324, "M": -0.645}, # I order is never visible
+    ("111/mm", "Short") : {"I": -0.069, "Z": -0.079, "X": -0.092,  "J": -0.111,   "H": -0.134, "K": -0.183, "L": -0.273, "M": -0.562},
     ("111/mm", "Long")  : {"I": -0.023, "Z": -0.027, "X": -0.0309, "J": -0.0371,  "H": -0.0464,"K": -0.0618,"L": -0.0922,"M": -0.1875}
 }
 

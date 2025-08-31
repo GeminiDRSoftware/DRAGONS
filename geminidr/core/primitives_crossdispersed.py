@@ -23,6 +23,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from geminidr.core import Spect, Preprocess
 from geminidr import CalibrationNotFoundError
+from gemini_instruments.gnirs import lookup
 from . import parameters_crossdispersed
 
 
@@ -150,13 +151,22 @@ class CrossDispersed(Spect, Preprocess):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
-        order_key_parts = self._get_order_information_key()
-        order_info = import_module('.orders_XD', self.inst_lookups).order_info
+        def get_dispersions_for_orders(grating, camera):
+            min_order = 3
+            dispersions = []
+            config = lookup.dispersion_by_config.get((grating, camera), {})
+            for order in range(min_order, max(lookup.xd_orders.keys()) + 1):
+                filter_name = lookup.xd_orders.get(order)
+                if filter_name and filter_name in config:
+                    dispersions.append(config[filter_name])
+            return dispersions
 
         adoutputs = []
         for ad in adinputs:
-            order_key = "_".join(getattr(ad, desc)() for desc in order_key_parts)
-            _, dispersions = order_info[order_key]
+            grating = ad._grating(pretty=True, stripID=True)
+            camera = 'Short' if 'Short' in ad.camera() \
+                else 'Long' if 'Long' in ad.camera() else None
+            dispersions = get_dispersions_for_orders(grating, camera)
 
             # Get the central wavelength setting and order it occurs in.
             central_wavelength = ad.central_wavelength(asNanometers=True)

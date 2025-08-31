@@ -159,21 +159,6 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
         return super().determinePinholeRectification(adinputs=adinputs, **params)
 
 
-    def _get_order_information_key(self):
-        """
-        This function provides a key to the order-specific information needed
-        for updating the WCS when cutting out slits in XD data.
-
-        Returns
-        -------
-        tuple
-            A tuple of strings representing the attributes of the dict key for
-            information on the orders
-
-        """
-
-        return ('telescope', '_prism', 'decker', '_grating', 'camera')
-
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
         Determines the wavelength solution for an ARC and updates the wcs
