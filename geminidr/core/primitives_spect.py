@@ -1414,8 +1414,10 @@ class Spect(Resample):
                 # slits (currently cross-dispersed).
                 constant_slit = 'LS' in ext.tags
                 if debug:
+                    self.viewer.window.frame(n=ext.id)
                     self.viewer.display_image(ext, wcs=False)
                     self.viewer.width = 2
+                    self.viewer.color = "red"
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
@@ -1581,7 +1583,7 @@ class Spect(Resample):
 
                 else:
                     log.warning("Failed to find any peaks in "
-                                "f{ad.filename}:{ext.id}")
+                                f"{ad.filename}:{ext.id}")
                     continue
 
                 # List of "reference" positions (i.e., the coordinate
@@ -1626,9 +1628,11 @@ class Spect(Resample):
                 # print(np.min(diff), np.max(diff), np.std(diff))
 
                 if debug:  # pragma: no cover
-                    self.viewer.color = "red"
+                    self.viewer.color = "green"
+                    n = 10 if constant_slit else 1
                     spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
-                                                ext.shape[1 - dispaxis] // (step * 10))
+                                                ext.shape[1 - dispaxis] // (step * n))
+
                     spectral_coords = np.unique(ref_coords[1 - dispaxis])
                     for coord in spectral_coords:
                         if dispaxis == 1:
