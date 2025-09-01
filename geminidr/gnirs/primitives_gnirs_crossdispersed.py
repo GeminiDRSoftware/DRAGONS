@@ -286,8 +286,6 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                         these_params["order"] = 1
                     if these_params["min_snr"] is None:
                         these_params["min_snr"] = 1
-                    if these_params["num_lines"] is None:
-                        these_params["num_lines"] = 100
                 else:
                     # Airglow emission
                     self.generated_linelist = "airglow"
