@@ -42,20 +42,22 @@ class AstroDataFactory:
                 LOGGER.warning(f"File {source} is zero size")
 
             # try vs all handlers
+            collected_exceptions = []
             for func in AstroDataFactory._file_openers:
                 try:
                     fp = func(source)
                     yield fp
-                except Exception:
+                except Exception as ex:
                     # Just ignore the error. Assume that it is a not supported
                     # format and go for the next opener
-                    pass
+                    collected_exceptions.append(str(ex))
                 else:
                     if hasattr(fp, 'close'):
                         fp.close()
                     return
-            raise AstroDataError("No access, or not supported format for: {}"
-                                 .format(source))
+            exceptions = '\n'.join(collected_exceptions)
+            raise AstroDataError("No access, or not supported format for: {}.\nCollected errors: {}"
+                                 .format(source), exceptions)
         else:
             yield source
 
