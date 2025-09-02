@@ -1617,6 +1617,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
                 bg_data = bg_data.data[~bg_data.mask]
                 bg = np.median(bg_data)
                 bg_std = np.std(bg_data)
+            bg, bg_std = float(bg), float(bg_std)  # allow weak type promotion
         else:
             bg, bg_std = None, None
 
