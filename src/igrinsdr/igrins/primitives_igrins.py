@@ -50,6 +50,10 @@ from .procedures.readout_pattern.readout_pattern_helper import (
 
 from .procedures.readout_pattern.readout_pattern_guard import remove_pattern_from_guard as remove_readout_pattern_from_guard
 
+from .procedures.flexure_correction import isolate_sky_lines, estimate_flexure
+
+# -----
+
 def fix_pattern_using_reference_pixel(d):
     return remove_readout_pattern_from_guard(d)
 
@@ -742,7 +746,6 @@ class Igrins(Gemini, NearIR):
             # should contain stacked data.
             data = adinputs[0][0].data
 
-        from .procedures.flexure_correction import isolate_sky_lines
         ref_data = isolate_sky_lines(data/exptime)
         adinputs[0][0].FLEXCORR = ref_data
 
@@ -1484,10 +1487,35 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
+    def _stackFrames(self, adinputs, correct_flexure=True):
+        print("#### stackFrames!!")
+        if correct_flexure == False:
+            exptime = adinputs[0][0].exposure_time()
+            # if exptime >= 20.0:
+
+            # FIXME the code has not been finished.
+            # data_list = estimate_flexure(obsset, data_list, exptime) #Estimate flexure and apply correction
+
+            ad = adinputs[0]
+            ad_sky = self._get_ad_sky(ad)
+            # data_list = estimate_flexure(adinputs, ad_sky, exptime) #Estimate flexure and apply correction
+            adinputs = estimate_flexure(adinputs, ad_sky, exptime)
+
+            # This is to measure the shift of telluric lines
+            # FIXME we skip this for now.
+
+            # if len(data_list) > 1: #Testing detection
+            #     check_telluric_shift(obsset, data_list)
+
+        stacked = self.stackFrames(adinputs)
+        return stacked
+
     def makeAB(self, adinputs, **params):
         adinputsA, adinputsB = splitAB(adinputs)
-        stackedA = self.stackFrames(adinputsA)
-        stackedB = self.stackFrames(adinputsB)
+
+
+        stackedA = self._stackFrames(adinputsA)
+        stackedB = self._stackFrames(adinputsB)
 
         ad = adinputs[0]
         ad_sky = self._get_ad_sky(ad)

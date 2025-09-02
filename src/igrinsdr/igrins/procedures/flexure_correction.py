@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+from pathlib import Path
+
 import numpy as np
 from scipy.ndimage import median_filter, zoom, gaussian_filter1d, binary_dilation, binary_erosion
 from scipy.signal import fftconvolve
@@ -137,7 +139,58 @@ def check_telluric_shift(obsset, datalist):
                 f.write(str(obsset.obsids[0])+', '+str(obsset.obsids[j])+', '+str(dx)+'\n')
 
 
-def estimate_flexure(obsset, data, exptime):
+def get_band(adlist):
+    ad = adlist[0]
+    band = ad[0].band() # phu["BAND"]
+
+    return band
+
+
+def estimate_flexure(adlist, ad_sky, exptime):
+    flexure_corrected_data = [] #Create a list to store the flexure corrected data
+
+    refframe = ad_sky[0].FLEXCORR
+
+    # FIXME we need a way to load packaged calibration data
+
+	# if exptime >= 20.0: #Load mask to isolate sky lines , for long exposures estimate flexure for each frame seperately
+    # master_cal_dir = obsset.rs.master_ref_loader.config.master_cal_dir
+	#mask = (fits.getdata(master_cal_dir+'/'+band+'-band_sky_mask.fits') == 1.0)
+
+    band = get_band(adlist)
+    master_cal_dir = Path("calib")
+    mask = (fits.getdata(master_cal_dir / f'{band}-band_sky_mask_igrins2.fits') == 1.0)
+    refframe[~mask] = np.nan
+
+	#for dataframe in data:
+    # for i in range(len(data)):
+    #     dataframe = data[i]
+    for ad in adlist:
+        dataframe = ad[0].data
+        cleaned_dataframe = isolate_sky_lines(dataframe/exptime) #Apply median filters to isolate sky lines from other signal and normalize by exposure time
+        #if obsset.obsids[i] == 99:
+        #	breakpoint()
+        cleaned_dataframe[~mask] = np.nan #Apply mask to isolate sky lines on detector
+        #dx, dy = cross_correlate(refframe, cleaned_dataframe) #Estimate delta-x and delta-y difference in pixels between the reference and data frames
+        dx = cross_correlate(refframe, cleaned_dataframe) #Estimate delta-x and delta-y difference in pixels between the reference and data frames
+
+        #shifted_dataframe = roll_along_axis(dataframe, dy, axis=0)
+        #shifted_dataframe = roll_along_axis(shifted_dataframe, dx, axis=1) #Apply flexure correction
+        shifted_dataframe = roll_along_axis(dataframe, dx, axis=1)
+
+        ad[0].data = shifted_dataframe
+        # flexure_corrected_data.append(shifted_dataframe)
+
+        #print('dx =', dx, 'dy =', dy)
+
+        # if False:
+        #     outdata_path = obsset.rs.storage.get_section('OUTDATA_PATH')
+        #     with open(outdata_path+"/flexure_"+band+".csv", "a") as f: #Output flexure corrections to the textfile flexure.txt 
+        #         f.write(band+', '+str(obsset.obsids[i])+', '+str(dx)+'\n')
+
+    return adlist # flexure_corrected_data
+
+def estimate_flexure_orig(obsset, data, exptime):
 	#exptime = get_exptime(obsset)
     date, band = get_date_and_band(obsset) #Grab date and band we are working in
     flexure_corrected_data = [] #Create a list to store the flexure corrected data
