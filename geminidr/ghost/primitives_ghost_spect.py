@@ -2189,8 +2189,6 @@ class GHOSTSpect(GHOST):
                 if not hasattr(ext, "WAVL"):
                     log.warning(f"    EXTVER {i} has no WAVL table. Ignoring.")
                     continue
-                has_var = ext.variance is not None
-                has_mask = ext.mask is not None
                 npix, nobj = ext.shape[-2:]
                 try:
                     orders = list(range(ext.shape[-3]))
@@ -2225,9 +2223,9 @@ class GHOSTSpect(GHOST):
                     for order, wave_model in zip(orders, wave_models):
                         ndd = ext.nddata.__class__(data=ext.data[order, :, spec].ravel(),
                                                    meta={'header': ext.hdr.copy()})
-                        if has_mask:
+                        if ext.has_mask():
                             ndd.mask = ext.mask[order, :, spec].ravel()
-                        if has_var:
+                        if ext.has_variance():
                             ndd.variance = ext.variance[order, :, spec].ravel()
                         adout.append(ndd)
                         adout[-1].hdr[ad._keyword_for('data_section')] = f"[1:{npix}]"

@@ -361,7 +361,8 @@ class Aperture:
 
 
 class Trace:
-    """A class describing a trace along columns. It has the following attributes:
+    """
+    A class describing a trace along columns. It has the following attributes:
 
     starting_point : len-2 iterable
         The starting point of the trace on the array, in (y, x) format.
@@ -371,6 +372,9 @@ class Trace:
         The highest y-value that the trace has reached.
     bottom_limit : float
         The lowest y-value that the trace have reached.
+
+    Note that trace_lines() (which creates Trace objects) *always* traces in
+    the vertical direction, regardless of the orientation of the image.
     """
     def __init__(self, starting_point, reverse_returned_coords=False):
         """
@@ -458,6 +462,10 @@ class Trace:
                                f"{point}, top: {self.top_limit}, "
                                f"bottom: {self.bottom_limit}")
         self.last_point = point
+
+    def remove_point(self, point):
+        """Remove a point from the deque"""
+        self.points.remove(point)
 
     def predict_location(self, row, lookback=4, order=1):
         """Predict where the next peak will be in the tracing direction.
@@ -563,12 +571,13 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         Minimum amplitude of fit to be considered as a real detection. Peaks
         smaller than this value will be counted as a miss.
     min_line_length: float
-        Minimum length of traced feature (as a fraction of the tracing dimension length)
-        to be considered as a useful line.
+        Minimum length of traced feature (as a fraction of the tracing
+        dimension length) to be considered as a useful line.
 
     Returns
     -------
-    list of Trace objects, or an empty list if no peaks were recoverable
+    list of Trace objects, or an empty list if no peaks were recoverable.
+    These objects are *always* configured to return coordinates in (x, y) order.
     """
     log = logutils.get_logger(__name__)
 

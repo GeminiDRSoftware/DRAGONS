@@ -55,7 +55,7 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                              '_grating', 'camera')
             mdf_key = "_".join(getattr(ad, desc)()
                                for desc in mdf_key_parts)
-            x_ccd, y_ccd, length_pix = get_slit_info(mdf_key, ad.central_wavelength())
+            x_ccd, y_ccd, length_pix = get_slit_info(mdf_key, ad.central_wavelength(), ad._grating_order())
             mdf_table = Table([range(1, len(x_ccd) + 1), x_ccd], names=['slit_id', 'x_ccd'])
             mdf_table['y_ccd'] = y_ccd
             mdf_table['specorder'] = mdf_table['slit_id'] + 2
@@ -127,10 +127,10 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
 
         return adoutputs
 
-    def tracePinholeApertures(self, adinputs=None, **params):
+    def determinePinholeRectification(self, adinputs=None, **params):
         """
         This primitive exists to provide some mode-specific values to the
-        tracePinholeApertures() in primitives_spect, since the modes in GNIRS
+        determinePinholeRectification() in primitives_spect, since the modes in GNIRS
         cross-dispersed are different enough to warrant having different values.
         """
 
@@ -156,23 +156,8 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                                   "Long camera.")
 
         # Call the parent primitive with the new parameter values.
-        return super().tracePinholeApertures(adinputs=adinputs, **params)
+        return super().determinePinholeRectification(adinputs=adinputs, **params)
 
-
-    def _get_order_information_key(self):
-        """
-        This function provides a key to the order-specific information needed
-        for updating the WCS when cutting out slits in XD data.
-
-        Returns
-        -------
-        tuple
-            A tuple of strings representing the attributes of the dict key for
-            information on the orders
-
-        """
-
-        return ('telescope', '_prism', 'decker', '_grating', 'camera')
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
@@ -290,9 +275,7 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
             min_snr_isNone = True if these_params["min_snr"] is None else False
             order_isNone = True if these_params["order"] is None else False
 
-            disp = ad.disperser(pretty=True)
-            filt = ad.filter_name(pretty=True)
-            cam = ad.camera(pretty=True)
+            grating = ad._grating(pretty=True, stripID=True)
             cenwave = ad.central_wavelength(asMicrometers=True)
             log = self.log
             if 'ARC' not in ad.tags:
@@ -306,6 +289,14 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                 else:
                     # Airglow emission
                     self.generated_linelist = "airglow"
+            else:
+                if 'Long' in ad.camera() and grating == "111/mm":
+                    if these_params["order"] is None:
+                        these_params["order"] = 1
+                    if these_params["min_snr"] is None:
+                        these_params["min_snr"] = 10
+
+
 
             if these_params["min_snr"] is None:
                 these_params["min_snr"] = 20

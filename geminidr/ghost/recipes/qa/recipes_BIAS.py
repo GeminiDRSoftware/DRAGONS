@@ -1,8 +1,8 @@
 """
-Recipes available to data with tags ['GMOS', 'CAL', 'BIAS'].
-Default is "makeProcessedBias".
+Recipes available to data with tags ``['GHOST', 'CAL', 'BIAS']``.
+Default is ``makeProcessedBias``.
 """
-recipe_tags = {'GMOS', 'CAL', 'BIAS'}
+recipe_tags = set(['GHOST', 'CAL', 'BIAS'])
 
 def makeProcessedBias(p):
     """
@@ -13,17 +13,16 @@ def makeProcessedBias(p):
 
     Parameters
     ----------
-    p : PrimitivesBASE object
+    p : Primitives object
         A primitive set matching the recipe_tags.
     """
 
-    p.prepare(require_wcs=False)
+    p.prepare()
     p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
-    p.addToList(purpose="forStack")
-    p.getList(purpose="forStack")
-    p.stackBiases()
+    #p.tileArrays()
+    p.stackFrames(operation="median")
     p.storeProcessedBias()
     return
 
@@ -35,29 +34,12 @@ def checkBias1(p):
     :param p:
     :return:
     """
-    p.prepare(require_wcs=False)
-    p.addDQ(add_illum_mask=False)
+    p.prepare()
+    p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.recordPixelStats(prefix='OSCO')
     p.writeOutputs(strip=True, suffix='_checkBias1')
-    return
-
-def checkBias2(p):
-    """
-    This recipe checks bias frames by processing them as regular bias frames
-    (notably including overscan correction), then subtracting a processed bias
-    and recording some pixel statistics.
-    :param p:
-    :return:
-    """
-    p.prepare(require_wcs=False)
-    p.addDQ(add_illum_mask=False)
-    p.addVAR(read_noise=True)
-    p.overscanCorrect()
-    p.biasCorrect(do_cal="force")
-    p.recordPixelStats(prefix="BICO")
-    p.writeOutputs(strip=True, suffix='_checkBias2')
     return
 
 _default = makeProcessedBias

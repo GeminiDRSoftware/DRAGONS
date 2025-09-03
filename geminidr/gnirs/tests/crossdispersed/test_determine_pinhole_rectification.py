@@ -25,12 +25,12 @@ datasets = [
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 @pytest.mark.parametrize("ad", datasets, indirect=True)
-def test_trace_pinhole_apertures(ad, change_working_dir, ref_ad_factory):
+def test_determine_pinhole_rectification(ad, change_working_dir, ref_ad_factory):
 
     with change_working_dir():
         p = GNIRSCrossDispersed([ad])
         p.viewer = geminidr.dormantViewer(p, None)
-        pinholes_traced_ad = p.tracePinholeApertures().pop()
+        pinholes_traced_ad = p.determinePinholeRectification().pop()
 
     ref_ad = ref_ad_factory(pinholes_traced_ad.filename)
     for ext, ext_ref in zip(pinholes_traced_ad, ref_ad):
@@ -55,7 +55,7 @@ def test_straight_edges_from_pinhole_model(ad):
     applying the pinhole-created distortion model.
     """
     p = GNIRSCrossDispersed([ad])
-    ad = p.tracePinholeApertures().pop()
+    ad = p.determinePinholeRectification().pop()
 
     for ext in ad:
         nmasked = (ext.mask & 64).astype(bool).sum(axis=1)

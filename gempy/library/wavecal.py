@@ -629,9 +629,18 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         mask &= bad_bits
         data[mask > 0] = 0.
 
+    # FWHM expected from resolution, in case estimation from data fails
+    exp_fwidth = ((cenwave or ext.central_wavelength(asNanometers=True))
+         / p._get_resolution(ext)
+         / abs(dispersion or ext.dispersion(asNanometers=True)))
+
     if config["fwidth"] is None:
         fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30)
-        logit(f"Estimated feature width: {fwidth:.2f} pixels")
+        if fwidth is None:
+            fwidth = exp_fwidth
+            logit(f"Expected feature width: {fwidth:.2f} pixels")
+        else:
+            logit(f"Estimated feature width: {fwidth:.2f} pixels")
     else:
         fwidth = config["fwidth"]
 
@@ -646,16 +655,19 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
         reject_bad=False, nbright=config.get("nbright", 0))
-    if len(peaks) == 0:
-        raise ValueError(f"No peaks were found; perhaps try a lower min_snr value?")
+
     # Do the second iteration of fwidth estimation and peak finding, this time using the number of peaks
     # found after the first fwidth estimation, in order to get more accurate
     # line widths. This step is mostly necessary when doing wavecal from sky lines, as for those
     # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends
     # to be too high.
-    if config["fwidth"] is None:
+    if config["fwidth"] is None and len(peaks):
         fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
-        log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
+        if fwidth is None:
+            fwidth = exp_fwidth
+            log.stdinfo(f"Expected feature width: {fwidth:.2f} pixels")
+        else:
+            log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
@@ -1119,69 +1131,73 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     log = logutils.get_logger(__name__)
     in_vacuo = config.in_vacuo
 
-    # Because of the way the fit_1D object is constructed, there
-    # should be no masking. But it doesn't hurt to make sure, or
-    # be futureproofed in case we change things.
-    incoords = fit1d.points[~fit1d.mask]
-    outcoords = fit1d.image[~fit1d.mask]
+    if fit1d.image is None:
+        # We didn't do a successful fit, so just use the original model
+        m_final = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+    else:
+        # Because of the way the fit_1D object is constructed, there
+        # should be no masking. But it doesn't hurt to make sure, or
+        # be futureproofed in case we change things.
+        incoords = fit1d.points[~fit1d.mask]
+        outcoords = fit1d.image[~fit1d.mask]
 
-    m_final = fit1d.model
-    domain = m_final.domain
-    rms = fit1d.rms
-    nmatched = len(incoords)
-    log.stdinfo("Chebyshev coefficients: "+" ".join(
-        f"{p:.5f}" for p in m_final.parameters))
-    # TODO: Do we need input_data? config.fwidth?
-    log.stdinfo(f"Matched {nmatched}/{len(input_data['peaks'])} lines with "
-                f"rms = {rms:.3f} nm")
+        m_final = fit1d.model
+        domain = m_final.domain
+        rms = fit1d.rms
+        nmatched = len(incoords)
+        log.stdinfo("Chebyshev coefficients: "+" ".join(
+            f"{p:.5f}" for p in m_final.parameters))
+        # TODO: Do we need input_data? config.fwidth?
+        log.stdinfo(f"Matched {nmatched}/{len(input_data['peaks'])} lines with "
+                    f"rms = {rms:.3f} nm")
 
-    dw = np.diff(m_final(domain))[0] / np.diff(domain)[0]
-    max_rms = max(0.2 * rms / abs(dw), 1e-4)  # in pixels
-    max_dev = 3 * max_rms
-    m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
-                                            max_deviation=max_dev)
-    if len(incoords) > 1:
-        inv_rms = np.std(m_inverse(m_final(incoords)) - incoords)
-        log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
-    m_final.name = "WAVE"  # always WAVE, never AWAV
-    m_final.inverse = m_inverse
+        dw = np.diff(m_final(domain))[0] / np.diff(domain)[0]
+        max_rms = max(0.2 * rms / abs(dw), 1e-4)  # in pixels
+        max_dev = 3 * max_rms
+        m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
+                                                max_deviation=max_dev)
+        if len(incoords) > 1:
+            inv_rms = np.std(m_inverse(m_final(incoords)) - incoords)
+            log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
+        m_final.name = "WAVE"  # always WAVE, never AWAV
+        m_final.inverse = m_inverse
 
-    if len(incoords):
-        indices = np.argsort(incoords)
-        # Add 1 to pixel coordinates so they're 1-indexed
-        incoords = np.float32(incoords[indices]) + 1
-        outcoords = np.float32(outcoords[indices])
-    temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=u.nm)
+        if len(incoords):
+            indices = np.argsort(incoords)
+            # Add 1 to pixel coordinates so they're 1-indexed
+            incoords = np.float32(incoords[indices]) + 1
+            outcoords = np.float32(outcoords[indices])
+        temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=u.nm)
 
-    #### Temporary to ensure all the old stuff is still there
-    # while I refactor tests
-    temptable.add_columns([[1], [m_final.degree], [domain[0]], [domain[1]]],
-                          names=("ndim", "degree", "domain_start", "domain_end"))
-    temptable.add_columns([[rms], [input_data["fwidth"]]],
-                          names=("rms", "fwidth"))
-    if ext.data.ndim > 1:
-        # TODO: Need to update this from the interactive tool's values
-        direction, location = input_data["location"].split()
-        temptable[direction] = int(location)
-        temptable["nsum"] = config.nsum
-    pad_rows = nmatched - len(temptable.colnames)
-    if pad_rows < 0:  # Really shouldn't be the case
-        incoords = list(incoords) + [0] * (-pad_rows)
-        outcoords = list(outcoords) + [0] * (-pad_rows)
-        pad_rows = 0
+        #### Temporary to ensure all the old stuff is still there
+        # while I refactor tests
+        temptable.add_columns([[1], [m_final.degree], [domain[0]], [domain[1]]],
+                              names=("ndim", "degree", "domain_start", "domain_end"))
+        temptable.add_columns([[rms], [input_data["fwidth"]]],
+                              names=("rms", "fwidth"))
+        if ext.data.ndim > 1:
+            # TODO: Need to update this from the interactive tool's values
+            direction, location = input_data["location"].split()
+            temptable[direction] = int(location)
+            temptable["nsum"] = config.nsum
+        pad_rows = nmatched - len(temptable.colnames)
+        if pad_rows < 0:  # Really shouldn't be the case
+            incoords = list(incoords) + [0] * (-pad_rows)
+            outcoords = list(outcoords) + [0] * (-pad_rows)
+            pad_rows = 0
 
-    fit_table = Table([temptable.colnames + [''] * pad_rows,
-                       list(temptable[0].values()) + [0] * pad_rows,
-                       incoords, outcoords],
-                      names=("name", "coefficients", "peaks", "wavelengths"),
-                      units=(None, None, u.pix, u.nm),
-                      meta=temptable.meta)
-    medium = "vacuo" if in_vacuo else "air"
-    fit_table.meta['comments'] = [
-        'coefficients are based on 0-indexing',
-        'peaks column is 1-indexed',
-        f'calibrated with wavelengths in {medium}']
-    ext.WAVECAL = fit_table
+        fit_table = Table([temptable.colnames + [''] * pad_rows,
+                           list(temptable[0].values()) + [0] * pad_rows,
+                           incoords, outcoords],
+                          names=("name", "coefficients", "peaks", "wavelengths"),
+                          units=(None, None, u.pix, u.nm),
+                          meta=temptable.meta)
+        medium = "vacuo" if in_vacuo else "air"
+        fit_table.meta['comments'] = [
+            'coefficients are based on 0-indexing',
+            'peaks column is 1-indexed',
+            f'calibrated with wavelengths in {medium}']
+        ext.WAVECAL = fit_table
 
     spectral_frame = (ext.wcs.output_frame if ext.data.ndim == 1
                       else ext.wcs.output_frame.frames[0])

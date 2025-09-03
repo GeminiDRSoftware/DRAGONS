@@ -26,7 +26,7 @@ def reduceScience(p):
     p.associateSky()
     p.skyCorrect()
     # p.cleanReadout()  # algorithm doesn't work on cut data
-    p.attachPinholeModel()
+    p.attachPinholeRectification()
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame(conserve=True)
@@ -63,7 +63,7 @@ def reduceTelluric(p):
     p.associateSky()
     p.skyCorrect()
     # p.cleanReadout()  # algorithm doesn't work on cut data
-    p.attachPinholeModel()
+    p.attachPinholeRectification()
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
@@ -92,10 +92,10 @@ def  makeWavecalFromSkyEmission(p):
     p.addVAR(poisson_noise=True, read_noise=True)
     p.nonlinearityCorrect()
     p.flatCorrect()
+    p.attachPinholeRectification()
     p.stackFrames()
-    p.attachPinholeModel()
     p.determineWavelengthSolution()
-    p.determineDistortion(spatial_order=1, step=4)
+    p.determineDistortion()
     p.storeProcessedArc(force=True)
     p.writeOutputs()
 
@@ -123,7 +123,7 @@ def  makeWavecalFromSkyAbsorption(p):
     p.associateSky()
     p.skyCorrect()
     # p.cleanReadout()  # algorithm doesn't work on cut data
-    p.attachPinholeModel()
+    p.attachPinholeRectification()
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame(output_wave_scale='reference', trim_spectral=True)

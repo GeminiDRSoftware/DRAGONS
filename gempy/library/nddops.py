@@ -33,7 +33,7 @@ NDD = namedtuple("NDD", "data mask variance")
 # be "bad" when rejecting pixels from the input data. If one takes multiple
 # images of an object and one of those images is saturated, it would clearly
 # be wrong statistically to reject the saturated one.
-BAD = 65535 ^ (DQ.non_linear | DQ.saturated)
+BAD = DQ.max ^ (DQ.non_linear | DQ.saturated)
 
 # A hierarchy of "badness". Pixels in the inputs are considered to be as
 # bad as the worst bit set, so a "bad_pixel" will only be used if there are
@@ -55,12 +55,14 @@ def stack_nddata(fn):
     The returned arrays are then stuffed back into an NDAstroData object.
     """
     @wraps(fn)
-    def wrapper(instance, sequence, scale=None, zero=None, *args, **kwargs):
+    def wrapper(instance, sequence, global_scaling=None, scale=None, zero=None, *args, **kwargs):
         nddata_list = list(sequence)
         if scale is None:
-            scale = [1.0] * len(nddata_list)
+            scale = np.ones(len(nddata_list), dtype=np.float32)
         if zero is None:
-            zero = [0.0] * len(nddata_list)
+            zero = np.zeros(len(nddata_list), dtype=np.float32)
+        if global_scaling is not None:
+            scale *= global_scaling
 
         # Coerce all data to 32-bit floats. FITS data on disk is big-endian
         # and preserving that datatype will cause problems with Cython
@@ -86,6 +88,11 @@ def stack_nddata(fn):
 
         out_data, out_mask, out_var, rejmap = fn(
             instance, data=data, mask=mask, variance=variance, *args, **kwargs)
+
+        if global_scaling is not None:
+            out_data /= global_scaling
+            if out_var is not None:
+                out_var /= global_scaling * global_scaling
 
         # Can't instantiate NDAstroData with variance
         ret_value = NDAstroData(out_data, mask=out_mask, variance=out_var)
@@ -387,6 +394,9 @@ class NDStacker:
             out_data = (_masked_sum(data / variance, mask=mask) /
                         _masked_sum(1 / variance, mask=mask))
             out_var = 1 / _masked_sum(1 / variance, mask=mask)
+        # Input data where all VAR=0. Should be masked
+        if out_mask is not None:
+            out_data[np.logical_and(np.isnan(out_data), out_mask > 0)] = 0
         return out_data, out_mask, out_var
 
     @staticmethod

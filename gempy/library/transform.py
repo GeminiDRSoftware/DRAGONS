@@ -1172,8 +1172,12 @@ class DataGroup:
                 # Perform the jobs (in parallel, if we can)
                 for (key, arr, kwargs) in jobs:
                     args = (arr, mapping, key, output_array_shape)
+                    # VAR can produce negative values near "walls" so use
+                    # a linear interpolant instead.
+                    this_interpolant = ("linear" if key == "variance"
+                                        else interpolant)
                     kwargs.update({'dtype': self.output_dict[attr].dtype,
-                                   'interpolant': interpolant,
+                                   'interpolant': this_interpolant,
                                    'subsample': subsample,
                                    'jfactor': jfactor})
                     if parallel:

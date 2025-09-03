@@ -636,7 +636,7 @@ def write_fits(ad, filename, overwrite=False):
 
 
 def windowedOp(func, sequence, kernel, shape=None, dtype=None,
-               with_uncertainty=False, with_mask=False, **kwargs):
+               with_uncertainty=False, with_mask=False, result=None, **kwargs):
     """Apply function on a NDData obbjects, splitting the data in chunks to
     limit memory usage.
 
@@ -656,9 +656,10 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
         Compute uncertainty?
     with_mask : bool
         Compute mask?
+    result : NDData/None
+        if not None, the output will be written to this object
     **kwargs
         Additional args are passed to ``func``.
-
     """
 
     def generate_boxes(shape, kernel):
@@ -676,15 +677,25 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
         shape = sequence[0].shape
 
     if dtype is None:
-        dtype = sequence[0].window[:1, :1].data.dtype
+        dtype = sequence[0].window[(slice(0, 1),) * len(shape)].data.dtype
 
-    result = NDDataObject(
-        np.empty(shape, dtype=dtype),
-        variance=np.zeros(shape, dtype=dtype) if with_uncertainty else None,
-        mask=np.empty(shape, dtype=np.uint16) if with_mask else None,
-        meta=deepcopy(sequence[0].meta),
-        wcs=sequence[0].wcs,
-    )
+    if result is None:
+        result = NDDataObject(
+            np.empty(shape, dtype=dtype),
+            variance=np.zeros(shape, dtype=dtype) if with_uncertainty else None,
+            mask=np.empty(shape, dtype=np.uint16) if with_mask else None,
+            meta=deepcopy(sequence[0].meta),
+            wcs=sequence[0].wcs,
+        )
+    elif any(inlen > reslen for inlen, reslen in zip(shape, result.shape)):
+        raise ValueError("Object 'result' has a smaller shape ({}) than the "
+                         "inputs ({})".format(result.shape, shape))
+    else:  # Don't update these things if they already exist
+        if result.meta is None:
+            result.meta = deepcopy(sequence[0].meta)
+        if result.wcs is None:
+            result.wcs = sequence[0].wcs
+
     # Delete other extensions because we don't know what to do with them
     result.meta['other'] = OrderedDict()
 
@@ -708,7 +719,7 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
                         result.meta['other'][k, coords] = v
                     else:
                         result.meta['other'][k] = v
-
+            del out
             gc.collect()
     finally:
         astropy.log.setLevel(log_level)  # and reset
