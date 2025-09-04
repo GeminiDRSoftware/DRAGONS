@@ -2309,6 +2309,13 @@ class Spect(Resample):
                         plt.show()
                     continue
 
+                # We add 0.5. If the slit edge is at the pixel edge
+                # between x and x+1, we want to record it as x+0.5.
+                # Because np.diff() reduces the size of the array by 1,
+                # the peak in the first derivative will be at x.
+                positions_1 = np.asarray(positions_1) + 0.5
+                positions_2 = np.asarray(positions_2) + 0.5
+
                 # Use +ve and -ve weights for left and right edges to assist
                 # with matching the correct "handedness". "Reference" weights
                 # are set to the pixel values to prefer strong gradients
@@ -2387,13 +2394,8 @@ class Spect(Resample):
                     log.debug(f"({exp_edge1:.2f},{exp_edge2:.2f}) -> "
                               f"({model_edge1:.2f},{model_edge2:.2f}) actual: "
                               f"({actual_edge1},{actual_edge2})")
-
-                    # We add 0.5. If the slit edge is at the pixel edge
-                    # between x and x+1, we want to record it as x+0.5.
-                    # Because np.diff() reduces the size of the array by 1,
-                    # the peak in the first derivative will be at x.
-                    edges_1.append(actual_edge1 + 0.5)
-                    edges_2.append(actual_edge2 + 0.5)
+                    edges_1.append(actual_edge1)
+                    edges_2.append(actual_edge2)
 
                 if set(edges_1) == set(edges_2) == {None} :
                     log.warning("No edges could be determined for "
