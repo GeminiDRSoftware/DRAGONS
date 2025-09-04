@@ -204,13 +204,8 @@ of the illuminated areas in the array, ie, where the orders are located.
 
     reduce @flats.lis
 
-GNIRS data are affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
 
-In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  You can inspect each
+In interactive mode, you can inspect the fit for each
 order by selecting the tabs above the plot.
 
 Note that you are not required to run in interactive mode, but you might want
@@ -222,9 +217,9 @@ to if flat fielding is critical to your program.
 
 The interactive tools are introduced in section :ref:`interactive`.
 
-.. image:: _graphics/gnirsxd_evenoddflat.png
+.. image:: _graphics/gnirsxd_interflat.png
    :width: 600
-   :alt: Even-odd effect in flats
+   :alt: Interactive flat field inspection.
 
 
 Processed Pinholes - Rectification
@@ -344,30 +339,30 @@ The fit for Order 3 looks like this:
    :width: 600
    :alt: fit to the telluric standard
 
-Order 8 needs some discussion.  You will notice many rejected data points marked
-as light blue triangle.  The software by default rejects those points because
-the stellar features in that part of the spectrum are notoriouly difficult to
-model.
+.. Order 8 needs some discussion.  You will notice many rejected data points marked
+   as light blue triangle.  The software by default rejects those points because
+   the stellar features in that part of the spectrum are notoriouly difficult to
+   model.
 
-.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8.png
+.. .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8.png
    :width: 325
    :alt: fit to the telluric standard
 
-.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_model.png
+.. .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_model.png
    :width: 325
    :alt: telluric absorption model fit
 
-In our case, the model and the star do fit remarkably well, so we can
-reactivate those points and give the software more points to fit.  On the top
-plot, use the
-box selection tool (the dotted line square) to include the blue triangles and
-type "u" to unmask them and reactivate them.
+.. In our case, the model and the star do fit remarkably well, so we can
+   reactivate those points and give the software more points to fit.  On the top
+   plot, use the
+   box selection tool (the dotted line square) to include the blue triangles and
+   type "u" to unmask them and reactivate them.
 
-.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_after.png
+.. .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_after.png
    :width: 325
    :alt: fit to the telluric standard
 
-.. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_model_after.png
+.. .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_model_after.png
    :width: 325
    :alt: telluric absorption model fit
 
@@ -412,12 +407,17 @@ To run the reduction with all the interactive tools activated, set the
 
     reduce @sci.lis -p interactive=True
 
+----
+
+**skyCorrectFromSlit**
+
 At the ``skyCorrectFromSlit`` step, you will notice that the fit for Order 8
 is not very good.  The row being sampled is in the middle of the image.  If
 you look at the raw image, you will see that there is not much signal for
-Order in the middle row.  Increase the row number (the data has been resampled
+Order 8 in the middle row.  Increase the row number (the data has been resampled
 and flipped at this point) using the slider at the top-left of the tool and
-you will see that when there is signal the fit is good.
+you will see that when there is signal the fit is good.  Bottom line: where
+there is signal, the fit is good, that's what we wish to verify.
 
 .. image:: _graphics/gnirsxd_SXD32mm_skycor_order8_middle.png
    :width: 600
@@ -426,6 +426,8 @@ you will see that when there is signal the fit is good.
 .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_withsignal.png
    :width: 600
    :alt: skyCorrectFromSlit fit to a row with signal
+
+**telluricCorrect**
 
 When you get to the ``telluricCorrect`` step, you can experiment with the
 shift between the telluric standard and the target.  Both need to be well
@@ -436,6 +438,8 @@ that a shift of 0.55 pixels significantly improves the correction.
    :align: right
    :width: 200
    :alt: 2D spectrum
+
+----
 
 A section of 2D spectrum before extraction is shown on the right, with blue wavelengths at
 the bottom and the red-end at the top.  Note that each order has been rectified
@@ -462,6 +466,11 @@ The 1D extracted spectrum after telluric correction but before flux
 calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
 like this.
 
+::
+
+    dgsplot N20170113S0146_telluricCorrected.fits 1 --thin
+
+
 .. image:: _graphics/gnirsxd_SXD32mm_tellcor.png
    :width: 600
    :alt: 1D extracted spectrum after telluric correction or before flux calibration
@@ -477,10 +486,22 @@ And the final spectrum, corrected for telluric features and flux calibrated.
    :alt: 1D extracted spectrum after telluric correction and flux calibration
 
 In the final spectrum, the orders are remain separated.  Here they are simply
-plotted one after the other on a common plot.  If you need to stitch the order,
-and maybe stack the common wavelength ranges, you will have to do that with
-your own software.
+plotted one after the other on a common plot.
 
+If you need to stitch the order and stack the common wavelength ranges,
+you can use the ``combineOrders`` primitive.
+
+::
+
+    reduce -r combineOrders N20170113S0146_1D.fits
+
+::
+
+    dgsplot N20170113S0146_ordersCombined.fits 1 --thin
+
+.. image:: _graphics/gnirsxd_SXD32mm_ordersCombined.png
+   :width: 600q
+   :alt: Combined orders. Full range 1D spectrum.
 
 
 
