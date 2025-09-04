@@ -308,12 +308,11 @@ class CrossDispersed(Spect, Preprocess):
                 # which parts are on the detector
                 xpixels = np.arange(ext.shape[dispaxis])
                 ypixels1, ypixels2 = model1(xpixels), model2(xpixels)
-                ypix1_on = np.logical_and(
-                    ypixels1 >= padding, ypixels1 <= ext.shape[1 - dispaxis] - padding - 1)
-                ypix2_on = np.logical_and(
-                    ypixels2 >= padding, ypixels2 <= ext.shape[1 - dispaxis] - padding - 1)
-                y1 = int(max(np.floor(ypixels1.min() - padding), 0))
-                y2 = int(min(np.ceil(ypixels2.max() + padding),
+                # These are both +0.5 because it's a python max-exclusive range
+                # We want to keep pixels where any fraction is within the slit,
+                # even if padding=0
+                y1 = int(max(np.floor(ypixels1.min() + 0.5 - padding), 0))
+                y2 = int(min(np.ceil(ypixels2.max() + 0.5 + padding),
                              ext.shape[1 - dispaxis]))
 
                 # Add cut rectangle and a modified SLITEDGE table with
@@ -329,12 +328,19 @@ class CrossDispersed(Spect, Preprocess):
                 adout[-1].SLITEDGE["c0"] -= y1
                 adout[-1].SLITEDGE["slit"] = 1  # reset slit number in ext
 
-                # Calculate a Chebyshev2D model that represents both slit
+               # Calculate a Chebyshev2D model that represents both slit
                 # edges. This requires coordinates be fed with the *detector*
                 # x-coordinate first. The rectified slit will be as wide in
                 # pixels as it is halfway up the unrectified image, and the
                 # left edge will be "padding" pixels in from the left edge of
                 # the image.
+                # Pixels along the dispersion axis which are "on" the detector
+                # (and more than 'padding' pixels away from the edges)
+                ypix1_on = np.logical_and(
+                    ypixels1 >= padding, ypixels1 <= ext.shape[1 - dispaxis] - padding - 1)
+                ypix2_on = np.logical_and(
+                    ypixels2 >= padding, ypixels2 <= ext.shape[1 - dispaxis] - padding - 1)
+
                 xcenter = 0.5 * (ext.shape[dispaxis] - 1)
                 y1ref = np.full_like(ypixels1, padding)[ypix1_on]
                 y2ref = np.full_like(ypixels2, model2(xcenter) - model1(xcenter) + padding)[ypix2_on]
@@ -593,6 +599,13 @@ class CrossDispersed(Spect, Preprocess):
             ad[0].SLITEDGE = self._construct_slitedge_model(ad, flat)
 
         adinputs = self.cutSlits(adinputs, suffix=None)
+
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                    force_ad=(1,))):
+            for ext, ext_flat in zip(ad, flat):
+                if ext.detector_section() != ext_flat.detector_section():
+                    raise ValueError("Mismatched detector sections after "
+                                     "cutting! Please contact SUSD.")
 
         # Since we've already worked out the flats to use, send them along to
         # avoid needing to re-query the Caldb
