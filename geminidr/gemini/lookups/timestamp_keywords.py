@@ -39,6 +39,7 @@ timestamp_keys = {
     "determineAstrometricSolution": "ASTRMTRY",
     "determineDistortion": "FITCOORD",
     "determinePinholeRectification": "PINHOLES",
+    "determineSlitEdges": "DETSLITS",
     "determineWavelengthSolution": "WAVECAL",
     "dilateObjectMask": "DLOBJMSK",
     "distortionCorrect": "TRANSFRM",
