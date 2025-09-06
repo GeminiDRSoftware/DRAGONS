@@ -23,7 +23,7 @@ from scipy.interpolate import interp1d
 from geminidr.interactive.controls import Controller, Handler
 from geminidr.interactive.styles import dragons_styles
 
-
+from gempy.library.fitting import fit_1D
 from gempy.library.matching import match_sources
 from gempy.library.peak_finding import cwt_ricker, pinpoint_peaks
 
@@ -1311,6 +1311,32 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             # Reset panel axes
             for panel in self.panels:
                 panel.reset_spectrum_axes()
+
+    def results(self):
+        """Get the results of the interactive fit.
+
+        This gets the list of `~gempy.library.fitting.fit_1D` fits of the data
+        to be used by the caller. We need to override the base class method to
+        handle possible "None" fits which revert to the initial model.
+
+        Returns
+        -------
+        list of `~gempy.library.fitting.fit_1D`
+        """
+        fits = []
+        for fit in self.fits:
+            if fit.fit is None:
+                # Hack a fit1D object that represents the original model with no fitted lines
+                fit1d = fit_1D(np.arange(5), function="chebyshev", order=1,
+                               niter=0)
+                fit1d._models = fit.default_model
+                fit1d.image = None
+                fit1d.points = np.array([])
+                fit1d.mask = np.array([], dtype=bool)
+                fits.append(fit1d)
+            else:
+                fits.append(fit.fit)
+        return fits
 
 
 def get_closest(arr, value):

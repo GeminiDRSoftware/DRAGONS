@@ -448,7 +448,9 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
                 lnlist.convert_refplot_to_air()
             input_data.update(lnlist.reference_spectrum)
 
-        input_data["init_models"] = [fit1d.model] + input_data["init_models"]
+        # No longer prepend the initial model as we want the fallback to
+        # be the starting (linear) wavelength solution
+        #input_data["init_models"] = [fit1d.model] + input_data["init_models"]
         data["meta"].append(input_data)
     return data
 
@@ -1134,6 +1136,7 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     if fit1d.image is None:
         # We didn't do a successful fit, so just use the original model
         m_final = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+        log.stdinfo(f"Wavelength solution was not updated for extension {ext.id}")
     else:
         # Because of the way the fit_1D object is constructed, there
         # should be no masking. But it doesn't hurt to make sure, or
