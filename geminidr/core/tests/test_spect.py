@@ -860,7 +860,7 @@ def create_zero_filled_fake_astrodata(height, width):
     """
     astrofaker = pytest.importorskip("astrofaker")
 
-    data = np.zeros((height, width))
+    data = np.zeros((height, width), dtype=np.float32)
 
     hdu = fits.ImageHDU()
     hdu.header['CCDSUM'] = "1 1"
