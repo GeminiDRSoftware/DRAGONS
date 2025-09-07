@@ -336,7 +336,7 @@ def test_fixpixels_with_file(niriprim, tmp_path):
 @pytest.mark.dragons_remote_data
 def test_fixpixels_3D(astrofaker):
     np.random.seed(42)
-    arr = np.arange(4 * 5 * 6, dtype=float).reshape(4, 5, 6)
+    arr = np.arange(4 * 5 * 6, dtype=np.float32).reshape(4, 5, 6)
 
     # Shuffle the values to be sure the interpolation is done on the good axis
     # (when chacking the data below)
@@ -363,7 +363,7 @@ def test_fixpixels_3D(astrofaker):
 @pytest.mark.dragons_remote_data
 def test_fixpixels_3D_axis(astrofaker):
     np.random.seed(42)
-    arr = np.arange(4 * 5 * 6, dtype=float).reshape(4, 5, 6)
+    arr = np.arange(4 * 5 * 6, dtype=np.float32).reshape(4, 5, 6)
 
     # Shuffle the values to be sure the interpolation is done on the good axis
     # (when chacking the data below)
