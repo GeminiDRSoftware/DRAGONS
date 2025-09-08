@@ -24,7 +24,7 @@ def makeProcessedSlitBias(p):
     p.storeProcessedBias()
     return
 
-def checkBias1(p):
+def checkBiasOSCO(p):
     """
     This recipe checks bias frames by processing them as regular bias frames
     (notably including overscan correction), then recording some pixel
@@ -36,7 +36,7 @@ def checkBias1(p):
     p.addDQ()
     p.addVAR(read_noise=True)
     p.recordPixelStats(prefix='OSCO')
-    p.writeOutputs(strip=True, suffix='_checkBias1')
+    p.writeOutputs(strip=True, suffix='_checkBiasOSCO')
     return
 
 _default = makeProcessedSlitBias
