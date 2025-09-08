@@ -600,12 +600,16 @@ class CrossDispersed(Spect, Preprocess):
 
         adinputs = self.cutSlits(adinputs, suffix=None)
 
+        # pragma: no cover
         for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
                                     force_ad=(1,))):
             for ext, ext_flat in zip(ad, flat):
                 if ext.detector_section() != ext_flat.detector_section():
-                    raise ValueError("Mismatched detector sections after "
-                                     "cutting! Please contact SUSD.")
+                    raise ValueError(
+                        "Mismatched detector sections after cutting!\n"
+                        "If you created your calibrations with an older "
+                        "version of DRAGONS, please remake them.\n"
+                        "If the problem persists, please contact SUSD.")
 
         # Since we've already worked out the flats to use, send them along to
         # avoid needing to re-query the Caldb
