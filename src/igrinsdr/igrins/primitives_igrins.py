@@ -844,6 +844,30 @@ class Igrins(Gemini, NearIR):
         return len(ad) in [1]
 
     def determineSlitEdges(self, adinputs=None, **params):
+        """
+        This primitive determines the slit edges from flat field images by analyzing
+        the illumination pattern. It traces the edges of the slit profile for each
+        order in the echelle spectrum.
+
+        The detected slit edges are stored in the 'SLITEDGE' attribute of each
+        extension as an Astropy Table, which can be used by subsequent primitives
+        like `maskBeyondSlit` for further processing.
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input images containing flat field data. Only the first image in the
+            list is processed.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include SLITEDGE tables
+            in each extension.
+        """
 
         ad = adinputs[0]
 
@@ -862,6 +886,35 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def maskBeyondSlit(self, adinputs=None, **params):
+        """
+        This primitive applies a mask to pixels that lie beyond the slit edges
+        as determined by the `determineSlitEdges` primitive. It updates the
+        mask plane of each extension to mark unilluminated regions.
+
+        The method uses the 'SLITEDGE' table stored in each extension by
+        `determineSlitEdges` to create a mask that identifies unilluminated
+        regions outside the slit. This mask is then combined with any existing
+        mask using a bitwise OR operation.
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input images containing SLITEDGE tables. Only the first image in the
+            list is processed.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the mask plane of the first image updated to
+            include the unilluminated regions beyond the slit edges.
+
+        See Also
+        --------
+        determineSlitEdges : Primitive that identifies the slit edges.
+        """
 
         ad = adinputs[0]
 
@@ -880,6 +933,38 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def normalizeFlat(self, adinputs=None, **params):
+        """
+        This primitive normalizes flat field images by creating a response model
+        that accounts for the illumination pattern and pixel-to-pixel variations.
+
+        The method performs the following steps:
+        1. Saves a copy of the original flat field data in the 'FLAT_ORIGINAL' attribute
+        2. Uses the slit edge information from 'SLITEDGE' to model the slit profile
+        3. Computes a normalized flat field response that can be used to correct
+           science data for pixel-to-pixel variations
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input flat field images. Only the first image in the list is processed.
+            Each extension should contain a 'SLITEDGE' table created by the
+            `determineSlitEdges` primitive.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the normalized
+            flat field data and the original flat field data stored in the
+            'FLAT_ORIGINAL' attribute.
+
+        Notes
+        -----
+        This primitive should be run after `determineSlitEdges` and `maskBeyondSlit`
+        to ensure proper slit edge detection and masking of unilluminated regions.
+        """
 
         from .procedures.normalize_flat import (get_initial_spectrum_for_flaton,
                                                 get_normalize_spectrum_for_flaton)
@@ -1032,6 +1117,41 @@ class Igrins(Gemini, NearIR):
             return astrodata.open(fn)
 
     def extractSimpleSpec(self, adinputs, **params):
+        """
+        Extract simple 1D spectra from 2D spectral data using predefined apertures.
+
+        This primitive performs a basic spectral extraction by summing flux within
+        predefined slit edges. It uses the SLITEDGE information from a processed
+        flat field to define the extraction apertures.
+
+        The extracted spectra are stored in the 'SPEC1D' attribute as an Astropy
+        Table containing the order numbers and corresponding 1D spectra.
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input science data to extract spectra from. Only the first image in
+            the list is processed. The input should be flat-field corrected.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the extracted
+            spectra in the 'SPEC1D' attribute and the slit edge information in
+            the 'SLITEDGE' attribute.
+
+        Notes
+        -----
+        - This is a simple extraction method that performs a straight sum of
+          pixels within the defined apertures.
+        - The extraction uses a fractional range of 0.1 to 0.9 of the slit height
+          to avoid edge effects.
+        - The input data should be flat-field corrected before using this method.
+        - The mask from the flat field is applied to the science data.
+        """
         # from recipe_system import cal_service
         # caldb = cal_service.set_local_database()
         # procmode = 'sq' if self.mode == 'sq' else None
@@ -1060,7 +1180,41 @@ class Igrins(Gemini, NearIR):
 
 
     def identifyOrders(self, adinputs):
-        # given the extracted spectrum, we compare this with reference spectrum
+        """
+        Identify spectral orders by cross-correlating with reference spectra.
+
+        This method matches extracted 1D spectra to known reference orders using
+        cross-correlation. It determines the correct order numbers and any
+        necessary shifts between the observed and reference spectra.
+
+        The method processes the input spectra as follows:
+        1. Compares each extracted spectrum with reference spectra using cross-correlation
+        2. Filters bright lines to improve correlation matching
+        3. Determines the most likely order assignments based on correlation peaks
+        4. Estimates any systematic shifts between observed and reference spectra
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing extracted 1D spectra in the 'SPEC1D' attribute.
+            Only the first image in the list is processed.
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include order identification
+            information. The results are stored in the 'ORDER_TABLE' attribute.
+
+        Notes
+        -----
+        - The method is particularly focused on the central ~10 orders for robust
+          identification.
+        - A threshold is applied to ensure reliable order identification.
+        - The reference spectra are filtered to prevent bright lines from dominating
+          the correlation.
+        - The band (H or K) is automatically determined from the input data.
+        """
+        # Given the extracted spectrum, we compare this with reference spectrum
         # to figure which aperture corresponds to which order. We basically
         # cross-correlat the spectrum of a given aperture with all the spectra
         # in the reference spectra, and found the order that gives a maximum
@@ -1103,6 +1257,42 @@ class Igrins(Gemini, NearIR):
 
 
     def identifyLines(self, adinputs, **params):
+        """
+        Identify spectral lines by matching observed spectra with reference data.
+
+        This method matches observed spectral lines to known reference lines using
+        a transform function that maps reference pixel positions to target spectrum
+        positions. It uses cross-correlation to determine the optimal alignment
+        between reference and observed spectra.
+
+        The method performs the following steps:
+        1. Retrieves reference spectral data for the appropriate band (H or K)
+        2. Computes a transform between reference and target spectra
+        3. Identifies and matches spectral lines between the reference and observed data
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing extracted 1D spectra in the 'SPEC1D' attribute.
+            The input should have gone through order identification first.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include line identification
+            information. The results are stored in the 'LINE_TABLE' attribute.
+
+        Notes
+        -----
+        - The method relies on having reference line data available for the
+          appropriate band.
+        - The band (H or K) is automatically determined from the input data.
+        - The transform accounts for both wavelength calibration and any shifts
+          between the reference and observed spectra.
+        """
         # Given the already identified line in position and wavelength per order,
         # we try to reidentify lines from the spectrum. To do this, we need to
         # provide an initial transform function that transform pixel axis in the
@@ -1133,6 +1323,44 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def getInitialWvlsol(self, adinputs, **params):
+        """
+        Generate an initial wavelength solution for the observed spectra.
+
+        This method creates a preliminary wavelength calibration by matching
+        identified spectral lines with a reference echellogram. It uses the
+        identified lines from the 'LINEID' attribute and the slit edge information
+        to establish a mapping between pixel positions and wavelengths.
+
+        The method performs the following steps:
+        1. Retrieves identified lines from the 'LINEID' attribute
+        2. Loads the reference echellogram for the appropriate band
+        3. Calculates the initial wavelength solution by matching observed lines
+           with the reference data
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing identified spectral lines in the 'LINEID' attribute
+            and slit edge information in 'SLITEDGE'. The input should have gone
+            through line identification first.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the initial
+            wavelength solution. The solution is stored in the 'WAVECAL' attribute.
+
+        Notes
+        -----
+        - The method uses a reference echellogram that contains pre-computed
+          wavelength solutions for the instrument.
+        - The band (H or K) is automatically determined from the input data.
+        - This provides an initial solution that may be refined by subsequent
+          calibration steps.
+        """
         ad = adinputs[0]
         ext = ad[0]
         tgt_spec = ext.SPEC1D
@@ -1176,6 +1404,45 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def extractSpectraMulti(self, adinputs, **params):
+        """
+        Extract multiple 1D spectra at different positions along the slit.
+
+        This method extracts spectra at multiple positions across the slit to capture
+        spatial information. It creates a series of extractions centered on the slit
+        and at positions above and below the center.
+
+        The extraction is performed at multiple slit positions defined by the
+        `n_slice_one_direction` parameter, which determines how many slices to take
+        on either side of the center. The results are stored in a table with
+        'orders', 'multispec', and 'slit_centers' columns.
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing 2D spectral data. Only the first image in the
+            list is processed. The input should contain SLITEDGE information.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the multi-slit
+            extractions in the 'SPEC1D_MULTI' attribute. This is an Astropy Table
+            with the following columns:
+            - 'orders': The order numbers
+            - 'multispec': Extracted spectra at different slit positions
+            - 'slit_centers': The relative slit positions of each extraction
+
+        Notes
+        -----
+        - The method currently uses a fixed number of slices (2) on each side of
+          the center.
+        - The extracted spectra can be used for analysis of spatial variations
+          along the slit.
+        - The 'slit_centers' are given in fractional slit height from bottom to top.
+        """
 
         ad = adinputs[0]
 
@@ -1204,6 +1471,45 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def identifyMultiline(self, adinputs, **params):
+        """
+        Identify multiple spectral lines across different slit positions.
+
+        This method identifies spectral lines in the extracted spectra from
+        multiple slit positions. It uses reference OH lines to identify and
+        fit lines in the observed spectra, taking into account the initial
+        wavelength solution.
+
+        The method performs the following steps:
+        1. Loads the initial wavelength solution from the 'WVLSOL0' attribute
+        2. Retrieves reference OH lines for the appropriate band
+        3. Matches observed lines with reference lines using the initial
+           wavelength solution
+        4. Fits the identified lines to improve the wavelength calibration
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing extracted spectra and initial wavelength
+            solution. The input should have gone through initial wavelength
+            calibration and contain the 'WVLSOL0' attribute.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include identified
+            lines information. The results are stored in the 'MULTILINE' attribute.
+
+        Notes
+        -----
+        - The method is particularly useful for echelle spectrographs with
+          multiple spectral orders.
+        - It relies on the presence of OH sky lines for accurate wavelength
+          calibration.
+        - The band (H or K) is automatically determined from the input data.
+        """
         from operator import itemgetter
         from scipy.interpolate import interp1d
         from igrinsdr.igrins.primitives_igrins import get_ref_path
@@ -1396,6 +1702,44 @@ class Igrins(Gemini, NearIR):
         return out_df
 
     def volumeFit(self, adinputs, **params):
+        """
+        Perform a volume fit to model the wavelength solution in 3D space.
+
+        This method fits a polynomial model to the wavelength solution across
+        the detector, taking into account the spatial and spectral dimensions.
+        It uses the results from line fitting to create a comprehensive model
+        of the wavelength solution that varies across the detector.
+
+        The method performs the following steps:
+        1. Retrieves line fitting results from the 'LINEFIT' attribute
+        2. Prepares the data for volume fitting
+        3. Fits a polynomial model to the wavelength solution in 3D space
+        4. Stores the resulting coefficients in the 'VOLUMEFIT_COEFFS' attribute
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing line fitting results in the 'LINEFIT' attribute.
+            The input should have gone through line identification and fitting.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the volume
+            fitting coefficients in the 'VOLUMEFIT_COEFFS' attribute.
+
+        Notes
+        -----
+        - This method is typically used after line identification and fitting
+          to create a smooth wavelength solution across the entire detector.
+        - The resulting model can be used to convert between pixel coordinates
+          and wavelengths at any point on the detector.
+        - The polynomial order is determined by the input data and the fitting
+          process.
+        """
 
         # fn = "./SDCH_20190412_0040_wvl0.fits"
         # ad = astrodata.open(fn)
@@ -1414,6 +1758,42 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def attachWatTable(self, adinputs, **params):
+        """
+        Attach Wavelength Transformation (WAT) header cards to the data.
+
+        This method generates and attaches Wavelength Transformation (WAT) header
+        cards to the input data. These cards are used to describe the wavelength
+        solution in a format compatible with the FITS WCS standard.
+
+        The method performs the following steps:
+        1. Retrieves wavelength fitting results from the 'WVLFIT_RESULTS' attribute
+        2. Generates WAT header cards using the fitting results
+        3. Stores the WAT cards in the 'WAT_HEADER' attribute
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing wavelength fitting results in the 'WVLFIT_RESULTS'
+            attribute. The input should have gone through wavelength calibration.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the WAT header
+            cards in the 'WAT_HEADER' attribute.
+
+        Notes
+        -----
+        - The WAT cards follow the FITS WCS standard for describing non-linear
+          wavelength solutions.
+        - These cards are essential for tools that need to interpret the wavelength
+          solution of the data.
+        - The method is typically one of the final steps in the wavelength
+          calibration process.
+        """
 
         ad = adinputs[0]
         fit_results_tbl = ad[0].WVLFIT_RESULTS
@@ -1426,6 +1806,47 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def makeSpectralMaps(self, adinputs, **params):
+        """
+        Generate spectral order and slit position maps for the detector.
+
+        This method creates spatial maps that identify the spectral order and
+        slit position for each pixel on the detector. These maps are essential
+        for subsequent spectral extraction and analysis.
+
+        The method performs the following steps:
+        1. Creates an order map that identifies the spectral order for each pixel
+        2. Creates a slit position map that identifies the relative position
+           within each order
+        3. Processes the volume fitting coefficients to create a comprehensive
+           mapping between pixel coordinates and spectral properties
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing SLITEDGE information. The input should have
+            gone through the volume fitting process and contain the 'VOLUMEFIT_COEFFS'
+            attribute.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include:
+            - 'ORDERMAP': A 2D array mapping each pixel to its spectral order
+            - 'SLITPOSMAP': A 2D array mapping each pixel to its relative position
+              within the slit
+
+        Notes
+        -----
+        - The order map and slit position map are essential for proper spectral
+          extraction and wavelength calibration.
+        - The method uses the volume fitting coefficients to create a smooth
+          mapping across the detector.
+        - The resulting maps can be used to transform between pixel coordinates
+          and spectral coordinates.
+        """
 
         ad = adinputs[0]
 
@@ -1511,6 +1932,47 @@ class Igrins(Gemini, NearIR):
         return stacked
 
     def makeAB(self, adinputs, **params):
+        """
+        Process and combine A-B nod pairs for background subtraction.
+
+        This method processes A-B nod pairs by splitting the input data into
+        A and B positions, stacking each position separately, and then
+        performing background subtraction between them.
+
+        The method performs the following steps:
+        1. Splits the input data into A and B nod positions
+        2. Stacks the frames for each position separately
+        3. Performs background subtraction between A and B stacks
+        4. Applies additional processing like level removal and amplifier-wise
+           variance correction
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing A-B nod pairs. The input should be a list
+            of AstroData objects with alternating A and B positions.
+        **params : dict
+            Additional parameters for the subtraction process:
+            - remove_level : int
+                Level of background removal to apply (default: 2)
+            - remove_amp_wise_var : bool
+                Whether to remove amplifier-wise variance (default: False)
+
+        Returns
+        -------
+        list of AstroData
+            A list containing a single AstroData object with the A-B subtracted
+            data and associated variance.
+
+        Notes
+        -----
+        - This method is typically used for nod-and-shuffle observations to
+          remove sky background and detector artifacts.
+        - The input data should contain an even number of frames, alternating
+          between A and B positions.
+        - The method preserves the header information from the first A position
+          in the output.
+        """
         adinputsA, adinputsB = splitAB(adinputs)
 
 
@@ -1538,11 +2000,54 @@ class Igrins(Gemini, NearIR):
 
     def estimateSlitProfile(self, adinputs, **params):
         """
-        return a profile function
+        Estimate the slit profile function for the spectrograph.
 
-        def profile(order, x_pixel, y_slit_pos):
-            return profile_value
+        This method calculates the spatial profile of the slit as a function of
+        spectral order, pixel position, and slit position. The profile can be
+        used to model and correct for variations in the slit illumination.
 
+        The method supports different calculation methods controlled by the
+        'slit_profile_method' parameter:
+        - 'full': Uses a single profile across the full detector
+        - 'per_order': Calculates separate profiles for each order
+        - 'per_pixel': Calculates a profile for each pixel position
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing the science frames to analyze. Only the first
+            image in the list is processed.
+        **params : dict
+            Additional parameters including:
+            - slit_profile_range : tuple (x1, x2)
+                The pixel range in the dispersion direction to use for profile
+                calculation.
+            - slit_profile_method : str
+                Method to use for profile calculation. One of: 'full', 'per_order',
+                or 'per_pixel'.
+
+        Returns
+        -------
+        function
+            A profile function with the signature:
+                profile(order, x_pixel, y_slit_pos) -> profile_value
+            where:
+            - order : int
+                The spectral order number
+            - x_pixel : int
+                The pixel position in the dispersion direction
+            - y_slit_pos : float
+                The relative position in the slit (0-1)
+            - profile_value : float
+                The normalized intensity at the specified position
+
+        Notes
+        -----
+        - The method uses flat field and sky data to estimate the slit profile.
+        - The profile is normalized such that the maximum value is 1.0.
+        - The input data should be flat-field corrected before using this method.
+        - The method requires the 'ORDERMAP' and 'SLITPOSMAP' attributes to be
+          present in the input data.
         """
 
         ad = adinputs[0]
@@ -1663,9 +2168,57 @@ class Igrins(Gemini, NearIR):
         return ad_out
 
     def extractStellarSpec(self, adinputs, **params):
-        # extraction_mode="optimal",
-        #                      conserve_2d_flux=True,
-        #                      pixel_per_res_element=None):
+        """
+        Extract 1D stellar spectra from 2D spectral data using optimal extraction.
+
+        This method performs optimal extraction of stellar spectra from 2D
+        spectral data, taking into account the spatial profile of the star
+        and the noise characteristics of the detector. The extraction can be
+        performed using different methods and parameters to optimize the
+        signal-to-noise ratio.
+
+        The method performs the following steps:
+        1. Loads flat field and sky data for calibration
+        2. Applies flat field correction
+        3. Performs optimal extraction using the specified method
+        4. Calculates wavelength solution and signal-to-noise ratios
+        5. Returns the extracted 1D spectrum with associated metadata
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing 2D spectral data. Only the first image in the
+            list is processed. The input should be flat-field corrected and
+            have associated SLITEDGE information.
+        **params : dict
+            Additional parameters:
+            - extraction_mode : str
+                The extraction method to use. Currently supports 'optimal'.
+            - pixel_per_res_element : int or None
+                The number of pixels per resolution element, used for calculating
+                the signal-to-noise ratio. If None, a default value is used.
+
+        Returns
+        -------
+        AstroData
+            A new AstroData object containing the extracted 1D spectrum with
+            the following extensions:
+            - Primary HDU: The extracted 1D spectrum
+            - Variance array: The variance of the extracted spectrum
+            - Wavelengths: The wavelength solution for the spectrum
+            - SN_PER_RESEL: Signal-to-noise ratio per resolution element
+
+        Notes
+        -----
+        - The method requires flat field and sky data to be available through
+          the `_get_ad_flat` and `_get_ad_sky` methods.
+        - The extraction uses the SLITEDGE information to define the extraction
+          apertures.
+        - The wavelength solution is taken from the WVLFIT_RESULTS attribute
+          of the sky data.
+        - The output spectrum includes WCS information in the header for
+          wavelength calibration.
+        """
 
         extraction_mode = params["extraction_mode"]
         pixel_per_res_element = params["pixel_per_res_element"]
@@ -1792,6 +2345,49 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def saveTwodspec(self, adinputs, **params):
+        """
+        Save a rectified 2D spectral image with wavelength calibration.
+
+        This method processes and saves a 2D spectral image that has been
+        rectified and wavelength calibrated. The output is suitable for
+        visualization and further spectral analysis.
+
+        The method performs the following steps:
+        1. Retrieves wavelength calibration and order mapping from input data
+        2. Applies any necessary shifts to the data and variance maps
+        3. Creates a rectified 2D spectral image with uniform wavelength scale
+        4. Handles the wavelength order (increasing/decreasing) as specified
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing the 2D spectral data. The method expects
+            the input to have gone through wavelength calibration and have
+            the necessary WCS information in the header.
+        **params : dict
+            Additional parameters:
+            - height_2dspec : int
+                The height (in pixels) of the output rectified 2D spectrum.
+            - wavelength_increasing_order : bool
+                If True, ensures the output spectrum has wavelengths in
+                increasing order. If False, preserves the original order.
+
+        Returns
+        -------
+        list of AstroData
+            The input list, typically unmodified, as this method is primarily
+            used for its side effect of saving data.
+
+        Notes
+        -----
+        - The method uses the WAT (Wavelength Transformation) header information
+          to properly handle the wavelength calibration.
+        - The output is a rectified 2D spectrum where one axis is wavelength
+          and the other is spatial position along the slit.
+        - The flux can be optionally conserved during the rectification process.
+        - The method relies on the presence of ORDERMAP and SLITEDGE information
+          in the input data for proper rectification.
+        """
 
         height_2dspec = params["height_2dspec"]
         conserve_flux = True

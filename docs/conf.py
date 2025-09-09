@@ -31,14 +31,56 @@ from _version import __version__ as release
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+# Ensure the package is in the Python path
+import os
+import sys
+
+# Add the project root directory to the Python path
+project_root = os.path.abspath('../../')
+sys.path.insert(0, project_root)
+
+# Verify the package can be imported
+try:
+    import igrinsdr
+    print(f"Successfully imported igrinsdr from: {igrinsdr.__file__}")
+except ImportError as e:
+    print(f"Error importing igrinsdr: {e}")
+    print(f"Current sys.path: {sys.path}")
+
+# Autodoc configuration
+autodoc_default_options = {
+    'members': True,
+    'member-order': 'bysource',
+    'special-members': '__init__',
+    'undoc-members': True,
+    'exclude-members': '__weakref__',
+    'show-inheritance': True,
+}
+
+# Napoleon settings
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_private_with_doc = True
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = True
+napoleon_use_ivar = True
+napoleon_use_param = True
+napoleon_use_rtype = True
+napoleon_use_keyword = True
+napoleon_custom_sections = [('Returns', 'params_style')]
+
+# Add extensions
 extensions = [
     "sphinx_copybutton",
     # "sphinx_gallery.gen_gallery",
     "sphinx.ext.napoleon",
     "numpydoc",
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.inheritance_diagram',
-    'autoapi.sphinx',
     'myst_parser',
 ]
 
@@ -52,6 +94,11 @@ sphinx_gallery_conf = {
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
+# Autosummary configuration
+autosummary_generate = True
+autosummary_imported_members = True
+numpydoc_show_class_members = True
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

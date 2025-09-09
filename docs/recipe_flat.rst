@@ -24,14 +24,14 @@ The default recipe for processing flat field images. It creates a processed flat
 **Primitives Used:**
 
 - ``prepare()``: Initial preparation of the input frames
-- `[readoutPatternCorrectFlatOff()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:1056:4-1080:23)`: Corrects readout pattern in flat-off images
+- ``readoutPatternCorrectFlatOff()``: Corrects readout pattern in flat-off images
 - ``addDQ()``: Adds data quality information
 - ``addVAR()``: Adds variance planes including read noise and Poisson noise
 - ``ADUToElectrons()``: Converts ADU to electron counts
 - ``makeLampFlat()``: Processes lamp-on and lamp-off frames
-- `[determineSlitEdges()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:845:4-885:23)`: Identifies slit edges
-- `[maskBeyondSlit()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:887:4-932:23)`: Masks unilluminated pixels
-- `[normalizeFlat()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:934:4-1015:23)`: Normalizes the flat field
+- ``determineSlitEdges()``: Identifies slit edges
+- ``maskBeyondSlit()``: Masks unilluminated pixels
+- ``normalizeFlat()``: Normalizes the flat field
 - ``thresholdFlatfield()``: Applies thresholding to the flat field
 - ``storeProcessedFlat()``: Saves the processed flat
 
@@ -41,14 +41,14 @@ Analyzes the readout pattern noise in flat-off images.
 
 **Primitives Used:**
 
-- `[selectFrame()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:681:4-687:24)`: Selects specific frame types (OFF)
+- ``selectFrame()``: Selects specific frame types (OFF)
 - ``prepare()``: Initial preparation
-- `[streamPatternCorrected()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:689:4-724:23)`: Creates pattern-corrected images
-- `[estimateNoise()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:754:4-780:23)`: Estimates noise characteristics
-- `[selectStream()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:782:4-784:40)`: Selects specific data streams
+- ``streamPatternCorrected()``: Creates pattern-corrected images
+- ``estimateNoise()``: Estimates noise characteristics
+- ``selectStream()``: Selects specific data streams
 - ``stackFlats()``: Stacks flat field images
-- `[addNoiseTable()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:786:4-801:23)`: Adds noise characteristics to the output
-- `[setSuffix()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:803:4-811:23)`: Sets the output file suffix
+- ``addNoiseTable()``: Adds noise characteristics to the output
+- ``setSuffix()``: Sets the output file suffix
 
 makeProcessedBPM
 ----------------
@@ -58,11 +58,11 @@ Creates a Bad Pixel Mask (BPM) using flat field data.
 
 - ``prepare()``: Initial preparation
 - ``addDQ()``: Adds data quality information
-- `[readoutPatternCorrectFlatOff()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:1056:4-1080:23)`: Corrects flat-off images
-- `[readoutPatternCorrectFlatOn()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:1082:4-1094:23)`: Corrects flat-on images
+- ``readoutPatternCorrectFlatOff()``: Corrects flat-off images
+- ``readoutPatternCorrectFlatOn()``: Corrects flat-on images
 - ``selectFromInputs()``: Selects specific input types
 - ``stackFrames()``: Stacks selected frames
-- `[makeIgrinsBPM()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:2247:4-2278:27)`: Creates the bad pixel mask
+- ``makeIgrinsBPM()``: Creates the bad pixel mask
 - ``storeBPM()``: Saves the BPM
 
 makeTestBadpix
@@ -72,10 +72,10 @@ Test recipe for generating and examining bad pixel masks.
 **Primitives Used:**
 
 - ``prepare()``: Initial preparation
-- `[readoutPatternCorrectFlatOff()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:1056:4-1080:23)`: Corrects flat-off images
+- ``readoutPatternCorrectFlatOff()``: Corrects flat-off images
 - ``addDQ()``: Adds data quality information
 - ``addVAR()``: Adds variance planes
-- `[fixIgrinsHeader()](cci:1://file:///home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/primitives_igrins.py:1017:4-1037:23)`: Fixes FITS headers
+- ``fixIgrinsHeader()``: Fixes FITS headers
 - ``ADUToElectrons()``: Converts ADU to electron counts
 - ``selectFromInputs()``: Selects specific input types
 - ``stackFrames()``: Stacks selected frames
