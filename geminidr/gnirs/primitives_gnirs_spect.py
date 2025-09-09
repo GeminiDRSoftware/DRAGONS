@@ -240,7 +240,6 @@ class GNIRSSpect(Telluric, GNIRS):
 
         return linelist
 
-
     def _wavelength_model_bounds(self, model=None, ext=None):
         # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
         # the range of parameter space to explore
@@ -258,4 +257,6 @@ class GNIRSSpect(Telluric, GNIRS):
         c1 = np.mean(bounds['c1'])
         dx = 0.02 * abs(c1)
         bounds['c1'] = (c1 - dx, c1 + dx)
+        for i in range(2, model.degree + 1):
+            bounds[f'c{i}'] = (-dx, dx)
         return bounds

@@ -969,7 +969,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         if not first:
             m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
         #print("INPUT MODEL")
-        #print(m_init.parameters, m_init.domain, m_init(np.arange(0,1001,200)))
+        #print(m_init.parameters, m_init.domain)
         #print(m_init.bounds)
         #print(datetime.now() - start)
 
@@ -991,7 +991,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                     # automatically removes old (bad) match
                     matches[i] = m
                     found_new_matches = True
-                    #print(f"Pixel {p} => {arc_lines[m]}")
+                    #print(f"Pixel {p} => was {m_init(p):.4f} now {m_this(p):.4f} {arc_lines[m]}")
         try:
             p_lo = peaks[matches > -1].min()
         except ValueError:
