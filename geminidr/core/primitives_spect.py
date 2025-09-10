@@ -3417,7 +3417,7 @@ class Spect(Resample):
                         sens_factor *= 10**(0.4 * delta_airmass * extinction_correction)
 
                 final_sens_factor = (sci_flux_unit * sens_factor / pixel_sizes).to(
-                    final_units, equivalencies=u.spectral_density(waves)).value
+                    final_units, equivalencies=u.spectral_density(waves)).value.astype(np.float32)
 
                 if ndim == 2 and dispaxis == 0:
                     ext *= final_sens_factor[:, np.newaxis]
