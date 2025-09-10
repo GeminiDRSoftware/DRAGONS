@@ -257,6 +257,7 @@ class GNIRSSpect(Telluric, GNIRS):
         c1 = np.mean(bounds['c1'])
         dx = 0.02 * abs(c1)
         bounds['c1'] = (c1 - dx, c1 + dx)
-        for i in range(2, model.degree + 1):
+        # This method may be called to determine the bounds when there isn't a model
+        for i in range(2, model.getattr('degree', 0) + 1):
             bounds[f'c{i}'] = (-dx, dx)
         return bounds
