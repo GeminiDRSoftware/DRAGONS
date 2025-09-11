@@ -436,9 +436,9 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
             rows_val, cols_val = \
                 np.mgrid[-border:height+border, -border:width+border]
 
-            slit_response_data = model_2d_data(cols_val, rows_val)
+            slit_response_data = model_2d_data(cols_val, rows_val).astype(np.float32)
             slit_response_mask = np.pad(mask, border, mode='edge')  # ToDo: any update to the mask?
-            slit_response_std = model_2d_std(cols_val, rows_val)
+            slit_response_std = model_2d_std(cols_val, rows_val).astype(np.float32)
             slit_response_var = slit_response_std ** 2
 
             del cols_fit, cols_val, rows_fit, rows_val
