@@ -12,6 +12,14 @@ Change Logs
 =====
 
 
+Improvements
+------------
+
+**geminidr.ghost**
+
+Exclude saturated bias images when creating the master bias. This has been
+seen once.
+
 4.0.0
 =====
 
