@@ -5660,14 +5660,16 @@ class Spect(Resample):
                     raise ValueError("Cannot set bounds for model class "
                                      f"{model.__class__.__name__}")
 
+        bounds = {}
         if isinstance(cheb, models.Chebyshev1D):
             for k, v in zip(cheb.param_names, cheb.parameters):
                 if k == 'c0':
-                    bounds = {'c0': (v - 10, v + 10)}
+                    bounds['c0'] = (v - 10, v + 10)
                 elif k == 'c1':
                     bounds['c1'] = (v - 0.05 * abs(v), v + 0.05 * abs(v))
                 else:
-                    bounds[k] = (v - 20, v + 20)
+                    dv = min(20, 0.5 * abs(np.diff(bounds['c1'])[0]))
+                    bounds[k] = (v - dv, v + dv)
         else:
             raise ValueError("Cannot set bounds for model class "
                              f"{model.__class__.__name__}")
