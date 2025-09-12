@@ -231,7 +231,9 @@ class GHOSTSpect(GHOST):
 
             for ext in ad:
                 # Needs to be transposed because of astropy x-first
-                ext.wcs = gWCS([(input_frame, models.Tabular2D(lookup_table=0.1 * wfit.T, name="WAVE")),
+                # set bounding_box=None to avoid GwcsBoundingBoxWarning later
+                ext.wcs = gWCS([(input_frame, models.Tabular2D(
+                    lookup_table=0.1 * wfit.T, name="WAVE", bounding_box=None)),
                                 (output_frame, None)])
 
             # Timestamp and update filename
