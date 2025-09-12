@@ -2268,7 +2268,7 @@ class Spect(Resample):
                 convolved_median_slice = ndimage.gaussian_filter1d(
                     median_slice, sigma=2, mode='nearest')
                 noise = at.std_from_pixel_variations(
-                        convolved_median_slice, subtract_linear_fits=True)
+                        convolved_median_slice, subtract_linear_fits=False)
                 min_height = min_snr * noise
                 cwidth = 8
 

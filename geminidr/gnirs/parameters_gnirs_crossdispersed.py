@@ -38,7 +38,7 @@ class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
     # the default values were calibrated to, so adjust some values.
 
     def setDefaults(self):
-        self.min_snr = 1.0
+        self.min_snr = 0.5
         self.debug_max_missed = 4
         self.debug_max_shift = 0.4
         self.debug_step = 10
