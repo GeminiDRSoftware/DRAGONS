@@ -2066,8 +2066,11 @@ class Spect(Resample):
             Science data as 2D spectral images.
         suffix : str
             Suffix to be added to output files.
-        spectral_order : int, Default : 3
+        spectral_order : int
             Fitting order in the spectral direction (minimum of 1).
+        min_snr : float
+            Minimum signal-to-noise ratio of peaks to be considered as slit
+            edges
         edges1, edges2 : list
             List (of matching length) of the pixel locations of the edges of
             illuminated regions in the image. `edges1` should be all the top or
@@ -2075,7 +2078,7 @@ class Spect(Resample):
         search_radius : float
             Distance (in pixels) within which to search for the edges of
             illuminated regions.
-        debug_plots : bool, Default: False
+        debug_plots : bool
             Generate plots of several aspects of the fitting process.
         debug_max_missed : int
             The maximum number of steps that can be missed before the trace is
@@ -2109,6 +2112,7 @@ class Spect(Resample):
         spectral_order = params['spectral_order']
         edge1 = params.get('edge1', None)
         edge2 = params.get('edge2', None)
+        min_snr = params.get('min_snr', 5.0)
         # How far to search (in pixels) to match expected and detected
         # peaks.
         search_rad = params.get('search_radius', 30)
@@ -2260,32 +2264,26 @@ class Spect(Resample):
                     median_slice = np.median(diffarr[:, s], axis=1)
 
                 # Search for position of peaks in the first derivative of flux
-                # in the spatial direction. Setting a value for the std and
-                # minimum peak height is something of an art, and requires
-                # different values between longslit and cross-dispersed data.
-                if num_slits == 1:
-                    min_height = 0.5 * sorted(median_slice)[-3]
-                else:
-                    min_height = at.std_from_pixel_variations(
-                        median_slice, subtract_linear_fits=True)
+                # in the spatial direction.
+                convolved_median_slice = ndimage.gaussian_filter1d(
+                    median_slice, sigma=2, mode='nearest')
+                noise = at.std_from_pixel_variations(
+                        convolved_median_slice, subtract_linear_fits=True)
+                min_height = min_snr * noise
                 cwidth = 8
 
                 # TODO: It's unclear whether find_wavelet_peaks() might be
                 # better for this.
-                positions_1, _ = find_peaks(at.boxcar(median_slice, size=1),
-                                            height=min_height,
-                                            distance=10,
-                                            prominence=min_height,
-                                            wlen=21)
+                positions_1, _ = find_peaks(
+                    convolved_median_slice, height=min_height, distance=10,
+                    prominence=min_height, wlen=21)
                 # find_peaks returns integer values, so use pinpoint_peaks
                 # to better describe the positions.
                 positions_1, _ = peak_finding.pinpoint_peaks(
                     median_slice, peaks=positions_1, halfwidth=cwidth//2)
-                positions_2, _ = find_peaks(at.boxcar(-median_slice, size=1),
-                                            height=min_height,
-                                            distance=10,
-                                            prominence=min_height,
-                                            wlen=21)
+                positions_2, _ = find_peaks(
+                    -convolved_median_slice, height=min_height, distance=10,
+                    prominence=min_height, wlen=21)
                 positions_2, _ = peak_finding.pinpoint_peaks(
                     -median_slice, peaks=positions_2, halfwidth=cwidth//2)
 
@@ -2296,6 +2294,7 @@ class Spect(Resample):
                     # Print a diagnostic plot of the profile being fitted.
                     plt.plot(at.boxcar(median_slice, size=1), label='1st-derivative of flux')
                     plt.plot(at.boxcar(-median_slice, size=1), label='Inverse')
+                    plt.plot((0, median_slice.size), (min_height, min_height), 'r-', label='Threshold')
                     plt.xlabel(f'{row_or_col.capitalize()} number')
                     plt.legend()
 
@@ -2320,7 +2319,7 @@ class Spect(Resample):
                 # with matching the correct "handedness". "Reference" weights
                 # are set to the pixel values to prefer strong gradients
                 all_edges = np.r_[positions_1, positions_2]
-                all_edge_weights = median_slice[np.round(
+                all_edge_weights = convolved_median_slice[np.round(
                     np.r_[positions_1, positions_2]).astype(int)]
                 all_edge_weights = np.exp(np.abs(all_edge_weights)/10000) * all_edge_weights/np.abs(all_edge_weights)
                 in_weights = [1, -1]
