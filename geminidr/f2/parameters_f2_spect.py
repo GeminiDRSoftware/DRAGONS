@@ -42,8 +42,10 @@ class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):
-        self.scale_sky = False #MS: IF for whatever reason the exposure times are different between frames being subtracted, one should have a check to turn this on.  
-        self.offset_sky = False
+        del self.scale
+        del self.zero
+        del self.scale_sky #MS: IF for whatever reason the exposure times are different between frames being subtracted, one should have a check to turn this on.
+        del self.offset_sky
         self.mask_objects = False
         self.dilation = 0.
 

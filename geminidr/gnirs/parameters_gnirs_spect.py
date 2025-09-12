@@ -2,7 +2,7 @@
 # in the primitives_gnirs_spect.py file, in alphabetical order.
 from astrodata import AstroData
 from gempy.library import config
-from geminidr.core import parameters_preprocess, parameters_spect
+from geminidr.core import parameters_preprocess
 from . import parameters_gnirs
 
 
@@ -29,6 +29,8 @@ class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):
         # self.scale_sky = False #MS: IF for whatever reason the exposure times are different between frames being subtracted, that case may require a special treatment
         # self.offset_sky = False
+        del self.scale
+        del self.zero
         del self.scale_sky
         del self.offset_sky
         self.mask_objects = False

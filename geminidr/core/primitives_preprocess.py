@@ -1474,13 +1474,19 @@ class Preprocess(PrimitivesBASE):
             number of high pixels to reject (for "minmax")
         memory: float/None
             available memory (in GB) for stacking calculations
+        scale: bool
+            scale the sky frames before stacking them?
+        zero: bool
+            apply offets to the sky frames before stacking them?
         reset_sky: bool
             maintain the sky level by adding a constant to the science
             frame after subtracting the sky?
         scale_sky: bool
-            scale each extension of each sky frame to match the science frame?
+            scale each extension of each stacked sky frame to match the
+            science frame?
         offset_sky: bool
-            apply offset to each extension of each sky frame to match science?
+            apply offset to each extension of each stacked sky frame to match
+            the science frame?
         sky: str/AD/list
             sky frame(s) to subtract
         """
