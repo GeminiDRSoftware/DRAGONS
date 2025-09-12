@@ -1498,6 +1498,10 @@ class Preprocess(PrimitivesBASE):
         scale_sky = params.get("scale_sky", False)
         offset_sky = params.get("offset_sky", False)
         suffix = params["suffix"]
+        if "zero" not in params.keys():
+            params["zero"] = False
+        if "scale" not in params.keys():
+            params["scale"] = False
         if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")

@@ -2,7 +2,7 @@
 # in the primitives_gnirs_spect.py file, in alphabetical order.
 from astrodata import AstroData
 from gempy.library import config
-from geminidr.core import parameters_preprocess
+from geminidr.core import parameters_preprocess, parameters_spect
 from . import parameters_gnirs
 
 
