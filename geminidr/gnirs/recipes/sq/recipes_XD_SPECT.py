@@ -69,7 +69,7 @@ def reduceTelluric(p):
     p.resampleToCommonFrame()
     p.stackFrames(scale=False, zero=False)
     p.findApertures(max_apertures=1)
-    p.skyCorrectFromSlit()
+    #p.skyCorrectFromSlit()  # tellurics are bright, no need to do this
     p.traceApertures()
     p.extractSpectra()
     p.fitTelluric()
