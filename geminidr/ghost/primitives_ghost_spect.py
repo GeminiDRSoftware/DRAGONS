@@ -229,12 +229,11 @@ class GHOSTSpect(GHOST):
                 wfit = wfit[:, ::2] + wfit[:, 1::2]
                 wfit /= 2.0
 
-            wmodel = models.Tabular2D( lookup_table=0.1 * wfit.T, name="WAVE")
-            wmodel.bounding_box = None
             for ext in ad:
                 # Needs to be transposed because of astropy x-first
                 # set bounding_box=None to avoid GwcsBoundingBoxWarning later
-                ext.wcs = gWCS([(input_frame, wmodel),
+                ext.wcs = gWCS([(input_frame, models.Tabular2D(
+                    lookup_table=0.1 * wfit.T, name="WAVE", bounding_box=None)),
                                 (output_frame, None)])
 
             # Timestamp and update filename
