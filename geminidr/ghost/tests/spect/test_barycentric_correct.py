@@ -40,7 +40,7 @@ def test_barycentricCorrect(ad_min, ra, dec, dt, known_corr):
                                     axes_names=("AWAV",),
                                     name="Wavelength in air")
     # Needs to be transposed because of astropy x-first
-    ad_min[0].wcs = gWCS([(input_frame, models.Tabular2D(lookup_table=orig_wavl.copy().T, name="WAVE", bounding_box=None)),
+    ad_min[0].wcs = gWCS([(input_frame, models.Tabular2D(lookup_table=orig_wavl.copy().T, name="WAVE")),
                           (output_frame, None)])
 
     ad_min.phu.set('RA', ra)
