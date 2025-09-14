@@ -125,19 +125,16 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         mask_out = np.empty_like(data_out, dtype=np.uint16)
         variance_out = np.empty_like(data_out)
 
-        # Sum `nsum` pixels around the center at each column.
+        # Average `nsum` pixels around the center at each column.
+        # FIXME: This should ideally respect the "combiner" argument, and handle
+        # all the combine methods NDStacker does. (mean, median, wtmean, lmedian)
         for i, center_pix in enumerate(centers):
             n1 = center_pix + 1 - 0.5 * nsum
             n2 = center_pix + 1 + 0.5 * nsum
             nddata = NDAstroData(data[:, i], mask=mask[:, i],
                                  variance=variance[:, i])
-            data_out[i], mask_out[i], variance_out[i] = combine1d(nddata, n1, n2)
-
-        # Divide by number of pixels summed to get the mean.
-        # FIXME: This should ideally respect the "combiner" argument, and handle
-        # all the combine methods NDStacker does. (mean, median, wtmean, lmedian)
-        data_out /= nsum
-        variance_out /= nsum ** 2
+            data_out[i], mask_out[i], variance_out[i] = combine1d(
+                nddata, n1, n2, average=True)
 
         # Pass the polynomial for the center instead of the extract slice
         return data_out, mask_out, variance_out, slit_polynomial
