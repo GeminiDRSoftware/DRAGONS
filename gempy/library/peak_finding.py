@@ -30,7 +30,7 @@ from scipy import interpolate, optimize, signal
 
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from gempy.library.nddops import NDStacker, sum1d
+from gempy.library.nddops import NDStacker, combine1d
 from gempy.utils import logutils
 
 from . import astrotools as at, astromodels as am
@@ -131,7 +131,7 @@ def average_along_slit(ext, center=None, offset_from_center=None,
             n2 = center_pix + 1 + 0.5 * nsum
             nddata = NDAstroData(data[:, i], mask=mask[:, i],
                                  variance=variance[:, i])
-            data_out[i], mask_out[i], variance_out[i] = sum1d(nddata, n1, n2)
+            data_out[i], mask_out[i], variance_out[i] = combine1d(nddata, n1, n2)
 
         # Divide by number of pixels summed to get the mean.
         # FIXME: This should ideally respect the "combiner" argument, and handle
