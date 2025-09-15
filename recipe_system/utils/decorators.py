@@ -402,7 +402,7 @@ def assert_expected_dtypes(adinputs):
                 ndd.uncertainty.array.dtype.kind != 'f' or
                 ndd.uncertainty.array.dtype.itemsize != 4  # expect float32
             ):
-                emsg += f'    uncertainty: {ndd.data.dtype}\n'
+                emsg += f'    uncertainty: {ndd.uncertainty.array.dtype}\n'
             if ndd.mask is not None and (
                 ndd.mask.dtype.kind != 'u' or
                 ndd.mask.dtype.itemsize > 2  # uint16 for Gemini data; OK?
