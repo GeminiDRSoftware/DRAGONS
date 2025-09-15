@@ -413,7 +413,7 @@ class Spect(Resample):
                         max_peak_width = min(0.25 * profile.size, 20)
                         widths = 10**np.arange(np.log10(min_peak_width),
                                                np.log10(max_peak_width), 0.05)
-                        peaks, snrs = peak_finding.find_wavelet_peaks(
+                        peaks, _, snrs = peak_finding.find_wavelet_peaks(
                             corr, widths=widths,
                             reject_bad=False, pinpoint_index=0)
                         if peaks.size:
@@ -1485,7 +1485,7 @@ class Spect(Resample):
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                    initial_peaks, _ = peak_finding.find_wavelet_peaks(
+                    initial_peaks, _, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
                 # The coordinates are always returned as (x-coords, y-coords)
@@ -1953,7 +1953,7 @@ class Spect(Resample):
                 # determineDistortion
                 widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                 # These are returned sorted by pixel coordinate
-                initial_peaks, _ = peak_finding.find_wavelet_peaks(
+                initial_peaks, _, _ = peak_finding.find_wavelet_peaks(
                     data, widths=widths, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)

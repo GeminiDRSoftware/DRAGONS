@@ -259,7 +259,7 @@ def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
     """
     # Find peaks; convert width FWHM to sigma
     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-    peaks, peak_snrs = peak_finding.find_wavelet_peaks(
+    peaks, _, peak_snrs = peak_finding.find_wavelet_peaks(
         data, widths=widths, mask=mask, variance=variance, min_snr=min_snr,
         min_sep=min_sep, reject_bad=reject_bad)
     fit_this_peak = peak_snrs > min_snr
