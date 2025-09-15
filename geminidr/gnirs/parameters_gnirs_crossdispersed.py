@@ -19,6 +19,8 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
 
 
 class determineDistortionConfig(parameters_gnirs_spect.determineDistortionConfig):
+    debug_min_relative_peak_height = config.RangeField("Minimum relative peak height for tracing", float, 0., min=0., max=1.)
+
     def setDefaults(self):
         self.spatial_order = 2
         self.step = 5

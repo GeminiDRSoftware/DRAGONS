@@ -148,6 +148,7 @@ class determineDistortionConfig(config.Config):
     min_line_length = config.RangeField("Exclude line traces shorter than this fraction of slit length",
                                         float, 0.8, min=0., max=1.)
     debug_reject_bad = config.Field("Reject lines with suspiciously high SNR (e.g. bad columns)?", bool, True)
+    debug_min_points_per_trace = config.RangeField("Minimum number of points per trace", int, 1, min=1)
     debug = config.Field("Display line traces on image display?", bool, False)
 
 

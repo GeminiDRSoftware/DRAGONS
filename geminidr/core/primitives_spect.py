@@ -1374,10 +1374,18 @@ class Spect(Resample):
             length) to be considered as a useful line.
 
         debug_reject_bad: bool
-            Reject lines with suspiciously high SNR (e.g. bad columns)? (Default: True)
+            Reject lines with suspiciously high SNR (e.g. bad columns)?
 
         debug: bool
             plot arc line traces on image display window?
+
+        debug_min_points_per_trace: int
+            minimum number of points required for a trace to be considered
+            valid
+
+        debug_min_relative_peak_height: float
+            minimum height of a peak relative to the its initial value during
+            the tracing
 
         Returns
         -------
@@ -1402,6 +1410,8 @@ class Spect(Resample):
         min_line_length = params["min_line_length"]
         debug_reject_bad = params["debug_reject_bad"]
         debug = params["debug"]
+        min_points = params.get("debug_min_points_per_trace", 0)
+        min_relative_height = params.get("debug_min_relative_peak_height", 0.)
 
         orders = (max(spectral_order, 1), spatial_order)
         fail = False
@@ -1485,7 +1495,7 @@ class Spect(Resample):
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                    initial_peaks, _, _ = peak_finding.find_wavelet_peaks(
+                    initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
                 # The coordinates are always returned as (x-coords, y-coords)
@@ -1530,7 +1540,7 @@ class Spect(Resample):
 
                     else:
                         traces = []
-                        for peak in initial_peaks:
+                        for peak, peak_value in zip(initial_peaks, peak_values):
                             # Need to start midway along the slit, which varies
                             # along the dispersion axis. `extract_info` here is the
                             # polynomial describing that midway line.
@@ -1542,7 +1552,11 @@ class Spect(Resample):
                                 nsum=nsum, max_missed=max_missed,
                                 max_shift=max_shift * ybin / xbin,
                                 viewer=self.viewer if debug else None,
-                                min_line_length=min_line_length*slit_length_frac))
+                                min_line_length=min_line_length*slit_length_frac,
+                                min_peak_value=min_relative_height*peak_value))
+
+                    # Remove traces with too few points
+                    traces = [trace for trace in traces if len(trace) >= min_points]
 
                     # Traces are always returned in (x, y) order, regardless
                     # of the dispersion axis
@@ -1615,8 +1629,13 @@ class Spect(Resample):
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
+                ydeg = orders[dispaxis]
+                if len(traces) <= ydeg:
+                    log.warning(f"Only {len(traces)} traces so reducing "
+                                f"spectral order from {ydeg} to {len(traces)-1}")
+                    ydeg = len(traces) - 1
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
-                                            y_degree=orders[dispaxis],
+                                            y_degree=ydeg,
                                             x_domain=[0, ext.shape[1]-1],
                                             y_domain=[0, ext.shape[0]-1])
 
