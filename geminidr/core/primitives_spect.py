@@ -1562,9 +1562,6 @@ class Spect(Resample):
                     # of the dispersion axis
                     log.stdinfo(f"Traced {len(traces)} lines from "
                                 f"{len(initial_peaks)} peaks")
-                    print(initial_peaks)
-                    for trace in traces:
-                        print ([(f"{x:.2f}", f"{y:.2f}") for x, y in trace.input_coordinates()])
 
                     # Traces can extend beyond the edge of the illuminated slit
                     # if adaptive binning has occurred and there's a feature in
