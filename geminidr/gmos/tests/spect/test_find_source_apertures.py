@@ -13,6 +13,7 @@ import astrodata
 import gemini_instruments
 
 from astropy.modeling.models import Gaussian1D
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.primitives_gmos_spect import GMOSSpect
 
 test_data = [
@@ -97,10 +98,10 @@ def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrof
     rows, cols = np.mgrid[:ad.shape[0][0], :ad.shape[0][1]]
 
     for ext in ad:
-        ext.data = model(rows)
+        ext.data = model(rows).astype(np.float32)
         ext.data += np.random.poisson(ext.data)
         ext.data += np.random.normal(scale=gmos_fake_noise, size=ext.shape)
-        ext.mask = np.zeros_like(ext.data, dtype=np.uint)
+        ext.mask = np.zeros_like(ext.data, dtype=DQ.datatype)
 
     p = GMOSSpect([ad])
     _ad = p.findApertures(max_apertures=1, min_snr=3)[0]
@@ -352,8 +353,8 @@ def create_inputs_automated_recipe():
         sn_std = 0.42466 * sn_fwhm
         model = (Gaussian1D(amplitude=peak, mean=yc, stddev=gal_std) +
                  Gaussian1D(amplitude=peak * contrast, mean=yc + sep, stddev=sn_std))
-        profile = model(np.arange(SHAPE[0]))
-        data = np.zeros(SHAPE) + profile[:, np.newaxis]
+        profile = model(np.arange(SHAPE[0])).astype(np.float32)
+        data = np.zeros(SHAPE, dtype=np.float32) + profile[:, np.newaxis]
         data += np.random.normal(scale=RDNOISE, size=data.size).reshape(data.shape)
 
         hdulist = pf.HDUList([pf.PrimaryHDU(header=pf.Header(phu_dict)),
