@@ -163,19 +163,23 @@ def test_stacking_gain_read_noise_propagation(f2_adinputs, caplog):
 
 
 @pytest.mark.parametrize("old_norm", (True, False))
-def test_stacking_with_scaling(niri_adinputs_with_noise, old_norm):
+@pytest.mark.parametrize("statsec", (None, "10:1000,10:1000"))
+def test_stacking_with_scaling(niri_adinputs_with_noise, statsec, old_norm):
     """Simple test to scale images and confirm new and old methods"""
     p = NIRIImage(niri_adinputs_with_noise)
     ad = p.stackFrames(operation='mean', reject_method='none', scale=True,
+                       statsec=statsec,
                        debug_old_normalization=old_norm).pop()
     assert ad[0].data.mean() == pytest.approx(1.0, rel=1e-3)
 
 
 @pytest.mark.parametrize("old_norm", (True, False))
-def test_stacking_with_offsetting(niri_adinputs_with_noise, old_norm):
+@pytest.mark.parametrize("statsec", (None, "10:1000,10:1000"))
+def test_stacking_with_offsetting(niri_adinputs_with_noise, statsec, old_norm):
     """Simple test to offset images and confirm new and old methods"""
     p = NIRIImage(niri_adinputs_with_noise)
     ad = p.stackFrames(operation='mean', reject_method='none', zero=True,
+                       statsec=statsec,
                        debug_old_normalization=old_norm).pop()
     assert ad[0].data.mean() == pytest.approx(1.0, rel=1e-3)
 
@@ -209,6 +213,22 @@ def test_stacking_with_scaling_separate_ext(niri_adinputs_with_noise, old_norm, 
         assert ad[0].data.mean() == pytest.approx(1.25, rel=1e-3)
         assert ad[1].data.mean() == pytest.approx(3.0, rel=1e-3)
         assert ad[2].data.mean() == pytest.approx(4.75, rel=1e-3)
+
+
+def test_stacking_with_masked_region(niri_adinputs_with_noise, caplog):
+    """Mask the entire 'statsec' region in one image"""
+    niri_adinputs_with_noise[-1][0].mask = np.zeros_like(
+        niri_adinputs_with_noise[-1][0].data, dtype=np.uint16)
+    # Note the difference between the slice and 'statsec' below
+    niri_adinputs_with_noise[-1][0].mask[599:700, 499:700] = 1
+    p = NIRIImage(niri_adinputs_with_noise)
+    ad = p.stackFrames(operation='mean', reject_method='none', scale=True,
+                       statsec="500:700,600:700").pop()
+
+    # Confirm 5 warnings about masked statsec (images 0-4 vs image 5)
+    nwarnings = sum('No overlapping unmasked pixels' in r.message
+                    for r in caplog.records)
+    assert nwarnings == 5
 
 
 @pytest.mark.niri

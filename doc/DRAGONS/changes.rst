@@ -11,14 +11,36 @@ Change Logs
 4.1.0
 =====
 
-
 Improvements
 ------------
+**geminidr.core**
 
-**geminidr.ghost**
+  * Changes to ``stackFrames``
 
-Exclude saturated bias images when creating the master bias. This has been
-seen once.
+    The ``scale`` and ``zero`` parameters now work by a pairwise comparison
+    of the overlap regions of the input frames and perform a least-squares
+    minimization of the differences after applying an appropriate
+    transformation, rather than simply scaling by the average value of the
+    entire image (or ``statsec`` if provided).
+
+    The previous behavior can be restored by setting the new parameter
+    ``debug_old_normalization=True``.
+
+  * Easier handling of incorrect solutions in the
+    ``determineWavelengthSolution`` GUI
+
+    If all identified lines are deleted in the GUI, the model will revert
+    to the initial linear solution instead of maintaining the original (bad)
+    solution.
+
+
+Interface Modifications
+-----------------------
+**geminidr.core**
+
+  * The default parameters of ``fitTelluric`` have changed so as not to mask
+    regions with significant intrinsic stellar absorption.
+
 
 4.0.0
 =====
