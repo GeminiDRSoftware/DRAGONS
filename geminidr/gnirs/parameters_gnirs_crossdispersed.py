@@ -19,10 +19,12 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
 
 
 class determineDistortionConfig(parameters_gnirs_spect.determineDistortionConfig):
+    debug_min_relative_peak_height = config.RangeField("Minimum relative peak height for tracing", float, 0.7, min=0., max=1.)
+
     def setDefaults(self):
         self.spatial_order = 2
         self.step = 5
-        self.min_line_length = 0.5  # because some orders go off the edge
+        self.min_line_length = 0.8  # need to keep high to avoid false positives
 
 
 class determinePinholeRectificationConfig(parameters_spect.determinePinholeRectificationConfig):
@@ -80,9 +82,10 @@ class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
     # Sky subtraction is difficult due to the short slit
     def setDefaults(self):
         self.function = "chebyshev"
-        self.order = 2
+        self.order = 1
         self.aperture_growth = 1
         self.debug_allow_skip = True
+        self.grow = 1
 
 
 class traceAperturesConfig(parameters_spect.traceAperturesConfig):

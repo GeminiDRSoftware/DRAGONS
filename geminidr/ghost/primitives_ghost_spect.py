@@ -15,7 +15,7 @@ from astropy.io.ascii.core import InconsistentTableError
 from astropy import units as u
 from astropy import constants as const
 from astropy.stats import sigma_clip
-from astropy.modeling import fitting, models
+from astropy.modeling import fitting, models, bind_bounding_box
 from astropy.table import Table
 from scipy import interpolate
 from scipy.ndimage import measurements
@@ -231,7 +231,9 @@ class GHOSTSpect(GHOST):
 
             for ext in ad:
                 # Needs to be transposed because of astropy x-first
-                ext.wcs = gWCS([(input_frame, models.Tabular2D(lookup_table=0.1 * wfit.T, name="WAVE")),
+                m = models.Tabular2D(lookup_table=0.1 * wfit.T, name="WAVE")
+                bind_bounding_box(m, m.bounding_box.bounding_box(order="F"), order="F")
+                ext.wcs = gWCS([(input_frame, m),
                                 (output_frame, None)])
 
             # Timestamp and update filename

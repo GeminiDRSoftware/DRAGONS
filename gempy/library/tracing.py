@@ -22,7 +22,7 @@ from astropy.stats import sigma_clip, sigma_clipped_stats
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.fitting import fit_1D
-from gempy.library.nddops import NDStacker, sum1d
+from gempy.library.nddops import NDStacker, combine1d
 from gempy.utils import logutils
 
 from . import astrotools as at
@@ -151,7 +151,7 @@ class Aperture:
         all_x2 = self._center_pixels + aper_upper
 
         ext = NDAstroData(data, mask=mask, variance=var)
-        results = [sum1d(ext[:, i], x1, x2)
+        results = [combine1d(ext[:, i], x1, x2)
                    for i, (x1, x2) in enumerate(zip(all_x1, all_x2))]
         self.data[:] = [result.data for result in results]
         if mask is not None:
