@@ -11,9 +11,22 @@ Change Logs
 4.1.0
 =====
 
+Static images such as illumination masks are now distributed as bzip2
+files to reduce the size of the download.
+
 Improvements
 ------------
 **geminidr.core**
+
+  * log-linear wavelength resampling is now supported
+
+    Instead of the ``force_linear`` boolean parameter in the
+    ``resampleToCommonFrame`` primitive, the ``output_wave_scale``
+    parameter now accepts three values: ``linear``,  ``loglinear``,
+    and ``reference``.  The first two force a linear or log-linear
+    resampling along the wavelength axis, while ``reference`` maintains the
+    wavelength sampling of the reference frame, but can only be used if
+    ``trim_spectral=True`` since it is unsafe to extrapolate this solution.
 
   * Changes to ``stackFrames``
 
@@ -38,8 +51,21 @@ Interface Modifications
 -----------------------
 **geminidr.core**
 
+  * ``determineWavelengthSolution`` will now proceed even if no solution
+    is found, leaving the initial linear solution in place.
+
   * The default parameters of ``fitTelluric`` have changed so as not to mask
     regions with significant intrinsic stellar absorption.
+
+**geninidr.gnirs**
+
+  * A non-linearity correction is now applied to GNIRS data taken at Gemini
+    North with the original IR Detector Controller (between 2010 and summer
+    2025). This follows the same form as the NIRI non-linearity correction.
+
+  * Before fitting a smooth function in ``normalizeFlat``, the flat field is
+    divided by a sawtooth pattern to remove the odd-even row effect seen in
+    the data. This pattern is re-applied to the data after the normalization.
 
 
 4.0.0
