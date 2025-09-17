@@ -18,8 +18,7 @@ DRAGONS-compatible version of IGRINS2 pipeline
 Install
 =======
 
-If you have not, please consult “Preparation for dragons version.ipynb”
-and install IGRINSDR.
+Please consult “INSTALL.md” and install IGRINSDR.
 
 Setting up
 ==========
