@@ -360,7 +360,7 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
 
 
 def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
-                          return_scaling=False, maxiter=1000000):
+                          statsec=None, return_scaling=False, maxiter=1000000):
     """
     Compute a set of normalization offsets/scale factors to give a list
     of NDAstroData objects the same overall value. This is done by
@@ -389,9 +389,11 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
         number of independent fields to compute normalization for
     separate_ext: bool
         compute normalization for each set of extensions separately?
+    statsec: tuple of slices/None
+        section of each image to use for the normalization (None => full image)
     return_scaling: bool
         return scaling factors rather than additive offsets?
-   maxiter: int
+    maxiter: int
         maximum number of iterations for the minimization
 
     Returns
@@ -399,8 +401,12 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
     ndarray: additive offsets or scaling factors to scale the second and
         subsequent NDAstroData objects to match the first one
     """
-    ext_sizes = [ndd.size for ndd in nddata_list[:num_ext]]
+    if statsec is not None:
+        ext_sizes = [np.prod([s.stop - s.start for s in statsec])] * num_ext
+    else:
+        ext_sizes = [ndd.size for ndd in nddata_list[:num_ext]]
     result_size = max(ext_sizes) if separate_ext else sum(ext_sizes)
+    print("STATSEC", statsec, ext_sizes)
 
     # Prepare all the arrays we need
     nimg = len(nddata_list) // num_ext
@@ -416,14 +422,17 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
 
     tmp_data = np.empty((2, result_size), dtype=np.float32)
     tmp_mask = np.empty((2, result_size), dtype=np.uint16)
+    print("SHAPES", tmp_data.shape, tmp_mask.shape)
 
     def load_data(ndd_list, data_out, mask_out):
         start = 0
         for ndd in ndd_list:
-            size = ndd.size
-            data_out[start:start+size] = ndd.window[:].data.ravel()
+            size = ndd.size if statsec is None else ext_sizes[0]  # all the same
+            data_out[start:start+size] = (ndd.window[:] if statsec is None
+                                          else ndd.window[statsec]).data.ravel()
             try:
-                mask_out[start:start+size] = ndd.window[:].mask.ravel()
+                mask_out[start:start+size] = (ndd.window[:] if statsec is None
+                                              else ndd.window[statsec]).mask.ravel()
             except AttributeError:  # mask is None
                 mask_out[start:start+size] = 0
             start += size
@@ -462,6 +471,13 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
 
                 med = masked_median(tmp_data[1], tmp_mask[1], result_size)
                 offset_matrix[i, j] = -(np.log(med) if return_scaling else med)
+                if weight_matrix[i, j] == 0:
+                    msg = ("No overlapping unmasked pixels found between "
+                           f"input frames {i} and {j}")
+                    if separate_ext:
+                        msg += f" for extension {n}"
+                    msg += " - they will not be normalized with respect to each other."
+                    log.warning(msg)
 
         # Scale the offsets so they're O(1) since minimization can fail if
         # the value to be optimized is too large. See:

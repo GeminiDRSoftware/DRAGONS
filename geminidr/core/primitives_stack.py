@@ -191,11 +191,6 @@ class Stack(PrimitivesBASE):
         save_rejection_map = params["save_rejection_map"]
         old_method = params.get("debug_old_normalization", False)
 
-        if statsec:
-            statsec = tuple([slice(int(start)-1, int(end))
-                             for x in reversed(statsec.strip('[]').split(','))
-                             for start, end in [x.split(':')]])
-
         if len(adinputs) <= 1:
             log.stdinfo("No stacking will be performed, since at least two "
                         "input AstroData objects are required for stackFrames")
@@ -214,6 +209,14 @@ class Stack(PrimitivesBASE):
         for i in range(len(adinputs[0])):
             if len({ad[i].nddata.shape for ad in adinputs}) > 1:
                 raise ValueError("Not all inputs images have the same shape")
+
+        if statsec:
+            statsec = tuple([slice(int(start)-1, int(end))
+                             for x in reversed(statsec.strip('[]').split(','))
+                             for start, end in [x.split(':')]])
+            if len(statsec) != len(adinputs[0][0].nddata.shape):
+                raise ValueError("'statsec' must have the same number of "
+                                 "dimensions as the data")
 
         # We will determine the average gain from the input AstroData
         # objects and add in quadrature the read noise
@@ -293,7 +296,7 @@ class Stack(PrimitivesBASE):
                 # Reshaping ensures it's a 2D array
                 values = at.optimal_normalization(
                     nddata_list, num_ext=num_ext, separate_ext=separate_ext,
-                    return_scaling=scale)
+                    statsec=statsec, return_scaling=scale)
                 if separate_ext:
                     values = values.reshape(num_ext, num_img)
                 else:
@@ -302,6 +305,8 @@ class Stack(PrimitivesBASE):
                     scale_factors = values
                 else:
                     zero_offsets = values
+
+                print("VALUES", values)
 
             if scale and np.min(scale_factors) < 0:
                 log.warning("Some scale factors are negative. Not scaling.")
