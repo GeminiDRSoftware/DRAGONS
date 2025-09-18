@@ -57,7 +57,7 @@ Interface Modifications
   * The default parameters of ``fitTelluric`` have changed so as not to mask
     regions with significant intrinsic stellar absorption.
 
-**geninidr.gnirs**
+**geminidr.gnirs**
 
   * A non-linearity correction is now applied to GNIRS data taken at Gemini
     North with the original IR Detector Controller (between 2010 and summer
@@ -66,6 +66,12 @@ Interface Modifications
   * Before fitting a smooth function in ``normalizeFlat``, the flat field is
     divided by a sawtooth pattern to remove the odd-even row effect seen in
     the data. This pattern is re-applied to the data after the normalization.
+
+**gempy.scripts**
+
+    * The ``showpars`` script now supports the ``--all`` (or ``-a``) option to
+      list all parameters, including the debug-level ones which are normally
+      hidden.
 
 
 4.0.0
