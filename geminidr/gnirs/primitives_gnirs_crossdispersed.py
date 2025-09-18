@@ -6,8 +6,10 @@
 import astrodata, gemini_instruments
 
 from astropy.table import Table
+import numpy as np
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -16,6 +18,8 @@ from .primitives_gnirs_spect import GNIRSSpect
 from . import parameters_gnirs_crossdispersed
 from geminidr.core.primitives_crossdispersed import CrossDispersed
 from .lookups.MDF_XD import get_slit_info
+from ..gemini.lookups.timestamp_keywords import timestamp_keys
+
 
 # -----------------------------------------------------------------------------
 @parameter_override
@@ -311,4 +315,55 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                                  f'Using order={these_params["order"]} for {ad.filename}')
 
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
+        return adoutputs
+
+    def maskBeyondRegions(self, adinputs=None, **params):
+        """
+        suffix
+        regions3   to keep
+        regions4
+        regions5
+        regions6
+        regions7
+        regions8
+        aperture default 1
+        """
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params['suffix']
+        aperture = params['aperture']
+
+        adoutputs = []
+        for ad in adinputs:
+            aperture_extindex = []
+            for i, ext in enumerate(ad):
+                if ext.hdr.get('APERTURE') == aperture:
+                    aperture_extindex.append((i, ext.hdr.get('SPECORDR')))
+
+            for index, order in aperture_extindex:
+                regions = at.parse_user_regions(params[f'regions{order}'], dtype=float)
+                if regions is None:
+                    log.warning(f"No regions provided for order {order}, skipping")
+                    continue
+                try:
+                    ext = ad[index]
+                except IndexError:
+                    log.warning(f"Order {order} not found in {ad.filename}, skipping")
+                    continue
+
+                waves = ext.wcs(np.arange(ext.data.size))
+                mask = at.create_mask_from_regions(waves, regions=regions)
+                # regions defines what to keep.
+                # mask is False for pixels to keep. True for pixels to mask.
+                ext.mask[mask] |= DQ.no_data
+
+                if params[f'regions{order}'] is not None:
+                    log.stdinfo(f"Masked pixels outside '{params[f'regions{order}']}' nm "
+                                f"in order {order} of aperture {aperture} of {ad.filename}")
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad)
+
         return adoutputs
