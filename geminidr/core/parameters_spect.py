@@ -148,6 +148,7 @@ class determineDistortionConfig(config.Config):
     min_line_length = config.RangeField("Exclude line traces shorter than this fraction of slit length",
                                         float, 0.8, min=0., max=1.)
     debug_reject_bad = config.Field("Reject lines with suspiciously high SNR (e.g. bad columns)?", bool, True)
+    debug_min_points_per_trace = config.RangeField("Minimum number of points per trace", int, 1, min=1)
     debug = config.Field("Display line traces on image display?", bool, False)
 
 
@@ -197,6 +198,8 @@ class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
     spectral_order = config.RangeField("Fitting order in spectral direction",
                                        int, 3, min=1)
+    min_snr = config.RangeField("Minimum SNR for edge detection", float, 10., min=0.1,
+                                optional=False)
     edge1 = config.RangeField("Left/lower edge of illuminated region",
                               float, None, min=1)
     edge2 = config.RangeField("Right/upper edge of illuminated region",
@@ -568,6 +571,10 @@ class linearizeSpectraConfig(config.Config):
 class maskBeyondSlitConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit",
                           optional=True)
+    debug_min_illuminated_fraction = config.RangeField(
+        "Minimum fraction of pixel that must be illuminated to not be masked",
+        float, 0.9, min=0., max=1., inclusiveMax=True)
+
 
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)

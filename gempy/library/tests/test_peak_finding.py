@@ -55,7 +55,7 @@ def test_find_peaks(noise):
     np.random.seed(0)
     y += (np.random.random(x.size) - 0.5) * noise
 
-    peaks_detected, _ = peak_finding.find_wavelet_peaks(y, np.ones_like(y) * stddev)
+    peaks_detected, _, _ = peak_finding.find_wavelet_peaks(y, np.ones_like(y) * stddev)
 
     np.testing.assert_allclose(peaks_detected, peaks, atol=1)
 

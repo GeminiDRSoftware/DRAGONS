@@ -287,7 +287,12 @@ class GHOSTSlit(GHOST):
         adtemp = astrodata.create(adinputs[0].phu)
         for ad in adinputs:
             for ext in ad:
-                adtemp.append(ext)
+                if (ext.mask is not None and
+                        (ext.mask & DQ.saturated).astype(bool).sum() > 0.1 * ext.mask.size):
+                    log.warning(f"{ad.filename}:{ext.id} is being excluded "
+                                "due to more than 10% saturated pixels")
+                else:
+                    adtemp.append(ext)
         return self.stackFrames([adtemp], operation="median")
 
 

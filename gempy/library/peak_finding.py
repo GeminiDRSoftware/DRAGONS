@@ -30,7 +30,7 @@ from scipy import interpolate, optimize, signal
 
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from gempy.library.nddops import NDStacker, sum1d
+from gempy.library.nddops import NDStacker, combine1d
 from gempy.utils import logutils
 
 from . import astrotools as at, astromodels as am
@@ -125,19 +125,16 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         mask_out = np.empty_like(data_out, dtype=np.uint16)
         variance_out = np.empty_like(data_out)
 
-        # Sum `nsum` pixels around the center at each column.
+        # Average `nsum` pixels around the center at each column.
+        # FIXME: This should ideally respect the "combiner" argument, and handle
+        # all the combine methods NDStacker does. (mean, median, wtmean, lmedian)
         for i, center_pix in enumerate(centers):
             n1 = center_pix + 1 - 0.5 * nsum
             n2 = center_pix + 1 + 0.5 * nsum
             nddata = NDAstroData(data[:, i], mask=mask[:, i],
                                  variance=variance[:, i])
-            data_out[i], mask_out[i], variance_out[i] = sum1d(nddata, n1, n2)
-
-        # Divide by number of pixels summed to get the mean.
-        # FIXME: This should ideally respect the "combiner" argument, and handle
-        # all the combine methods NDStacker does. (mean, median, wtmean, lmedian)
-        data_out /= nsum
-        variance_out /= nsum ** 2
+            data_out[i], mask_out[i], variance_out[i] = combine1d(
+                nddata, n1, n2, average=True)
 
         # Pass the polynomial for the center instead of the extract slice
         return data_out, mask_out, variance_out, slit_polynomial
@@ -642,7 +639,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     Returns
     -------
-    2D array: peak pixels and SNRs (sorted by pixel coordinate)
+    2D array: peak pixels, peak values, and SNRs (sorted by pixel coordinate)
     """
     # Non-linear peaks are OK but saturated ones are not
     mask = ((mask & (DQ.max ^ DQ.saturated)).astype(bool) if mask is not None
@@ -711,8 +708,8 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     # Clip the really noisy parts of the data and get more accurate positions
     #pinpoint_data[snr < 0.5] = 0
-    peaks = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
-                           halfwidth=int(0.5*np.median(widths)))[0]
+    peaks, values = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
+                                   halfwidth=int(0.5*np.median(widths)))
 
     # Clean up peaks that are too close together
     while True:
@@ -721,12 +718,15 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
             break
         i = np.argmax(diffs < min_sep)
         # Replace with mean of re-pinpointed points
-        new_peaks = pinpoint_peaks(pinpoint_data, peaks=peaks[i:i+2])[0]
+        new_peaks = pinpoint_peaks(pinpoint_data, peaks=peaks[i:i+2])
         del peaks[i+1]
-        if new_peaks:
-            peaks[i] = np.mean(new_peaks)
+        del values[i+1]
+        if new_peaks[0]:
+            peaks[i] = np.mean(new_peaks[0])
+            values[i] = np.mean(new_peaks[1])
         else:  # somehow both peaks vanished
             del peaks[i]
+            del values[i]
 
     #final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
     final_peaks = peaks
@@ -735,9 +735,9 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # Remove suspiciously bright peaks and return as array of
     # locations and SNRs, sorted by location
     if reject_bad:
-        good_peaks = reject_bad_peaks(list(zip(final_peaks, peak_snrs)))
+        good_peaks = reject_bad_peaks(list(zip(final_peaks, values, peak_snrs)))
     else:
-        good_peaks = list(zip(final_peaks, peak_snrs))
+        good_peaks = list(zip(final_peaks, values, peak_snrs))
     #print("KLDEBUG: T=", np.array(sorted(good_peaks)).T)
 
     # When no peaks are found the array is an empty list.  When called,
@@ -748,7 +748,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     T = np.array(sorted(good_peaks)).T
     if not T.size:
-        T = np.array([[],[]])
+        T = np.array([[],[], []])
     return T
 
 
@@ -881,17 +881,17 @@ def reject_bad_peaks(peaks):
 
     Parameters
     ----------
-    peaks: sequence of 2-tuples:
-        peak location and "strength" (e.g., SNR) of peaks
+    peaks: sequence of 3-tuples:
+        peak location, value, and "strength" (e.g., SNR) of peaks
 
     Returns
     -------
-    sequence of 2-tuples:
+    sequence of 3-tuples:
         accepted elements of input list
     """
     diff = 3  # Compare 1st brightest to 4th brightest
-    peaks.sort(key=lambda x: x[1])  # Sort by SNR
-    while len(peaks) > diff and (peaks[-1][1] / peaks[-(diff + 1)][1] > 3):
+    peaks.sort(key=lambda x: x[2])  # Sort by SNR
+    while len(peaks) > diff and (peaks[-1][2] / peaks[-(diff + 1)][2] > 3):
         del peaks[-1]
     return peaks
 

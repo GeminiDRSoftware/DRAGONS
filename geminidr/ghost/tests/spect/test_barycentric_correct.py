@@ -3,7 +3,7 @@ import pytest
 import datetime
 import numpy as np
 
-from astropy.modeling import models
+from astropy.modeling import models, bind_bounding_box
 from astropy import units as u
 from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
@@ -40,7 +40,9 @@ def test_barycentricCorrect(ad_min, ra, dec, dt, known_corr):
                                     axes_names=("AWAV",),
                                     name="Wavelength in air")
     # Needs to be transposed because of astropy x-first
-    ad_min[0].wcs = gWCS([(input_frame, models.Tabular2D(lookup_table=orig_wavl.copy().T, name="WAVE")),
+    m = models.Tabular2D(lookup_table=orig_wavl.copy().T, name="WAVE")
+    bind_bounding_box(m, m.bounding_box.bounding_box(order="F"), order="F")
+    ad_min[0].wcs = gWCS([(input_frame, m),
                           (output_frame, None)])
 
     ad_min.phu.set('RA', ra)

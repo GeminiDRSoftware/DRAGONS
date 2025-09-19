@@ -413,7 +413,7 @@ class Spect(Resample):
                         max_peak_width = min(0.25 * profile.size, 20)
                         widths = 10**np.arange(np.log10(min_peak_width),
                                                np.log10(max_peak_width), 0.05)
-                        peaks, snrs = peak_finding.find_wavelet_peaks(
+                        peaks, _, snrs = peak_finding.find_wavelet_peaks(
                             corr, widths=widths,
                             reject_bad=False, pinpoint_index=0)
                         if peaks.size:
@@ -1374,10 +1374,18 @@ class Spect(Resample):
             length) to be considered as a useful line.
 
         debug_reject_bad: bool
-            Reject lines with suspiciously high SNR (e.g. bad columns)? (Default: True)
+            Reject lines with suspiciously high SNR (e.g. bad columns)?
 
         debug: bool
             plot arc line traces on image display window?
+
+        debug_min_points_per_trace: int
+            minimum number of points required for a trace to be considered
+            valid
+
+        debug_min_relative_peak_height: float
+            minimum height of a peak relative to the its initial value during
+            the tracing
 
         Returns
         -------
@@ -1402,6 +1410,8 @@ class Spect(Resample):
         min_line_length = params["min_line_length"]
         debug_reject_bad = params["debug_reject_bad"]
         debug = params["debug"]
+        min_points = params.get("debug_min_points_per_trace", 0)
+        min_relative_height = params.get("debug_min_relative_peak_height", 0.)
 
         orders = (max(spectral_order, 1), spatial_order)
         fail = False
@@ -1485,7 +1495,7 @@ class Spect(Resample):
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                    initial_peaks, _ = peak_finding.find_wavelet_peaks(
+                    initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
                 # The coordinates are always returned as (x-coords, y-coords)
@@ -1530,7 +1540,7 @@ class Spect(Resample):
 
                     else:
                         traces = []
-                        for peak in initial_peaks:
+                        for peak, peak_value in zip(initial_peaks, peak_values):
                             # Need to start midway along the slit, which varies
                             # along the dispersion axis. `extract_info` here is the
                             # polynomial describing that midway line.
@@ -1542,7 +1552,11 @@ class Spect(Resample):
                                 nsum=nsum, max_missed=max_missed,
                                 max_shift=max_shift * ybin / xbin,
                                 viewer=self.viewer if debug else None,
-                                min_line_length=min_line_length*slit_length_frac))
+                                min_line_length=min_line_length*slit_length_frac,
+                                min_peak_value=min_relative_height*peak_value))
+
+                    # Remove traces with too few points
+                    traces = [trace for trace in traces if len(trace) >= min_points]
 
                     # Traces are always returned in (x, y) order, regardless
                     # of the dispersion axis
@@ -1615,8 +1629,13 @@ class Spect(Resample):
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
+                ydeg = orders[dispaxis]
+                if len(traces) <= ydeg:
+                    log.warning(f"Only {len(traces)} traces so reducing "
+                                f"spectral order from {ydeg} to {len(traces)-1}")
+                    ydeg = len(traces) - 1
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
-                                            y_degree=orders[dispaxis],
+                                            y_degree=ydeg,
                                             x_domain=[0, ext.shape[1]-1],
                                             y_domain=[0, ext.shape[0]-1])
 
@@ -1878,6 +1897,170 @@ class Spect(Resample):
 
         return adoutputs
 
+    def determinePinholeRectification(self, adinputs=None, **params):
+        """
+        Trace pinhole apertures and create a rectification model.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images.
+        suffix : str, optional
+            Suffix to be added to output files. Default: "_pinholesTraced".
+        debug_plots : bool, Default: False
+            Create a plot of the traces
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The input file with a slit rectification model attached.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params['suffix']
+        step = params['step']
+        max_missed = params['max_missed']
+        max_shift = params['max_shift']
+        min_snr = params['min_snr']
+        nsum = params['nsum']
+        min_line_length = params['min_line_length']
+        spect_ord = params['spectral_order']
+        min_trace_pos = params['debug_min_trace_pos']
+        max_trace_pos = params['debug_max_trace_pos']
+
+        fwidth = 3  # An educated guess for pinholes.
+
+        for ad in adinputs:
+
+            log.stdinfo(f"Tracing pinhole apertures in {ad.filename}.")
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            for ext in ad:
+
+                dispaxis = 2 - ext.dispersion_axis() # Python sense
+                if nsum > ext.shape[dispaxis]:
+                    raise ValueError("{} is larger than the size of the data".format(nsum))
+
+                if params['start_pos']:
+                    start = min(max(params['start_pos'], nsum // 2),
+                                ext.shape[dispaxis] - nsum // 2)
+                else:
+                    start = ext.shape[dispaxis] // 2
+                data, mask, variance = ext.data, ext.mask, ext.variance
+
+                # Make life easier for the poor coder by transposing data if
+                # needed, so that we're always tracing along columns
+                if dispaxis == 0:
+                    ext_data = data
+                    ext_mask = None if mask is None else mask & DQ.not_signal
+                    ext_variance = variance
+                    x_ord, y_ord = 1, spect_ord
+                    direction = "row"
+                else:
+                    ext_data = data.T
+                    ext_mask = None if mask is None else mask.T & DQ.not_signal
+                    ext_variance = variance.T
+                    x_ord, y_ord = spect_ord, 1
+                    direction = "column"
+
+                start_slice = slice(start - nsum // 2, start + nsum // 2)
+                data, mask, variance = NDStacker.mean(
+                    ext_data[start_slice], mask=ext_mask[start_slice],
+                    variance=ext_variance[start_slice])
+                # Find peaks; convert width FWHM to sigma. Copied from
+                # determineDistortion
+                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
+                # These are returned sorted by pixel coordinate
+                initial_peaks, _, _ = peak_finding.find_wavelet_peaks(
+                    data, widths=widths, mask=mask & DQ.not_signal,
+                    variance=variance, min_snr=min_snr,
+                    reject_bad=False)
+                if len(initial_peaks) == 0:
+                    log.error(f"\nNo pinholes found in extension {ext.id}. "
+                              f"Consider lowering the detection \n"
+                              f"threshold, min_snr. (Currently set to {min_snr}.)\n")
+                    raise RuntimeError('No pinholes found.')
+
+                if min_trace_pos is not None and min_trace_pos > len(initial_peaks):
+                    log.warning(f"'min_trace_pos' is set to {min_trace_pos} but "
+                                f"there are only {len(initial_peaks)} peaks. Using "
+                                "only the last peak.")
+                    min_trace_pos = len(initial_peaks) - 1
+
+                log.fullinfo(f"  Found {len(initial_peaks)} peaks in extension "
+                             f"{ext.id}, tracing "
+                             f"numbers {min_trace_pos or 1} to "
+                             f"{max_trace_pos or len(initial_peaks)} "
+                             f"starting at {direction} {start}")
+
+                traces = tracing.trace_lines(
+                    # Only need a single `start` value for all lines.
+                    ext, axis=dispaxis,
+                    start=start,
+                    initial=initial_peaks[min_trace_pos:max_trace_pos],
+                    rwidth=None, cwidth=max(int(fwidth), 5),
+                    step=step, nsum=nsum, max_missed=max_missed,
+                    max_shift=max_shift * ybin / xbin,
+                    min_line_length=min_line_length,
+                    initial_tolerance=2.0)
+
+                # List of traced peak positions
+                in_coords = np.array([coord for trace in traces for
+                                      coord in trace.input_coordinates()]).T
+                # List of "reference" positions. These should be equally spaced
+                # in pixel coordinates, so set them to be equally spaced between
+                # the first and last. "trace.starting_point[1]" *always* returns
+                # the coordinate orthogonal to the tracing direction, but if we
+                # want to use the rectified coordinates they must be x-first.
+                try:
+                    t = ext.wcs.get_transform(ext.wcs.input_frame, 'rectified')
+                except CoordinateFrameError:
+                    rectified_pinholes = [trace.starting_point[1]
+                                          for trace in traces]
+                else:
+                    rectified_pinholes = [t(*trace.start_coordinates)[dispaxis]
+                                          for trace in traces]
+                equispaced_coords = np.linspace(rectified_pinholes[0],
+                                                rectified_pinholes[-1],
+                                                len(traces))
+                log.debug("Initial coords are "
+                          f"{[trace.starting_point[1] for trace in traces]}")
+                log.debug(f"Equispaced coords are {equispaced_coords}")
+                ref_coords = np.array([coord for trace, equi_coord in zip(traces, equispaced_coords) for
+                                       coord in trace.reference_coordinates(reference_coord=equi_coord)]).T
+
+                # Create the 2D slit rectification model:
+                m_init_2d = models.Chebyshev2D(
+                    x_degree=x_ord, y_degree=y_ord,
+                    x_domain=[0, ext.shape[1]-1],
+                    y_domain=[0, ext.shape[0]-1])
+                # The `fixed_linear` parameter is False because we should
+                # have both edges for each slit.
+                model, m_final_2d, m_inverse_2d = am.create_distortion_model(
+                    m_init_2d, dispaxis, in_coords, ref_coords, False)
+                model.name = "PNHLRECT"
+
+                try:
+                    ext.wcs.set_transform('pixels', 'rectified', model)
+                except CoordinateFrameError:
+                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                           cf.Frame2D(name='rectified'))
+
+                if params["debug_plots"]:
+                    plt.plot(in_coords[0], in_coords[1], linestyle='',
+                             marker='o')
+                    plt.title(f"Extension {ext.id}")
+                    plt.xlabel("X")
+                    plt.ylabel("Y")
+                    plt.show()
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
     def determineSlitEdges(self, adinputs=None, **params):
         """
         Finds the edges of the illuminated regions of the CCD and stores the
@@ -1902,8 +2085,11 @@ class Spect(Resample):
             Science data as 2D spectral images.
         suffix : str
             Suffix to be added to output files.
-        spectral_order : int, Default : 3
+        spectral_order : int
             Fitting order in the spectral direction (minimum of 1).
+        min_snr : float
+            Minimum signal-to-noise ratio of peaks to be considered as slit
+            edges
         edges1, edges2 : list
             List (of matching length) of the pixel locations of the edges of
             illuminated regions in the image. `edges1` should be all the top or
@@ -1911,7 +2097,7 @@ class Spect(Resample):
         search_radius : float
             Distance (in pixels) within which to search for the edges of
             illuminated regions.
-        debug_plots : bool, Default: False
+        debug_plots : bool
             Generate plots of several aspects of the fitting process.
         debug_max_missed : int
             The maximum number of steps that can be missed before the trace is
@@ -1937,6 +2123,7 @@ class Spect(Resample):
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
         # Parse parameters
@@ -1944,6 +2131,7 @@ class Spect(Resample):
         spectral_order = params['spectral_order']
         edge1 = params.get('edge1', None)
         edge2 = params.get('edge2', None)
+        min_snr = params.get('min_snr', 5.0)
         # How far to search (in pixels) to match expected and detected
         # peaks.
         search_rad = params.get('search_radius', 30)
@@ -1959,6 +2147,31 @@ class Spect(Resample):
                                                 "order": spectral_order})
 
         def find_slits(mdf, ystep=50):
+            """
+            Find slit locations from an MDF giving their approximate locations.
+
+            This is done by cross-correlating pairs of spatial cuts, separated
+            by "ystep" pixels, to determine the non-verticality of the slits.
+            Then a model of the full image is created from the MDF and this
+            angle, which is cross-correlated with the image, first in the
+            spatial direction, and then in the spectral direction, to better
+            determinezx the slit locations.
+
+            Parameters
+            ----------
+            mdf: Table
+                information about the slit locations in Gemini MDF format
+            ystep: int
+                step in pixels along the dispersion direction
+
+            Returns
+            -------
+            3-tuple of:
+                int:  "row" (along dispersion direction) where edges have been
+                        determined
+                list: pixel locations of lower slit edges at that row
+                list: pixel locations of upper slit edges at that row
+            """
             exp_edges1, exp_edges2 = [], []
             for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -2049,11 +2262,9 @@ class Spect(Resample):
                 # chosen row/col doesn't significantly affect the slit location
                 collapsed = np.median(ext.data, axis=1-dispaxis)
                 if num_slits == 1:
-                    cut = collapsed[offset:-offset].argmax()
-                    cut += offset
+                    cut = collapsed[offset:-offset].argmax() + offset
 
                 row_or_col = ['row', 'column'][dispaxis]
-                col_or_row = ['row', 'column'][dispaxis-1]
                 # Use 1-indexed numbers for rows/columns for user-facing output
                 # for easier legibility.
                 log.stdinfo(f"Creating profile from {row_or_col} {cut+1}"
@@ -2072,32 +2283,26 @@ class Spect(Resample):
                     median_slice = np.median(diffarr[:, s], axis=1)
 
                 # Search for position of peaks in the first derivative of flux
-                # in the spatial direction. Setting a value for the std and
-                # minimum peak height is something of an art, and requires
-                # different values between longslit and cross-dispersed data.
-                if num_slits == 1:
-                    min_height = 0.5 * sorted(median_slice)[-3]
-                else:
-                    min_height = at.std_from_pixel_variations(
-                        median_slice, subtract_linear_fits=True)
+                # in the spatial direction.
+                convolved_median_slice = ndimage.gaussian_filter1d(
+                    median_slice, sigma=2, mode='nearest')
+                noise = at.std_from_pixel_variations(
+                        convolved_median_slice, subtract_linear_fits=False)
+                min_height = min_snr * noise
                 cwidth = 8
 
                 # TODO: It's unclear whether find_wavelet_peaks() might be
                 # better for this.
-                positions_1, _ = find_peaks(at.boxcar(median_slice, size=1),
-                                            height=min_height,
-                                            distance=10,
-                                            prominence=min_height,
-                                            wlen=21)
+                positions_1, _ = find_peaks(
+                    convolved_median_slice, height=min_height, distance=10,
+                    prominence=min_height, wlen=21)
                 # find_peaks returns integer values, so use pinpoint_peaks
                 # to better describe the positions.
                 positions_1, _ = peak_finding.pinpoint_peaks(
                     median_slice, peaks=positions_1, halfwidth=cwidth//2)
-                positions_2, _ = find_peaks(at.boxcar(-median_slice, size=1),
-                                            height=min_height,
-                                            distance=10,
-                                            prominence=min_height,
-                                            wlen=21)
+                positions_2, _ = find_peaks(
+                    -convolved_median_slice, height=min_height, distance=10,
+                    prominence=min_height, wlen=21)
                 positions_2, _ = peak_finding.pinpoint_peaks(
                     -median_slice, peaks=positions_2, halfwidth=cwidth//2)
 
@@ -2108,6 +2313,7 @@ class Spect(Resample):
                     # Print a diagnostic plot of the profile being fitted.
                     plt.plot(at.boxcar(median_slice, size=1), label='1st-derivative of flux')
                     plt.plot(at.boxcar(-median_slice, size=1), label='Inverse')
+                    plt.plot((0, median_slice.size), (min_height, min_height), 'r-', label='Threshold')
                     plt.xlabel(f'{row_or_col.capitalize()} number')
                     plt.legend()
 
@@ -2121,11 +2327,18 @@ class Spect(Resample):
                         plt.show()
                     continue
 
+                # We add 0.5. If the slit edge is at the pixel edge
+                # between x and x+1, we want to record it as x+0.5.
+                # Because np.diff() reduces the size of the array by 1,
+                # the peak in the first derivative will be at x.
+                positions_1 = np.asarray(positions_1) + 0.5
+                positions_2 = np.asarray(positions_2) + 0.5
+
                 # Use +ve and -ve weights for left and right edges to assist
                 # with matching the correct "handedness". "Reference" weights
                 # are set to the pixel values to prefer strong gradients
                 all_edges = np.r_[positions_1, positions_2]
-                all_edge_weights = median_slice[np.round(
+                all_edge_weights = convolved_median_slice[np.round(
                     np.r_[positions_1, positions_2]).astype(int)]
                 all_edge_weights = np.exp(np.abs(all_edge_weights)/10000) * all_edge_weights/np.abs(all_edge_weights)
                 in_weights = [1, -1]
@@ -2157,8 +2370,8 @@ class Spect(Resample):
                     m_init = m_recenter | m_scale | m_shift | m_recenter.inverse
 
                     pair = [exp_edge1, exp_edge2]
-
                     log.debug(f"Fitting {pair} with {search_rad} {dfactor}")
+
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore', AstropyUserWarning)
                         if num_slits == 1:
@@ -2177,10 +2390,14 @@ class Spect(Resample):
                             m_final = m_init
                             m_final.offset_2 = x[xx] - expected_center
 
+                        # Match the improved initial model (called m_final)
+                        # to the full list of edges, although the bounds
+                        # will ensure it fits the pair we want.
                         m_final = fit_it2(m_final, pair, all_edges,
-                                         in_weights=in_weights, ref_weights=all_edge_weights)
+                                          in_weights=in_weights,
+                                          ref_weights=all_edge_weights)
 
-                    model_edge1, model_edge2 = m_final([exp_edge1, exp_edge2])
+                    model_edge1, model_edge2 = m_final(pair)
                     actual_edge1 = actual_edge2 = None
                     if len(positions_1):
                         actual_edge1 = positions_1[np.argmin(abs(model_edge1 - positions_1))]
@@ -2208,7 +2425,7 @@ class Spect(Resample):
                         plt.show()
                     continue
 
-                nfound = sum(set([a, b]) != {None} for a, b in zip(edges_1, edges_2))
+                nfound = sum({a, b} != {None} for a, b in zip(edges_1, edges_2))
                 if nfound != len(slit_lengths):
                     log.warning(f"Did not find expected number of {slit_name}s "
                                 f"(found {nfound}, expected {len(slit_lengths)}).")
@@ -2351,7 +2568,6 @@ class Spect(Resample):
                     log.warning("No SLITEDGE table created for {ad.filename}")
                     continue
 
-
                 # For XD, this is all the work we need to do because the
                 # rectification models can't be constructed and added to the
                 # WCS objects until after the slits have been cut in a later
@@ -2402,169 +2618,6 @@ class Spect(Resample):
                                              cf.Frame2D(name="rectified"))
                     log.debug("The WCS for this extension is:")
                     log.debug(ext.wcs)
-
-            # Update the filname suffix.
-            ad.update_filename(suffix=sfx, strip=True)
-
-        return adinputs
-
-    def determinePinholeRectification(self, adinputs=None, **params):
-        """
-        Trace pinhole apertures and create a rectification model.
-
-        Parameters
-        ----------
-        adinputs : list of :class:`~astrodata.AstroData`
-            Science data as 2D spectral images.
-        suffix : str, optional
-            Suffix to be added to output files. Default: "_pinholesTraced".
-        debug_plots : bool, Default: False
-            Create a plot of the traces
-
-        Returns
-        -------
-        list of :class:`~astrodata.AstroData`
-            The input file with a slit rectification model attached.
-
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params['suffix']
-        step = params['step']
-        max_missed = params['max_missed']
-        max_shift = params['max_shift']
-        min_snr = params['min_snr']
-        nsum = params['nsum']
-        min_line_length = params['min_line_length']
-        spect_ord = params['spectral_order']
-        min_trace_pos = params['debug_min_trace_pos']
-        max_trace_pos = params['debug_max_trace_pos']
-
-        fwidth = 3  # An educated guess for pinholes.
-
-        for ad in adinputs:
-
-            log.stdinfo(f"Tracing pinhole apertures in {ad.filename}.")
-            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-            for ext in ad:
-
-                dispaxis = 2 - ext.dispersion_axis() # Python sense
-                if nsum > ext.shape[dispaxis]:
-                    raise ValueError("{} is larger than the size of the data".format(nsum))
-
-                if params['start_pos']:
-                    start = min(max(params['start_pos'], nsum // 2),
-                                ext.shape[dispaxis] - nsum // 2)
-                else:
-                    start = ext.shape[dispaxis] // 2
-                data, mask, variance = ext.data, ext.mask, ext.variance
-
-                # Make life easier for the poor coder by transposing data if
-                # needed, so that we're always tracing along columns
-                if dispaxis == 0:
-                    ext_data = data
-                    ext_mask = None if mask is None else mask & DQ.not_signal
-                    ext_variance = variance
-                    x_ord, y_ord = 1, spect_ord
-                    direction = "row"
-                else:
-                    ext_data = data.T
-                    ext_mask = None if mask is None else mask.T & DQ.not_signal
-                    ext_variance = variance.T
-                    x_ord, y_ord = spect_ord, 1
-                    direction = "column"
-
-                start_slice = slice(start - nsum // 2, start + nsum // 2)
-                data, mask, variance = NDStacker.mean(
-                    ext_data[start_slice], mask=ext_mask[start_slice],
-                    variance=ext_variance[start_slice])
-                # Find peaks; convert width FWHM to sigma. Copied from
-                # determineDistortion
-                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                # These are returned sorted by pixel coordinate
-                initial_peaks, _ = peak_finding.find_wavelet_peaks(
-                    data, widths=widths, mask=mask & DQ.not_signal,
-                    variance=variance, min_snr=min_snr,
-                    reject_bad=False)
-                if len(initial_peaks) == 0:
-                    log.error(f"\nNo pinholes found in extension {ext.id}. "
-                              f"Consider lowering the detection \n"
-                              f"threshold, min_snr. (Currently set to {min_snr}.)\n")
-                    raise RuntimeError('No pinholes found.')
-
-                if min_trace_pos is not None and min_trace_pos > len(initial_peaks):
-                    log.warning(f"'min_trace_pos' is set to {min_trace_pos} but "
-                                f"there are only {len(initial_peaks)} peaks. Using "
-                                "only the last peak.")
-                    min_trace_pos = len(initial_peaks) - 1
-
-                log.fullinfo(f"  Found {len(initial_peaks)} peaks in extension "
-                             f"{ext.id}, tracing "
-                             f"numbers {min_trace_pos or 1} to "
-                             f"{max_trace_pos or len(initial_peaks)} "
-                             f"starting at {direction} {start}")
-
-                traces = tracing.trace_lines(
-                    # Only need a single `start` value for all lines.
-                    ext, axis=dispaxis,
-                    start=start,
-                    initial=initial_peaks[min_trace_pos:max_trace_pos],
-                    rwidth=None, cwidth=max(int(fwidth), 5),
-                    step=step, nsum=nsum, max_missed=max_missed,
-                    max_shift=max_shift * ybin / xbin,
-                    min_line_length=min_line_length,
-                    initial_tolerance=2.0)
-
-                # List of traced peak positions
-                in_coords = np.array([coord for trace in traces for
-                                      coord in trace.input_coordinates()]).T
-                # List of "reference" positions. These should be equally spaced
-                # in pixel coordinates, so set them to be equally spaced between
-                # the first and last. "trace.starting_point[1]" *always* returns
-                # the coordinate orthogonal to the tracing direction, but if we
-                # want to use the rectified coordinates they must be x-first.
-                try:
-                    t = ext.wcs.get_transform(ext.wcs.input_frame, 'rectified')
-                except CoordinateFrameError:
-                    rectified_pinholes = [trace.starting_point[1]
-                                          for trace in traces]
-                else:
-                    rectified_pinholes = [t(*trace.start_coordinates)[dispaxis]
-                                          for trace in traces]
-                equispaced_coords = np.linspace(rectified_pinholes[0],
-                                                rectified_pinholes[-1],
-                                                len(traces))
-                log.debug("Initial coords are "
-                          f"{[trace.starting_point[1] for trace in traces]}")
-                log.debug(f"Equispaced coords are {equispaced_coords}")
-                ref_coords = np.array([coord for trace, equi_coord in zip(traces, equispaced_coords) for
-                                       coord in trace.reference_coordinates(reference_coord=equi_coord)]).T
-
-                # Create the 2D slit rectification model:
-                m_init_2d = models.Chebyshev2D(
-                    x_degree=x_ord, y_degree=y_ord,
-                    x_domain=[0, ext.shape[1]-1],
-                    y_domain=[0, ext.shape[0]-1])
-                # The `fixed_linear` parameter is False because we should
-                # have both edges for each slit.
-                model, m_final_2d, m_inverse_2d = am.create_distortion_model(
-                    m_init_2d, dispaxis, in_coords, ref_coords, False)
-                model.name = "PNHLRECT"
-
-                try:
-                    ext.wcs.set_transform('pixels', 'rectified', model)
-                except CoordinateFrameError:
-                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
-                                           cf.Frame2D(name='rectified'))
-
-                if params["debug_plots"]:
-                    plt.plot(in_coords[0], in_coords[1], linestyle='',
-                             marker='o')
-                    plt.title(f"Extension {ext.id}")
-                    plt.xlabel("X")
-                    plt.ylabel("Y")
-                    plt.show()
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -3792,6 +3845,9 @@ class Spect(Resample):
             Spectra with unilluminated regions.
         suffix : str
             Suffix to append to the filename.
+        debug_min_illuminated_fraction : float
+            at least this much of the pixel must be illuminated to not be
+            masked
 
         Returns
         -------
@@ -3803,6 +3859,7 @@ class Spect(Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         sfx = params["suffix"]
+        min_frac = params["debug_min_illuminated_fraction"]
 
         for ad in adinputs:
             log.stdinfo(f"Masking unilluminated regions in {ad.filename}")
@@ -3836,7 +3893,8 @@ class Spect(Resample):
                     # Compute the two edges.
                     edge1, edge2 = model1(grid[0]), model2(grid[0])
                     # Mask the area between them.
-                    slit = np.logical_and(grid[1] > edge1, grid[1] < edge2)
+                    slit = np.logical_and(grid[1] > edge1 + min_frac - 0.5,
+                                          grid[1] < edge2 - min_frac + 0.5)
 
                     # Add this slit to the image of slits
                     slits |= slit
@@ -5620,14 +5678,16 @@ class Spect(Resample):
                     raise ValueError("Cannot set bounds for model class "
                                      f"{model.__class__.__name__}")
 
+        bounds = {}
         if isinstance(cheb, models.Chebyshev1D):
             for k, v in zip(cheb.param_names, cheb.parameters):
                 if k == 'c0':
-                    bounds = {'c0': (v - 10, v + 10)}
+                    bounds['c0'] = (v - 10, v + 10)
                 elif k == 'c1':
                     bounds['c1'] = (v - 0.05 * abs(v), v + 0.05 * abs(v))
                 else:
-                    bounds[k] = (v - 20, v + 20)
+                    dv = min(20, 0.5 * abs(np.diff(bounds['c1'])[0]))
+                    bounds[k] = (v - dv, v + dv)
         else:
             raise ValueError("Cannot set bounds for model class "
                              f"{model.__class__.__name__}")

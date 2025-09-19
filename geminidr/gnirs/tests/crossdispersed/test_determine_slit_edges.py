@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Tests for determineSlitEdges() on GNIRS data (longslit and cross-dispersed).
+Tests for determineSlitEdges() on GNIRS XD data
 """
 
 import numpy as np
@@ -15,23 +15,6 @@ from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 
 # -- Test Parameters ----------------------------------------------------------
-
-# -- Datasets -----------------------------------------------------------------
-input_pars_ls = [
-    # (Input file, params, reference values [column: row])
-    # GNIRS 111/mm LongBlue, off right edge of detector.
-    ('N20121118S0375_stack.fits', dict(),
-     {255: (530,), 511: (526,), 767: (522,)}),
-    # GNIRS 111/mm LongBlue, off left edge of detector
-    ('N20180605S0138_stack.fits', dict(),
-     {255: (490,), 511: (486,), 767: (482,)}),
-    # GNIRS 32/mm ShortRed, centered
-    ('S20040413S0268_stack.fits', dict(),
-     {255: (504.7,), 511: (504.1,), 767: (503.4,)}),
-    # GNIRS 10/mm LongRed, one-off shorter slit length.
-    ('N20110718S0129_stack.fits', dict(),
-     {255: (454.3,), 511: (449.4,), 767: (442.9,)}),
-]
 
 # Cross-dispersed datasets
 input_pars_xd = [
@@ -144,28 +127,17 @@ input_pars_xd = [
      {255: (277, 393, 471, 538, 606, 680),
       511: (285, 399, 476, 543, 613, 692),
       767: (292, 404, 483, 551, 624, 704)}),
+    ('N20130630S0177_stack.fits', dict(), # faint order 7
+     {255: (243, 442, 589, 745, 907),
+      511: (245, 443, 595, 748, 914),
+      767: (247, 445, 599, 752, 921)}),
+    ('N20200818S0137_stack.fits', dict(), # faint order 8
+     {255: (125, 345, 492, 624, 760, 909),
+      511: (128, 346, 493, 625, 764, 914),
+      767: (130, 347, 495, 627, 767, 920)}),
 ]
 
 # -- Tests --------------------------------------------------------------------
-@pytest.mark.gnirsls
-@pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad,params,ref_vals", input_pars_ls, indirect=['ad'])
-def test_determine_slit_edges_longslit(ad, params, ref_vals):
-
-    # We do this so we don't need to remake the input files if the MDF changes
-    del ad.MDF
-    p = GNIRSLongslit([ad])
-    p.addMDF()
-    ad_out = p.determineSlitEdges(**params).pop()
-
-    for refrow, midpoints in ref_vals.items():
-        for i, midpoint in enumerate(midpoints):
-            model1 = am.table_to_model(ad_out[0].SLITEDGE[2*i])
-            model2 = am.table_to_model(ad_out[0].SLITEDGE[2*i+1])
-            assert midpoint == pytest.approx(
-                (model1(refrow) + model2(refrow)) / 2, abs=5.)
-
-
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad,params,ref_vals", input_pars_xd, indirect=['ad'])

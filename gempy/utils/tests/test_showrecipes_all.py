@@ -75,7 +75,6 @@ def test_showrecipes_on_gnirs_xd():
         # "!!! No recipes were found for this file !!!"
         "Recipes available for the input file: ",
         "   geminidr.gnirs.recipes.sq.recipes_XD_SPECT::reduceScience",
-        "   geminidr.gnirs.recipes.sq.recipes_XD_SPECT::reduceScienceWithAdjustmentFromSkylines",
     ]
 
     answer = showrecipes(file_location)

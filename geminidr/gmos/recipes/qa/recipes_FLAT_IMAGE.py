@@ -32,7 +32,7 @@ def makeProcessedFlat(p):
     p.storeProcessedFlat()
     return
 
-def checkFlat1(p):
+def checkFlatCounts(p):
     """
     For checking count levels in flat field.
 
@@ -49,7 +49,7 @@ def checkFlat1(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.recordPixelStats(prefix='FLAT')
-    p.writeOutputs(strip=True, suffix='_checkFlat1')
+    p.writeOutputs(strip=True, suffix='_checkFlatCounts')
     return
 
 _default = makeProcessedFlat

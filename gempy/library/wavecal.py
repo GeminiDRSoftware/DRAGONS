@@ -259,7 +259,7 @@ def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
     """
     # Find peaks; convert width FWHM to sigma
     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-    peaks, peak_snrs = peak_finding.find_wavelet_peaks(
+    peaks, _, peak_snrs = peak_finding.find_wavelet_peaks(
         data, widths=widths, mask=mask, variance=variance, min_snr=min_snr,
         min_sep=min_sep, reject_bad=reject_bad)
     fit_this_peak = peak_snrs > min_snr
@@ -448,7 +448,9 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
                 lnlist.convert_refplot_to_air()
             input_data.update(lnlist.reference_spectrum)
 
-        input_data["init_models"] = [fit1d.model] + input_data["init_models"]
+        # No longer prepend the initial model as we want the fallback to
+        # be the starting (linear) wavelength solution
+        #input_data["init_models"] = [fit1d.model] + input_data["init_models"]
         data["meta"].append(input_data)
     return data
 
@@ -967,7 +969,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         if not first:
             m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
         #print("INPUT MODEL")
-        #print(m_init.parameters, m_init.domain, m_init(np.arange(0,1001,200)))
+        #print(m_init.parameters, m_init.domain)
         #print(m_init.bounds)
         #print(datetime.now() - start)
 
@@ -989,7 +991,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                     # automatically removes old (bad) match
                     matches[i] = m
                     found_new_matches = True
-                    #print(f"Pixel {p} => {arc_lines[m]}")
+                    #print(f"Pixel {p} => was {m_init(p):.4f} now {m_this(p):.4f} {arc_lines[m]}")
         try:
             p_lo = peaks[matches > -1].min()
         except ValueError:
@@ -1134,6 +1136,7 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     if fit1d.image is None:
         # We didn't do a successful fit, so just use the original model
         m_final = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+        log.stdinfo(f"Wavelength solution was not updated for extension {ext.id}")
     else:
         # Because of the way the fit_1D object is constructed, there
         # should be no masking. But it doesn't hurt to make sure, or

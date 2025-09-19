@@ -25,7 +25,8 @@ class core_stacking_config(config.Config):
     """Parameters relevant to ALL stacking primitives"""
     suffix = config.Field("Filename suffix", str, "_stack", optional=True)
     apply_dq = config.Field("Use DQ to mask bad pixels?", bool, True)
-    statsec = config.Field("Section for statistics", str, None, optional=True, check=statsec_check)
+    statsec = config.Field("Section for statistics (1-indexed, inclusive-max, x-first)",
+                           str, None, optional=True, check=statsec_check)
     operation = config.ChoiceField("Averaging operation", str,
                                    allowed = {"mean": "arithmetic mean",
                                               "wtmean": "variance-weighted mean",

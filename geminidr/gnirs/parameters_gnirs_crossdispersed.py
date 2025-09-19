@@ -19,10 +19,12 @@ class addDQConfig(parameters_standardize.addDQConfig, addIllumMaskToDQConfig):
 
 
 class determineDistortionConfig(parameters_gnirs_spect.determineDistortionConfig):
+    debug_min_relative_peak_height = config.RangeField("Minimum relative peak height for tracing", float, 0.7, min=0., max=1.)
+
     def setDefaults(self):
         self.spatial_order = 2
         self.step = 5
-        self.min_line_length = 0.5  # because some orders go off the edge
+        self.min_line_length = 0.8  # need to keep high to avoid false positives
 
 
 class determinePinholeRectificationConfig(parameters_spect.determinePinholeRectificationConfig):
@@ -38,6 +40,7 @@ class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
     # the default values were calibrated to, so adjust some values.
 
     def setDefaults(self):
+        self.min_snr = 0.5
         self.debug_max_missed = 4
         self.debug_max_shift = 0.4
         self.debug_step = 10
@@ -67,6 +70,22 @@ class findAperturesConfig(parameters_crossdispersed.findAperturesConfig):
                             int, None, optional=True, min=1, max=6,
                             inclusiveMin=True, inclusiveMax=True)
 
+class maskBeyondRegionsConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_regionsMasked", optional=True)
+    regions3 = config.Field('Wavelength regions (nm) to keep in order 3, eg. "1888:2200,2250:"', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions4 = config.Field('Wavelength regions (nm) to keep in order 4', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions5 = config.Field('Wavelength regions (nm) to keep in order 5', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions6 = config.Field('Wavelength regions (nm) to keep in order 6"', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions7 = config.Field('Wavelength regions (nm) to keep in order 7"', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions8 = config.Field('Wavelength regions (nm) to keep in order 8"', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    aperture = config.RangeField("Aperture to mask", int, 1, min=1, optional=True)
+
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     # Set flatfield threshold a little lower to avoid masking a region in
@@ -79,9 +98,10 @@ class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
     # Sky subtraction is difficult due to the short slit
     def setDefaults(self):
         self.function = "chebyshev"
-        self.order = 2
+        self.order = 1
         self.aperture_growth = 1
         self.debug_allow_skip = True
+        self.grow = 1
 
 
 class traceAperturesConfig(parameters_spect.traceAperturesConfig):

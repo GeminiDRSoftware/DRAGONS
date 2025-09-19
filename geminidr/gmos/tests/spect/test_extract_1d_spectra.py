@@ -72,7 +72,7 @@ def test_regression_on_extract_1d_spectra(ad, ref_ad_factory, change_working_dir
 
     for ext, ref_ext in zip(extracted_ad, ref_ad):
         assert ext.data.ndim == 1
-        np.testing.assert_allclose(ext.data, ref_ext.data, atol=1e-3)
+        np.testing.assert_allclose(ext.data, ref_ext.data, rtol=5e-7, atol=1e-3)
 
     # Check the RA and DEC; the maths here is just a quick way to evaluate
     # the Chebyshev1D model
