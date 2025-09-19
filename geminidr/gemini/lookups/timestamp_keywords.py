@@ -58,6 +58,7 @@ timestamp_keys = {
     "makeFlat": "MAKEFLAT",
     "makeFringeFrame": "FRINGE",
     "makeIRAFCompatible": "IRAFCOMP",
+    "maskBeyondRegions": "MSKBYNDR",
     "measureBlaze": "MEASBLZE",
     "measureBG": "MEASREBG",
     "measureCC": "MEASRECC",

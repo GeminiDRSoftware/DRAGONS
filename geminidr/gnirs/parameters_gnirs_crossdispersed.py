@@ -70,6 +70,22 @@ class findAperturesConfig(parameters_crossdispersed.findAperturesConfig):
                             int, None, optional=True, min=1, max=6,
                             inclusiveMin=True, inclusiveMax=True)
 
+class maskBeyondRegionsConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_regionsMasked", optional=True)
+    regions3 = config.Field('Wavelength regions (nm) to keep in order 3, eg. "1888:2200,2250:"', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions4 = config.Field('Wavelength regions (nm) to keep in order 4', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions5 = config.Field('Wavelength regions (nm) to keep in order 5', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions6 = config.Field('Wavelength regions (nm) to keep in order 6"', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions7 = config.Field('Wavelength regions (nm) to keep in order 7"', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    regions8 = config.Field('Wavelength regions (nm) to keep in order 8"', str, None, optional=True,
+                           check=parameters_spect.validate_regions_float)
+    aperture = config.RangeField("Aperture to mask", int, 1, min=1, optional=True)
+
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     # Set flatfield threshold a little lower to avoid masking a region in
