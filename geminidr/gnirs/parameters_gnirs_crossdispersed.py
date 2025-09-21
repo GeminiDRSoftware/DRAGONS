@@ -2,6 +2,7 @@
 # in the primitives_gnirs_crossdispersed.py file, in alphabetical order.
 from geminidr.core import parameters_spect
 from geminidr.core import parameters_crossdispersed
+from geminidr.core import parameters_preprocess
 from geminidr.core import parameters_standardize
 from geminidr.core.parameters_standardize import addIllumMaskToDQConfig
 from . import parameters_gnirs_spect
@@ -103,6 +104,14 @@ class skyCorrectFromSlitConfig(parameters_spect.skyCorrectFromSlitConfig):
         self.debug_allow_skip = True
         self.grow = 1
 
+
+class thresholdFlatfieldConfig(parameters_preprocess.thresholdFlatfieldConfig):
+    debug_min_unmasked = config.RangeField(
+        "Minimum number of contiguous unmasked rows to leave alone",
+        int, 3, min=0)
+    debug_min_masked = config.RangeField(
+        "Minimum number of contiguous masked rows to extend",
+        int, 5, min=0)
 
 class traceAperturesConfig(parameters_spect.traceAperturesConfig):
     # GNIRS XD benefits from light sigma clipping.
