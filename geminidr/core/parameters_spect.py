@@ -185,6 +185,8 @@ class determinePinholeRectificationConfig(config.Config):
                                             dtype=int, default=None, min=1, optional=True)
     debug_max_trace_pos = config.RangeField("Last pinhole trace to use",
                                             dtype=int, default=None, min=1, optional=True)
+    debug_avoidance = config.RangeField("Number of pixels from edge of slit to ignore pinholes",
+                                        float, 3., min=0)
     debug_plots = config.Field("Create diagnostic plots of traces", bool, False)
 
     def validate(self):

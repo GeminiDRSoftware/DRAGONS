@@ -140,17 +140,18 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
 
         camera = getattr(adinputs[0], 'camera')()
 
-        if 'Short' in camera:
-            # In the short camera configuration there are four good pinholes
-            # and one that's right on the edge of the slit and isn't consistently
-            # picked up. This setting stops it from being used in the orders it
-            # is found in since it produces a sketchy fit.
-            if params['debug_max_trace_pos'] is None:
-                params['debug_max_trace_pos'] = 4
-                self.log.debug("Setting debug_max_trace_pos to 4 for Short "
-                               "camera.")
+        # CJS: Replace with 'debug_avoidance' parameter
+        # if 'Short' in camera:
+        #     # In the short camera configuration there are four good pinholes
+        #     # and one that's right on the edge of the slit and isn't consistently
+        #     # picked up. This setting stops it from being used in the orders it
+        #     # is found in since it produces a sketchy fit.
+        #     if params['debug_max_trace_pos'] is None:
+        #         params['debug_max_trace_pos'] = 4
+        #         self.log.debug("Setting debug_max_trace_pos to 4 for Short "
+        #                        "camera.")
 
-        elif 'Long' in camera:
+        if 'Long' in camera:
             # In the long camera configuration the 5th and 6th slits run off the
             # side of the array, necessitating a start point much closer to the
             # bottom instead of the default middle-of-the-array.
