@@ -19,7 +19,7 @@ def makeProcessedPinhole(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
-    p.flatCorrect()
+    p.applySlitModel()
     p.stackFrames()
     p.determinePinholeRectification()
     p.storeProcessedPinhole()

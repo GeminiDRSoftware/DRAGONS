@@ -708,6 +708,8 @@ class AstroDataGnirs(AstroDataGemini):
         """
         try:
             slit = self.phu['SLIT'].replace(' ', '')
+            # Fix inconsistency in 1.00arcsec slit name
+            slit = slit.replace('1.0arcsec', '1.00arcsec')
         except KeyError:
             return None
         return gmu.removeComponentID(slit) if stripID or pretty else slit

@@ -140,17 +140,18 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
 
         camera = getattr(adinputs[0], 'camera')()
 
-        if 'Short' in camera:
-            # In the short camera configuration there are four good pinholes
-            # and one that's right on the edge of the slit and isn't consistently
-            # picked up. This setting stops it from being used in the orders it
-            # is found in since it produces a sketchy fit.
-            if params['debug_max_trace_pos'] is None:
-                params['debug_max_trace_pos'] = 4
-                self.log.debug("Setting debug_max_trace_pos to 4 for Short "
-                               "camera.")
+        # CJS: Replace with 'debug_avoidance' parameter
+        # if 'Short' in camera:
+        #     # In the short camera configuration there are four good pinholes
+        #     # and one that's right on the edge of the slit and isn't consistently
+        #     # picked up. This setting stops it from being used in the orders it
+        #     # is found in since it produces a sketchy fit.
+        #     if params['debug_max_trace_pos'] is None:
+        #         params['debug_max_trace_pos'] = 4
+        #         self.log.debug("Setting debug_max_trace_pos to 4 for Short "
+        #                        "camera.")
 
-        elif 'Long' in camera:
+        if 'Long' in camera:
             # In the long camera configuration the 5th and 6th slits run off the
             # side of the array, necessitating a start point much closer to the
             # bottom instead of the default middle-of-the-array.
@@ -367,3 +368,82 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
             adoutputs.append(ad)
 
         return adoutputs
+
+    def thresholdFlatfield(self, adinputs=None, **params):
+        """
+        This primitive sets the DQ '64' bit (unilluminated) for any pixels
+        which have a value <lower or >upper in the SCI plane.
+        it also sets the science plane pixel value to 1.0 for pixels which are bad
+        and very close to zero, to avoid divide by zero issues and inf values
+        in the flat-fielded science data.
+
+        The GNIRS XD version of this primitive additionally tidies the mask by
+        masking small islands of good rows and extending large masked regions
+        all the way to the edge of the spectrum. This avoids strange situations
+        where low-brightness regions in the flatfield can leave illuminated
+        regions at either end of the spectrum where primitives like
+        determineWavelengthSolution or determinePinholeRectification will try
+        to identify features that will result in a poor fit.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        lower: float
+            value below which DQ pixels should be set to unilluminated
+        upper: float
+            value above which DQ pixels should be set to unilluminated
+        debug_min_unmasked: int
+            contiguous groups of unmasked rows smaller than this will be masked
+        debug_min_masked: int
+            contiguous groups of masked rows of this size or larger will be
+            extended to the end of the spectrum
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adinputs = super().thresholdFlatfield(adinputs=adinputs, **params)
+
+        min_unmasked = params.pop('debug_min_unmasked', 0)
+        min_masked = params.pop('debug_min_masked', np.inf)
+
+        for ad in adinputs:
+            for ext in ad:
+                if ext.mask is None:
+                    log.debug("Skipping {}:{} with no DQ plane".format(ad.filename, ext.id))
+                    continue
+
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                illum_mask = np.bitwise_and.reduce(ext.mask & DQ.unilluminated,
+                                                   axis=1-dispaxis)
+                tmp_array = np.ma.masked_array(illum_mask,
+                                               mask=illum_mask.astype(bool))
+                unmasked_slices = np.ma.clump_unmasked(tmp_array)
+                for _slice in unmasked_slices:
+                    if _slice.stop - _slice.start < min_unmasked:
+                        # Small island of good rows, mask them
+                        illum_mask[_slice] |= DQ.unilluminated
+                        log.debug(f"Masking rows {list(range(_slice.start, _slice.stop))} "
+                                  f"in {ad.filename}:{ext.id} as they are a small island")
+
+                # tmp_array has been updated because its mask is a reference
+                # to illum_mask
+                masked_slices = np.ma.clump_masked(tmp_array)
+                masked_slices = [s for s in masked_slices if s.stop - s.start >= min_masked]
+                halfway = illum_mask.size // 2
+                for _slice in masked_slices:
+                    if _slice.stop < halfway:
+                        illum_mask[:_slice.stop] |= DQ.unilluminated
+                        log.debug("Masking to row {} in {}:{}".format(
+                            _slice.stop, ad.filename, ext.id))
+                    elif _slice.start >= halfway:
+                        illum_mask[_slice.start:] |= DQ.unilluminated
+                        log.debug("Masking from row {} in {}:{}".format(
+                            _slice.start, ad.filename, ext.id))
+
+                if dispaxis == 0:
+                    ext.mask |= illum_mask[:, np.newaxis]
+                else:
+                    ext.mask |= illum_mask
+
+        # Everything was timestamped and filename-updated in the parent primitive
+        return adinputs

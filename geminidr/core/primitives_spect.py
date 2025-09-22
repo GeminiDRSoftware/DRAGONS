@@ -1929,6 +1929,7 @@ class Spect(Resample):
         spect_ord = params['spectral_order']
         min_trace_pos = params['debug_min_trace_pos']
         max_trace_pos = params['debug_max_trace_pos']
+        avoidance = params['debug_avoidance']
 
         fwidth = 3  # An educated guess for pinholes.
 
@@ -1976,6 +1977,13 @@ class Spect(Resample):
                     data, widths=widths, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)
+
+                if mask is not None:
+                    slit_start = mask.argmin()
+                    slit_end = mask.size - mask[::-1].argmin() - 1
+                    initial_peaks = [p for p in initial_peaks
+                                     if slit_start + avoidance < p < slit_end - avoidance]
+
                 if len(initial_peaks) == 0:
                     log.error(f"\nNo pinholes found in extension {ext.id}. "
                               f"Consider lowering the detection \n"

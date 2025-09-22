@@ -42,6 +42,89 @@ class CrossDispersed(Spect, Preprocess):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_crossdispersed)
 
+    def applySlitModel(self, adinputs=None, suffix=None, flat=None):
+        """
+        This primitive copies the SLITEDGE table from a corresponding processed flat,
+        extracts slits into individual extensions, combines DQ planes of the
+        ad and the flat, and attaches the rectification model from the flat.
+
+        If no flatfield is provided, the calibration database will be
+        queried.
+
+        It does all the same stuff as flatCorrect, without actually dividing
+        the data by the flatfield. It is intended for use in XD arc recipes,
+        where a flatfield in blue orders may have very low illumination and
+        dividing the arc by the flat may do more harm than good.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        flat: str
+            name of flatfield to use
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        if flat is None:
+            flat_list = self.caldb.get_processed_flat(adinputs)
+        else:
+            flat_list = (flat, None)
+
+        adoutputs = []
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                                   force_ad=(1,))):
+            if flat is None:
+                if 'sq' in self.mode:
+                    raise CalibrationNotFoundError("No processed flat listed "
+                                                   f"for {ad.filename}")
+                else:
+                    log.warning(f"No changes will be made to {ad.filename}, "
+                                "since no flatfield has been specified")
+                    continue
+
+            if len(ad) != 1:
+                log.warning(f"{ad.filename} has more than one extension, so "
+                            "the SLITEDGE table will not be copied.")
+                continue
+
+            # Reconstruct the original SLITEDGE model from the flatfield
+            ad[0].SLITEDGE = self._construct_slitedge_model(ad, flat)
+
+            ad_cut = self.cutSlits([ad])[0]
+
+            # Combine the DQ planes with bitwise OR
+            for ad_ext, flat_ext in zip(ad_cut, flat):
+                ad_ext.mask |= flat_ext.mask
+
+            # Try to get a slit rectification model from the flat, and, if one
+            # exists, insert it before the pixels-to-world transform.
+            ad_rect = gt.attach_rectification_model(ad_cut, flat, log=self.log)
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+
+            if 'rectified' not in ad_rect[0].wcs.available_frames:
+                log.fullinfo("No rectification model found "
+                             f"for the flat {flat.filename}{origin_str}")
+                continue
+
+            else:
+                log.stdinfo(f"{ad.filename}: copied rectification model from the flat "
+                            f"{flat.filename}{origin_str}")
+
+            # Update the header and filename, copying QECORR keyword from flat
+            ad_rect.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
+
+            gt.mark_history(ad_rect, primname=self.myself(), keyword=timestamp_key)
+            ad_rect.update_filename(suffix=suffix, strip=True)
+            if flat.path:
+                add_provenance(ad_rect, flat.filename, md5sum(flat.path) or "", self.myself())
+
+            adoutputs.append(ad_rect)
+
+        return adoutputs
+
     def combineOrders(self, adinputs=None, **params):
         """
         Combines the spectral orders in 1D cross-dispersed data into a single
@@ -664,89 +747,6 @@ class CrossDispersed(Spect, Preprocess):
 
         return adinputs
     
-    def applySlitModel(self, adinputs=None, suffix=None, flat=None):
-        """
-        This primitive copies the SLITEDGE table from a corresponding processed flat,
-        extracts slits into individual extensions, combines DQ planes of the
-        ad and the flat, and attaches the rectification model from the flat.
-        
-        If no flatfield is provided, the calibration database will be
-        queried.
-        
-        It does all the same stuff as flatCorrect, without actually dividing
-        the data by the flatfield. It is intended for use in XD arc recipes,
-        where a flatfield in blue orders may have very low illumination and 
-        dividing the arc by the flat may do more harm than good.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        flat: str
-            name of flatfield to use
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        if flat is None:
-            flat_list = self.caldb.get_processed_flat(adinputs)
-        else:
-            flat_list = (flat, None)
-
-        adoutputs = []
-        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
-                                    force_ad=(1,))):
-            if flat is None:
-                if 'sq' in self.mode:
-                   raise CalibrationNotFoundError("No processed flat listed "
-                                                  f"for {ad.filename}")
-                else:
-                   log.warning(f"No changes will be made to {ad.filename}, "
-                               "since no flatfield has been specified")
-                   continue
-
-            if len(ad) != 1:
-                log.warning(f"{ad.filename} has more than one extension, so "
-                            "the SLITEDGE table will not be copied.")
-                continue
-
-            # Reconstruct the original SLITEDGE model from the flatfield
-            ad[0].SLITEDGE = self._construct_slitedge_model(ad, flat)
-
-            ad_cut = self.cutSlits([ad])[0]
-
-            # Combine the DQ planes with bitwise OR
-            for ad_ext, flat_ext in zip(ad_cut, flat):
-                ad_ext.mask |= flat_ext.mask
-
-            # Try to get a slit rectification model from the flat, and, if one
-            # exists, insert it before the pixels-to-world transform.
-            ad_rect = gt.attach_rectification_model(ad_cut, flat, log=self.log)
-
-            origin_str = f" (obtained from {origin})" if origin else ""
-
-            if 'rectified' not in ad_rect[0].wcs.available_frames:
-                log.fullinfo("No rectification model found "
-                             f"for the flat {flat.filename}{origin_str}")
-                continue
-
-            else:
-                log.stdinfo(f"{ad.filename}: copied rectification model from the flat "
-                         f"{flat.filename}{origin_str}")
-
-            # Update the header and filename, copying QECORR keyword from flat
-            ad_rect.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
-
-            gt.mark_history(ad_rect, primname=self.myself(), keyword=timestamp_key)
-            ad_rect.update_filename(suffix=suffix, strip=True)
-            if flat.path:
-                add_provenance(ad_rect, flat.filename, md5sum(flat.path) or "", self.myself())
-
-            adoutputs.append(ad_rect)
-
-        return adoutputs
-
     @staticmethod
     def _separate_by_spectral_order(ad):
         """
