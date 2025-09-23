@@ -445,5 +445,8 @@ class GNIRSCrossDispersed(GNIRSSpect, CrossDispersed):
                 else:
                     ext.mask |= illum_mask
 
+                # Reset newly-masked pixels to 1.0
+                ext.data[(ext.mask & DQ.unilluminated) > 0] = 1.0
+
         # Everything was timestamped and filename-updated in the parent primitive
         return adinputs
