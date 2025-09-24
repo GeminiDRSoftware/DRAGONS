@@ -711,6 +711,15 @@ class Telluric(Spect):
         for wline, fline in zip(wlines[indices], airglow_linelist.weights[indices]):
             sigma = 0.42 * wline / resolution
             refplot_data += fline * np.exp(-0.5 * ((refplot_waves - wline) / sigma) ** 2)
+
+        if end_wvl < wlines[0]:
+            order_str = ""
+            if  'SPECORDR' in ext.hdr:
+                order = ext.hdr.get('SPECORDR')
+                order_str = f" for order {order}"
+            self.log.warning(f"Synthetic airglow spectrum does not cover wavelengths below {int(wlines[0])}nm; no linelist will be generated{order_str}.")
+
+
         # Around 2300 nm is roughly where the OH lines die off and the telluric spectrum
         #  starts dominating
         if end_wvl > 2314:
@@ -877,6 +886,13 @@ class Telluric(Spect):
         sigma_pix = 0.42 * 0.5 * (start_wvl + end_wvl) / resolution / sampling
         atran_spec = convolve(data[wave_range], Gaussian1DKernel(sigma_pix),
                               boundary='extend')
+        if end_wvl < waves[0]:
+            order_str = ""
+            if  'SPECORDR' in ext.hdr:
+                order = ext.hdr.get('SPECORDR')
+                order_str = f" for order {order}"
+            self.log.warning(f"ATRAN spectrum does not cover wavelengths below {int(waves[0])}nm; no linelist will be generated{order_str}.")
+
         refplot_spec = np.asarray([waves[wave_range], atran_spec],
                                   dtype=np.float32)
 
