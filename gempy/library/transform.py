@@ -1747,13 +1747,14 @@ def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
 
         # array_section only has meaning now if the inputs were from a
         # single physical array
-        if len(blocks) == 1:
-            all_arrsec = np.array([ext.array_section() for ext in ad]).T
-            ad_out.hdr[keywords['array']] = \
-                '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
-                               for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
-        else:
-            del ad_out.hdr[keywords['array']]
+        if keywords['array'] in ad_out.hdr:
+            if len(blocks) == 1:
+                all_arrsec = np.array([ext.array_section() for ext in ad]).T
+                ad_out.hdr[keywords['array']] = \
+                    '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
+                                   for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
+            else:
+                del ad_out.hdr[keywords['array']]
 
     # Try to assign an array name for this based on commonality
     if not is_single:
