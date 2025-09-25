@@ -57,7 +57,7 @@ extra_test_data.extend([
 
 # Some iterations are known to be failure cases
 # we mark them accordingly so we can see if they start passing
-_xfail_indices = (0, 1, 5, 6, 9, 17, 20, 24, 25, 29)
+_xfail_indices = (0, 4, 13, 20, 21, 25, 29)
 for idx in _xfail_indices:
     args = extra_test_data[idx]
     extra_test_data[idx] = pytest.param(args, marks=pytest.mark.xfail)
