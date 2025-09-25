@@ -59,7 +59,7 @@ def test_resampling(adinputs, caplog, offset):
     assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
 
     p.resampleToCommonFrame(dw=0.15)
-    wpars = 'w1=508.343 w2=1088.393 dw=0.150 npix=3868'
+    wpars = 'w1=508.273 w2=1088.323 dw=0.150 npix=3868'
     assert any(wpars in record.message for record in caplog.records)
     assert all(ad[0].shape == (int(512 - 2*offset), 3868) for ad in p.streams['main'])
 
@@ -76,7 +76,7 @@ def test_resampling_and_trim(adinputs, caplog, offset):
     assert abs(adout[2].phu['SLITOFF'] + 2 * offset) < 0.001
 
     p.resampleToCommonFrame(dw=0.15, trim_spectral=True)
-    wpars = 'w1=614.812 w2=978.862 dw=0.150 npix=2428'
+    wpars = 'w1=614.787 w2=978.837 dw=0.150 npix=2428'
     assert any(wpars in record.message for record in caplog.records)
     for ad in p.streams['main']:
         assert ad[0].shape == (int(512 - 2*offset), 2428)
@@ -127,12 +127,12 @@ def test_resampling_non_linearize(adinputs, caplog):
     assert adout[2].phu['SLITOFF'] == -20
 
     p.resampleToCommonFrame(output_wave_scale="reference", trim_spectral=True)
-    wpars = 'w1=614.870 w2=978.802 dw=0.151 npix=2407'
+    wpars = 'w1=614.835 w2=978.758 dw=0.151 npix=2407'
     assert any(wpars in record.message for record in caplog.records)
     caplog.clear()
     adout = p.resampleToCommonFrame(dw=0.15)
     assert 'ALIGN' in adout[0].phu
-    wpars = 'w1=614.870 w2=978.920 dw=0.150 npix=2428'
+    wpars = 'w1=614.835 w2=978.885 dw=0.150 npix=2428'
     assert any(wpars in record.message for record in caplog.records)
 
     adstack = p.stackFrames()
@@ -225,7 +225,7 @@ def create_inputs_recipe():
         else:
             p = GMOSLongslit([astrodata.open(arc_path)])
             p.prepare()
-            p.addDQ(static_bpm=None)
+            p.addDQ()
             p.addVAR(read_noise=True)
             p.overscanCorrect()
             p.ADUToElectrons()
@@ -245,7 +245,6 @@ def create_inputs_recipe():
         p.overscanCorrect()
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
-        p.mosaicDetectors()
         p.attachWavelengthSolution(arc=arc)
         p.distortionCorrect()
         p.findApertures(max_apertures=1)
