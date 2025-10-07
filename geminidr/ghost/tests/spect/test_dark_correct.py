@@ -32,7 +32,7 @@ def test_darkCorrect_rebin(ad_min, xbin, ybin):
     dark.filename = 'dark.fits'
 
     # 'Re-bin' the data file
-    ad_min[0].data = np.ones((int(1024 / ybin), int(1024 / xbin),), dtype=np.float64)
+    ad_min[0].data = np.ones((int(1024 / ybin), int(1024 / xbin),), dtype=np.float32)
     ad_min[0].hdr.set('CCDSUM', '{} {}'.format(xbin, ybin, ))
 
     gs = GHOSTSpect([])
