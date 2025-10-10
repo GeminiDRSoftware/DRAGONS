@@ -2,7 +2,7 @@
 
 .. include:: symbols.txt
 
-.. _gnirs_Kband32mm_cmdline:
+.. _gnirsls_Kband32mm_cmdline:
 
 **************************************************************************
 Example 1 - K-band Longslit Point Source - Using the "reduce" command line

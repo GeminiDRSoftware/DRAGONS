@@ -6,8 +6,8 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS'
-copyright = '2025, Association of Universities for Research in Astronomy'
+project = 'Tutorial Series - GNIRS Cross-dispersed Data Reduction with DRAGONS'
+copyright = '2025, DRAGONS Team'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
@@ -51,6 +51,9 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 # Output file base name for HTML help builder.
+htmlhelp_basename = 'TutorialSeries-GNIRSXDDRDRAGONS'
+
+# Output file base name for HTML help builder.
 htmlhelp_basename = 'TutorialSeries-GNIRSLSDRDRAGONS'
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -77,7 +80,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'TutorialSeries-GMOSLSDRDRAGONS.tex', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'TutorialSeries-GMOSXDDRDRAGONS.tex', 'Tutorial Series - GMOS Cross-dispersed Data Reduction with DRAGONS Documentation',
      'DRAGONS Team', 'manual'),
 ]
 
@@ -90,7 +93,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'tutorialseries-gnirslsdrdragons', 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'tutorialseries-gnirsxddrdragons', 'Tutorial Series - GNIRS Cross-dispersed Data Reduction with DRAGONS Documentation',
      [author], 1)
 ]
 
