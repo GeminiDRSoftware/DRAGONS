@@ -21,7 +21,7 @@ def f2_adinputs():
     phu = fits.PrimaryHDU()
     phu.header.update(OBSERVAT='Gemini-North', INSTRUME='F2',
                       ORIGNAME='S20010101S0001.fits')
-    data = np.ones((2, 2))
+    data = np.ones((2, 2), dtype=np.float32)
     adinputs = []
     for i in range(2):
         ad = astrodata.create(phu)
@@ -35,7 +35,7 @@ def niri_adinputs():
     phu = fits.PrimaryHDU()
     phu.header.update(OBSERVAT='Gemini-North', INSTRUME='NIRI',
                       ORIGNAME='N20010101S0001.fits')
-    data = np.ones((2, 2))
+    data = np.ones((2, 2), dtype=np.float32)
     adinputs = []
     for i in range(2):
         ad = astrodata.create(phu)
@@ -80,14 +80,14 @@ def test_error_only_one_file(niri_adinputs, caplog):
 
 def test_error_extension_number(niri_adinputs):
     p = NIRIImage(niri_adinputs)
-    niri_adinputs[1].append(np.zeros((2, 2)))
+    niri_adinputs[1].append(np.zeros((2, 2), dtype=np.float32))
     match = "Not all inputs have the same number of extensions"
     with pytest.raises(ValueError, match=match):
         p.stackFrames()
 
 
 def test_error_extension_shape(niri_adinputs, caplog):
-    niri_adinputs[1][0].data = np.zeros((3, 3))
+    niri_adinputs[1][0].data = np.zeros((3, 3), dtype=np.float32)
     p = NIRIImage(niri_adinputs)
     match = "Not all inputs images have the same shape"
     with pytest.raises(ValueError, match=match):
@@ -156,7 +156,7 @@ def test_stack_biases(rejection_method, expected, niri_image):
     adinputs = []
     for i in (0, 1, 2, 2, 3):
         ad = niri_image()
-        data = np.ones((2, 2)) * i
+        data = np.ones((2, 2), dtype=np.float32) * i
         ad[0].data = data
         ad.tags = ad.tags.union({'BIAS'})
         for ext in ad:

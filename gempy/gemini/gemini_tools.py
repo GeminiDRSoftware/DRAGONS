@@ -1562,6 +1562,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         or (bg, std, number of samples) tuple; otherwise returns a list of
         such things
     """
+    log = logutils.get_logger(__name__)
+
     # Handle NDData objects (or anything with .data and .mask attributes
     maxiter = 10
     try:
@@ -1593,30 +1595,42 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         else:
             bg_data = bg_data[flags.ravel() == 0][::sampling]
 
+        do_gaussfit = gaussfit
+
         if len(bg_data) > 1:
-            if gaussfit:
+            if do_gaussfit:
                 lsigma, hsigma = 3, 1
                 bg, bg_std = sigma_clipped_stats(bg_data, sigma=5, maxiters=5)[1:]
                 niter = 0
                 while True:
                     iter_data = np.sort(bg_data[np.logical_and(bg-lsigma*bg_std < bg_data,
-                                                               bg+hsigma*bg_std > bg_data)][::sampling])
+                                                               bg+hsigma*bg_std >= bg_data)][::sampling])
                     oldbg, oldbg_std = bg, bg_std
                     g_init = Ogive(bg, bg_std, lsigma, hsigma)
                     g_init.lsigma.fixed = True
                     g_init.hsigma.fixed = True
                     fit_g = fitting.LevMarLSQFitter()
-                    g = fit_g(g_init, iter_data, np.linspace(0., 1., iter_data.size + 1)[1:])
+                    try:
+                        g = fit_g(g_init, iter_data, np.linspace(0., 1., iter_data.size + 1)[1:])
+                    except Exception as err:
+                        do_gaussfit = False
+                        log.warning(
+                            f"measure_bg_from_image: fitting failed; "
+                            f"falling back to gaussfit=False instead.\n"
+                            f"Error was: {err}"
+                        )
+                        break
                     bg, bg_std = g.mean.value, abs(g.stddev.value)
                     if abs(bg - oldbg) < 0.001 * bg_std or niter > maxiter:
                         break
                     niter += 1
-            else:
+            if not do_gaussfit:
                 # Sigma-clipping will screw up the stats of course!
                 bg_data = sigma_clip(bg_data[::sampling], sigma=2.0, maxiters=2)
                 bg_data = bg_data.data[~bg_data.mask]
                 bg = np.median(bg_data)
                 bg_std = np.std(bg_data)
+            bg, bg_std = float(bg), float(bg_std)  # allow weak type promotion
         else:
             bg, bg_std = None, None
 

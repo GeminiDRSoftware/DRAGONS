@@ -527,7 +527,8 @@ class GMOSImage(GMOS, Image, Photometry):
 
             if calc_scaling:
                 # weight by number of samples in each slice
-                bg_measurements = [np.asarray(m) for m in bg_measurements]
+                bg_measurements = [np.asarray(m, dtype=np.float32)
+                                   for m in bg_measurements]
                 bg_levels = [np.average(m[:, 0], weights=m[:, 1])
                              for m in bg_measurements]
                 log.debug("{} background levels: {:.3f}, {:.3f}, {:.3f}".
@@ -558,7 +559,9 @@ class GMOSImage(GMOS, Image, Photometry):
         # factors for all inputs, calculate and apply that now
         if calc_scaling and common and ads_to_correct:
             scale_factors = 1 / np.average(
-                np.asarray(scalings), weights=np.asarray(scaling_samples), axis=0)
+                np.asarray(scalings), weights=np.asarray(scaling_samples),
+                axis=0
+            ).astype(np.float32)
             log.stdinfo("Calculated scale factors of {:.3f}, {:.3f} for all "
                         "inputs".format(*scale_factors))
             for ad in ads_to_correct:

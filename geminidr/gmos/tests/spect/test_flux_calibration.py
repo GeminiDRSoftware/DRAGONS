@@ -66,7 +66,7 @@ def test_flux_calibration_with_fake_data():
 
         spline = BSpline(std_wavelength, std_flux, 3)
         wavelength = np.linspace(std_wavelength.min(), std_wavelength.max(), 1000)
-        flux = spline(wavelength)
+        flux = spline(wavelength).astype(np.float32)
         return wavelength, flux
 
     def _create_fake_data(object_name):
