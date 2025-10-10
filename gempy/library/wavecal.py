@@ -786,7 +786,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
     best_fit1d = None
     # Iterate over start position models most rapidly
-    if np.asarray(peaks).size:
+    if np.asarray(peaks).size and np.asarray(arc_lines).size:
         for min_lines_per_fit, model, loc_start in cart_product(
                 min_lines, init_models, (0.5, 0.3, 0.7)):
             domain = model.domain
