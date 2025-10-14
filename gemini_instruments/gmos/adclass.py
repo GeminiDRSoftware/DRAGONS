@@ -1066,7 +1066,7 @@ class AstroDataGmos(AstroDataGemini):
         """
         fpmask = self.focal_plane_mask(pretty=True)
         if 'arcsec' in fpmask:
-            return float(fpmask.replace('arcsec', ''))
+            return float(fpmask.replace('arcsec', '').replace('NS', ''))
         return None
 
     @astro_data_descriptor
