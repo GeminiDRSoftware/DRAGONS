@@ -1509,9 +1509,9 @@ class Spect(Resample):
                     if ext.mask is not None:
                         loc = int(np.median(initial_peaks))
                         if dispaxis == 0:
-                            _slice = ext.mask[loc] & DQ.unilluminated
+                            _slice = ext.mask[loc] & (DQ.unilluminated | DQ.no_data)
                         else:
-                            _slice = ext.mask[:, loc] & DQ.unilluminated
+                            _slice = ext.mask[:, loc] & (DQ.unilluminated | DQ.no_data)
                         slit_length_frac = 1 - ((_slice.argmin() +
                                                  _slice[::-1].argmin()) / _slice.size)
                     else:
