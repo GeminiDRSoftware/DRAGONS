@@ -306,8 +306,6 @@ class Stack(PrimitivesBASE):
                 else:
                     zero_offsets = values
 
-                print("VALUES", values)
-
             if scale and np.min(scale_factors) < 0:
                 log.warning("Some scale factors are negative. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)

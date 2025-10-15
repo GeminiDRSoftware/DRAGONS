@@ -406,7 +406,6 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
     else:
         ext_sizes = [ndd.size for ndd in nddata_list[:num_ext]]
     result_size = max(ext_sizes) if separate_ext else sum(ext_sizes)
-    print("STATSEC", statsec, ext_sizes)
 
     # Prepare all the arrays we need
     nimg = len(nddata_list) // num_ext
@@ -422,7 +421,6 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
 
     tmp_data = np.empty((2, result_size), dtype=np.float32)
     tmp_mask = np.empty((2, result_size), dtype=np.uint16)
-    print("SHAPES", tmp_data.shape, tmp_mask.shape)
 
     def load_data(ndd_list, data_out, mask_out):
         start = 0
