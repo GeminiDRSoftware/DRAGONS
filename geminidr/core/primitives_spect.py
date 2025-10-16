@@ -3739,9 +3739,9 @@ class Spect(Resample):
                 # only covers a small part.
                 if len(ext.mask.shape) == 2:
                     if dispaxis == 0:
-                        sens_factor[(np.bitwise_or.reduce(ext.mask, axis=1) & DQ.no_data) > 0] = 0
+                        sens_factor[(np.bitwise_and.reduce(ext.mask, axis=1) & DQ.no_data) > 0] = 0
                     elif dispaxis == 1:
-                        sens_factor[(np.bitwise_or.reduce(ext.mask) & DQ.no_data) > 0] = 0
+                        sens_factor[(np.bitwise_and.reduce(ext.mask) & DQ.no_data) > 0] = 0
                     else:
                         raise ValueError(f"dispersion axis {dispaxis} not recognized.")
                 else:
