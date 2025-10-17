@@ -41,6 +41,41 @@ def reduce(p):
 
 _default = reduce
 
+def reducePreimage(p):
+    """
+    This recipe performs the standardization and corrections needed to
+    convert the raw input science images into a stacked image. It does the
+    resampling in a manner suitable for GMMPS mask preparation, and calls
+    makeIRAFCompatible to add IRAF-style header keywords and to trim the image
+    to the same dimensions that IRAF would generate.
+
+    Parameters
+    ----------
+    p : GMOSImage object
+        A primitive set matching the recipe_tags.
+    """
+
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.flatCorrect()
+    p.fringeCorrect()
+    p.QECorrect()
+    p.mosaicDetectors()
+    p.detectSources()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame(trim_data=True)
+    p.flagCosmicRaysByStacking()
+    p.scaleCountsToReference()
+    p.stackFrames(zero=True)
+    p.makeIRAFCompatible()
+    p.storeProcessedScience(suffix="_preimage")
+    return
+
 def reduceSeparateCCDsCentral(p):
     """
     This recipe performs the standardization and corrections needed to
