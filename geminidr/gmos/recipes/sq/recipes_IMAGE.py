@@ -2,9 +2,11 @@
 Recipes available to data with tags ['GMOS', 'IMAGE'].
 Default is "reduce".
 """
+
 recipe_tags = {'GMOS', 'IMAGE'}
 blocked_tags = {'THRUSLIT'}
 
+from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
 
 def reduce(p):
     """

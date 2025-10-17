@@ -4,6 +4,8 @@ Default is "makeProcessedBias".
 """
 recipe_tags = {'GMOS', 'CAL', 'BIAS'}
 
+from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
+
 def makeProcessedBias(p):
     """
      This recipe performs the standardization and corrections needed to convert

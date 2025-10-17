@@ -5,6 +5,8 @@ Default is "reduce".
 """
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'FLAT'}
 
+from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
+
 def makeProcessedFlatNoStack(p):
     p.prepare()
     p.addDQ()

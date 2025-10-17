@@ -4,6 +4,8 @@ Default is "makeProcessedDark".
 """
 recipe_tags = {'GMOS', 'CAL', 'DARK'}
 
+from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
+
 def makeProcessedDark(p):
     """
     This recipe performs the standardization and corrections needed to convert
