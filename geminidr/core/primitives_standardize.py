@@ -304,7 +304,8 @@ class Standardize(PrimitivesBASE):
     def makeIRAFCompatible(self, adinputs=None):
         """
         Add keywords to make the pipeline-processed file compatible
-        with the tasks in the Gemini IRAF package.
+        with the tasks in the Gemini IRAF package. For Hamamatsu data, also
+        trim off the 48/binning rows and 1 column that IRAF trims off.
         """
         log = self.log
         log.debug(gt.log_message('primitive', self.myself(), 'starting'))
