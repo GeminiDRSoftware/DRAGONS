@@ -6,7 +6,6 @@ Default is "reduceScience".
 recipe_tags = {'GMOS', 'SPECT', 'LS'}
 blocked_tags = {'NODANDSHUFFLE'}
 
-from geminidr.gmos.recipes.ql.recipes_common import makeIRAFCompatible
 
 def reduceScience(p):
     """
