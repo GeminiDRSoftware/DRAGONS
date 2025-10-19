@@ -1,5 +1,10 @@
 .. ex1_niriim_extended_api.rst
 
+.. role:: raw-html(raw)
+   :format: html
+
+.. |verticalpadding| replace:: :raw-html:`<br>`
+
 .. _extended_api:
 
 *************************************************************************
@@ -338,7 +343,7 @@ recipe but rather the special recipe from that library called
     reduce_bpm.recipename = 'makeProcessedBPM'
     reduce_bpm.runr()
 
-    bpm = reduce_bpm.output_filenames[0]
+    userbpm = reduce_bpm.output_filenames[0]
 
 The BPM produced is named ``N20160102S0373_bpm.fits``.
 
@@ -361,7 +366,7 @@ follow:
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
-    reduce_flats.uparms = dict([('addDQ:user_bpm', bpm)])
+    reduce_flats.uparms = dict([('addDQ:user_bpm', userbpm)])
     reduce_flats.runr()
 
 Note how we pass in the BPM we created in the previous step.  The ``addDQ``
@@ -382,6 +387,7 @@ the input data.
    :scale: 100%
    :align: center
 
+|verticalpadding|
 
 Standard Star
 =============
@@ -399,7 +405,7 @@ recommended) needs to be specified by the user.
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
-    reduce_std.uparms = dict([('addDQ:user_bpm', bpm), ('darkCorrect:do_cal', 'skip')])
+    reduce_std.uparms = dict([('addDQ:user_bpm', userbpm), ('darkCorrect:do_cal', 'skip')])
     reduce_std.runr()
 
 
@@ -424,9 +430,6 @@ The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
 
-.. todo:: Fix cleanReadout so that we don't have to skip it.
-          For now, add ``cleanReadout:clean=skip`` to uparms.
-
 
 .. code-block:: python
     :linenos:
@@ -434,7 +437,7 @@ the data quality plane (mask) is in the "DQ" extension.
 
     reduce_target = Reduce()
     reduce_target.files.extend(target)
-    reduce_target.uparms = dict([('addDQ:user_bpm', bpm),
+    reduce_target.uparms = dict([('addDQ:user_bpm', userbpm),
                                 ('skyCorrect:scale_sky', False),
                                 ('cleanReadout:clean', 'skip')])
     reduce_target.runr()

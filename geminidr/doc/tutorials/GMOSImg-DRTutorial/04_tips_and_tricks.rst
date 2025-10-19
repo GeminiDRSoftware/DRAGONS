@@ -62,7 +62,7 @@ show up with the green background.
 |verticalpadding|
 
 If a BPM does not show up, see if you find one using the manual search
-explained in the previous section.
+explained in the previous section, :ref:`manualBPM`.
 
 
 .. Calibration service
