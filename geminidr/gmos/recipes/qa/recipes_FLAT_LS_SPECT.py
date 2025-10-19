@@ -18,7 +18,6 @@ def makeProcessedFlat(p):
     p.stackFrames()
     p.normalizeFlat()
     p.thresholdFlatfield()
-    p.makeIRAFCompatible()
     p.storeProcessedFlat()
 
 _default = makeProcessedFlat

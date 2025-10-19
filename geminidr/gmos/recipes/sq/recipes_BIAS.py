@@ -24,7 +24,6 @@ def makeProcessedBias(p):
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.stackBiases()
-    p.makeIRAFCompatible()
     p.storeProcessedBias()
     return
 

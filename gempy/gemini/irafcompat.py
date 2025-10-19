@@ -11,6 +11,8 @@ def pipeline2iraf(ad, verbose=False):
         
     if "GMOS" in ad.tags:
         compat_with_iraf_GMOS(ad, verbose)
+    if "GMOS" in ad.tags and 'Hamamatsu' in ad.detector_name(pretty=True):
+        trim_like_iraf(ad, verbose)
     elif "F2" in ad.tags:
         compat_with_iraf_F2(ad, verbose)
     else:
@@ -18,6 +20,25 @@ def pipeline2iraf(ad, verbose=False):
             print("Data type not supported, {}".format(ad.filename))
          
     return
+
+def trim_like_iraf(ad, verbose):
+    rows = 48 // ad.detector_y_bin()
+    for ext in ad:
+        if verbose:
+            print(f"Trimming {rows} rows and 1 column from ext id {ext.id}")
+        ext.reset(ext.nddata[rows:, 1:])
+
+        if hasattr(ext, 'OBJMASK'):
+            if verbose:
+                print(f"Trimming OBJMASK")
+            ext.OBJMASK = ext.OBJMASK[rows:, 1:]
+
+        if hasattr(ext, 'OBJCAT'):
+            if verbose:
+                print(f"Adjusting OBJCAT")
+            ext.OBJCAT['X_IMAGE'] = [x-1. for x in ext.OBJCAT['X_IMAGE']]
+            ext.OBJCAT['Y_IMAGE'] = [y-rows for y in ext.OBJCAT['Y_IMAGE']]
+
 
 def compat_with_iraf_GMOS(ad, verbose):
 

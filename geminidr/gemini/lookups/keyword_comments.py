@@ -48,6 +48,7 @@ keyword_comments = {
     "OBSTYPE": "Observation type",
     "ORIGNAME": "Original filename prior to processing",
     "OVERRMS": "RMS of fit to overscan mean values",
+    "OVERRDNS": "Readnoise estimate derived from overscan",
     "OVERSCAN": "Median of Overscan mean values",
     "OVERSEC": "Section used for overscan calculation",
     "PIXSCALE": "Pixel scale [arcsec/pixel]",
