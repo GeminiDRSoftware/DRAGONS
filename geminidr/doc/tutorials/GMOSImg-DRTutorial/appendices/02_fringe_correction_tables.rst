@@ -12,7 +12,7 @@ GMOS-N and one table for GMOS-S. Each row of these tables corresponds to one
 of the detectors used in the instrument during its life-time. The five columns
 in the right contains
 the broadband filters used in imaging mode. The intersection of the 
-detector rows with the filter columns contains cell with the following 
+detector rows with the filter columns contains the following
 information:
 
 - `Yes`: Requires a Processed Fringe Frame for data reduction;
