@@ -216,11 +216,11 @@ epub_exclude_files = ['search.html']
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
 #    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/latest/', None),
-    'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
     #'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
     #'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'matplotlib': ('https://matplotlib.org/', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
     'python': ('https://docs.python.org/3', None),
 }
 
