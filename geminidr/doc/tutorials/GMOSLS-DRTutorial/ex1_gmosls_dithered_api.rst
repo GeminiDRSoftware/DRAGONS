@@ -269,7 +269,7 @@ First, let's have a look at the list of objects.
         ad = astrodata.open(sci)
         print(sci, '  ', ad.object())
 
-On line 37, remember that the second argument contains the tags to **include**
+On line 31, remember that the second argument contains the tags to **include**
 (``tags``) and the third argument is the list of tags to **exclude**
 (``xtags``).
 
@@ -499,7 +499,7 @@ sensitivity function:
 
     reduce_std = Reduce()
     reduce_std.files.extend(stdstar)
-    reduce_std.uparms = dicit([('calculateSensitivity:interactive', True)])
+    reduce_std.uparms = dict([('calculateSensitivity:interactive', True)])
     reduce_std.runr()
 
 Here is an example of what could be adjusted in this particular case.  The
@@ -528,7 +528,7 @@ The interactive tools are introduced in section :ref:`interactive`.
 
         ad = astrodata.open(reduce_std.output_filenames[0])
         plt.ioff()
-        plotting.dgsplot_matplotlib(ad, 1)
+        plotting.dgsplot_matplotlib(ad, 1, kwargs={})
         plt.ion()
 
     To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
@@ -616,7 +616,7 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
     ad = astrodata.open(reduce_science.output_filenames[0])
     plt.ioff()
-    plotting.dgsplot_matplotlib(ad, 1)
+    plotting.dgsplot_matplotlib(ad, 1, kwargs={})
     plt.ion()
 
 
