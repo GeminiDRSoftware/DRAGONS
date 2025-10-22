@@ -1,17 +1,16 @@
-.. ex1_gnirsxd_SXD32mm_cmdline.rst
+.. ex1_gnirsxd_SXD32mm_api.rst
 
 .. include:: symbols.txt
 
-.. _gnirsxd_SXD32mm_cmdline:
+.. _gnirsxd_SXD32mm_api:
 
-*****************************************************************
-Example 1 - SXD+32 Point Source - Using the "reduce" command line
-*****************************************************************
+**************************************************************
+Example 1 - SXD+32 Point Source - Using the "Reduce" class API
+**************************************************************
 
 In this example, we will reduce the GNIRS crossed-dispersed observation of
-a supernova type II 54 days after explosion using the "|reduce|" command that
-is operated directly from the unix shell.  Just open a terminal and load the
-DRAGONS conda environment to get started.
+a supernova type II 54 days after explosion using the Python programmatic
+interface.
 
 This cross-dispersed observation uses the 32 l/mm grating, the short-blue
 camera, and the 0.675 arcsec slit.   The dither pattern is the standard ABBA
@@ -53,6 +52,36 @@ The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
 the interactive tools using that browser.  The allowed strings are "**safari**",
 "**chrome**", and "**firefox**".
 
+Importing libraries
+===================
+
+.. code-block:: python
+    :linenos:
+
+    import glob
+
+    import astrodata
+    import gemini_instruments
+    from recipe_system.reduction.coreReduce import Reduce
+    from gempy.adlibrary import dataselect
+
+The ``dataselect`` module will be used to create file lists for the
+biases, the flats, the arcs, the telluric star, and the science observations.
+The ``Reduce`` class is used to set up and run the data
+reduction.
+
+Setting up the logger
+=====================
+We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 7
+
+    from gempy.utils import logutils
+    logutils.config(file_name='gnirsls_tutorial.log')
+
+
 Set up the Local Calibration Manager
 ====================================
 
@@ -60,11 +89,14 @@ Set up the Local Calibration Manager
 
     Instructions to configure and use the calibration service are found in
     :ref:`cal_service`, specifically the these sections:
-    :ref:`cal_service_config` and :ref:`cal_service_cmdline`.
+    :ref:`cal_service_config` and :ref:`cal_service_api`.
 
 We recommend that you clean up your working directory (``playground``) and
 start a fresh calibration database (``caldb init -w``) when you start a new
 example.
+
+Start a fresh calibration database (``caldb.init(wipe=True)``) when you
+start a new example.
 
 Create file lists
 =================
@@ -78,14 +110,27 @@ have to do it.  However, DRAGONS provides tools to help you with that.
 
 The first step is to create input file lists.  The tool "|dataselect|" helps.
 It uses Astrodata tags and |descriptors| to select the files and
-send the filenames to a text file that can then be fed to "|reduce|".  (See the
+send the filenames to a text file that can then be fed to ``Reduce``.  (See the
 |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
 
-First, navigate to the ``playground`` directory in the unpacked data package::
+The first list we create is a list of all the files in the ``playdata``
+directory.
 
-    cd <path>/gnirsxd_tutorial/playground
+.. code-block:: python
+    :linenos:
+    :lineno-start: 9
 
+    all_files = glob.glob('../playdata/example1/*.fits')
+    all_files.sort()
+
+We will search that list for files with specific characteristics.  We use
+the ``all_files`` :class:`list` as an input to the function
+``dataselect.select_data()`` .  The function's signature is::
+
+    select_data(inputs, tags=[], xtags=[], expression='True')
+
+We show several usage examples below.
 
 A list for the flats
 --------------------
@@ -95,9 +140,11 @@ automatically assemble the orders into a new flat with all orders well
 illuminated.   You will use "|dataselect|" to select all the flats associated
 with our science observation.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 11
 
-    dataselect ../playdata/example1/*.fits --tags FLAT -o flats.lis
+    flats = dataselect.select_data(all_files, ['FLAT'])
 
 A list for the pinholes
 -----------------------
@@ -107,9 +154,12 @@ position of each order, the pinholes observations lead to a more accurate
 model of the order positions.  The pinholes are taken in the same configuration
 as for the science.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 12
 
-    dataselect ../playdata/example1/*.fits --tags PINHOLE -o pinholes.lis
+    pinholes = dataselect.select_data(all_files, ['PINHOLE'])
+
 
 A list for the arcs
 -------------------
@@ -117,9 +167,11 @@ The GNIRS cross-dispersed arcs were obtained at the end of the science
 observation.  Often two are taken.  If we decide to use both, they will be
 stacked.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 13
 
-    dataselect ../playdata/example1/*.fits --tags ARC -o arcs.lis
+    arcs = dataselect.select_data(all_files, ['ARC'])
 
 A list for the telluric
 -----------------------
@@ -130,10 +182,16 @@ the ``observation_class`` descriptor can be used to differentiate the telluric
 from the science observations, along with the rejection of the ``CAL`` tag to
 reject flats and arcs.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 14
 
-    dataselect ../playdata/example1/*.fits --xtags=CAL --expr='observation_class=="partnerCal"' -o telluric.lis
-
+    tellurics = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class=="partnerCal"')
+    )
 
 A list for the science observations
 -----------------------------------
@@ -142,16 +200,24 @@ The science observations can be selected from the "observation class"
 ``science``.  This is how they are differentiated from the telluric
 standards which are most often set to ``partnerCal``.
 
-If we had multiple targets, we would need to split them into separate lists. To
-inspect what we have we can use |dataselect| and |showd| together.
+First, let's have a look at the list of objects.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 20
+
+    all_science = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class=="science"')
+    )
+    for sci in all_science:
+        ad = astrodata.open(sci)
+        print(sci, '  ', ad.object())
 
 ::
 
-    dataselect ../playdata/example1/*.fits --expr='observation_class=="science"' | showd -d object
-
-    --------------------------------------------------
-    filename                                    object
-    --------------------------------------------------
     ../playdata/example1/N20170113S0146.fits   DLT16am
     ../playdata/example1/N20170113S0147.fits   DLT16am
     ../playdata/example1/N20170113S0148.fits   DLT16am
@@ -163,9 +229,16 @@ inspect what we have we can use |dataselect| and |showd| together.
 Here we only have one object from the same sequence.  If we had multiple
 objects we could add the object name in the expression.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 29
 
-    dataselect ../playdata/example1/*.fits --expr='observation_class=="science" and object=="DLT16am"' -o sci.lis
+    scitarget = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class=="science" and object=="DLT16am"')
+    )
 
 
 Bad Pixel Mask
@@ -182,9 +255,13 @@ to get the BPMs from the archive.
 To add the static BPM included in the data package to the local calibration
 database:
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 35
 
-    caldb add ../playdata/example1/bpm*.fits
+    for bpm in dataselect.select_data(all_files, ['BPM']):
+        caldb.add_cal(bpm)
+
 
 Master Flat Field
 =================
@@ -200,9 +277,13 @@ care of the assembly.
 The processed flat will also contain the illumination mask that identify the location
 of the illuminated areas in the array, ie, where the orders are located.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 37
 
-    reduce @flats.lis
+    reduce_flats = Reduce()
+    reduce_flats.files.extend(flats)
+    reduce_flats.runr()
 
 
 In interactive mode, you can inspect the fit for each
@@ -211,9 +292,14 @@ order by selecting the tabs above the plot.
 Note that you are not required to run in interactive mode, but you might want
 to if flat fielding is critical to your program.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 40
 
-    reduce @flats.lis -p interactive=True
+    reduce_flats = Reduce()
+    reduce_flats.files.extend(flats)
+    reduce_flats.uparms = dict([('interactive', True)])
+    reduce_flats.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
 
@@ -234,9 +320,13 @@ orders. A pinhole observation looks like this:
 The rectification model is calculated by tracing the dispersed image of each
 pinhole in each order.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 44
 
-    reduce @pinholes.lis
+    reduce_pinholes = Reduce()
+    reduce_pinholes.files.extend(pinholes)
+    reduce_pinholes.runr()
 
 
 Processed Arc - Wavelength Solution
@@ -255,16 +345,25 @@ For more information about wavelength calibration, see the
 The illumination mask will be obtained from the processed flat.  The
 processed pinhole will provide the distortion correction.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 47
 
-    reduce @arcs.lis
+    reduce_arcs = Reduce()
+    reduce_arcs.files.extend(arcs)
+    reduce_arcs.runr()
 
 The primitive ``determineWavelengthSolution``, used in the recipe, has an
 interactive mode. To activate the interactive mode:
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 50
 
-    reduce @arcs.lis -p interactive=True
+    reduce_arcs = Reduce()
+    reduce_arcs.files.extend(arcs)
+    reduce_arcs.uparms = dict([('interactive', True),])
+    reduce_arcs.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
 
@@ -313,58 +412,30 @@ effect on the telluric correction, so the temperature from any reliable
 source can be used. Using Simbad, we find that the star has a magnitude
 of K=9.244.
 
-Instead of typing the values on the command line, we will use a parameter file
-to store them.  In a normal text file (here we name it "hip17030.param"), we write::
-
-    -p
-    fitTelluric:bbtemp=9700
-    fitTelluric:magnitude='K=9.244'
-
-Then we can call the ``reduce`` command with the parameter file.  The telluric
-fitting primitive can be run in interactive mode.
-
 Note that the data are recognized by Astrodata as normal GNIRS cross-dispersed
 science spectra.  To calculate the telluric correction, we need to specify the
-telluric recipe (``-r reduceTelluric``), otherwise the default science
+telluric recipe, otherwise the default science
 reduction will be run.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 54
 
-    reduce @telluric.lis -r reduceTelluric @hip17030.param -p fitTelluric:interactive=True
+    reduce_telluric = Reduce()
+    reduce_telluric.files.extend(tellurics)
+    reduce_telluric.recipename = 'reduceTelluric'
+    reduce_telluric.uparms = dict([
+                ('fitTelluric:bbtemp', 9700),
+                ('fitTelluric:magnitude', 'K=9.244'),
+                ('fitTelluric:interactive', True),
+                ])
+    reduce_telluric.runr()
 
 The fit for Order 3 looks like this:
 
 .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order3.png
    :width: 600
    :alt: fit to the telluric standard
-
-.. Order 8 needs some discussion.  You will notice many rejected data points marked
-   as light blue triangle.  The software by default rejects those points because
-   the stellar features in that part of the spectrum are notoriouly difficult to
-   model.
-
-.. .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8.png
-   :width: 325
-   :alt: fit to the telluric standard
-
-.. .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_model.png
-   :width: 325
-   :alt: telluric absorption model fit
-
-.. In our case, the model and the star do fit remarkably well, so we can
-   reactivate those points and give the software more points to fit.  On the top
-   plot, use the
-   box selection tool (the dotted line square) to include the blue triangles and
-   type "u" to unmask them and reactivate them.
-
-.. .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_after.png
-   :width: 325
-   :alt: fit to the telluric standard
-
-.. .. image:: _graphics/gnirsxd_SXD32mm_tellfit_order8_model_after.png
-   :width: 325
-   :alt: telluric absorption model fit
-
 
 
 Science Observations
@@ -393,18 +464,27 @@ is at the bottom and blue at the top.  This will be reversed when the data is
 resampled and the distortion corrected and wavelength calibration are applied.
 
 With all the calibrations in the local calibration manager, one only needs
-to call |reduce| on the science frames to get an extracted spectrum.
+to call ``Reduce`` on the science frames to get an extracted spectrum.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 63
 
-    reduce @sci.lis
+    reduce_science = Reduce()
+    reduce_science.files.extend(scitarget)
+    reduce_science.runr()
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 66
 
-    reduce @sci.lis -p interactive=True
+    reduce_science = Reduce()
+    reduce_science.files.extend(scitarget)
+    reduce_science.uparms = dict([('interactive', True)])
+    reduce_science.runr()
 
 ----
 
@@ -455,7 +535,9 @@ simply plots a thinner line than the default width.)
 
 ::
 
-    dgsplot N20170113S0146_extracted.fits 1 --thin
+   from gempy.adlibrary import plotting
+   ad = astrodata.open('N20170113S0146_extracted.fits')
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
 
 .. image:: _graphics/gnirsxd_SXD32mm_extracted.png
    :width: 450
@@ -467,7 +549,10 @@ like this.
 
 ::
 
-    dgsplot N20170113S0146_telluricCorrected.fits 1 --thin
+   from gempy.adlibrary import plotting
+   ad = astrodata.open('N20170113S0146_telluricCorrected.fits')
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
+
 
 
 .. image:: _graphics/gnirsxd_SXD32mm_tellcor.png
@@ -478,7 +563,9 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
 ::
 
-    dgsplot N20170113S0146_1D.fits 1 --thin
+   from gempy.adlibrary import plotting
+   ad = astrodata.open(reduce_science.output_filenames[0])
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
 
 .. image:: _graphics/gnirsxd_SXD32mm_1d.png
    :width: 600
@@ -490,13 +577,20 @@ plotted one after the other on a common plot.
 If you need to stitch the order and stack the common wavelength ranges,
 you can use the ``combineOrders`` primitive.
 
+.. code-block:: python
+    :linenos:
+    :lineno-start: 70
+
+    reduce_combine = Reduce()
+    reduce_combine.recipename = 'combineOrders'
+    reduce_combine.files.extend([reduce_science.output_filenames[0]])
+    reduce_combine.runr()
+
 ::
 
-    reduce -r combineOrders N20170113S0146_1D.fits
-
-::
-
-    dgsplot N20170113S0146_ordersCombined.fits 1 --thin
+   from gempy.adlibrary import plotting
+   ad = astrodata.open('N20170113S0146_ordersCombined.fits')
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
 
 .. image:: _graphics/gnirsxd_SXD32mm_ordersCombined.png
    :width: 600q

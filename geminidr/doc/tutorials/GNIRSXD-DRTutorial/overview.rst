@@ -6,14 +6,14 @@
 Overview
 ********
 
-This is a tutorial for the reduction of GNIRS longslit spectroscopic data
-with DRAGONS.
+This is a tutorial for the reduction of GNIRS cross-dispersed (XD)
+spectroscopic data with DRAGONS.
 
 GNIRS is a near-IR spectrograph offering longslit spectroscopy, cross-dispersed
 spectroscopy, and intergral field spectroscopy (aka IFU).  This tutorial
-focuses on the longslit spectroscopy.
+focuses on the cross-dispersed spectroscopy.
 
-For cross-dispersed spectroscopy, see |GNIRSXDTut|.
+For longslit spectroscopy, see |GNIRSLSTut|.
 
 Note that the acquisition keyhole can be used as an imager when no other
 near-IR imager is available on the telescope and the science is time sensitive.
@@ -26,8 +26,9 @@ contains all the data you need to run the examples presented.  Instructions
 on where to get that package and how to set things up are given in
 :ref:`datasetup`.
 
-The GNIRS longslit tutorial series contains four scientific
-examples covering non-thermal and thermal bands, and grating settings.
+The GNIRS cross-dispersed tutorial series contains two scientific
+examples covering a Short Blue 32 l/mm configuration and a Short Blue
+111 l/mm configuration with multiple central wavelengts observations.
 
 The reduction can be done in two different ways:
 
@@ -38,10 +39,8 @@ We show how to run the same reduction using both methods.
 
 The tutorials are:
 
-* :ref:`K-band 32 l/mm grating <gnirsls_Kband32mm_example>`
-* :ref:`J-band 111 l/mm grating <gnirsls_Jband111mm_example>`
-* :ref:`L-band 10 l/mm grating <gnirsls_Lband10mm_example>`
-* :ref:`K-band beyond 2.3 microns 111 l/mm grating <gnirsls_Kband11mm_red_example>`
+* :ref:`XD with Short-Blue + 32 l/mm grating  <gnirsxd_SXD32mm_example>`
+* :ref:`XD with Short-Blue + 111 l/mm grating <gnirsxd_SXD111mm_example>`
 
 See the |RSUserInstall| to install the software if you have not already.
 
@@ -50,5 +49,7 @@ See the |RSUserInstall| to install the software if you have not already.
           :ref:`tips_and_tricks` and :ref:`issues_and_limitations` sections.
           They may contain the solution to your problem.
 
-          Also, please use the :ref:`gnirsls_wavecal_guide` to help you choose
+          Also, please use the :ref:`gnirsxd_wavecal_guide` to help you choose
           the best way to wavelength calibrate your data.
+
+

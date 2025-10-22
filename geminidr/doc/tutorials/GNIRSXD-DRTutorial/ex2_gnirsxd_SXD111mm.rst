@@ -21,9 +21,11 @@ stitch the spectra together in the final step.
 
 The data was originally published in Evans et al, 2022, MNRAS, 517, 4.
 
+There is no API version of this example at this time.
+
 .. toctree::
    :maxdepth: 1
 
    ex2_gnirsxd_SXD111mm_dataset
    ex2_gnirsxd_SXD111mm_cmdline
-   ex2_gnirsxd_SXD111mm_api
+..   ex2_gnirsxd_SXD111mm_api

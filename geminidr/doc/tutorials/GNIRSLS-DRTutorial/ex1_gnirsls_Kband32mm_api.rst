@@ -93,8 +93,8 @@ Set up the Calibration Service
 We recommend that you clean up your working directory (``playground``) and
 delete the old calibration database before you start.  Create a fresh one.
 
-.. start a fresh calibration database (``caldb.init(wipe=True)``) when you start a new
-    example.  "wipe" appears to be broken.
+Start a fresh calibration database (``caldb.init(wipe=True)``) when you
+start a new example.
 
 Create file lists
 =================

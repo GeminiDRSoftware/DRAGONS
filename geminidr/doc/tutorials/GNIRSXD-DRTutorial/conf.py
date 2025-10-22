@@ -123,6 +123,7 @@ rst_epilog = """
 .. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/usermanual/index.html" target="_blank">Astrodata User Manual</a>`
 
 .. |GNIRSImgTut| replace:: :raw-html:`<a href="http://GNIRSImg-DRTutorial.readthedocs.io/en/{v}">GNIRS Imaging Data Reduction Tutorial</a>`
+.. |GNIRSLSTut| replace:: :raw-html:`<a href="http://GNIRSLS-DRTutorial.readthedocs.io/en/{v}">GNIRS Longslit Data Reduction Tutorial</a>`
 .. |DRAGONS| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/en/{v}/" target="_blank">DRAGONS</a>`
 
 .. |RSUserInstall| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/{v}/install.html" target="_blank">DRAGONS Installation Instructions</a>`

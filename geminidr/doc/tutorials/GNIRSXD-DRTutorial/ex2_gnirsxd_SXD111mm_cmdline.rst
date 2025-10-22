@@ -143,7 +143,7 @@ Note that we have downloaded only the October data from that program.  If
 the September data were also in our raw data directory, we would have to add
 a date constraint to the expression, like this:
 
-    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6 and ut_date=="2019-10-13"' -o flatSep155.lis
+    ``dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6 and ut_date=="2019-10-13"' -o flatSep155.lis``
 
 
 A list for the pinholes
@@ -404,8 +404,6 @@ model will be obtained from the processed flat.
 
 The interactive tools are introduced in section :ref:`interactive`.
 
-.. todo:: add interactive page.
-
 Each order can be inspected individually by selecting the tabs above the plot.
 
 The general shape of the fit for each order should look like this:
@@ -436,6 +434,9 @@ no solution since there are no lines.  It will use an approximate linear solutio
 to complete.  We will not be using it anyway in this case since the arc solution
 for Order 8 is reasonable.
 
+For the 1.68 |um| and 1.81 |um| settings, the solutions are generally good
+except for Order 8 where the lines needs to be added manually.
+
 Verifying the Solutions with fitTelluric
 ----------------------------------------
 We will verify the solutions we calculated above.  We have:
@@ -458,6 +459,16 @@ We need to run ``fitTelluric`` with each one and assess the quality of the
 model for each order.   We use the ``--user_cal`` option to override the
 automatic "proccessed arc" selection.
 
+We need to use information about the star like the temperature and
+the magnitude.   See the section about the modeling of the telluric
+below for more details.   For now, create a file named ``hip94510.param``
+with this content::
+
+    -p
+    fitTelluric:bbtemp=9700
+    fitTelluric:magnitude='K=6.754'
+
+
 For 1.55 |um|
 +++++++++++++
 You can "Abort" ``fitTelluric`` when you are done with the inspection.
@@ -475,7 +486,7 @@ scale is clearly offset and the model is wrong.
     reduce @tel155.lis -r reduceTelluric --user_cal processed_arc:N20191013S0006_arc.fits -p fitTelluric:interactive=True @hip94510.param @nopinhole.param
 
 The ringing is not as well fit, if at all when using the solution from the sky
-lines.  However, the fit for Order 6 and 7 is great.
+lines.  However, the fits for Order 6 and 7 are good.
 
 **CONCLUSION**
 
@@ -579,7 +590,9 @@ lines is clearly wrong at the blue end.
     reduce @tel181.lis -r reduceTelluric --user_cal processed_arc:N20191013S0014_arc.fits -p fitTelluric:interactive=True @hip94510.param @nopinhole.param
 
 With the sky line solution, it is Order 8 that is bad.  The other Orders are
-good.
+good.   The telluric fit for Order 3 is good, it is the continuum that is
+a bit off.  We will deal with that later when we calculate the model using
+our final wavelength solutions.
 
 **CONCLUSION**
 
@@ -629,8 +642,8 @@ In this case, the best combinations are:
 +--------------+------------------------------+----------------------------+
 
 
-The primitive used to `combineSlices` is generic, which means that it knows
-about extensions, not about "Orders".  The **Orders 3 to 8 are stored in
+The primitive used by the recipe to ``combineSlices`` is generic, which means
+that it knows about extensions, not about "Orders".  The **Orders 3 to 8 are stored in
 extensions 1 to 6, respectively**.  This is the index scale we have to use.
 It is not the most elegant solution, but for now, it works.
 
@@ -747,7 +760,7 @@ an extracted spectrum.
 
 ::
 
-    reduce @sci155.lis
+    reduce @sci155.lis @nopinhole.param
 
 For a Science Quality output, it is recommended to run the reduction in
 interactive mode, in particular to adjust the wavelength shift often needed
@@ -755,7 +768,7 @@ for the telluric correction.
 
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.  In this case, the need for
-interactivity lies mostly in the telluric correction as an offset in
+interactivity lies mostly in the telluric correction since an offset in
 wavelength needs to be applied.  This is not always needed but it's safer to
 verify anyway.  To target that step, one would use
 ``telluricCorrect:interactive=True`` instead of the non-specific call that
@@ -769,9 +782,11 @@ activates all the interactive steps.
 
 When you get to the ``telluricCorrect`` step, you can experiment with the
 shift between the telluric standard and the target.  Both need to be well
-aligned in wavelength to optimize the correction.  We find that the following
-offsets are required:  -0.7 for 1.55 |um|, -0.1 for 1.68 |um|, and -0.11 for
-1.81 |um|.  (Depending on your interactive adjustments during wavelength
+aligned in wavelength to optimize the correction.  **We find that the following
+offsets are required**:  -0.7 for 1.55 |um|, -0.1 for 1.68 |um|, and -0.11 for
+1.81 |um|.
+
+(Depending on your interactive adjustments during wavelength
 calibrations and the calculation of the telluric model, those offsets might
 be different for you.)
 
