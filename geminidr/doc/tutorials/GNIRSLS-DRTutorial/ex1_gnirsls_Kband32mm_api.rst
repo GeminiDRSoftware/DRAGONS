@@ -260,16 +260,16 @@ The flats will be stacked.
     reduce_flats.runr()
 
 GNIRS data are affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
-
-In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, order=30
-worked well.
+GNIRS science array have gains that differ by approximately 10 percent.
+We have added a correction in ``normalizeFlat`` that levels off the rows to
+help with the fit.  Here it works well, in some cases you might see a some
+split when you run ``normalizeFlat`` in interactive mode.  The objective
+if you see the split is to get a fit that falls inbetween the
+two sets of points, with a symmetrical residual fit.
 
 Note that you are not required to run in interactive mode, but you might want
-to if flat fielding is critical to your program.
+to if flat fielding is critical to your program.  For example, in this case
+adjusting the order to 30 significantly improves the fit.
 
 .. code-block:: python
     :linenos:
@@ -308,9 +308,9 @@ Because the slit length does not cover the whole array, we want to know where
 the unilluminated areas are located and ignore them when the distortion
 correction is calculated (along with the wavelength solution).  That information
 is measured during the creation of the flat field and stored in the processed
-flat.   Right now, the association rules do not automatically associate
-flats to arcs, therefore we need to specify the processed flat on the
-command line.  Using the flat is optional but it is recommended.
+flat.   Using the flat is optional but it is recommended. In any case, if a
+matching flat exists, it will be picked up automatically by the calibration
+manager.
 
 
 .. code-block:: python
@@ -319,7 +319,6 @@ command line.  Using the flat is optional but it is recommended.
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
-    reduce_arcs.uparms = dict([('flatCorrect:flat', reduce_flats.output_filenames[0])])
     reduce_arcs.runr()
 
 The primitive ``determineWavelengthSolution``, used in the recipe, has an
@@ -331,10 +330,7 @@ interactive mode. To activate the interactive mode:
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
-    reduce_arcs.uparms = dict([
-                ('flatCorrect:flat', reduce_flats.output_filenames[0]),
-                ('interactive', True),
-                ])
+    reduce_arcs.uparms = dict([('interactive', True),])
     reduce_arcs.runr()
 
 
@@ -450,13 +446,14 @@ spectrum.
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
-At the ``traceApertures`` step, the fit one gets automatically for this source
-is perfectly reasonable, well within the envelope of the source aperture.
-To improve the fit, one could activate sigma clipping and increase to number
-of iteration to 1 to get a straighter fit that ignores the deviant points at
-the edges of the spectrum. This can be done manually with the interactive
-tool (try it), or by specifying the user parameter value
-``('traceApertures:niter', 1)`` in the ``Reduce`` object.
+The primitive ``findApertures`` finds the real source and a couple spurious
+ones on the left.  They won't affect the extraction of the real source. But
+since we are in interactive mode, we can remove the spurious sources by
+pointing the cursor to them and pressing ``d``.
+
+It does not make a big difference in this case but at the ``fitTelluric``
+step we can adjust the offset to ``0.2`` to better remove the telluric features.
+
 
 .. code-block:: python
     :linenos:
@@ -464,10 +461,7 @@ tool (try it), or by specifying the user parameter value
 
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
-    reduce_science.uparms = dict([
-                        ('traceApertures:niter', 1),
-                        ('interactive', True),
-                        ])
+    reduce_science.uparms = dict([('interactive', True)])
     reduce_science.runr()
 
 The 2D spectrum before extraction looks like this, with blue wavelengths at
@@ -500,7 +494,7 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
    from gempy.adlibrary import plotting
    ad = astrodata.open(reduce_science.output_filenames[0])
-   plotting.dgsplot_matplotlib(ad, 1)
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={})
 
 .. image:: _graphics/gnirsls_Kband32mm_1d.png
    :width: 600

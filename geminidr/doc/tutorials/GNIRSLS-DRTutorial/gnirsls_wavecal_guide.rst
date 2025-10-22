@@ -84,15 +84,14 @@ the information that helps calculating the wavelength solution.
 From the Arc Lamp
 -----------------
 Producing a wavelength solution from the arc observations is fairly
-straightforward.  Just call reduce on the raw arcs and provide a processed
-flat.
+straightforward.  Just call reduce on the raw arcs.
 
 The use of the interactive mode is recommended to verify the solution and
 ensure that the lines offer a good coverage the entire spectral range.
 
 ::
 
-  reduce @arcs.lis -p interactive=True flatCorrect:flat=N20180201S0060_flat.fits
+  reduce @arcs.lis -p interactive=True
 
 From the Emission Lines
 -----------------------
@@ -127,7 +126,7 @@ condition.  So in this case, there are two steps to the process.
 
 ::
 
-  reduce @arcs.lis -p flatCorrect:flat=N20210407S0177_flat.fits interactive=True
+  reduce @arcs.lis -p interactive=True
   caldb remove N20210407S0181_arc.fits
 
   reduce @sci.lis -r makeWavecalFromSkyAbsorption --user_cal processed_arc:N20210407S0181_arc.fits -p interactive=True

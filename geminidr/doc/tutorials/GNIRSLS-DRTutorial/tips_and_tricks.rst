@@ -134,8 +134,6 @@ stored in FITS headers.
     wavelength = ad[0].wcs(np.arange(data.size)).astype(np.float32)
     units = ad[0].wcs.output_frame.unit[0]
 
-    # add aperture number and location in the title.
-    # check that plt.xlabel call.  Not sure it's right, it works though.
     plt.xlabel(f'Wavelength ({units})')
     plt.ylabel(f'Signal ({ad[0].hdr["BUNIT"]})')
     plt.plot(wavelength, data)

@@ -254,11 +254,11 @@ The flats will be stacked.
     reduce_flats.runr()
 
 GNIRS data are affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
-
-In interactive mode, the objective is to get a fit that falls inbetween the
+GNIRS science array have gains that differ by approximately 10 percent.
+We have added a correction in ``normalizeFlat`` that levels off the rows to
+help with the fit.  Here it works well, in some cases you might see a some
+split when you run ``normalizeFlat`` in interactive mode.  The objective
+if you see the split is to get a fit that falls inbetween the
 two sets of points, with a symmetrical residual fit.
 
 Note that you are not required to run in interactive mode, but you might want
@@ -273,9 +273,6 @@ to if flat fielding is critical to your program.
     reduce_flats.uparms = dict([('interactive', True)])
     reduce_flats.runr()
 
-In this case, order=20, the default, worked well and we find that sigma
-clipping with 1 iteration and grow=2 rejects the outliers at the left end
-of the flat.  The fit leads to residuals that are symmetrical.
 
 .. image:: _graphics/gnirsls_Jband111_evenoddflat.png
    :width: 600
@@ -305,10 +302,9 @@ Because the slit length does not cover the whole array, we want to know where
 the unilluminated areas are located and ignore them when the distortion
 correction is calculated (along with the wavelength solution).  That information
 is measured during the creation of the flat field and stored in the processed
-flat.   Right now, the association rules do not automatically associate
-flats to arcs, therefore we need to specify the processed flat on the
-command line.  Using the flat is optional but it is recommended when using
-an arc lamp.
+flat.   Using the flat is optional but it is recommended.  In any case, if a
+matching flat exists, it will be picked up automatically by the calibration
+manager.
 
 .. code-block:: python
     :linenos:
@@ -316,10 +312,7 @@ an arc lamp.
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
-    reduce_arcs.uparms = dict([
-                ('flatCorrect:flat', reduce_flats.output_filenames[0]),
-                ('interactive', True),
-                ])
+    reduce_arcs.uparms = dict([('interactive', True)])
     reduce_arcs.runr()
 
 Here, increasing the order to 4 helps to get a tighter fit.
@@ -541,7 +534,7 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
    from gempy.adlibrary import plotting
    ad = astrodata.open(reduce_science.output_filenames[0])
-   plotting.dgsplot_matplotlib(ad, 1)
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={})
 
 .. image:: _graphics/gnirsls_Jband111mm_1d.png
    :width: 600

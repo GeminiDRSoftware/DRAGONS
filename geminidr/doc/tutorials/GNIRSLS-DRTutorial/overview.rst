@@ -13,6 +13,8 @@ GNIRS is a near-IR spectrograph offering longslit spectroscopy, cross-dispersed
 spectroscopy, and intergral field spectroscopy (aka IFU).  This tutorial
 focuses on the longslit spectroscopy.
 
+For crossed-dispersed spectroscopy, see |GNIRSXDTut|.
+
 Note that the acquisition keyhole can be used as an imager when no other
 near-IR imager is available on the telescope and the science is time sensitive.
 For a tutorial on the reduction of GNIRS keyhole imaging data, see
