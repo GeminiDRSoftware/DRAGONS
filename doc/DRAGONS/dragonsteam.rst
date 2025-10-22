@@ -17,7 +17,6 @@ Current DRAGONS Team
 * Chris Simpson
 * Olesja Smirnova
 * Monika Soraisam
-* D.J. Teal
 * James Turner
 * Bill Vacca
 
@@ -31,6 +30,7 @@ Past DRAGONS Team Members
 * Simon Conseil
 * Oliver Oberdorf
 * Bruno Quint
+* D.J. Teal
 * Joanna Thomas-Osip
 
 Special Thanks
