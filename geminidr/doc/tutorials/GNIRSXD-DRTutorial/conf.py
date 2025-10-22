@@ -12,10 +12,10 @@ author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
 version = '4.1'
-#release = '4.1.0'
-#rtdurl = 'v'+release
-release = '4.1.x'
-rtdurl = 'release-'+release
+release = '4.1.0'
+rtdurl = 'v'+release
+#release = '4.1.x'
+#rtdurl = 'release-'+release
 #rtdurl = 'latest'
 
 today = 'October 2025'
