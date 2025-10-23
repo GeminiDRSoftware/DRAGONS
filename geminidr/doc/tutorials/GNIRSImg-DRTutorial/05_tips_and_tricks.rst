@@ -49,12 +49,14 @@ has a much lower number of correlated sources than the others, the algorithm
 is unable to overcome the discrepancy; remove the file from the input list
 and reduce again.
 
-In general, discrepancies of the order of what is shown above do not cause
-problems.  When the discrepancy matches the size of the dither, then you will
-have issues and it is best to simply remove that file from you file list right
-away.  When such a large discrepancy happens, the WCS of that file is likely
-to have accidentally inherited the WCS of the previous frame which is
-obviously very wrong.
+In many cases, where there are discrepancies ,``standardizeWCS`` will exit
+with an error.  If that occurs, add ``-p prepare:bad_wcs=fix`` or
+``-p prepare:bad_wcs=new`` to your call.  This will ask ``standardizeWCS``
+to use header information about RA and Dec and offsets to try to fix the
+WCS, or create a new WCS to the best of its ability.
+
+This is very common with GNIRS for which the WCS can be accidentally inherited
+from the previous frame.
 
 .. note::  From the API, run ``checkWCS`` like this:
 
@@ -115,41 +117,38 @@ show up with the green background.
 
 |verticalpadding|
 
-This will be the case for new data (from late March 2023).  For old data,
-until we fix an issue recently discovered, they will not show up as
-associated calibration and you will have to find them manual as explained
-in the previous section, :ref:`manualBPM`.  We understand the issue and are
-working on a fix.
+If a BPM does not show up, see if you find one using the manual search
+explained in the previous section, :ref:`manualBPM`.
 
 
-Calibration service
--------------------
-The calibration service in DRAGONS 3.1 adds several new features.  One of them
-is the ability to search multiple databases in a serial way, including online
-database, like the Gemini archive.
+.. Calibration service
+.. -------------------
+.. The calibration service in DRAGONS 3.1 adds several new features.  One of them
+.. is the ability to search multiple databases in a serial way, including online
+.. database, like the Gemini archive.
 
-The system will look first in your local database for processed calibration
-and BPMs.  If it does not find anything that matches, it will look in the
-next database.  To activate this feature, in ``~/.dragons/``, create or edit
-the configuration file ``dragonsrc`` as follows:
+.. The system will look first in your local database for processed calibration
+.. and BPMs.  If it does not find anything that matches, it will look in the
+.. next database.  To activate this feature, in ``~/.dragons/``, create or edit
+.. the configuration file ``dragonsrc`` as follows:
 
-.. code-block:: none
+.. .. code-block:: none
 
-    [calibs]
-    databases = ${path_to_my_data}/niriimg_tutorial/playground/cal_manager.db get store
-                https://archive.gemini.edu get
+.. ..     [calibs]
+..     databases = ${path_to_my_data}/niriimg_tutorial/playground/cal_manager.db get store
+..                 https://archive.gemini.edu get
 
-If you know that you will be connected to the internet when you reduce the data,
-you do not need to pre-download the BPM, DRAGONS will find it for you in the
-archive.
+.. If you know that you will be connected to the internet when you reduce the data,
+.. you do not need to pre-download the BPM, DRAGONS will find it for you in the
+.. archive.
 
-If you want to pre-download the BPM without having to search for it, like in the
-previous two sections, you can let DRAGONS find it and download it for you:
+.. If you want to pre-download the BPM without having to search for it, like in the
+.. previous two sections, you can let DRAGONS find it and download it for you:
 
-.. code-block:: none
+.. .. code-block:: none
 
-    $ reduce -r getBPM <file_for_which_you_need_bpm>
-    $ caldb add calibrations/processed_bpm/<the_bpm>
+..     $ reduce -r getBPM <file_for_which_you_need_bpm>
+..     $ caldb add calibrations/processed_bpm/<the_bpm>
 
 
 

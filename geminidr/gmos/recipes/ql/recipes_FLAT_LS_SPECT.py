@@ -7,6 +7,7 @@ recipe_tags = {'GMOS', 'SPECT', 'LS', 'FLAT'}
 
 from geminidr.gmos.recipes.sq.recipes_FLAT_LS_SPECT import (makeProcessedFlatStack,
                                         makeProcessedFlatNoStack)
+from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
 
 _default = makeProcessedFlatNoStack
 

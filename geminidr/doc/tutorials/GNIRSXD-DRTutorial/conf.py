@@ -11,14 +11,14 @@ copyright = '2025, DRAGONS Team'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
-version = '4.1_dev'
-#release = '4.1.0'
-#rtdurl = 'v'+release
-release = '4.1.x'
-rtdurl = 'release-'+release
+version = '4.1'
+release = '4.1.0'
+rtdurl = 'v'+release
+#release = '4.1.x'
+#rtdurl = 'release-'+release
 #rtdurl = 'latest'
 
-today = 'September 2025'
+today = 'October 2025'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -123,6 +123,7 @@ rst_epilog = """
 .. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/usermanual/index.html" target="_blank">Astrodata User Manual</a>`
 
 .. |GNIRSImgTut| replace:: :raw-html:`<a href="http://GNIRSImg-DRTutorial.readthedocs.io/en/{v}">GNIRS Imaging Data Reduction Tutorial</a>`
+.. |GNIRSLSTut| replace:: :raw-html:`<a href="http://GNIRSLS-DRTutorial.readthedocs.io/en/{v}">GNIRS Longslit Data Reduction Tutorial</a>`
 .. |DRAGONS| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/en/{v}/" target="_blank">DRAGONS</a>`
 
 .. |RSUserInstall| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/{v}/install.html" target="_blank">DRAGONS Installation Instructions</a>`

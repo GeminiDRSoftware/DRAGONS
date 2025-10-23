@@ -1,5 +1,10 @@
 .. ex1_gnirsim_twostars_api.rst
 
+.. role:: raw-html(raw)
+   :format: html
+
+.. |verticalpadding| replace:: :raw-html:`<br>`
+
 .. _twostars_api:
 
 ********************************************************************************
@@ -285,6 +290,8 @@ This can be seen by using "|showpars|"::
 .. image:: _graphics/showpars_associateSky.png
    :scale: 100%
    :align: center
+
+|verticalpadding|
 
 The BPM, the master dark and the master flat are in our local calibration
 database.  For any other Gemini facility instrument, they would both be

@@ -146,7 +146,7 @@ option to select the appropriate filter as follows:
         -------------------------------------------------------------
         filename                                          filter_name
         -------------------------------------------------------------
-        ../playdata/example1/S20170504S0114.fits   Kshort_G1105&Clear
+        ../playdata/example1/S20170504S0114.fits               Kshort
         ...
         ...
 
@@ -287,10 +287,6 @@ flat field is still valid and will crop it to match the ROIs.
 
     $ reduce @std_9132.list
 
-.. note:: The ``reduce`` command will automatically align and stack the images.
-      Therefore, it is no longer necessary to use the ``disco_stu`` tool for
-      GSAOI data.
-
 
 .. _processing_science_files:
 
@@ -321,9 +317,34 @@ on-target and the off-target appropriately using information in the headers.
 Once we have our calibration files processed and added to the database, ready
 for retrieval, we can run ``reduce`` on our science data.
 
+The observations have problems with their World Coordinate System (WCS) headers
+values.  The primitive ``standardizeWCS`` will catch those and exit.  You can
+get more information by running ``checkWCS``::
+
+    $ reduce @science.list -r checkWCS
+    ...
+      PRIMITIVE: standardizeWCS
+      -------------------------
+      Using S20170505S0095.fits as base pointing
+      Using S20170505S0101.fits as base pointing
+      Using S20170505S0102.fits as base pointing
+      Using S20170505S0104.fits as base pointing
+
+      The following files were identified as having bad WCS information:
+          S20170505S0105.fits
+          S20170505S0108.fits
+          S20170505S0109.fits
+      No changes are being made to the WCS information.
+
+``standardizeWCS``, called by ``prepare``, can try to ``fix`` the  WCS
+information or make ``new`` WCS based on the RA and Dec and offsets information
+found in the headers.
+
+In this case, ``fix`` is enough.
+
 .. code-block:: bash
 
-   $ reduce @science.list -p skyCorrect:offset_sky=False
+   $ reduce @science.list -p skyCorrect:offset_sky=False prepare:bad_wcs=fix
 
 This command will generate flat corrected files, align them,
 stack them, and orient them such that North is up and East is left. The final

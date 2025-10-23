@@ -468,7 +468,7 @@ Here we will focus on two of them, the one for the trace and the one for the
 calculation of the sensitivity function.
 
 In both cases, we will adjust the *region* to use for the fits.  This is done
-by point the cursor on one edge of the region, typing "r", moving the cursor
+by pointing the cursor on one edge of the region, typing "r", moving the cursor
 to the other edge, and typing "r" again.   To adjust the edge of an existing
 region, use "e" and the cursor, and "e" again to confirm the adjustment.
 See the summary of keyboard shortcuts at the bottom right of the tool, in
@@ -626,7 +626,7 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
     ad = astrodata.open(reduce_science.output_filenames[0])
     plt.ioff()
-    plotting.dgsplot_matplotlib(ad, 1)
+    plotting.dgsplot_matplotlib(ad, 1, kwargs={})
     plt.ion()
 
 
@@ -649,7 +649,7 @@ That is shown in the plot on the right.
 Note the flaring bluer of 700nm.  This is because the spectrophotometric
 standard was observed with a central wavelength of 900nm and it is unable
 to constrain the sensitivity bluer of ~700nm.  This can be seen in the
-plots of the interactive ``calculateSensitivity``, the bluer point is at 690nm.
+plots of the interactive ``calculateSensitivity``, the bluest point is at 690nm.
 (:ref:`ex4_gmosls_nsred_api_sensfunc`) We have a science spectrum bluer of 690nm because of the other two central
 wavelength settings of 890nm and 880nm.  Observing the standard with a
-central wavelength of 880nm would have help reduce, possible avoid entirely.
+central wavelength of 880nm would have help reduce, possible avoid it entirely.

@@ -249,7 +249,8 @@ Our configuration in this example is cross-dispersed with short-blue camera
 and the 32 l/mm grating.  This configuration generally has a sufficient number
 of lines available in all the orders.
 
-.. todo::  TBD whether we need a wavecal guide. (See :ref:`gnirsls_wavecal_guide`.)
+For more information about wavelength calibration, see the
+:ref:`gnirsxd_wavecal_guide`.
 
 The illumination mask will be obtained from the processed flat.  The
 processed pinhole will provide the distortion correction.
@@ -267,8 +268,6 @@ interactive mode. To activate the interactive mode:
 
 The interactive tools are introduced in section :ref:`interactive`.
 
-.. todo:: add interactive page.
-
 Each order can be inspected individually by selecting the tabs above the plot.
 
 The general shape of the fit for each order should look like this:
@@ -277,19 +276,19 @@ The general shape of the fit for each order should look like this:
    :width: 600
    :alt: Arc line identifications and fit for Order 3
 
-For this dataset, the fit for Order 7 is much improved by deleting ('d') the
-blue-most identification. Below are the plots before and after the deletion
-of the misidentified line.
+.. For this dataset, the fit for Order 7 is much improved by deleting ('d') the
+.. blue-most identification. Below are the plots before and after the deletion
+.. of the misidentified line.
 
-.. image:: _graphics/gnirsxd_SXD32mm_arc_order7_before.png
-   :width: 325
-   :alt: Arc line identifications and fit for Order 7 before deletion of
-         blue-most line.
+.. .. image:: _graphics/gnirsxd_SXD32mm_arc_order7_before.png
+..    :width: 325
+..    :alt: Arc line identifications and fit for Order 7 before deletion of
+..          blue-most line.
 
-.. image:: _graphics/gnirsxd_SXD32mm_arc_order7_after.png
-   :width: 325
-   :alt: Arc line identifications and fit for Order 7 after deletion of
-         blue-most line.
+.. .. image:: _graphics/gnirsxd_SXD32mm_arc_order7_after.png
+..    :width: 325
+..    :alt: Arc line identifications and fit for Order 7 after deletion of
+..          blue-most line.
 
 
 Telluric Standard

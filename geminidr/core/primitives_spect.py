@@ -1509,9 +1509,9 @@ class Spect(Resample):
                     if ext.mask is not None:
                         loc = int(np.median(initial_peaks))
                         if dispaxis == 0:
-                            _slice = ext.mask[loc] & DQ.unilluminated
+                            _slice = ext.mask[loc] & (DQ.unilluminated | DQ.no_data)
                         else:
-                            _slice = ext.mask[:, loc] & DQ.unilluminated
+                            _slice = ext.mask[:, loc] & (DQ.unilluminated | DQ.no_data)
                         slit_length_frac = 1 - ((_slice.argmin() +
                                                  _slice[::-1].argmin()) / _slice.size)
                     else:
@@ -3737,7 +3737,15 @@ class Spect(Resample):
                 # This avoids extrapolative blow-ups when flux-calibrating XD
                 # data that covers the full wavelength range but the standard
                 # only covers a small part.
-                sens_factor[(ext.mask & DQ.no_data) > 0] = 0
+                if len(ext.mask.shape) == 2:
+                    if dispaxis == 0:
+                        sens_factor[(np.bitwise_and.reduce(ext.mask, axis=1) & DQ.no_data) > 0] = 0
+                    elif dispaxis == 1:
+                        sens_factor[(np.bitwise_and.reduce(ext.mask) & DQ.no_data) > 0] = 0
+                    else:
+                        raise ValueError(f"dispersion axis {dispaxis} not recognized.")
+                else:
+                    sens_factor[(ext.mask & DQ.no_data) > 0] = 0
 
                 # Apply airmass correction. If none is needed/possible, we
                 # don't need to try to do this

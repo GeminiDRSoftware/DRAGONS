@@ -1065,7 +1065,6 @@ class IQReport(QAReport):
         strehl_fn : None/callable
             function to calculate Strehl ratio from "sources" catalog
         """
-        print("IMAGELIKE", self.image_like)
         sources = (gt.clip_sources(ext) if self.image_like
                    else gt.fit_continuum(ext))
         if (len(sources) > 0 and self.is_ao and self.image_like and

@@ -457,6 +457,8 @@ are also available in the header of each extracted spectrum: ``XTRACTED``,
 respectively.
 
 This is what the 1-D flux-calibrated spectrum of our sole target looks like.
+Note that any pixels flagged in the data quality array (DQ in the FITS file, or
+``ad.mask`` in Python) are not plotted by default. To over-ride that behavior,
 
 ::
 

@@ -30,7 +30,7 @@ Especially in the high resolution mode, 111l/mm grating, a combination of
 solution methods is often needed.
 
 We have not tested all the configuration.  The table below is based on
-limited experimentation and it is met as a guide, not as a set of absolute
+limited experimentation and it is meant as a guide, not as a set of absolute
 rules.   The table covers the most commonly used configurations.  We will
 add more configurations as we study them.
 
@@ -38,21 +38,25 @@ add more configurations as we study them.
 | Camera      | Grating    | Central |br| | Advise                                                                        |
 |             |            | Wavelength   |                                                                               |
 +-------------+------------+--------------+-------------------------------------------------------------------------------+
-| Short Blue  | 32/mm |br| |   ~1.65|um|  | **most likely** The arcs will normally have enough lines and |br|             |
+| Short Blue  | 32/mm |br| |   ~1.65 |um| | **most likely**: The arcs will normally have enough lines and |br|            |
 |             |            |              | reasonable coverage. |br| |br|                                                |
-|             |            |              | **recommended improvement** If the OH and O\ :sub:`2`\  emission lines  |br|  |
-|             |            |              | are visible in all orders, they can be used instead of the arc. |br| |br|     |
-|             |            |              | **unlikely** If emission lines are not visible (short exposures), |br|        |
+|             |            |              | **recommended improvement**: If the OH and O\ :sub:`2`\  emission |br|        |
+|             |            |              | lines are visible in all orders, they can be used instead of |br|             |
+|             |            |              | the arc. |br| |br|                                                            |
+|             |            |              | **unlikely**: If emission lines are not visible (short exposures), |br|       |
 |             |            |              | and the arc is not sufficient, the telluric absorption lines  |br|            |
 |             |            |              | can be used (from the telluric or the science observation).                   |
 |             +------------+--------------+-------------------------------------------------------------------------------+
-|             | 111/mm     | H-band range | **most likely** You will need a combination of methods and the best  |br|     |
-|             |            |              | solution for each order will depend on the exact central wavelength. |br|     |
-|             |            |              | In general, if the exposure time is long enough, the OH and O\ :sub:`2`\ |br| |
-|             |            |              | emission lines will be the primary method.                         |br| |br|  |
-|             |            |              | See discussion below to get a feel for what to expect for a set of |br|       |
-|             |            |              | three central wavelengths with the 111/mm grating.                            |
-|             +------------+--------------+-------------------------------------------------------------------------------+
+|             | 111/mm     | H-band range | **most likely**: You will need a combination of methods and |br|              |
+|             |            |              | the best solution for each order will depend on the exact |br|                |
+|             |            |              | central wavelength.  In general, if the exposure time is long |br|            |
+|             |            |              | enough, the OH and O\ :sub:`2`\  emission lines will be the |br|              |
+|             |            |              | primary method.  |br| |br|                                                    |
+|             |            |              | See discussion below to get a feel for what to expect for |br|                |
+|             |            |              | a set of three central wavelengths with the 111/mm |br|                       |
+|             |            |              | grating.                                                                      |
++-------------+------------+--------------+-------------------------------------------------------------------------------+
+
 
 Usage
 =====
@@ -134,14 +138,48 @@ identification.
 
 Combining Wavelength Solutions
 ++++++++++++++++++++++++++++++
+As shown in Example 2, when a single method does not provide a good solution
+we need to combine orders from wavelength solutions obtained with different
+methods.
+
+This is done with with the recipe ``combineWavelengthSolutions``, followed
+by the primitive ``storeProcessedArc`` to add the new combined solution to the
+calibration database.  For example::
+
+    reduce -r combineWavelengthSolutions N20191013S0006_arc.fits N20191013S0034_arc.fits -p ids=1,2,3,6
+    reduce -r storeProcessedArc N20191013S0006_combinedArc.fits -p suffix=_arc155
+
+.. important::  The primitive used by the recipe to ``combineSlices`` is
+      generic, which means that it knows about extensions, not about "Orders".
+      The **Orders 3 to 8 are stored in extensions 1 to 6, respectively**.
+      This is the index scale we have to use. It is not the most elegant
+      solution, but for now, it works.
 
 
 Special Considerations for the 111/mm Grating
 ---------------------------------------------
+The each order when the 111/mm grating is used covers a very small wavelength
+range.  This means that the number of arc lines per order is going to be
+small.  Also, because the specific region depends on the central wavelength
+selected, predicting the quality of the wavelength calibration one is going
+to obtain is difficult.
 
-.. the diagram. note that it will depend on exposure time and the visibility
-    of the sky lines.  depends also on the exact central wavelength as the
-    wave range is small and the set of lines available will vary greatly.
-    For the tel lines method, use the science if bright, otherwise the
-    telluric standard.  Discuss what "fit order 3" means.  Discuss the
-    possible issues.
+We have also found that just evaluating the wavelength calibration based
+on the ``determineWavelengthSolution`` plots is not sufficient.  We tried
+as illustrated in the diagram below.   Then, when we ran ``fitTelluric``
+(see Example 2) we found that there are exception.
+
+Therefore, use the diagram as a first guide, but always verify the adequacy
+of the solution using ``fitTelluric`` as shown in Example 2.
+
+Keep in mind that the diagram applies only for those specific central
+wavelengths.
+
+As a general recommendation, avoid using the telluric line solution if there
+is another method that leads to reasonable results.
+
+.. image:: _graphics/GNIRSXD_WavecalChart.png
+   :width: 100%
+   :alt: GNIRS XD Wavecal Chart for Example 2
+
+

@@ -190,6 +190,8 @@ This can be seen by using "|showpars|"::
    :scale: 100%
    :align: center
 
+|verticalpadding|
+
 The BPM, the master dark and the master flat are in our local calibration
 database.  For any other Gemini facility instrument, they would both be
 retrieved automatically by the calibration manager.  However, GNIRS not being
@@ -198,15 +200,9 @@ out that there are no calibration association rules between GNIRS keyhole images
 and darks.   We can specify the dark on the command line.  The flat will be
 retrieved automatically.
 
-.. todo:: The cleanReadout needs to be turned off.  It doesn't do a good job.
-        The FFT version does better on the individual frames, but the difference
-        in background level of the 4 quadrants messes up the source detection.
-        That is "fixed" by setting `mask=True` in detectSources.  Regardless,
-        the final stack is still bad in a similar way as for the std cleanReadout.
-
 ::
 
-    reduce @target.lis --user_cal processed_dark:N20120102S0538_dark.fits -p cleanReadout:clean=skip
+    reduce @target.lis --user_cal processed_dark:N20120102S0538_dark.fits
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science

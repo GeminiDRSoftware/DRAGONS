@@ -3,8 +3,6 @@
 #
 #                                                            primitives_stack.py
 # ------------------------------------------------------------------------------
-from IPython.terminal.interactiveshell import black_reformat_handler
-
 import astrodata
 from astrodata.fits import windowedOp
 
@@ -305,8 +303,6 @@ class Stack(PrimitivesBASE):
                     scale_factors = values
                 else:
                     zero_offsets = values
-
-                print("VALUES", values)
 
             if scale and np.min(scale_factors) < 0:
                 log.warning("Some scale factors are negative. Not scaling.")
