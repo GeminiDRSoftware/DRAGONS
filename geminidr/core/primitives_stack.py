@@ -3,8 +3,6 @@
 #
 #                                                            primitives_stack.py
 # ------------------------------------------------------------------------------
-from IPython.terminal.interactiveshell import black_reformat_handler
-
 import astrodata
 from astrodata.fits import windowedOp
 
