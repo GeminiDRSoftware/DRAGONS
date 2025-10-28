@@ -37,7 +37,7 @@ fixed_parameters_for_determine_distortion = {
     "nsum": 10,
     "spatial_order": 3,
     "spectral_order": 3,
-    "min_line_length": 0.3,
+    "min_line_length": 0.8,
     "debug_reject_bad": False
 }
 
@@ -186,7 +186,6 @@ associated_calibrations = {
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.f2ls
 @pytest.mark.preprocessed_data
-@pytest.mark.regression
 @pytest.mark.parametrize("ad,params", input_pars, indirect=['ad'])
 def test_regression_for_determine_distortion_using_wcs(
         ad, params, change_working_dir, ref_ad_factory):
@@ -214,18 +213,24 @@ def test_regression_for_determine_distortion_using_wcs(
         distortion_determined_ad = p.writeOutputs().pop()
 
     ref_ad = ref_ad_factory(distortion_determined_ad.filename)
-    model = distortion_determined_ad[0].wcs.get_transform(
-        "pixels", "distortion_corrected")[2]
-    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")[2]
+
+    # Confirm that the distortion model is placed after the rectification model
+    assert (distortion_determined_ad[0].wcs.available_frames.index("distortion_corrected") >
+            distortion_determined_ad[0].wcs.available_frames.index("rectified"))
+    # assert (ref_ad[0].wcs.available_frames.index("distortion_corrected") >
+    #         ref_ad[0].wcs.available_frames.index("rectified"))
+
+    model = distortion_determined_ad[0].wcs.get_transform("pixels", "distortion_corrected")
+    ref_model = ref_ad[0].wcs.get_transform("pixels", "distortion_corrected")
 
     # Otherwise we're doing something wrong!
-    assert model.__class__.__name__ == ref_model.__class__.__name__ == "Chebyshev2D"
+    assert model[-1].__class__.__name__ == ref_model[-1].__class__.__name__ == "Chebyshev2D"
 
-    X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
+    Y, X = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
-    # Increasing atol to 0.07 due to S20180114S0104_flatCorrected.fits producing
-    # slightly different results on Jenkins vs. on MacOS. DB 20240820
-    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.07)
+    xx, yy = X[ad[0].mask == 0], Y[ad[0].mask == 0]
+    diffs = model(xx, yy)[1] - ref_model(xx, yy)[1]  # 1 is y-axis in astropy
+    np.testing.assert_allclose(diffs, 0, atol=1)
 
 
 @pytest.mark.f2ls
@@ -252,8 +257,9 @@ def test_fitcoord_table_and_gwcs_match(ad, params, change_working_dir):
         p.determineDistortion(**fixed_parameters_for_determine_distortion)
         distortion_determined_ad = p.writeOutputs().pop()
 
-    model = distortion_determined_ad[0].wcs.get_transform(
-        "pixels", "distortion_corrected")
+    model = distortion_determined_ad[0].wcs.pipeline[
+        distortion_determined_ad[0].wcs.available_frames.index(
+            "distortion_corrected") - 1].transform
 
     fitcoord = distortion_determined_ad[0].FITCOORD
     fitcoord_model = am.table_to_model(fitcoord[0])

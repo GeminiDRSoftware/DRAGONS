@@ -169,18 +169,19 @@ The flats will be stacked.
     reduce @flats.lis
 
 GNIRS data are affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
-
-In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, because
-of the rapid variations around pixel 800, increasing the order could improve
-the final results.  Setting ``order=50`` fits that area well while still
-offering a good fit elsewhere.
+GNIRS science array have gains that differ by approximately 10 percent.
+We have added a correction in ``normalizeFlat`` that levels off the rows to
+help with the fit.  Here it works well, in some cases you might see a some
+split when you run ``normalizeFlat`` in interactive mode.  The objective,
+if you see the split, is to get a fit that falls inbetween the
+two sets of points, with a symmetrical residual fit.
 
 Note that you are not required to run in interactive mode, but you might want
 to if flat fielding is critical to your program.
+
+In this case, because of the rapid variations around pixel 800, increasing
+the order could improve the final results.  Setting ``order=50`` fits that
+area well while still offering a good fit elsewhere.
 
 ::
 
@@ -302,7 +303,7 @@ To run the reduction with all the interactive tools activated, set the
     reduce @sci.lis -p interactive=True
 
 The default fits are all good, though the trace can be improved by setting
-the order to 5 (interactively or with ``-p traceApertures:order=5``).
+the order to 4 (interactively or with ``-p traceApertures:order=4``).
 
 The 2D spectrum before extraction looks like this, with blue wavelengths at
 the bottom and the red-end at the top.

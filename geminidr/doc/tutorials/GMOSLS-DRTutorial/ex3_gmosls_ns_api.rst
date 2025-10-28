@@ -259,7 +259,7 @@ First, let's have a look at the list of objects.
         ad = astrodata.open(sci)
         print(sci, '  ', ad.object())
 
-On line 37, remember that the second argument contains the tags to **include**
+On line 31, remember that the second argument contains the tags to **include**
 (``tags``) and the third argument is the list of tags to **exclude**
 (``xtags``).
 
@@ -435,7 +435,7 @@ configuration file.
 
         ad = astrodata.open(reduce_std.output_filenames[0])
         plt.ioff()
-        plotting.dgsplot_matplotlib(ad, 1)
+        plotting.dgsplot_matplotlib(ad, 1, kwargs={})
         plt.ion()
 
     To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
@@ -517,7 +517,7 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
     ad = astrodata.open(reduce_science.output_filenames[0])
     plt.ioff()
-    plotting.dgsplot_matplotlib(ad, 1)
+    plotting.dgsplot_matplotlib(ad, 1, kwargs={})
     plt.ion()
 
 

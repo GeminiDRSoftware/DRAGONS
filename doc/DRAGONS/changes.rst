@@ -11,6 +11,91 @@ Change Logs
 4.1.0
 =====
 
+This major release includes new support for near-infrared spectroscopic data.
+Specifically, we are introducing support for GNIRS cross-dispersed data.
+
+Many improvements and bug fixes have been included in this release. Below we
+list the most notable ones.
+
+New Features
+------------
+
+Full support for the reduction of GNIRS cross-dispersed spectroscopy data.
+    GNIRS cross-dispersed data reduction can now be performed in DRAGONS.  Full
+    support from raw data to telluric and flux calibrated data is available. All
+    GNIRS cross-dispersed configurations are supported.
+
+    The software builds upon the GNIRS longslit support introduced in DRAGONS
+    V4.0.0.
+
+Improvements
+------------
+**geminidr.core**
+
+  * log-linear wavelength resampling is now supported.
+
+    Instead of the ``force_linear`` boolean parameter in the
+    ``resampleToCommonFrame`` primitive, the ``output_wave_scale``
+    parameter now accepts three values: ``linear``,  ``loglinear``,
+    and ``reference``.  The first two force a linear or log-linear
+    resampling along the wavelength axis, while ``reference`` maintains the
+    wavelength sampling of the reference frame, but can only be used if
+    ``trim_spectral=True`` since it is unsafe to extrapolate this solution.
+
+  * ``stackFrames``
+
+    The ``scale`` and ``zero`` parameters now work by a pairwise comparison
+    of the overlap regions of the input frames and perform a least-squares
+    minimization of the differences after applying an appropriate
+    transformation, rather than simply scaling by the average value of the
+    entire image (or ``statsec`` if provided).
+
+    The previous behavior can be restored by setting the new parameter
+    ``debug_old_normalization=True``.
+
+  * Easier handling of incorrect solutions in the
+    ``determineWavelengthSolution`` GUI
+
+    If all identified lines are deleted in the GUI, the model will revert
+    to the initial linear solution instead of maintaining the original (bad)
+    solution.
+
+**geminidr.gnirs**
+
+  * A non-linearity correction is now applied to GNIRS data taken at Gemini
+    North with the original IR Detector Controller (between 2010 and summer
+    2025). This follows the same form as the NIRI non-linearity correction.
+
+  * Before fitting a smooth function in ``normalizeFlat``, the flat field is
+    divided by a sawtooth pattern to remove the odd-even row effect seen in
+    the data. This pattern is re-applied to the data after the normalization.
+
+**geminidr**
+
+  * Static images such as illumination masks are now distributed as bzip2
+    files to reduce the size of the download.
+
+
+Interface Modifications
+-----------------------
+**geminidr.core**
+
+  * ``resampleToCommonFrame``:  The ``output_wave_scale``
+    parameter now accepts three values: ``linear``,  ``loglinear``,
+    and ``reference``.
+
+  * ``determineWavelengthSolution`` will now proceed even if no solution
+    is found, leaving the initial linear solution in place.
+
+  * The default parameters of ``fitTelluric`` have changed so as not to mask
+    regions with significant intrinsic stellar absorption.
+
+**gempy.scripts**
+
+    * The ``showpars`` script now supports the ``--all`` (or ``-a``) option to
+      list all parameters, including the debug-level ones which are normally
+      hidden.
+
 
 4.0.0
 =====

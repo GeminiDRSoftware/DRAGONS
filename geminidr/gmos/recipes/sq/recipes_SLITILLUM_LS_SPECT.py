@@ -18,7 +18,6 @@ def makeProcessedSlitIllum(p):
     p.addVAR(poisson_noise=True)
     p.stackFrames()
     p.makeSlitIllum()
-    p.makeIRAFCompatible()
     p.storeProcessedSlitIllum()
 
 

@@ -19,11 +19,11 @@ def makeProcessedArc(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
-    p.flatCorrect()
+    p.applySlitModel()
+    p.attachPinholeRectification()
     p.stackFrames()
-    p.attachPinholeModel()
     p.determineWavelengthSolution()
-    p.determineDistortion(spatial_order=1, step=4)
+    p.determineDistortion()
     p.storeProcessedArc()
 
 def combineWavelengthSolutions(p):

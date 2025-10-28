@@ -1,10 +1,8 @@
-from copy import deepcopy
-
 import numpy as np
 
 from geminidr import PrimitivesBASE
 from gempy.gemini import gemini_tools as gt
-from recipe_system.utils.decorators import parameter_override, capture_provenance
+from recipe_system.utils.decorators import parameter_override
 
 from . import parameters_stats
 
@@ -15,7 +13,7 @@ class Stats(PrimitivesBASE):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_stats)
 
-    def stats(self, adinputs=None, **params):
+    def recordPixelStats(self, adinputs=None, **params):
         """
         Adds headers to the AD object giving some statistics of the unmasked
         pixel values

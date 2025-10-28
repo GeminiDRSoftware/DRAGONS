@@ -570,6 +570,9 @@ we update as follows
     ])
     reduce_std_795nm.runr()
 
+The resulting curve is shown on the right plot (click the panel to enlarge).
+**Notice that we have manually masked three data points**.
+
 .. image:: _graphics/LS_ldred_sens_before.png
    :width: 325
    :alt: Sensitivity function before optimization
@@ -579,8 +582,6 @@ we update as follows
    :width: 325
    :alt: Sensitivity function after optimization
 
-The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the 
-interactive tool and have manually masked four data points.  
 
 .. note:: If you wish to inspect the spectrum in aperture 1:
 
@@ -681,12 +682,12 @@ respective variance and data quality (or mask) arrays.
 
         Pixels Extensions
         Index  Content                  Type              Dimensions     Format
-        [ 0]   science                  NDAstroData       (3723,)        float32
-                  .variance             ADVarianceUncerta (3723,)        float32
-                  .mask                 ndarray           (3723,)        uint16
-        [ 1]   science                  NDAstroData       (3723,)        float32
-                  .variance             ADVarianceUncerta (3723,)        float32
-                  .mask                 ndarray           (3723,)        uint16
+        [ 0]   science                  NDAstroData       (3743,)        float32
+                  .variance             ADVarianceUncerta (3743,)        float32
+                  .mask                 ndarray           (3743,)        uint16
+        [ 1]   science                  NDAstroData       (3743,)        float32
+                  .variance             ADVarianceUncerta (3743,)        float32
+                  .mask                 ndarray           (3743,)        uint16
 
         Other Extensions
                        Type        Dimensions

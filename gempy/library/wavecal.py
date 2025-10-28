@@ -259,7 +259,7 @@ def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
     """
     # Find peaks; convert width FWHM to sigma
     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-    peaks, peak_snrs = peak_finding.find_wavelet_peaks(
+    peaks, _, peak_snrs = peak_finding.find_wavelet_peaks(
         data, widths=widths, mask=mask, variance=variance, min_snr=min_snr,
         min_sep=min_sep, reject_bad=reject_bad)
     fit_this_peak = peak_snrs > min_snr
@@ -448,7 +448,9 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
                 lnlist.convert_refplot_to_air()
             input_data.update(lnlist.reference_spectrum)
 
-        input_data["init_models"] = [fit1d.model] + input_data["init_models"]
+        # No longer prepend the initial model as we want the fallback to
+        # be the starting (linear) wavelength solution
+        #input_data["init_models"] = [fit1d.model] + input_data["init_models"]
         data["meta"].append(input_data)
     return data
 
@@ -629,9 +631,18 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         mask &= bad_bits
         data[mask > 0] = 0.
 
+    # FWHM expected from resolution, in case estimation from data fails
+    exp_fwidth = ((cenwave or ext.central_wavelength(asNanometers=True))
+         / p._get_resolution(ext)
+         / abs(dispersion or ext.dispersion(asNanometers=True)))
+
     if config["fwidth"] is None:
         fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30)
-        logit(f"Estimated feature width: {fwidth:.2f} pixels")
+        if fwidth is None:
+            fwidth = exp_fwidth
+            logit(f"Expected feature width: {fwidth:.2f} pixels")
+        else:
+            logit(f"Estimated feature width: {fwidth:.2f} pixels")
     else:
         fwidth = config["fwidth"]
 
@@ -646,16 +657,19 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
         reject_bad=False, nbright=config.get("nbright", 0))
-    if len(peaks) == 0:
-        raise ValueError(f"No peaks were found; perhaps try a lower min_snr value?")
+
     # Do the second iteration of fwidth estimation and peak finding, this time using the number of peaks
     # found after the first fwidth estimation, in order to get more accurate
     # line widths. This step is mostly necessary when doing wavecal from sky lines, as for those
     # the brightest peaks also tend to be the widest, thus estimation from 10 brightest lines tends
     # to be too high.
-    if config["fwidth"] is None:
+    if config["fwidth"] is None and len(peaks):
         fwidth = peak_finding.estimate_peak_width(data, mask=mask, boxcar_size=30, nlines=len(peaks))
-        log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
+        if fwidth is None:
+            fwidth = exp_fwidth
+            log.stdinfo(f"Expected feature width: {fwidth:.2f} pixels")
+        else:
+            log.stdinfo(f"Estimated feature width is {fwidth:.2f} pixels")
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
@@ -760,7 +774,10 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
     log = logutils.get_logger(__name__)
     min_lines = [int(x) for x in str(config["debug_min_lines"]).split(',')]
     best_score = np.inf
-    arc_lines = linelist.wavelengths(in_vacuo=config["in_vacuo"], units="nm")
+    if linelist._lines is not None:
+        arc_lines = linelist.wavelengths(in_vacuo=config["in_vacuo"], units="nm")
+    else:
+        arc_lines = np.array([])
     arc_weights = linelist.weights
     # This allows suppression of the terminal log output by calling the function
     # with loglevel='debug'.
@@ -769,93 +786,94 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
     best_fit1d = None
     # Iterate over start position models most rapidly
-    for min_lines_per_fit, model, loc_start in cart_product(
-            min_lines, init_models, (0.5, 0.3, 0.7)):
-        domain = model.domain
-        #print("STARTING", model.parameters, loc_start, domain)
-        len_data = np.diff(domain)[0]  # actually len(data)-1
-        pixel_start = domain[0] + loc_start * len_data
+    if np.asarray(peaks).size and np.asarray(arc_lines).size:
+        for min_lines_per_fit, model, loc_start in cart_product(
+                min_lines, init_models, (0.5, 0.3, 0.7)):
+            domain = model.domain
+            #print("STARTING", model.parameters, loc_start, domain)
+            len_data = np.diff(domain)[0]  # actually len(data)-1
+            pixel_start = domain[0] + loc_start * len_data
 
-        matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
-                                        kdsigma, order=config["order"],
-                                        min_lines_per_fit=min_lines_per_fit,
-                                        k=k, bounds_setter=bounds_setter)
+            matches = perform_piecewise_fit(model, peaks, arc_lines, pixel_start,
+                                            kdsigma, order=config["order"],
+                                            min_lines_per_fit=min_lines_per_fit,
+                                            k=k, bounds_setter=bounds_setter)
 
-        # We perform a regular least-squares fit to all the matches
-        # we've made. This allows a high polynomial order to be
-        # used without the risk of it going off the rails
-        matched = np.where(matches > -1)[0]
-        fit_it = fitting.LinearLSQFitter()
-        if len(matched) > 1:  # need at least 2 lines, right?
-            m_init = models.Chebyshev1D(degree=min(config["order"], len(matched)-1),
-                                        domain=domain)
-            for p, v in zip(model.param_names, model.parameters):
-                if p in m_init.param_names:
+            # We perform a regular least-squares fit to all the matches
+            # we've made. This allows a high polynomial order to be
+            # used without the risk of it going off the rails
+            matched = np.where(matches > -1)[0]
+            fit_it = fitting.LinearLSQFitter()
+            if len(matched) > 1:  # need at least 2 lines, right?
+                m_init = models.Chebyshev1D(degree=min(config["order"], len(matched)-1),
+                                            domain=domain)
+                for p, v in zip(model.param_names, model.parameters):
+                    if p in m_init.param_names:
+                        setattr(m_init, p, v)
+                #bounds_setter(m_init)
+                #for i in range(len(matched), m_init.degree + 1):
+                #    m_init.fixed[f"c{i}"] = True
+                matched_peaks = peaks[matched]
+                matched_arc_lines = arc_lines[matches[matched]]
+                m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
+                #for p, l in zip(matched_peaks, matched_arc_lines):
+                #    print(f"{p:.2f} => {l:.2f}")
+
+                # We're close to the correct solution, perform a KDFit
+                m_init = models.Chebyshev1D(degree=config["order"], domain=domain)
+                for p, v in zip(m_final.param_names, m_final.parameters):
                     setattr(m_init, p, v)
-            #bounds_setter(m_init)
-            #for i in range(len(matched), m_init.degree + 1):
-            #    m_init.fixed[f"c{i}"] = True
-            matched_peaks = peaks[matched]
-            matched_arc_lines = arc_lines[matches[matched]]
-            m_final = fit_it(m_init, matched_peaks, matched_arc_lines)
-            #for p, l in zip(matched_peaks, matched_arc_lines):
-            #    print(f"{p:.2f} => {l:.2f}")
+                dw = abs(np.diff(m_final(m_final.domain))[0] / np.diff(m_final.domain)[0])
+                fit_it = matching.KDTreeFitter(sigma=2 * abs(dw), maxsig=5,
+                                               k=k, method='Nelder-Mead')
+                m_final = fit_it(m_init, peaks, arc_lines, in_weights=peak_weights,
+                                 ref_weights=arc_weights)
+                logit(f'{repr(m_final)} {fit_it.statistic}')
 
-            # We're close to the correct solution, perform a KDFit
-            m_init = models.Chebyshev1D(degree=config["order"], domain=domain)
-            for p, v in zip(m_final.param_names, m_final.parameters):
-                setattr(m_init, p, v)
-            dw = abs(np.diff(m_final(m_final.domain))[0] / np.diff(m_final.domain)[0])
-            fit_it = matching.KDTreeFitter(sigma=2 * abs(dw), maxsig=5,
-                                           k=k, method='Nelder-Mead')
-            m_final = fit_it(m_init, peaks, arc_lines, in_weights=peak_weights,
-                             ref_weights=arc_weights)
-            logit(f'{repr(m_final)} {fit_it.statistic}')
+                # And then recalculate the matches
+                match_radius = 4 * fwidth * abs(m_final.c1) / len_data  # 2*fwidth pixels
+                try:
+                    matched = matching.match_sources(m_final(peaks), arc_lines,
+                                                     radius=match_radius)
+                    incoords, outcoords = zip(*[(peaks[i], arc_lines[m])
+                                                for i, m in enumerate(matched) if m > -1])
+                    # Probably incoords and outcoords as defined here should go to
+                    # the interactive fitter, but cull to derive the "best" model
+                    fit1d = fit_1D(outcoords, points=incoords, function="chebyshev",
+                                   order=min(m_final.degree, len(incoords)-1),
+                                   domain=m_final.domain,
+                                   niter=config["niter"], sigma_lower=config["lsigma"],
+                                   sigma_upper=config["hsigma"])
+                    fit1d.image = np.asarray(outcoords)
+                except ValueError:
+                    log.warning("Line-matching failed")
+                    continue
+                nmatched = np.sum(~fit1d.mask)
+                logit(f"{filename} {repr(fit1d.model)} {nmatched} {fit1d.rms}")
 
-            # And then recalculate the matches
-            match_radius = 4 * fwidth * abs(m_final.c1) / len_data  # 2*fwidth pixels
-            try:
-                matched = matching.match_sources(m_final(peaks), arc_lines,
-                                                 radius=match_radius)
-                incoords, outcoords = zip(*[(peaks[i], arc_lines[m])
-                                            for i, m in enumerate(matched) if m > -1])
-                # Probably incoords and outcoords as defined here should go to
-                # the interactive fitter, but cull to derive the "best" model
-                fit1d = fit_1D(outcoords, points=incoords, function="chebyshev",
-                               order=min(m_final.degree, len(incoords)-1),
-                               domain=m_final.domain,
-                               niter=config["niter"], sigma_lower=config["lsigma"],
-                               sigma_upper=config["hsigma"])
-                fit1d.image = np.asarray(outcoords)
-            except ValueError:
-                log.warning("Line-matching failed")
-                continue
-            nmatched = np.sum(~fit1d.mask)
-            logit(f"{filename} {repr(fit1d.model)} {nmatched} {fit1d.rms}")
+                # Wavelength solution models need to be monotonic. Make that check.
+                waves = fit1d.evaluate(np.arange(len_data))
+                if not (np.all(np.diff(waves) > 0) or np.all(np.diff(waves) < 0)):
+                    continue
 
-            # Wavelength solution models need to be monotonic. Make that check.
-            waves = fit1d.evaluate(np.arange(len_data))
-            if not (np.all(np.diff(waves) > 0) or np.all(np.diff(waves) < 0)):
-                continue
+                # Calculate how many lines *could* be fit. We require a constrained
+                # fit but also that it fits some reasonable number of lines
+                nfittable_lines = np.sum(np.logical_and(arc_lines > waves.min(), arc_lines < waves.max()))
+                min_matches_required = max(config["order"] + min(nfittable_lines // 2, 3), 2)
 
-            # Calculate how many lines *could* be fit. We require a constrained
-            # fit but also that it fits some reasonable number of lines
-            nfittable_lines = np.sum(np.logical_and(arc_lines > waves.min(), arc_lines < waves.max()))
-            min_matches_required = max(config["order"] + min(nfittable_lines // 2, 3), 2)
+                # Trial and error suggests this criterion works well
+                if fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and nmatched >= min_matches_required:
+                    #print("RETURNING", fit1d.model.parameters)
+                    return fit1d, True
 
-            # Trial and error suggests this criterion works well
-            if fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and nmatched >= min_matches_required:
-                #print("RETURNING", fit1d.model.parameters)
-                return fit1d, True
-
-            # This seems to be a reasonably ranking for poor models
-            if nmatched > config["order"] + 1:
-                score = fit1d.rms / (nmatched - config["order"] - 1)
-            else:
-                score = np.inf
-            if score < best_score or np.isinf(score) and (best_fit1d is None or fit1d.model.degree > best_fit1d.model.degree):
-                best_score = score
-                best_fit1d = fit1d
+                # This seems to be a reasonably ranking for poor models
+                if nmatched > config["order"] + 1:
+                    score = fit1d.rms / (nmatched - config["order"] - 1)
+                else:
+                    score = np.inf
+                if score < best_score or np.isinf(score) and (best_fit1d is None or fit1d.model.degree > best_fit1d.model.degree):
+                    best_score = score
+                    best_fit1d = fit1d
 
     if best_fit1d is None:
         # Hack a fit1D object that represents the original model with no fitted lines
@@ -951,7 +969,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         if not first:
             m_init.c0.bounds = (c0 - 5 * abs(dw), c0 + 5 * abs(dw))
         #print("INPUT MODEL")
-        #print(m_init.parameters, m_init.domain, m_init(np.arange(0,1001,200)))
+        #print(m_init.parameters, m_init.domain)
         #print(m_init.bounds)
         #print(datetime.now() - start)
 
@@ -973,7 +991,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
                     # automatically removes old (bad) match
                     matches[i] = m
                     found_new_matches = True
-                    #print(f"Pixel {p} => {arc_lines[m]}")
+                    #print(f"Pixel {p} => was {m_init(p):.4f} now {m_this(p):.4f} {arc_lines[m]}")
         try:
             p_lo = peaks[matches > -1].min()
         except ValueError:
@@ -1115,69 +1133,74 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
     log = logutils.get_logger(__name__)
     in_vacuo = config.in_vacuo
 
-    # Because of the way the fit_1D object is constructed, there
-    # should be no masking. But it doesn't hurt to make sure, or
-    # be futureproofed in case we change things.
-    incoords = fit1d.points[~fit1d.mask]
-    outcoords = fit1d.image[~fit1d.mask]
+    if fit1d.image is None:
+        # We didn't do a successful fit, so just use the original model
+        m_final = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+        log.stdinfo(f"Wavelength solution was not updated for extension {ext.id}")
+    else:
+        # Because of the way the fit_1D object is constructed, there
+        # should be no masking. But it doesn't hurt to make sure, or
+        # be futureproofed in case we change things.
+        incoords = fit1d.points[~fit1d.mask]
+        outcoords = fit1d.image[~fit1d.mask]
 
-    m_final = fit1d.model
-    domain = m_final.domain
-    rms = fit1d.rms
-    nmatched = len(incoords)
-    log.stdinfo("Chebyshev coefficients: "+" ".join(
-        f"{p:.5f}" for p in m_final.parameters))
-    # TODO: Do we need input_data? config.fwidth?
-    log.stdinfo(f"Matched {nmatched}/{len(input_data['peaks'])} lines with "
-                f"rms = {rms:.3f} nm")
+        m_final = fit1d.model
+        domain = m_final.domain
+        rms = fit1d.rms
+        nmatched = len(incoords)
+        log.stdinfo("Chebyshev coefficients: "+" ".join(
+            f"{p:.5f}" for p in m_final.parameters))
+        # TODO: Do we need input_data? config.fwidth?
+        log.stdinfo(f"Matched {nmatched}/{len(input_data['peaks'])} lines with "
+                    f"rms = {rms:.3f} nm")
 
-    dw = np.diff(m_final(domain))[0] / np.diff(domain)[0]
-    max_rms = max(0.2 * rms / abs(dw), 1e-4)  # in pixels
-    max_dev = 3 * max_rms
-    m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
-                                            max_deviation=max_dev)
-    if len(incoords) > 1:
-        inv_rms = np.std(m_inverse(m_final(incoords)) - incoords)
-        log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
-    m_final.name = "WAVE"  # always WAVE, never AWAV
-    m_final.inverse = m_inverse
+        dw = np.diff(m_final(domain))[0] / np.diff(domain)[0]
+        max_rms = max(0.2 * rms / abs(dw), 1e-4)  # in pixels
+        max_dev = 3 * max_rms
+        m_inverse = am.make_inverse_chebyshev1d(m_final, rms=max_rms,
+                                                max_deviation=max_dev)
+        if len(incoords) > 1:
+            inv_rms = np.std(m_inverse(m_final(incoords)) - incoords)
+            log.stdinfo(f"Inverse model has rms = {inv_rms:.3f} pixels.")
+        m_final.name = "WAVE"  # always WAVE, never AWAV
+        m_final.inverse = m_inverse
 
-    if len(incoords):
-        indices = np.argsort(incoords)
-        # Add 1 to pixel coordinates so they're 1-indexed
-        incoords = np.float32(incoords[indices]) + 1
-        outcoords = np.float32(outcoords[indices])
-    temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=u.nm)
+        if len(incoords):
+            indices = np.argsort(incoords)
+            # Add 1 to pixel coordinates so they're 1-indexed
+            incoords = np.float32(incoords[indices]) + 1
+            outcoords = np.float32(outcoords[indices])
+        temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=u.nm)
 
-    #### Temporary to ensure all the old stuff is still there
-    # while I refactor tests
-    temptable.add_columns([[1], [m_final.degree], [domain[0]], [domain[1]]],
-                          names=("ndim", "degree", "domain_start", "domain_end"))
-    temptable.add_columns([[rms], [input_data["fwidth"]]],
-                          names=("rms", "fwidth"))
-    if ext.data.ndim > 1:
-        # TODO: Need to update this from the interactive tool's values
-        direction, location = input_data["location"].split()
-        temptable[direction] = int(location)
-        temptable["nsum"] = config.nsum
-    pad_rows = nmatched - len(temptable.colnames)
-    if pad_rows < 0:  # Really shouldn't be the case
-        incoords = list(incoords) + [0] * (-pad_rows)
-        outcoords = list(outcoords) + [0] * (-pad_rows)
-        pad_rows = 0
+        #### Temporary to ensure all the old stuff is still there
+        # while I refactor tests
+        temptable.add_columns([[1], [m_final.degree], [domain[0]], [domain[1]]],
+                              names=("ndim", "degree", "domain_start", "domain_end"))
+        temptable.add_columns([[rms], [input_data["fwidth"]]],
+                              names=("rms", "fwidth"))
+        if ext.data.ndim > 1:
+            # TODO: Need to update this from the interactive tool's values
+            direction, location = input_data["location"].split()
+            temptable[direction] = int(location)
+            temptable["nsum"] = config.nsum
+        pad_rows = nmatched - len(temptable.colnames)
+        if pad_rows < 0:  # Really shouldn't be the case
+            incoords = list(incoords) + [0] * (-pad_rows)
+            outcoords = list(outcoords) + [0] * (-pad_rows)
+            pad_rows = 0
 
-    fit_table = Table([temptable.colnames + [''] * pad_rows,
-                       list(temptable[0].values()) + [0] * pad_rows,
-                       incoords, outcoords],
-                      names=("name", "coefficients", "peaks", "wavelengths"),
-                      units=(None, None, u.pix, u.nm),
-                      meta=temptable.meta)
-    medium = "vacuo" if in_vacuo else "air"
-    fit_table.meta['comments'] = [
-        'coefficients are based on 0-indexing',
-        'peaks column is 1-indexed',
-        f'calibrated with wavelengths in {medium}']
-    ext.WAVECAL = fit_table
+        fit_table = Table([temptable.colnames + [''] * pad_rows,
+                           list(temptable[0].values()) + [0] * pad_rows,
+                           incoords, outcoords],
+                          names=("name", "coefficients", "peaks", "wavelengths"),
+                          units=(None, None, u.pix, u.nm),
+                          meta=temptable.meta)
+        medium = "vacuo" if in_vacuo else "air"
+        fit_table.meta['comments'] = [
+            'coefficients are based on 0-indexing',
+            'peaks column is 1-indexed',
+            f'calibrated with wavelengths in {medium}']
+        ext.WAVECAL = fit_table
 
     spectral_frame = (ext.wcs.output_frame if ext.data.ndim == 1
                       else ext.wcs.output_frame.frames[0])

@@ -15,7 +15,7 @@ from astropy.io.ascii.core import InconsistentTableError
 from astropy import units as u
 from astropy import constants as const
 from astropy.stats import sigma_clip
-from astropy.modeling import fitting, models
+from astropy.modeling import fitting, models, bind_bounding_box
 from astropy.table import Table
 from scipy import interpolate
 from scipy.ndimage import measurements
@@ -231,7 +231,9 @@ class GHOSTSpect(GHOST):
 
             for ext in ad:
                 # Needs to be transposed because of astropy x-first
-                ext.wcs = gWCS([(input_frame, models.Tabular2D(lookup_table=0.1 * wfit.T, name="WAVE")),
+                m = models.Tabular2D(lookup_table=0.1 * wfit.T, name="WAVE")
+                bind_bounding_box(m, m.bounding_box.bounding_box(order="F"), order="F")
+                ext.wcs = gWCS([(input_frame, m),
                                 (output_frame, None)])
 
             # Timestamp and update filename
@@ -2189,8 +2191,6 @@ class GHOSTSpect(GHOST):
                 if not hasattr(ext, "WAVL"):
                     log.warning(f"    EXTVER {i} has no WAVL table. Ignoring.")
                     continue
-                has_var = ext.variance is not None
-                has_mask = ext.mask is not None
                 npix, nobj = ext.shape[-2:]
                 try:
                     orders = list(range(ext.shape[-3]))
@@ -2225,9 +2225,9 @@ class GHOSTSpect(GHOST):
                     for order, wave_model in zip(orders, wave_models):
                         ndd = ext.nddata.__class__(data=ext.data[order, :, spec].ravel(),
                                                    meta={'header': ext.hdr.copy()})
-                        if has_mask:
+                        if ext.has_mask():
                             ndd.mask = ext.mask[order, :, spec].ravel()
-                        if has_var:
+                        if ext.has_variance():
                             ndd.variance = ext.variance[order, :, spec].ravel()
                         adout.append(ndd)
                         adout[-1].hdr[ad._keyword_for('data_section')] = f"[1:{npix}]"

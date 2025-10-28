@@ -409,13 +409,12 @@ to generate new sensitivity data points to fit.
 This is enabled by the ``resampling`` parameter, whose value 
 we update as follows
 
-.. todo:: The trace and the sensfunc plot are different from 3.2.x  For the
-    trace, order might need to be set to 6, though that is the not source of
-    the difference in the sensfunc plot.
-
 ::
 
     reduce @std_795nm.lis -p calculateSensitivity:interactive=True calculateSensitivity:resampling=15.0
+
+The resulting curve is shown on the right plot (click the panel to enlarge).
+**Notice that we have manually masked three data points**.
 
 .. image:: _graphics/LS_ldred_sens_before.png
    :width: 325
@@ -426,8 +425,6 @@ we update as follows
    :width: 325
    :alt: Sensitivity function after optimization
 
-The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the 
-interactive tool and have manually masked four data points.  
 
 .. note:: If you wish to inspect the spectra::
 
@@ -474,7 +471,7 @@ science observations and extract the 1-D spectrum.
 
 Here we use a different science reduction recipe ``reduceWithMultipleStandards`` 
 than the default. The 
-latter performs flux calibration *after* stacking the extracted spectra 
+default recipe performs flux calibration **after** stacking the extracted spectra
 as described :ref:`here <Science Observations>`, which is not suitable 
 for these observations with a large wavelength dither. The recipe 
 ``reduceWithMultipleStandards`` will run flux calibration for each 
@@ -490,7 +487,8 @@ we have selected sigma-clipping while tracing the apertures (right plot;
 click to enlarge). Notice that there is an additional tab for Aperture 2
 in the upper part of the right plot.
 
-.. todo:: The trace screenshot appears to be missing.
+The plots below are from the second ``findApertures`` call, the one done on
+the stacked image and after the ``skySubtractFromSlit`` primitive.
 
 .. image:: _graphics/LS_ldred_findAp_sci.png
    :width: 325
@@ -518,8 +516,6 @@ This is what the 2-D spectrum looks like.
     ``ds9`` must be launched by the user ahead of running the display primitive.
     (``ds9&`` on the terminal prompt.)
 
-.. todo:: update the screenshot.  It looks much better now.  ???
-
 .. image:: _graphics/LS_ldred_sci_2D.png
    :width: 600
    :alt: 2D stacked spectrum
@@ -532,9 +528,7 @@ respectively.
 
 The 1-D flux-calibrated spectra of the two apertures are shown below.
 
-.. todo:: update the screenshots.  Again, much cleaner.
-
-.. todo:: Note the drop beyond 960nm is related to the lack of coverage in the
+.. note:: The drop beyond 960nm is related to the lack of coverage in the
     sensitivity function.
 
 ::
@@ -552,9 +546,12 @@ The 1-D flux-calibrated spectra of the two apertures are shown below.
 
 Since there are only two images, several bad columns, and artifacts remain
 in the data.  Many are flagged in the mask, the DQ plane of the output FITS
-files. Flagged pixels are not used in the calculations.  They do show up in the
-data when plotted though.  Correcting for them is a cosmetic step left to the
-user as the only purpose is to improve the look of the spectra, not the
+files. Flagged pixels are not used in the calculations.  ``dgsplot``
+automatically ignore those bad pixels.
+
+If you are using your own tools and they cannot use the DQ plane or mask, you
+might want to interpolate over the bad values. This is a cosmetic step left to
+the user as the only purpose is to improve the look of the spectra, not the
 scientific result.
 
 If you decide to apply a cosmetic correction, you could use the primitive

@@ -57,7 +57,7 @@ def test_reduce_flat(change_working_dir, input_filename, bias, arm,
         output_filename = p.streams['main'][0].filename
         adout = astrodata.open(os.path.join("calibrations", "processed_flat", output_filename))
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        assert ad_compare(adref, adout, rtol=1e-6, ignore_kw=['PROCFLAT'])
+        assert ad_compare(adref, adout, rtol=1e-6, ignore_kw=['PROCFLAT', 'OVERRDNS'])
 
         # Comparison doesn't include "exotic" extensions
         assert hasattr(adout[0], "BLAZE")

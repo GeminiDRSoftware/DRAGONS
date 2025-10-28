@@ -213,19 +213,6 @@ Remember that you can use the ``--expr`` option to select targets with different
 names (``object``) or exposure times (``exposure_time``), or use it with any
 of the datasets |descriptors|.
 
-.. note::
-
-   For Flamingos-2 data, it is useful to check the World Coordinate System (WCS)
-   of the science data.
-
-   ::
-
-       $ reduce -r checkWCS @sci_images.list
-
-   Please see details in :ref:`checkWCS` in the :ref:`tips_and_tricks` chapter.
-
-.. todo:: checkWCS is clear, yet the reduce later crashes at standardizeWCS.
-
 
 .. _process_dark_files:
 
@@ -323,9 +310,6 @@ Reduce the Science Images
 Now that we have the master dark and the master flat, we can tell |reduce|
 to process our science data. |reduce| will look at the local database
 for calibration files.
-
-.. todo:: The reduce command below is not working. It crashes at standardizeWCS.
-     Add prepare:bad_wcs=fix to the reduce command.   Chris is looking into this.
 
 .. code-block:: bash
 

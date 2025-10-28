@@ -8,9 +8,9 @@
 
 .. _gnirsls_wavecal_guide:
 
-****************************
-Wavelength Calibration Guide
-****************************
+*****************************************
+Wavelength Calibration Guide for GNIRS LS
+*****************************************
 
 This is a quick reference table to guide you towards the wavelength calibration
 scenario that most likely applies based on the instrument configuration.
@@ -45,14 +45,14 @@ calculation.
 |             |            |              | and the arc is not sufficient, the telluric absorption lines  |br|            |
 |             |            |              | can be used.                                                                  |
 |             +------------+--------------+-------------------------------------------------------------------------------+
-|             | 111/mm     |  < 3.3 |um|  | **most likely** The arc lines will be very few, 1 to 5, and will |br|         |
+|             | 111/mm     |  < 2.3 |um|  | **most likely** The arc lines will be very few, 1 to 5, and will |br|         |
 |             |            |              | not offer a good coverage of the spectral range.  OH and O\ :sub:`2`\  |br|   |
 |             |            |              | lines should be visible, use them. |br| |br|                                  |
 |             |            |              | **less likely** If the exposure times are short, the OH and O\ :sub:`2`\ |br| |
 |             |            |              | lines might not be visible, the only solution will be to use the |br|         |
 |             |            |              | telluric absorption features.                                                 |
 |             |            +--------------+-------------------------------------------------------------------------------+
-|             |            |  > 3.3 |um|  | **most likely** The arc lines will be very few, 1 to 5, and will |br|         |
+|             |            |  > 2.3 |um|  | **most likely** The arc lines will be very few, 1 to 5, and will |br|         |
 |             |            |              | not offer a good coverage of the spectral range. There will be |br|           |
 |             |            |              | no OH or O\ :sub:`2`\  lines available. The telluric absorption features |br| |
 |             |            |              | **must** be used.                                                             |
@@ -84,15 +84,14 @@ the information that helps calculating the wavelength solution.
 From the Arc Lamp
 -----------------
 Producing a wavelength solution from the arc observations is fairly
-straightforward.  Just call reduce on the raw arcs and provide a processed
-flat.
+straightforward.  Just call reduce on the raw arcs.
 
 The use of the interactive mode is recommended to verify the solution and
 ensure that the lines offer a good coverage the entire spectral range.
 
 ::
 
-  reduce @arcs.lis -p interactive=True flatCorrect:flat=N20180201S0060_flat.fits
+  reduce @arcs.lis -p interactive=True
 
 From the Emission Lines
 -----------------------
@@ -127,7 +126,7 @@ condition.  So in this case, there are two steps to the process.
 
 ::
 
-  reduce @arcs.lis -p flatCorrect:flat=N20210407S0177_flat.fits interactive=True
+  reduce @arcs.lis -p interactive=True
   caldb remove N20210407S0181_arc.fits
 
   reduce @sci.lis -r makeWavecalFromSkyAbsorption --user_cal processed_arc:N20210407S0181_arc.fits -p interactive=True

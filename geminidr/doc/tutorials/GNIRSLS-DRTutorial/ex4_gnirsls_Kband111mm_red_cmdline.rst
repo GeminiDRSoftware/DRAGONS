@@ -183,18 +183,17 @@ The flats will be stacked.
     reduce @flats.lis
 
 GNIRS data are affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
-
-In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, the fit
-can be improved by activating the sigma clipping with one iteration, setting
-the low sigma to 2 instead of 3, and setting the "grow" parameter to 2.
+GNIRS science array have gains that differ by approximately 10 percent.
+We have added a correction in ``normalizeFlat`` that levels off the rows to
+help with the fit.  Here it works well, in some cases you might see a some
+split when you run ``normalizeFlat`` in interactive mode.  The objective,
+if you see the split, is to get a fit that falls inbetween the
+two sets of points, with a symmetrical residual fit.
 
 Note that you are not required to run in interactive mode, but you might want
-to if flat fielding is critical to your program.  Run it interactively and
-see for yourself the difference the adjustments make in this case.
+to if flat fielding is critical to your program.  In this case, the fit
+can be improved by activating the sigma clipping with one iteration, setting
+the low sigma to 2 instead of 3, and setting the "grow" parameter to 2.
 
 ::
 
@@ -252,7 +251,7 @@ We will feed it to the next step, the only one that needs it, manually.
 
 ::
 
-    reduce @arcs.lis -p flatCorrect:flat=N20210407S0177_flat.fits interactive=True
+    reduce @arcs.lis -p interactive=True
     caldb remove N20210407S0181_arc.fits
 
 .. image:: _graphics/gnirsls_Kband111mm_red_arcID.png
@@ -276,19 +275,22 @@ It is strongly recommended to use the interactive mode to visually confirm
 that lines have been properly identified and if not manually identify the
 lines.
 
-In this case, the automatic identification is correct and no further action
-is needed.
-
-If manually identification was needed, the first step would be to clear the
-lines and then use "i" to identify lines correctly with the help of the top
-plot.  After a few have been identified across the **entire** spectrum,
-click "Identify Lines" to fill in more lines automatically.
-
 ::
 
     reduce @sci.lis -r makeWavecalFromSkyAbsorption --user_cal processed_arc:N20210407S0181_arc.fits -p  interactive=True
 
-Zooming in on the sky lines, we can better spot discrepancies, if any.
+In this case, indeed, there is a discrepancy.
+
+.. image:: _graphics/gnirsls_Kband111mm_red_tellmatch_initial.png
+   :width: 600
+   :alt: Initial sky lines identification showing a discrepancy
+
+
+The first step to correct the situation is to clear the
+lines and then use "i" to identify lines correctly with the help of the top
+plot.   After a few have been identified across the **entire** spectrum,
+click "Identify Lines" to fill in more lines automatically.
+
 
 .. image:: _graphics/gnirsls_Kband111mm_red_tellmatch.png
    :width: 600

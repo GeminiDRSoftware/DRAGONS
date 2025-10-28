@@ -1065,7 +1065,6 @@ class IQReport(QAReport):
         strehl_fn : None/callable
             function to calculate Strehl ratio from "sources" catalog
         """
-        print("IMAGELIKE", self.image_like)
         sources = (gt.clip_sources(ext) if self.image_like
                    else gt.fit_continuum(ext))
         if (len(sources) > 0 and self.is_ao and self.image_like and
@@ -1248,7 +1247,7 @@ class IQReport(QAReport):
             body.append(('(Requested IQ could not be determined)', ''))
 
         # allow comparison if "elip" is None
-        if results.get("elip") or 0 > 0.1:
+        if (results.get("elip", 0) or 0) > 0.1:
             body.append(('', 'WARNING: high ellipticity'))
             self.comments.append('High ellipticity')
             if 'NON_SIDEREAL' in self.ad_tags:

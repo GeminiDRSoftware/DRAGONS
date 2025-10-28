@@ -17,7 +17,7 @@ def makeProcessedBias(p):
         A primitive set matching the recipe_tags.
     """
 
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
@@ -27,7 +27,7 @@ def makeProcessedBias(p):
     p.storeProcessedBias()
     return
 
-def checkBias1(p):
+def checkBiasOSCO(p):
     """
     This recipe checks bias frames by processing them as regular bias frames
     (notably including overscan correction), then recording some pixel
@@ -35,15 +35,15 @@ def checkBias1(p):
     :param p:
     :return:
     """
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
-    p.stats(prefix='OSCO')
-    p.writeOutputs(strip=True, suffix='_checkBias1')
+    p.recordPixelStats(prefix='OSCO')
+    p.writeOutputs(strip=True, suffix='_checkBiasOSCO')
     return
 
-def checkBias2(p):
+def checkBiasBICO(p):
     """
     This recipe checks bias frames by processing them as regular bias frames
     (notably including overscan correction), then subtracting a processed bias
@@ -51,13 +51,13 @@ def checkBias2(p):
     :param p:
     :return:
     """
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.biasCorrect(do_cal="force")
-    p.stats(prefix="BICO")
-    p.writeOutputs(strip=True, suffix='_checkBias2')
+    p.recordPixelStats(prefix="BICO")
+    p.writeOutputs(strip=True, suffix='_checkBiasBICO')
     return
 
 _default = makeProcessedBias

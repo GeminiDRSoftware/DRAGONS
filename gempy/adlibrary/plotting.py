@@ -62,11 +62,12 @@ def _setup_dgsplots(ad, aperture, ignore_mask):
 
         pix = np.arange(ext.data.shape[-1])
         if ext.data.ndim == 1:
-            setup_plot['data'].append(ext.data if ext.mask is None else
+            setup_plot['data'].append(ext.data if (ext.mask is None or ignore_mask) else
                                       np.where(ext.mask==0, ext.data, np.nan))
             setup_plot['wavelength'].append(ext.wcs(pix).astype(np.float32))
         else:
-            setup_plot['data'].extend(ext.data if ext.mask is None else np.where(ext.mask==0, ext.data, np.nan))
+            setup_plot['data'].extend(ext.data if (ext.mask is None or ignore_mask) else
+                                      np.where(ext.mask==0, ext.data, np.nan))
             grid = np.meshgrid(pix, np.arange(ext.data.shape[0]),
                                sparse=True, indexing='xy')
             setup_plot['wavelength'].extend(ext.wcs(*grid).astype(np.float32))

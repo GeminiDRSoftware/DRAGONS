@@ -288,3 +288,19 @@ The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
+
+
+Below are one of the raw images and the final stack:
+
+.. figure:: _static/img/N20170614S0201.png
+   :align: center
+
+   One of the multi-extensions files.
+
+
+.. figure:: _static/img/N20170614S0201_stack.png
+   :align: center
+
+   Final stacked image. The light-gray area represents the
+   masked pixels.
+

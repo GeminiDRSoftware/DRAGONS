@@ -7,7 +7,7 @@ import numpy as np
 from astropy import coordinates as coord
 from astropy import units as u
 from astropy.io import fits
-from astropy.modeling import core, models, projections, CompoundModel
+from astropy.modeling import core, models, projections, CompoundModel, bind_bounding_box
 from astropy.table import Table
 from gwcs import coordinate_frames as cf
 from gwcs import utils as gwutils
@@ -781,6 +781,7 @@ def fitswcs_other(header, other=None):
                 other_model = models.Tabular1D(lookup_table=table[header[f'PS{ax + 1}_1']])
             else:
                 other_model = models.Tabular2D(lookup_table=table.T)
+                bind_bounding_box(other_model, other_model.bounding_box.bounding_box(order="F"), order="F")
             other_model.name = model_name_mapping.get(ctype[:4], ctype[:4])
             del other[table_name]
         elif len(pixel_axes) == 1:
