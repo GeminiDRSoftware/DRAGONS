@@ -44,4 +44,4 @@ def test_reduce_bias(change_working_dir, path_to_inputs, input_filename, arm, pa
         output_filename = p.streams['main'][0].filename
         adout = astrodata.open(os.path.join("calibrations", "processed_bias", output_filename))
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        assert ad_compare(adref, adout, ignore_kw=['PROCBIAS', 'OVERRDNS'])
+        assert ad_compare(adref, adout, ignore_kw=['PROCBIAS', 'OVERRDNS', 'RDNOISEM'])

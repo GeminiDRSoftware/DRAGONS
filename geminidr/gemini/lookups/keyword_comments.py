@@ -57,6 +57,7 @@ keyword_comments = {
     "RAWPIREQ": "PI Requirements Met",
     "RAWBIAS": "Estimated raw bias level [ADU]",
     "RDNOISE": "Estimated read noise [electrons]",
+    "RDNOISEM": "Measured read noise [electrons]",
     "RELEASE": "End of proprietary period YYYY-MM-DD",
     "RELINT": "Relative intensity factor",
     "SATLEVEL": "Saturation level [ADU]",

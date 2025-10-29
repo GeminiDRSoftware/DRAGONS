@@ -310,6 +310,7 @@ class CCD(PrimitivesBASE):
                                 self.keyword_comments['OVERSCAN'])
                     ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
                     ext.hdr.set('OVERRDNS', overstd, self.keyword_comments['OVERRDNS'])
+                    ext.hdr.set('RDNOISEM', overstd*ext.gain(), self.keyword_comments['RDNOISEM'])
                     for desc in ('saturation_level', 'non_linear_level'):
                         with suppress(AttributeError, KeyError):
                             ext.hdr[ad._keyword_for(desc)] -= bias_level
