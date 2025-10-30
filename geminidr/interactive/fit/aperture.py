@@ -424,17 +424,16 @@ class FindSourceAperturesModel:
 
                 limits = get_limits(
                     np.nan_to_num(self.profile),
-                    self.prof_mask,
+                    None,  # don't use mask because of -ve beams
                     peaks=peaks,
                     threshold=self.threshold,
-                    min_snr=self.min_snr,
+                    min_snr=0,  # we MUST find a peak
                 )
-
-                log.stdinfo(
-                    f"Found source at {self.direction}: {peaks[0]:.1f}"
-                )
-
-                self.add_aperture(peaks[0], *limits[0])
+                if limits:  # otherwise there will have been a warning
+                    log.stdinfo(
+                        f"Found source at {self.direction}: {peaks[0]:.1f}"
+                    )
+                    self.add_aperture(peaks[0], *limits[0])
 
     def update(self, extras):
         """Update extras in the model."""
