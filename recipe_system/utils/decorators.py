@@ -395,7 +395,7 @@ def assert_expected_dtypes(adinputs):
         for n, ext in enumerate(ad):
             emsg = f'  File {ad.filename}, AstroData ext {n}:\n'
             initlen = len(emsg)
-            ndd = ext.nddata
+            ndd = ext.nddata.window[(slice(0, 1),) * len(ext.shape)]
             if ndd.data.dtype.itemsize > 4:  # int/float with max 32 bits
                 emsg += f'    data:        {ndd.data.dtype}\n'
             if ndd.uncertainty is not None and (
