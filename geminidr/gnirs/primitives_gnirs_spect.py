@@ -14,7 +14,7 @@ from .primitives_gnirs import GNIRS
 from . import parameters_gnirs_spect
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import wavecal
+from gempy.library import astrotools as at, wavecal
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
@@ -32,6 +32,110 @@ class GNIRSSpect(Telluric, GNIRS):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gnirs_spect)
+
+    def determineDistortion(self, adinputs=None, **params):
+        """
+        Maps the distortion on a detector by tracing lines perpendicular to the
+        dispersion direction. Then it fits a 2D Chebyshev polynomial to the
+        fitted coordinates in the dispersion direction. The distortion map does
+        not change the coordinates in the spatial direction.
+
+        The Chebyshev2D model is stored as part of a gWCS object in each
+        `nddata.wcs` attribute, which gets mapped to a FITS table extension
+        named `WCS` on disk.
+
+        This GNIRS-specific primitive sets default spectral order in case it's None
+        (since there are only few lines available in H and K-bands in high-res mode, which
+        requires setting order to 1), and minimum length of traced feature to be considered
+        as a useful line for each pixel scale.
+        It then calls the generic version of the primitive.
+
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Arc data as 2D spectral images with the distortion and wavelength
+            solutions encoded in the WCS.
+
+        suffix :  str
+            Suffix to be added to output files.
+
+        spatial_order : int
+            Order of fit in spatial direction.
+
+        spectral_order : int
+            Order of fit in spectral direction.
+
+        id_only : bool
+            Trace using only those lines identified for wavelength calibration?
+
+        min_snr : float
+            Minimum signal-to-noise ratio for identifying lines (if
+            id_only=False).
+
+        nsum : int
+            Number of rows/columns to sum at each step.
+
+        step : int
+            Size of step in pixels when tracing.
+
+        max_shift : float
+            Maximum orthogonal shift (per pixel) for line-tracing (unbinned).
+
+        max_missed : int
+            Maximum number of steps to miss before a line is lost.
+
+        min_line_length: float
+            Minimum length of traced feature (as a fraction of the tracing dimension
+            length) to be considered as a useful line.
+
+        debug_reject_bad: bool
+            Reject lines with suspiciously high SNR (e.g. bad columns)? (Default: True)
+
+        debug: bool
+            plot arc line traces on image display window?
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The same input list is used as output but each object now has the
+            appropriate `nddata.wcs` defined for each of its extensions. This
+            provides details of the 2D Chebyshev fit which maps the distortion.
+        """
+        adoutputs = []
+        for ad in adinputs:
+            these_params = params.copy()
+            disp = ad.disperser(pretty=True)
+            cam = ad.camera(pretty=True)
+            cenwave = ad.central_wavelength(asMicrometers=True)
+            if these_params["spectral_order"] is None:
+                if 'ARC' in ad.tags:
+                    if (disp.startswith('111') and cam.startswith('Long') and
+                            (cenwave >= 1.65 or 'XD' in ad.tags)):
+                        these_params["spectral_order"] = 1
+                    else:
+                        these_params["spectral_order"] = 2
+                else:
+                # sky line case
+                    these_params["spectral_order"] = 3
+                self.log.stdinfo(f'Parameter "spectral_order" is set to None. '
+                                 f'Using spectral_order={these_params["spectral_order"]} for {ad.filename}')
+
+            if these_params["max_missed"] is None:
+                if "ARC" in ad.tags:
+                    # In arcs with few lines tracing strong horizontal noise pattern can
+                    # affect distortion model.Using a lower max_missed value helps to
+                    # filter out horizontal noise.
+                    these_params["max_missed"] = 1 if 'XD' in ad.tags else 2
+                else:
+                    # In science frames we want this parameter be set to a higher value, since
+                    # otherwise the line might be abandoned when crossing a bright object spectrum.
+                    these_params["max_missed"] = 5
+                self.log.stdinfo(f'Parameter "max_missed" is set to None. '
+                 f'Using max_missed={these_params["max_missed"]} for {ad.filename}')
+            adoutputs.extend(super().determineDistortion([ad], **these_params))
+        return adoutputs
+
 
     def normalizeFlat(self, adinputs=None, **params):
         """
@@ -74,10 +178,10 @@ class GNIRSSpect(Telluric, GNIRS):
             for ext in ad:
                 row_values = np.ma.median(np.ma.masked_array(
                     ext.data, mask=ext.mask), axis=1)
-                bright_enough = row_values[1::2] > 50 * ext.read_noise()
-                if bright_enough.any():
-                    scaling = np.ma.median((row_values[::2] /
-                                            row_values[1::2])[bright_enough])
+                ratios = at.divide0(row_values[::2], row_values[1::2])
+                weights = np.maximum(row_values[::2], 0.0)
+                if weights.sum() > 0:
+                    scaling = at.weighted_median(ratios, weights=weights)
                 else:
                     scaling = 1.0
                 log.debug(f"Scaling for {ad.filename}:{ext.id}: {scaling:8.6f}")
@@ -136,7 +240,6 @@ class GNIRSSpect(Telluric, GNIRS):
 
         return linelist
 
-
     def _wavelength_model_bounds(self, model=None, ext=None):
         # Apply bounds to an astropy.modeling.models.Chebyshev1D to indicate
         # the range of parameter space to explore
@@ -154,4 +257,7 @@ class GNIRSSpect(Telluric, GNIRS):
         c1 = np.mean(bounds['c1'])
         dx = 0.02 * abs(c1)
         bounds['c1'] = (c1 - dx, c1 + dx)
+        # This method may be called to determine the bounds when there isn't a model
+        for i in range(2, getattr(model, 'degree', 0) + 1):
+            bounds[f'c{i}'] = (-dx, dx)
         return bounds

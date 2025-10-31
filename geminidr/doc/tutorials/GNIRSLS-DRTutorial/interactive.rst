@@ -206,10 +206,6 @@ The ``normalizeFlat`` tool simply fits a function to the flat signal to
 normalize it.  The slider at the top defaults to
 the center of the pixel array.  You can select a different row if you want.
 
-The normalization steps generally works well without any interaction but the
-tool is there to visualize the fits if you suspect a problem and need to
-correct for it.  The main difficulty in GNIRS data is the odd-even effect that
-results from different gains between odd and even columns.
 
 .. _ui_skycorrectfromslit:
 

@@ -236,18 +236,20 @@ The flats will be stacked.
     reduce_flats.runr()
 
 GNIRS data are affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
-
-In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, because
-of the rapid variations around pixel 800, increasing the order could improve
-the final results.  Setting ``order=50`` fits that area well while still
-offering a good fit elsewhere.
+GNIRS science array have gains that differ by approximately 10 percent.
+We have added a correction in ``normalizeFlat`` that levels off the rows to
+help with the fit.  Here it works well, in some cases you might see a some
+split when you run ``normalizeFlat`` in interactive mode.  The objective,
+if you see the split, is to get a fit that falls inbetween the
+two sets of points, with a symmetrical residual fit.
 
 Note that you are not required to run in interactive mode, but you might want
 to if flat fielding is critical to your program.
+
+In this case, because of the rapid variations around pixel 800, increasing
+the order could improve the final results.  Setting ``order=50`` fits that
+area well while still offering a good fit elsewhere.
+
 
 .. code-block:: python
     :linenos:
@@ -388,7 +390,7 @@ To run the reduction with all the interactive tools activated, set the
     reduce_science.runr()
 
 The default fits are all good, though the trace can be improved by setting
-the order to 5 (interactively or by adding ``('traceApertures:order', 5)``
+the order to 4 (interactively or by adding ``('traceApertures:order', 4)``
 to the ``uparms`` dictionary).
 
 The 2D spectrum before extraction looks like this, with blue wavelengths at
@@ -419,7 +421,7 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
    from gempy.adlibrary import plotting
    ad = astrodata.open(reduce_science.output_filenames[0])
-   plotting.dgsplot_matplotlib(ad, 1)
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={})
 
 .. image:: _graphics/gnirsls_Lband10mm_1d.png
    :width: 600

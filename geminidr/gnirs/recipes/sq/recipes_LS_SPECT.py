@@ -54,9 +54,9 @@ def reduceTelluric(p):
     """
     p.prepare()
     p.addDQ()
-    # p.nonlinearityCorrect() # non-linearity correction tbd
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
     p.adjustWavelengthZeroPoint()
@@ -90,6 +90,7 @@ def  makeWavecalFromSkyEmission(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.flatCorrect()
     p.stackFrames()
     p.determineWavelengthSolution()
@@ -110,9 +111,9 @@ def  makeWavecalFromSkyAbsorption(p):
     """
     p.prepare()
     p.addDQ()
-    # p.nonlinearityCorrect() # non-linearity correction tbd
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
     p.copyInputs(instream="main", outstream="with_distortion_model")

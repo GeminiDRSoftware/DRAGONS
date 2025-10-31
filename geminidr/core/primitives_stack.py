@@ -11,6 +11,7 @@ from astropy import table
 from copy import deepcopy
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
 from gempy.library.nddops import NDStacker
 
 from geminidr import PrimitivesBASE
@@ -183,13 +184,10 @@ class Stack(PrimitivesBASE):
         apply_dq = params["apply_dq"]
         separate_ext = params.get("separate_ext", False)
         statsec = params.get("statsec", None)
+        operation = params["operation"]
         reject_method = params["reject_method"]
         save_rejection_map = params["save_rejection_map"]
-
-        if statsec:
-            statsec = tuple([slice(int(start)-1, int(end))
-                             for x in reversed(statsec.strip('[]').split(','))
-                             for start, end in [x.split(':')]])
+        old_method = params.get("debug_old_normalization", False)
 
         if len(adinputs) <= 1:
             log.stdinfo("No stacking will be performed, since at least two "
@@ -209,6 +207,14 @@ class Stack(PrimitivesBASE):
         for i in range(len(adinputs[0])):
             if len({ad[i].nddata.shape for ad in adinputs}) > 1:
                 raise ValueError("Not all inputs images have the same shape")
+
+        if statsec:
+            statsec = tuple([slice(int(start)-1, int(end))
+                             for x in reversed(statsec.strip('[]').split(','))
+                             for start, end in [x.split(':')]])
+            if len(statsec) != len(adinputs[0][0].nddata.shape):
+                raise ValueError("'statsec' must have the same number of "
+                                 "dimensions as the data")
 
         # We will determine the average gain from the input AstroData
         # objects and add in quadrature the read noise
@@ -230,48 +236,74 @@ class Stack(PrimitivesBASE):
         # Also determine kernel size from offered memory and bytes per pixel
         bytes_per_ext = []
         for ext in adinputs[0]:
-            bytes = 0
-            # Count _data twice to handle temporary arrays
-            bytes += 2 * ext.data.dtype.itemsize
-            if ext.variance is not None:
-                bytes += ext.variance.dtype.itemsize
+            # to check attributes without loading the entire array
+            test_slice = ext.nddata.window[(slice(0, 1),) * len(ext.shape)]
+
+            # Count data twice to handle temporary arrays
+            bytes = 2 * test_slice.data.dtype.itemsize
+            try:
+                bytes += test_slice.variance.dtype.itemsize
+            except AttributeError:  # variance is None
+                pass
 
             bytes += 2  # mask always created
-            bytes_per_ext.append(bytes * np.prod(ext.shape))
+            bytes_per_ext.append(bytes * np.multiply.reduce(ext.shape))
 
         if memory is not None and (num_img * max(bytes_per_ext) > memory):
             adinputs = self.flushPixels(adinputs)
 
-        # Compute the scale and offset values by accessing the memmapped data
-        # so we can pass those to the stacking function
-        # TODO: Should probably be done better to consider only the overlap
-        # regions between frames
-        if scale or zero:
+        if scale and zero:
+            log.warning("Both scale and zero are set. Setting scale=False.")
+            scale = False
+
+        # We need to know the image levels if we're doing the weighted mean
+        # as discussed below. Also if we're using the old scaling.
+        if (scale or zero) and old_method or operation == "wtmean":
             levels = np.empty((num_img, num_ext), dtype=np.float32)
             for i, ad in enumerate(adinputs):
                 for index in range(num_ext):
+                    # Use of 'window' leaves the AD's data memory-mapped
                     nddata = (ad[index].nddata.window[:] if statsec is None
                               else ad[index].nddata.window[statsec])
-                    #levels[i, index] = np.median(nddata.data)
-                    levels[i, index] = gt.measure_bg_from_image(nddata, value_only=True)
-            if scale and zero:
-                log.warning("Both scale and zero are set. Setting scale=False.")
-                scale = False
-            if separate_ext:
-                # Target value is corresponding extension of first image
-                if scale:
-                    scale_factors = (levels[0] / levels).T
-                else:  # zero=True
-                    zero_offsets = (levels[0] - levels).T
+                    if 'IMAGE' in ad.tags:
+                        levels[i, index] = gt.measure_bg_from_image(nddata, value_only=True)
+                    else:
+                        levels[i, index] = np.ma.median(np.ma.masked_array
+                                                        (nddata.data, mask=nddata.mask))
+
+        if scale or zero:
+            if old_method:
+                if separate_ext:
+                    # Target value is corresponding extension of first image
+                    if scale:
+                        scale_factors = (levels[0] / levels).T
+                    else:  # zero=True
+                        zero_offsets = (levels[0] - levels).T
+                else:
+                    # Target value is mean of all extensions of first image
+                    target = np.mean(levels[0])
+                    if scale:
+                        scale_factors = np.tile(target / np.mean(levels, axis=1),
+                                                num_ext).reshape(num_ext, num_img)
+                    else:  # zero=True
+                        zero_offsets = np.tile(target - np.mean(levels, axis=1),
+                                               num_ext).reshape(num_ext, num_img)
             else:
-                # Target value is mean of all extensions of first image
-                target = np.mean(levels[0])
+                # All extensions from AD1 first, then all from AD2, etc.
+                nddata_list = [ext.nddata for ad in adinputs for ext in ad]
+                # Reshaping ensures it's a 2D array
+                values = at.optimal_normalization(
+                    nddata_list, num_ext=num_ext, separate_ext=separate_ext,
+                    statsec=statsec, return_scaling=scale)
+                if separate_ext:
+                    values = values.reshape(num_ext, num_img)
+                else:
+                    values = np.tile(values, num_ext).reshape(num_ext, num_img)
                 if scale:
-                    scale_factors = np.tile(target / np.mean(levels, axis=1),
-                                            num_ext).reshape(num_ext, num_img)
-                else:  # zero=True
-                    zero_offsets = np.tile(target - np.mean(levels, axis=1),
-                                           num_ext).reshape(num_ext, num_img)
+                    scale_factors = values
+                else:
+                    zero_offsets = values
+
             if scale and np.min(scale_factors) < 0:
                 log.warning("Some scale factors are negative. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
@@ -285,6 +317,16 @@ class Stack(PrimitivesBASE):
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
 
+        # For extensions with very large or small data values, the variance
+        # can lead to under/overflows when calculating the weighted mean, so
+        # we rescale the data to avoid this.
+        if operation == "wtmean":
+            average_levels_per_ext = np.round(np.log10(np.median(abs(levels), axis=0)))
+            global_scaling_per_ext = 10 ** np.where(abs(average_levels_per_ext) > 10,
+                                                    -average_levels_per_ext, 0)
+        else:
+            global_scaling_per_ext = [None] * num_ext
+
         if reject_method == "varclip" and any(ext.variance is None
                                               for ad in adinputs for ext in ad):
             log.warning("Rejection method 'varclip' has been chosen but some"
@@ -293,9 +335,9 @@ class Stack(PrimitivesBASE):
             reject_method = "sigclip"
 
         log.stdinfo("Combining {} inputs with {} and {} rejection"
-                    .format(num_img, params["operation"], reject_method))
+                    .format(num_img, operation, reject_method))
 
-        stack_function = NDStacker(combine=params["operation"],
+        stack_function = NDStacker(combine=operation,
                                    reject=reject_method,
                                    log=self.log, **params)
 
@@ -330,10 +372,10 @@ class Stack(PrimitivesBASE):
                 kernel = ((shape[0] + oversubscription - 1) // oversubscription,) + shape[1:]
 
             with_uncertainty = True  # Since all stacking methods return variance
-            with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
-                                             for ad in adinputs)
+            with_mask = apply_dq and all(ad[index].nddata.has_mask() for ad in adinputs)
             result = windowedOp(stack_function,
                                 [ad[index].nddata for ad in adinputs],
+                                global_scaling=global_scaling_per_ext[index],
                                 scale=sfactors,
                                 zero=zfactors,
                                 kernel=kernel,

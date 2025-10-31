@@ -8,6 +8,20 @@ from gempy.library import astrotools as at
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
+from astrodata.nddata import NDAstroData
+
+
+@pytest.fixture(scope='module')
+def flat_images():
+    # Produce 6 NDAstroData objects with different mean values and some noise.
+    rng = np.random.default_rng(42)
+    images = []
+    for i in range(6):
+        img = NDAstroData(data=rng.normal(loc=50*(i+1), scale=20, size=(100, 100)).astype(np.float32),
+                          mask=(np.random.rand(100, 100) > 0.99).astype(np.uint16))
+        images.append(img)
+    return images
+
 
 def test_array_from_list():
     values = (1, 2, 3)
@@ -185,6 +199,42 @@ def test_cartesian_regions_to_slices():
         cart(12)
 
 
+@pytest.mark.parametrize("return_scaling", (True, False))
+def test_optimal_normalization(flat_images, return_scaling):
+    """
+    Quick test to check image scaling/offsetting. This doesn't test the
+    memory-mapping part of the function.
+    """
+    retval = at.optimal_normalization(flat_images, return_scaling=return_scaling)
+
+    if return_scaling:
+        np.testing.assert_allclose(retval, 1. / (np.arange(len(flat_images)) + 1), rtol=0.01)
+    else:
+        np.testing.assert_allclose(retval, -np.arange(len(flat_images)) * 50, atol=1.0)
+
+
+@pytest.mark.parametrize("separate_ext", (True, False))
+def test_optimal_normalization_multiple_extensions(flat_images, separate_ext):
+    """
+    Confirm that the function works with multiple extensions, either computing
+    the offsets separately or together.
+    """
+    # Pass the list as 2 images with 3 extensions each
+    retval = at.optimal_normalization(flat_images, return_scaling=True,
+                                      num_ext=3, separate_ext=separate_ext)
+
+    if separate_ext:
+        assert retval.shape == (3, 2)  # 3 extensions, 2 images
+        np.testing.assert_allclose(retval, [[1., 0.25], [1., 0.4], [1., 0.5]], rtol=0.01)
+    else:
+        # Because the data *don't* have a common scaling, the result here
+        # depends on how one decides to calculate the average scaling.
+        # The extensions in image 1 have signals (50, 100, 150), and in
+        # image 2 (200, 250, 300), so the divided image will have 1/3 pixels
+        # ~0.25, 1/3 being ~0.4, and 1/3 being ~0.5; hence median is 0.4
+        np.testing.assert_allclose(retval, [1, 0.4], rtol=0.01)
+
+
 def test_spherical_offsets_by_pa():
     c1 = SkyCoord(ra=120, dec=0, unit='deg')
     c2 = SkyCoord(ra=120.01, dec=0.05, unit='deg')
@@ -224,3 +274,19 @@ def test_magnitude_flux_densities_ab(filter_name):
     assert isinstance(m.flux_density(), u.Quantity)
     assert m.flux_density().to("Jy").value == pytest.approx(3630, rel=0.001)
     assert m.flux_density(units="Jy") == pytest.approx(3630, rel=0.001)
+
+
+@pytest.mark.parametrize("num_values", [1, 2, 3, 4, 5])
+def test_weighted_median_equal_weights(num_values):
+    x = np.arange(num_values)
+    w = np.ones_like(x)
+    assert at.weighted_median(x, w) == pytest.approx(at.weighted_median(x), abs=0.001)
+
+
+def test_weighted_median_unequal_weights():
+    x = np.arange(10)
+    w = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2])
+    assert at.weighted_median(x, w) == pytest.approx(6, abs=0.001)
+    x = np.arange(9)
+    w = np.array([1, 1, 1, 1, 1, 1, 2, 2, 2])
+    assert at.weighted_median(x, w) == pytest.approx(5.5, abs=0.001)

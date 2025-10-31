@@ -19,9 +19,9 @@ def makeProcessedPinhole(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
-    p.flatCorrect()
+    p.applySlitModel()
     p.stackFrames()
-    p.tracePinholeApertures()
+    p.determinePinholeRectification()
     p.storeProcessedPinhole()
 
 _default = makeProcessedPinhole

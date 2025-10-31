@@ -44,7 +44,7 @@ datasets = {
                                                       333, 334, 335, 336, 337)],
         "pinholes": [], # No pinhole for this dataset
         "sci": [f"S20060311S{i:04d}.fits" for i in range(237, 241)],
-        "user_pars": {'attachPinholeModel:do_cal': 'skip',
+        "user_pars": {'attachPinholeRectification:do_cal': 'skip',
                       'findApertures:ext': '4',
                       "telluricCorrect:do_cal": "skip",
                       "fluxCalibrate:do_cal": "skip"}

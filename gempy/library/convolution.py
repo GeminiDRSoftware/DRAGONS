@@ -119,6 +119,8 @@ def resample(wout, w, data):
     rev_out = any(diffs < 0)
     if rev_out and not all(diffs < 0):
         raise ValueError("Output wavelength array is not monotonic")
+    if np.min(wout) < np.min(w) or np.max(wout) > np.max(w):
+        raise ValueError("Output wavelength array extends beyond input array")
 
     _slice = slice(None, None, -1) if rev_in else slice(None)
     spline = make_interp_spline(w[_slice], data[_slice], axis=-1, k=3)

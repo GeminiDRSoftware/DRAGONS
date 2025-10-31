@@ -11,6 +11,13 @@ Release Notes
 V4.1.0
 ======
 
+This release includes new support for GNIRS cross-dispersed data.  Full
+support from raw data to telluric and flux calibrated data is available. All
+GNIRS cross-dispersed configurations are supported.   This release builds
+upon the GNIRS longslit support introduced in DRAGONS V4.0.0.
+
+Improvements to various algorithms, especially wavelength calibration, have
+been made.  Various bug fixes and documentation improvements are also included.
 
 V4.0.0
 ======

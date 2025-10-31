@@ -498,7 +498,7 @@ class InteractiveModel1D(InteractiveModel):
 
                 elif self.fit is None:
                     self.quality = FitQuality.BAD
-                    self.fit = new_fit
+                    #self.fit = new_fit
 
                 else:
                     # Modify the fit_1D object with a shift by ugly hacking
@@ -509,6 +509,8 @@ class InteractiveModel1D(InteractiveModel):
                     self.fit.points = new_fit.points
                     self.fit.mask = new_fit.mask
                     self.quality = FitQuality.POOR  # else stay BAD
+        elif self.default_model is not None:
+            self.fit = None
 
         if self.quality != FitQuality.BAD:  # don't update if it's BAD
             if "residuals" in self.data.data:
@@ -1068,6 +1070,9 @@ class Fit1DPanel:
 
         default_model : callable
             function to evaluate model if self.fit is None
+
+        initial_fit : callable
+            the initial fit created before the Visualizer
         """
         # Just to get the doc later
         self.visualizer = visualizer

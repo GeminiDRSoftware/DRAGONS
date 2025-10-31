@@ -33,7 +33,7 @@ NDD = namedtuple("NDD", "data mask variance")
 # be "bad" when rejecting pixels from the input data. If one takes multiple
 # images of an object and one of those images is saturated, it would clearly
 # be wrong statistically to reject the saturated one.
-BAD = 65535 ^ (DQ.non_linear | DQ.saturated)
+BAD = DQ.max ^ (DQ.non_linear | DQ.saturated)
 
 # A hierarchy of "badness". Pixels in the inputs are considered to be as
 # bad as the worst bit set, so a "bad_pixel" will only be used if there are
@@ -55,12 +55,14 @@ def stack_nddata(fn):
     The returned arrays are then stuffed back into an NDAstroData object.
     """
     @wraps(fn)
-    def wrapper(instance, sequence, scale=None, zero=None, *args, **kwargs):
+    def wrapper(instance, sequence, global_scaling=None, scale=None, zero=None, *args, **kwargs):
         nddata_list = list(sequence)
         if scale is None:
-            scale = [1.0] * len(nddata_list)
+            scale = np.ones(len(nddata_list), dtype=np.float32)
         if zero is None:
-            zero = [0.0] * len(nddata_list)
+            zero = np.zeros(len(nddata_list), dtype=np.float32)
+        if global_scaling is not None:
+            scale *= global_scaling
 
         # Coerce all data to 32-bit floats. FITS data on disk is big-endian
         # and preserving that datatype will cause problems with Cython
@@ -86,6 +88,11 @@ def stack_nddata(fn):
 
         out_data, out_mask, out_var, rejmap = fn(
             instance, data=data, mask=mask, variance=variance, *args, **kwargs)
+
+        if global_scaling is not None:
+            out_data /= global_scaling
+            if out_var is not None:
+                out_var /= global_scaling * global_scaling
 
         # Can't instantiate NDAstroData with variance
         ret_value = NDAstroData(out_data, mask=out_mask, variance=out_var)
@@ -387,6 +394,9 @@ class NDStacker:
             out_data = (_masked_sum(data / variance, mask=mask) /
                         _masked_sum(1 / variance, mask=mask))
             out_var = 1 / _masked_sum(1 / variance, mask=mask)
+        # Input data where all VAR=0. Should be masked
+        if out_mask is not None:
+            out_data[np.logical_and(np.isnan(out_data), out_mask > 0)] = 0
         return out_data, out_mask, out_var
 
     @staticmethod
@@ -604,12 +614,22 @@ class NDStacker:
     #     return data, mask, variance
 
 
-def sum1d(ndd, x1, x2, proportional_variance=True):
+def combine1d(ndd, x1, x2, proportional_variance=True, average=False):
     """
-    This function sums the pixels between x1 and x2 of a 1-dimensional
+    This function combines the pixels between x1 and x2 of a 1-dimensional
     NDData-like object. Fractional pixel locations are defined in the usual
     manner such that each pixel covers the region (i-0.5, i+0.5) where i
     is the integer index.
+
+    If a sum is requested (average=False, the default), the output is summed
+    and the mask is the bitwise OR of all input pixels. If an average is
+    requested, then bad pixels are rejected in the same was as in NDStacker,
+    with the output mask being the mask of the "best" input pixels.
+
+    The "proportional_variance" option determines how fractional pixels are
+    handled; if True (the default), then they're handled in a way that is not
+    statistically correct but avoids strong changes in the output variance
+    depending on the subpixel alignment of the aperture edges.
 
     Parameters
     ----------
@@ -624,30 +644,49 @@ def sum1d(ndd, x1, x2, proportional_variance=True):
         rather than quadratic, proportion? When summing rows of a spectral
         image, this removes the strong dependency of the output variance on
         the subpixel alignement of the aperture edges.
+    average: bool
+        return the average of pixels between x1 and x2, rather than the sum?
 
     Returns
     -------
     NDD:
         sum of pixels (and partial pixels) between x1 and x2, with mask
-        and variance
+        and variance; dtype is likely to be float64
     """
-    x1 = max(x1, -0.5)
-    x2 = min(x2, ndd.shape[0]-0.5)
-    ix1 = int(np.floor(x1 + 0.5))
-    ix2 = int(np.ceil(x2 - 0.5))
-    fx1 = ix1 - x1 + 0.5
-    fx2 = x2 - ix2 + 0.5
-    mask = var = None
-
-    try:
-        data = fx1*ndd.data[ix1] + ndd.data[ix1+1:ix2].sum() + fx2*ndd.data[ix2]
-    except IndexError:  # catches the *entire* aperture being off the image
+    if x2 <= x1:
+        raise ValueError('x2 must be greater than x1')
+    if x2 < -0.5 or x1 > ndd.shape[0] - 0.5:  # fully off the image
         return NDD(0, DQ.no_data, 0)
-    if ndd.mask is not None:
-        mask = np.bitwise_or.reduce(ndd.mask[ix1:ix2+1])
-    if ndd.variance is not None:
-        var = ((fx1 if proportional_variance else fx1*fx1)*ndd.variance[ix1] +
-               ndd.variance[ix1:ix2].sum() +
-               (fx2 if proportional_variance else fx2*fx2)*ndd.variance[ix2])
+
+    pixels = np.arange(ndd.data.size)
+    f1 = np.maximum(np.minimum(pixels + 0.5 - x1, 1), 0)
+    f2 = np.maximum(np.minimum(x2 - pixels + 0.5, 1), 0)
+    f = f1 * f2
+    if np.count_nonzero(f) == 1:
+        f = np.maximum(f1 + f2 - 1, 0)  # catches the case of a single pixel
+
+    mask = var = None  # output values
+
+    if average and ndd.mask is not None:
+        region_pixels = f > 0
+        out_mask, mask = NDStacker._process_mask(ndd.mask[region_pixels, np.newaxis])
+        out_mask = out_mask[:, 0]
+        mask = mask[0]
+        effective_npix = f[region_pixels][out_mask == 0].sum()
+        data = (f[region_pixels] * ndd.data[region_pixels])[out_mask == 0].sum() / effective_npix
+        if ndd.variance is not None:
+            var = (f[region_pixels] * (1 if proportional_variance else
+                                       f[region_pixels]) * ndd.variance[region_pixels])[out_mask == 0]
+            var = var.sum() / (effective_npix * effective_npix)
+    else:
+        data = (f * ndd.data).sum()
+        if ndd.mask is not None:
+            mask = np.bitwise_or.reduce(ndd.mask[f > 0])
+        if ndd.variance is not None:
+            var = (f * ndd.variance).sum() if proportional_variance else (f * f * ndd.variance).sum()
+        if average:  # ndd.mask was None
+            data /= f.sum()
+            if ndd.variance is not None:
+                var /= f.sum() * f.sum()
 
     return NDD(data, mask, var)

@@ -86,8 +86,9 @@ From the API, the calibration database is initialized as follows:
 
 
 The calibration service is now ready to use.
-.. To delete the existing database and start fresh, use the "wipe" option: ``caldb.init(wipe=True)``.
-    April2025, the wipe option appears to be broken.  
+
+To delete the existing database and start fresh, use the "wipe"
+option: ``caldb.init(wipe=True)``.
 
 You can manually add processed calibrations with ``caldb.add_cal(<filename>)``,
 list the database content with ``caldb.list_files()``, and

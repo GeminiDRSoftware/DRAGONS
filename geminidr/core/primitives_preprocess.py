@@ -1474,13 +1474,19 @@ class Preprocess(PrimitivesBASE):
             number of high pixels to reject (for "minmax")
         memory: float/None
             available memory (in GB) for stacking calculations
+        scale: bool
+            scale the sky frames before stacking them?
+        zero: bool
+            apply offets to the sky frames before stacking them?
         reset_sky: bool
             maintain the sky level by adding a constant to the science
             frame after subtracting the sky?
         scale_sky: bool
-            scale each extension of each sky frame to match the science frame?
+            scale each extension of each stacked sky frame to match the
+            science frame?
         offset_sky: bool
-            apply offset to each extension of each sky frame to match science?
+            apply offset to each extension of each stacked sky frame to match
+            the science frame?
         sky: str/AD/list
             sky frame(s) to subtract
         """
@@ -1492,6 +1498,10 @@ class Preprocess(PrimitivesBASE):
         scale_sky = params.get("scale_sky", False)
         offset_sky = params.get("offset_sky", False)
         suffix = params["suffix"]
+        if "zero" not in params.keys():
+            params["zero"] = False
+        if "scale" not in params.keys():
+            params["scale"] = False
         if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")

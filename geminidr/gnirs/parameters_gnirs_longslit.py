@@ -11,16 +11,6 @@ def list_of_ints_check(value):
     [int(x) for x in str(value).split(',')]
     return True
 
-class determineDistortionConfig(parameters_spect.determineDistortionConfig):
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, None, min=1, optional=True)
-    min_line_length = config.RangeField("Exclude line traces shorter than this fraction of spatial dimension",
-                                        float, None, min=0., max=1., optional=True)
-    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
-                               int, None, min=0, optional=True)
-    def setDefaults(self):
-        self.min_snr = 10
-        self.debug_reject_bad = False
-
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     order = config.RangeField("Order of fitting function", int, None, min=1,
                               optional=True)

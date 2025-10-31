@@ -11,13 +11,13 @@
 </table>
 
 # Current Status
-**The stable version is v4.0.0.**  
+**The stable version is v4.1.0.**  
 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15226659.svg)](https://doi.org/10.5281/zenodo.15226659) DRAGONS is distributed as a conda package, *dragons*, and it is 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17412281.svg)](https://doi.org/10.5281/zenodo.17412281) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
-Version 4.0 is recommend for the reduction of **imaging** data from Gemini's
+Version 4.1 is recommend for the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI, for the
 reduction of GMOS and GNIRS **longslit spectroscopy** data, and the reduction 
 of GHOST data.
@@ -39,7 +39,7 @@ $ conda config --add channels http://astroconda.gemini.edu/public
 ```
 
 
-A list of changes since 3.2 can be found in the [Change Logs](https://dragons.readthedocs.io/en/v4.0.0/changes.html).
+A list of changes since 4.0 can be found in the [Change Logs](https://dragons.readthedocs.io/en/v4.1.0/changes.html).
 
 ---
 # What is DRAGONS
@@ -52,12 +52,13 @@ reduction of Gemini data.
 ---
 
 # Documentation
-Documentation on DRAGONS v4.0 is available on "readthedocs" at:
+Documentation on DRAGONS v4.1 is available on "readthedocs" at:
 
-* https://dragons.readthedocs.io/en/v4.0.0/
+* https://dragons.readthedocs.io/en/v4.1.0/
 
 There your will find manuals for Astrodata and the Recipe System, and hands-on
-tutorials on reducing Gemini imaging data with DRAGONS.
+tutorials on reducing Gemini imaging, longslit, and cross-dispersed data
+with DRAGONS.
 
 Gemini users with data should pick the tutorial discussing
 the reduction of data from the appropriate instrument and mode.  
@@ -70,13 +71,13 @@ manuals.
 # Setting up a development environment
 
 To run checkouts, first set up a development conda environment.  This is what
-we are using at this time for the `master` branch and the `release/4.0.x` 
+we are using at this time for the `master` branch and the `release/4.x` 
 branches.
 
 ```
-$ conda create -n dgdev3.12_20250520 python=3.12 "astropy>=6" astroquery matplotlib "numpy<2" psutil pytest python-dateutil requests scikit-image scipy sextractor "sqlalchemy>=2.0.0" "gwcs>=0.15,<=0.22.1" specutils "bokeh>=3" holoviews cython future "astroscrappy>=1.1" fitsverify jsonschema ds9 jupyter ipympl imexam sphinx sphinx_rtd_theme objgraph
-$ conda activate dgdev3.12_20250520
-$ pip install git+https://github.com/GeminiDRSoftware/FitsStorage.git@v3.4.x
+$ conda create -n dgdev3.12_20251021 python=3.12 "astropy>=7" astroquery matplotlib "numpy<2" psutil pytest python-dateutil requests scikit-image scipy sextractor "sqlalchemy>=2.0.0" "gwcs>=0.15,<=0.22.1" specutils "bokeh>=3" "holoviews>=1.2" cython future "astroscrappy>=1.2" fitsverify jsonschema ds9 jupyter ipympl imexam sphinx sphinx_rtd_theme objgraph
+$ conda activate dgdev3.12_20251021
+$ pip install git+https://github.com/GeminiDRSoftware/FitsStorage.git@v3.5.2
 ```
 Dependencies change all the time and can break the development environment
 or cause problems when conda tries to find a solution for the dependencies. 

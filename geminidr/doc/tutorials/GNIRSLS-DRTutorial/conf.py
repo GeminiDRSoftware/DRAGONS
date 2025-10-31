@@ -11,14 +11,14 @@ copyright = '2025, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
-version = '4.1_dev'
+version = '4.2_dev'
 #release = '4.1.0'
 #rtdurl = 'v'+release
-release = '4.1.x'
-rtdurl = 'release-'+release
-#rtdurl = 'latest'
+#release = '4.1.x'
+#rtdurl = 'release-'+release
+rtdurl = 'latest'
 
-today = 'September 2025'
+today = 'October 2025'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -90,7 +90,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'tutorialseries-gmoslsdrdragons', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'tutorialseries-gnirslsdrdragons', 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS Documentation',
      [author], 1)
 ]
 
@@ -120,6 +120,7 @@ rst_epilog = """
 .. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/usermanual/index.html" target="_blank">Astrodata User Manual</a>`
 
 .. |GNIRSImgTut| replace:: :raw-html:`<a href="http://GNIRSImg-DRTutorial.readthedocs.io/en/{v}">GNIRS Imaging Data Reduction Tutorial</a>`
+.. |GNIRSXDTut| replace:: :raw-html:`<a href="http://GNIRSXD-DRTutorial.readthedocs.io/en/{v}">GNIRS Cross-Dispersed Data Reduction Tutorial</a>`
 .. |DRAGONS| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/en/{v}/" target="_blank">DRAGONS</a>`
 
 .. |RSUserInstall| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/{v}/install.html" target="_blank">DRAGONS Installation Instructions</a>`

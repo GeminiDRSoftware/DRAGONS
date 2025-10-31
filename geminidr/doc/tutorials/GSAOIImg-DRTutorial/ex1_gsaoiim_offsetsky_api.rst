@@ -263,10 +263,6 @@ the local calibration database will be fetched automatically.
     reduce_std.files.extend(list_of_std_stars)
     reduce_std.runr()
 
-.. note:: ``Reduce`` will automatically align and stack the images.
-      Therefore, it is no longer necessary to use the ``disco_stu`` tool for
-      GSAOI data.
-
 
 
 .. _api_process_science_files:
@@ -280,6 +276,42 @@ and used for the sky subtraction.
 The BPM and the master flat will be retrieved automatically from the local
 calibration database.
 
+The observations have problems with their World Coordinate System (WCS) headers
+values.  The primitive ``standardizeWCS`` will catch those and exit.  You can
+get more information by running ``checkWCS``.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 40
+
+    check_target_wcs = Reduce()
+    check_target_wcs.files.extend(list_of_science_images)
+    check_target_wcs.recipename = 'checkWCS'
+    check_target_wcs.runr()
+
+::
+
+    ...
+      PRIMITIVE: standardizeWCS
+      -------------------------
+      Using S20170505S0095.fits as base pointing
+      Using S20170505S0101.fits as base pointing
+      Using S20170505S0102.fits as base pointing
+      Using S20170505S0104.fits as base pointing
+
+      The following files were identified as having bad WCS information:
+          S20170505S0105.fits
+          S20170505S0108.fits
+          S20170505S0109.fits
+      No changes are being made to the WCS information.
+
+``standardizeWCS``, called by ``prepare``, can try to ``fix`` the  WCS
+information or make ``new`` WCS based on the RA and Dec and offsets information
+found in the headers.
+
+In this case, ``fix`` is enough.
+
+
 We use similar commands as before to initiate a new reduction to reduce the
 science data:
 
@@ -290,6 +322,7 @@ science data:
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)
     reduce_target.uparms['skyCorrect:offset_sky'] = False
+    reduce_target.uparms['prepare:bad_wcs'] = 'fix'
     reduce_target.runr()
 
 This will generate flat corrected files, align them,

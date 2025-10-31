@@ -15,22 +15,22 @@ from recipe_system.testing import ref_ad_factory
 
 datasets = [
     #GNIRS XD pinhole files
-    "S20060507S0125_flatCorrected.fits", # 32 l/mm, ShortBlue
-    "N20130821S0556_flatCorrected.fits", # 10 l/mm, LongBlue
-    "N20231029S0343_stack.fits",         # 111 l/mm, ShortBlue
+    ("S20060507S0125_flatCorrected.fits", {}),# 32 l/mm, ShortBlue
+    ("N20130821S0556_flatCorrected.fits", {}), # 10 l/mm, LongBlue
+    ("N20231029S0343_stack.fits", {"debug_max_trace_pos": 4})         # 111 l/mm, ShortBlue
     ]
 
 
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize("ad", datasets, indirect=True)
-def test_trace_pinhole_apertures(ad, change_working_dir, ref_ad_factory):
+@pytest.mark.parametrize("ad, params", datasets, indirect=["ad"])
+def test_determine_pinhole_rectification(ad, params, change_working_dir, ref_ad_factory):
 
     with change_working_dir():
         p = GNIRSCrossDispersed([ad])
         p.viewer = geminidr.dormantViewer(p, None)
-        pinholes_traced_ad = p.tracePinholeApertures().pop()
+        pinholes_traced_ad = p.determinePinholeRectification(**params).pop()
 
     ref_ad = ref_ad_factory(pinholes_traced_ad.filename)
     for ext, ext_ref in zip(pinholes_traced_ad, ref_ad):
@@ -48,14 +48,16 @@ def test_trace_pinhole_apertures(ad, change_working_dir, ref_ad_factory):
 
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad", datasets, indirect=True)
-def test_straight_edges_from_pinhole_model(ad):
+@pytest.mark.parametrize("ad, params", datasets, indirect=["ad"])
+def test_straight_edges_from_pinhole_model(ad, params):
     """
     Test that the edges of the masked regions are close to vertical after
     applying the pinhole-created distortion model.
     """
     p = GNIRSCrossDispersed([ad])
-    ad = p.tracePinholeApertures().pop()
+    # We don't apply "params" here as we want to make sure the defaults
+    # produce a good solution
+    ad = p.determinePinholeRectification().pop()
 
     for ext in ad:
         nmasked = (ext.mask & 64).astype(bool).sum(axis=1)

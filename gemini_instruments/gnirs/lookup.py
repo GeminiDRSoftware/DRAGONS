@@ -69,24 +69,24 @@ detector_properties = {
         ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.72, 1.0),
     },
     'SN7638228.1.3': {
-        # GNIRS North - New Detector Controller [expected August 2025]
-        # Temporary values (copied from old SN7638228.1.2)
+        # GNIRS North - Mechanisms refurbished, same detector controller. Sep2025
+        # Copied from old SN7638228.1.2
         #
         # Dictionary key is the read mode and well depth setting
         # Dictionary values are in the following order:
         # readnoise, gain, well, linearlimit, nonlinearlimit
         # readnoise and well are in units of electrons
-        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 90000., 0.72, 1.0),
-        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 90000., 0.72, 1.0),
-        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 90000., 0.72, 1.0),
-        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 90000., 0.72, 1.0),
-        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 180000., 0.72, 1.0),
-        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 180000., 0.72, 1.0),
-        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 180000., 0.72, 1.0),
+        ('Very Bright Objects', 'Shallow'): DetectorConfig(155., 13.5, 92000., 0.96, 1.0),
+        ('Bright Objects', 'Shallow'): DetectorConfig(30., 13.5, 91000., 0.96, 1.0),
+        ('Faint Objects', 'Shallow'): DetectorConfig(10., 13.5, 78000., 0.95, 1.0),
+        ('Very Faint Objects', 'Shallow'): DetectorConfig(7., 13.5, 67000., 0.98, 1.0),
+        ('Very Bright Objects', 'Deep'): DetectorConfig(155., 13.5, 209000., 0.93, 1.0),
+        ('Bright Objects', 'Deep'): DetectorConfig(30., 13.5, 207000., 0.91, 1.0),
+        ('Faint Objects', 'Deep'): DetectorConfig(10., 13.5, 190000., 0.95, 1.0),
         ('Very Faint Objects', 'Deep'): DetectorConfig(7., 13.5, 180000., 0.72, 1.0),
     },
     'SN7638228.1.3+ARC-III': {
-        # GNIRS North - New Detector Controller [expected Fall 2025]
+        # GNIRS North - New Detector Controller [expected Feb 2026]
         # Temporary values (copied from old SN7638228.1.2)
         #
         # Dictionary key is the read mode and well depth setting
@@ -105,7 +105,7 @@ detector_properties = {
 }
 
 nonlin_coeffs = {
-    'SN7638228.1.2': {   # GNIRS North - Orginal Detector Controller
+    'SN7638228.1.2': {   # GNIRS North - Original Detector Controller
         # Calculated by CJS 2025 June, modelled on NIRI formula
         # "time_delta" then "gamma" and "eta" for the even rows first,
         # then the odd rows (0-indexed). "time_delta" is the same for all
@@ -137,6 +137,52 @@ nonlin_coeffs = {
         ('Faint Objects', 'Deep'): {
             slice(0, None, 2): NonLinCoeffs(1.4466383436198411, 1.76451657e-07, 4.11771903e-12),
             slice(1, None, 2): NonLinCoeffs(1.4466383436198411, 2.73057711e-07, 2.43750647e-12)
+        },
+    },
+    'SN7638228.1.3': {  # GNIRS North - Original Detector Controller
+        # Post refurbishment - assumed to be the same as before.
+        # Same detector controllers.
+        ('Very Bright Objects', 'Shallow'): {
+            slice(0, None, 2): NonLinCoeffs(-0.00927304429432728,
+                                            7.31286925e-07, 1.12822847e-11),
+            slice(1, None, 2): NonLinCoeffs(-0.00927304429432728,
+                                            8.78778457e-07, 4.79246805e-12)
+        },
+        ('Bright Objects', 'Shallow'): {
+            slice(0, None, 2): NonLinCoeffs(0.08396650606937735, 7.15637971e-07,
+                                            1.15383256e-11),
+            slice(1, None, 2): NonLinCoeffs(0.08396650606937735, 5.69215470e-07,
+                                            7.12109353e-12)
+        },
+        ('Faint Objects', 'Shallow'): {
+            slice(0, None, 2): NonLinCoeffs(1.3876736162675933, 7.80927834e-07,
+                                            1.14904418e-11),
+            slice(1, None, 2): NonLinCoeffs(1.3876736162675933, 8.25762314e-07,
+                                            4.76417974e-12)
+        },
+        ('Very Faint Objects', 'Shallow'): {
+            slice(0, None, 2): NonLinCoeffs(2.597328770047285, 5.06924968e-08,
+                                            2.39898215e-11),
+            slice(1, None, 2): NonLinCoeffs(2.597328770047285, 8.35434220e-08,
+                                            1.49121259e-11)
+        },
+        ('Very Bright Objects', 'Deep'): {
+            slice(0, None, 2): NonLinCoeffs(0.01030521861815561, 3.65581625e-07,
+                                            3.10036318e-12),
+            slice(1, None, 2): NonLinCoeffs(0.01030521861815561, 4.74146254e-07,
+                                            1.54197057e-12)
+        },
+        ('Bright Objects', 'Deep'): {
+            slice(0, None, 2): NonLinCoeffs(0.08232950781117235, 3.67280555e-07,
+                                            3.17756003e-12),
+            slice(1, None, 2): NonLinCoeffs(0.08232950781117235, 4.50936807e-07,
+                                            1.65522683e-12)
+        },
+        ('Faint Objects', 'Deep'): {
+            slice(0, None, 2): NonLinCoeffs(1.4466383436198411, 1.76451657e-07,
+                                            4.11771903e-12),
+            slice(1, None, 2): NonLinCoeffs(1.4466383436198411, 2.73057711e-07,
+                                            2.43750647e-12)
         },
     },
 }
@@ -190,20 +236,16 @@ dispersion_by_config = {
     # "Filter": dispersion
     # Dispersion values are in nm/pix (updated by CJS 20250109)
     # The dispersion values are based on wvl. coverages for each filter/mode listed in GNIRS instrument pages.
+    # Z and I are not the real filters used with GNIRS, those are added to accout for the two blues order in XD mode
     ("10/mm", "Short")  : {"M": -1.939},
-    ("10/mm", "Long")   : {"X": -0.324,  "J": -0.389,   "H": -0.485, "K": -0.647, "L": -0.972, "M": -1.943},
-    ("32/mm", "Short")  : {"X": -0.323,  "J": -0.388,   "H": -0.484, "K": -0.646, "L": -0.969, "M": -1.934},
-    ("32/mm", "Long")   : {"X": -0.107,  "J": -0.129,   "H": -0.162, "K": -0.216, "L": -0.324, "M": -0.645},
-    ("111/mm", "Short") : {"X": -0.092,  "J": -0.110,   "H": -0.139, "K": -0.185, "L": -0.273, "M": -0.562},
-    ("111/mm", "Long")  : {"X": -0.0309, "J": -0.0371,  "H": -0.0464,"K": -0.0618,"L": -0.0922,"M": -0.1875}
+    ("10/mm", "Long")   : {"I": -0.242, "Z": -0.277, "X": -0.323,  "J": -0.387,   "H": -0.487, "K": -0.645, "L": -0.972, "M": -1.943},
+    ("32/mm", "Short")  : {"I": -0.242, "Z": -0.275, "X": -0.321,  "J": -0.386,   "H": -0.482, "K": -0.646, "L": -0.969, "M": -1.934},
+    ("32/mm", "Long")   : {             "Z": -0.089, "X": -0.107,  "J": -0.129,   "H": -0.162, "K": -0.216, "L": -0.324, "M": -0.645}, # I order is never visible
+    ("111/mm", "Short") : {"I": -0.069, "Z": -0.079, "X": -0.092,  "J": -0.111,   "H": -0.134, "K": -0.183, "L": -0.273, "M": -0.562},
+    ("111/mm", "Long")  : {"I": -0.023, "Z": -0.027, "X": -0.0309, "J": -0.0371,  "H": -0.0464,"K": -0.0618,"L": -0.0922,"M": -0.1875}
 }
 
 # XD order number mapping to filter names
 xd_orders = {
-    1: "L",
-    2: "M",
-    3: "K",
-    4: "H",
-    5: "J",
-    6: "X"
+    1: "L", 2: "M", 3: "K", 4: "H", 5: "J", 6: "X", 7: "Z", 8: "I"
 }

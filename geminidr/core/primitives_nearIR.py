@@ -95,7 +95,7 @@ class NearIR(Bookkeeping):
         Parameters
         ----------
         dark_lo_thresh, dark_hi_thresh: float, optional
-            Range of data values (always in ADUs) outside which pixels in the
+            Range of data values (always in electrons) outside which pixels in the
             input dark are considered bad (eg. -20 and 100, but these defaults
             vary by instrument). A limit of None is not applied and all pixels
             are considered good at that end of the range.
@@ -147,21 +147,22 @@ class NearIR(Bookkeeping):
             log.stdinfo(msg.format(flat_lo, flat_hi))
             flat_mask = np.ma.masked_outside(flat_ext.data, flat_lo, flat_hi)
 
-            msg = "BPM Dark Mask Lower < > Upper Limit: {} < > {} ADU\n" \
-                  "                                    ({} < > {})"
             bunit = dark_ext.hdr.get('BUNIT', 'ADU').upper()
-            if bunit in ('ELECTRON', 'ELECTRONS'):
-                conv = dark_ext.gain()
-            elif bunit == 'ADU':
-                conv = 1
-            else:
+            if bunit not in ('ELECTRON', 'ELECTRONS', 'ADU'):
                 raise ValueError("Input units for dark should be ADU or "
                                  "ELECTRON, not {}".format(bunit))
-            log.stdinfo(msg.format(dark_lo, dark_hi,
-                                   conv*dark_lo, conv*dark_hi))
-            # create the mask -- darks (hot pixels)
+
+            msg = "BPM Dark Mask Lower < > Upper Limit: {} < > {} electrons\n" #\
+                  #"                                    ({} < > {})"
+            if bunit == 'ADU':
+                msg += "                                    ({:.2f} < > {:.2f}) ADU"
+                log.stdinfo(msg.format(dark_lo, dark_hi,
+                                   dark_lo/dark_ext.gain(), dark_hi/dark_ext.gain()))
+            else:
+                log.stdinfo(msg.format(dark_lo, dark_hi))
             dark_mask = np.ma.masked_outside(dark_ext.data,
-                                             conv*dark_lo, conv*dark_hi)
+                                             dark_lo / dark_ext.gain(),
+                                             dark_hi / dark_ext.gain())
 
             # combine masks and write to bpm file
             data_mask = np.ma.mask_or(np.ma.getmaskarray(dark_mask),
