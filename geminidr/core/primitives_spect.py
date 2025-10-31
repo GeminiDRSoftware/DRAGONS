@@ -3717,7 +3717,7 @@ class Spect(Resample):
                 # edges of all pixels.
                 all_coords = [0.5*(length - 1) for length in ext.shape]
                 all_coords[dispaxis] = np.arange(-0.5, ext.shape[dispaxis], 0.5)
-                all_waves = ext.wcs(*all_coords[::-1], with_units=True)
+                all_waves = ext.wcs.pixel_to_world(*all_coords[::-1])
                 if ndim > 1:
                     all_waves = all_waves[0]
 
