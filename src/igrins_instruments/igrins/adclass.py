@@ -530,7 +530,7 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
         return self.phu.get('FILTER')
 
     @staticmethod
-    def _get_udatetime(hdr):
+    def _get_udatetime(hdr, dateonly=False, timeonly=False):
         utdatetime = hdr.get('UTDATETI', None)
         if utdatetime is None:
             utdatetime = hdr.get('UTSTART', None)
@@ -538,21 +538,29 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
         if utdatetime is None:
             raise KeyError("The header needs UTDATETIME or UTSART")
 
-        return datetime.datetime.fromisoformat(utdatetime)
+        dt = datetime.datetime.fromisoformat(utdatetime)
+
+        if dateonly:
+            return dt.date()
+        elif timeonly:
+            return dt.time()
+        else:
+            return dt
 
     @astro_data_descriptor
-    def ut_datetime(self):
+    def ut_datetime(self, strict=False, dateonly=False, timeonly=False):
         # FIXME To workaround an issue in dragons4, which try to do
         # ad.phu['UTSTART'] (primitive_gemini.py:244), we have a primitive that
         # temporarily rename UTSTART to UTDATETIME. This is a work around for thos cases.
 
         if self.is_single:
-            return self._get_udatetime(self.hdr)
+            return self._get_udatetime(self.hdr, dateonly=dateonly, timeonly=timeonly)
         else:
             try:
-                return self._get_udatetime(self.phu)
+                return self._get_udatetime(self.phu, dateonly=dateonly, timeonly=timeonly)
             except KeyError:
                 if len(self):
-                    return self._get_udatetime(self[0].hdr)
+                    return self._get_udatetime(self[0].hdr,
+                                               dateonly=dateonly, timeonly=timeonly)
 
 
