@@ -739,7 +739,8 @@ def test_get_sky_spectrum(path_to_inputs, path_to_refs):
     ref_refplot_spec_f2 = np.loadtxt(
         os.path.join(path_to_refs, "S20180114S0104_refplot_spec.dat"))
 
-    np.testing.assert_allclose(ref_refplot_spec_f2, refplot_data_f2["refplot_spec"], atol=1e-3)
+    np.testing.assert_allclose(ref_refplot_spec_f2[:, 0], refplot_data_f2["refplot_spec"][:, 0], atol=1e-3)
+    np.testing.assert_allclose(ref_refplot_spec_f2[:, 1], refplot_data_f2["refplot_spec"][:, 1], atol=0.25)  # max numerical diff in flux with numpy 2
 
 
 def test_resample_spec_table():
@@ -859,7 +860,7 @@ def create_zero_filled_fake_astrodata(height, width):
     """
     astrofaker = pytest.importorskip("astrofaker")
 
-    data = np.zeros((height, width))
+    data = np.zeros((height, width), dtype=np.float32)
 
     hdu = fits.ImageHDU()
     hdu.header['CCDSUM'] = "1 1"

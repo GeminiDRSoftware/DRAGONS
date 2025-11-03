@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '4.1.0'
+VERSION = '4.2_dev'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -93,7 +93,7 @@ setup(name='dragons',
           'jinja2>=3.0',
           'jsonschema>=3.0',
           'matplotlib>=3.7',
-          'numpy>=1.24,<2.0.0a0',
+          'numpy>=1.24',
           'pandas>=2.0',
           'psutil>=5.6',
           'pyerfa>=1.7',

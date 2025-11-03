@@ -60,7 +60,7 @@ def test_write_spectrum_various_units(ad, xunits, yunits, change_working_dir, ca
                                       for r in caplog.records)
         assert mismatched_units == unit_conversion_failure
         t = Table.read(ad.filename.replace(".fits", "_001.dat"),
-                       format="ascii.basic")
+                       format="ascii.basic")  # defaults to float64
         assert len(t) == ad[0].data.size
         assert len(t.colnames) == 3
         # Confirm wavelength has been converted
@@ -68,7 +68,8 @@ def test_write_spectrum_various_units(ad, xunits, yunits, change_working_dir, ca
             (w0 * 10) if xunits == 'AA'  else w0)
         # Confirm S/N is preserved
         np.testing.assert_allclose(np.sqrt(ad[0].variance) / ad[0].data,
-                                   np.sqrt(t['variance']) / t['data'], rtol=2e-7)
+                                   np.sqrt(t['variance']) / t['data'],
+                                   rtol=2e-7, atol=1.2e-7)
 
 
 

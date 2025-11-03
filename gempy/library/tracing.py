@@ -190,7 +190,8 @@ class Aperture:
                 mvar_init, np.ma.masked_where(np.logical_or(mask, var == 0).ravel(),
                                               abs(data).ravel()), var.ravel())
             var_mask = var_mask.reshape(var.shape)[ix1:ix2]
-            var = np.where(var_mask, var[ix1:ix2], var_model(data[ix1:ix2]))
+            var = np.where(var_mask, var[ix1:ix2],
+                           var_model(data[ix1:ix2]).astype(np.float32))
         var[var < 0] = 0
 
         if mask is None:
@@ -216,14 +217,16 @@ class Aperture:
                 m_init = models.Chebyshev1D(degree=degree, domain=[0, npix - 1])
                 m_final, _ = fit_it(m_init, pixels, row,
                                     weights=np.sqrt(ivar_row) * np.where(spectrum > 0, spectrum, 0))
-                profile_models.append(m_final(pixels))
+                profile_models.append(m_final(pixels).astype(np.float32))
             profile_model_spectrum = np.array([np.where(pm < 0, 0, pm) for pm in profile_models])
             sums = profile_model_spectrum.sum(axis=0)
             model_profile = at.divide0(profile_model_spectrum, sums)
 
             # Step 6: revise variance estimates
-            var = np.where(var_mask | mask & BAD_BITS, var,
-                           var_model(abs(model_profile * spectrum)))
+            var = np.where(
+                var_mask | mask & BAD_BITS, var,
+                var_model(abs(model_profile * spectrum)).astype(np.float32)
+            )
             inv_var = at.divide0(1.0, var)
 
             # Step 7: identify cosmic ray hits: we're (probably) OK

@@ -118,7 +118,7 @@ class Preprocess(PrimitivesBASE):
                                 "Continuing.")
                     continue
                 gain = gt.array_from_descriptor_value(ext, "gain")
-                ext.multiply(gain)
+                ext.multiply(np.float32(gain))  # avoid casting int to float64
 
                 # Update saturation and nonlinear levels with new value. We
                 # allowed these to return lists before this point but now a

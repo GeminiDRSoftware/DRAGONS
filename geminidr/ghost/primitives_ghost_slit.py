@@ -385,7 +385,7 @@ class GHOSTSlit(GHOST):
             data, var, mask = _scale_and_stack(
                 all_data, all_var, all_mask, np.full((next,), 1./next))
             if operation == "median":  # we keep mask but modify data and var
-                data = np.median(all_data, axis=2)
+                data = np.median(all_data, axis=2).astype(data.dtype)
                 var *= 0.5 * np.pi  # according to Laplace (see nddops.py)
             adout.append(astrodata.NDAstroData(
                 data=data, mask=mask, meta={'header': hdr.copy()}))

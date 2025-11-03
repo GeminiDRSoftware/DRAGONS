@@ -22,7 +22,7 @@ def test_estimate_peak_width(fwhm):
     stddev = fwhm / stddev_to_fwhm
 
     peaks = np.linspace(
-        x.min() + 0.05 * x.ptp(), x.max() - 0.05 * x.ptp(), n_peaks)
+        x.min() + 0.05 * np.ptp(x), x.max() - 0.05 * np.ptp(x), n_peaks)
 
     for x0 in peaks:
         g = models.Gaussian1D(mean=x0, stddev=stddev)
@@ -46,7 +46,7 @@ def test_find_peaks(noise):
 
     stddev = 4.
     peaks = np.linspace(
-        x.min() + 0.05 * x.ptp(), x.max() - 0.05 * x.ptp(), n_peaks)
+        x.min() + 0.05 * np.ptp(x), x.max() - 0.05 * np.ptp(x), n_peaks)
 
     for x0 in peaks:
         g = models.Gaussian1D(mean=x0, stddev=stddev, amplitude=100)

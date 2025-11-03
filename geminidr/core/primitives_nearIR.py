@@ -757,8 +757,8 @@ class NearIR(Bookkeeping):
                                 else:
                                     mask = deepcopy(MSK)
 
-                                median_collapsed_signal[mask] = np.NAN
-                                mean_collapsed_signa[mask] = np.NAN
+                                median_collapsed_signal[mask] = np.nan
+                                mean_collapsed_signa[mask] = np.nan
 
                                 ## for intra-quad, level to the same value. Note that when there is a strong gradient in the quad, this method will fail 
                                 for _ind in np.arange(len(median_collapsed_signal))[mask]:

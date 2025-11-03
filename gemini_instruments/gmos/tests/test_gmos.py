@@ -7,14 +7,12 @@ import gemini_instruments
 import numpy as np
 
 
-FLOAT_TYPES = (float, np.float32, np.float64)
-
 GMOS_DESCRIPTORS_TYPES = [
-    ('detector_x_offset', FLOAT_TYPES),
-    ('detector_y_offset', FLOAT_TYPES),
+    ('detector_x_offset', float),
+    ('detector_y_offset', float),
     ('nod_count', tuple),
     ('nod_offsets', tuple),
-    ('pixel_scale', FLOAT_TYPES),
+    ('pixel_scale', float),
     ('shuffle_pixels', int),
 ]
 

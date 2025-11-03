@@ -35,15 +35,15 @@ author = 'DRAGONS Team'
 
 # The short X.Y version
 #version = astrodata.version(short=True)
-version = '4.1'
+version = '4.2_dev'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-release = '4.1.0'
-rtdurl = 'v'+release
+#release = '4.1.0'
+#rtdurl = 'v'+release
 #release = '4.1.x'
 #rtdurl = 'release-'+release
-#rtdurl = 'latest'
+rtdurl = 'latest'
 
 
 # -- General configuration ---------------------------------------------------

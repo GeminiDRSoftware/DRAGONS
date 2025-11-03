@@ -236,7 +236,7 @@ def calculate_scaling(x, y, sigma_x=None, sigma_y=None, sigma=3, niter=2):
         fitting.LinearLSQFitter(), outlier_func=stats.sigma_clip, niter=niter,
         sigma=sigma)
     m_final, _ = fit_it(m_init, x, y, weights=weights)
-    return m_final.factor.value
+    return float(m_final.factor.value)  # don't force upcasting in N2 arith.
 
 
 def divide0(numerator, denominator):
